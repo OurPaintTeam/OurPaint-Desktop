@@ -565,6 +565,24 @@ public:
         messageLayout->addWidget(messageScrollArea, 1, 0);
         messageLayout->addWidget(messageConsole, 2, 0);
 
+        // Для сообщений
+        messageContent = new QWidget();
+        messageContentLayout = new QVBoxLayout(messageContent);
+        messageContentLayout->setContentsMargins(1, 1, 1, 1);
+        messageContentLayout->setSpacing(5);
+        messageContentLayout->setAlignment(Qt::AlignTop);
+
+        // Прокрутка
+        QScrollArea *messageScrollArea = new QScrollArea();
+        messageScrollArea->setWidgetResizable(true);
+        messageScrollArea->setWidget(messageContent);
+        messageScrollArea->setStyleSheet("background-color: #494850; border: none;");
+
+        // Добавление элементов в макет message
+        messageLayout->addWidget(messageCollapseButton, 0, 0, Qt::AlignTop | Qt::AlignRight);
+        messageLayout->addWidget(messageScrollArea, 1, 0);
+        messageLayout->addWidget(messageConsole, 2, 0);
+
         // Изначально скрываем messageContainer
         messageContainer->hide();
     }

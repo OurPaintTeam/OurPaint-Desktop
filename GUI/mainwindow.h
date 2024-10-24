@@ -134,11 +134,8 @@ signals:
 
     // Кнопки сервера
     void SigOpenServer(const QString &text);
-
     void SigJoinServer(const QString &text);
-
     void SigJoinLocalServer(const QString &text);
-
     void SigExitSession();
 
     // Чат
@@ -156,21 +153,24 @@ signals:
 
 public slots:
 
-    // Кнопки
+     // Кнопки
     void saveProjectToFile();
-
     void LoadProjectFile();
-
     void openServer();
-
     void joinServer();
-
     void joinLocalServer();
+
 
     void Message() {
         QString input = ui->messageConsole->text();
         if (!input.isEmpty()) {
             ui->messageConsole->clear();
+
+            QLabel *messageLabel = new QLabel(input);
+            messageLabel->setStyleSheet("color: #D8D8F6;");
+            messageLabel->setWordWrap(true);
+            messageLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+            ui->messageContentLayout->addWidget(messageLabel);
             emit EnterMessage(input);
         }
     }

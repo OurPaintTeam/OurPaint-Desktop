@@ -62,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
 
+
     this->setFocusPolicy(Qt::StrongFocus);
 
     frameOverlay->hide(); // Скрытие наложения рамки
@@ -236,8 +237,6 @@ void MainWindow::saveProjectToFile() {
         save = false;
     }
 }
-
-
 
 
 // Добавление элементов в левое меню
