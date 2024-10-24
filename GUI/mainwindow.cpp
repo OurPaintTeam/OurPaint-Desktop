@@ -425,9 +425,9 @@ std::tuple<std::vector<std::vector<QString>>,  std::vector<std::vector<QString>>
     return  std::make_tuple(figures, requirements, settings);
 }
 
-
 // Добавление требований в левое меню
-void MainWindow::Requar_LeftMenu(unsigned long long id, const std::string &text, unsigned long long id1, unsigned long long id2, double parametr) {
+void MainWindow::Requar_LeftMenu(unsigned long long id, const std::string &text, unsigned long long id1,
+                                 unsigned long long id2, double parametr) {
     QTreeWidgetItem *itemReq = ui->leftMenu->topLevelItem(2);
 
     if (text == "Clear") {
@@ -857,3 +857,5 @@ void MainWindow::paintEvent(QPaintEvent *event) {
 
     emit resized();
 }
+
+

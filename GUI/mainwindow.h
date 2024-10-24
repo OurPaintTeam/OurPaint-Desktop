@@ -85,7 +85,6 @@ public:
 
 
 protected:
-
     // Обработчики событий клавиатуры и мыши
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -134,8 +133,11 @@ signals:
 
     // Кнопки сервера
     void SigOpenServer(const QString &text);
+
     void SigJoinServer(const QString &text);
+
     void SigJoinLocalServer(const QString &text);
+
     void SigExitSession();
 
     // Чат
@@ -153,13 +155,16 @@ signals:
 
 public slots:
 
-     // Кнопки
+    // Кнопки
     void saveProjectToFile();
-    void LoadProjectFile();
-    void openServer();
-    void joinServer();
-    void joinLocalServer();
 
+    void LoadProjectFile();
+
+    void openServer();
+
+    void joinServer();
+
+    void joinLocalServer();
 
     void Message() {
         QString input = ui->messageConsole->text();
