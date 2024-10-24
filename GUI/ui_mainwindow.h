@@ -564,11 +564,12 @@ public:
         messageLayout->addWidget(messageCollapseButton, 0, 0, Qt::AlignTop | Qt::AlignRight);
         messageLayout->addWidget(messageScrollArea, 1, 0);
         messageLayout->addWidget(messageConsole, 2, 0);
+        messageContainer->setFixedWidth(200);
 
         // Для сообщений
         messageContent = new QWidget();
         messageContentLayout = new QVBoxLayout(messageContent);
-        messageContentLayout->setContentsMargins(1, 1, 1, 1);
+        messageContentLayout->setContentsMargins(10, 1, 1, 1);
         messageContentLayout->setSpacing(5);
         messageContentLayout->setAlignment(Qt::AlignTop);
 
