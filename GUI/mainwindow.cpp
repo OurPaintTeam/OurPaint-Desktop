@@ -66,7 +66,7 @@ void MainWindow::setMessage(const std::string& name, const std::string& message)
     messageLabel->setWordWrap(true);
     messageLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 
-  //  ui->messageContentLayout->addWidget(messageLabel);
+    ui->messageContentLayout->addWidget(messageLabel);
 }
 
 

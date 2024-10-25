@@ -29,7 +29,6 @@ add_executable(ourpaint
         painter/saveload/FileOurP.cpp
         painter/saveload/requirementInFile.cpp
         ClientServer/Server.cpp ClientServer/Client.cpp
-        painter/Optimization/NewtonOptimizer.cpp
         painter/Optimization/GradientOptimizer.cpp painter/saveload/requirementInFile.h)
 
 include_directories(additions)
