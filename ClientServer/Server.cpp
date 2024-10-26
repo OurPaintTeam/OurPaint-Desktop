@@ -9,7 +9,12 @@ Server::Server(QObject *parent) : QObject(parent), tcpServer(new QTcpServer(this
 }
 
 bool Server::startServer(quint16 port) {
-    return tcpServer->listen(QHostAddress::Any, port);
+    if (!tcpServer->listen(QHostAddress::Any, port)) {
+        qDebug() << "Server could not start!";
+        return false;
+    }
+    qDebug() << "Server started!";
+    return true;
 }
 
 void Server::sendToClients(const QString &command) {
@@ -37,7 +42,14 @@ void Server::onReadyRead() {
     while (!clientSocket->atEnd()) {
         QString command;
         in >> command;
-        emit newCommandReceived(command);
+        if (command.startsWith("CHAT|")) {
+            QString message = command.mid(5);
+            sendChatToClients(message);
+            emit newMessageReceived(message, "Client");
+        }else{
+            sendToClients(command);
+            emit newCommandReceived(command);
+        }
     }
 }
 void Server::onClientDisconnected() {
@@ -45,5 +57,14 @@ void Server::onClientDisconnected() {
     if (clientSocket) {
         clients.remove(clientSocket);
         clientSocket->deleteLater();
+    }
+}
+
+void Server::sendChatToClients(const QString &message) {
+    for (QTcpSocket *client : clients) {
+        QByteArray data;
+        QDataStream out(&data, QIODevice::WriteOnly);
+        out << QString("CHAT|%1").arg(message);
+        client->write(data);
     }
 }

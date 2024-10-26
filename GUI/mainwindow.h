@@ -63,7 +63,8 @@ public:
     void Print_LeftMenu(unsigned long long id, const std::string &text, const std::vector<double> &object);
 
     // Добавление требований в левое меню
-    void Requar_LeftMenu(unsigned long long int id, const std::string &text);
+    void Requar_LeftMenu(unsigned long long id, const std::string &text, unsigned long long id1, unsigned long long id2,
+                         double parametr);
 
     QWidget *getWorkWindow() const { return ui->workWindow; }
 
@@ -75,8 +76,12 @@ public:
 
     void showHelp();
 
+// Добавление сообщений
+    void setMessage(const std::string& name, const std::string& message);
+
 
 protected:
+
     // Обработчики событий клавиатуры и мыши
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -125,8 +130,11 @@ signals:
 
     // Кнопки сервера
     void SigOpenServer(const QString &text);
+
     void SigJoinServer(const QString &text);
+
     void SigJoinLocalServer(const QString &text);
+
     void SigExitSession();
 
     // Чат
@@ -135,25 +143,28 @@ signals:
     //Настройки
     void GridOn(bool T);
 
-    // Кнопки выбора фигур
-    void SigMoving();
-    void SigPoint();
-    void SigSection();
-    void SigCircle();
-
 
 public slots:
 
-     // Кнопки
+    // Кнопки
     void saveProjectToFile();
+
     void LoadProjectFile();
+
     void openServer();
+
     void joinServer();
+
     void joinLocalServer();
-    void Moving(){emit SigMoving();}
-    void Point(){emit SigPoint();}
-    void Section(){emit SigSection();}
-    void Circle(){emit SigCircle();}
+
+    void Message() {
+        QString input = ui->messageConsole->text();
+        if (!input.isEmpty()) {
+            ui->messageConsole->clear();
+            emit EnterMessage(input);
+        }
+    }
+
 
     void exitSession() {
         emit SigExitSession();
