@@ -24,7 +24,7 @@
 #include <QIcon>
 #include <QCheckBox>
 #include <QPropertyAnimation>
-
+#include "../GUI/CastomeConsole.h"
 QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow
@@ -46,7 +46,7 @@ public:
     QGridLayout *gridLayout_2;
     QGridLayout *gridLayout;
     QTreeWidget *leftMenu;
-    QLineEdit *console;
+    CastomeConsole *console;
     QFrame *workWindow;
     QWidget *topBar;
     QHBoxLayout *topBarLayout;
@@ -654,7 +654,7 @@ public:
     void setupConsole()
     {
         // Создание и настройка консоли
-        console = new QLineEdit(centralwindow);
+        console = new CastomeConsole(centralwindow);
         console->setObjectName("console");
         QFont font2;
         font2.setPointSize(12);

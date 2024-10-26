@@ -256,7 +256,7 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         }
 
         if (Section) {
-            if (sectionClickCount < 2) {
+            if (sectionClickCount  == 0) {
                 sectionPoints[sectionClickCount] = event->pos();
                 int logicalX = static_cast<int>((sectionPoints[sectionClickCount].x() - width() / 2) / Scaling.getScale());
                 int logicalY = static_cast<int>((height() / 2 - sectionPoints[sectionClickCount].y()) / Scaling.getScale());

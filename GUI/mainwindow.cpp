@@ -46,6 +46,12 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
+    QStringList commandList = {
+            "circle ", "exit", "addreq ", "section ", "point ","clear"
+    };
+
+    ui->console->setCommands(commandList);
+
     // Обработка ввода в консоль чата
     connect(ui->messageConsole, &QLineEdit::returnPressed, this, [this]() {
         QString input = ui->messageConsole->text();
