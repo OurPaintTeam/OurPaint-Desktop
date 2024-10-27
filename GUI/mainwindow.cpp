@@ -44,6 +44,14 @@ MainWindow::MainWindow(QWidget *parent)
             ui->console->clear();
         }
     });
+    connect(ui->enterConsole,&QPushButton::clicked, this, [this]() {
+        QString input = ui->console->text();
+        if (!input.isEmpty()) {
+            commands.push_back(input);
+            emit EnterPressed(input);
+            ui->console->clear();
+        }
+    });
 
     QStringList commandList = {
             "circle ", "exit", "addreq ", "section ", "point ","clear"
@@ -53,6 +61,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Обработка ввода в консоль чата
     connect(ui->messageConsole, &QLineEdit::returnPressed, this, &MainWindow::Message);
+    connect(ui->enterMes, &QPushButton::clicked, this, &MainWindow::Message);
 
     // Изменение параметров обьектов в левом меню
     connect(ui->leftMenu, &QTreeWidget::itemChanged, this, &MainWindow::LeftMenuChanged);

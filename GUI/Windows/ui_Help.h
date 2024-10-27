@@ -13,6 +13,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QSpacerItem>
 #include <QSizePolicy>
+#include <QDesktopServices>
 
 QT_BEGIN_NAMESPACE
 
@@ -33,6 +34,7 @@ public:
     QPushButton *commandsButton;
     QPushButton *requirementsButton;
     QPushButton *aboutButton;
+    QPushButton *supportButton;
 
     // Content area
     QFrame *contentFrame;
@@ -158,7 +160,17 @@ public:
         aboutButton->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(aboutButton);
 
+        supportButton = new QPushButton("Support", leftMenu);
+        supportButton->setObjectName("aboutButton");
+        supportButton->setFont(buttonFont);
+        supportButton->setStyleSheet(buttonStyle());
+        leftMenuLayout->addWidget(supportButton);
+
         leftMenuLayout->addStretch();
+
+        QObject::connect(supportButton, &QPushButton::clicked, []() {
+            QDesktopServices::openUrl(QUrl("https://t.me/+Du5DMLT9QukxZjky"));
+        });
     }
 
     QString buttonStyle()

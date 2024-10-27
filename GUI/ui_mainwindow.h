@@ -53,6 +53,8 @@ public:
     QFrame *workWindow;
     QWidget *topBar;
     QHBoxLayout *topBarLayout;
+    QPushButton *enterConsole;
+    QHBoxLayout *layoutConsole;
 
     // Меню
     QMenu *menuProject;
@@ -101,6 +103,8 @@ public:
     QWidget *messageContent;
     QVBoxLayout *messageContentLayout;
     QScrollArea *messageScrollArea;
+    QHBoxLayout *layoutMessage;
+    QPushButton *enterMes;
 
     // Панель настроек
     QWidget *settingsPanel;
@@ -509,6 +513,40 @@ public:
         messageConsole = new QLineEdit();
         messageConsole->setObjectName("messageConsole");
 
+        // Установка стилей для поля ввода
+        messageConsole->setStyleSheet(QString::fromUtf8(R"(
+        background-color: #3e3d3d;
+        color: #D8D8F6;
+        border: 1px solid black;
+        border-radius: 5px; /* Закругление углов */
+        padding: 5px; /* Отступ внутри поля ввода */
+    )"));
+
+
+        enterMes = new QPushButton("", messageConsole);
+        enterMes->setFixedSize(25, 25);
+
+
+        enterMes->setIcon(QIcon("../Static/icons/enter.ico"));
+        enterMes->setIconSize(QSize(20, 20));
+
+        layoutMessage = new QHBoxLayout(messageConsole);
+        layoutMessage->setContentsMargins(0, 0, 0, 0);
+        layoutMessage->setSpacing(5);
+        layoutMessage->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+        layoutMessage->addWidget(enterMes);
+        enterMes->setStyleSheet(
+                "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 5px; }"
+                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; }"
+        );
+
+        layoutMessage->addWidget(enterMes);
+        layoutMessage->addSpacerItem(new QSpacerItem(5, 20, QSizePolicy::Fixed, QSizePolicy::Minimum));
+
+        messageConsole->setLayout(layoutMessage);
+
+
+
         QFont font2; // Шрифт
         font2.setPointSize(12);
         messageConsole->setFont(font2);
@@ -712,6 +750,28 @@ public:
             border-bottom-left-radius: 0px;
             border-bottom-right-radius: 0px;
         )"));
+
+       enterConsole = new QPushButton("", console);
+        enterConsole->setFixedSize(25, 25);
+
+        QIcon fileIn("../Static/icons/enter.ico");
+        enterConsole->setIcon(fileIn);
+        enterConsole->setIconSize(QSize(20, 20));
+
+        layoutConsole = new QHBoxLayout(console);
+        layoutConsole->setContentsMargins(0, 0, 0, 0);
+        layoutConsole->setSpacing(5);
+
+        layoutConsole->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+
+        layoutConsole->addWidget(enterConsole);
+        layoutConsole->addSpacerItem(new QSpacerItem(5, 20, QSizePolicy::Fixed, QSizePolicy::Minimum));
+
+        enterConsole->setStyleSheet(
+                "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 5px; }"
+                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; }"
+        );
+        console->setLayout(layoutConsole);
     }
 
     void setupWorkWindow()
