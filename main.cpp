@@ -14,6 +14,8 @@
 #include "painter/paint.h"
 #include "painter/QTPainter.h"
 #include "GUI/mainwindow.h"
+#include "painter/saveload/SaveSettingsApplications.h"
+#include "painter/saveload/LoadSettingsApplications.h"
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
@@ -310,6 +312,62 @@ int main(int argc, char *argv[]) {
                          painter->draw();
                      });
 
+    QObject::connect(painter.get(), &QTPainter::SigPoint, [&painter, &w, &screen, &updateState](QPoint Position) {
+        ElementData point;
+        point.et = ET_POINT;
+        point.params.addElement(Position.x());
+        point.params.addElement(Position.y());
+        ID id = screen.addElement(point);
+        w.setSave(false);
+        updateState();
+    });
+
+    QObject::connect(painter.get(), &QTPainter::SigCircle,
+                     [&painter, &w, &screen, &updateState](QPoint centerPoint, int radius) {
+                         ElementData circle;
+                         circle.et = ET_CIRCLE;
+                         circle.params.addElement(centerPoint.x());
+                         circle.params.addElement(centerPoint.y());
+                         circle.params.addElement(radius);
+                         ID id = screen.addElement(circle);
+                         w.setSave(false);
+                         updateState();
+                     });
+
+    QObject::connect(painter.get(), &QTPainter::SigSection,
+                     [&painter, &w, &screen, &updateState](int startX, int startY, int endX, int endY) {
+                         ElementData section;
+                         section.et = ET_SECTION;
+                         section.params.addElement(startX);
+                         section.params.addElement(startY);
+                         section.params.addElement(endX);
+                         section.params.addElement(endY);
+                         ID id = screen.addElement(section);
+                         w.setSave(false);
+                         updateState();
+                     });
+
+
+    // Выбор фигур
+    QObject::connect(&w, &MainWindow::SigMoving, [&painter]() {
+        painter->setEditor(false);
+        painter->setCircle(false);
+        painter->setSection(false);
+        painter->setPoint(false);
+    });
+    QObject::connect(&w, &MainWindow::SigPoint, [&painter]() {
+        painter->setEditor(true);
+        painter->setPoint(true);
+    });
+    QObject::connect(&w, &MainWindow::SigSection, [&painter]() {
+        painter->setEditor(true);
+        painter->setSection(true);
+    });
+    QObject::connect(&w, &MainWindow::SigCircle, [&painter]() {
+        painter->setEditor(true);
+        painter->setCircle(true);
+    });
+
     // Настройки
     QObject::connect(&w, &MainWindow::GridOn, [&painter](bool T) {
         painter->setCell(T);
@@ -528,8 +586,15 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&w, &MainWindow::projectSaved, [&screen, &w, &painter](const QString &fileName) {
         std::string File = fileName.toStdString();
+        auto [figures, requirements, settings] = w.saveSettings();
+        SaveSettingsApplications saveSet(File.c_str(), &w);
+        saveSet.SaveFigures(figures);
+        saveSet.SaveRequirements(requirements);
+        saveSet.SaveSettings(settings);
+
         screen.saveToFile(File.c_str());
         screen.paint();
+
         painter->draw();
     });
 
@@ -541,25 +606,52 @@ int main(int argc, char *argv[]) {
         screen.loadFromFile(File.c_str());
         screen.paint();
         painter->draw();
-        std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
-        for (auto element: elements) {
-            if (element.second.et == ET_POINT) {
-                double x = element.second.params.getElement(0);
-                double y = element.second.params.getElement(1);
-                w.Print_LeftMenu(element.first.id, "Point", {x, y});
-            } else if (element.second.et == ET_CIRCLE) {
-                double x = element.second.params.getElement(0);
-                double y = element.second.params.getElement(1);
-                double r = element.second.params.getElement(2);
-                w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
-            } else if (element.second.et == ET_SECTION) {
-                double x1 = element.second.params.getElement(0);
-                double y1 = element.second.params.getElement(1);
-                double x2 = element.second.params.getElement(2);
-                double y2 = element.second.params.getElement(3);
-                w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+
+        LoadSettingsApplications LoadSet(File.c_str(), &w);
+        std::vector<std::vector<QString>> figures;
+        std::vector<std::vector<QString>> requirements;
+        std::vector<bool> settings;
+        LoadSet.LoadFigures(figures);
+        LoadSet.LoadRequirements(requirements);
+        LoadSet.LoadSettings(settings);
+
+        for (const auto& figure : figures) {
+            qDebug()<<figure;
+            QString name = figure[0];
+            unsigned long long id = figure[1].toULongLong();
+
+            std::vector<double> params;
+            for (int i = 2; i < figure.size(); ++i) {
+                bool ok;
+                double value = figure[i].toDouble(&ok);
+                if (ok) {
+                    params.push_back(value);
+                }
             }
+            w.Print_LeftMenu(id, name.toStdString(), params);
         }
+
+        for (const auto& req : requirements) {
+            if (req.size() < 2) continue;
+            QString name = req[0];
+            unsigned long long id = req[1].toULongLong();
+
+            std::vector<double> params;
+            for (int i = 2; i < req.size(); ++i) {
+                bool ok;
+                double value = req[i].toDouble(&ok);
+                if (ok) {
+                    params.push_back(value);
+                } else {
+
+                }
+            }
+         //   w.Requar_LeftMenu(id, name.toStdString(), params);
+        }
+
+        w.loadSettings(settings);
+
+
     });
 
 

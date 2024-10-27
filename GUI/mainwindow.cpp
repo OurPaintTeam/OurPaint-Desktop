@@ -17,6 +17,10 @@ MainWindow::MainWindow(QWidget *parent)
     setAllMouseTracking(this); // Отслеживание мыши
     setAttribute(Qt::WA_OpaquePaintEvent);
 
+        connect(ui->figureMoving, &QPushButton::clicked, this, &MainWindow::Moving);
+            connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
+                connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
+                    connect(ui->figureSection, &QPushButton::clicked, this, &MainWindow::Section);
 
     // Кнопки сохранение/импорт
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
@@ -234,6 +238,8 @@ void MainWindow::saveProjectToFile() {
 }
 
 
+
+
 // Добавление элементов в левое меню
 void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, const std::vector<double> &object) {
     QTreeWidgetItem *itemFigures = ui->leftMenu->topLevelItem(1);
@@ -278,11 +284,11 @@ void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, 
     std::vector<QString> paramNames;
 
 
-    if (text == "Point" && object.size() == 2) {
+    if ( object.size() == 2) {
         paramNames = {"ID", "X", "Y"};
-    } else if (text == "Circle" && object.size() == 3) {
+    } else if ( object.size() == 3) {
         paramNames = {"ID", "X", "Y", "R"};
-    } else if (text == "Section" && object.size() == 4) {
+    } else if (object.size() == 4) {
         paramNames = {"ID", "X1", "Y1", "X2", "Y2"};
     }
 
@@ -339,6 +345,85 @@ void MainWindow::LeftMenuChanged(QTreeWidgetItem *item) {
         }
     }
     emit parameterChanged(id, parameters); // Сигнал
+}
+
+void MainWindow::loadSettings(std::vector<bool> settings) {
+    if (!settings.empty()) {
+        ui->componentGrid->setChecked(settings[0]);
+    }
+}
+
+
+std::tuple<std::vector<std::vector<QString>>,  std::vector<std::vector<QString>>, std::vector<bool>> MainWindow::saveSettings() {
+    std::vector<std::vector<QString>> figures;
+    std::vector<std::vector<QString>> requirements;
+    std::vector<bool> settings;
+
+
+    QTreeWidgetItem *itemFigures = ui->leftMenu->topLevelItem(1);
+    for (int i = 0; i < itemFigures->childCount(); ++i) {
+        QTreeWidgetItem *figureItem = itemFigures->child(i);
+        QString figureName = figureItem->text(0);
+
+        std::vector<QString> figureData;
+        figureData.push_back(figureName);
+
+        unsigned long long id = 0;
+        QString idStr;
+
+        for (int j = 0; j < figureItem->childCount(); ++j) {
+            QTreeWidgetItem *paramItem = figureItem->child(j);
+            QString peremen = paramItem->text(0);
+            QStringList XYR = peremen.split(": ");
+
+            if (XYR.size() != 2) continue;
+
+            QString name = XYR[0];
+            QString value = XYR[1];
+
+            if (name == "ID") {
+                idStr = value;
+                id = value.toULongLong();
+                figureData.push_back("ID: " + value);
+            } else {
+                figureData.push_back(name + ": " + value);
+            }
+        }
+
+        figures.push_back(figureData);
+    }
+
+
+    QTreeWidgetItem *itemReq = ui->leftMenu->topLevelItem(2);
+    for (int i = 0; i < itemReq->childCount(); ++i) {
+        QTreeWidgetItem *reqItem = itemReq->child(i);
+        QString reqText = reqItem->text(0);
+
+        std::vector<QString> reqData;
+        reqData.push_back(reqText);
+
+
+        for (int j = 0; j < reqItem->childCount(); ++j) {
+            QTreeWidgetItem *paramItem = reqItem->child(j);
+            QString peremen = paramItem->text(0);
+            QStringList XYR = peremen.split(": ");
+
+            if (XYR.size() != 2) continue;
+
+            QString name = XYR[0];
+            QString value = XYR[1];
+
+            reqData.push_back(name + ": " + value);
+        }
+
+        requirements.push_back(reqData);
+    }
+
+
+    bool isChecked = ui->componentGrid->isChecked();
+    settings.push_back(isChecked);
+
+    return  std::make_tuple(figures, requirements, settings);
 }
 
 

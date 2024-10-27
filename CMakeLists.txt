@@ -31,8 +31,9 @@ add_executable(ourpaint
         ClientServer/Server.cpp ClientServer/Client.cpp
 
         painter/Optimization/GradientOptimizer.cpp
-        GUI/CastomeConsole.cpp)
-        painter/Optimization/GradientOptimizer.cpp painter/saveload/requirementInFile.h)
+        GUI/CastomeConsole.cpp
+        painter/saveload/SaveSettingsApplications.cpp
+        painter/saveload/LoadSettingsApplications.cpp)
 
 include_directories(additions)
 include_directories(UndoRedo)

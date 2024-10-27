@@ -80,6 +80,10 @@ public:
     void setMessage(const std::string& name, const std::string& message);
 
 
+    std::tuple<std::vector<std::vector<QString>>,  std::vector<std::vector<QString>>, std::vector<bool>> saveSettings() ;
+    void loadSettings(std::vector<bool> settings);
+
+
 protected:
 
     // Обработчики событий клавиатуры и мыши
@@ -144,6 +148,12 @@ signals:
     void GridOn(bool T);
 
 
+     void SigMoving();
+      void SigSection();
+       void SigCircle();
+        void SigPoint();
+
+
 public slots:
 
     // Кнопки
@@ -172,6 +182,10 @@ public slots:
 
     void LeftMenuChanged(QTreeWidgetItem *item);
 
+    void Point(){emit SigPoint();};
+    void Moving(){emit SigMoving(); };
+    void Section(){emit SigSection();};
+    void Circle(){emit SigCircle();};
 
 };
 
