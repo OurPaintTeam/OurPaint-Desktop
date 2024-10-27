@@ -538,8 +538,11 @@ public:
         enterMes->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 5px; }"
                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; }"
+
         );
 
+
+        enterMes->setCursor(Qt::PointingHandCursor);
         layoutMessage->addWidget(enterMes);
         layoutMessage->addSpacerItem(new QSpacerItem(5, 20, QSizePolicy::Fixed, QSizePolicy::Minimum));
 
@@ -771,6 +774,7 @@ public:
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 5px; }"
                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; }"
         );
+        enterConsole->setCursor(Qt::PointingHandCursor);
         console->setLayout(layoutConsole);
     }
 
