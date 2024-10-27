@@ -100,6 +100,7 @@ public:
     QGridLayout *messageContainerLayout;
     QWidget *messageContent;
     QVBoxLayout *messageContentLayout;
+    QScrollArea *messageScrollArea;
 
     // Панель настроек
     QWidget *settingsPanel;
@@ -574,7 +575,7 @@ public:
         messageContentLayout->setAlignment(Qt::AlignTop);
 
         // Прокрутка
-        QScrollArea *messageScrollArea = new QScrollArea();
+        messageScrollArea = new QScrollArea();
         messageScrollArea->setWidgetResizable(true);
         messageScrollArea->setWidget(messageContent);
         messageScrollArea->setStyleSheet("background-color: #494850; border: none;");
