@@ -17,10 +17,10 @@ MainWindow::MainWindow(QWidget *parent)
     setAllMouseTracking(this); // Отслеживание мыши
     setAttribute(Qt::WA_OpaquePaintEvent);
 
-        connect(ui->figureMoving, &QPushButton::clicked, this, &MainWindow::Moving);
-            connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
-                connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
-                    connect(ui->figureSection, &QPushButton::clicked, this, &MainWindow::Section);
+    connect(ui->figureMoving, &QPushButton::clicked, this, &MainWindow::Moving);
+    connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
+    connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
+    connect(ui->figureSection, &QPushButton::clicked, this, &MainWindow::Section);
 
     // Кнопки сохранение/импорт
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
@@ -35,6 +35,15 @@ MainWindow::MainWindow(QWidget *parent)
     // Кнопка помощь
     connect(ui->helpButton, &QPushButton::clicked, this, &MainWindow::showHelp);
 
+    connect(ui->nameUsers, &QLineEdit::returnPressed, this, [this]() {
+        QString input = ui->console->text();
+        if (!input.isEmpty()) {
+            ui->nameUsers->setEnabled(false);
+            commands.push_back(input);
+            emit NameUsers(input);
+        }
+    });
+
     // Обработка ввода в консоли
     connect(ui->console, &QLineEdit::returnPressed, this, [this]() {
         QString input = ui->console->text();
@@ -44,7 +53,7 @@ MainWindow::MainWindow(QWidget *parent)
             ui->console->clear();
         }
     });
-    connect(ui->enterConsole,&QPushButton::clicked, this, [this]() {
+    connect(ui->enterConsole, &QPushButton::clicked, this, [this]() {
         QString input = ui->console->text();
         if (!input.isEmpty()) {
             commands.push_back(input);
@@ -54,7 +63,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     QStringList commandList = {
-            "circle ", "exit", "addreq ", "section ", "point ","clear"
+            "circle ", "exit", "addreq ", "section ", "point ", "clear"
     };
 
     ui->console->setCommands(commandList);
@@ -71,14 +80,13 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
 
-
     this->setFocusPolicy(Qt::StrongFocus);
 
     frameOverlay->hide(); // Скрытие наложения рамки
 }
 
 // Добавление сообщений
-void MainWindow::setMessage(const std::string& name, const std::string& message) {
+void MainWindow::setMessage(const std::string &name, const std::string &message) {
     QString messageText = QString::fromStdString(name) + ": " + QString::fromStdString(message);
 
     QLabel *messageLabel = new QLabel(messageText);
@@ -292,9 +300,9 @@ void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, 
     std::vector<QString> paramNames;
 
 
-    if ( object.size() == 2) {
+    if (object.size() == 2) {
         paramNames = {"ID", "X", "Y"};
-    } else if ( object.size() == 3) {
+    } else if (object.size() == 3) {
         paramNames = {"ID", "X", "Y", "R"};
     } else if (object.size() == 4) {
         paramNames = {"ID", "X1", "Y1", "X2", "Y2"};
@@ -362,7 +370,8 @@ void MainWindow::loadSettings(std::vector<bool> settings) {
 }
 
 
-std::tuple<std::vector<std::vector<QString>>,  std::vector<std::vector<QString>>, std::vector<bool>> MainWindow::saveSettings() {
+std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>>
+MainWindow::saveSettings() {
     std::vector<std::vector<QString>> figures;
     std::vector<std::vector<QString>> requirements;
     std::vector<bool> settings;
@@ -431,7 +440,7 @@ std::tuple<std::vector<std::vector<QString>>,  std::vector<std::vector<QString>>
     bool isChecked = ui->componentGrid->isChecked();
     settings.push_back(isChecked);
 
-    return  std::make_tuple(figures, requirements, settings);
+    return std::make_tuple(figures, requirements, settings);
 }
 
 // Добавление требований в левое меню

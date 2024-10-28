@@ -30,8 +30,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Ui_MainWindow
-{
+class Ui_MainWindow {
 public:
     // Действия (Actions)
     QAction *actionSave_project_to;
@@ -110,9 +109,9 @@ public:
     QWidget *settingsPanel;
     QVBoxLayout *settingsLayout;
     QCheckBox *componentGrid;
+    QLineEdit *nameUsers;
 
-    void setupUi(QMainWindow *MainWindow)
-    {
+    void setupUi(QMainWindow *MainWindow) {
         // Установка флагов окна
         MainWindow->setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
         MainWindow->setAttribute(Qt::WA_TranslucentBackground); // Прозрачность
@@ -217,8 +216,7 @@ public:
 
     }
 
-    void setupActions(QMainWindow *MainWindow)
-    {
+    void setupActions(QMainWindow *MainWindow) {
         // Инициализация действий меню
         QFont font;
         font.setPointSize(9);
@@ -257,8 +255,7 @@ public:
         action_help->setObjectName("action_help");
     }
 
-    void setupTopBar(QMainWindow *MainWindow)
-    {
+    void setupTopBar(QMainWindow *MainWindow) {
         // Создание верхней панели
         topBar = new QWidget(MainWindow);
         topBar->setObjectName("topBar");
@@ -302,15 +299,15 @@ public:
         topBarLayout->addWidget(closeButton);
     }
 
-    void setupMenus(QMainWindow *MainWindow)
-    {
+    void setupMenus(QMainWindow *MainWindow) {
         QFont font;
         font.setPointSize(9);
 
         // Меню "Project"
         menuProject = new QMenu(MainWindow);
         menuProject->setObjectName("menuProject");
-        menuProject->setStyleSheet("QMenu#menuProject { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }");
+        menuProject->setStyleSheet(
+                "QMenu#menuProject { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }");
         menuProject->setFont(font);
         menuProject->addAction(actionSave_project_to);
         menuProject->addAction(actionImport_project);
@@ -320,7 +317,8 @@ public:
         // Меню "Collaboration"
         menuCollaboration = new QMenu(MainWindow);
         menuCollaboration->setObjectName("menuCollaboration");
-        menuCollaboration->setStyleSheet("QMenu#menuCollaboration { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }");
+        menuCollaboration->setStyleSheet(
+                "QMenu#menuCollaboration { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }");
         menuCollaboration->setFont(font);
         menuCollaboration->addAction(actionOpen_server);
         menuCollaboration->addAction(actionJoin_server);
@@ -329,8 +327,7 @@ public:
         menuCollaboration->addAction(actionExit_from_session);
     }
 
-    void setupMenuButtons()
-    {
+    void setupMenuButtons() {
         // Создание кнопки "Project"
         projectButton = new QPushButton("Project", topBar);
         projectButton->setObjectName("projectButton");
@@ -382,8 +379,7 @@ public:
         );
     }
 
-    void setupWindowControlButtons(QMainWindow *MainWindow)
-    {
+    void setupWindowControlButtons(QMainWindow *MainWindow) {
         // Кнопка "Закрыть"
         closeButton = new QPushButton("", topBar);
         closeButton->setFixedSize(25, 25);
@@ -396,16 +392,18 @@ public:
         minimizeButton = new QPushButton("", topBar);
         minimizeButton->setFixedSize(25, 25);
         minimizeButton->setIcon(QIcon("../Static/icons/minus.ico"));
-        minimizeButton->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
-                                      "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
+        minimizeButton->setStyleSheet(
+                "QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
+                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
         QObject::connect(minimizeButton, &QPushButton::clicked, MainWindow, &QMainWindow::showMinimized);
 
         // Кнопка "Развернуть"
         maximizeButton = new QPushButton("", topBar);
         maximizeButton->setFixedSize(25, 25);
         maximizeButton->setIcon(QIcon("../Static/icons/big.ico"));
-        maximizeButton->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
-                                      "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
+        maximizeButton->setStyleSheet(
+                "QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
+                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
         QObject::connect(maximizeButton, &QPushButton::clicked, [=]() {
             if (MainWindow->isMaximized() || MainWindow->isFullScreen()) {
                 MainWindow->showNormal(); // Возвращаем к обычному размеру
@@ -423,8 +421,7 @@ public:
                                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
     }
 
-    void setupLeftMenu()
-    {
+    void setupLeftMenu() {
         // Создание и настройка левого меню
         leftMenu = new QTreeWidget();
         leftMenu->setObjectName("leftMenu");
@@ -491,8 +488,7 @@ public:
         leftMenuContainer->hide();
     }
 
-    void setupMessage()
-    {
+    void setupMessage() {
         // Создание и настройка message
         message = new QFrame();
         message->setObjectName("message");
@@ -547,7 +543,6 @@ public:
         layoutMessage->addSpacerItem(new QSpacerItem(5, 20, QSizePolicy::Fixed, QSizePolicy::Minimum));
 
         messageConsole->setLayout(layoutMessage);
-
 
 
         QFont font2; // Шрифт
@@ -643,7 +638,6 @@ public:
         figuresLayout->setSpacing(0);
 
 
-
         figureMoving = new QPushButton("", figuresPanel);
         figurePoint = new QPushButton("", figuresPanel);
         figureSection = new QPushButton("", figuresPanel);
@@ -685,8 +679,7 @@ public:
     }
 
 
-    void setupCollapsedPanel()
-    {
+    void setupCollapsedPanel() {
         // Создание свернутой панели
         collapsedPanel = new QWidget(centralwindow);
         collapsedPanel->setFixedWidth(40);
@@ -733,8 +726,7 @@ public:
         collapsedPanelLayout->addWidget(Figures);
     }
 
-    void setupConsole()
-    {
+    void setupConsole() {
         // Создание и настройка консоли
         console = new CastomeConsole(centralwindow);
         console->setObjectName("console");
@@ -754,7 +746,7 @@ public:
             border-bottom-right-radius: 0px;
         )"));
 
-       enterConsole = new QPushButton("", console);
+        enterConsole = new QPushButton("", console);
         enterConsole->setFixedSize(25, 25);
 
         QIcon fileIn("../Static/icons/enter.ico");
@@ -778,8 +770,7 @@ public:
         console->setLayout(layoutConsole);
     }
 
-    void setupWorkWindow()
-    {
+    void setupWorkWindow() {
         // Создание и настройка рабочего окна
         workWindow = new QFrame(centralwindow);
         workWindow->setObjectName("workWindow");
@@ -789,8 +780,7 @@ public:
         workWindow->resize(674, 460);
     }
 
-    void setupSettingsPanel()
-    {
+    void setupSettingsPanel() {
         // Создание панели настроек
         settingsPanel = new QWidget(nullptr, Qt::Popup);
         settingsPanel->setObjectName("settingsPanel");
@@ -801,17 +791,30 @@ public:
         settingsLayout->setContentsMargins(10, 10, 10, 10);
         settingsLayout->setSpacing(10);
 
-        // Добавление компонентов
         componentGrid = new QCheckBox("Grid", settingsPanel);
         componentGrid->setStyleSheet("color: #D8D8F6;background-color: #494850; border: none");
         componentGrid->setChecked(true);
         settingsLayout->addWidget(componentGrid);
 
+        QHBoxLayout *nameLayout = new QHBoxLayout();
+        QLabel *nameLabel = new QLabel("Имя:", settingsPanel);
+        QFont font = nameLabel->font();
+        font.setPointSize(9);
+        nameLabel->setFont(font);
+        nameLabel->setStyleSheet("color: #D8D8F6;border: none");
+
+        nameUsers = new QLineEdit("", settingsPanel);
+      //  nameUsers->setFixedSize(50, 20);
+        nameUsers->setStyleSheet("color: #D8D8F6;background-color: #494850; border: 1px solid #000000");
+
+        nameLayout->addWidget(nameLabel);
+        nameLayout->addWidget(nameUsers);
+
+        settingsLayout->addLayout(nameLayout);
         settingsPanel->adjustSize();
     }
 
-    void setupConnections()
-    {
+    void setupConnections() {
         QObject::connect(collapseButton, &QPushButton::clicked, [=]() {
             leftMenuContainer->hide();
             collapsedPanel->show();
@@ -835,7 +838,8 @@ public:
         });
 
         QObject::connect(settings, &QPushButton::clicked, [=]() {
-            QPoint pos = settings->mapToGlobal(QPoint(0, settings->height()));
+            QPoint buttonPos = settings->mapToGlobal(QPoint(0, 0));
+            QPoint pos = QPoint(buttonPos.x() - settingsPanel->width(),  buttonPos.y() + settings->height());
             settingsPanel->move(pos);
             settingsPanel->adjustSize();
             settingsPanel->show();
@@ -903,8 +907,7 @@ public:
         });
     }
 
-    void retranslateUi(QMainWindow *MainWindow)
-    {
+    void retranslateUi(QMainWindow *MainWindow) {
         // Установка текста элементов интерфейса
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         actionSave_project_to->setText(QCoreApplication::translate("MainWindow", "Save project to...", nullptr));
@@ -940,7 +943,8 @@ public:
 };
 
 namespace Ui {
-    class MainWindow : public Ui_MainWindow {};
+    class MainWindow : public Ui_MainWindow {
+    };
 }
 
 QT_END_NAMESPACE

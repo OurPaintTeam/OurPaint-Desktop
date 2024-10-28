@@ -77,10 +77,11 @@ public:
     void showHelp();
 
 // Добавление сообщений
-    void setMessage(const std::string& name, const std::string& message);
+    void setMessage(const std::string &name, const std::string &message);
 
 
-    std::tuple<std::vector<std::vector<QString>>,  std::vector<std::vector<QString>>, std::vector<bool>> saveSettings() ;
+    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>> saveSettings();
+
     void loadSettings(std::vector<bool> settings);
 
 
@@ -147,10 +148,14 @@ signals:
     void GridOn(bool T);
 
 
-     void SigMoving();
-      void SigSection();
-       void SigCircle();
-        void SigPoint();
+    void SigMoving();
+
+    void SigSection();
+
+    void SigCircle();
+
+    void SigPoint();
+    void NameUsers(const QString &text);
 
 
 public slots:
@@ -182,10 +187,13 @@ public slots:
 
     void LeftMenuChanged(QTreeWidgetItem *item);
 
-    void Point(){emit SigPoint();};
-    void Moving(){emit SigMoving(); };
-    void Section(){emit SigSection();};
-    void Circle(){emit SigCircle();};
+    void Point() { emit SigPoint(); };
+
+    void Moving() { emit SigMoving(); };
+
+    void Section() { emit SigSection(); };
+
+    void Circle() { emit SigCircle(); };
 
 };
 
