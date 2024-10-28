@@ -33,7 +33,8 @@ add_executable(ourpaint
         painter/Optimization/GradientOptimizer.cpp
         GUI/CastomeConsole.cpp
         painter/saveload/SaveSettingsApplications.cpp
-        painter/saveload/LoadSettingsApplications.cpp)
+        painter/saveload/LoadSettingsApplications.cpp
+        GUI/RightClickFilter.cpp)
 
 include_directories(additions)
 include_directories(UndoRedo)

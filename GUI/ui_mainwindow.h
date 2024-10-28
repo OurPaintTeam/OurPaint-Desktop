@@ -25,6 +25,7 @@
 #include <QCheckBox>
 #include <QPropertyAnimation>
 #include "../GUI/CastomeConsole.h"
+#include "../GUI/RightClickFilter.h"
 #include <QScrollArea>
 #include <QTextEdit>
 
@@ -104,6 +105,7 @@ public:
     QScrollArea *messageScrollArea;
     QHBoxLayout *layoutMessage;
     QPushButton *enterMes;
+    QPushButton *smile;
 
     // Панель настроек
     QWidget *settingsPanel;
@@ -546,28 +548,39 @@ public:
 
         enterMes = new QPushButton("", messageConsole);
         enterMes->setFixedSize(25, 25);
-
-
         enterMes->setIcon(QIcon("../Static/icons/enter.ico"));
         enterMes->setIconSize(QSize(20, 20));
+        enterMes->setStyleSheet(
+                "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 5px; }"
+                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; }"
+        );
+        enterMes->setCursor(Qt::PointingHandCursor);
+
+
+        smile = new QPushButton("+", messageConsole);
+        smile->setFixedSize(25, 25);
+        smile->setIcon(QIcon("../Static/icons/smile.ico"));
+        smile->setIconSize(QSize(20, 20));
+        smile->setStyleSheet(
+                "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 5px; }"
+                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; }"
+        );
+        smile->setCursor(Qt::PointingHandCursor);
+
+        enterMes->setVisible(true);
+        smile->setVisible(false);
+
 
         layoutMessage = new QHBoxLayout(messageConsole);
         layoutMessage->setContentsMargins(0, 0, 0, 0);
         layoutMessage->setSpacing(5);
         layoutMessage->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
         layoutMessage->addWidget(enterMes);
-        enterMes->setStyleSheet(
-                "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 5px; }"
-                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 5px; }"
-
-        );
-
-
-        enterMes->setCursor(Qt::PointingHandCursor);
-        layoutMessage->addWidget(enterMes);
+        layoutMessage->addWidget(smile);
         layoutMessage->addSpacerItem(new QSpacerItem(5, 20, QSizePolicy::Fixed, QSizePolicy::Minimum));
-
         messageConsole->setLayout(layoutMessage);
+
+
 
 
         QFont font2; // Шрифт
@@ -841,6 +854,22 @@ public:
     }
 
     void setupConnections() {
+
+        auto *rightClickFilter = new RightClickFilter(centralwindow);
+
+        QObject::connect(rightClickFilter, &RightClickFilter::rightClicked, [=](QObject *obj){
+            if (obj == smile) {
+                enterMes->setVisible(true);
+                smile->setVisible(false);
+            } else if (obj == enterMes) {
+                enterMes->setVisible(false);
+                smile->setVisible(true);
+            }
+        });
+
+        smile->installEventFilter(rightClickFilter);
+        enterMes->installEventFilter(rightClickFilter);
+
         QObject::connect(collapseButton, &QPushButton::clicked, [=]() {
             leftMenuContainer->hide();
             collapsedPanel->show();
