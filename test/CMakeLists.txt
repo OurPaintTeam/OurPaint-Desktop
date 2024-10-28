@@ -31,6 +31,11 @@ add_executable(
         graphgtests.cpp
         ${SOURCES}
 )
+add_executable(
+        matrixgtest
+        TestsMatrix.cpp
+        ${SOURCES}
+        TestsMatrix.cpp)
 target_link_libraries(
   ourpainttest
   GTest::gtest_main
@@ -47,6 +52,10 @@ target_link_libraries(
         ourpainttest
         GTest::gtest_main
 )
-
+target_link_libraries(
+        matrixgtest
+        GTest::gtest_main
+)
 include(GoogleTest)
 gtest_discover_tests(ourpainttest)
+gtest_discover_tests(matrixgtest)
