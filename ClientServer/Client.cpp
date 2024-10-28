@@ -4,7 +4,7 @@
 
 #include "Client.h"
 #include "Client.h"
-#include <QDataStream>
+#include <QMessageBox>
 
 Client::Client(QObject *parent) : QObject(parent), tcpSocket(new QTcpSocket(this)) {
     connect(tcpSocket, &QTcpSocket::connected, this, &Client::onConnected);
@@ -34,13 +34,22 @@ void Client::sendChatMessage(const QString &message) {
 void Client::onReadyRead() {
     QDataStream in(tcpSocket);
     while (!tcpSocket->atEnd()) {
-        QString command;
-        in >> command;
-        if (command.startsWith("CHAT|")) {
-            QString msg = command.mid(5);
-            emit newChatMessageReceived(msg, "User");
+        QString message;
+        in >> message;
+
+        if (message.startsWith("CHAT|")) {
+            QString msg = message.mid(5);
+            emit newChatMessageReceived(msg, "User"); // Здесь можно заменить "User" на реальное имя отправителя, если оно доступно
         }
-        emit newStateReceived(command);
+        else if (message == "SERVER_SHUTDOWN") {
+            emit serverShutdown();
+            // Опционально можно показать сообщение пользователю
+            QMessageBox::information(nullptr, "Отключение", "Сервер отключился.");
+            tcpSocket->disconnectFromHost();
+        }
+        else {
+            emit newStateReceived(message);
+        }
     }
 }
 

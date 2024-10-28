@@ -4,9 +4,7 @@
 #include <QPixmap>
 #include "ClientServer/Server.h"
 #include "ClientServer/Client.h"
-#include "GUI/Windows/CastomeWindowError.h"
 #include "GUI/Windows/CastomeWindowSuccessful.h"
-#include "GUI/Windows/CastomeWindowWarning.h"
 #include "GUI/Windows/WindowServer.h"
 #include "Arry.h"
 #include "BMPfile.h"
@@ -327,11 +325,18 @@ int main(int argc, char *argv[]) {
                 }
             }
         }else{
-            auto *errorWindow = new CastomeWindowError("You are not connected!", &w);
-            errorWindow->show();
+            w.showError("Firstly connect to server!");
             return;
         }
     });
+    QObject::connect(&client, &Client::serverShutdown, [&client](){
+        //TODO logic for shutdown
+    });
+
+    QObject::connect(&client, &Client::disconnectedFromServer, [](){
+        qDebug() << "User disconnected from server";
+    });
+
 
     //Кнопки сервера
     QObject::connect(&w, &MainWindow::SigExitSession, []() {
@@ -339,27 +344,23 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(&w, &MainWindow::SigOpenServer, [&](const QString &text) {
         if (isConnected || isServer) {
-            auto *errorWindow = new CastomeWindowError("Firstly disconnect!", &w);
-            errorWindow->show();
+            w.showError("Firstly disconnect!");
             return;
         }
         bool ok = false;
         text.toUShort(&ok);
         if (!ok) {
-            auto *errorWindow = new CastomeWindowError("Error! This is not valid port!", &w);
-            errorWindow->show();
+            w.showError("Error! This is not valid port!");
             return;
         }
         server.startServer(text.toUShort(&ok));
         isServer = true;
         isConnected = true;
-        auto *successWindow = new CastomeWindowSuccessful("Server has been started!", &w);
-        successWindow->show();
+        w.showSuccess("Successfully connected to server!");
     });
     QObject::connect(&w, &MainWindow::SigJoinServer, [&](const QString &text) {
         if (isConnected || isServer){
-            auto *errorWindow = new CastomeWindowError("Firstly disconnect!", &w);
-            errorWindow->show();
+            w.showError("Firstly disconnect!");
             return;
         }
         bool ok = false;
@@ -367,14 +368,12 @@ int main(int argc, char *argv[]) {
         qDebug() << texts[1];
         texts[1].toUShort(&ok);
         if (!ok){
-            auto *errorWindow = new CastomeWindowError("Error! This is not valid port!", &w);
-            errorWindow->show();
+            w.showError("Error! This is not valid port!");
             return;
         }
         client.connectToServer(texts[0], texts[1].toUShort(&ok));
         isConnected = true;
-        auto *successWindow = new CastomeWindowSuccessful("Connected!", &w);
-        successWindow->show();
+        w.showSuccess("Successfully connected to server!");
     });
     QObject::connect(&w, &MainWindow::SigJoinLocalServer, [](const QString &text) {
         //TODO need to search find all IP with port 2005

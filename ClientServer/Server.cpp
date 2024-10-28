@@ -68,3 +68,25 @@ void Server::sendChatToClients(const QString &message) {
         client->write(data);
     }
 }
+
+void Server::stopServer() {
+    // Специальное сообщение для уведомления клиентов об отключении сервера
+    QString shutdownMsg = "STOP|";
+
+    QByteArray data;
+    QDataStream out(&data, QIODevice::WriteOnly);
+    out << shutdownMsg;
+
+    for(auto client : clients) {
+        client->write(data);
+        client->flush();
+        client->disconnectFromHost();
+    }
+
+    clients.clear();
+
+    if(tcpServer->isListening()) {
+        tcpServer->close();
+        qDebug() << "Сервер остановлен.";
+    }
+}

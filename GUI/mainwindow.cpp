@@ -11,7 +11,10 @@ MainWindow::MainWindow(QWidget *parent)
           frameOverlay(new FrameOverlay()),
           Index(0),
           helpWindow(nullptr),
-          addElem(true) {
+          addElem(true),
+          error(nullptr),
+          warning(nullptr),
+          success(nullptr){
 
     ui->setupUi(this);
     setAllMouseTracking(this); // Отслеживание мыши
@@ -767,6 +770,34 @@ void MainWindow::paintEvent(QPaintEvent *event) {
     painter.drawPath(path);
 
     emit resized();
+}
+
+void MainWindow::showError(const QString &text) {
+    delete error;
+    error = new CastomeWindowError(text, this);
+    int x = this->width() - error->width() - 100;
+    int y = this->height() - error->height() - 50;
+    QPoint pos = this->mapToGlobal(QPoint(x, y));
+    error->move(pos);
+    error->show();
+}
+void MainWindow::showWarning(const QString &text) {
+    delete warning;
+    warning = new CastomeWindowWarning(text, this);
+    int x = this->width() - warning->width() - 100;
+    int y = this->height() - warning->height() - 50;
+    QPoint pos = this->mapToGlobal(QPoint(x, y));
+    warning->move(pos);
+    warning->show();
+}
+void MainWindow::showSuccess(const QString &text) {
+    delete success;
+    success = new CastomeWindowSuccessful(text, this);
+    int x = this->width() - success->width() - 150;
+    int y = this->height() - success->height() - 50;
+    QPoint pos = this->mapToGlobal(QPoint(x, y));
+    success->move(pos);
+    success->show();
 }
 
 

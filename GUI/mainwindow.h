@@ -20,6 +20,9 @@
 #include <QGestureEvent>
 
 #include "Windows/help.h"
+#include "Windows/CastomeWindowError.h"
+#include "Windows/CastomeWindowSuccessful.h"
+#include "Windows/CastomeWindowWarning.h"
 #include "Windows/SaveDialog.h"
 #include "Windows/WindowServer.h"
 #include "ui_mainwindow.h"
@@ -36,6 +39,9 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 private:
+    CastomeWindowError *error;
+    CastomeWindowWarning *warning;
+    CastomeWindowSuccessful *success;
     Ui::MainWindow *ui;
     std::vector<QString> commands; // Буфер команд для консоли
     const int resizeMargin = 10; // Коэф для рисования закруглений
@@ -75,7 +81,9 @@ public:
     }
 
     void showHelp();
-
+    void showError(const QString &text);
+    void showSuccess(const QString &text);
+    void showWarning(const QString &text);
 // Добавление сообщений
     void setMessage(const std::string& name, const std::string& message);
 

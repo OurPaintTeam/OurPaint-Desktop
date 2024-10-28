@@ -28,6 +28,9 @@ public:
     void sendToClients(const QString& paint);
 
     void sendChatToClients(const QString& msg);
+
+    void stopServer();
+
 signals:
     void newMessageReceived(const QString &msg, const QString &ip);
     void newCommandReceived(const QString &command);
