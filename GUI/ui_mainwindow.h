@@ -307,7 +307,11 @@ public:
         menuProject = new QMenu(MainWindow);
         menuProject->setObjectName("menuProject");
         menuProject->setStyleSheet(
-                "QMenu#menuProject { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }");
+                "QMenu#menuProject { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }"
+                "QMenu#menuProject::indicator { image: none; width: 0px; height: 0px; }"
+                "::menu-indicator{ image: none; }"
+        );
+
         menuProject->setFont(font);
         menuProject->addAction(actionSave_project_to);
         menuProject->addAction(actionImport_project);
@@ -318,7 +322,9 @@ public:
         menuCollaboration = new QMenu(MainWindow);
         menuCollaboration->setObjectName("menuCollaboration");
         menuCollaboration->setStyleSheet(
-                "QMenu#menuCollaboration { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }");
+                "QMenu#menuCollaboration { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }"
+                "QMenu#menuCollaboration::indicator { image: none; width: 0px; height: 0px; }"
+        );
         menuCollaboration->setFont(font);
         menuCollaboration->addAction(actionOpen_server);
         menuCollaboration->addAction(actionJoin_server);
@@ -339,10 +345,16 @@ public:
                 "border-radius: 5px; "
                 "padding: 5px 10px; "
                 "}"
+                "QPushButton#projectButton::menu-indicator { "
+                "image: none; "
+                "width: 0px; "
+                "}"
                 "QPushButton#projectButton:hover { "
                 "background-color: rgba(255, 255, 255, 0.3); "
                 "}"
         );
+        projectButton->setIcon(QIcon("../Static/icons/Chevron down.ico"));
+        projectButton->setLayoutDirection(Qt::RightToLeft);
         projectButton->setMenu(menuProject);
 
         // Создание кнопки "Collaboration"
@@ -356,10 +368,16 @@ public:
                 "border-radius: 5px; "
                 "padding: 5px 10px; "
                 "}"
+                "QPushButton#collaborationButton::menu-indicator { "
+                "image: none; "
+                "width: 0px; "
+                "}"
                 "QPushButton#collaborationButton:hover { "
                 "background-color: rgba(255, 255, 255, 0.3); "
                 "}"
         );
+        collaborationButton->setIcon(QIcon("../Static/icons/Chevron down.ico"));
+        collaborationButton->setLayoutDirection(Qt::RightToLeft);
         collaborationButton->setMenu(menuCollaboration);
 
         // Создание кнопки "Help"
@@ -377,6 +395,11 @@ public:
                 "background-color: rgba(255, 255, 255, 0.3); "
                 "}"
         );
+        helpButton->setIcon(QIcon("../Static/icons/Chevron down.ico"));
+        helpButton->setLayoutDirection(Qt::RightToLeft);
+
+
+
     }
 
     void setupWindowControlButtons(QMainWindow *MainWindow) {
@@ -464,7 +487,8 @@ public:
         leftMenu->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
         // Создание кнопки свернуть влево
-        collapseButton = new QPushButton("⮘");
+        collapseButton = new QPushButton("");
+        collapseButton->setIcon(QIcon("../Static/icons/Chevron+right.ico"));
         collapseButton->setFixedSize(30, 30);
         collapseButton->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; }"
@@ -484,7 +508,8 @@ public:
         leftMenuContainer = new QWidget();
         leftMenuContainer->setLayout(leftMenuLayout);
         leftMenuContainer->setFixedWidth(200);
-
+        leftMenu->setSelectionMode(QAbstractItemView::NoSelection);// Убираем выделение
+        leftMenu->setFocusPolicy(Qt::NoFocus);
         leftMenuContainer->hide();
     }
 
@@ -559,7 +584,8 @@ public:
         )"));
 
         // Создание кнопки свернуть
-        messageCollapseButton = new QPushButton("⮘");
+        messageCollapseButton = new QPushButton("");
+        messageCollapseButton->setIcon(QIcon("../Static/icons/Chevron+right.ico"));
         messageCollapseButton->setFixedSize(30, 30);
         messageCollapseButton->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; }"
