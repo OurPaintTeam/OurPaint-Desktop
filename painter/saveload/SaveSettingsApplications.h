@@ -20,7 +20,8 @@ public:
 
     void SaveRequirements(const std::vector<std::vector<QString>> &requirements) ;
 
-    void SaveSettings(const std::vector<bool> &settings) ;
+    void SaveSettings(const std::vector<bool> &settings,const QString &name) ;
+    void clear();
 };
 
 #endif //OURPAINT_SAVESETTINGSAPPLICATIONS_H

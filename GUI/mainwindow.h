@@ -79,10 +79,9 @@ public:
 // Добавление сообщений
     void setMessage(const std::string &name, const std::string &message);
 
+    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>,QString> saveSettings();
 
-    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>> saveSettings();
-
-    void loadSettings(std::vector<bool> settings);
+    void loadSettings(std::vector<bool> settings,const QString &name);
 
 
 protected:
@@ -156,6 +155,7 @@ signals:
 
     void SigPoint();
     void NameUsers(const QString &text);
+    void changeSettings();
 
 
 public slots:

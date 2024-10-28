@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 
-
 MainWindow::MainWindow(QWidget *parent)
         : QMainWindow(parent),
           ui(new Ui::MainWindow),
@@ -36,12 +35,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->helpButton, &QPushButton::clicked, this, &MainWindow::showHelp);
 
     connect(ui->nameUsers, &QLineEdit::returnPressed, this, [this]() {
-        QString input = ui->console->text();
+        QString input = ui->nameUsers->text();
         if (!input.isEmpty()) {
             ui->nameUsers->setEnabled(false);
-            commands.push_back(input);
             emit NameUsers(input);
+            emit changeSettings();
         }
+        ui->nameUsers->setEnabled(true);
     });
 
     // Обработка ввода в консоли
@@ -77,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->componentGrid, &QCheckBox::toggled, [=](bool checked) {
         emit GridOn(checked);
+        emit changeSettings();
     });
 
 
@@ -84,6 +85,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     frameOverlay->hide(); // Скрытие наложения рамки
 }
+
 
 // Добавление сообщений
 void MainWindow::setMessage(const std::string &name, const std::string &message) {
@@ -363,18 +365,22 @@ void MainWindow::LeftMenuChanged(QTreeWidgetItem *item) {
     emit parameterChanged(id, parameters); // Сигнал
 }
 
-void MainWindow::loadSettings(std::vector<bool> settings) {
+void MainWindow::loadSettings(std::vector<bool> settings,const QString &name) {
     if (!settings.empty()) {
         ui->componentGrid->setChecked(settings[0]);
+    }
+    if(!name.isEmpty()){
+        ui->nameUsers->setText(name);
     }
 }
 
 
-std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>>
+std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>,QString>
 MainWindow::saveSettings() {
     std::vector<std::vector<QString>> figures;
     std::vector<std::vector<QString>> requirements;
     std::vector<bool> settings;
+    QString name;
 
 
     QTreeWidgetItem *itemFigures = ui->leftMenu->topLevelItem(1);
@@ -401,9 +407,9 @@ MainWindow::saveSettings() {
             if (name == "ID") {
                 idStr = value;
                 id = value.toULongLong();
-                figureData.push_back("ID: " + value);
-            } else {
-                figureData.push_back(name + ": " + value);
+                figureData.push_back(value);
+            }else{
+                break;
             }
         }
 
@@ -419,6 +425,8 @@ MainWindow::saveSettings() {
         std::vector<QString> reqData;
         reqData.push_back(reqText);
 
+        unsigned long long id = 0;
+        QString idStr;
 
         for (int j = 0; j < reqItem->childCount(); ++j) {
             QTreeWidgetItem *paramItem = reqItem->child(j);
@@ -430,7 +438,14 @@ MainWindow::saveSettings() {
             QString name = XYR[0];
             QString value = XYR[1];
 
-            reqData.push_back(name + ": " + value);
+            if (name == "ID") {
+                idStr = value;
+                id = value.toULongLong();
+                reqData.push_back(value);
+            }else{
+                break;
+            }
+
         }
 
         requirements.push_back(reqData);
@@ -440,7 +455,9 @@ MainWindow::saveSettings() {
     bool isChecked = ui->componentGrid->isChecked();
     settings.push_back(isChecked);
 
-    return std::make_tuple(figures, requirements, settings);
+    name=ui->nameUsers->text();
+
+    return std::make_tuple(figures, requirements, settings,name);
 }
 
 // Добавление требований в левое меню

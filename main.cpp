@@ -39,6 +39,9 @@ int main(int argc, char *argv[]) {
     bool isConnected = false;
     bool isServer = false;
 
+
+
+
     /*  QTimer::singleShot(1000, [&]() {
           splash.finish(&w);
 
@@ -47,22 +50,25 @@ int main(int argc, char *argv[]) {
         painter->getUsers(false);
         screen.paint();
         painter->draw();
+        auto [figures, requirements, settings, name] = w.saveSettings();
         w.Print_LeftMenu(0, "Clear", {});
         std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
-        auto [figures, requirements, settings] = w.saveSettings();
+
         for (auto element: elements) {
             std::string name;
+
             for (int i = 0; i < figures.size(); ++i) {
                 if (element.first.id == figures[i][1].toLongLong()) {
-                    name= figures[i][0].toStdString();
+                    name = figures[i][0].toStdString();
                     break;
                 }
             }
+
             if (element.second.et == ET_POINT) {
                 double x = element.second.params.getElement(0);
                 double y = element.second.params.getElement(1);
                 if (!name.empty()) {
-                    w.Print_LeftMenu(element.first.id,name, {x, y});
+                    w.Print_LeftMenu(element.first.id, name, {x, y});
                 } else {
                     w.Print_LeftMenu(element.first.id, "Point", {x, y});
                 }
@@ -72,10 +78,9 @@ int main(int argc, char *argv[]) {
                 double r = element.second.params.getElement(2);
                 if (!name.empty()) {
                     w.Print_LeftMenu(element.first.id, name, {x, y, r});
-                }else {
+                } else {
                     w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
                 }
-                break;
             } else if (element.second.et == ET_SECTION) {
                 double x1 = element.second.params.getElement(0);
                 double y1 = element.second.params.getElement(1);
@@ -83,10 +88,9 @@ int main(int argc, char *argv[]) {
                 double y2 = element.second.params.getElement(3);
                 if (!name.empty()) {
                     w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
-                }else {
+                } else {
                     w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
                 }
-                break;
             }
         }
         std::vector<std::pair<ID, RequirementData>> req = screen.getAllRequirementsInfo();
@@ -499,25 +503,25 @@ int main(int argc, char *argv[]) {
     QObject::connect(&w, &MainWindow::ChangeLeftMenu, [&w, &screen, &painter]() {
         w.setSave(false);
         w.Print_LeftMenu(0, "Clear", {});
-       /* std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
-        for (auto element: elements) {
-            if (element.second.et == ET_POINT) {
-                double x = element.second.params.getElement(0);
-                double y = element.second.params.getElement(1);
-                w.Print_LeftMenu(element.first.id, "Point", {x, y});
-            } else if (element.second.et == ET_CIRCLE) {
-                double x = element.second.params.getElement(0);
-                double y = element.second.params.getElement(1);
-                double r = element.second.params.getElement(2);
-                w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
-            } else if (element.second.et == ET_SECTION) {
-                double x1 = element.second.params.getElement(0);
-                double y1 = element.second.params.getElement(1);
-                double x2 = element.second.params.getElement(2);
-                double y2 = element.second.params.getElement(3);
-                w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
-            }
-        }*/
+        /* std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
+         for (auto element: elements) {
+             if (element.second.et == ET_POINT) {
+                 double x = element.second.params.getElement(0);
+                 double y = element.second.params.getElement(1);
+                 w.Print_LeftMenu(element.first.id, "Point", {x, y});
+             } else if (element.second.et == ET_CIRCLE) {
+                 double x = element.second.params.getElement(0);
+                 double y = element.second.params.getElement(1);
+                 double r = element.second.params.getElement(2);
+                 w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
+             } else if (element.second.et == ET_SECTION) {
+                 double x1 = element.second.params.getElement(0);
+                 double y1 = element.second.params.getElement(1);
+                 double x2 = element.second.params.getElement(2);
+                 double y2 = element.second.params.getElement(3);
+                 w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+             }
+         }*/
 
         screen.paint();
         painter->draw();
@@ -554,14 +558,15 @@ int main(int argc, char *argv[]) {
             screen.redo();
             updateState();
             w.setSave(true);
+
+            auto [figures, requirements, settings, name] = w.saveSettings();
             w.Print_LeftMenu(0, "Clear", {});
-            auto [figures, requirements, settings] = w.saveSettings();
             std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
             for (auto element: elements) {
                 std::string name;
                 for (int i = 0; i < figures.size(); ++i) {
                     if (element.first.id == figures[i][1].toLongLong()) {
-                        name= figures[i][0].toStdString();
+                        name = figures[i][0].toStdString();
                         break;
                     }
                 }
@@ -569,7 +574,7 @@ int main(int argc, char *argv[]) {
                     double x = element.second.params.getElement(0);
                     double y = element.second.params.getElement(1);
                     if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id,name, {x, y});
+                        w.Print_LeftMenu(element.first.id, name, {x, y});
                     } else {
                         w.Print_LeftMenu(element.first.id, "Point", {x, y});
                     }
@@ -579,10 +584,9 @@ int main(int argc, char *argv[]) {
                     double r = element.second.params.getElement(2);
                     if (!name.empty()) {
                         w.Print_LeftMenu(element.first.id, name, {x, y, r});
-                    }else {
+                    } else {
                         w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
                     }
-                    break;
                 } else if (element.second.et == ET_SECTION) {
                     double x1 = element.second.params.getElement(0);
                     double y1 = element.second.params.getElement(1);
@@ -590,10 +594,9 @@ int main(int argc, char *argv[]) {
                     double y2 = element.second.params.getElement(3);
                     if (!name.empty()) {
                         w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
-                    }else {
+                    } else {
                         w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
                     }
-                    break;
                 }
             }
         } catch (std::exception &e) {
@@ -606,14 +609,15 @@ int main(int argc, char *argv[]) {
             screen.undo();
             updateState();
             w.setSave(true);
+
+            auto [figures, requirements, settings, name] = w.saveSettings();
             w.Print_LeftMenu(0, "Clear", {});
-            auto [figures, requirements, settings] = w.saveSettings();
             std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
             for (auto element: elements) {
                 std::string name;
                 for (int i = 0; i < figures.size(); ++i) {
                     if (element.first.id == figures[i][1].toLongLong()) {
-                        name= figures[i][0].toStdString();
+                        name = figures[i][0].toStdString();
                         break;
                     }
                 }
@@ -621,7 +625,7 @@ int main(int argc, char *argv[]) {
                     double x = element.second.params.getElement(0);
                     double y = element.second.params.getElement(1);
                     if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id,name, {x, y});
+                        w.Print_LeftMenu(element.first.id, name, {x, y});
                     } else {
                         w.Print_LeftMenu(element.first.id, "Point", {x, y});
                     }
@@ -631,10 +635,9 @@ int main(int argc, char *argv[]) {
                     double r = element.second.params.getElement(2);
                     if (!name.empty()) {
                         w.Print_LeftMenu(element.first.id, name, {x, y, r});
-                    }else {
+                    } else {
                         w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
                     }
-                    break;
                 } else if (element.second.et == ET_SECTION) {
                     double x1 = element.second.params.getElement(0);
                     double y1 = element.second.params.getElement(1);
@@ -642,10 +645,9 @@ int main(int argc, char *argv[]) {
                     double y2 = element.second.params.getElement(3);
                     if (!name.empty()) {
                         w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
-                    }else {
+                    } else {
                         w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
                     }
-                    break;
                 }
             }
         } catch (std::exception &e) {
@@ -655,18 +657,24 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&w, &MainWindow::projectSaved, [&screen, &w, &painter](const QString &fileName) {
         std::string File = fileName.toStdString();
-        auto [figures, requirements, settings] = w.saveSettings();
+        auto [figures, requirements, settings, name] = w.saveSettings();
         SaveSettingsApplications saveSet(File.c_str(), &w);
+        saveSet.clear();
         saveSet.SaveFigures(figures);
         saveSet.SaveRequirements(requirements);
-        saveSet.SaveSettings(settings);
-
+        saveSet.SaveSettings(settings, name);
         screen.saveToFile(File.c_str());
         screen.paint();
 
         painter->draw();
     });
 
+    QObject::connect(&w, &MainWindow::changeSettings, [&w]() {
+        SaveSettingsApplications saveSet("Settings", &w);
+        saveSet.clear();
+        auto [figures, requirements, settings, name] = w.saveSettings();
+        saveSet.SaveSettings(settings, name);
+    });
 
     QObject::connect(&w, &MainWindow::LoadFile, [&screen, &painter, &w](const QString &fileName) {
         painter->clear();
@@ -680,64 +688,69 @@ int main(int argc, char *argv[]) {
         std::vector<std::vector<QString>> figures;
         std::vector<std::vector<QString>> requirements;
         std::vector<bool> settings;
+        QString NameUsers;
         LoadSet.LoadFigures(figures);
         LoadSet.LoadRequirements(requirements);
-        LoadSet.LoadSettings(settings);
+        LoadSet.LoadSettings(settings, NameUsers);
 
         std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
         for (auto element: elements) {
             std::string name;
             for (int i = 0; i < figures.size(); ++i) {
                 if (element.first.id == figures[i][1].toLongLong()) {
-                   name= figures[i][0].toStdString();
+                    name = figures[i][0].toStdString();
                     break;
                 }
             }
-                if (element.second.et == ET_POINT) {
-                    double x = element.second.params.getElement(0);
-                    double y = element.second.params.getElement(1);
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id,name, {x, y});
-                    } else {
-                        w.Print_LeftMenu(element.first.id, "Point", {x, y});
-                    }
-                } else if (element.second.et == ET_CIRCLE) {
-                    double x = element.second.params.getElement(0);
-                    double y = element.second.params.getElement(1);
-                    double r = element.second.params.getElement(2);
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id, name, {x, y, r});
-                    }else {
-                        w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
-                    }
-                    break;
-                } else if (element.second.et == ET_SECTION) {
-                    double x1 = element.second.params.getElement(0);
-                    double y1 = element.second.params.getElement(1);
-                    double x2 = element.second.params.getElement(2);
-                    double y2 = element.second.params.getElement(3);
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
-                    }else {
-                        w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
-                    }
-                    break;
+            if (element.second.et == ET_POINT) {
+                double x = element.second.params.getElement(0);
+                double y = element.second.params.getElement(1);
+                if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x, y});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Point", {x, y});
                 }
+            } else if (element.second.et == ET_CIRCLE) {
+                double x = element.second.params.getElement(0);
+                double y = element.second.params.getElement(1);
+                double r = element.second.params.getElement(2);
+                if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x, y, r});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
+                }
+                break;
+            } else if (element.second.et == ET_SECTION) {
+                double x1 = element.second.params.getElement(0);
+                double y1 = element.second.params.getElement(1);
+                double x2 = element.second.params.getElement(2);
+                double y2 = element.second.params.getElement(3);
+                if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+                }
+                break;
             }
+        }
 
 
-        w.loadSettings(settings);
+        w.loadSettings(settings, NameUsers);
 
 
     });
 
-
-
-
-
-
-
-
+    const std::string File = "SettingsSet";
+    std::ifstream inFile(File);
+    if (!(inFile.good() && inFile.peek() == std::ifstream::traits_type::eof())) {
+        LoadSettingsApplications LoadSet("Settings", &w);
+        std::vector<bool> settings;
+        QString NameUsers;
+        LoadSet.LoadSettings(settings, NameUsers);
+        qDebug() << settings[0];
+        w.loadSettings(settings, NameUsers);
+    }
+    inFile.close();
 
 
 

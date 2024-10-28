@@ -18,7 +18,7 @@ public:
 
     void LoadFigures(std::vector<std::vector<QString>> &figures);
     void LoadRequirements(std::vector<std::vector<QString>> &requirements);
-    void LoadSettings(std::vector<bool> &settings);
+    void LoadSettings(std::vector<bool> &settings,QString &name);
 };
 
 #endif //OURPAINT_LOADSETTINGSAPPLICATIONS_H

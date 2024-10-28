@@ -1,71 +1,80 @@
 
 #include "SaveSettingsApplications.h"
 
-    void SaveSettingsApplications::SaveFigures(const std::vector<std::vector<QString>> &figures) {
-        qDebug()<<File;
-        std::ofstream outFile(File, std::ios::app);
-        if (!outFile) {
-            CastomeWindowError *errorWindow = new CastomeWindowError("Произошла ошибка открытия файла!", parent);
-            return;
-        }
+void SaveSettingsApplications::clear() {
+    std::ofstream outFile(File, std::ios::trunc);
+    if (!outFile) {
+        CastomeWindowError *errorWindow = new CastomeWindowError("Произошла ошибка открытия файла!", parent);
+        return;
+    }
+    outFile.close();
+}
 
-        outFile << "Figure:" << std::endl << "{" << std::endl;
+void SaveSettingsApplications::SaveFigures(const std::vector<std::vector<QString>> &figures) {
+    std::ofstream outFile(File, std::ios::app);
+    if (!outFile) {
+        CastomeWindowError *errorWindow = new CastomeWindowError("Произошла ошибка открытия файла!", parent);
+        return;
+    }
 
-        for (const auto &figure : figures) {
-            if (figure.empty()) continue;
+    outFile << "Figure:" << std::endl << "{" << std::endl;
 
-            QString name = figure[0];
-            outFile << name.toStdString() << std::endl << '{' << std::endl;
+    for (const auto &figure: figures) {
+        if (figure.empty()) continue;
 
-            for (size_t i = 1; i < figure.size(); ++i) {
-                outFile << figure[i].toStdString() << std::endl;
-            }
+        QString name = figure[0];
+        outFile << name.toStdString() << std::endl << '{' << std::endl;
 
-            outFile <<'}'<< std::endl;
+        for (size_t i = 1; i < figure.size(); ++i) {
+            outFile << figure[i].toStdString() << std::endl;
         }
 
         outFile << '}' << std::endl;
-        outFile.close();
     }
 
-    void SaveSettingsApplications::SaveRequirements(const std::vector<std::vector<QString>> &requirements) {
-        std::ofstream outFile(File, std::ios::app);
-        if (!outFile) {
-            CastomeWindowError *errorWindow = new CastomeWindowError("Произошла ошибка открытия файла!", parent);
-            return;
-        }
+    outFile << '}' << std::endl;
+    outFile.close();
+}
 
-        outFile << "Requirements:" << std::endl << '{' << std::endl;
+void SaveSettingsApplications::SaveRequirements(const std::vector<std::vector<QString>> &requirements) {
+    std::ofstream outFile(File, std::ios::app);
+    if (!outFile) {
+        CastomeWindowError *errorWindow = new CastomeWindowError("Произошла ошибка открытия файла!", parent);
+        return;
+    }
 
-        for (const auto &req : requirements) {
-            if (req.empty()) continue;
+    outFile << "Requirements:" << std::endl << '{' << std::endl;
 
-            QString name = req[0];
-            outFile << name.toStdString() << std::endl << '{' << std::endl;
+    for (const auto &req: requirements) {
+        if (req.empty()) continue;
 
-            for (size_t i = 1; i < req.size(); ++i) {
-                outFile << req[i].toStdString() << std::endl;
-            }
+        QString name = req[0];
+        outFile << name.toStdString() << std::endl << '{' << std::endl;
 
-            outFile << '}' << std::endl;
+        for (size_t i = 1; i < req.size(); ++i) {
+            outFile << req[i].toStdString() << std::endl;
         }
 
         outFile << '}' << std::endl;
-        outFile.close();
     }
 
-    void SaveSettingsApplications::SaveSettings(const std::vector<bool> &settings) {
-        std::ofstream outFile(File, std::ios::app);
-        if (!outFile) {
-            CastomeWindowError *errorWindow = new CastomeWindowError("Произошла ошибка открытия файла!", parent);
-            return;
-        }
+    outFile << '}' << std::endl;
+    outFile.close();
+}
 
-        outFile << "Settings:" << std::endl << '{' << std::endl;
-
-        outFile << "Grid: " << (settings[0] ? "1" : "0") << std::endl;
-
-        outFile << '}' << std::endl;
-        outFile.close();
+void SaveSettingsApplications::SaveSettings(const std::vector<bool> &settings, const QString &name) {
+    std::ofstream outFile(File, std::ios::app);
+    if (!outFile) {
+        CastomeWindowError *errorWindow = new CastomeWindowError("Произошла ошибка открытия файла!", parent);
+        return;
     }
+
+    outFile << "Settings:" << std::endl << '{' << std::endl;
+
+    outFile << "Grid: " << (settings[0] ? "1" : "0") << std::endl;
+    outFile << "Name: " << name.toStdString() << std::endl;
+
+    outFile << '}' << std::endl;
+    outFile.close();
+}
 

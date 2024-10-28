@@ -100,7 +100,7 @@ void LoadSettingsApplications::LoadRequirements(std::vector<std::vector<QString>
     inFile.close();
 }
 
-void LoadSettingsApplications::LoadSettings(std::vector<bool> &settings) {
+void LoadSettingsApplications::LoadSettings(std::vector<bool> &settings,QString &name) {
     std::ifstream inFile(File);
     if (!inFile) {
         new CastomeWindowError("Произошла ошибка открытия файла!", parent);
@@ -127,6 +127,12 @@ void LoadSettingsApplications::LoadSettings(std::vector<bool> &settings) {
                 std::string value = line.substr(line.find(":") + 2);
                 bool gridValue = (value == "1");
                 settings.push_back(gridValue);
+            }
+            if (line.find("Name:") != std::string::npos) {
+                // Находим позицию двоеточия
+                size_t colonPos = line.find(":");
+                std::string value = line.substr(colonPos + 2);
+                name = QString::fromStdString(value);
             }
         }
     }
