@@ -23,6 +23,8 @@
 #include "Windows/CastomeWindowError.h"
 #include "Windows/CastomeWindowSuccessful.h"
 #include "Windows/CastomeWindowWarning.h"
+#include "Windows/CastomeIpListWindow.h"
+#include "../ClientServer/LocalScanner.h"
 #include "Windows/SaveDialog.h"
 #include "Windows/WindowServer.h"
 #include "ui_mainwindow.h"

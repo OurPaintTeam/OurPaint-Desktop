@@ -3,7 +3,6 @@
 //
 
 #include "Client.h"
-#include "Client.h"
 #include <QMessageBox>
 
 Client::Client(QObject *parent) : QObject(parent), tcpSocket(new QTcpSocket(this)) {
@@ -39,12 +38,10 @@ void Client::onReadyRead() {
 
         if (message.startsWith("CHAT|")) {
             QString msg = message.mid(5);
-            emit newChatMessageReceived(msg, "User"); // Здесь можно заменить "User" на реальное имя отправителя, если оно доступно
+            emit newChatMessageReceived(msg, "User");
         }
         else if (message == "SERVER_SHUTDOWN") {
             emit serverShutdown();
-            // Опционально можно показать сообщение пользователю
-            QMessageBox::information(nullptr, "Отключение", "Сервер отключился.");
             tcpSocket->disconnectFromHost();
         }
         else {
@@ -55,4 +52,9 @@ void Client::onReadyRead() {
 
 void Client::onDisconnected() {
     emit disconnectedFromServer();
+}
+
+void Client::disconnectFromServer() {
+    tcpSocket->disconnectFromHost();
+    emit onDisconnected();
 }

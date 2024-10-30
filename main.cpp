@@ -4,10 +4,8 @@
 #include <QPixmap>
 #include "ClientServer/Server.h"
 #include "ClientServer/Client.h"
-#include "GUI/Windows/CastomeWindowSuccessful.h"
 #include "GUI/Windows/WindowServer.h"
 #include "Arry.h"
-#include "BMPfile.h"
 #include "painter/objects.h"
 #include "painter/paint.h"
 #include "painter/QTPainter.h"
@@ -329,18 +327,33 @@ int main(int argc, char *argv[]) {
             return;
         }
     });
-    QObject::connect(&client, &Client::serverShutdown, [&client](){
-        //TODO logic for shutdown
+    QObject::connect(&client, &Client::serverShutdown, [&](){
+        w.showSuccess("Server shutdown!(");
+        isConnected = false;
+        isServer = false;
     });
 
-    QObject::connect(&client, &Client::disconnectedFromServer, [](){
-        qDebug() << "User disconnected from server";
+    QObject::connect(&client, &Client::disconnectedFromServer, [&isConnected](){
+        isConnected = false;
+        qDebug() << "You disconnected from server";
     });
-
-
     //Кнопки сервера
-    QObject::connect(&w, &MainWindow::SigExitSession, []() {
-        // TODO need to make dissconnect or server close
+    QObject::connect(&w, &MainWindow::SigExitSession, [&]() {
+        if (isConnected){
+            if (isServer){
+                server.stopServer();
+                isServer = false;
+                isConnected = false;
+                w.showSuccess("Successfully stopped!");
+            }else{
+                client.disconnectFromServer();
+                isConnected = false;
+                w.showSuccess("Successfully disconnected!");
+            }
+        }
+        else{
+            w.showError("Firstly connect to server!");
+        }
     });
     QObject::connect(&w, &MainWindow::SigOpenServer, [&](const QString &text) {
         if (isConnected || isServer) {
@@ -374,9 +387,6 @@ int main(int argc, char *argv[]) {
         client.connectToServer(texts[0], texts[1].toUShort(&ok));
         isConnected = true;
         w.showSuccess("Successfully connected to server!");
-    });
-    QObject::connect(&w, &MainWindow::SigJoinLocalServer, [](const QString &text) {
-        //TODO need to search find all IP with port 2005
     });
 
     // Сервера

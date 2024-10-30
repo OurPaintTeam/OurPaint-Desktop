@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionOpen_server, &QAction::triggered, this, &MainWindow::openServer);
     connect(ui->actionJoin_server, &QAction::triggered, this, &MainWindow::joinServer);
     connect(ui->actionJoin_local_server, &QAction::triggered, this, &MainWindow::joinLocalServer);
-    connect(ui->actionJoin_local_server, &QAction::triggered, this, &MainWindow::exitSession);
+    connect(ui->actionExit_from_session, &QAction::triggered, this, &MainWindow::exitSession);
 
     // Кнопка помощь
     connect(ui->helpButton, &QPushButton::clicked, this, &MainWindow::showHelp);
@@ -46,7 +46,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Обработка ввода в консоль чата
     connect(ui->messageConsole, &QLineEdit::returnPressed, this, &MainWindow::Message);
-
     // Изменение параметров обьектов в левом меню
     connect(ui->leftMenu, &QTreeWidget::itemChanged, this, &MainWindow::LeftMenuChanged);
 
@@ -533,9 +532,10 @@ void MainWindow::joinServer() {
 
 // Обработка кнопки сервера
 void MainWindow::joinLocalServer() {
-    WindowServer *windowServer = new WindowServer("Enter IP: port ");
-    QObject::connect(windowServer, &WindowServer::textEnter, [this](const QString &text) {
-        emit SigJoinLocalServer(text);
+    QStringList IPs = PortScanner().scanNetwork();
+    CastomeIPListWindow *windowServer = new CastomeIPListWindow(IPs, this);
+    QObject::connect(windowServer, &CastomeIPListWindow::onConnectButtonClicked, [this](const QString &text) {
+        emit SigJoinServer(text + ":2005");
     });
     windowServer->show();
 }
@@ -545,6 +545,9 @@ MainWindow::~MainWindow() {
     delete frameOverlay; // Наложения рамки
     delete ui;
     delete helpWindow;
+    delete warning;
+    delete success;
+    delete error;
 }
 
 /****************************************************************************************

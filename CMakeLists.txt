@@ -2,11 +2,22 @@ cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_STANDARD 20)
 
 project(ourpaint)
-# for using this app, you need to download QT6. If you have question, ask @ardrasss
+# Для использования этого приложения необходимо установить QT6. Если у вас есть вопросы, обращайтесь к @ardrasss
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
+
+include(FetchContent)
+
+# Загрузка и подключение Eigen
+FetchContent_Declare(
+        Eigen
+        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+        GIT_TAG 3.4.0  # Замените на нужную версию Eigen
+)
+
+FetchContent_MakeAvailable(Eigen)
 
 add_executable(ourpaint
         main.cpp
@@ -21,6 +32,7 @@ add_executable(ourpaint
         GUI/Windows/help.cpp
         GUI/Windows/CastomeWindowWarning.h
         GUI/Windows/CastomeWindowSuccessful.h
+        GUI/Windows/CastomeIpListWindow.h
         GUI/Windows/WindowServer.h
         painter/Painter.h
         painter/QTPainter.h
@@ -29,12 +41,14 @@ add_executable(ourpaint
         painter/saveload/FileOurP.cpp
         painter/saveload/requirementInFile.cpp
         ClientServer/Server.cpp ClientServer/Client.cpp
-        painter/Optimization/GradientOptimizer.cpp painter/saveload/requirementInFile.h)
+        ClientServer/LocalScanner.cpp
+        ClientServer/PortCheckTask.cpp
+        painter/saveload/requirementInFile.h
+)
 
 include_directories(additions)
 include_directories(UndoRedo)
 include_directories(BMPfile/code)
-
 
 add_subdirectory(BMPfile)
 add_subdirectory(test)
@@ -45,6 +59,5 @@ target_link_libraries(ourpaint
         Qt6::Gui
         Qt6::Widgets
         Qt6::Network
-)
-
-
+        Eigen3::Eigen
+        )
