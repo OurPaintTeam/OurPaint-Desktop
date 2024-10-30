@@ -26,6 +26,7 @@
 #include <QPropertyAnimation>
 #include "../GUI/CastomeConsole.h"
 #include "../GUI/RightClickFilter.h"
+#include "../GUI/EmojiWidget.h"
 #include <QScrollArea>
 #include <QTextEdit>
 
@@ -106,6 +107,7 @@ public:
     QHBoxLayout *layoutMessage;
     QPushButton *enterMes;
     QPushButton *smile;
+    EmojiWidget *emojiWidget;
 
     // Панель настроек
     QWidget *settingsPanel;
@@ -237,9 +239,14 @@ public:
 
         actionExport_bmp = new QAction(MainWindow);
         actionExport_bmp->setObjectName("actionExport_bmp");
+        QIcon bmpIn("../Static/icons/bmpSave.ico");
+        actionExport_bmp->setIcon(bmpIn);
+
 
         actionOpen_bmp = new QAction(MainWindow);
         actionOpen_bmp->setObjectName("actionOpen_bmp");
+        QIcon bmpOn("../Static/icons/bmpImp.ico");
+        actionOpen_bmp->setIcon(bmpOn);
 
         actionOpen_server = new QAction(MainWindow);
         actionOpen_server->setObjectName("actionOpen_server");
@@ -557,7 +564,7 @@ public:
         enterMes->setCursor(Qt::PointingHandCursor);
 
 
-        smile = new QPushButton("+", messageConsole);
+        smile = new QPushButton("", messageConsole);
         smile->setFixedSize(25, 25);
         smile->setIcon(QIcon("../Static/icons/smile.ico"));
         smile->setIconSize(QSize(20, 20));
@@ -581,6 +588,7 @@ public:
         messageConsole->setLayout(layoutMessage);
 
 
+        emojiWidget = nullptr;
 
 
         QFont font2; // Шрифт
@@ -856,7 +864,8 @@ public:
     void setupConnections() {
 
         auto *rightClickFilter = new RightClickFilter(centralwindow);
-
+        smile->installEventFilter(rightClickFilter);
+        enterMes->installEventFilter(rightClickFilter);
         QObject::connect(rightClickFilter, &RightClickFilter::rightClicked, [=](QObject *obj){
             if (obj == smile) {
                 enterMes->setVisible(true);
@@ -867,10 +876,29 @@ public:
             }
         });
 
-        smile->installEventFilter(rightClickFilter);
-        enterMes->installEventFilter(rightClickFilter);
 
-        QObject::connect(collapseButton, &QPushButton::clicked, [=]() {
+        QObject::connect(smile, &QPushButton::clicked, [this]() {
+            if (!emojiWidget) {
+                emojiWidget = new EmojiWidget(nullptr);
+                emojiWidget->hide();
+                QObject::connect(emojiWidget, &EmojiWidget::emojiSelected, [this](const QString &emoji) {
+                    this->messageConsole->insert(emoji);
+                    emojiWidget->hide();
+                });
+            }
+
+            if (emojiWidget->isVisible()) {
+                emojiWidget->hide();
+            } else {
+                QPoint buttonPos = smile->mapToGlobal(QPoint(0, 0));
+                emojiWidget->adjustSize();
+                emojiWidget->move(buttonPos.x(), buttonPos.y() - emojiWidget->height());
+                emojiWidget->show();
+            }
+        });
+
+
+    QObject::connect(collapseButton, &QPushButton::clicked, [=]() {
             leftMenuContainer->hide();
             collapsedPanel->show();
         });

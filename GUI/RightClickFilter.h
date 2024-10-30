@@ -1,7 +1,3 @@
-//
-// Created by Tim on 28.10.2024.
-//
-
 #ifndef OURPAINT_RIGHTCLICKFILTER_H
 #define OURPAINT_RIGHTCLICKFILTER_H
 
