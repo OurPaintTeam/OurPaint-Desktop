@@ -440,7 +440,7 @@ inline const Matrix<V> operator/(const Matrix<V>& A, const V& scalar)
 template<Arithmetic V>
 inline Matrix<V>& operator+=(Matrix<V>& A, const Matrix<V>& B)
 {
-    if (A.row_size() != B.row_size() || A.cow_size() != B.col_size()) {
+    if (A.row_size() != B.row_size() || A.col_size() != B.col_size()) {
         throw std::invalid_argument("Matrices must have the same size for addition.");
     }
     for (typename Matrix<V>::iterator_type i = 0; i < A.row_size(); i++) {
@@ -454,7 +454,7 @@ inline Matrix<V>& operator+=(Matrix<V>& A, const Matrix<V>& B)
 template<Arithmetic V>
 inline Matrix<V>& operator-=(Matrix<V>& A, const Matrix<V>& B)
 {
-    if (A.row_size() != B.row_size() || A.cow_size() != B.col_size()) {
+    if (A.row_size() != B.row_size() || A.col_size() != B.col_size()) {
         throw std::invalid_argument("Matrices must have the same size for addition.");
     }
     for (typename Matrix<V>::iterator_type i = 0; i < A.row_size(); i++) {
