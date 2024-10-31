@@ -19,6 +19,47 @@ TEST(MatrixTests, rowColConstructor) {
     EXPECT_EQ(test.col_size(), 5);
 }
 
+// constructor(row, col, value)
+TEST(MatrixTests, rowColValConstructor) {
+    Matrix<> test(1, 2, 7);
+    EXPECT_EQ(test.row_size(), 1);
+    EXPECT_EQ(test.col_size(), 2);
+    EXPECT_EQ(test(0, 0),  7);
+    EXPECT_EQ(test(0, 1), 7);
+}
+
+// constructor(size)
+TEST(MatrixTests, sizeConstructor) {
+    Matrix<> test(20);
+    EXPECT_EQ(test.row_size(), 20);
+    EXPECT_EQ(test.col_size(), 20);
+
+    // WARNING! IF I WANT TO USE SIZE CONSTRUCTOR I SHOULD USE DOUBLE OR FLOAT IN TEMPLATE, I COULDN'T USE INT OR SIZE_TYPE IN TEMPLATE, ONLY DOUBLE OR FLOAT
+}
+
+// constructor(std::vector)
+TEST(MatrixTests, vecConstructor) {
+    std::vector<double> vec = { 1, 2, 3 };
+    Matrix<> test(vec);
+    EXPECT_EQ(test.row_size(), 1);
+    EXPECT_EQ(test.col_size(), 3);
+    EXPECT_EQ(test(0, 0), 1);
+    EXPECT_EQ(test(0, 1), 2);
+    EXPECT_EQ(test(0, 2), 3);
+}
+
+// constructor(std::vector<vector>)
+TEST(MatrixTests, vecVecConstructor) {
+    std::vector<std::vector<double>> vec = { {1, 2}, {3, 4} };
+    Matrix<> test(vec);
+    EXPECT_EQ(test.row_size(), 2);
+    EXPECT_EQ(test.col_size(), 2);
+    EXPECT_EQ(test(0, 0), 1);
+    EXPECT_EQ(test(0, 1), 2);
+    EXPECT_EQ(test(1, 0), 3);
+    EXPECT_EQ(test(1, 1), 4);
+}
+
 // copy constructor
 TEST(MatrixTests, copyConstuctor) {
     Matrix<> A(3, 5);
@@ -39,9 +80,9 @@ TEST(MatrixTests, moveConstuctor) {
 // Initialize list constructor
 TEST(MatrixTests, initializerListConstuctor) {
     Matrix<> A = {
-        {1, 2, 3},
-        {4, 5, 6},
-        {7, 8, 9}
+        {1.0, 2.0, 3.0},
+        {4.0, 5.0, 6.0},
+        {7.0, 8.0, 9.0}
     };
     EXPECT_EQ(A(0, 0), 1);
     EXPECT_EQ(A(0, 1), 2);
@@ -228,6 +269,142 @@ TEST(MatrixTests, MatrixMultiplyAssignOperator) {
     EXPECT_EQ(A(1, 1), 22.0);
 }
 
+// Matrix + List
+TEST(MatrixTests, MatrixListSumOperator) {
+    Matrix<> A = {
+        {1.0, 2.0},
+        {3.0, 4.0}
+    };
+    std::initializer_list<std::initializer_list<double>> B = {
+        {4.0, 3.0},
+        {2.0, 1.0}
+    };
+
+    Matrix<> C = A + B;
+    EXPECT_EQ(C(0, 0), 5.0);
+    EXPECT_EQ(C(0, 1), 5.0);
+    EXPECT_EQ(C(1, 0), 5.0);
+    EXPECT_EQ(C(1, 1), 5.0);
+}
+
+// Matrix - List
+TEST(MatrixTests, MatrixListSubOperator) {
+    Matrix<> A = {
+        {1, 2},
+        {3, 4}
+    };
+    std::initializer_list<std::initializer_list<double>> B = {
+        {1, 2},
+        {3, 4}
+    };
+
+    Matrix<> C = A - B;
+    EXPECT_EQ(C(0, 0), 0.0);
+    EXPECT_EQ(C(0, 1), 0.0);
+    EXPECT_EQ(C(1, 0), 0.0);
+    EXPECT_EQ(C(1, 1), 0.0);
+}
+
+// Matrix * List
+TEST(MatrixTests, MatrixListMultiplyOperator) {
+    Matrix<> A = {
+        {4, 6},
+        {1, 3}
+    };
+    std::initializer_list<std::initializer_list<double>> B = {
+        {1, 7},
+        {2, 5}
+    };
+
+    Matrix<> C = A * B;
+    EXPECT_EQ(C(0, 0), 16.0);
+    EXPECT_EQ(C(0, 1), 58.0);
+    EXPECT_EQ(C(1, 0), 7.0);
+    EXPECT_EQ(C(1, 1), 22.0);
+}
+
+// Matrix += List
+TEST(MatrixTests, MatrixListSumAssignOperator) {
+    Matrix<> A = {
+        {1.0, 2.0},
+        {3.0, 4.0}
+    };
+    std::initializer_list<std::initializer_list<double>> B = {
+        {4.0, 3.0},
+        {2.0, 1.0}
+    };
+
+    A += B;
+    EXPECT_EQ(A(0, 0), 5.0);
+    EXPECT_EQ(A(0, 1), 5.0);
+    EXPECT_EQ(A(1, 0), 5.0);
+    EXPECT_EQ(A(1, 1), 5.0);
+}
+
+// Matrix -= List
+TEST(MatrixTests, MatrixListSubAssignOperator) {
+    Matrix<> A = {
+        {1.0, 2.0},
+        {3.0, 4.0}
+    };
+    std::initializer_list<std::initializer_list<double>> B = {
+        {4.0, 3.0},
+        {2.0, 1.0}
+    };
+
+    A -= B;
+    EXPECT_EQ(A(0, 0), -3.0);
+    EXPECT_EQ(A(0, 1), -1.0);
+    EXPECT_EQ(A(1, 0), 1.0);
+    EXPECT_EQ(A(1, 1), 3.0);
+}
+
+// Matrix *= List
+TEST(MatrixTests, MatrixListMultiplyAssignOperator) {
+    Matrix<> A = {
+        {4, 6},
+        {1, 3}
+    };
+    std::initializer_list<std::initializer_list<double>> B = {
+        {1, 7},
+        {2, 5}
+    };
+
+    A *= B;
+    EXPECT_EQ(A(0, 0), 16.0);
+    EXPECT_EQ(A(0, 1), 58.0);
+    EXPECT_EQ(A(1, 0), 7.0);
+    EXPECT_EQ(A(1, 1), 22.0);
+}
+
+// Matrix + scalar ========================
+TEST(MatrixTests, SumOperatorMatrixScalar) {
+    Matrix<> A(2, 2);
+    A(0, 0) = 1.0;
+    A(0, 1) = 2.0;
+    A(1, 0) = 3.0;
+    A(1, 1) = 4.0;
+    A = A + 2.0;
+    EXPECT_EQ(A(0, 0), 3.0);
+    EXPECT_EQ(A(0, 1), 4.0);
+    EXPECT_EQ(A(1, 0), 5.0);
+    EXPECT_EQ(A(1, 1), 6.0);
+}
+
+// Matrix - scalar
+TEST(MatrixTests, SubOperatorMatrixScalar) {
+    Matrix<> A(2, 2);
+    A(0, 0) = 1.0;
+    A(0, 1) = 2.0;
+    A(1, 0) = 3.0;
+    A(1, 1) = 4.0;
+    A = A - 2.0;
+    EXPECT_EQ(A(0, 0), -1.0);
+    EXPECT_EQ(A(0, 1), 0.0);
+    EXPECT_EQ(A(1, 0), 1.0);
+    EXPECT_EQ(A(1, 1), 2.0);
+}
+
 // Matrix * scalar
 TEST(MatrixTests, MultiplyOperatorMatrixScalar) {
     Matrix<> A(2, 2);
@@ -253,6 +430,32 @@ TEST(MatrixTests, DivideOperatorMatrixScalar) {
     EXPECT_EQ(A(0, 0), 0.5);
     EXPECT_EQ(A(0, 1), 1.0);
     EXPECT_EQ(A(1, 0), 1.5);
+    EXPECT_EQ(A(1, 1), 2.0);
+}
+
+// Matrix += scalar
+TEST(MatrixTests, SumAssignOperatorMatrixScalar) {
+    Matrix<> A(2, 2);
+    A(0, 0) = 1.0;
+    A(0, 1) = 2.0;
+    A(1, 0) = 3.0;
+    A(1, 1) = 4.0;
+    A += 2.0;
+    EXPECT_EQ(A(0, 0), 3.0);
+    EXPECT_EQ(A(0, 1), 4.0);
+    EXPECT_EQ(A(1, 0), 5.0);
+    EXPECT_EQ(A(1, 1), 6.0);
+}
+
+// Matrix -= scalar
+TEST(MatrixTests, SubAssignOperatorMatrixScalar) {
+    Matrix<> A(2, 2);
+    A = { {1.0, 2.0},
+          {3.0, 4.0} };
+    A -= 2.0;
+    EXPECT_EQ(A(0, 0), -1.0);
+    EXPECT_EQ(A(0, 1), 0.0);
+    EXPECT_EQ(A(1, 0), 1.0);
     EXPECT_EQ(A(1, 1), 2.0);
 }
 
@@ -471,6 +674,42 @@ TEST(MatrixTests, matrixSetInverse) {
         }
     }
 }
+
+// Minor
+TEST(MatrixTests, matrixMinor) {
+    Matrix<> A = {
+        {1, 4, 7},
+        {2, 8, 8},
+        {3, 6, 9}
+    };
+
+    double B = A.minor(1, 1);
+
+    double C = A.minor(2, 2);
+
+    EXPECT_EQ(B, -12.0);
+    EXPECT_EQ(C, 0.0);
+}
+
+// Minor static
+TEST(MatrixTests, StaticMatrixMinor) {
+    Matrix<> A = {
+        {1, 4, 7},
+        {2, 8, 8},
+        {3, 6, 9}
+    };
+
+    double B = Matrix<>::minor(1, 1, A);
+
+    double C = Matrix<>::minor(2, 2, A);
+
+    EXPECT_EQ(B, -12.0);
+    EXPECT_EQ(C, 0.0);
+}
+
+// adj
+
+// adj static
 
 // Ones matrix (static)
 TEST(MatrixTests, onesMatrix) {

@@ -40,8 +40,8 @@ public:
         }
         return grad;
     };
-    Matrix<double> getJacob() const {};
-    Matrix<double> getHess() const {};
+    Matrix<> getJacob() const {};
+    Matrix<> getHess() const {};
     std::vector<double> getParameter() const {
         std::vector<double> params;
         for (auto& a : function->getParam()) {
