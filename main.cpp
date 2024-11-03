@@ -63,6 +63,7 @@ int main(int argc, char *argv[]) {
             }
         }
         std::vector<std::pair<ID, RequirementData>> req = screen.getAllRequirementsInfo();
+        w.Requar_LeftMenu(0, "Clear", 0, 0, 0);
         for (const auto& element: req) {
             QString text;
             double param = element.second.params[0];
