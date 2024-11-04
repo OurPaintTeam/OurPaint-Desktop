@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
         }
         std::vector<std::pair<ID, RequirementData>> req = screen.getAllRequirementsInfo();
         w.Requar_LeftMenu(0, "Clear", 0, 0, 0);
-        for (const auto& element: req) {
+        for (const auto &element: req) {
             QString text;
             double param = element.second.params[0];
             switch (element.second.req) {
@@ -102,7 +102,8 @@ int main(int argc, char *argv[]) {
                     text = QString("PointOnCircle");
                     break;
             }
-            w.Requar_LeftMenu(element.first.id, text.toStdString(), element.second.objects[0].id, element.second.objects[1].id, param);
+            w.Requar_LeftMenu(element.first.id, text.toStdString(), element.second.objects[0].id,
+                              element.second.objects[1].id, param);
         }
     };
 
@@ -182,100 +183,105 @@ int main(int argc, char *argv[]) {
             if (commandParts.size() == 5) {
                 parameters = commandParts[4].toDouble();
             }
-
-            switch (req) {
-                case 1:
-                    type = ET_POINTSECTIONDIST;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    reqData.params.addElement(parameters);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 2:
-                    type = ET_POINTONSECTION;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 3:
-                    type = ET_POINTPOINTDIST;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    reqData.params.addElement(parameters);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 4:
-                    type = ET_POINTONPOINT;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 5:
-                    type = ET_SECTIONCIRCLEDIST;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    reqData.params.addElement(parameters);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 6:
-                    type = ET_SECTIONONCIRCLE;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 7:
-                    type = ET_SECTIONINCIRCLE;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 8:
-                    type = ET_SECTIONSECTIONPARALLEL;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 9:
-                    type = ET_SECTIONSECTIONPERPENDICULAR;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                case 10:
-                    type = ET_SECTIONSECTIONANGEL;
-                    reqData.req = type;
-                    reqData.objects.addElement(obj1);
-                    reqData.objects.addElement(obj2);
-                    reqData.params.addElement(parameters);
-                    screen.addRequirement(reqData);
-                    w.setSave(false);
-                    break;
-                default:
-                    //  std::cout << "Unknown requirement. Please read types of instructions by help command" << std::endl;
-                    break;
+            try {
+                switch (req) {
+                    case 1:
+                        type = ET_POINTSECTIONDIST;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        reqData.params.addElement(parameters);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 2:
+                        type = ET_POINTONSECTION;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 3:
+                        type = ET_POINTPOINTDIST;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        reqData.params.addElement(parameters);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 4:
+                        type = ET_POINTONPOINT;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 5:
+                        type = ET_SECTIONCIRCLEDIST;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        reqData.params.addElement(parameters);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 6:
+                        type = ET_SECTIONONCIRCLE;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 7:
+                        type = ET_SECTIONINCIRCLE;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 8:
+                        type = ET_SECTIONSECTIONPARALLEL;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 9:
+                        type = ET_SECTIONSECTIONPERPENDICULAR;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    case 10:
+                        type = ET_SECTIONSECTIONANGEL;
+                        reqData.req = type;
+                        reqData.objects.addElement(obj1);
+                        reqData.objects.addElement(obj2);
+                        reqData.params.addElement(parameters);
+                        screen.addRequirement(reqData);
+                        w.setSave(false);
+                        break;
+                    default:
+                        commandRight = false;
+                        w.showError("Not right number of req");
+                        break;
+                }
+            } catch (std::exception &e) {
+                commandRight = false;
+                w.showError(e.what());
             }
         }
-        if(commandRight){
+        if (commandRight) {
             updateState();
-       }
+        }
     };
 
     QObject::connect(&w, &MainWindow::parameterChanged,
@@ -314,45 +320,44 @@ int main(int argc, char *argv[]) {
 
     // Чатик
     QObject::connect(&w, &MainWindow::EnterMessage, [&](const QString &text) {
-        if (isConnected){
-            if (isServer){
-                w.setMessage("Me",text.toStdString());
+        if (isConnected) {
+            if (isServer) {
+                w.setMessage("Me", text.toStdString());
                 server.sendChatToClients(text);
-            }else{
+            } else {
                 if (!text.isEmpty()) {
                     client.sendChatMessage(text);
                 }
             }
-        }else{
+        } else {
             w.showError("Firstly connect to server!");
             return;
         }
     });
-    QObject::connect(&client, &Client::serverShutdown, [&](){
+    QObject::connect(&client, &Client::serverShutdown, [&]() {
         w.showSuccess("Server shutdown!(");
         isConnected = false;
         isServer = false;
     });
 
-    QObject::connect(&client, &Client::disconnectedFromServer, [&isConnected](){
+    QObject::connect(&client, &Client::disconnectedFromServer, [&isConnected]() {
         isConnected = false;
         qDebug() << "You disconnected from server";
     });
     //Кнопки сервера
     QObject::connect(&w, &MainWindow::SigExitSession, [&]() {
-        if (isConnected){
-            if (isServer){
+        if (isConnected) {
+            if (isServer) {
                 server.stopServer();
                 isServer = false;
                 isConnected = false;
                 w.showSuccess("Successfully stopped!");
-            }else{
+            } else {
                 client.disconnectFromServer();
                 isConnected = false;
                 w.showSuccess("Successfully disconnected!");
             }
-        }
-        else{
+        } else {
             w.showError("Firstly connect to server!");
         }
     });
@@ -373,7 +378,7 @@ int main(int argc, char *argv[]) {
         w.showSuccess("Successfully connected to server!");
     });
     QObject::connect(&w, &MainWindow::SigJoinServer, [&](const QString &text) {
-        if (isConnected || isServer){
+        if (isConnected || isServer) {
             w.showError("Firstly disconnect!");
             return;
         }
@@ -381,7 +386,7 @@ int main(int argc, char *argv[]) {
         QStringList texts = text.split(':');
         qDebug() << texts[1];
         texts[1].toUShort(&ok);
-        if (!ok){
+        if (!ok) {
             w.showError("Error! This is not valid port!");
             return;
         }
@@ -395,15 +400,15 @@ int main(int argc, char *argv[]) {
         handler(cmd);
         server.sendToClients(QString::fromStdString(screen.to_string()));
     });
-    QObject::connect(&client, &Client::newStateReceived, [&](const QString & state) {
+    QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
         screen.loadFromString(state.toStdString());
         updateState();
     });
     //Chat
-    QObject::connect(&client, &Client::newChatMessageReceived, [&](const QString & msg, const QString & name){
+    QObject::connect(&client, &Client::newChatMessageReceived, [&](const QString &msg, const QString &name) {
         w.setMessage(name.toStdString(), msg.toStdString());
     });
-    QObject::connect(&server, &Server::newMessageReceived, [&](const QString & msg, const QString & name){
+    QObject::connect(&server, &Server::newMessageReceived, [&](const QString &msg, const QString &name) {
         w.setMessage(name.toStdString(), msg.toStdString());
     });
 
@@ -416,8 +421,7 @@ int main(int argc, char *argv[]) {
             } else {
                 client.sendCommandToServer(command);
             }
-        }
-        else {
+        } else {
             handler(command);
         }
     });

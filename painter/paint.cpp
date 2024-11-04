@@ -9,7 +9,7 @@ ElementData::ElementData() {
 ID Paint::addRequirement(const RequirementData &rd) {
     Arry<IReq*> allRequirements;
     ActionsInfo info;
-    m_reqD.addElement(rd);
+    auto it = m_reqD.addElement(rd);
     SumOfSquares sq;
     int countOfReq = 0;
 // Сбор всех требований и их параметров
@@ -20,60 +20,121 @@ ID Paint::addRequirement(const RequirementData &rd) {
         if (r.req == ET_POINTSECTIONDIST) {
             point *p_it = &(*(m_pointIDs[r.objects[0]]));
             section *s_it = &(*(m_sectionIDs[r.objects[1]]));
+            if (p_it == nullptr || s_it == nullptr){
+                p_it = &(*(m_pointIDs[r.objects[1]]));
+                s_it = &(*(m_sectionIDs[r.objects[0]]));
+                if (p_it == nullptr || s_it == nullptr){
+                    m_reqD.remove(it);
+                    throw std::runtime_error("No such point or section");
+                }
+            }
             requirement = new ReqPointSecDist(p_it, s_it, r.params[0]);
         }
 // 2
         else if (r.req == ET_POINTONSECTION) {
+
             point *p_it = &(*(m_pointIDs[r.objects[0]]));
             section *s_it = &(*(m_sectionIDs[r.objects[1]]));
+            if (p_it == nullptr || s_it == nullptr){
+                p_it = &(*(m_pointIDs[r.objects[1]]));
+                s_it = &(*(m_sectionIDs[r.objects[0]]));
+                if (p_it == nullptr || s_it == nullptr){
+                    m_reqD.remove(it);
+                    throw std::runtime_error("No such point or section");
+                }
+            }
             requirement = new ReqPointOnSec(p_it, s_it);
         }
 // 3
         else if (r.req == ET_POINTPOINTDIST) {
             point *p1_it = &(*(m_pointIDs[r.objects[0]]));
             point *p2_it = &(*(m_pointIDs[r.objects[1]]));
+            if (p1_it == nullptr || p2_it == nullptr){
+                m_reqD.remove(it);
+                throw std::runtime_error("No such point");
+            }
             requirement = new ReqPointPointDist(p1_it, p2_it, r.params[0]);
         }
 // 4
         else if (r.req == ET_POINTONPOINT) {
             point *p1_it = &(*(m_pointIDs[r.objects[0]]));
             point *p2_it = &(*(m_pointIDs[r.objects[1]]));
+            if (p1_it == nullptr || p2_it == nullptr){
+                m_reqD.remove(it);
+                throw std::runtime_error("No such point");
+            }
             requirement = new ReqPointOnPoint(p1_it, p2_it);
         }
 // 5
         else if (r.req == ET_SECTIONCIRCLEDIST) {
             circle *c_it = &(*(m_circleIDs[r.objects[0]]));
             section *s_it = &(*(m_sectionIDs[r.objects[1]]));
+            if (c_it == nullptr || s_it == nullptr){
+                c_it = &(*(m_circleIDs[r.objects[1]]));
+                s_it = &(*(m_sectionIDs[r.objects[0]]));
+                if (c_it == nullptr || s_it == nullptr){
+                    m_reqD.remove(it);
+                    throw std::runtime_error("No such circle or section");
+                }
+            }
             requirement = new ReqSecCircleDist(s_it, c_it, r.params[0]);
         }
 // 6
         else if (r.req == ET_SECTIONONCIRCLE) {
             circle *c_it = &(*(m_circleIDs[r.objects[0]]));
             section *s_it = &(*(m_sectionIDs[r.objects[1]]));
+            if (c_it == nullptr || s_it == nullptr){
+                c_it = &(*(m_circleIDs[r.objects[1]]));
+                s_it = &(*(m_sectionIDs[r.objects[0]]));
+                if (c_it == nullptr || s_it == nullptr){
+                    m_reqD.remove(it);
+                    throw std::runtime_error("No such circle or section");
+                }
+            }
             requirement = new ReqSecOnCircle(s_it, c_it);
         }
 // 7
         else if (r.req == ET_SECTIONINCIRCLE) {
             circle *c_it = &(*(m_circleIDs[r.objects[0]]));
             section *s_it = &(*(m_sectionIDs[r.objects[1]]));
+            if (c_it == nullptr || s_it == nullptr){
+                c_it = &(*(m_circleIDs[r.objects[1]]));
+                s_it = &(*(m_sectionIDs[r.objects[0]]));
+                if (c_it == nullptr || s_it == nullptr){
+                    m_reqD.remove(it);
+                    throw std::runtime_error("No such circle or section");
+                }
+            }
             requirement = new ReqSecInCircle(s_it, c_it);
         }
 // 8
         else if (r.req == ET_SECTIONSECTIONPARALLEL) {
             section *s1_it = &(*(m_sectionIDs[r.objects[0]]));
             section *s2_it = &(*(m_sectionIDs[r.objects[1]]));
+            if (s1_it == nullptr || s2_it == nullptr){
+                m_reqD.remove(it);
+                throw std::runtime_error("No such section");
+            }
             requirement = new ReqSecSecParallel(s1_it, s2_it);
         }
 // 9
         else if (r.req == ET_SECTIONSECTIONPERPENDICULAR) {
             section *s1_it = &(*(m_sectionIDs[r.objects[0]]));
             section *s2_it = &(*(m_sectionIDs[r.objects[1]]));
+            if (s1_it == nullptr || s2_it == nullptr){
+                m_reqD.remove(it);
+                throw std::runtime_error("No such section");
+            }
             requirement = new ReqSecSecPerpendicular(s1_it, s2_it);
         }
 // 10
         else if (r.req == ET_SECTIONSECTIONANGEL) {
             section *s1_it = &(*(m_sectionIDs[r.objects[0]]));
             section *s2_it = &(*(m_sectionIDs[r.objects[1]]));
+            if (s1_it == nullptr || s2_it == nullptr){
+                m_reqD.remove(it);
+                throw std::runtime_error("No such section");
+            }
             requirement = new ReqSecSecAngel(s1_it, s2_it, r.params[0]);
         }
 
