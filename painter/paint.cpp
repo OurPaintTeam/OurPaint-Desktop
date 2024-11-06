@@ -140,9 +140,6 @@ ID Paint::addRequirement(const RequirementData &rd) {
 
 
         if (requirement) {
-            if (countOfReq == m_reqD.getSize()){
-                m_reqIDs[s_maxID.id++] = m_reqStorage.addElement(requirement);
-            }
             Function *func = new FunctionOfReq(requirement);
             sq.addFunction(func);
             allRequirements.addElement(requirement);
@@ -174,7 +171,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
         delete requirement;
     }
     // c_undoRedo.add(info);
-
+    m_reqIDs[++s_maxID.id] = it;
     return s_maxID;
 }
 
@@ -278,15 +275,7 @@ ElementData Paint::getElementInfo(ID id) {
 }
 
 RequirementData Paint::getRequirementInfo(ID id) {
-    RequirementData result;
-    auto req = m_reqIDs[id];
-    Arry<PARAMID> paramIDs = (*req)->getParams();
-    Arry<double> params;
-    for (auto paramID = paramIDs.begin(); paramID != paramIDs.end(); ++paramID) {
-        params.addElement(*(*paramID));
-    }
-    result.params = params;
-    return result;
+    return *m_reqIDs[id];
 }
 
 void Paint::paint() {
@@ -303,129 +292,12 @@ void Paint::paint() {
     }
 }
 
-
-/*
-void Paint::saveToFile(const char* file) {
-    std::ofstream fout;
-    fout.open(file);
-    if (!(fout.is_open())) {
-        throw "We can't open file";
-    }
-    fout << m_pointStorage.getSize();
-    point prm;
-    for(auto pos=m_pointIDs.begin(); pos!=m_pointIDs.end(); ++pos){
-        fout<<(*pos).first.id();
-        prm=*((*pos).second);
-        fout<<prm.x;
-        fout<<prm.y;
-    }
-    fout << "\n";
-    fout << m_sectionStorage.getSize();
-    section sct;
-    bool end=false;
-    for (auto pos=m_sectionIDs.begin(); pos!=m_sectionIDs.end(); ++pos) {
-        end=false;
-        fout<<(*pos).first().id();
-        sct=*((*pos).second());
-        for(auto pos=m_pointIDs.begin(); pos!=m_pointIDs.end() && !(end); ++pos){
-            if(&(*((*pos).second))==sct.beg){
-                fout<<(*pos).first.id();
-                end=true;
-            }
-        }
-        for(auto pos=m_pointIDs.begin(); pos!=m_pointIDs.end() && !(end); ++pos){
-            if(&(*((*pos).second))==sct.end){
-                fout<<(*pos).first.id();
-                end=true;
-            }
-        }
-    }
-    fout << "\n";
-    fout << m_circleStorage.getSize();
-    circle crc;
-    bool end=false;
-    for (auto pos=m_sectionIDs.begin(); pos!=m_sectionIDs.end(); ++pos) {
-        end=false;
-        fout<<(*pos).first.id();
-        crc=*((*pos).second);
-        for(auto pos=m_pointIDs.begin(); pos!=m_pointIDs.end() && !(end); ++pos){
-            if(&(*((*pos).second))==crc.center){
-                fout<<(*pos).first.id();
-                end=true;
-            }
-        }
-        fout<<crc.R;
-    }
-    fout.close();
-}
-
-
-void Paint::loadFromFile(const char* filename) {
-    std::ifstream files;
-    files.open(filename);
-    if (!(files.is_open())) {
-        throw "We can't open file";
-    }
-    m_pointIDs = Assoc<ID, List<point>::iterator>();
-    m_sectionIDs = Assoc<ID, List<section>::iterator>();
-    m_circleIDs = Assoc<ID, List<circle>::iterator>();
-    size_t size=0;
-    files >> size;
-    point need;
-    ID id;
-    s_maxID = 0;
-    List<point>::iterator point_iter;
-    m_pointStorage = List<point>(0);
-    for (size_t i = 0; i < size; ++i) {
-        files >> id;
-        if (id > s_maxID) {
-            s_maxID = id;
-        }
-        files >> need;//нужно создать ввод для таких элементов
-        point_iter =m_pointStorage.addElement(need);
-        m_pointIDs.addPair(id, point_iter);
-    }
-    files >> size;
-    section work;
-    List<section>::iterator section_iter;
-    m_sectionStorage = List<section>(0);
-    ID beg_section;
-    ID end_section;
-    for (size_t i = 0; i < size; ++i) {
-        files >> id;
-        if (id > s_maxID) {
-            s_maxID = id;
-        }
-        files >> beg_section;
-        files >> end_section;
-        work.beg=&(*m_pointIDs.findByKey(beg_section));
-        work.end=&(*m_pointIDs.findByKey(end_section));
-        section_iter = m_sectionStorage.addElement(work);
-        m_sectionIDs.addPair(id, section_iter);
-    }
-    files >> size;
-    circle worker;
-    List<circle>::iterator circle_iter;
-    m_circleStorage = List<circle>(0);
-    ID center;
-    for (size_t i = 0; i < size; ++i) {
-        files >> id;
-        if (id > s_maxID) {
-            s_maxID = id;
-        }
-        files >> center;
-        worker.center=&(*m_pointIDs.findByKey(center));
-        files >> worker.R;
-        circle_iter = m_circleStorage.addElement(worker);
-        m_circleIDs.addPair(id, circle_iter);
-    }
-}
-*/
-
 void Paint::exportToBMP(const char *file) {
     paint();
     try {
-        //c_bmpPainter.saveBMP(file);
+        BMPpainter b;
+        b.changeSize(s_allFigures);
+        b.saveBMP(file);
     }
     catch (...) {
         throw std::invalid_argument("Can not opened file!");
@@ -482,11 +354,8 @@ void Paint::makeMyCircleEqual(const ElementData& ed, ElementData& changing) {
 
 
 void Paint::deleteRequirement(ID req) {
-    try {
-        m_reqStorage.remove(m_reqIDs[req]);
-    } catch (...) {
-        std::cout << "no requirement with ID " << req.id << std::endl;
-    }
+    m_reqD.remove(m_reqIDs[req]);
+    m_reqIDs.erase(req);
 }
 
 void Paint::undo() {
@@ -620,6 +489,10 @@ void Paint::saveToFile(const char *filename) {
         std::pair<ID, primitive *> m{i->first, c};
         saver.addObject(m);
     }
+    for (auto i = m_reqIDs.begin(); i != m_reqIDs.end(); ++i){
+        std::pair<ID, RequirementData> m = {i->first,*i->second};
+        saver.addRequirement(m);
+    }
     saver.saveToOurP(filename);
 }
 
@@ -642,6 +515,10 @@ void Paint::loadFromFile(const char *file) {
             s_allFigures = s_allFigures || s->rect();
         }
     }
+    for(const auto &i: loader.getRequirements()){
+        auto it = m_reqD.addElement(i.to_pair().second);
+        m_reqIDs[i.to_pair().first] = it;
+    }
 }
 
 void Paint::clear() {
@@ -649,8 +526,8 @@ void Paint::clear() {
     m_sectionIDs.clear();
     m_circleIDs.clear();
     m_reqIDs.clear();
-    for (auto i = m_reqStorage.begin(); i != m_reqStorage.end(); ++i) {
-        m_reqStorage.remove(i);
+    for (auto i = m_reqD.begin(); i != m_reqD.end(); ++i) {
+        m_reqD.remove(i);
     }
     for (auto i = m_pointStorage.begin(); i != m_pointStorage.end(); ++i) {
         m_pointStorage.remove(i);
@@ -721,6 +598,9 @@ void Paint::loadFromString(const std::string & str) {
             s_allFigures = s_allFigures || s->rect();
         }
     }
+    for (const auto & m_reqID : loader.getRequirements()){
+        m_reqIDs[m_reqID.to_pair().first] = m_reqD.addElement(m_reqID.to_pair().second);
+    }
 }
 
 std::string Paint::to_string() const {
@@ -740,15 +620,17 @@ std::string Paint::to_string() const {
         std::pair<ID, primitive *> m{m_circleID.first, c};
         saver.addObject(m);
     }
+    for (auto & m_reqID : m_reqIDs) {
+        std::pair<ID, RequirementData> m{m_reqID.first, *m_reqID.second};
+        saver.addRequirement(m);
+    }
     return saver.to_string();
 }
 
 std::vector<std::pair<ID, RequirementData>> Paint::getAllRequirementsInfo() {
     std::vector<std::pair<ID, RequirementData>> data;
-    size_t i = 0;
     for (auto req: m_reqIDs){
-        ID id = req.first;
-        data.emplace_back(id, m_reqD.getElement(i++));
+        data.emplace_back(req.first, *req.second);
     }
     return data;
 }

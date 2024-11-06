@@ -37,20 +37,14 @@ class Paint {
     std::map<ID, List<point>::iterator> m_pointIDs;
     std::map<ID, List<section>::iterator> m_sectionIDs;
     std::map<ID, List<circle>::iterator> m_circleIDs;
-    std::map<ID, List<IReq*>::iterator> m_reqIDs;
-    ID s_maxID;
+    std::map<ID, List<RequirementData>::iterator> m_reqIDs;
     List<RequirementData> m_reqD;
-    List<IReq*> m_reqStorage;
     List<point> m_pointStorage;
     List<section> m_sectionStorage;
     List<circle> m_circleStorage;
     Painter* c_bmpPainter;
     rectangle s_allFigures;
-    /*
-    * TODO
-    * All methods (addElement, getElementInfo, etc.) must be adapted to work with the new data structure,
-    * utilizing Assoc methods for adding, searching, and deleting elements.
-    */
+    ID s_maxID;
 
 public:
     Paint(Painter* p) : s_maxID(0), m_pointIDs(),c_bmpPainter(p), m_sectionIDs(), m_circleIDs(), m_pointStorage(),
