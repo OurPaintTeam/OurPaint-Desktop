@@ -7,7 +7,7 @@ ElementData::ElementData() {
 }
 
 ID Paint::addRequirement(const RequirementData &rd) {
-    Arry<IReq*> allRequirements;
+    Arry<IReq *> allRequirements;
     ActionsInfo info;
     auto it = m_reqD.addElement(rd);
     SumOfSquares sq;
@@ -18,12 +18,16 @@ ID Paint::addRequirement(const RequirementData &rd) {
         IReq *requirement = nullptr;
 // 1
         if (r.req == ET_POINTSECTIONDIST) {
-            point *p_it = &(*(m_pointIDs[r.objects[0]]));
-            section *s_it = &(*(m_sectionIDs[r.objects[1]]));
-            if (p_it == nullptr || s_it == nullptr){
-                p_it = &(*(m_pointIDs[r.objects[1]]));
-                s_it = &(*(m_sectionIDs[r.objects[0]]));
-                if (p_it == nullptr || s_it == nullptr){
+            point *p_it = nullptr;
+            section *s_it = nullptr;
+            try {
+                p_it = &(*(m_pointIDs.at(r.objects[0])));
+                s_it = &(*(m_sectionIDs.at(r.objects[1])));
+            } catch (...) {
+                try {
+                    p_it = &(*(m_pointIDs.at(r.objects[1])));
+                    s_it = &(*(m_sectionIDs.at(r.objects[0])));
+                } catch (...) {
                     m_reqD.remove(it);
                     throw std::runtime_error("No such point or section");
                 }
@@ -32,13 +36,16 @@ ID Paint::addRequirement(const RequirementData &rd) {
         }
 // 2
         else if (r.req == ET_POINTONSECTION) {
-
-            point *p_it = &(*(m_pointIDs[r.objects[0]]));
-            section *s_it = &(*(m_sectionIDs[r.objects[1]]));
-            if (p_it == nullptr || s_it == nullptr){
-                p_it = &(*(m_pointIDs[r.objects[1]]));
-                s_it = &(*(m_sectionIDs[r.objects[0]]));
-                if (p_it == nullptr || s_it == nullptr){
+            point *p_it = nullptr;
+            section *s_it = nullptr;
+            try {
+                p_it = &(*(m_pointIDs.at(r.objects[0])));
+                s_it = &(*(m_sectionIDs.at(r.objects[1])));
+            } catch (...) {
+                try {
+                    p_it = &(*(m_pointIDs.at(r.objects[1])));
+                    s_it = &(*(m_sectionIDs.at(r.objects[0])));
+                } catch (...) {
                     m_reqD.remove(it);
                     throw std::runtime_error("No such point or section");
                 }
@@ -47,9 +54,12 @@ ID Paint::addRequirement(const RequirementData &rd) {
         }
 // 3
         else if (r.req == ET_POINTPOINTDIST) {
-            point *p1_it = &(*(m_pointIDs[r.objects[0]]));
-            point *p2_it = &(*(m_pointIDs[r.objects[1]]));
-            if (p1_it == nullptr || p2_it == nullptr){
+            point *p1_it = nullptr;
+            point *p2_it = nullptr;
+            try {
+                p1_it = &(*(m_pointIDs.at(r.objects[0])));
+                p2_it = &(*(m_pointIDs.at(r.objects[1])));
+            } catch (...) {
                 m_reqD.remove(it);
                 throw std::runtime_error("No such point");
             }
@@ -57,36 +67,47 @@ ID Paint::addRequirement(const RequirementData &rd) {
         }
 // 4
         else if (r.req == ET_POINTONPOINT) {
-            point *p1_it = &(*(m_pointIDs[r.objects[0]]));
-            point *p2_it = &(*(m_pointIDs[r.objects[1]]));
-            if (p1_it == nullptr || p2_it == nullptr){
+            point *p1_it = nullptr;
+            point *p2_it = nullptr;
+            try {
+                p1_it = &(*(m_pointIDs.at(r.objects[0])));
+                p2_it = &(*(m_pointIDs.at(r.objects[1])));
+            } catch (...) {
                 m_reqD.remove(it);
                 throw std::runtime_error("No such point");
             }
             requirement = new ReqPointOnPoint(p1_it, p2_it);
         }
-// 5
+        //5
         else if (r.req == ET_SECTIONCIRCLEDIST) {
-            circle *c_it = &(*(m_circleIDs[r.objects[0]]));
-            section *s_it = &(*(m_sectionIDs[r.objects[1]]));
-            if (c_it == nullptr || s_it == nullptr){
-                c_it = &(*(m_circleIDs[r.objects[1]]));
-                s_it = &(*(m_sectionIDs[r.objects[0]]));
-                if (c_it == nullptr || s_it == nullptr){
+            circle* c_it = nullptr;
+            section* s_it = nullptr;
+            try {
+                c_it = &(*(m_circleIDs.at(r.objects[0])));
+                s_it = &(*(m_sectionIDs.at(r.objects[1])));
+            }catch (...){
+                try {
+                    c_it = &(*(m_circleIDs.at(r.objects[1])));
+                    s_it = &(*(m_sectionIDs.at(r.objects[0])));
+                }catch(...) {
                     m_reqD.remove(it);
                     throw std::runtime_error("No such circle or section");
                 }
             }
             requirement = new ReqSecCircleDist(s_it, c_it, r.params[0]);
         }
-// 6
+        //6
         else if (r.req == ET_SECTIONONCIRCLE) {
-            circle *c_it = &(*(m_circleIDs[r.objects[0]]));
-            section *s_it = &(*(m_sectionIDs[r.objects[1]]));
-            if (c_it == nullptr || s_it == nullptr){
-                c_it = &(*(m_circleIDs[r.objects[1]]));
-                s_it = &(*(m_sectionIDs[r.objects[0]]));
-                if (c_it == nullptr || s_it == nullptr){
+            circle* c_it = nullptr;
+            section* s_it = nullptr;
+            try {
+                c_it = &(*(m_circleIDs.at(r.objects[0])));
+                s_it = &(*(m_sectionIDs.at(r.objects[1])));
+            }catch (...){
+                try {
+                    c_it = &(*(m_circleIDs.at(r.objects[1])));
+                    s_it = &(*(m_sectionIDs.at(r.objects[0])));
+                }catch(...) {
                     m_reqD.remove(it);
                     throw std::runtime_error("No such circle or section");
                 }
@@ -95,12 +116,16 @@ ID Paint::addRequirement(const RequirementData &rd) {
         }
 // 7
         else if (r.req == ET_SECTIONINCIRCLE) {
-            circle *c_it = &(*(m_circleIDs[r.objects[0]]));
-            section *s_it = &(*(m_sectionIDs[r.objects[1]]));
-            if (c_it == nullptr || s_it == nullptr){
-                c_it = &(*(m_circleIDs[r.objects[1]]));
-                s_it = &(*(m_sectionIDs[r.objects[0]]));
-                if (c_it == nullptr || s_it == nullptr){
+            circle* c_it = nullptr;
+            section* s_it = nullptr;
+            try {
+                c_it = &(*(m_circleIDs.at(r.objects[0])));
+                s_it = &(*(m_sectionIDs.at(r.objects[1])));
+            }catch (...){
+                try {
+                    c_it = &(*(m_circleIDs.at(r.objects[1])));
+                    s_it = &(*(m_sectionIDs.at(r.objects[0])));
+                }catch(...) {
                     m_reqD.remove(it);
                     throw std::runtime_error("No such circle or section");
                 }
@@ -109,9 +134,12 @@ ID Paint::addRequirement(const RequirementData &rd) {
         }
 // 8
         else if (r.req == ET_SECTIONSECTIONPARALLEL) {
-            section *s1_it = &(*(m_sectionIDs[r.objects[0]]));
-            section *s2_it = &(*(m_sectionIDs[r.objects[1]]));
-            if (s1_it == nullptr || s2_it == nullptr){
+            section* s1_it = nullptr;
+            section* s2_it = nullptr;
+            try {
+                s1_it = &(*(m_sectionIDs.at(r.objects[0])));
+                s2_it = &(*(m_sectionIDs.at(r.objects[1])));
+            }catch(...){
                 m_reqD.remove(it);
                 throw std::runtime_error("No such section");
             }
@@ -119,9 +147,12 @@ ID Paint::addRequirement(const RequirementData &rd) {
         }
 // 9
         else if (r.req == ET_SECTIONSECTIONPERPENDICULAR) {
-            section *s1_it = &(*(m_sectionIDs[r.objects[0]]));
-            section *s2_it = &(*(m_sectionIDs[r.objects[1]]));
-            if (s1_it == nullptr || s2_it == nullptr){
+            section* s1_it = nullptr;
+            section* s2_it = nullptr;
+            try {
+                s1_it = &(*(m_sectionIDs.at(r.objects[0])));
+                s2_it = &(*(m_sectionIDs.at(r.objects[1])));
+            }catch(...){
                 m_reqD.remove(it);
                 throw std::runtime_error("No such section");
             }
@@ -129,9 +160,12 @@ ID Paint::addRequirement(const RequirementData &rd) {
         }
 // 10
         else if (r.req == ET_SECTIONSECTIONANGEL) {
-            section *s1_it = &(*(m_sectionIDs[r.objects[0]]));
-            section *s2_it = &(*(m_sectionIDs[r.objects[1]]));
-            if (s1_it == nullptr || s2_it == nullptr){
+            section* s1_it = nullptr;
+            section* s2_it = nullptr;
+            try {
+                s1_it = &(*(m_sectionIDs.at(r.objects[0])));
+                s2_it = &(*(m_sectionIDs.at(r.objects[1])));
+            }catch(...){
                 m_reqD.remove(it);
                 throw std::runtime_error("No such section");
             }
@@ -148,7 +182,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
     Task optTask(&sq);
     GradientOptimizer grad(&optTask);
     grad.solve();
-    if (!grad.isSolved()){
+    if (!grad.isSolved()) {
         throw std::runtime_error("This requirement is wrong");
     }
 
@@ -281,13 +315,13 @@ RequirementData Paint::getRequirementInfo(ID id) {
 void Paint::paint() {
 
     c_bmpPainter->changeSize(s_allFigures);
-    for (auto & point : m_pointStorage) {
+    for (auto &point: m_pointStorage) {
         c_bmpPainter->drawPoint(point, false);
     }
-    for (auto & circle : m_circleStorage) {
+    for (auto &circle: m_circleStorage) {
         c_bmpPainter->drawCircle(circle, false);
     }
-    for (auto & section : m_sectionStorage) {
+    for (auto &section: m_sectionStorage) {
         c_bmpPainter->drawSection(section, false);
     }
 }
@@ -489,8 +523,8 @@ void Paint::saveToFile(const char *filename) {
         std::pair<ID, primitive *> m{i->first, c};
         saver.addObject(m);
     }
-    for (auto i = m_reqIDs.begin(); i != m_reqIDs.end(); ++i){
-        std::pair<ID, RequirementData> m = {i->first,*i->second};
+    for (auto i = m_reqIDs.begin(); i != m_reqIDs.end(); ++i) {
+        std::pair<ID, RequirementData> m = {i->first, *i->second};
         saver.addRequirement(m);
     }
     saver.saveToOurP(filename);
@@ -515,7 +549,7 @@ void Paint::loadFromFile(const char *file) {
             s_allFigures = s_allFigures || s->rect();
         }
     }
-    for(const auto &i: loader.getRequirements()){
+    for (const auto &i: loader.getRequirements()) {
         auto it = m_reqD.addElement(i.to_pair().second);
         m_reqIDs[i.to_pair().first] = it;
     }
@@ -545,7 +579,7 @@ void Paint::clear() {
 
 std::vector<std::pair<ID, ElementData>> Paint::getAllElementsInfo() {
     std::vector<std::pair<ID, ElementData>> data;
-    for (auto & m_pointID : m_pointIDs) {
+    for (auto &m_pointID: m_pointIDs) {
         point *p = &(*m_pointID.second);
         ElementData info;
         info.et = ET_POINT;
@@ -553,7 +587,7 @@ std::vector<std::pair<ID, ElementData>> Paint::getAllElementsInfo() {
         info.params.addElement(p->y);
         data.emplace_back(m_pointID.first, info);
     }
-    for (auto & m_sectionID : m_sectionIDs) {
+    for (auto &m_sectionID: m_sectionIDs) {
         section *s = &(*m_sectionID.second);
         ElementData info;
         info.et = ET_SECTION;
@@ -563,7 +597,7 @@ std::vector<std::pair<ID, ElementData>> Paint::getAllElementsInfo() {
         info.params.addElement(s->end->y);
         data.emplace_back(m_sectionID.first, info);
     }
-    for (auto & m_circleID : m_circleIDs) {
+    for (auto &m_circleID: m_circleIDs) {
         circle *c = &(*m_circleID.second);
         ElementData info;
         info.et = ET_CIRCLE;
@@ -579,7 +613,7 @@ void Paint::setPainter(Painter *p) {
     c_bmpPainter = p;
 }
 
-void Paint::loadFromString(const std::string & str) {
+void Paint::loadFromString(const std::string &str) {
     FileOurP loader;
     loader.loadString(str);
     clear();
@@ -598,29 +632,29 @@ void Paint::loadFromString(const std::string & str) {
             s_allFigures = s_allFigures || s->rect();
         }
     }
-    for (const auto & m_reqID : loader.getRequirements()){
+    for (const auto &m_reqID: loader.getRequirements()) {
         m_reqIDs[m_reqID.to_pair().first] = m_reqD.addElement(m_reqID.to_pair().second);
     }
 }
 
 std::string Paint::to_string() const {
     FileOurP saver;
-    for (const auto & m_pointID : m_pointIDs) {
+    for (const auto &m_pointID: m_pointIDs) {
         point *p = &(*m_pointID.second);
         std::pair<ID, primitive *> m{m_pointID.first, p};
         saver.addObject(m);
     }
-    for (const auto & m_sectionID : m_sectionIDs) {
+    for (const auto &m_sectionID: m_sectionIDs) {
         section *s = &(*m_sectionID.second);
         std::pair<ID, primitive *> m{m_sectionID.first, s};
         saver.addObject(m);
     }
-    for (const auto & m_circleID : m_circleIDs) {
+    for (const auto &m_circleID: m_circleIDs) {
         circle *c = &(*m_circleID.second);
         std::pair<ID, primitive *> m{m_circleID.first, c};
         saver.addObject(m);
     }
-    for (auto & m_reqID : m_reqIDs) {
+    for (auto &m_reqID: m_reqIDs) {
         std::pair<ID, RequirementData> m{m_reqID.first, *m_reqID.second};
         saver.addRequirement(m);
     }
@@ -629,7 +663,7 @@ std::string Paint::to_string() const {
 
 std::vector<std::pair<ID, RequirementData>> Paint::getAllRequirementsInfo() {
     std::vector<std::pair<ID, RequirementData>> data;
-    for (auto req: m_reqIDs){
+    for (auto req: m_reqIDs) {
         data.emplace_back(req.first, *req.second);
     }
     return data;
