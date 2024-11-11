@@ -108,6 +108,8 @@ public:
     QPushButton *enterMes;
     QPushButton *smile;
     EmojiWidget *emojiWidget;
+    QHBoxLayout *nameLayout;
+    QLabel *nameLabel;
 
     // Панель настроек
     QWidget *settingsPanel;
@@ -843,8 +845,8 @@ public:
         componentGrid->setChecked(true);
         settingsLayout->addWidget(componentGrid);
 
-        QHBoxLayout *nameLayout = new QHBoxLayout();
-        QLabel *nameLabel = new QLabel("Имя:", settingsPanel);
+        nameLayout = new QHBoxLayout();
+        nameLabel = new QLabel("Имя:", settingsPanel);
         QFont font = nameLabel->font();
         font.setPointSize(9);
         nameLabel->setFont(font);
