@@ -46,19 +46,19 @@ int main(int argc, char *argv[]) {
 
         for (auto element: elements) {
             if (element.second.et == ET_POINT) {
-                double x = element.second.params.getElement(0);
-                double y = element.second.params.getElement(1);
+                double x = element.second.params[1];
+                double y = element.second.params[1];
                 w.Print_LeftMenu(element.first.id, "Point", {x, y});
             } else if (element.second.et == ET_SECTION) {
-                double x1 = element.second.params.getElement(0);
-                double y1 = element.second.params.getElement(1);
-                double x2 = element.second.params.getElement(2);
-                double y2 = element.second.params.getElement(3);
+                double x1 = element.second.params[0];
+                double y1 = element.second.params[1];
+                double x2 = element.second.params[2];
+                double y2 = element.second.params[3];
                 w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
             } else if (element.second.et == ET_CIRCLE) {
-                double x = element.second.params.getElement(0);
-                double y = element.second.params.getElement(1);
-                double r = element.second.params.getElement(2);
+                double x = element.second.params[0];
+                double y = element.second.params[1];
+                double r = element.second.params[2];
                 w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
             }
         }
@@ -66,7 +66,10 @@ int main(int argc, char *argv[]) {
         w.Requar_LeftMenu(0, "Clear", 0, 0, 0);
         for (const auto &element: req) {
             QString text;
-            double param = element.second.params[0];
+            double param = 0;
+            if (element.second.params.size() == 1) {
+                param = element.second.params[0];
+            }
             switch (element.second.req) {
                 case ET_POINTSECTIONDIST:
                     text = QString("PointSectionDist");
@@ -119,8 +122,8 @@ int main(int argc, char *argv[]) {
             if (xOk && yOk) {
                 ElementData point;
                 point.et = ET_POINT;
-                point.params.addElement(x);
-                point.params.addElement(y);
+                point.params.push_back(x);
+                point.params.push_back(y);
                 ID id = screen.addElement(point);
                 w.setSave(false);
                 commandRight = true;
@@ -136,9 +139,9 @@ int main(int argc, char *argv[]) {
 
                 ElementData circle;
                 circle.et = ET_CIRCLE;
-                circle.params.addElement(x);
-                circle.params.addElement(y);
-                circle.params.addElement(r);
+                circle.params.push_back(x);
+                circle.params.push_back(y);
+                circle.params.push_back(r);
                 ID id = screen.addElement(circle);
                 w.setSave(false);
                 commandRight = true;
@@ -153,10 +156,10 @@ int main(int argc, char *argv[]) {
             if (xOk && yOk && zOk && rOk) {
                 ElementData section;
                 section.et = ET_SECTION;
-                section.params.addElement(x);
-                section.params.addElement(y);
-                section.params.addElement(z);
-                section.params.addElement(r);
+                section.params.push_back(x);
+                section.params.push_back(y);
+                section.params.push_back(z);
+                section.params.push_back(r);
                 ID id = screen.addElement(section);
                 w.setSave(false);
                 commandRight = true;
@@ -188,84 +191,84 @@ int main(int argc, char *argv[]) {
                     case 1:
                         type = ET_POINTSECTIONDIST;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
-                        reqData.params.addElement(parameters);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
+                        reqData.params.push_back(parameters);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 2:
                         type = ET_POINTONSECTION;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 3:
                         type = ET_POINTPOINTDIST;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
-                        reqData.params.addElement(parameters);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
+                        reqData.params.push_back(parameters);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 4:
                         type = ET_POINTONPOINT;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 5:
                         type = ET_SECTIONCIRCLEDIST;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
-                        reqData.params.addElement(parameters);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
+                        reqData.params.push_back(parameters);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 6:
                         type = ET_SECTIONONCIRCLE;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 7:
                         type = ET_SECTIONINCIRCLE;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 8:
                         type = ET_SECTIONSECTIONPARALLEL;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 9:
                         type = ET_SECTIONSECTIONPERPENDICULAR;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
                     case 10:
                         type = ET_SECTIONSECTIONANGEL;
                         reqData.req = type;
-                        reqData.objects.addElement(obj1);
-                        reqData.objects.addElement(obj2);
-                        reqData.params.addElement(parameters);
+                        reqData.objects.push_back(obj1);
+                        reqData.objects.push_back(obj2);
+                        reqData.params.push_back(parameters);
                         screen.addRequirement(reqData);
                         w.setSave(false);
                         break;
@@ -412,19 +415,19 @@ int main(int argc, char *argv[]) {
         std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
         for (auto element: elements) {
             if (element.second.et == ET_POINT) {
-                double x = element.second.params.getElement(0);
-                double y = element.second.params.getElement(1);
+                double x = element.second.params[0];
+                double y = element.second.params[1];
                 w.Print_LeftMenu(element.first.id, "Point", {x, y});
             } else if (element.second.et == ET_CIRCLE) {
-                double x = element.second.params.getElement(0);
-                double y = element.second.params.getElement(1);
-                double r = element.second.params.getElement(2);
+                double x = element.second.params[0];
+                double y = element.second.params[1];
+                double r = element.second.params[2];
                 w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
             } else if (element.second.et == ET_SECTION) {
-                double x1 = element.second.params.getElement(0);
-                double y1 = element.second.params.getElement(1);
-                double x2 = element.second.params.getElement(2);
-                double y2 = element.second.params.getElement(3);
+                double x1 = element.second.params[0];
+                double y1 = element.second.params[1];
+                double x2 = element.second.params[2];
+                double y2 = element.second.params[3];
                 w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
             }
         }
@@ -468,19 +471,19 @@ int main(int argc, char *argv[]) {
             std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
             for (auto element: elements) {
                 if (element.second.et == ET_POINT) {
-                    double x = element.second.params.getElement(0);
-                    double y = element.second.params.getElement(1);
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
                     w.Print_LeftMenu(element.first.id, "Point", {x, y});
                 } else if (element.second.et == ET_CIRCLE) {
-                    double x = element.second.params.getElement(0);
-                    double y = element.second.params.getElement(1);
-                    double r = element.second.params.getElement(2);
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
+                    double r = element.second.params[2];
                     w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
                 } else if (element.second.et == ET_SECTION) {
-                    double x1 = element.second.params.getElement(0);
-                    double y1 = element.second.params.getElement(1);
-                    double x2 = element.second.params.getElement(2);
-                    double y2 = element.second.params.getElement(3);
+                    double x1 = element.second.params[0];
+                    double y1 = element.second.params[1];
+                    double x2 = element.second.params[2];
+                    double y2 = element.second.params[3];
                     w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
                 }
             }
@@ -498,19 +501,19 @@ int main(int argc, char *argv[]) {
             std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
             for (auto element: elements) {
                 if (element.second.et == ET_POINT) {
-                    double x = element.second.params.getElement(0);
-                    double y = element.second.params.getElement(1);
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
                     w.Print_LeftMenu(element.first.id, "Point", {x, y});
                 } else if (element.second.et == ET_CIRCLE) {
-                    double x = element.second.params.getElement(0);
-                    double y = element.second.params.getElement(1);
-                    double r = element.second.params.getElement(2);
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
+                    double r = element.second.params[2];
                     w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
                 } else if (element.second.et == ET_SECTION) {
-                    double x1 = element.second.params.getElement(0);
-                    double y1 = element.second.params.getElement(1);
-                    double x2 = element.second.params.getElement(2);
-                    double y2 = element.second.params.getElement(3);
+                    double x1 = element.second.params[0];
+                    double y1 = element.second.params[1];
+                    double x2 = element.second.params[2];
+                    double y2 = element.second.params[3];
                     w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
                 }
             }
@@ -595,9 +598,9 @@ int main(int argc, char *argv[]) {
             std::cin >> x >> y;
             ElementData point;
             point.et = ET_POINT;
-            point.params.addElement(x);
-            point.params.addElement(y);
-            ID id = screen.addElement(point);
+            point.params.push_back(x);
+            point.params.push_back(y);
+            ID id = screen.push_back(point);
             std::cout << "Point (" << x << ", " << y << ") added with id " << id.id << std::endl;
         }
         if (strcmp(command, "circle") == 0) {
@@ -605,10 +608,10 @@ int main(int argc, char *argv[]) {
             std::cin >> x >> y >> r;
             ElementData circle;
             circle.et = ET_CIRCLE;
-            circle.params.addElement(x);
-            circle.params.addElement(y);
-            circle.params.addElement(r);
-            ID id = screen.addElement(circle);
+            circle.params.push_back(x);
+            circle.params.push_back(y);
+            circle.params.push_back(r);
+            ID id = screen.push_back(circle);
             std::cout << "Circle with center on(" << x << ", " << y << ") and radius " << r << " added with id " << id.id << std::endl;
         }
         if (strcmp(command, "section") == 0) {
@@ -616,11 +619,11 @@ int main(int argc, char *argv[]) {
             std::cin >> x1 >> y1 >> x2 >> y2;
             ElementData section;
             section.et = ET_SECTION;
-            section.params.addElement(x1);
-            section.params.addElement(y1);
-            section.params.addElement(x2);
-            section.params.addElement(y2);
-            ID id = screen.addElement(section);
+            section.params.push_back(x1);
+            section.params.push_back(y1);
+            section.params.push_back(x2);
+            section.params.push_back(y2);
+            ID id = screen.push_back(section);
             std::cout << "Section between points (" << x1 << ", " << y1 << ") and (" << x2 << ", " << y2 << ") added with id " << id.id << std::endl;
         }
         if (strcmp(command, "export") == 0) {
@@ -669,18 +672,18 @@ int main(int argc, char *argv[]) {
             switch   (element.et)   {
                 case ET_SECTION:
                     std::cout   <<  "TYPE: SECTION" <<std::endl;
-                    std::cout << "START POINT: (" << element.params.getElement(0)  <<  ",  "  << element.params.getElement(1)  <<  ")"  << std::endl;
-                    std::cout  <<  "END POINT:  ("  << element.params.getElement(2)  <<  ",   "  << element.params.getElement(3)  <<  ")"  << std::endl;
+                    std::cout << "START POINT: (" << element.params[0]  <<  ",  "  << element.params[1]  <<  ")"  << std::endl;
+                    std::cout  <<  "END POINT:  ("  << element.params[2]  <<  ",   "  << element.params[3]  <<  ")"  << std::endl;
                     break;
                 case ET_POINT:
                     std::cout  << "TYPE: POINT" << std::endl;
-                    std::cout   << "X: " << element.params.getElement(0) << std::endl;
-                    std::cout   <<  "Y:  "  << element.params.getElement(1)  << std::endl;
+                    std::cout   << "X: " << element.params[0] << std::endl;
+                    std::cout   <<  "Y:  "  << element.params[1]  << std::endl;
                     break;
                 case ET_CIRCLE:
                     std::cout   <<  "TYPE: CIRCLE"  << std::endl;
-                    std::cout << "CENTER: (" << element.params.getElement(0)  << ",  "  << element.params.getElement(1)  << ")"  << std::endl;
-                    std::cout   <<   "RADIUS:   "   << element.params.getElement(2)   << std::endl;
+                    std::cout << "CENTER: (" << element.params[0]  << ",  "  << element.params[1]  << ")"  << std::endl;
+                    std::cout   <<   "RADIUS:   "   << element.params[2]   << std::endl;
                     break;
             }
         }
@@ -699,9 +702,9 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj2.id;
                 std::cin >> parameters;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
-                reqData.params.addElement(parameters);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
+                reqData.params.push_back(parameters);
                 screen.addRequirement(reqData);
                 break;
             case 2:
@@ -709,8 +712,8 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj1.id;
                 std::cin >> obj2.id;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
                 screen.addRequirement(reqData);
                 break;
             case 3:
@@ -719,9 +722,9 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj2.id;
                 std::cin >> parameters;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
-                reqData.params.addElement(parameters);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
+                reqData.params.push_back(parameters);
                 screen.addRequirement(reqData);
                 break;
             case 4:
@@ -729,8 +732,8 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj1.id;
                 std::cin >> obj2.id;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
                 screen.addRequirement(reqData);
                 break;
             case 5:
@@ -739,9 +742,9 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj2.id;
                 std::cin >> parameters;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
-                reqData.params.addElement(parameters);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
+                reqData.params.push_back(parameters);
                 screen.addRequirement(reqData);
                 break;
             case 6:
@@ -749,8 +752,8 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj1.id;
                 std::cin >> obj2.id;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
                 screen.addRequirement(reqData);
                 break;
             case 7:
@@ -758,8 +761,8 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj1.id;
                 std::cin >> obj2.id;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
                 screen.addRequirement(reqData);
                 break;
             case 8:
@@ -767,8 +770,8 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj1.id;
                 std::cin >> obj2.id;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
                 screen.addRequirement(reqData);
                 break;
             case 9:
@@ -776,8 +779,8 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj1.id;
                 std::cin >> obj2.id;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
                 screen.addRequirement(reqData);
                 break;
             case 10:
@@ -786,9 +789,9 @@ int main(int argc, char *argv[]) {
                 std::cin >> obj2.id;
                 std::cin >> parameters;
                 reqData.req = type;
-                reqData.objects.addElement(obj1);
-                reqData.objects.addElement(obj2);
-                reqData.params.addElement(parameters);
+                reqData.objects.push_back(obj1);
+                reqData.objects.push_back(obj2);
+                reqData.params.push_back(parameters);
                 screen.addRequirement(reqData);
                 break;
             default:

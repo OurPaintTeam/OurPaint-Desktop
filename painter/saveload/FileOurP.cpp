@@ -32,9 +32,9 @@ void FileOurP::parseFile(std::istream &file) {
                 double param;
                 data >> id1.id >> id2.id >> param;
                 RequirementData req;
-                req.objects.addElement(id1);
-                req.objects.addElement(id2);
-                req.params.addElement(param);
+                req.objects.push_back(id1);
+                req.objects.push_back(id2);
+                req.params.push_back(param);
                 std::pair<ID, RequirementData> ll = {object_id, req};
                 requirements.emplace_back(ll);
             } else if (type == "point") {

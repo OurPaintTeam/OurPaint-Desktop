@@ -3,14 +3,13 @@
 
 
 ElementData::ElementData() {
-    params = Arry<double>();
+    params = std::vector<double>();
 }
 
 ID Paint::addRequirement(const RequirementData &rd) {
-    Arry<IReq *> allRequirements;
+    std::vector<IReq *> allRequirements;
     ActionsInfo info;
     auto it = m_reqD.addElement(rd);
-    SumOfSquares sq;
     int countOfReq = 0;
 // Сбор всех требований и их параметров
     for (const auto &r: m_reqD) {
@@ -174,29 +173,32 @@ ID Paint::addRequirement(const RequirementData &rd) {
 
 
         if (requirement) {
-            Function *func = new FunctionOfReq(requirement);
-            sq.addFunction(func);
-            allRequirements.addElement(requirement);
+            allRequirements.push_back(requirement);
         }
     }
-    Task optTask(&sq);
-    GradientOptimizer grad(&optTask);
-    grad.solve();
-    if (!grad.isSolved()) {
-        throw std::runtime_error("This requirement is wrong");
-    }
+    std::vector<Function*> allFunctions;
+    for (auto requirement: allRequirements) {
+        allFunctions.push_back(requirement->getFunction());
 
+    }
+    LSMTask* task = new LSMTask(allFunctions, VarsStorage::getVars());
+    LMSolver solver(1000);
+    solver.setTask(task);
+    solver.optimize();
+    if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
+        throw std::runtime_error("Not converged");
+    }
 // undo/redo
     for (const auto &req: allRequirements) {
         /* now in reconstruction
-        Arry<PARAMID> params = req->getParams();
-        Arry<double> beforeValues, afterValues;
-        for (size_t i = 0; i < params.getSize(); ++i) {
-            beforeValues.addElement(*params[i]);
-            afterValues.addElement(allParamValues[i]);
+        std::vector<PARAMID> params = req->getParams();
+        std::vector<double> beforeValues, afterValues;
+        for (size_t i = 0; i < params.size(); ++i) {
+            beforeValues.push_back(*params[i]);
+            afterValues.push_back(allParamValues[i]);
         }
-        info.m_paramsBefore.addElement(beforeValues);
-        info.m_paramsAfter.addElement(afterValues);
+        info.m_paramsBefore.push_back(beforeValues);
+        info.m_paramsAfter.push_back(afterValues);
          */
         s_allFigures = s_allFigures || req->getRectangle();
     }
@@ -217,8 +219,8 @@ ID Paint::addElement(const ElementData &ed) {
         tmp.y = ed.params[1];
         s_allFigures = s_allFigures || tmp.rect();
         m_pointIDs[++s_maxID.id] = m_pointStorage.addElement(tmp);
-        info.m_objects.addElement(s_maxID);
-        info.m_paramsAfter.addElement(ed.params);
+        info.m_objects.push_back(s_maxID);
+        info.m_paramsAfter.push_back(ed.params);
         c_undoRedo.add(info);
         return s_maxID;
     }
@@ -228,28 +230,28 @@ ID Paint::addElement(const ElementData &ed) {
         tmp1.y = ed.params[1];
         auto beg = m_pointStorage.addElement(tmp1);
         m_pointIDs[++s_maxID.id] = beg;
-        Arry<double> params1;
-        params1.addElement(ed.params[0]);
-        params1.addElement(ed.params[1]);
-        info.m_objects.addElement(s_maxID);
-        info.m_paramsAfter.addElement(params1);
+        std::vector<double> params1;
+        params1.push_back(ed.params[0]);
+        params1.push_back(ed.params[1]);
+        info.m_objects.push_back(s_maxID);
+        info.m_paramsAfter.push_back(params1);
         point tmp2;
         tmp2.x = ed.params[2];
         tmp2.y = ed.params[3];
         auto end = m_pointStorage.addElement(tmp2);
         m_pointIDs[++s_maxID.id] = end;
-        Arry<double> params2;
-        params2.addElement(ed.params[2]);
-        params2.addElement(ed.params[3]);
-        info.m_objects.addElement(s_maxID);
-        info.m_paramsAfter.addElement(params2);
+        std::vector<double> params2;
+        params2.push_back(ed.params[2]);
+        params2.push_back(ed.params[3]);
+        info.m_objects.push_back(s_maxID);
+        info.m_paramsAfter.push_back(params2);
         section tmp;
         tmp.beg = &(*beg);
         tmp.end = &(*end);
         s_allFigures = s_allFigures || tmp.rect();
         m_sectionIDs[++s_maxID.id] = m_sectionStorage.addElement(tmp);
-        info.m_objects.addElement(s_maxID);
-        info.m_paramsAfter.addElement(ed.params);
+        info.m_objects.push_back(s_maxID);
+        info.m_paramsAfter.push_back(ed.params);
         c_undoRedo.add(info);
         return s_maxID;
     }
@@ -257,21 +259,21 @@ ID Paint::addElement(const ElementData &ed) {
         point center;
         center.x = ed.params[0];
         center.y = ed.params[1];
-        Arry<double> params1;
-        params1.addElement(ed.params[0]);
-        params1.addElement(ed.params[1]);
-        info.m_paramsAfter.addElement(params1);
+        std::vector<double> params1;
+        params1.push_back(ed.params[0]);
+        params1.push_back(ed.params[1]);
+        info.m_paramsAfter.push_back(params1);
         auto cent = m_pointStorage.addElement(center);
         m_pointIDs[++s_maxID.id] = cent;
-        info.m_objects.addElement(s_maxID);
+        info.m_objects.push_back(s_maxID);
         circle tmp;
         tmp.center = &(*cent);
         tmp.R = ed.params[2];
         s_allFigures = s_allFigures || tmp.rect();
         m_circleIDs[++s_maxID.id] = m_circleStorage.addElement(tmp);
-        info.m_objects.addElement(s_maxID);
-        params1.addElement(ed.params[2]);
-        info.m_paramsAfter.addElement(params1);
+        info.m_objects.push_back(s_maxID);
+        params1.push_back(ed.params[2]);
+        info.m_paramsAfter.push_back(params1);
         c_undoRedo.add(info);
         return s_maxID;
     }
@@ -284,24 +286,24 @@ ElementData Paint::getElementInfo(ID id) {
     try {
         auto p = m_pointIDs[id];
         result.et = ET_POINT;
-        result.params.addElement((*p).x);
-        result.params.addElement((*p).y);
+        result.params.push_back((*p).x);
+        result.params.push_back((*p).y);
     }
     catch (const std::runtime_error &) {
         try {
             auto sec = m_sectionIDs[id];
             result.et = ET_SECTION;
-            result.params.addElement((*sec).beg->x);
-            result.params.addElement((*sec).beg->y);
-            result.params.addElement((*sec).end->x);
-            result.params.addElement((*sec).end->y);
+            result.params.push_back((*sec).beg->x);
+            result.params.push_back((*sec).beg->y);
+            result.params.push_back((*sec).end->x);
+            result.params.push_back((*sec).end->y);
         }
         catch (const std::runtime_error &) {
             auto circ = m_circleIDs[id];
             result.et = ET_CIRCLE;
-            result.params.addElement((*circ).center->x);
-            result.params.addElement((*circ).center->y);
-            result.params.addElement((*circ).R);
+            result.params.push_back((*circ).center->x);
+            result.params.push_back((*circ).center->y);
+            result.params.push_back((*circ).R);
         }
     }
 
@@ -397,8 +399,8 @@ void Paint::undo() {
     point *p = nullptr;
     section *s = nullptr;
     circle *c = nullptr;
-    if (info.m_paramsBefore.getSize() == 0) {
-        for (int i = 0; i < info.m_objects.getSize(); ++i) {
+    if (info.m_paramsBefore.size() == 0) {
+        for (int i = 0; i < info.m_objects.size(); ++i) {
             if (m_pointIDs.contains(info.m_objects[i])) {
                 m_pointStorage.remove(m_pointIDs[info.m_objects[i]]);
             } else if (m_sectionIDs.contains(info.m_objects[i])) {
@@ -412,7 +414,7 @@ void Paint::undo() {
         }
         return;
     }
-    for (int i = 0; i < info.m_objects.getSize(); ++i) {
+    for (int i = 0; i < info.m_objects.size(); ++i) {
         try {
             p = &(*m_pointIDs[info.m_objects[i]]);
             p->x = info.m_paramsBefore[i][0];
@@ -443,8 +445,8 @@ void Paint::redo() {
     point *p = nullptr;
     section *s = nullptr;
     circle *c = nullptr;
-    if (info.m_paramsBefore.getSize() == 0) {
-        if (info.m_objects.getSize() == 3) {
+    if (info.m_paramsBefore.size() == 0) {
+        if (info.m_objects.size() == 3) {
             point beg;
             beg.x = info.m_paramsAfter[0][0];
             beg.y = info.m_paramsAfter[0][1];
@@ -460,7 +462,7 @@ void Paint::redo() {
             sec.end = &(*(p2));
             m_sectionIDs[info.m_objects[2]] = m_sectionStorage.addElement(sec);
             s_allFigures = s_allFigures || sec.rect();
-        } else if (info.m_objects.getSize() == 2) {
+        } else if (info.m_objects.size() == 2) {
             point center;
             center.x = info.m_paramsAfter[0][0];
             center.y = info.m_paramsAfter[0][1];
@@ -471,7 +473,7 @@ void Paint::redo() {
             circ.R = info.m_paramsAfter[1][2];
             m_circleIDs[info.m_objects[1]] = m_circleStorage.addElement(circ);
             s_allFigures = s_allFigures || circ.rect();
-        } else if (info.m_objects.getSize() == 1) {
+        } else if (info.m_objects.size() == 1) {
             point pt;
             pt.x = info.m_paramsAfter[0][0];
             pt.y = info.m_paramsAfter[0][1];
@@ -480,7 +482,7 @@ void Paint::redo() {
         }
         return;
     }
-    for (int i = 0; i < info.m_objects.getSize(); ++i) {
+    for (int i = 0; i < info.m_objects.size(); ++i) {
         try {
             p = &(*m_pointIDs[info.m_objects[i]]);
             p->x = info.m_paramsAfter[i][0];
@@ -583,27 +585,27 @@ std::vector<std::pair<ID, ElementData>> Paint::getAllElementsInfo() {
         point *p = &(*m_pointID.second);
         ElementData info;
         info.et = ET_POINT;
-        info.params.addElement(p->x);
-        info.params.addElement(p->y);
+        info.params.push_back(p->x);
+        info.params.push_back(p->y);
         data.emplace_back(m_pointID.first, info);
     }
     for (auto &m_sectionID: m_sectionIDs) {
         section *s = &(*m_sectionID.second);
         ElementData info;
         info.et = ET_SECTION;
-        info.params.addElement(s->beg->x);
-        info.params.addElement(s->beg->y);
-        info.params.addElement(s->end->x);
-        info.params.addElement(s->end->y);
+        info.params.push_back(s->beg->x);
+        info.params.push_back(s->beg->y);
+        info.params.push_back(s->end->x);
+        info.params.push_back(s->end->y);
         data.emplace_back(m_sectionID.first, info);
     }
     for (auto &m_circleID: m_circleIDs) {
         circle *c = &(*m_circleID.second);
         ElementData info;
         info.et = ET_CIRCLE;
-        info.params.addElement(c->center->x);
-        info.params.addElement(c->center->y);
-        info.params.addElement(c->R);
+        info.params.push_back(c->center->x);
+        info.params.push_back(c->center->y);
+        info.params.push_back(c->R);
         data.emplace_back(m_circleID.first, info);
     }
     return data;

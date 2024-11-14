@@ -1,35 +1,55 @@
 #include "requirements.h"
+std::map<PARAMID, Variable*> VarsStorage::m_vars;
+std::vector<Variable *> VarsStorage::getVars() {
+    std::vector<Variable *> vars;
+    for (auto var : m_vars) {
+        vars.push_back(var.second);
+    }
+    return vars;
+}
+Variable* VarsStorage::addVar(PARAMID id){
+    if (m_vars.find(id) == m_vars.end()) {
+        m_vars[id] = new Variable(id);
+    }
+    return m_vars[id];
+}
+Variable* VarsStorage::getVar(PARAMID id) {
+    if (m_vars.find(id) == m_vars.end()) {
+        throw std::runtime_error("Variable not found");
+    }
+    return m_vars[id];
+}
 
 RequirementData::RequirementData() {
-    objects = Arry<ID>();
-    params = Arry<double>();
+    objects = std::vector<ID>();
+    params = std::vector<double>();
 }
-
-
 
 // 1
-double ReqPointSecDist::getError() {
-    double A = m_s->end->y - m_s->beg->y;
-    double B = m_s->end->x - m_s->beg->x;
-    double C = m_s->end->x * m_s->beg->y - m_s->beg->x * m_s->end->y;
-    double e = std::abs(A * m_p->x - B * m_p->y + C) / sqrt(A * A + B * B) - d;
-    return std::abs(e);
+ErrorFunctions* ReqPointSecDist::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqPointSecDist::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_p->x));
-    res.addElement(&(m_p->y));
-    res.addElement(&(m_s->beg->x));
-    res.addElement(&(m_s->beg->y));
-    res.addElement(&(m_s->end->x));
-    res.addElement(&(m_s->end->y));
+std::vector<PARAMID> ReqPointSecDist::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_p->x));
+    res.push_back(&(m_p->y));
+    res.push_back(&(m_s->beg->x));
+    res.push_back(&(m_s->beg->y));
+    res.push_back(&(m_s->end->x));
+    res.push_back(&(m_s->end->y));
     return res;
 }
 ReqPointSecDist::ReqPointSecDist(point* p, section* s, double dist) {
     m_p = p;
     m_s = s;
     d = dist;
-
+    Variable* x1 = VarsStorage::addVar(&p->x);
+    Variable* y1 = VarsStorage::addVar(&p->y);
+    Variable* x2 = VarsStorage::addVar(&s->beg->x);
+    Variable* y2 = VarsStorage::addVar(&s->beg->y);
+    Variable* x3 = VarsStorage::addVar(&s->end->x);
+    Variable* y3 = VarsStorage::addVar(&s->end->y);
+    c_f = new PointSectionDistanceError({x1, y1, x2, y2, x3, y3}, d);
 }
 
 rectangle ReqPointSecDist::getRectangle() {
@@ -42,22 +62,25 @@ rectangle ReqPointSecDist::getRectangle() {
 ReqPointOnSec::ReqPointOnSec(point* p, section* s) {
     m_p = p;
     m_s = s;
+    Variable* x1 = VarsStorage::addVar(&p->x);
+    Variable* y1 = VarsStorage::addVar(&p->y);
+    Variable* x2 = VarsStorage::addVar(&s->beg->x);
+    Variable* y2 = VarsStorage::addVar(&s->beg->y);
+    Variable* x3 = VarsStorage::addVar(&s->end->x);
+    Variable* y3 = VarsStorage::addVar(&s->end->y);
+    c_f = new PointOnSectionError({x1, y1, x2, y2, x3, y3});
 }
-double ReqPointOnSec::getError() {
-    double A = m_s->end->y - m_s->beg->y;
-    double B = m_s->end->x - m_s->beg->x;
-    double C = m_s->end->x * m_s->beg->y - m_s->beg->x * m_s->end->y;
-    double e = std::abs(A * m_p->x - B * m_p->y + C) / sqrt(A * A + B * B);
-    return e;
+ErrorFunctions* ReqPointOnSec::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqPointOnSec::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_p->x));
-    res.addElement(&(m_p->y));
-    res.addElement(&(m_s->beg->x));
-    res.addElement(&(m_s->beg->y));
-    res.addElement(&(m_s->end->x));
-    res.addElement(&(m_s->end->y));
+std::vector<PARAMID> ReqPointOnSec::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_p->x));
+    res.push_back(&(m_p->y));
+    res.push_back(&(m_s->beg->x));
+    res.push_back(&(m_s->beg->y));
+    res.push_back(&(m_s->end->x));
+    res.push_back(&(m_s->end->y));
     return res;
 }
 
@@ -71,16 +94,21 @@ ReqPointPointDist::ReqPointPointDist(point* p1, point* p2, double dist) {
     m_p1 = p1;
     m_p2 = p2;
     v_dist = dist;
+    Variable* x1 = VarsStorage::addVar(&p1->x);
+    Variable* y1 = VarsStorage::addVar(&p1->y);
+    Variable* x2 = VarsStorage::addVar(&p2->x);
+    Variable* y2 = VarsStorage::addVar(&p2->y);
+    c_f = new PointPointDistanceError({x1, y1, x2, y2}, v_dist);
 }
-double ReqPointPointDist::getError() {
-    return std::abs(hypot(m_p1->x - m_p2->x, m_p1->y - m_p2->y) - v_dist);
+ErrorFunctions* ReqPointPointDist::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqPointPointDist::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_p1->x));
-    res.addElement(&(m_p1->y));
-    res.addElement(&(m_p2->x));
-    res.addElement(&(m_p2->y));
+std::vector<PARAMID> ReqPointPointDist::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_p1->x));
+    res.push_back(&(m_p1->y));
+    res.push_back(&(m_p2->x));
+    res.push_back(&(m_p2->y));
     return res;
 }
 
@@ -93,16 +121,21 @@ rectangle ReqPointPointDist::getRectangle() {
 ReqPointOnPoint::ReqPointOnPoint(point* p1, point* p2) {
     m_p1 = p1;
     m_p2 = p2;
+    Variable* x1 = VarsStorage::addVar(&p1->x);
+    Variable* y1 = VarsStorage::addVar(&p1->y);
+    Variable* x2 = VarsStorage::addVar(&p2->x);
+    Variable* y2 = VarsStorage::addVar(&p2->y);
+    c_f = new PointOnPointError({x1, y1, x2, y2});
 }
-double ReqPointOnPoint::getError() {
-    return sqrt((m_p2->x - m_p1->x) * (m_p2->x - m_p1->x) + (m_p2->y - m_p1->y) * (m_p2->y - m_p1->y));
+ErrorFunctions* ReqPointOnPoint::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqPointOnPoint::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_p1->x));
-    res.addElement(&(m_p1->y));
-    res.addElement(&(m_p2->x));
-    res.addElement(&(m_p2->y));
+std::vector<PARAMID> ReqPointOnPoint::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_p1->x));
+    res.push_back(&(m_p1->y));
+    res.push_back(&(m_p2->x));
+    res.push_back(&(m_p2->y));
     return res;
 }
 
@@ -116,23 +149,27 @@ ReqSecCircleDist::ReqSecCircleDist(section* s, circle* c, double dist) {
     m_s = s;
     m_c = c;
     v_dist = dist;
+    Variable* x1 = VarsStorage::addVar(&s->beg->x);
+    Variable* y1 = VarsStorage::addVar(&s->beg->y);
+    Variable* x2 = VarsStorage::addVar(&s->end->x);
+    Variable* y2 = VarsStorage::addVar(&s->end->y);
+    Variable* xc = VarsStorage::addVar(&c->center->x);
+    Variable* yc = VarsStorage::addVar(&c->center->y);
+    Variable* r = VarsStorage::addVar(&c->R);
+    c_f = new SectionCircleDistanceError({x1, y1, x2, y2, xc, yc, r}, v_dist);
 }
-double ReqSecCircleDist::getError() {
-    double A = m_s->end->y - m_s->beg->y;
-    double B = m_s->end->x - m_s->beg->x;
-    double C = m_s->end->x * m_s->beg->y - m_s->beg->x * m_s->end->y;
-    double e = std::abs(A * m_c->center->x - B * m_c->center->y + C) / sqrt(A * A + B * B) - (m_c->R + v_dist);
-    return std::abs(e);
+ErrorFunctions* ReqSecCircleDist::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqSecCircleDist::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_c->center->x));
-    res.addElement(&(m_c->center->y));
-    res.addElement(&(m_c->R));
-    res.addElement(&(m_s->beg->x));
-    res.addElement(&(m_s->beg->y));
-    res.addElement(&(m_s->end->x));
-    res.addElement(&(m_s->end->y));
+std::vector<PARAMID> ReqSecCircleDist::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_c->center->x));
+    res.push_back(&(m_c->center->y));
+    res.push_back(&(m_c->R));
+    res.push_back(&(m_s->beg->x));
+    res.push_back(&(m_s->beg->y));
+    res.push_back(&(m_s->end->x));
+    res.push_back(&(m_s->end->y));
     return res;
 }
 
@@ -145,23 +182,28 @@ rectangle ReqSecCircleDist::getRectangle() {
 ReqSecOnCircle::ReqSecOnCircle(section* s, circle* c) {
     m_s = s;
     m_c = c;
+
+    Variable* x1 = VarsStorage::addVar(&s->beg->x);
+    Variable* y1 = VarsStorage::addVar(&s->beg->y);
+    Variable* x2 = VarsStorage::addVar(&s->end->x);
+    Variable* y2 = VarsStorage::addVar(&s->end->y);
+    Variable* xc = VarsStorage::addVar(&c->center->x);
+    Variable* yc = VarsStorage::addVar(&c->center->y);
+    Variable* r = VarsStorage::addVar(&c->R);
+    c_f = new SectionOnCircleError({x1, y1, x2, y2, xc, yc,r });
 }
-double ReqSecOnCircle::getError() {
-    double A = m_s->end->y - m_s->beg->y;
-    double B = m_s->end->x - m_s->beg->x;
-    double C = m_s->end->x * m_s->beg->y - m_s->beg->x * m_s->end->y;
-    double e = std::abs(A * m_c->center->x - B * m_c->center->y + C) / sqrt(A * A + B * B) - (m_c->R);
-    return std::abs(e);
+ErrorFunctions* ReqSecOnCircle::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqSecOnCircle::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_c->center->x));
-    res.addElement(&(m_c->center->y));
-    res.addElement(&(m_c->R));
-    res.addElement(&(m_s->beg->x));
-    res.addElement(&(m_s->beg->y));
-    res.addElement(&(m_s->end->x));
-    res.addElement(&(m_s->end->y));
+std::vector<PARAMID> ReqSecOnCircle::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_c->center->x));
+    res.push_back(&(m_c->center->y));
+    res.push_back(&(m_c->R));
+    res.push_back(&(m_s->beg->x));
+    res.push_back(&(m_s->beg->y));
+    res.push_back(&(m_s->end->x));
+    res.push_back(&(m_s->end->y));
     return res;
 }
 
@@ -174,33 +216,20 @@ rectangle ReqSecOnCircle::getRectangle() {
 ReqSecInCircle::ReqSecInCircle(section* s, circle* c) {
     m_s = s;
     m_c = c;
+    throw std::runtime_error("Not implemented");
 }
-double ReqSecInCircle::getError() {
-    double x0 = m_c->center->x;
-    double y0 = m_c->center->y;
-
-    double r = m_c->R - 1;
-
-    double x1 = m_s->beg->x;
-    double y1 = m_s->beg->y;
-
-    double x2 = m_s->end->x;
-    double y2 = m_s->end->y;
-
-    double dist1 = std::hypot(x1 - x0, y1 - y0);
-    double dist2 = std::hypot(x2 - x0, y2 - y0);
-
-    return std::max(dist1 - r, dist2 - r);
+ErrorFunctions* ReqSecInCircle::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqSecInCircle::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_c->center->x));
-    res.addElement(&(m_c->center->y));
-    res.addElement(&(m_c->R));
-    res.addElement(&(m_s->beg->x));
-    res.addElement(&(m_s->beg->y));
-    res.addElement(&(m_s->end->x));
-    res.addElement(&(m_s->end->y));
+std::vector<PARAMID> ReqSecInCircle::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_c->center->x));
+    res.push_back(&(m_c->center->y));
+    res.push_back(&(m_c->R));
+    res.push_back(&(m_s->beg->x));
+    res.push_back(&(m_s->beg->y));
+    res.push_back(&(m_s->end->x));
+    res.push_back(&(m_s->end->y));
     return res;
 }
 
@@ -213,25 +242,30 @@ rectangle ReqSecInCircle::getRectangle() {
 ReqSecSecParallel::ReqSecSecParallel(section* s1, section* s2) {
     m_s1 = s1;
     m_s2 = s2;
+    Variable* x1 = VarsStorage::addVar(&s1->beg->x);
+    Variable* y1 = VarsStorage::addVar(&s1->beg->y);
+    Variable* x2 = VarsStorage::addVar(&s1->end->x);
+    Variable* y2 = VarsStorage::addVar(&s1->end->y);
+    Variable* x3 = VarsStorage::addVar(&s2->beg->x);
+    Variable* y3 = VarsStorage::addVar(&s2->beg->y);
+    Variable* x4 = VarsStorage::addVar(&s2->end->x);
+    Variable* y4 = VarsStorage::addVar(&s2->end->y);
+    c_f = new SectionSectionParallelError({x1, y1, x2, y2, x3, y3, x4, y4});
 }
 // ad-bc. Normal vectors (x2-x1, y2-y1) and (x4-x3, y4-y3)
-double ReqSecSecParallel::getError() {
-    double v1 = m_s1->end->x - m_s1->beg->x;
-    double v2 = m_s1->end->y - m_s1->beg->y;
-    double w1 = m_s2->end->x - m_s2->beg->x;
-    double w2 = m_s2->end->y - m_s2->beg->y;
-    return std::abs(v1 * w2 - v2 * w1);
+ErrorFunctions* ReqSecSecParallel::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqSecSecParallel::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_s1->beg->x));
-    res.addElement(&(m_s1->beg->y));
-    res.addElement(&(m_s1->end->x));
-    res.addElement(&(m_s1->end->y));
-    res.addElement(&(m_s2->beg->x));
-    res.addElement(&(m_s2->beg->y));
-    res.addElement(&(m_s2->end->x));
-    res.addElement(&(m_s2->end->y));
+std::vector<PARAMID> ReqSecSecParallel::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_s1->beg->x));
+    res.push_back(&(m_s1->beg->y));
+    res.push_back(&(m_s1->end->x));
+    res.push_back(&(m_s1->end->y));
+    res.push_back(&(m_s2->beg->x));
+    res.push_back(&(m_s2->beg->y));
+    res.push_back(&(m_s2->end->x));
+    res.push_back(&(m_s2->end->y));
     return res;
 }
 //  (x2-x1)*(y4-y3)-(y2-y1)*(x4-x3)
@@ -245,24 +279,29 @@ rectangle ReqSecSecParallel::getRectangle() {
 ReqSecSecPerpendicular::ReqSecSecPerpendicular(section* s1, section* s2) {
     m_s1 = s1;
     m_s2 = s2;
+    Variable* x1 = VarsStorage::addVar(&s1->beg->x);
+    Variable* y1 = VarsStorage::addVar(&s1->beg->y);
+    Variable* x2 = VarsStorage::addVar(&s1->end->x);
+    Variable* y2 = VarsStorage::addVar(&s1->end->y);
+    Variable* x3 = VarsStorage::addVar(&s2->beg->x);
+    Variable* y3 = VarsStorage::addVar(&s2->beg->y);
+    Variable* x4 = VarsStorage::addVar(&s2->end->x);
+    Variable* y4 = VarsStorage::addVar(&s2->end->y);
+    c_f = new SectionSectionPerpendicularError({x1, y1, x2, y2, x3, y3, x4, y4});
 }
-double ReqSecSecPerpendicular::getError() {
-    double v1 = m_s1->end->x - m_s1->beg->x;
-    double v2 = m_s1->end->y - m_s1->beg->y;
-    double w1 = m_s2->end->x - m_s2->beg->x;
-    double w2 = m_s2->end->y - m_s2->beg->y;
-    return std::abs(v1 * w1 + v2 * w2);
+ErrorFunctions* ReqSecSecPerpendicular::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqSecSecPerpendicular::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_s1->beg->x));
-    res.addElement(&(m_s1->beg->y));
-    res.addElement(&(m_s1->end->x));
-    res.addElement(&(m_s1->end->y));
-    res.addElement(&(m_s2->beg->x));
-    res.addElement(&(m_s2->beg->y));
-    res.addElement(&(m_s2->end->x));
-    res.addElement(&(m_s2->end->y));
+std::vector<PARAMID> ReqSecSecPerpendicular::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_s1->beg->x));
+    res.push_back(&(m_s1->beg->y));
+    res.push_back(&(m_s1->end->x));
+    res.push_back(&(m_s1->end->y));
+    res.push_back(&(m_s2->beg->x));
+    res.push_back(&(m_s2->beg->y));
+    res.push_back(&(m_s2->end->x));
+    res.push_back(&(m_s2->end->y));
     return res;
 }
 
@@ -276,34 +315,33 @@ ReqSecSecAngel::ReqSecSecAngel(section* s1, section* s2, double angle) {
     m_s1 = s1;
     m_s2 = s2;
     desired_angle = angle;
+    Variable* x1 = VarsStorage::addVar(&s1->beg->x);
+    Variable* y1 = VarsStorage::addVar(&s1->beg->y);
+    Variable* x2 = VarsStorage::addVar(&s1->end->x);
+    Variable* y2 = VarsStorage::addVar(&s1->end->y);
+    Variable* x3 = VarsStorage::addVar(&s2->beg->x);
+    Variable* y3 = VarsStorage::addVar(&s2->beg->y);
+    Variable* x4 = VarsStorage::addVar(&s2->end->x);
+    Variable* y4 = VarsStorage::addVar(&s2->end->y);
+    c_f = new SectionSectionAngleError({x1, y1, x2, y2, x3, y3, x4, y4}, desired_angle);
 }
-double ReqSecSecAngel::getError() {
-    double v1 = m_s1->end->x - m_s1->beg->x;
-    double v2 = m_s1->end->y - m_s1->beg->y;
-    double w1 = m_s2->end->x - m_s2->beg->x;
-    double w2 = m_s2->end->y - m_s2->beg->y;
-
-    double dot_product = v1 * w1 + v2 * w2;
-    double mag_v = std::hypot(v1, v2);
-    double mag_w = std::hypot(w1, w2);
-    double cos_angle = dot_product / (mag_v * mag_w);
-    double angle = (acos(cos_angle) / 3.141592) * 180;
-
-    return std::abs(angle - desired_angle);
+ErrorFunctions* ReqSecSecAngel::getFunction() {
+    return c_f;
 }
-Arry<PARAMID> ReqSecSecAngel::getParams() {
-    Arry<PARAMID> res;
-    res.addElement(&(m_s1->beg->x));
-    res.addElement(&(m_s1->beg->y));
-    res.addElement(&(m_s1->end->x));
-    res.addElement(&(m_s1->end->y));
-    res.addElement(&(m_s2->beg->x));
-    res.addElement(&(m_s2->beg->y));
-    res.addElement(&(m_s2->end->x));
-    res.addElement(&(m_s2->end->y));
+std::vector<PARAMID> ReqSecSecAngel::getParams() {
+    std::vector<PARAMID> res;
+    res.push_back(&(m_s1->beg->x));
+    res.push_back(&(m_s1->beg->y));
+    res.push_back(&(m_s1->end->x));
+    res.push_back(&(m_s1->end->y));
+    res.push_back(&(m_s2->beg->x));
+    res.push_back(&(m_s2->beg->y));
+    res.push_back(&(m_s2->end->x));
+    res.push_back(&(m_s2->end->y));
     return res;
 }
 
 rectangle ReqSecSecAngel::getRectangle() {
     return m_s1->rect() || m_s2->rect();
 }
+

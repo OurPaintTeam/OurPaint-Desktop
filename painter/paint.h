@@ -8,26 +8,25 @@
 #include "BMPpainter.h"
 #include "QTPainter.h"
 #include "Assoc.h"
-#include "../Matrix/Matrix.h"
+#include "Matrix.h"
 #include "saveload/FileOurP.h"
-#include "./Optimization/Task.h"
-#include "./Optimization/GradientOptimizer.h"
+#include "LSMTask.h"
+#include "LevenbergMarquardtSolver.h"
 #include "../graph/simpleGraph.h"
 #include "enums.h"
 #include "requirements.h"
 #include "UndoRedo.h"
-
 #include <map>
 struct ElementData {
     Element et;
-    Arry<double> params;
+    std::vector<double> params;
     ElementData();
 };
 struct ActionsInfo{
     bool isNew;
-    Arry<ID> m_objects;
-    Arry<Arry<double>> m_paramsBefore;
-    Arry<Arry<double>> m_paramsAfter;
+    std::vector<ID> m_objects;
+    std::vector<std::vector<double>> m_paramsBefore;
+    std::vector<std::vector<double>> m_paramsAfter;
 };
 
 //c_ - класс, v_- переменная, s_структура, m_ - контейнеры(списки, массивы и другие) f_ - приватный метод класса

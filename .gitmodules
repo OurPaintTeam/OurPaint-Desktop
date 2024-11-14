@@ -7,3 +7,6 @@
 [submodule "UndoRedo"]
 	path = UndoRedo
 	url = https://github.com/Ardrass2/UndoRedo
+[submodule "math"]
+	path = math
+	url = https://github.com/ardrass2/minimizeroptimizer
