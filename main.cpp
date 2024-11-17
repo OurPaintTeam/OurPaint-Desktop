@@ -497,26 +497,6 @@ int main(int argc, char *argv[]) {
             screen.undo();
             updateState();
             w.setSave(true);
-            w.Print_LeftMenu(0, "Clear", {});
-            std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
-            for (auto element: elements) {
-                if (element.second.et == ET_POINT) {
-                    double x = element.second.params[0];
-                    double y = element.second.params[1];
-                    w.Print_LeftMenu(element.first.id, "Point", {x, y});
-                } else if (element.second.et == ET_CIRCLE) {
-                    double x = element.second.params[0];
-                    double y = element.second.params[1];
-                    double r = element.second.params[2];
-                    w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
-                } else if (element.second.et == ET_SECTION) {
-                    double x1 = element.second.params[0];
-                    double y1 = element.second.params[1];
-                    double x2 = element.second.params[2];
-                    double y2 = element.second.params[3];
-                    w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
-                }
-            }
         } catch (std::exception &e) {
         }
     });

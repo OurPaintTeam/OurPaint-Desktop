@@ -179,35 +179,51 @@ ID Paint::addRequirement(const RequirementData &rd) {
     std::vector<Function*> allFunctions;
     for (auto requirement: allRequirements) {
         allFunctions.push_back(requirement->getFunction());
-
+    }
+    for (const auto& req: m_reqD){
+        for (auto i: req.objects){
+            info.m_objects.push_back(i);
+            info.m_paramsBefore.push_back(getElementInfo(i).params);
+        }
     }
     LSMTask* task = new LSMTask(allFunctions, VarsStorage::getVars());
-    LMSolver solver(1000);
+    LMSolver solver;
     solver.setTask(task);
     solver.optimize();
     if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
+        for (const auto& req: m_reqD){
+            for (auto i: req.objects){
+                info.m_paramsAfter.push_back(getElementInfo(i).params);
+            }
+        }
+        for (const auto &req: allRequirements) {
+            s_allFigures = s_allFigures || req->getRectangle();
+        }
+        // Clear
+        for (auto requirement: allRequirements) {
+            delete requirement;
+        }
+        info.m_objects.emplace_back(++s_maxID.id);
+        c_undoRedo.add(info);
+        m_reqIDs[s_maxID.id] = it;
+        undo();
         throw std::runtime_error("Not converged");
     }
-// undo/redo
-    for (const auto &req: allRequirements) {
-        /* now in reconstruction
-        std::vector<PARAMID> params = req->getParams();
-        std::vector<double> beforeValues, afterValues;
-        for (size_t i = 0; i < params.size(); ++i) {
-            beforeValues.push_back(*params[i]);
-            afterValues.push_back(allParamValues[i]);
+    for (const auto& req: m_reqD){
+        for (auto i: req.objects){
+            info.m_paramsAfter.push_back(getElementInfo(i).params);
         }
-        info.m_paramsBefore.push_back(beforeValues);
-        info.m_paramsAfter.push_back(afterValues);
-         */
+    }
+    for (const auto &req: allRequirements) {
         s_allFigures = s_allFigures || req->getRectangle();
     }
-// Clear
+    // Clear
     for (auto requirement: allRequirements) {
         delete requirement;
     }
-    // c_undoRedo.add(info);
-    m_reqIDs[++s_maxID.id] = it;
+    info.m_objects.emplace_back(++s_maxID.id);
+    c_undoRedo.add(info);
+    m_reqIDs[s_maxID.id] = it;
     return s_maxID;
 }
 
@@ -284,22 +300,22 @@ ElementData Paint::getElementInfo(ID id) {
     ElementData result;
 
     try {
-        auto p = m_pointIDs[id];
+        auto p = m_pointIDs.at(id);
         result.et = ET_POINT;
         result.params.push_back((*p).x);
         result.params.push_back((*p).y);
     }
-    catch (const std::runtime_error &) {
+    catch (...) {
         try {
-            auto sec = m_sectionIDs[id];
+            auto sec = m_sectionIDs.at(id);
             result.et = ET_SECTION;
             result.params.push_back((*sec).beg->x);
             result.params.push_back((*sec).beg->y);
             result.params.push_back((*sec).end->x);
             result.params.push_back((*sec).end->y);
         }
-        catch (const std::runtime_error &) {
-            auto circ = m_circleIDs[id];
+        catch (...) {
+            auto circ = m_circleIDs.at(id);
             result.et = ET_CIRCLE;
             result.params.push_back((*circ).center->x);
             result.params.push_back((*circ).center->y);
@@ -311,6 +327,9 @@ ElementData Paint::getElementInfo(ID id) {
 }
 
 RequirementData Paint::getRequirementInfo(ID id) {
+    if (m_reqIDs.find(id) == m_reqIDs.end()) {
+        throw std::invalid_argument("No such requirement!");
+    }
     return *m_reqIDs[id];
 }
 
@@ -390,6 +409,9 @@ void Paint::makeMyCircleEqual(const ElementData& ed, ElementData& changing) {
 
 
 void Paint::deleteRequirement(ID req) {
+    if (!m_reqIDs.contains(req)) {
+        throw std::invalid_argument("No such requirement!");
+    }
     m_reqD.remove(m_reqIDs[req]);
     m_reqIDs.erase(req);
 }
@@ -399,41 +421,51 @@ void Paint::undo() {
     point *p = nullptr;
     section *s = nullptr;
     circle *c = nullptr;
-    if (info.m_paramsBefore.size() == 0) {
-        for (int i = 0; i < info.m_objects.size(); ++i) {
+    if (info.m_paramsBefore.empty()) {
+        int i = 0;
+        while (!info.m_objects.empty()) {
             if (m_pointIDs.contains(info.m_objects[i])) {
                 m_pointStorage.remove(m_pointIDs[info.m_objects[i]]);
+                m_pointIDs.erase(info.m_objects[i]);
             } else if (m_sectionIDs.contains(info.m_objects[i])) {
                 m_sectionStorage.remove(m_sectionIDs[info.m_objects[i]]);
+                m_sectionIDs.erase(info.m_objects[i]);
             } else if (m_circleIDs.contains(info.m_objects[i])) {
                 m_circleStorage.remove(m_circleIDs[info.m_objects[i]]);
+                m_circleIDs.erase(info.m_objects[i]);
             } else {
                 std::cout << "No ID to undo" << std::endl;
                 break;
             }
+            ++i;
         }
         return;
     }
     for (int i = 0; i < info.m_objects.size(); ++i) {
         try {
-            p = &(*m_pointIDs[info.m_objects[i]]);
+            p = &(*m_pointIDs.at(info.m_objects[i]));
             p->x = info.m_paramsBefore[i][0];
             p->y = info.m_paramsBefore[i][1];
         } catch (...) {
             try {
-                s = &(*m_sectionIDs[info.m_objects[i]]);
+                s = &(*m_sectionIDs.at(info.m_objects[i]));
                 s->beg->x = info.m_paramsBefore[i][0];
                 s->beg->y = info.m_paramsBefore[i][1];
                 s->end->x = info.m_paramsBefore[i][2];
                 s->end->y = info.m_paramsBefore[i][3];
             } catch (...) {
                 try {
-                    c = &(*m_circleIDs[info.m_objects[i]]);
+                    c = &(*m_circleIDs.at(info.m_objects[i]));
                     c->center->x = info.m_paramsBefore[i][0];
                     c->center->y = info.m_paramsBefore[i][1];
                 } catch (...) {
-                    std::cout << "No ID to undo" << std::endl;
-                    break;
+                    try{
+                        m_reqD.remove(m_reqIDs.at(info.m_objects[i]));
+                        m_reqIDs.erase(info.m_objects[i]);
+                    } catch (...) {
+                        std::cout << "No ID to redo" << std::endl;
+                        break;
+                    }
                 }
             }
         }
@@ -484,19 +516,19 @@ void Paint::redo() {
     }
     for (int i = 0; i < info.m_objects.size(); ++i) {
         try {
-            p = &(*m_pointIDs[info.m_objects[i]]);
+            p = &(*m_pointIDs.at(info.m_objects[i]));
             p->x = info.m_paramsAfter[i][0];
             p->y = info.m_paramsAfter[i][1];
         } catch (...) {
             try {
-                s = &(*m_sectionIDs[info.m_objects[i]]);
+                s = &(*m_sectionIDs.at(info.m_objects[i]));
                 s->beg->x = info.m_paramsAfter[i][0];
                 s->beg->y = info.m_paramsAfter[i][1];
                 s->end->x = info.m_paramsAfter[i][2];
                 s->end->y = info.m_paramsAfter[i][3];
             } catch (...) {
                 try {
-                    c = &(*m_circleIDs[info.m_objects[i]]);
+                    c = &(*m_circleIDs.at(info.m_objects[i]));
                     c->center->x = info.m_paramsAfter[i][0];
                     c->center->y = info.m_paramsAfter[i][1];
                 } catch (...) {
