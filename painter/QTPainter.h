@@ -31,10 +31,10 @@ private:
     bool Circle;
     bool Section;
     bool Point;
-    int circleClickCount;
-    int sectionClickCount;
-    QPoint sectionPoints[2];
     QPoint centerPoint;
+    QPoint perimeterPoint;
+    QPoint sectionStartPoint;
+    bool Drawing;
 
 public:
     void setCircle(bool T){Circle=T;}

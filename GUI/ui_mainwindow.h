@@ -881,7 +881,7 @@ public:
 
         QObject::connect(smile, &QPushButton::clicked, [this]() {
             if (!emojiWidget) {
-                emojiWidget = new EmojiWidget(nullptr);
+                emojiWidget = new EmojiWidget(centralwindow);
                 emojiWidget->hide();
                 QObject::connect(emojiWidget, &EmojiWidget::emojiSelected, [this](const QString &emoji) {
                     this->messageConsole->insert(emoji);
@@ -892,7 +892,7 @@ public:
             if (emojiWidget->isVisible()) {
                 emojiWidget->hide();
             } else {
-                QPoint buttonPos = smile->mapToGlobal(QPoint(0, 0));
+                QPoint buttonPos = smile->mapToGlobal(QPoint(0, -2));
                 emojiWidget->adjustSize();
                 emojiWidget->move(buttonPos.x(), buttonPos.y() - emojiWidget->height());
                 emojiWidget->show();

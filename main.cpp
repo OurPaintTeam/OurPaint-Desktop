@@ -384,14 +384,20 @@ int main(int argc, char *argv[]) {
     QObject::connect(&w, &MainWindow::SigPoint, [&painter]() {
         painter->setEditor(true);
         painter->setPoint(true);
+        painter->setCircle(false);
+        painter->setSection(false);
     });
     QObject::connect(&w, &MainWindow::SigSection, [&painter]() {
         painter->setEditor(true);
         painter->setSection(true);
+        painter->setCircle(false);
+        painter->setPoint(false);
     });
     QObject::connect(&w, &MainWindow::SigCircle, [&painter]() {
         painter->setEditor(true);
         painter->setCircle(true);
+        painter->setSection(false);
+        painter->setPoint(false);
     });
 
     // Настройки
