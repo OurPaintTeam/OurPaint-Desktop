@@ -2,7 +2,10 @@
 
 QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
         : QFrame(parent), ui(ui), Scaling(ui->workWindow->width(), ui->workWindow->height()),
-          minCellSize(10), maxCellSize(20), CellSize(50), CellView(true), currentCellSize(1) {
+          minCellSize(10), maxCellSize(20), CellSize(8), CellView(true), currentCellSize(1), cursorX(0), cursorY(0),
+          editor(false), Circle(false), Section(false), Point(false),Drawing(false) {
+
+    setMouseTracking(true);
 
     resize(parent->size());
     setStyleSheet("background: \"#ffffff\"");
@@ -19,6 +22,7 @@ void QTPainter::clear() {
     Scaling.setZoomZero();
     update();
 }
+
 
 void QTPainter::resizeEvent(QResizeEvent *event) {
     QFrame::resizeEvent(event);
@@ -45,7 +49,7 @@ void QTPainter::draw() {
 }
 
 void QTPainter::setZoomPlus() {
-    double max_zoom = ui->workWindow->width() / 16.0 / Scaling.getScale();
+    double max_zoom = (ui->workWindow->width()) / 16.0 / Scaling.getScale();
     Scaling.setZoomPlus(max_zoom);
     update();
 }
@@ -169,23 +173,23 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
 
     // Отрисовка координат
-    int widthX = static_cast<int>(_width / (scale * zoom)) - deltaX;
-    int heightY = static_cast<int>(_height / (scale * zoom)) + deltaY;
-    if ((width() + deltaX - 30 > width()) || (_height + deltaY - 5  > height()) ||
-        (_width + deltaX - 30 > width()) || ( deltaY+10 > height())) {
+    int widthX = static_cast<int>(_width / (scale * zoom));
+    int heightY = static_cast<int>(_height / (scale * zoom));
+    if ((width() + deltaX - 30 > width()) || (_height + deltaY - 5 > height()) ||
+        (_width + deltaX - 30 > width()) || (deltaY + 10 > height())) {
         painter.drawText(10, 10, QString::number(widthX));
         painter.drawText(10, 30, QString::number(heightY));
     } else {
-        painter.drawText(static_cast<int>(width()) + deltaX- 30, static_cast<int>(_height)  + deltaY- 5,
+        painter.drawText(static_cast<int>(width()) + deltaX - 30, static_cast<int>(_height) + deltaY - 5,
                          QString::number(widthX));
-        painter.drawText(static_cast<int>(_width) + deltaX - 30,  deltaY+10 , QString::number(heightY));
+        painter.drawText(static_cast<int>(_width) + deltaX - 30, deltaY + 10, QString::number(heightY));
     }
 
 
     // Отрисовка фигур
     for (const auto &pt: points) {
         int X = static_cast<int>(Scaling.scaleCoordinateX(pt.x) + _width );
-        int Y = static_cast<int>(Scaling.scaleCoordinateY(-pt.y ) + _height );
+        int Y = static_cast<int>(Scaling.scaleCoordinateY(-pt.y) + _height );
         painter.drawPoint(X, Y);
     }
 
@@ -203,10 +207,35 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int EndY = static_cast<int>(Scaling.scaleCoordinateY(-sec.end->y) + _height );
         painter.drawLine(BegX, BegY, EndX, EndY);
     }
+
+    if (editor) {
+        painter.setPen(Qt::black);
+        int logicalX = static_cast<int>((cursorX - _width) / (scale * zoom));
+        int logicalY = static_cast<int>((_height - cursorY) / (scale * zoom));
+        painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY));
+
+        if (Circle && Drawing) {
+            int logicalPerimeterX = perimeterPoint.x();
+            int logicalPerimeterY = perimeterPoint.y();
+            int logicalCursorX = static_cast<int>((cursorX - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
+            int logicalCursorY = static_cast<int>((height() / 2 - cursorY) / (Scaling.getScale() * Scaling.getZoom()));
+            int centerX = (logicalPerimeterX + logicalCursorX) / 2;
+            int centerY = (logicalPerimeterY + logicalCursorY) / 2;
+            int radius = static_cast<int>(std::hypot(logicalPerimeterX - centerX, logicalPerimeterY - centerY));
+            int screenCenterX = static_cast<int>(Scaling.scaleCoordinateX(centerX) + width() / 2);
+            int screenCenterY = static_cast<int>(Scaling.scaleCoordinateY(-centerY) + height() / 2);
+            int scaledRadius = static_cast<int>(radius * Scaling.getScale() * Scaling.getZoom());
+            painter.drawEllipse(screenCenterX - scaledRadius, screenCenterY - scaledRadius, 2 * scaledRadius, 2 * scaledRadius);
+        }
+        else if (Section && Drawing) {
+            int screenStartX = static_cast<int>(Scaling.scaleCoordinateX(sectionStartPoint.x()) + _width);
+            int screenStartY = static_cast<int>(Scaling.scaleCoordinateY(-sectionStartPoint.y()) + _height);
+            painter.drawLine(screenStartX, screenStartY, cursorX, cursorY);
+        }
+    }
     points.clear();
     circles.clear();
     sections.clear();
-
 }
 
 void QTPainter::changeSize(const rectangle &allObjects) {}
@@ -222,16 +251,82 @@ unsigned long long QTPainter::getHeight() {
 void QTPainter::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         Scaling.startMousePress(event->pos());
+        emit RightPress();
+
+        if (Drawing) {
+            Drawing = false;
+            update();
+        }
+
     }
-    emit RightPress();
+
+    if (editor && event->button() == Qt::LeftButton) {
+        if (Point) {
+            QPoint Position = event->pos();
+            int logicalX = static_cast<int>((Position.x() - width() / 2) / Scaling.getScale());
+            int logicalY = static_cast<int>((height() / 2 - Position.y()) / Scaling.getScale());
+            Position.setX(logicalX);
+            Position.setY(logicalY);
+            emit SigPoint(Position);
+        }
+
+        if (Section) {
+            if (!Drawing) {
+                Drawing = true;
+                QPoint Position = event->pos();
+                int logicalX = static_cast<int>((Position.x() - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
+                int logicalY = static_cast<int>((height() / 2 - Position.y()) / (Scaling.getScale() * Scaling.getZoom()));
+                sectionStartPoint.setX(logicalX);
+                sectionStartPoint.setY(logicalY);
+            } else {
+                QPoint Position = event->pos();
+                int logicalX = static_cast<int>((Position.x() - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
+                int logicalY = static_cast<int>((height() / 2 - Position.y()) / (Scaling.getScale() * Scaling.getZoom()));
+                QPoint EndPoint(logicalX, logicalY);
+                emit SigSection(sectionStartPoint.x(), sectionStartPoint.y(), EndPoint.x(), EndPoint.y());
+                Drawing = false;
+            }
+        }
+
+        if (Circle) {
+            if (!Drawing) {
+                Drawing = true;
+                QPoint Position = event->pos();
+                int logicalX = static_cast<int>((Position.x() - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
+                int logicalY = static_cast<int>((height() / 2 - Position.y()) / (Scaling.getScale() * Scaling.getZoom()));
+                perimeterPoint.setX(logicalX);
+                perimeterPoint.setY(logicalY);
+            } else {
+                QPoint Position = event->pos();
+                int logicalX = static_cast<int>((Position.x() - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
+                int logicalY = static_cast<int>((height() / 2 - Position.y()) / (Scaling.getScale() * Scaling.getZoom()));
+                QPoint cursorPoint(logicalX, logicalY);
+                int centerX = (perimeterPoint.x() + cursorPoint.x()) / 2;
+                int centerY = (perimeterPoint.y() + cursorPoint.y()) / 2;
+                int radius = static_cast<int>(std::hypot(perimeterPoint.x() - centerX, perimeterPoint.y() - centerY));
+                QPoint centerPoint(centerX, centerY);
+                emit SigCircle(centerPoint, radius);
+                Drawing = false;
+            }
+        }
+    }
 }
 
 void QTPainter::mouseMoveEvent(QMouseEvent *event) {
     Scaling.mouseMove(event->pos());
+
+    if (editor ) {
+        cursorX = event->pos().x();
+        cursorY = event->pos().y();
+        if (Drawing) {
+            update();
+        }
+    }
+
     if (Scaling.isRightMousePressed()) {
         emit RightPress();
-        update();
     }
+    update();
 }
 
 void QTPainter::mouseReleaseEvent(QMouseEvent *event) {

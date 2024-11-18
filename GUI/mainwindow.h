@@ -87,11 +87,14 @@ public:
     void showSuccess(const QString &text);
     void showWarning(const QString &text);
 // Добавление сообщений
-    void setMessage(const std::string& name, const std::string& message);
+    void setMessage(const std::string &name, const std::string &message);
+
+    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>,QString> saveSettings();
+
+    void loadSettings(std::vector<bool> settings,const QString &name);
 
 
 protected:
-
     // Обработчики событий клавиатуры и мыши
     void keyPressEvent(QKeyEvent *event) override;
 
@@ -154,6 +157,17 @@ signals:
     void GridOn(bool T);
 
 
+    void SigMoving();
+
+    void SigSection();
+
+    void SigCircle();
+
+    void SigPoint();
+    void NameUsers(const QString &text);
+    void changeSettings();
+
+
 public slots:
 
     // Кнопки
@@ -166,6 +180,7 @@ public slots:
     void joinServer();
 
     void joinLocalServer();
+
 
     void Message() {
         QString input = ui->messageConsole->text();
@@ -182,6 +197,13 @@ public slots:
 
     void LeftMenuChanged(QTreeWidgetItem *item);
 
+    void Point() { emit SigPoint(); };
+
+    void Moving() { emit SigMoving(); };
+
+    void Section() { emit SigSection(); };
+
+    void Circle() { emit SigCircle(); };
 
 };
 

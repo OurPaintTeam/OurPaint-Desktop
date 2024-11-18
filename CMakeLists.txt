@@ -45,7 +45,13 @@ add_executable(ourpaint
         ClientServer/PortCheckTask.cpp
         painter/saveload/requirementInFile.h
         painter/requirements.cpp
-)
+        painter/Optimization/GradientOptimizer.cpp
+        GUI/CastomeConsole.cpp
+        painter/saveload/SaveSettingsApplications.cpp
+        painter/saveload/LoadSettingsApplications.cpp
+        GUI/RightClickFilter.cpp
+        GUI/EmojiWidget.h
+        GUI/EmojiWidget.cpp)
 
 include_directories(additions)
 include_directories(UndoRedo)

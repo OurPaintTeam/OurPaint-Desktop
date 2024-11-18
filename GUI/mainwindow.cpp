@@ -20,6 +20,10 @@ MainWindow::MainWindow(QWidget *parent)
     setAllMouseTracking(this); // Отслеживание мыши
     setAttribute(Qt::WA_OpaquePaintEvent);
 
+    connect(ui->figureMoving, &QPushButton::clicked, this, &MainWindow::Moving);
+    connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
+    connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
+    connect(ui->figureSection, &QPushButton::clicked, this, &MainWindow::Section);
 
     // Кнопки сохранение/импорт
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
@@ -34,6 +38,16 @@ MainWindow::MainWindow(QWidget *parent)
     // Кнопка помощь
     connect(ui->helpButton, &QPushButton::clicked, this, &MainWindow::showHelp);
 
+    connect(ui->nameUsers, &QLineEdit::returnPressed, this, [this]() {
+        QString input = ui->nameUsers->text();
+        if (!input.isEmpty()) {
+            ui->nameUsers->setEnabled(false);
+            emit NameUsers(input);
+            emit changeSettings();
+        }
+        ui->nameUsers->setEnabled(true);
+    });
+
     // Обработка ввода в консоли
     connect(ui->console, &QLineEdit::returnPressed, this, [this]() {
         QString input = ui->console->text();
@@ -43,14 +57,31 @@ MainWindow::MainWindow(QWidget *parent)
             ui->console->clear();
         }
     });
+    connect(ui->enterConsole, &QPushButton::clicked, this, [this]() {
+        QString input = ui->console->text();
+        if (!input.isEmpty()) {
+            commands.push_back(input);
+            emit EnterPressed(input);
+            ui->console->clear();
+        }
+    });
+
+    QStringList commandList = {
+            "circle ", "exit", "addreq ", "section ", "point ", "clear"
+    };
+
+    ui->console->setCommands(commandList);
 
     // Обработка ввода в консоль чата
     connect(ui->messageConsole, &QLineEdit::returnPressed, this, &MainWindow::Message);
+    connect(ui->enterMes, &QPushButton::clicked, this, &MainWindow::Message);
+
     // Изменение параметров обьектов в левом меню
     connect(ui->leftMenu, &QTreeWidget::itemChanged, this, &MainWindow::LeftMenuChanged);
 
     connect(ui->componentGrid, &QCheckBox::toggled, [=](bool checked) {
         emit GridOn(checked);
+        emit changeSettings();
     });
 
 
@@ -60,7 +91,7 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 // Добавление сообщений
-void MainWindow::setMessage(const std::string& name, const std::string& message) {
+void MainWindow::setMessage(const std::string &name, const std::string &message) {
     QString messageText = QString::fromStdString(name) + ": " + QString::fromStdString(message);
 
     QLabel *messageLabel = new QLabel(messageText);
@@ -274,11 +305,11 @@ void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, 
     std::vector<QString> paramNames;
 
 
-    if (text == "Point" && object.size() == 2) {
+    if (object.size() == 2) {
         paramNames = {"ID", "X", "Y"};
-    } else if (text == "Circle" && object.size() == 3) {
+    } else if (object.size() == 3) {
         paramNames = {"ID", "X", "Y", "R"};
-    } else if (text == "Section" && object.size() == 4) {
+    } else if (object.size() == 4) {
         paramNames = {"ID", "X1", "Y1", "X2", "Y2"};
     }
 
@@ -337,6 +368,100 @@ void MainWindow::LeftMenuChanged(QTreeWidgetItem *item) {
     emit parameterChanged(id, parameters); // Сигнал
 }
 
+void MainWindow::loadSettings(std::vector<bool> settings,const QString &name) {
+    if (!settings.empty()) {
+        ui->componentGrid->setChecked(settings[0]);
+    }
+    if(!name.isEmpty()){
+        ui->nameUsers->setText(name);
+    }
+}
+
+
+std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>,QString>
+MainWindow::saveSettings() {
+    std::vector<std::vector<QString>> figures;
+    std::vector<std::vector<QString>> requirements;
+    std::vector<bool> settings;
+    QString name;
+
+
+    QTreeWidgetItem *itemFigures = ui->leftMenu->topLevelItem(1);
+    for (int i = 0; i < itemFigures->childCount(); ++i) {
+        QTreeWidgetItem *figureItem = itemFigures->child(i);
+        QString figureName = figureItem->text(0);
+
+        std::vector<QString> figureData;
+        figureData.push_back(figureName);
+
+        unsigned long long id = 0;
+        QString idStr;
+
+        for (int j = 0; j < figureItem->childCount(); ++j) {
+            QTreeWidgetItem *paramItem = figureItem->child(j);
+            QString peremen = paramItem->text(0);
+            QStringList XYR = peremen.split(": ");
+
+            if (XYR.size() != 2) continue;
+
+            QString name = XYR[0];
+            QString value = XYR[1];
+
+            if (name == "ID") {
+                idStr = value;
+                id = value.toULongLong();
+                figureData.push_back(value);
+            }else{
+                break;
+            }
+        }
+
+        figures.push_back(figureData);
+    }
+
+
+    QTreeWidgetItem *itemReq = ui->leftMenu->topLevelItem(2);
+    for (int i = 0; i < itemReq->childCount(); ++i) {
+        QTreeWidgetItem *reqItem = itemReq->child(i);
+        QString reqText = reqItem->text(0);
+
+        std::vector<QString> reqData;
+        reqData.push_back(reqText);
+
+        unsigned long long id = 0;
+        QString idStr;
+
+        for (int j = 0; j < reqItem->childCount(); ++j) {
+            QTreeWidgetItem *paramItem = reqItem->child(j);
+            QString peremen = paramItem->text(0);
+            QStringList XYR = peremen.split(": ");
+
+            if (XYR.size() != 2) continue;
+
+            QString name = XYR[0];
+            QString value = XYR[1];
+
+            if (name == "ID") {
+                idStr = value;
+                id = value.toULongLong();
+                reqData.push_back(value);
+            }else{
+                break;
+            }
+
+        }
+
+        requirements.push_back(reqData);
+    }
+
+
+    bool isChecked = ui->componentGrid->isChecked();
+    settings.push_back(isChecked);
+
+    name=ui->nameUsers->text();
+
+    return std::make_tuple(figures, requirements, settings,name);
+}
 
 // Добавление требований в левое меню
 void MainWindow::Requar_LeftMenu(unsigned long long id, const std::string &text, unsigned long long id1,

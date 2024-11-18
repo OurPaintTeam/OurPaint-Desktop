@@ -10,6 +10,8 @@
 #include "painter/paint.h"
 #include "painter/QTPainter.h"
 #include "GUI/mainwindow.h"
+#include "painter/saveload/SaveSettingsApplications.h"
+#include "painter/saveload/LoadSettingsApplications.h"
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
@@ -41,28 +43,51 @@ int main(int argc, char *argv[]) {
         painter->getUsers(false);
         screen.paint();
         painter->draw();
+        auto [figures, requirements, settings, name] = w.saveSettings();
         w.Print_LeftMenu(0, "Clear", {});
         std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
 
         for (auto element: elements) {
+            std::string name;
+
+            for (int i = 0; i < figures.size(); ++i) {
+                if (element.first.id == figures[i][1].toLongLong()) {
+                    name = figures[i][0].toStdString();
+                    break;
+                }
+            }
+
             if (element.second.et == ET_POINT) {
                 double x = element.second.params[1];
                 double y = element.second.params[1];
-                w.Print_LeftMenu(element.first.id, "Point", {x, y});
+                 if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x, y});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Point", {x, y});
+                }
             } else if (element.second.et == ET_SECTION) {
                 double x1 = element.second.params[0];
                 double y1 = element.second.params[1];
                 double x2 = element.second.params[2];
                 double y2 = element.second.params[3];
-                w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+                  if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+                }
             } else if (element.second.et == ET_CIRCLE) {
                 double x = element.second.params[0];
                 double y = element.second.params[1];
                 double r = element.second.params[2];
-                w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
+                if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x, y, r});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
+                }
             }
         }
         std::vector<std::pair<ID, RequirementData>> req = screen.getAllRequirementsInfo();
+
         w.Requar_LeftMenu(0, "Clear", 0, 0, 0);
         for (const auto &element: req) {
             QString text;
@@ -294,6 +319,68 @@ int main(int argc, char *argv[]) {
                          painter->draw();
                      });
 
+    QObject::connect(painter.get(), &QTPainter::SigPoint, [&painter, &w, &screen, &updateState](QPoint Position) {
+        ElementData point;
+        point.et = ET_POINT;
+        point.params.push_back(Position.x());
+        point.params.push_back(Position.y());
+        ID id = screen.addElement(point);
+        w.setSave(false);
+        updateState();
+    });
+
+    QObject::connect(painter.get(), &QTPainter::SigCircle,
+                     [&painter, &w, &screen, &updateState](QPoint centerPoint, int radius) {
+                         ElementData circle;
+                         circle.et = ET_CIRCLE;
+                         circle.params.push_back(centerPoint.x());
+                         circle.params.push_back(centerPoint.y());
+                         circle.params.push_back(radius);
+                         ID id = screen.addElement(circle);
+                         w.setSave(false);
+                         updateState();
+                     });
+
+    QObject::connect(painter.get(), &QTPainter::SigSection,
+                     [&painter, &w, &screen, &updateState](int startX, int startY, int endX, int endY) {
+                         ElementData section;
+                         section.et = ET_SECTION;
+                         section.params.push_back(startX);
+                         section.params.push_back(startY);
+                         section.params.push_back(endX);
+                         section.params.push_back(endY);
+                         ID id = screen.addElement(section);
+                         w.setSave(false);
+                         updateState();
+                     });
+
+
+    // Выбор фигур
+    QObject::connect(&w, &MainWindow::SigMoving, [&painter]() {
+        painter->setEditor(false);
+        painter->setCircle(false);
+        painter->setSection(false);
+        painter->setPoint(false);
+    });
+    QObject::connect(&w, &MainWindow::SigPoint, [&painter]() {
+        painter->setEditor(true);
+        painter->setPoint(true);
+        painter->setCircle(false);
+        painter->setSection(false);
+    });
+    QObject::connect(&w, &MainWindow::SigSection, [&painter]() {
+        painter->setEditor(true);
+        painter->setSection(true);
+        painter->setCircle(false);
+        painter->setPoint(false);
+    });
+    QObject::connect(&w, &MainWindow::SigCircle, [&painter]() {
+        painter->setEditor(true);
+        painter->setCircle(true);
+        painter->setSection(false);
+        painter->setPoint(false);
+    });
+
     // Настройки
     QObject::connect(&w, &MainWindow::GridOn, [&painter](bool T) {
         painter->setCell(T);
@@ -319,6 +406,10 @@ int main(int argc, char *argv[]) {
         w.showSuccess("Server shutdown!(");
         isConnected = false;
         isServer = false;
+    });
+
+    QObject::connect(&w, &MainWindow::NameUsers, [](const QString &text) {
+        // TODO need to make dissconnect or server close
     });
 
     QObject::connect(&client, &Client::disconnectedFromServer, [&isConnected]() {
@@ -467,24 +558,45 @@ int main(int argc, char *argv[]) {
             screen.redo();
             updateState();
             w.setSave(true);
+
+            auto [figures, requirements, settings, name] = w.saveSettings();
             w.Print_LeftMenu(0, "Clear", {});
             std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
             for (auto element: elements) {
+                std::string name;
+                for (int i = 0; i < figures.size(); ++i) {
+                    if (element.first.id == figures[i][1].toLongLong()) {
+                        name = figures[i][0].toStdString();
+                        break;
+                    }
+                }
                 if (element.second.et == ET_POINT) {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
-                    w.Print_LeftMenu(element.first.id, "Point", {x, y});
+                    if (!name.empty()) {
+                        w.Print_LeftMenu(element.first.id, name, {x, y});
+                    } else {
+                        w.Print_LeftMenu(element.first.id, "Point", {x, y});
+                    }
                 } else if (element.second.et == ET_CIRCLE) {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
                     double r = element.second.params[2];
-                    w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
+                    if (!name.empty()) {
+                        w.Print_LeftMenu(element.first.id, name, {x, y, r});
+                    } else {
+                        w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
+                    }
                 } else if (element.second.et == ET_SECTION) {
                     double x1 = element.second.params[0];
                     double y1 = element.second.params[1];
                     double x2 = element.second.params[2];
                     double y2 = element.second.params[3];
-                    w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+                    if (!name.empty()) {
+                        w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
+                    } else {
+                        w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+                    }
                 }
             }
         } catch (std::exception &e) {
@@ -497,6 +609,47 @@ int main(int argc, char *argv[]) {
             screen.undo();
             updateState();
             w.setSave(true);
+
+            auto [figures, requirements, settings, name] = w.saveSettings();
+            w.Print_LeftMenu(0, "Clear", {});
+            std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
+            for (auto element: elements) {
+                std::string name;
+                for (int i = 0; i < figures.size(); ++i) {
+                    if (element.first.id == figures[i][1].toLongLong()) {
+                        name = figures[i][0].toStdString();
+                        break;
+                    }
+                }
+                if (element.second.et == ET_POINT) {
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
+                    if (!name.empty()) {
+                        w.Print_LeftMenu(element.first.id, name, {x, y});
+                    } else {
+                        w.Print_LeftMenu(element.first.id, "Point", {x, y});
+                    }
+                } else if (element.second.et == ET_CIRCLE) {
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
+                    double r = element.second.params[2];
+                    if (!name.empty()) {
+                        w.Print_LeftMenu(element.first.id, name, {x, y, r});
+                    } else {
+                        w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
+                    }
+                } else if (element.second.et == ET_SECTION) {
+                    double x1 = element.second.params[0];
+                    double y1 = element.second.params[1];
+                    double x2 = element.second.params[2];
+                    double y2 = element.second.params[3];
+                    if (!name.empty()) {
+                        w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
+                    } else {
+                        w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+                    }
+                }
+            }
         } catch (std::exception &e) {
         }
     });
@@ -504,11 +657,23 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&w, &MainWindow::projectSaved, [&screen, &w, &painter](const QString &fileName) {
         std::string File = fileName.toStdString();
+        auto [figures, requirements, settings, name] = w.saveSettings();
+        SaveSettingsApplications saveSet(File.c_str(), &w);
+        saveSet.clear();
+        saveSet.SaveFigures(figures);
+        saveSet.SaveRequirements(requirements);
+        saveSet.SaveSettings(settings, name);
         screen.saveToFile(File.c_str());
         screen.paint();
         painter->draw();
     });
 
+    QObject::connect(&w, &MainWindow::changeSettings, [&w]() {
+        SaveSettingsApplications saveSet("Settings", &w);
+        saveSet.clear();
+        auto [figures, requirements, settings, name] = w.saveSettings();
+        saveSet.SaveSettings(settings, name);
+    });
 
     QObject::connect(&w, &MainWindow::LoadFile, [&](const QString &fileName) {
         painter->clear();
@@ -517,16 +682,74 @@ int main(int argc, char *argv[]) {
         screen.loadFromFile(File.c_str());
         screen.paint();
         painter->draw();
-        updateState();
+
+        LoadSettingsApplications LoadSet(File.c_str(), &w);
+        std::vector<std::vector<QString>> figures;
+        std::vector<std::vector<QString>> requirements;
+        std::vector<bool> settings;
+        QString NameUsers;
+        LoadSet.LoadFigures(figures);
+        LoadSet.LoadRequirements(requirements);
+        LoadSet.LoadSettings(settings, NameUsers);
+
+        std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
+        for (auto element: elements) {
+            std::string name;
+            for (int i = 0; i < figures.size(); ++i) {
+                if (element.first.id == figures[i][1].toLongLong()) {
+                    name = figures[i][0].toStdString();
+                    break;
+                }
+            }
+            if (element.second.et == ET_POINT) {
+                double x = element.second.params[0];
+                double y = element.second.params[1];
+                if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x, y});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Point", {x, y});
+                }
+            } else if (element.second.et == ET_CIRCLE) {
+                double x = element.second.params[0];
+                double y = element.second.params[1];
+                double r = element.second.params[2];
+                if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x, y, r});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
+                }
+                break;
+            } else if (element.second.et == ET_SECTION) {
+                double x1 = element.second.params[0];
+                double y1 = element.second.params[1];
+                double x2 = element.second.params[2];
+                double y2 = element.second.params[3];
+                if (!name.empty()) {
+                    w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
+                } else {
+                    w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
+                }
+                break;
+            }
+        }
+
+
+        w.loadSettings(settings, NameUsers);
+
+
     });
 
-
-
-
-
-
-
-
+    const std::string File = "SettingsSet";
+    std::ifstream inFile(File);
+    if (!(inFile.good() && inFile.peek() == std::ifstream::traits_type::eof())) {
+        LoadSettingsApplications LoadSet("Settings", &w);
+        std::vector<bool> settings;
+        QString NameUsers;
+        LoadSet.LoadSettings(settings, NameUsers);
+        qDebug() << settings[0];
+        w.loadSettings(settings, NameUsers);
+    }
+    inFile.close();
 
 
 
