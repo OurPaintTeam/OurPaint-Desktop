@@ -16,8 +16,6 @@
 #include "LevenbergMarquardtSolver.h"
 #include "LMForTest.h"
 #include "../graph/simpleGraph.h"
-#include "./Optimization/Task.h"
-#include "./Optimization/GradientOptimizer.h"
 #include "../graph/simpleGraph.h"
 #include "enums.h"
 #include "requirements.h"
