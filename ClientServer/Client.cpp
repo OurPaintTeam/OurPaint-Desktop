@@ -5,12 +5,15 @@
 #include "Client.h"
 #include <QMessageBox>
 
-Client::Client(QObject *parent) : QObject(parent), tcpSocket(new QTcpSocket(this)) {
+Client::Client(const QString& name, QObject *parent) : QObject(parent), tcpSocket(new QTcpSocket(this)) {
+    userName = name;
     connect(tcpSocket, &QTcpSocket::connected, this, &Client::onConnected);
     connect(tcpSocket, &QTcpSocket::readyRead, this, &Client::onReadyRead);
     connect(tcpSocket, &QTcpSocket::disconnected, this, &Client::onDisconnected);
 }
-
+void Client::setName(const QString &name) {
+    userName = name;
+}
 void Client::connectToServer(const QString &ip, quint16 port) {
     tcpSocket->connectToHost(ip, port);
 }
@@ -27,7 +30,7 @@ void Client::onConnected() {
 void Client::sendChatMessage(const QString &message) {
     QByteArray data;
     QDataStream out(&data, QIODevice::WriteOnly);
-    out << QString("CHAT|%1").arg(message);
+    out << QString("CHAT|%1|%2").arg(userName,message);
     tcpSocket->write(data);
 }
 void Client::onReadyRead() {
@@ -38,7 +41,8 @@ void Client::onReadyRead() {
 
         if (message.startsWith("CHAT|")) {
             QString msg = message.mid(5);
-            emit newChatMessageReceived(msg, "User");
+            QStringList list = msg.split("|");
+            emit newChatMessageReceived(list[1], list[0]);
         }
         else if (message == "SERVER_SHUTDOWN") {
             emit serverShutdown();

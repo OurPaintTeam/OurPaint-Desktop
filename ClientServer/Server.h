@@ -19,15 +19,18 @@ Q_OBJECT
 private:
     QTcpServer *tcpServer;
     QSet<QTcpSocket *> clients;
+    QString serverName;
 
 public:
-    explicit Server(QObject *parent = nullptr);
+    Server(const QString& name = "Server", QObject *parent = nullptr);
 
     bool startServer(quint16 port);
 
+    void setName(const QString& name);
+
     void sendToClients(const QString& paint);
 
-    void sendChatToClients(const QString& msg);
+    void sendChatToClients(const QString& msg, const QString& name);
 
     void stopServer();
 

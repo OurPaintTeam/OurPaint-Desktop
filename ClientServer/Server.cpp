@@ -4,7 +4,8 @@
 
 #include "Server.h"
 
-Server::Server(QObject *parent) : QObject(parent), tcpServer(new QTcpServer(this)) {
+Server::Server(const QString& name, QObject *parent) : QObject(parent), tcpServer(new QTcpServer(this)) {
+    serverName = name;
     connect(tcpServer, &QTcpServer::newConnection, this, &Server::onNewConnection);
 }
 
@@ -44,14 +45,19 @@ void Server::onReadyRead() {
         in >> command;
         if (command.startsWith("CHAT|")) {
             QString message = command.mid(5);
-            sendChatToClients(message);
-            emit newMessageReceived(message, "Client");
+            QStringList args = message.split("|");
+            sendChatToClients(args[1], args[0]);
+            emit newMessageReceived(args[1], args[0]);
         }else{
             sendToClients(command);
             emit newCommandReceived(command);
         }
     }
 }
+void Server::setName(const QString& name){
+    serverName = name;
+}
+
 void Server::onClientDisconnected() {
     QTcpSocket *clientSocket = qobject_cast<QTcpSocket *>(sender());
     if (clientSocket) {
@@ -60,31 +66,25 @@ void Server::onClientDisconnected() {
     }
 }
 
-void Server::sendChatToClients(const QString &message) {
+void Server::sendChatToClients(const QString &message, const QString &name){
+    QByteArray data;
+    QDataStream out(&data, QIODevice::WriteOnly);
+    out << QString("CHAT|%1|%2").arg(name, message);
     for (QTcpSocket *client : clients) {
-        QByteArray data;
-        QDataStream out(&data, QIODevice::WriteOnly);
-        out << QString("CHAT|%1").arg(message);
         client->write(data);
     }
 }
-
 void Server::stopServer() {
-    // Специальное сообщение для уведомления клиентов об отключении сервера
     QString shutdownMsg = "STOP|";
-
     QByteArray data;
     QDataStream out(&data, QIODevice::WriteOnly);
     out << shutdownMsg;
-
     for(auto client : clients) {
         client->write(data);
         client->flush();
         client->disconnectFromHost();
     }
-
     clients.clear();
-
     if(tcpServer->isListening()) {
         tcpServer->close();
         qDebug() << "Сервер остановлен.";

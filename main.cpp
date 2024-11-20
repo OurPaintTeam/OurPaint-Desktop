@@ -29,9 +29,23 @@ int main(int argc, char *argv[]) {
     auto painter = std::make_unique<QTPainter>(w.getUi(), w.getWorkWindow());
     painter->setParent(w.getWorkWindow());
     painter->show();
+    QString username = "User";
     Paint screen(painter.get());
-    Server server;
-    Client client;
+    const std::string File = "SettingsSet";
+    std::ifstream inFile(File);
+    if (!(inFile.good() && inFile.peek() == std::ifstream::traits_type::eof())) {
+        LoadSettingsApplications LoadSet("Settings", &w);
+        std::vector<bool> settings;
+        QString NameUsers;
+        LoadSet.LoadSettings(settings, NameUsers);
+        w.loadSettings(settings, NameUsers);
+        if (!NameUsers.isEmpty()) {
+            username = NameUsers;
+        }
+    }
+    inFile.close();
+    Server server(username);
+    Client client(username);
     bool isConnected = false;
     bool isServer = false;
 
@@ -391,7 +405,7 @@ int main(int argc, char *argv[]) {
         if (isConnected) {
             if (isServer) {
                 w.setMessage("Me", text.toStdString());
-                server.sendChatToClients(text);
+                server.sendChatToClients(text, username);
             } else {
                 if (!text.isEmpty()) {
                     client.sendChatMessage(text);
@@ -402,22 +416,26 @@ int main(int argc, char *argv[]) {
             return;
         }
     });
-    QObject::connect(&client, &Client::serverShutdown, [&]() {
+    QObject::connect(&client, &Client::serverShutdown, [&w, &isConnected, &isServer]() {
         w.showSuccess("Server shutdown!(");
         isConnected = false;
         isServer = false;
     });
 
-    QObject::connect(&w, &MainWindow::NameUsers, [](const QString &text) {
-        // TODO need to make dissconnect or server close
+    QObject::connect(&w, &MainWindow::NameUsers, [&isConnected, &server, &client, &username](const QString &text) {
+        username = text;
+        if (isConnected) {
+            server.setName(username);
+            client.setName(username);
+        }
     });
 
-    QObject::connect(&client, &Client::disconnectedFromServer, [&isConnected]() {
+    QObject::connect(&client, &Client::disconnectedFromServer, [&w, &isConnected]() {
         isConnected = false;
-        qDebug() << "You disconnected from server";
+        w.showSuccess("You disconnected from server");
     });
     //Кнопки сервера
-    QObject::connect(&w, &MainWindow::SigExitSession, [&]() {
+    QObject::connect(&w, &MainWindow::SigExitSession, [&w, &server, &client, &isConnected, &isServer]() {
         if (isConnected) {
             if (isServer) {
                 server.stopServer();
@@ -479,6 +497,7 @@ int main(int argc, char *argv[]) {
     //Chat
     QObject::connect(&client, &Client::newChatMessageReceived, [&](const QString &msg, const QString &name) {
         w.setMessage(name.toStdString(), msg.toStdString());
+        updateState();
     });
     QObject::connect(&server, &Server::newMessageReceived, [&](const QString &msg, const QString &name) {
         w.setMessage(name.toStdString(), msg.toStdString());
@@ -739,17 +758,6 @@ int main(int argc, char *argv[]) {
 
     });
 
-    const std::string File = "SettingsSet";
-    std::ifstream inFile(File);
-    if (!(inFile.good() && inFile.peek() == std::ifstream::traits_type::eof())) {
-        LoadSettingsApplications LoadSet("Settings", &w);
-        std::vector<bool> settings;
-        QString NameUsers;
-        LoadSet.LoadSettings(settings, NameUsers);
-        qDebug() << settings[0];
-        w.loadSettings(settings, NameUsers);
-    }
-    inFile.close();
 
 
 

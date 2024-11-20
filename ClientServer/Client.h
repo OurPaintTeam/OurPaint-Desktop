@@ -13,8 +13,8 @@ class Client : public QObject {
 Q_OBJECT
 
 public:
-    explicit Client(QObject *parent = nullptr);
-
+    Client(const QString& name="User", QObject *parent = nullptr);
+    void setName(const QString& name);
     void connectToServer(const QString &ip, quint16 port);
     void sendCommandToServer(const QString &command);
     void sendChatMessage(const QString &message);
@@ -33,6 +33,7 @@ private slots:
     void onDisconnected();
 
 private:
+    QString userName;
     QTcpSocket *tcpSocket;
 };
 
