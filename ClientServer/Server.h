@@ -37,7 +37,7 @@ public:
 signals:
     void newMessageReceived(const QString &msg, const QString &name);
     void newCommandReceived(const QString &command);
-
+    void newConnection();
 private slots:
 
     void onNewConnection();

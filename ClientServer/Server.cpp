@@ -34,6 +34,7 @@ void Server::onNewConnection() {
 
     connect(clientSocket, &QTcpSocket::readyRead, this, &Server::onReadyRead);
     connect(clientSocket, &QTcpSocket::disconnected, this, &Server::onClientDisconnected);
+    emit newConnection();
 }
 
 void Server::onReadyRead() {

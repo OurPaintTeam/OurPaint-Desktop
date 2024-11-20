@@ -560,6 +560,9 @@ int main(int argc, char *argv[]) {
         w.setMessage(name.toStdString(), msg.toStdString());
         updateState();
     });
+    QObject::connect(&server, &Server::newConnection, [&server, &screen](){
+        server.sendToClients(QString::fromStdString(screen.to_string()));
+    });
 
     QObject::connect(&w, &MainWindow::EnterPressed, [&](const QString &command) {
         QStringList commandParts = command.split(' ');
