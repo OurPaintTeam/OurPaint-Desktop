@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
             if (element.second.et == ET_POINT) {
                 double x = element.second.params[1];
                 double y = element.second.params[1];
-                 if (!name.empty()) {
+                if (!name.empty()) {
                     w.Print_LeftMenu(element.first.id, name, {x, y});
                 } else {
                     w.Print_LeftMenu(element.first.id, "Point", {x, y});
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
                 double y1 = element.second.params[1];
                 double x2 = element.second.params[2];
                 double y2 = element.second.params[3];
-                  if (!name.empty()) {
+                if (!name.empty()) {
                     w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
                 } else {
                     w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
@@ -333,39 +333,96 @@ int main(int argc, char *argv[]) {
                          painter->draw();
                      });
 
-    QObject::connect(painter.get(), &QTPainter::SigPoint, [&painter, &w, &screen, &updateState](QPoint Position) {
-        ElementData point;
-        point.et = ET_POINT;
-        point.params.push_back(Position.x());
-        point.params.push_back(Position.y());
-        ID id = screen.addElement(point);
-        w.setSave(false);
-        updateState();
-    });
+    QObject::connect(painter.get(), &QTPainter::SigPoint,
+                     [&painter, &w, &screen, &updateState, &isConnected, &isServer, &server, &client](QPoint Position) {
+                         if (isConnected) {
+                             if (isServer) {
+                                 ElementData point;
+                                 point.et = ET_POINT;
+                                 point.params.push_back(Position.x());
+                                 point.params.push_back(Position.y());
+                                 ID id = screen.addElement(point);
+                                 w.setSave(false);
+                                 updateState();
+                                 server.sendToClients(QString::fromStdString(screen.to_string()));
+                             } else {
+                                 client.sendCommandToServer("point " + QString::number(Position.x()) + " " +
+                                                            QString::number(Position.y()));
+                             }
+                         } else {
+                             ElementData point;
+                             point.et = ET_POINT;
+                             point.params.push_back(Position.x());
+                             point.params.push_back(Position.y());
+                             ID id = screen.addElement(point);
+                             w.setSave(false);
+                             updateState();
+                         }
+                     });
 
     QObject::connect(painter.get(), &QTPainter::SigCircle,
-                     [&painter, &w, &screen, &updateState](QPoint centerPoint, int radius) {
+                     [&painter, &w, &screen, &updateState, &isConnected, &isServer, &server, &client](
+                             QPoint centerPoint, int radius) {
                          ElementData circle;
-                         circle.et = ET_CIRCLE;
-                         circle.params.push_back(centerPoint.x());
-                         circle.params.push_back(centerPoint.y());
-                         circle.params.push_back(radius);
-                         ID id = screen.addElement(circle);
-                         w.setSave(false);
-                         updateState();
+                         if (isConnected) {
+                             if (isServer) {
+                                 circle.et = ET_CIRCLE;
+                                 circle.params.push_back(centerPoint.x());
+                                 circle.params.push_back(centerPoint.y());
+                                 circle.params.push_back(radius);
+                                 ID id = screen.addElement(circle);
+                                 w.setSave(false);
+                                 updateState();
+                                 server.sendToClients(QString::fromStdString(screen.to_string()));
+                             } else {
+                                 client.sendCommandToServer("circle " + QString::number(centerPoint.x()) + " " +
+                                                            QString::number(centerPoint.y()) + " " +
+                                                            QString::number(radius));
+                             }
+                         } else {
+                             circle.et = ET_CIRCLE;
+                             circle.params.push_back(centerPoint.x());
+                             circle.params.push_back(centerPoint.y());
+                             circle.params.push_back(radius);
+                             ID id = screen.addElement(circle);
+                             w.setSave(false);
+                             updateState();
+                         }
                      });
 
     QObject::connect(painter.get(), &QTPainter::SigSection,
-                     [&painter, &w, &screen, &updateState](int startX, int startY, int endX, int endY) {
+                     [&painter, &w, &screen, &updateState, &isConnected, &isServer, &server, &client](int startX,
+                                                                                                      int startY,
+                                                                                                      int endX,
+                                                                                                      int endY) {
                          ElementData section;
-                         section.et = ET_SECTION;
-                         section.params.push_back(startX);
-                         section.params.push_back(startY);
-                         section.params.push_back(endX);
-                         section.params.push_back(endY);
-                         ID id = screen.addElement(section);
-                         w.setSave(false);
-                         updateState();
+                         if (isConnected) {
+                             if (isServer) {
+                                 section.et = ET_SECTION;
+                                 section.params.push_back(startX);
+                                 section.params.push_back(startY);
+                                 section.params.push_back(endX);
+                                 section.params.push_back(endY);
+                                 ID id = screen.addElement(section);
+                                 w.setSave(false);
+                                 updateState();
+                                 server.sendToClients(QString::fromStdString(screen.to_string()));
+                             } else {
+                                 client.sendCommandToServer("section " + QString::number(startX) + " " +
+                                                            QString::number(startY) + " " +
+                                                            QString::number(endX) + " " +
+                                                            QString::number(endY));
+                             }
+                         } else {
+                             section.et = ET_SECTION;
+                             section.params.push_back(startX);
+                             section.params.push_back(startY);
+                             section.params.push_back(endX);
+                             section.params.push_back(endY);
+                             ID id = screen.addElement(section);
+                             w.setSave(false);
+                             updateState();
+                         }
                      });
 
 
@@ -424,7 +481,7 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&w, &MainWindow::NameUsers, [&isConnected, &server, &client, &username](const QString &text) {
         username = text;
-        if (isConnected) {
+        if (!isConnected) {
             server.setName(username);
             client.setName(username);
         }

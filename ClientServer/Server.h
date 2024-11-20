@@ -35,7 +35,7 @@ public:
     void stopServer();
 
 signals:
-    void newMessageReceived(const QString &msg, const QString &ip);
+    void newMessageReceived(const QString &msg, const QString &name);
     void newCommandReceived(const QString &command);
 
 private slots:
