@@ -404,7 +404,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(&w, &MainWindow::EnterMessage, [&](const QString &text) {
         if (isConnected) {
             if (isServer) {
-                w.setMessage("Me", text.toStdString());
+                w.setMessage(username.toStdString(), text.toStdString());
                 server.sendChatToClients(text, username);
             } else {
                 if (!text.isEmpty()) {
