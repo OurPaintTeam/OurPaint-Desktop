@@ -29,11 +29,6 @@ add_executable(
         ${SOURCES}
 )
 add_executable(
-        graphgtest
-        graphgtests.cpp
-        ${SOURCES}
-)
-add_executable(
         matrixgtest
         TestsMatrix.cpp
         ${SOURCES}
@@ -41,10 +36,6 @@ add_executable(
 target_link_libraries(
   ourpainttest
   GTest::gtest_main
-)
-target_link_libraries(
-        graphgtest
-        GTest::gtest_main
 )
 target_link_libraries(
         savergtest
