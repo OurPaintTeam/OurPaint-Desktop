@@ -679,6 +679,7 @@ int main(int argc, char *argv[]) {
                 }
             }
         } catch (std::exception &e) {
+            w.showWarning(e.what());
         }
 
     });
