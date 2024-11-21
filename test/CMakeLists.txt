@@ -33,12 +33,21 @@ add_executable(
         TestsMatrix.cpp
         ${SOURCES}
         TestsMatrix.cpp)
+add_executable(
+        addReqInComponentGtest
+        addReqInComponentTests.cpp
+        ${SOURCES}
+        addReqInComponentTests.cpp)
 target_link_libraries(
   ourpainttest
   GTest::gtest_main
 )
 target_link_libraries(
         savergtest
+        GTest::gtest_main
+)
+target_link_libraries(
+        addReqInComponentGtest
         GTest::gtest_main
 )
 target_link_libraries(

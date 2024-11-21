@@ -1,6 +1,4 @@
 #include "paint.h"
-#include <map>
-
 
 ElementData::ElementData() {
     params = std::vector<double>();
@@ -11,11 +9,39 @@ ID Paint::addRequirement(const RequirementData &rd) {
     ActionsInfo info;
     auto it = m_reqD.addElement(rd);
     int countOfReq = 0;
-// Сбор всех требований и их параметров
+
+    // Update graph: add vertex and edges for new req
+    for (const auto& obj : rd.objects) {
+        m_graph.addVertex(obj);
+    }
+    for (size_t i = 0; i < rd.objects.size(); ++i) {
+        for (size_t j = i + 1; j < rd.objects.size(); ++j) {
+            m_graph.addEdge(rd, rd.objects[i], rd.objects[j]);
+        }
+    }
+
+    // Find component
+    std::vector<ID> connectedComponent = m_graph.findConnectedComponent(rd.objects[0]);
+    std::unordered_set<ID> connectedObjects(connectedComponent.begin(), connectedComponent.end());
+
+
+    // Getting all req and parameters
     for (const auto &r: m_reqD) {
+        bool isConnected = false;
+        for (const auto& obj : r.objects) {
+            if (connectedObjects.find(obj) != connectedObjects.end()) {
+                isConnected = true;
+                break;
+            }
+        }
+        if (!isConnected) {
+            continue;
+        }
+
         countOfReq++;
         IReq *requirement = nullptr;
-// 1
+
+        // 1
         if (r.req == ET_POINTSECTIONDIST) {
             point *p_it = nullptr;
             section *s_it = nullptr;
@@ -33,7 +59,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqPointSecDist(p_it, s_it, r.params[0]);
         }
-// 2
+
+        // 2
         else if (r.req == ET_POINTONSECTION) {
             point *p_it = nullptr;
             section *s_it = nullptr;
@@ -51,7 +78,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqPointOnSec(p_it, s_it);
         }
-// 3
+
+        // 3
         else if (r.req == ET_POINTPOINTDIST) {
             point *p1_it = nullptr;
             point *p2_it = nullptr;
@@ -64,7 +92,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqPointPointDist(p1_it, p2_it, r.params[0]);
         }
-// 4
+
+        // 4
         else if (r.req == ET_POINTONPOINT) {
             point *p1_it = nullptr;
             point *p2_it = nullptr;
@@ -77,7 +106,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqPointOnPoint(p1_it, p2_it);
         }
-        //5
+
+        // 5
         else if (r.req == ET_SECTIONCIRCLEDIST) {
             circle* c_it = nullptr;
             section* s_it = nullptr;
@@ -95,7 +125,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqSecCircleDist(s_it, c_it, r.params[0]);
         }
-        //6
+
+        // 6
         else if (r.req == ET_SECTIONONCIRCLE) {
             circle* c_it = nullptr;
             section* s_it = nullptr;
@@ -113,7 +144,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqSecOnCircle(s_it, c_it);
         }
-// 7
+
+        // 7
         else if (r.req == ET_SECTIONINCIRCLE) {
             circle* c_it = nullptr;
             section* s_it = nullptr;
@@ -131,7 +163,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqSecInCircle(s_it, c_it);
         }
-// 8
+
+        // 8
         else if (r.req == ET_SECTIONSECTIONPARALLEL) {
             section* s1_it = nullptr;
             section* s2_it = nullptr;
@@ -144,7 +177,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqSecSecParallel(s1_it, s2_it);
         }
-// 9
+
+        // 9
         else if (r.req == ET_SECTIONSECTIONPERPENDICULAR) {
             section* s1_it = nullptr;
             section* s2_it = nullptr;
@@ -157,7 +191,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
             }
             requirement = new ReqSecSecPerpendicular(s1_it, s2_it);
         }
-// 10
+
+        // 10
         else if (r.req == ET_SECTIONSECTIONANGEL) {
             section* s1_it = nullptr;
             section* s2_it = nullptr;
@@ -176,20 +211,26 @@ ID Paint::addRequirement(const RequirementData &rd) {
             allRequirements.push_back(requirement);
         }
     }
+
     std::vector<Function*> allFunctions;
     for (auto requirement: allRequirements) {
         allFunctions.push_back(requirement->getFunction());
     }
+
     for (const auto& req: m_reqD){
         for (auto i: req.objects){
             info.m_objects.push_back(i);
             info.m_paramsBefore.push_back(getElementInfo(i).params);
         }
     }
+
     LSMTask* task = new LSMTask(allFunctions, VarsStorage::getVars());
     LMSolver solver;
     solver.setTask(task);
     solver.optimize();
+
+    std::cout << "Component count of req: " << countOfReq << std::endl;
+
     if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
         for (const auto& req: m_reqD){
             for (auto i: req.objects){

@@ -50,7 +50,7 @@ add_executable(ourpaint
         painter/saveload/LoadSettingsApplications.cpp
         GUI/RightClickFilter.cpp
         GUI/EmojiWidget.h
-        GUI/EmojiWidget.cpp)
+        GUI/EmojiWidget.cpp painter/paint.cpp)
 
 include_directories(additions)
 include_directories(UndoRedo)

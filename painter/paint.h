@@ -10,22 +10,23 @@
 #include "Assoc.h"
 #include "Matrix.h"
 #include "saveload/FileOurP.h"
-#include "LSMTask.h"
 #include "LSMFORLMTask.h"
 #include "GradientOptimizer.h"
 #include "LevenbergMarquardtSolver.h"
 #include "LMForTest.h"
-#include "../graph/simpleGraph.h"
-#include "../graph/simpleGraph.h"
+#include "../math/headers/graph/simpleGraph.h"
 #include "enums.h"
 #include "requirements.h"
 #include "UndoRedo.h"
 #include <map>
+
+
 struct ElementData {
     Element et;
     std::vector<double> params;
     ElementData();
 };
+
 struct ActionsInfo{
     bool isNew;
     std::vector<ID> m_objects;
@@ -48,6 +49,7 @@ class Paint {
     Painter* c_bmpPainter;
     rectangle s_allFigures;
     ID s_maxID;
+    Graph<RequirementData, ID> m_graph;
 
 public:
     Paint(Painter* p) : s_maxID(0), m_pointIDs(),c_bmpPainter(p), m_sectionIDs(), m_circleIDs(), m_pointStorage(),

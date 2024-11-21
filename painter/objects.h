@@ -14,10 +14,17 @@ struct ID {
 };
 
 bool operator>(const ID &left, const ID &right);
-
 bool operator<(const ID &left, const ID &right);
-
 bool operator==(const ID &left, const ID &right);
+
+namespace std {
+    template <>
+    struct hash<ID> {
+        std::size_t operator()(const ID& id) const {
+            return std::hash<long long int>()(id.id);
+        }
+    };
+}
 
 std::ifstream &operator>>(std::ifstream &in, ID &x);
 

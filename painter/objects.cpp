@@ -9,23 +9,15 @@ ID& ID::operator=(const ID& x) {
 }
 
 bool operator>(const ID& left, const ID& right) {
-    if (left.id < right.id) {
-        return false;
-    }
-    return true;
+    return left.id > right.id;
 }
 
 bool operator<(const ID& left, const ID& right) {
-    if (left.id < right.id) {
-        return true;
-    }
-    return false;
+    return left.id < right.id;
 }
+
 bool operator==(const ID& left, const ID& right) {
-    if (left.id == right.id) {
-        return true;
-    }
-    return false;
+    return left.id == right.id;
 }
 
 std::ifstream& operator>> (std::ifstream& in, ID& x) {
