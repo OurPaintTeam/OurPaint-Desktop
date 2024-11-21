@@ -32,7 +32,7 @@ std::string requirementInFile::to_string() const {
     s+= "{\n";
     s += "ID " + std::to_string(id.id) + "\n";
     s += "addreq " + std::to_string(s_req.req) + " " + std::to_string(s_req.objects[0].id) + " " +
-            std::to_string(s_req.objects[1].id) + " " + std::to_string(s_req.params[0]) + "\n";
+            std::to_string(s_req.objects[1].id) + " " + (!s_req.params.empty() ? std::to_string(s_req.params[0]): "0") + "\n";
     s += "}";
     return s;
 }
