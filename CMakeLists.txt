@@ -73,7 +73,7 @@ add_executable(ourpaint
         headers/GUI/Windows/CastomeIpListWindow.h
         headers/GUI/Windows/WindowServer.h
         headers/GUI/Windows/SaveDialog.h
-        headers/GUI/Windows/ui_Help.h
+        headers/GUI/Windows/ui_help.h
 
         headers/GUI/CastomeConsole.h
         headers/GUI/EmojiWidget.h
