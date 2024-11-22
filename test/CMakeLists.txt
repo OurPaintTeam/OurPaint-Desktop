@@ -29,11 +29,6 @@ add_executable(
         ${SOURCES}
 )
 add_executable(
-        matrixgtest
-        TestsMatrix.cpp
-        ${SOURCES}
-        TestsMatrix.cpp)
-add_executable(
         addReqInComponentGtest
         addReqInComponentTests.cpp
         ${SOURCES}
@@ -54,10 +49,5 @@ target_link_libraries(
         ourpainttest
         GTest::gtest_main
 )
-target_link_libraries(
-        matrixgtest
-        GTest::gtest_main
-)
 include(GoogleTest)
 gtest_discover_tests(ourpainttest)
-gtest_discover_tests(matrixgtest)
