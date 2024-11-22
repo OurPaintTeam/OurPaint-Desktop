@@ -19,38 +19,81 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Eigen)
 
+include_directories(headers)
+include_directories(headers/painters)
+include_directories(headers/saveload)
+include_directories(headers/ClientServer)
+include_directories(headers/GUI)
+include_directories(headers/GUI/Windows)
+
 add_executable(ourpaint
         main.cpp
-        painter/paint.cpp
-        painter/BMPpainter.cpp
-        painter/objects.cpp
-        painter/requirements.cpp
-        GUI/mainwindow.cpp
-        GUI/FrameOverlay.cpp
-        painter/Scaling.cpp
-        GUI/Windows/CastomeWindowError.h
-        GUI/Windows/help.cpp
-        GUI/Windows/CastomeWindowWarning.h
-        GUI/Windows/CastomeWindowSuccessful.h
-        GUI/Windows/CastomeIpListWindow.h
-        GUI/Windows/WindowServer.h
-        painter/Painter.h
-        painter/QTPainter.h
-        painter/QTPainter.cpp
-        painter/saveload/objectInFile.cpp
-        painter/saveload/FileOurP.cpp
-        painter/saveload/requirementInFile.cpp
-        ClientServer/Server.cpp ClientServer/Client.cpp
-        ClientServer/LocalScanner.cpp
-        ClientServer/PortCheckTask.cpp
-        painter/saveload/requirementInFile.h
-        painter/requirements.cpp
-        GUI/CastomeConsole.cpp
-        painter/saveload/SaveSettingsApplications.cpp
-        painter/saveload/LoadSettingsApplications.cpp
-        GUI/RightClickFilter.cpp
-        GUI/EmojiWidget.h
-        GUI/EmojiWidget.cpp painter/paint.cpp)
+        src/paint.cpp
+        src/objects.cpp
+        src/requirements.cpp
+        src/Scaling.cpp
+
+        src/painters/BMPpainter.cpp
+        src/painters/QTPainter.cpp
+
+        src/GUI/mainwindow.cpp
+        src/GUI/FrameOverlay.cpp
+        src/GUI/CastomeConsole.cpp
+        src/GUI/RightClickFilter.cpp
+        src/GUI/EmojiWidget.cpp
+
+        src/GUI/Windows/help.cpp
+
+        src/saveload/objectInFile.cpp
+        src/saveload/FileOurP.cpp
+        src/saveload/requirementInFile.cpp
+        src/saveload/SaveSettingsApplications.cpp
+        src/saveload/LoadSettingsApplications.cpp
+
+        src/ClientServer/Server.cpp
+        src/ClientServer/Client.cpp
+        src/ClientServer/LocalScanner.cpp
+        src/ClientServer/PortCheckTask.cpp
+
+        headers/enums.h
+        headers/objects.h
+        headers/paint.h
+        headers/requirements.h
+        headers/Scaling.h
+
+        headers/ClientServer/Client.h
+        headers/ClientServer/LocalScanner.h
+        headers/ClientServer/PortCheckTask.h
+        headers/ClientServer/Server.h
+
+        headers/GUI/Windows/CastomeWindowError.h
+        headers/GUI/Windows/CastomeWindowWarning.h
+        headers/GUI/Windows/CastomeWindowSuccessful.h
+        headers/GUI/Windows/help.h
+        headers/GUI/Windows/CastomeIpListWindow.h
+        headers/GUI/Windows/WindowServer.h
+        headers/GUI/Windows/SaveDialog.h
+        headers/GUI/Windows/ui_Help.h
+
+        headers/GUI/CastomeConsole.h
+        headers/GUI/EmojiWidget.h
+        headers/GUI/FrameOverlay.h
+        headers/GUI/mainwindow.h
+        headers/GUI/RightClickFilter.h
+        headers/GUI/ui_mainwindow.h
+
+        headers/painters/Painter.h
+        headers/painters/QTPainter.h
+        headers/painters/BMPpainter.h
+
+        headers/saveload/FileOurP.h
+        headers/saveload/requirementInFile.h
+        headers/saveload/LoadSettingsApplications.h
+        headers/saveload/objectInFile.h
+        headers/saveload/SaveSettingsApplications.h
+        )
+
+
 
 include_directories(additions)
 include_directories(UndoRedo)
@@ -59,9 +102,11 @@ include_directories(math/headers)
 include_directories(math/headers/decomposition)
 include_directories(math/headers/Optimizers)
 include_directories(math/headers/graph)
+
 add_subdirectory(BMPfile)
 add_subdirectory(test)
 add_subdirectory(math)
+
 target_link_libraries(ourpaint bitmap)
 
 target_link_libraries(ourpaint

@@ -24,9 +24,9 @@
 #include <QIcon>
 #include <QCheckBox>
 #include <QPropertyAnimation>
-#include "../GUI/CastomeConsole.h"
-#include "../GUI/RightClickFilter.h"
-#include "../GUI/EmojiWidget.h"
+#include "CastomeConsole.h"
+#include "RightClickFilter.h"
+#include "EmojiWidget.h"
 #include <QScrollArea>
 #include <QTextEdit>
 

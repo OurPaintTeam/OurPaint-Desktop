@@ -4,7 +4,7 @@
 
 #ifndef OURPAINT_REQUIREMENTINFILE_H
 #define OURPAINT_REQUIREMENTINFILE_H
-#include "../requirements.h"
+#include "requirements.h"
 #include <string>
 
 class requirementInFile {

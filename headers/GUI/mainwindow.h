@@ -19,14 +19,14 @@
 #include <QScreen>
 #include <QGestureEvent>
 
-#include "Windows/help.h"
-#include "Windows/CastomeWindowError.h"
-#include "Windows/CastomeWindowSuccessful.h"
-#include "Windows/CastomeWindowWarning.h"
-#include "Windows/CastomeIpListWindow.h"
-#include "../ClientServer/LocalScanner.h"
-#include "Windows/SaveDialog.h"
-#include "Windows/WindowServer.h"
+#include "help.h"
+#include "CastomeWindowError.h"
+#include "CastomeWindowSuccessful.h"
+#include "CastomeWindowWarning.h"
+#include "CastomeIpListWindow.h"
+#include "LocalScanner.h"
+#include "SaveDialog.h"
+#include "WindowServer.h"
 #include "ui_mainwindow.h"
 #include "FrameOverlay.h"
 

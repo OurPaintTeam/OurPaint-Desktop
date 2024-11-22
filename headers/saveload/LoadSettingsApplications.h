@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 #include <QWidget>
-#include "../GUI/Windows/CastomeWindowError.h"
+#include "CastomeWindowError.h"
 
 class LoadSettingsApplications {
 private:

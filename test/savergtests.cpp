@@ -1,9 +1,9 @@
 //
 // Created by Eugene Bychkov on 28.09.2024.
 //
-#include "../painter/saveload/objectInFile.h"
-#include "../painter/saveload/requirementInFile.h"
-#include "../painter/saveload/FileOurP.h"
+#include "../headers/saveload/objectInFile.h"
+#include "../headers/saveload/requirementInFile.h"
+#include "../headers/saveload/FileOurP.h"
 
 #include <gtest/gtest.h>
 #include <sstream>

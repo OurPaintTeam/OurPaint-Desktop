@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "../painter/objects.h"
-#include "../painter/requirements.h"
-#include "../painter/paint.h"
+#include "objects.h"
+#include "requirements.h"
+#include "paint.h"
 
 TEST(PaintTest, ConnectedComponentsMerge) {
     Painter *painter = nullptr;

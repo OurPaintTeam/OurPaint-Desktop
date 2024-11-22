@@ -2,16 +2,16 @@
 #include <QApplication>
 #include <QTranslator>
 #include <QPixmap>
-#include "ClientServer/Server.h"
-#include "ClientServer/Client.h"
-#include "GUI/Windows/WindowServer.h"
+#include "Server.h"
+#include "Client.h"
+#include "WindowServer.h"
 #include "Arry.h"
-#include "painter/objects.h"
-#include "painter/paint.h"
-#include "painter/QTPainter.h"
-#include "GUI/mainwindow.h"
-#include "painter/saveload/SaveSettingsApplications.h"
-#include "painter/saveload/LoadSettingsApplications.h"
+#include "objects.h"
+#include "paint.h"
+#include "QTPainter.h"
+#include "mainwindow.h"
+#include "SaveSettingsApplications.h"
+#include "LoadSettingsApplications.h"
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);

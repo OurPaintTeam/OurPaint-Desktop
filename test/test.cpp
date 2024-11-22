@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../painter/paint.h"
+#include "../headers/paint.h"
 
 
 TEST(PaintTest, PointSecDist) {

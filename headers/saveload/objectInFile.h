@@ -5,7 +5,7 @@
 #ifndef OURPAINT_OBJECTINFILE_H
 #define OURPAINT_OBJECTINFILE_H
 
-#include "../objects.h"
+#include "objects.h"
 #include <string>
 
 class objectInFile {

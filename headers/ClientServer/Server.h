@@ -11,7 +11,7 @@
 #include <QObject>
 #include <QSet>
 #include <QDataStream>
-#include "../painter/paint.h"
+#include "paint.h"
 
 class Server : public QObject {
 Q_OBJECT

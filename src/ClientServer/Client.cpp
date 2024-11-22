@@ -3,7 +3,6 @@
 //
 
 #include "Client.h"
-#include <QMessageBox>
 
 Client::Client(const QString& name, QObject *parent) : QObject(parent), tcpSocket(new QTcpSocket(this)) {
     userName = name;

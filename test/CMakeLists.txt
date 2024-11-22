@@ -17,7 +17,7 @@ if (NOT TARGET gtest)
 endif()
 
 enable_testing()
-set(SOURCES  ../painter/objects.cpp  ../painter/saveload/objectInFile.cpp ../painter/saveload/FileOurP.cpp)
+set(SOURCES ../src/objects.cpp ../src/saveload/objectInFile.cpp ../src/saveload/FileOurP.cpp)
 add_executable(
   savergtest
   savergtests.cpp
