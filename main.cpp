@@ -735,6 +735,21 @@ int main(int argc, char *argv[]) {
     });
 
 
+    QObject::connect(&w, &MainWindow::changeSettings, [&w]() {
+        SaveSettingsApplications saveSet("Settings", &w);
+        saveSet.clear();
+        auto [figures, requirements, settings, name] = w.saveSettings();
+        saveSet.SaveSettings(settings, name);
+    });
+
+    QObject::connect(&w, &MainWindow::saveBMP, [&screen, &w, &painter](const QString &fileName) {
+
+    });
+
+    QObject::connect(&w, &MainWindow::loadBMP, [&](const QString &fileName) {
+
+    });
+
     QObject::connect(&w, &MainWindow::projectSaved, [&screen, &w, &painter](const QString &fileName) {
         std::string File = fileName.toStdString();
         auto [figures, requirements, settings, name] = w.saveSettings();
@@ -746,13 +761,6 @@ int main(int argc, char *argv[]) {
         screen.saveToFile(File.c_str());
         screen.paint();
         painter->draw();
-    });
-
-    QObject::connect(&w, &MainWindow::changeSettings, [&w]() {
-        SaveSettingsApplications saveSet("Settings", &w);
-        saveSet.clear();
-        auto [figures, requirements, settings, name] = w.saveSettings();
-        saveSet.SaveSettings(settings, name);
     });
 
     QObject::connect(&w, &MainWindow::LoadFile, [&](const QString &fileName) {

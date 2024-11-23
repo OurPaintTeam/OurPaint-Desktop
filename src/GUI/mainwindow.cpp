@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
     connect(ui->actionImport_project, &QAction::triggered, this, &MainWindow::LoadProjectFile);
     connect(ui->actionExport_bmp, &QAction::triggered, this, &MainWindow::saveProjectToBMP);
-    connect(ui->actionOpen_bmp, &QAction::triggered, this, &MainWindow::LoadProjectBMP);
+    connect(ui->actionOpen_bmp, &QAction::triggered, this, &MainWindow::loadProjectBMP);
 
     // Кнопки сервера
     connect(ui->actionOpen_server, &QAction::triggered, this, &MainWindow::openServer);
@@ -223,6 +223,8 @@ void MainWindow::LoadProjectFile() {
     }
 }
 
+void MainWindow::saveProjectToBMP(){emit saveBMP("");}
+void MainWindow::LoadProjectBMP(){emit loadBMP("");}
 
 // Сохранение текущего проекта в файл
 void MainWindow::saveProjectToFile() {
