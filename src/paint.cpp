@@ -393,6 +393,15 @@ void Paint::exportToBMP(const char *file) {
     try {
         BMPpainter b;
         b.changeSize(s_allFigures);
+        for (auto &point: m_pointStorage) {
+            b.drawPoint(point, false);
+        }
+        for (auto &circle: m_circleStorage) {
+            b.drawCircle(circle, false);
+        }
+        for (auto &section: m_sectionStorage) {
+            b.drawSection(section, false);
+        }
         b.saveBMP(file);
     }
     catch (...) {

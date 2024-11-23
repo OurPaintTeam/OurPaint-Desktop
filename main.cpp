@@ -743,7 +743,12 @@ int main(int argc, char *argv[]) {
     });
 
     QObject::connect(&w, &MainWindow::saveBMP, [&screen, &w, &painter](const QString &fileName) {
-
+        try {
+            screen.exportToBMP(fileName.toStdString().c_str());
+            w.showSuccess("Saved to " + fileName);
+        }catch (std::exception &e) {
+            w.showWarning(e.what());
+        }
     });
 
     QObject::connect(&w, &MainWindow::loadBMP, [&](const QString &fileName) {
