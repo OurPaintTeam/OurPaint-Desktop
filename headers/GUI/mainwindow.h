@@ -174,8 +174,8 @@ public slots:
     // Кнопки
     void saveProjectToFile();
     void LoadProjectFile();
-    void saveProjectToBMP(){emit LoadBMP("")};
-    void LoadProjectBMP(){emit LoadBMP("")};
+    void saveProjectToBMP(){emit LoadBMP("");};
+    void LoadProjectBMP(){emit LoadBMP("");};
 
     void openServer();
 
