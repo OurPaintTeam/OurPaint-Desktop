@@ -119,7 +119,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     painter.setPen(Qt::lightGray);
 
     // Масштабируем
-    Scaling.scaling(width(), height(), FindMaxMin());
+ //   Scaling.scaling(width(), height(), FindMaxMin());
 
     double scale = Scaling.getScale();
     double zoom = Scaling.getZoom();
@@ -210,21 +210,20 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
     if (editor) {
         painter.setPen(Qt::black);
-        int logicalX = static_cast<int>((cursorX - _width) / (scale * zoom));
-        int logicalY = static_cast<int>((_height - cursorY) / (scale * zoom));
+        int logicalX = static_cast<int>(Scaling.logicX(cursorX - _width));
+        int logicalY = static_cast<int>(Scaling.logicY(_height - cursorY));
         painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY));
 
         if (Circle && Drawing) {
             int logicalPerimeterX = perimeterPoint.x();
             int logicalPerimeterY = perimeterPoint.y();
-            int logicalCursorX = static_cast<int>((cursorX - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
-            int logicalCursorY = static_cast<int>((height() / 2 - cursorY) / (Scaling.getScale() * Scaling.getZoom()));
-            int centerX = (logicalPerimeterX + logicalCursorX) / 2;
-            int centerY = (logicalPerimeterY + logicalCursorY) / 2;
+            int centerX = (logicalPerimeterX + logicalX) / 2;
+            int centerY = (logicalPerimeterY + logicalY) / 2;
+
             int radius = static_cast<int>(std::hypot(logicalPerimeterX - centerX, logicalPerimeterY - centerY));
-            int screenCenterX = static_cast<int>(Scaling.scaleCoordinateX(centerX) + width() / 2);
-            int screenCenterY = static_cast<int>(Scaling.scaleCoordinateY(-centerY) + height() / 2);
-            int scaledRadius = static_cast<int>(radius * Scaling.getScale() * Scaling.getZoom());
+            int screenCenterX = static_cast<int>(Scaling.scaleCoordinateX(centerX) + _width);
+            int screenCenterY = static_cast<int>(Scaling.scaleCoordinateY(-centerY) + _height);
+            int scaledRadius = static_cast<int>(Scaling.scaleCoordinate(radius));
             painter.drawEllipse(screenCenterX - scaledRadius, screenCenterY - scaledRadius, 2 * scaledRadius, 2 * scaledRadius);
         }
         else if (Section && Drawing) {
@@ -253,18 +252,22 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         Scaling.startMousePress(event->pos());
         emit RightPress();
 
-        if (Drawing) {
+        if ((Circle || Section || Point) && Drawing) {
+            Scaling.resetUsersResize();
             Drawing = false;
-            update();
         }
-
+        update();
     }
 
     if (editor && event->button() == Qt::LeftButton) {
+
+        QPoint Position = event->pos();
+        double _width = width() / 2.0;
+        double _height = height() / 2.0;
+        int logicalX = static_cast<int>(Scaling.logicX(Position.x() - _width));
+        int logicalY = static_cast<int>(Scaling.logicY(_height - Position.y()));
+
         if (Point) {
-            QPoint Position = event->pos();
-            int logicalX = static_cast<int>((Position.x() - width() / 2) / Scaling.getScale());
-            int logicalY = static_cast<int>((height() / 2 - Position.y()) / Scaling.getScale());
             Position.setX(logicalX);
             Position.setY(logicalY);
             emit SigPoint(Position);
@@ -273,15 +276,9 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         if (Section) {
             if (!Drawing) {
                 Drawing = true;
-                QPoint Position = event->pos();
-                int logicalX = static_cast<int>((Position.x() - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
-                int logicalY = static_cast<int>((height() / 2 - Position.y()) / (Scaling.getScale() * Scaling.getZoom()));
                 sectionStartPoint.setX(logicalX);
                 sectionStartPoint.setY(logicalY);
             } else {
-                QPoint Position = event->pos();
-                int logicalX = static_cast<int>((Position.x() - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
-                int logicalY = static_cast<int>((height() / 2 - Position.y()) / (Scaling.getScale() * Scaling.getZoom()));
                 QPoint EndPoint(logicalX, logicalY);
                 emit SigSection(sectionStartPoint.x(), sectionStartPoint.y(), EndPoint.x(), EndPoint.y());
                 Drawing = false;
@@ -291,15 +288,9 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         if (Circle) {
             if (!Drawing) {
                 Drawing = true;
-                QPoint Position = event->pos();
-                int logicalX = static_cast<int>((Position.x() - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
-                int logicalY = static_cast<int>((height() / 2 - Position.y()) / (Scaling.getScale() * Scaling.getZoom()));
                 perimeterPoint.setX(logicalX);
                 perimeterPoint.setY(logicalY);
             } else {
-                QPoint Position = event->pos();
-                int logicalX = static_cast<int>((Position.x() - width() / 2) / (Scaling.getScale() * Scaling.getZoom()));
-                int logicalY = static_cast<int>((height() / 2 - Position.y()) / (Scaling.getScale() * Scaling.getZoom()));
                 QPoint cursorPoint(logicalX, logicalY);
                 int centerX = (perimeterPoint.x() + cursorPoint.x()) / 2;
                 int centerY = (perimeterPoint.y() + cursorPoint.y()) / 2;
@@ -315,12 +306,9 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
 void QTPainter::mouseMoveEvent(QMouseEvent *event) {
     Scaling.mouseMove(event->pos());
 
-    if (editor ) {
+    if (editor) {
         cursorX = event->pos().x();
         cursorY = event->pos().y();
-        if (Drawing) {
-            update();
-        }
     }
 
     if (Scaling.isRightMousePressed()) {

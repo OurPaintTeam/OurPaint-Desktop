@@ -24,7 +24,9 @@ public:
     double scaleCoordinate(double X);
     double scaleCoordinateX(double X);
     double scaleCoordinateY(double Y);
-
+    double logic(double X);
+    double logicX(double X);
+    double logicY(double Y);
     void scaling(int widgetWidth, int widgetHeight,std::vector<double> size);
 
     void setZoomPlus(double maxZoom);

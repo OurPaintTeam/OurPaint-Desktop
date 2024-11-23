@@ -17,14 +17,28 @@ double Scaling::scaleCoordinateY(double Y) {
     return Y * scale * zoom + deltaY;
 }
 
+double Scaling::logic(double X) {
+    return X /( scale * zoom);
+}
+
+double Scaling::logicX(double X) {
+    qDebug()<<(X-deltaX) / (scale * zoom);
+    return (X-deltaX) / (scale * zoom);
+}
+
+double Scaling::logicY(double Y) {
+    return (Y+deltaY)/ (scale * zoom);
+}
+
 void Scaling::scaling(int widgetWidth, int widgetHeight, std::vector<double> size) {
     double scaleX = widgetWidth / width_;
     double scaleY = widgetHeight / height_;
     scale = std::min(scaleX, scaleY);
 
     if (!usersResize && !size.empty()) {
-        deltaX = 0;
-        deltaY = 0;
+        qDebug()<<"!";
+        //deltaX = 0;
+      //  deltaY = 0;
         // Вычисление границ окна в координатах
         int widthX = static_cast<int>(widgetWidth / (2 * scale * zoom));
         int heightY = static_cast<int>(widgetHeight / (2 * scale * zoom));
@@ -105,6 +119,7 @@ void Scaling::startMousePress(const QPoint &pos) {
 void Scaling::mouseMove(const QPoint &pos) {
    // usersResize = true;
     if (rightMousePressed) {
+        usersResize = true;
         int deltaX_ = pos.x() - lastMousePos.x();
         int deltaY_ = pos.y() - lastMousePos.y();
         setDelta(deltaX_, deltaY_);
@@ -127,3 +142,4 @@ bool Scaling::isUsersResize() const {
 void Scaling::resetUsersResize() {
     usersResize = false;
 }
+

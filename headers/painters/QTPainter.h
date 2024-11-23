@@ -34,6 +34,7 @@ private:
     QPoint centerPoint;
     QPoint perimeterPoint;
     QPoint sectionStartPoint;
+    QPoint sectionEndPoint;
     bool Drawing;
 
 public:
