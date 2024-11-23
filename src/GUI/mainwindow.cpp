@@ -28,6 +28,8 @@ MainWindow::MainWindow(QWidget *parent)
     // Кнопки сохранение/импорт
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
     connect(ui->actionImport_project, &QAction::triggered, this, &MainWindow::LoadProjectFile);
+    connect(ui->actionExport_bmp, &QAction::triggered, this, &MainWindow::saveProjectToBMP);
+    connect(ui->actionOpen_bmp, &QAction::triggered, this, &MainWindow::LoadProjectBMP);
 
     // Кнопки сервера
     connect(ui->actionOpen_server, &QAction::triggered, this, &MainWindow::openServer);

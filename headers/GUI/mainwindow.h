@@ -166,14 +166,16 @@ signals:
     void SigPoint();
     void NameUsers(const QString &text);
     void changeSettings();
-
+void LoadBMP(const QString &fileName);
+void OpenBMP(const QString &fileName);
 
 public slots:
 
     // Кнопки
     void saveProjectToFile();
-
     void LoadProjectFile();
+    void saveProjectToBMP(){emit LoadBMP("")};
+    void LoadProjectBMP(){emit LoadBMP("")};
 
     void openServer();
 
