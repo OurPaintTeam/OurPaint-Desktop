@@ -17,37 +17,40 @@ if (NOT TARGET gtest)
 endif()
 
 enable_testing()
-set(SOURCES ../src/objects.cpp ../src/saveload/objectInFile.cpp ../src/saveload/FileOurP.cpp)
+set(SOURCES
+        ../src/objects.cpp
+        ../src/requirements.cpp
+        ../src/saveload/objectInFile.cpp
+        ../src/saveload/FileOurP.cpp
+        ../src/saveload/requirementInFile.cpp
+    )
 add_executable(
   savergtest
   savergtests.cpp
   ${SOURCES}
 )
-add_executable(
-        ourpainttest
-        test.cpp
-        ${SOURCES}
+include_directories(../math)
+
+target_link_libraries(savergtest MinimizerOptimizer)
+
+target_link_libraries(
+        savergtest
+        GTest::gtest_main
 )
+
 add_executable(
         addReqInComponentGtest
         addReqInComponentTests.cpp
         ${SOURCES}
         addReqInComponentTests.cpp)
-target_link_libraries(
-  ourpainttest
-  GTest::gtest_main
-)
-target_link_libraries(
-        savergtest
-        GTest::gtest_main
-)
+
 target_link_libraries(
         addReqInComponentGtest
         GTest::gtest_main
 )
-target_link_libraries(
-        ourpainttest
-        GTest::gtest_main
-)
+
 include(GoogleTest)
-gtest_discover_tests(ourpainttest)
+
+gtest_discover_tests(savergtest)
+
+gtest_discover_tests(addReqInComponentGtest)

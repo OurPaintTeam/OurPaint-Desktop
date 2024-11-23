@@ -23,7 +23,7 @@ TEST(requirementInFileTest, TestPointOnPointToString) {
     r.objects.push_back({1});
     r.objects.push_back({2});
     requirementInFile rs(std::make_pair(ID{3}, r));
-    EXPECT_EQ(rs.to_string(), "{\nID 3\naddreq 3 1 2 0.000000\n}");
+    EXPECT_EQ(rs.to_string(), "{\nID 3\naddreq 3 1 2 0\n}");
 }
 
 
@@ -182,7 +182,7 @@ TEST(FileOurPTest, SaveToOurP) {
     std::string fileName = "test_file";
     std::string content = file.to_string();
     std::string expectedContent = "Elements: {\n{\nID 1\npoint 1.000000 2.000000\n}\n{\nID 2\npoint 3.000000 4.000000\n}\n{\nID 3\npoint 5.000000 6.000000\n}\n{\nID 4\nsection\n}\n}\n"
-                                  "Requirements: {\n{\nID 5\naddreq 3 2 3 0.000000\n}\n}\n";
+                                  "Requirements: {\n{\nID 5\naddreq 3 2 3 0\n}\n}\n";
 
     EXPECT_EQ(content, expectedContent);
 }
