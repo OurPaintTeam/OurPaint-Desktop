@@ -20,8 +20,8 @@ TEST(ObjectInFileTest, TestPointToString) {
 TEST(requirementInFileTest, TestPointOnPointToString) {
     RequirementData r;
     r.req = ET_POINTONPOINT;
-    r.objects.addElement({1});
-    r.objects.addElement({2});
+    r.objects.push_back({1});
+    r.objects.push_back({2});
     requirementInFile rs(std::make_pair(ID{3}, r));
     EXPECT_EQ(rs.to_string(), "{\nID 3\naddreq 3 1 2 0.000000\n}");
 }
@@ -167,8 +167,8 @@ TEST(FileOurPTest, SaveToOurP) {
     file.addObject(obj3);
     RequirementData req;
     ID idr{5};
-    req.objects.addElement(id2);
-    req.objects.addElement(id3);
+    req.objects.push_back(id2);
+    req.objects.push_back(id3);
     req.req = ET_POINTONPOINT;
     std::pair<ID, RequirementData> reqObj(idr, req);
     file.addRequirement(reqObj);
