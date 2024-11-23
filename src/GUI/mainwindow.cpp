@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Кнопки сохранение/импорт
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
-    connect(ui->actionImport_project, &QAction::triggered, this, &MainWindow::LoadProjectFile);
+    connect(ui->actionImport_project, &QAction::triggered, this, &MainWindow::loadProjectFile);
     connect(ui->actionExport_bmp, &QAction::triggered, this, &MainWindow::saveProjectToBMP);
     connect(ui->actionOpen_bmp, &QAction::triggered, this, &MainWindow::loadProjectBMP);
 
@@ -201,7 +201,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 
 // Загрузка файла проекта
-void MainWindow::LoadProjectFile() {
+void MainWindow::loadProjectFile() {
     if (!save) {
         SaveDialog dialog(this);
         int result = dialog.exec(); // Показать диалог
@@ -223,8 +223,66 @@ void MainWindow::LoadProjectFile() {
     }
 }
 
-void MainWindow::saveProjectToBMP(){emit saveBMP("");}
-void MainWindow::LoadProjectBMP(){emit loadBMP("");}
+void MainWindow::saveProjectToBMP(){
+    QString baseName = "project";
+    QString extension = ".bmp";
+    QString fileName;
+    int index = 1; // Уникальности имени
+
+    // Директория по умолчанию
+    QString defaultDir = QDir::homePath() + "/OurPaint/project";
+
+    QDir dir(defaultDir);
+    if (!dir.exists()) {
+        dir.mkpath("."); // Создание директории, если она не существует
+    }
+
+
+    fileName = QString("%1/%2%3").arg(defaultDir, baseName, extension); // Формирование полного имени файла
+
+
+    while (QFile::exists(fileName)) { // Проверка на существование файла
+        fileName = QString("%1/%2_%3%4").arg(defaultDir).arg(baseName).arg(index).arg(extension);
+        index++;
+    }
+
+
+    // Открытие диалога для сохранения файла
+    QString selectedFileName = QFileDialog::getSaveFileName(this, tr("Save Project"), fileName,
+                                                            tr("Project Files (*.bmp);;All Files (*)"));
+
+
+    if (!selectedFileName.isEmpty()) {
+        save = true;
+        emit saveBMP(selectedFileName); //Сигнал
+    } else {
+        save = false;
+    }
+
+}
+
+void MainWindow::loadProjectBMP(){
+    if (!save) {
+        SaveDialog dialog(this);
+        int result = dialog.exec(); // Показать диалог
+
+        if (result == QMessageBox::Yes) {
+            saveProjectToFile();
+        } else if (result == QMessageBox::Cancel) {
+            return;
+        }
+    }
+
+    // Открытие диалога выбора файла проекта
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
+                                                    QDir::homePath() + "/OurPaint/project",
+                                                    tr("Project Files (*.ourp);;All Files (*)"));
+
+    if (!fileName.isEmpty()) {
+        emit loadBMP(fileName); // Сигнал
+    }
+
+}
 
 // Сохранение текущего проекта в файл
 void MainWindow::saveProjectToFile() {

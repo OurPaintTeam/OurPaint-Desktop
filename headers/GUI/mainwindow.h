@@ -83,15 +83,20 @@ public:
     }
 
     void showHelp();
+
     void showError(const QString &text);
+
     void showSuccess(const QString &text);
+
     void showWarning(const QString &text);
+
 // Добавление сообщений
     void setMessage(const std::string &name, const std::string &message);
 
-    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>,QString> saveSettings();
+    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>, QString>
+    saveSettings();
 
-    void loadSettings(std::vector<bool> settings,const QString &name);
+    void loadSettings(std::vector<bool> settings, const QString &name);
 
 
 protected:
@@ -164,18 +169,26 @@ signals:
     void SigCircle();
 
     void SigPoint();
+
     void NameUsers(const QString &text);
+
     void changeSettings();
-void loadBMP(const QString &fileName);
-void saveBMP(const QString &fileName);
+
+    void loadBMP(const QString &fileName);
+
+    void saveBMP(const QString &fileName);
 
 public slots:
 
     // Кнопки
     void saveProjectToFile();
+
     void loadProjectFile();
+
     void saveProjectToBMP();
-    void LoadProjectBMP();
+
+    void loadProjectBMP();
+
     void openServer();
 
     void joinServer();
