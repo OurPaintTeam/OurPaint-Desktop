@@ -18,6 +18,7 @@ public:
     static std::vector<Variable*> getVars();
     static Variable* addVar(PARAMID id);
     static Variable* getVar(PARAMID id);
+    static void clearVars();
 };
 struct RequirementData {
     Requirement req;

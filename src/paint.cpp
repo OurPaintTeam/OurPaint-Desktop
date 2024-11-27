@@ -276,6 +276,7 @@ ID Paint::addElement(const ElementData &ed) {
         tmp.y = ed.params[1];
         s_allFigures = s_allFigures || tmp.rect();
         m_pointIDs[++s_maxID.id] = m_pointStorage.addElement(tmp);
+        m_graph.addVertex(s_maxID);
         info.m_objects.push_back(s_maxID);
         info.m_paramsAfter.push_back(ed.params);
         c_undoRedo.add(info);
@@ -287,6 +288,7 @@ ID Paint::addElement(const ElementData &ed) {
         tmp1.y = ed.params[1];
         auto beg = m_pointStorage.addElement(tmp1);
         m_pointIDs[++s_maxID.id] = beg;
+        m_graph.addVertex(s_maxID);
         std::vector<double> params1;
         params1.push_back(ed.params[0]);
         params1.push_back(ed.params[1]);
@@ -297,6 +299,7 @@ ID Paint::addElement(const ElementData &ed) {
         tmp2.y = ed.params[3];
         auto end = m_pointStorage.addElement(tmp2);
         m_pointIDs[++s_maxID.id] = end;
+        m_graph.addVertex(s_maxID);
         std::vector<double> params2;
         params2.push_back(ed.params[2]);
         params2.push_back(ed.params[3]);
@@ -307,6 +310,17 @@ ID Paint::addElement(const ElementData &ed) {
         tmp.end = &(*end);
         s_allFigures = s_allFigures || tmp.rect();
         m_sectionIDs[++s_maxID.id] = m_sectionStorage.addElement(tmp);
+
+        m_graph.addVertex(s_maxID);
+        RequirementData sectionReq;
+        sectionReq.objects.emplace_back(s_maxID.id);
+        sectionReq.objects.emplace_back(s_maxID.id-2);
+        sectionReq.req = ET_POINTINOBJECT;
+        m_graph.addEdge(sectionReq, s_maxID.id, s_maxID.id-2);
+        sectionReq.objects.pop_back();
+        sectionReq.objects.emplace_back(s_maxID.id-1);
+        m_graph.addEdge(sectionReq, s_maxID.id, s_maxID.id-1);
+
         info.m_objects.push_back(s_maxID);
         info.m_paramsAfter.push_back(ed.params);
         c_undoRedo.add(info);
@@ -322,12 +336,24 @@ ID Paint::addElement(const ElementData &ed) {
         info.m_paramsAfter.push_back(params1);
         auto cent = m_pointStorage.addElement(center);
         m_pointIDs[++s_maxID.id] = cent;
+
+        m_graph.addVertex(s_maxID);
+
         info.m_objects.push_back(s_maxID);
         circle tmp;
         tmp.center = &(*cent);
         tmp.R = ed.params[2];
         s_allFigures = s_allFigures || tmp.rect();
         m_circleIDs[++s_maxID.id] = m_circleStorage.addElement(tmp);
+
+        // add vertexes and edge to graph
+        m_graph.addVertex(s_maxID);
+        RequirementData circleReq;
+        circleReq.objects.emplace_back(s_maxID.id);
+        circleReq.objects.emplace_back(s_maxID.id-1);
+        circleReq.req = ET_POINTINOBJECT;
+        m_graph.addEdge(circleReq, s_maxID.id, s_maxID.id-1);
+
         info.m_objects.push_back(s_maxID);
         params1.push_back(ed.params[2]);
         info.m_paramsAfter.push_back(params1);

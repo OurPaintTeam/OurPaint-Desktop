@@ -20,6 +20,10 @@ Variable* VarsStorage::getVar(PARAMID id) {
     return m_vars[id];
 }
 
+void VarsStorage::clearVars() {
+    m_vars.clear();
+}
+
 RequirementData::RequirementData() {
     objects = std::vector<ID>();
     params = std::vector<double>();
