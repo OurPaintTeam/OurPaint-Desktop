@@ -22,22 +22,22 @@ public:
         setAttribute(Qt::WA_TranslucentBackground);
         setWindowModality(Qt::ApplicationModal);  // Для модальности только в пределах родительского окна
 
-       // setStyleSheet("background-color: gray; color: black;");
+        // setStyleSheet("background-color: gray; color: black;");
 
-        QVBoxLayout *layout = new QVBoxLayout(this);
+        QVBoxLayout * layout = new QVBoxLayout(this);
         layout->setContentsMargins(10, 10, 10, 10);
-        QLabel *label = new QLabel("Сохранить проект?", this);
+        QLabel * label = new QLabel("Сохранить проект?", this);
         layout->addWidget(label);
 
-        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        QHBoxLayout * buttonLayout = new QHBoxLayout();
 
-        QPushButton *yesButton = new QPushButton("Да", this);
-        QPushButton *noButton = new QPushButton("Нет", this);
-        QPushButton *cancelButton = new QPushButton("Отмена", this);
+        QPushButton * yesButton = new QPushButton("Да", this);
+        QPushButton * noButton = new QPushButton("Нет", this);
+        QPushButton * cancelButton = new QPushButton("Отмена", this);
 
-      //  yesButton->setStyleSheet("background-color: darkgray; color: black;");
-      //  noButton->setStyleSheet("background-color: darkgray; color: black;");
-       // cancelButton->setStyleSheet("background-color: darkgray; color: black;");
+        //  yesButton->setStyleSheet("background-color: darkgray; color: black;");
+        //  noButton->setStyleSheet("background-color: darkgray; color: black;");
+        // cancelButton->setStyleSheet("background-color: darkgray; color: black;");
 
         buttonLayout->addWidget(yesButton);
         buttonLayout->addWidget(noButton);
@@ -55,6 +55,7 @@ public:
             done(QMessageBox::Cancel);
         });
     }
+
 protected:
     void paintEvent(QPaintEvent *event) override {
         QPainter painter(this);
@@ -75,7 +76,10 @@ protected:
 
     void mouseMoveEvent(QMouseEvent *event) override { // Перемещение
         if (mousePressed) {
-            move(event->globalPos() - mousePos);
+            //move(event->globalPos() - mousePos);
+            QPoint Pos = pos();
+            QPoint newPos = Pos + (event->pos() - mousePos);
+            move(newPos);
             event->accept();
         }
     }
