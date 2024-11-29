@@ -31,7 +31,7 @@ add_executable(ourpaint
         src/paint.cpp
         src/objects.cpp
         src/requirements.cpp
-        src/Scaling.cpp
+        src/scaling.cpp
 
         src/painters/BMPpainter.cpp
         src/painters/QTPainter.cpp
@@ -59,7 +59,7 @@ add_executable(ourpaint
         headers/objects.h
         headers/paint.h
         headers/requirements.h
-        headers/Scaling.h
+        headers/scaling.h
 
         headers/ClientServer/Client.h
         headers/ClientServer/LocalScanner.h
