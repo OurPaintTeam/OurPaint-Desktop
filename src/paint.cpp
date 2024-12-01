@@ -7,7 +7,7 @@ ElementData::ElementData() {
 ID Paint::addRequirement(const RequirementData &rd) {
     std::vector<IReq *> allRequirements;
     ActionsInfo info;
-    auto it = m_reqD.addElement(rd);
+    auto it = m_reqStorage.addElement(rd);
     int countOfReq = 0;
 
     // Update graph: add vertex and edges for new req
@@ -26,7 +26,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
 
 
     // Getting all req and parameters
-    for (const auto &r: m_reqD) {
+    for (const auto &r: m_reqStorage) {
         bool isConnected = false;
         for (const auto& obj : r.objects) {
             if (connectedObjects.find(obj) != connectedObjects.end()) {
@@ -53,7 +53,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     p_it = &(*(m_pointIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 } catch (...) {
-                    m_reqD.remove(it);
+                    m_reqStorage.remove(it);
                     throw std::runtime_error("No such point or section");
                 }
             }
@@ -72,7 +72,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     p_it = &(*(m_pointIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 } catch (...) {
-                    m_reqD.remove(it);
+                    m_reqStorage.remove(it);
                     throw std::runtime_error("No such point or section");
                 }
             }
@@ -87,7 +87,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 p1_it = &(*(m_pointIDs.at(r.objects[0])));
                 p2_it = &(*(m_pointIDs.at(r.objects[1])));
             } catch (...) {
-                m_reqD.remove(it);
+                m_reqStorage.remove(it);
                 throw std::runtime_error("No such point");
             }
             requirement = new ReqPointPointDist(p1_it, p2_it, r.params[0]);
@@ -101,7 +101,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 p1_it = &(*(m_pointIDs.at(r.objects[0])));
                 p2_it = &(*(m_pointIDs.at(r.objects[1])));
             } catch (...) {
-                m_reqD.remove(it);
+                m_reqStorage.remove(it);
                 throw std::runtime_error("No such point");
             }
             requirement = new ReqPointOnPoint(p1_it, p2_it);
@@ -119,7 +119,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     c_it = &(*(m_circleIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 }catch(...) {
-                    m_reqD.remove(it);
+                    m_reqStorage.remove(it);
                     throw std::runtime_error("No such circle or section");
                 }
             }
@@ -138,7 +138,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     c_it = &(*(m_circleIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 }catch(...) {
-                    m_reqD.remove(it);
+                    m_reqStorage.remove(it);
                     throw std::runtime_error("No such circle or section");
                 }
             }
@@ -157,7 +157,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     c_it = &(*(m_circleIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 }catch(...) {
-                    m_reqD.remove(it);
+                    m_reqStorage.remove(it);
                     throw std::runtime_error("No such circle or section");
                 }
             }
@@ -172,7 +172,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 s1_it = &(*(m_sectionIDs.at(r.objects[0])));
                 s2_it = &(*(m_sectionIDs.at(r.objects[1])));
             }catch(...){
-                m_reqD.remove(it);
+                m_reqStorage.remove(it);
                 throw std::runtime_error("No such section");
             }
             requirement = new ReqSecSecParallel(s1_it, s2_it);
@@ -186,7 +186,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 s1_it = &(*(m_sectionIDs.at(r.objects[0])));
                 s2_it = &(*(m_sectionIDs.at(r.objects[1])));
             }catch(...){
-                m_reqD.remove(it);
+                m_reqStorage.remove(it);
                 throw std::runtime_error("No such section");
             }
             requirement = new ReqSecSecPerpendicular(s1_it, s2_it);
@@ -200,7 +200,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 s1_it = &(*(m_sectionIDs.at(r.objects[0])));
                 s2_it = &(*(m_sectionIDs.at(r.objects[1])));
             }catch(...){
-                m_reqD.remove(it);
+                m_reqStorage.remove(it);
                 throw std::runtime_error("No such section");
             }
             requirement = new ReqSecSecAngel(s1_it, s2_it, r.params[0]);
@@ -217,7 +217,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
         allFunctions.push_back(requirement->getFunction());
     }
 
-    for (const auto& req: m_reqD){
+    for (const auto& req: m_reqStorage){
         for (auto i: req.objects){
             info.m_objects.push_back(i);
             info.m_paramsBefore.push_back(getElementInfo(i).params);
@@ -232,7 +232,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
     std::cout << "Component count of req: " << countOfReq << std::endl;
 
     if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
-        for (const auto& req: m_reqD){
+        for (const auto& req: m_reqStorage){
             for (auto i: req.objects){
                 info.m_paramsAfter.push_back(getElementInfo(i).params);
             }
@@ -250,7 +250,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
         undo();
         throw std::runtime_error("Not converged");
     }
-    for (const auto& req: m_reqD){
+    for (const auto& req: m_reqStorage){
         for (auto i: req.objects){
             info.m_paramsAfter.push_back(getElementInfo(i).params);
         }
@@ -488,7 +488,7 @@ void Paint::deleteRequirement(ID req) {
     if (!m_reqIDs.contains(req)) {
         throw std::invalid_argument("No such requirement!");
     }
-    m_reqD.remove(m_reqIDs[req]);
+    m_reqStorage.remove(m_reqIDs[req]);
     m_reqIDs.erase(req);
 }
 
@@ -536,7 +536,7 @@ void Paint::undo() {
                     c->center->y = info.m_paramsBefore[i][1];
                 } catch (...) {
                     try{
-                        m_reqD.remove(m_reqIDs.at(info.m_objects[i]));
+                        m_reqStorage.remove(m_reqIDs.at(info.m_objects[i]));
                         m_reqIDs.erase(info.m_objects[i]);
                     } catch (...) {
                         std::cout << "No ID to redo" << std::endl;
@@ -660,7 +660,7 @@ void Paint::loadFromFile(const char *file) {
         }
     }
     for (const auto &i: loader.getRequirements()) {
-        auto it = m_reqD.addElement(i.to_pair().second);
+        auto it = m_reqStorage.addElement(i.to_pair().second);
         m_reqIDs[i.to_pair().first] = it;
     }
 }
@@ -670,8 +670,8 @@ void Paint::clear() {
     m_sectionIDs.clear();
     m_circleIDs.clear();
     m_reqIDs.clear();
-    for (auto i = m_reqD.begin(); i != m_reqD.end(); ++i) {
-        m_reqD.remove(i);
+    for (auto i = m_reqStorage.begin(); i != m_reqStorage.end(); ++i) {
+        m_reqStorage.remove(i);
     }
     for (auto i = m_pointStorage.begin(); i != m_pointStorage.end(); ++i) {
         m_pointStorage.remove(i);
@@ -743,7 +743,7 @@ void Paint::loadFromString(const std::string &str) {
         }
     }
     for (const auto &m_reqID: loader.getRequirements()) {
-        m_reqIDs[m_reqID.to_pair().first] = m_reqD.addElement(m_reqID.to_pair().second);
+        m_reqIDs[m_reqID.to_pair().first] = m_reqStorage.addElement(m_reqID.to_pair().second);
     }
 }
 
