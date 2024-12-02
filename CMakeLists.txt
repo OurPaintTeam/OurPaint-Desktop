@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_STANDARD 20)
 
+set(CMAKE_WIN32_EXECUTABLE TRUE)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
+
 project(ourpaint)
 # Для использования этого приложения необходимо установить QT6. Если у вас есть вопросы, обращайтесь к @ardrasss
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
