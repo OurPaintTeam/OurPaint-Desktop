@@ -49,7 +49,7 @@ public:
 
     void setEditor(bool T){editor=T;}
 
-    void getUsers(bool var) { Scaling.getUsers(var); }
+    void getUsers(bool var) { scaling.getUsers(var); }
 
     void setZoomPlus();
 
