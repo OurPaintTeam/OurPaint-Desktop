@@ -18,7 +18,7 @@ private:
     std::vector<point> points;
     std::vector<circle> circles;
     std::vector<section> sections;
-    Scaling Scaling;
+    Scaling scaling;
 
     const int CellSize;    // Изначальный размер клетки при отрисовке
     const int maxCellSize; // Максимальный размер клетки при масштабировании

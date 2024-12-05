@@ -1,7 +1,7 @@
 #include "QTPainter.h"
 
 QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
-        : QFrame(parent), ui(ui), Scaling(ui->workWindow->width(), ui->workWindow->height()),
+        : QFrame(parent), ui(ui), scaling(ui->workWindow->width(), ui->workWindow->height()),
           minCellSize(10), maxCellSize(20), CellSize(8), CellView(true), currentCellSize(1), cursorX(0), cursorY(0),
           editor(false), Circle(false), Section(false), Point(false),Drawing(false) {
 
@@ -19,7 +19,7 @@ void QTPainter::clear() {
     points.clear();
     circles.clear();
     sections.clear();
-    Scaling.setZoomZero();
+    scaling.setZoomZero();
     update();
 }
 
@@ -49,18 +49,18 @@ void QTPainter::draw() {
 }
 
 void QTPainter::setZoomPlus() {
-    double max_zoom = (ui->workWindow->width()) / 16.0 / Scaling.getScale();
-    Scaling.setZoomPlus(max_zoom);
+    double max_zoom = (ui->workWindow->width()) / 16.0 / scaling.getScale();
+    scaling.setZoomPlus(max_zoom);
     update();
 }
 
 void QTPainter::setZoomMinus() {
-    Scaling.setZoomMinus();
+    scaling.setZoomMinus();
     update();
 }
 
 void QTPainter::setZoomZero() {
-    Scaling.setZoomZero();
+    scaling.setZoomZero();
     points.clear();
     circles.clear();
     sections.clear();
@@ -121,12 +121,12 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     // Масштабируем
  //   Scaling.scaling(width(), height(), FindMaxMin());
 
-    double scale = Scaling.getScale();
-    double zoom = Scaling.getZoom();
+    double scale = scaling.getScale();
+    double zoom = scaling.getZoom();
     double _width = width() / 2.0;
     double _height = height() / 2.0;
-    int deltaX = Scaling.getDeltaX();
-    int deltaY = Scaling.getDeltaY();
+    int deltaX = scaling.getDeltaX();
+    int deltaY = scaling.getDeltaY();
 
 
     // Отрисовка клетчатого фона
@@ -188,30 +188,30 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
     // Отрисовка фигур
     for (const auto &pt: points) {
-        int X = static_cast<int>(Scaling.scaleCoordinateX(pt.x) + _width );
-        int Y = static_cast<int>(Scaling.scaleCoordinateY(-pt.y) + _height );
+        int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width );
+        int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height );
         painter.drawPoint(X, Y);
     }
 
     for (const auto &c: circles) {
-        int X = static_cast<int>(Scaling.scaleCoordinateX(c.center->x) + _width );
-        int Y = static_cast<int>(Scaling.scaleCoordinateY(-c.center->y) + _height );
-        int Radius = 2 * static_cast<int>(Scaling.scaleCoordinate(c.R));
+        int X = static_cast<int>(scaling.scaleCoordinateX(c.center->x) + _width );
+        int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
+        int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
         painter.drawEllipse(X - Radius / 2, Y - Radius / 2, Radius, Radius);
     }
 
     for (const auto &sec: sections) {
-        int BegX = static_cast<int>(Scaling.scaleCoordinateX(sec.beg->x) + _width );
-        int BegY = static_cast<int>(Scaling.scaleCoordinateY(-sec.beg->y) + _height );
-        int EndX = static_cast<int>(Scaling.scaleCoordinateX(sec.end->x) + _width );
-        int EndY = static_cast<int>(Scaling.scaleCoordinateY(-sec.end->y) + _height );
+        int BegX = static_cast<int>(scaling.scaleCoordinateX(sec.beg->x) + _width );
+        int BegY = static_cast<int>(scaling.scaleCoordinateY(-sec.beg->y) + _height );
+        int EndX = static_cast<int>(scaling.scaleCoordinateX(sec.end->x) + _width );
+        int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
         painter.drawLine(BegX, BegY, EndX, EndY);
     }
 
     if (editor) {
         painter.setPen(Qt::black);
-        int logicalX = static_cast<int>(Scaling.logicX(cursorX - _width));
-        int logicalY = static_cast<int>(Scaling.logicY(_height - cursorY));
+        int logicalX = static_cast<int>(scaling.logicX(cursorX - _width));
+        int logicalY = static_cast<int>(scaling.logicY(_height - cursorY));
         painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY));
 
         if (Circle && Drawing) {
@@ -221,14 +221,14 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             int centerY = (logicalPerimeterY + logicalY) / 2;
 
             int radius = static_cast<int>(std::hypot(logicalPerimeterX - centerX, logicalPerimeterY - centerY));
-            int screenCenterX = static_cast<int>(Scaling.scaleCoordinateX(centerX) + _width);
-            int screenCenterY = static_cast<int>(Scaling.scaleCoordinateY(-centerY) + _height);
-            int scaledRadius = static_cast<int>(Scaling.scaleCoordinate(radius));
+            int screenCenterX = static_cast<int>(scaling.scaleCoordinateX(centerX) + _width);
+            int screenCenterY = static_cast<int>(scaling.scaleCoordinateY(-centerY) + _height);
+            int scaledRadius = static_cast<int>(scaling.scaleCoordinate(radius));
             painter.drawEllipse(screenCenterX - scaledRadius, screenCenterY - scaledRadius, 2 * scaledRadius, 2 * scaledRadius);
         }
         else if (Section && Drawing) {
-            int screenStartX = static_cast<int>(Scaling.scaleCoordinateX(sectionStartPoint.x()) + _width);
-            int screenStartY = static_cast<int>(Scaling.scaleCoordinateY(-sectionStartPoint.y()) + _height);
+            int screenStartX = static_cast<int>(scaling.scaleCoordinateX(sectionStartPoint.x()) + _width);
+            int screenStartY = static_cast<int>(scaling.scaleCoordinateY(-sectionStartPoint.y()) + _height);
             painter.drawLine(screenStartX, screenStartY, cursorX, cursorY);
         }
     }
@@ -249,11 +249,11 @@ unsigned long long QTPainter::getHeight() {
 
 void QTPainter::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
-        Scaling.startMousePress(event->pos());
+        scaling.startMousePress(event->pos());
         emit RightPress();
 
         if ((Circle || Section || Point) && Drawing) {
-            Scaling.resetUsersResize();
+            scaling.resetUsersResize();
             Drawing = false;
         }
         update();
@@ -264,8 +264,8 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         QPoint Position = event->pos();
         double _width = width() / 2.0;
         double _height = height() / 2.0;
-        int logicalX = static_cast<int>(Scaling.logicX(Position.x() - _width));
-        int logicalY = static_cast<int>(Scaling.logicY(_height - Position.y()));
+        int logicalX = static_cast<int>(scaling.logicX(Position.x() - _width));
+        int logicalY = static_cast<int>(scaling.logicY(_height - Position.y()));
 
         if (Point) {
             Position.setX(logicalX);
@@ -304,14 +304,14 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
 }
 
 void QTPainter::mouseMoveEvent(QMouseEvent *event) {
-    Scaling.mouseMove(event->pos());
+    scaling.mouseMove(event->pos());
 
     if (editor) {
         cursorX = event->pos().x();
         cursorY = event->pos().y();
     }
 
-    if (Scaling.isRightMousePressed()) {
+    if (scaling.isRightMousePressed()) {
         emit RightPress();
     }
     update();
@@ -319,7 +319,7 @@ void QTPainter::mouseMoveEvent(QMouseEvent *event) {
 
 void QTPainter::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
-        Scaling.endMousePress();
+        scaling.endMousePress();
     }
 }
 
