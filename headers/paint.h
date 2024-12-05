@@ -34,56 +34,81 @@ struct ActionsInfo{
     std::vector<std::vector<double>> m_paramsAfter;
 };
 
-//c_ - класс, v_- переменная, s_структура, m_ - контейнеры(списки, массивы и другие) f_ - приватный метод класса
+// c_ class
+// v_ variable
+// s_ structure
+// m_ containers(List, Array and other)
+// f_ private class method
+
 class Paint {
-    //In the graph, the edges are represented by requirements and the vertices are represented by objects.
+    // Undo Redo
     UndoRedo<ActionsInfo> c_undoRedo;
+
+    // Point, Section, Circle ID-containers
     std::map<ID, List<point>::iterator> m_pointIDs;
     std::map<ID, List<section>::iterator> m_sectionIDs;
     std::map<ID, List<circle>::iterator> m_circleIDs;
-    std::map<ID, List<RequirementData>::iterator> m_reqIDs;
-    List<RequirementData> m_reqD;
+
+    // Point, Section, Circle containers
     List<point> m_pointStorage;
     List<section> m_sectionStorage;
     List<circle> m_circleStorage;
+
+    // Requirements ID-container
+    std::map<ID, List<RequirementData>::iterator> m_reqIDs;
+
+    // Requirements container
+    List<RequirementData> m_reqStorage;
+
+    // BMP painting structure
     Painter* c_bmpPainter;
+
+    // Rectangle
     rectangle s_allFigures;
+
+    //
     ID s_maxID;
+
+    // The graph. The edges are represented by requirements and the vertices are represented by objects.
     Graph<RequirementData, ID> m_graph;
 
 public:
+
+    // Default constructor
     Paint(Painter* p) : s_maxID(0), m_pointIDs(),c_bmpPainter(p), m_sectionIDs(), m_circleIDs(), m_pointStorage(),
         m_sectionStorage(), m_circleStorage() {
         s_allFigures.x_1 = -10;
         s_allFigures.x_2 = 10;
         s_allFigures.y_1 = -10;
         s_allFigures.y_2 = 10;
-    } //default constructor
+    }
         
-    // Добавление элементов с указанием их типа и необходимого набора параметров
+    // Addition elements by specifying their type and needed parameters
     ID addElement(const ElementData &ed);
     
-    // Добавление требованием
+    // Addition requirement
     ID addRequirement(const RequirementData &rd);
 
-    // Получение информации об объекте    
+    // Get information about object
     ElementData getElementInfo(ID id);
     std::vector<std::pair<ID, ElementData>> getAllElementsInfo();
     RequirementData getRequirementInfo(ID id);
     std::vector<std::pair<ID, RequirementData>> getAllRequirementsInfo();
 
-    // Сохранение данных в файл
+    // Save data in file
     void saveToFile(const char *filename);
     std::string to_string() const;
     
-    // Экспорт в BMP файл
+    // Export to BMP file
     void exportToBMP(const char *file);
     
-    // Загрузка данных из файла
+    // Upload data from file
     void loadFromFile(const char *file);
-    //Загрузка данных из string
+
+    // load data from string
     void loadFromString(const std::string & str);
-    // Задает фон(изменяет filename файл)
+
+    // Set background(change file name)
     // void changeBMP(const BMPfile& file);
     // void changeBMP(const char* filename);
     void setPainter(Painter* p);
