@@ -28,6 +28,7 @@ include_directories(headers/saveload)
 include_directories(headers/ClientServer)
 include_directories(headers/GUI)
 include_directories(headers/GUI/Windows)
+include_directories(headers/App)
 
 add_executable(ourpaint
         main.cpp
@@ -57,6 +58,8 @@ add_executable(ourpaint
         src/ClientServer/Client.cpp
         src/ClientServer/LocalScanner.cpp
         src/ClientServer/PortCheckTask.cpp
+
+        src/App/Application.cpp
 
         headers/enums.h
         headers/objects.h
@@ -94,6 +97,8 @@ add_executable(ourpaint
         headers/saveload/LoadSettingsApplications.h
         headers/saveload/objectInFile.h
         headers/saveload/SaveSettingsApplications.h
+
+        headers/App/Application.h
         )
 
 
