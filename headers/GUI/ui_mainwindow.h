@@ -39,6 +39,8 @@ public:
     QAction *actionImport_project;
     QAction *actionExport_bmp;
     QAction *actionOpen_bmp;
+    QAction *actionScript;
+
     QAction *actionOpen_server;
     QAction *actionJoin_server;
     QAction *actionJoin_local_server;
@@ -250,6 +252,11 @@ public:
         QIcon bmpOn("../Static/icons/bmpImp.ico");
         actionOpen_bmp->setIcon(bmpOn);
 
+        actionScript = new QAction(MainWindow);
+        actionScript->setObjectName("actionScript");
+        //QIcon scriptIcon();
+        //actionScript->setIcon();
+
         actionOpen_server = new QAction(MainWindow);
         actionOpen_server->setObjectName("actionOpen_server");
 
@@ -328,6 +335,7 @@ public:
         menuProject->addAction(actionImport_project);
         menuProject->addAction(actionExport_bmp);
         menuProject->addAction(actionOpen_bmp);
+        menuProject->addAction(actionScript);
 
         // Меню "Collaboration"
         menuCollaboration = new QMenu(MainWindow);
@@ -995,10 +1003,13 @@ public:
     void retranslateUi(QMainWindow *MainWindow) {
         // Установка текста элементов интерфейса
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
+
         actionSave_project_to->setText(QCoreApplication::translate("MainWindow", "Save project to...", nullptr));
         actionImport_project->setText(QCoreApplication::translate("MainWindow", "Import project", nullptr));
         actionExport_bmp->setText(QCoreApplication::translate("MainWindow", "Export bmp", nullptr));
         actionOpen_bmp->setText(QCoreApplication::translate("MainWindow", "Open bmp", nullptr));
+        actionScript->setText(QCoreApplication::translate("MainWindow", "Script", nullptr));
+
         actionOpen_server->setText(QCoreApplication::translate("MainWindow", "Open server", nullptr));
         actionJoin_server->setText(QCoreApplication::translate("MainWindow", "Join server", nullptr));
         actionJoin_local_server->setText(QCoreApplication::translate("MainWindow", "Join local server", nullptr));

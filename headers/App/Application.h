@@ -1,13 +1,14 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
+#include <QTranslator>
+#include <QPixmap>
 #include <memory>
 #include <QApplication>
 #include "MainWindow.h"
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
-#include "Paint.h"
 
 class Application {
 public:

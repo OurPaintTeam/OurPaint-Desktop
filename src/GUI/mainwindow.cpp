@@ -30,6 +30,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionImport_project, &QAction::triggered, this, &MainWindow::loadProjectFile);
     connect(ui->actionExport_bmp, &QAction::triggered, this, &MainWindow::saveProjectToBMP);
     connect(ui->actionOpen_bmp, &QAction::triggered, this, &MainWindow::loadProjectBMP);
+    connect(ui->actionScript, &QAction::triggered, this, &MainWindow::buttonScript);
+
 
     // Кнопки сервера
     connect(ui->actionOpen_server, &QAction::triggered, this, &MainWindow::openServer);
@@ -282,6 +284,17 @@ void MainWindow::loadProjectBMP(){
         emit loadBMP(fileName); // Сигнал
     }
 
+}
+
+void MainWindow::buttonScript() {
+    // Открытие диалога выбора файла проекта
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
+                                                    QDir::homePath(),
+                                                    tr("Project Files (*.txt);;All Files (*)"));
+
+    if (!fileName.isEmpty()) {
+        emit EmitScript(fileName); // Signal
+    }
 }
 
 // Сохранение текущего проекта в файл
@@ -989,5 +1002,7 @@ void MainWindow::showSuccess(const QString &text) {
     success->move(pos);
     success->show();
 }
+
+
 
 

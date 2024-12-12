@@ -136,6 +136,7 @@ signals:
     void resized(); // Сигнал при изменении размера окна
     void projectSaved(const QString &fileName); // Сигнал о сохранении проекта
     void LoadFile(const QString &fileName); // Сигнал для загрузки файла
+    void EmitScript(const QString &fileName);
 
     void KeyPlus(); // Сигнал увелечения при тачпаде,колёсике и ctrl +
     void KeyMinus(); // Сигнал уменьшения при тачпаде,колёсике и ctrl -
@@ -188,6 +189,8 @@ public slots:
     void saveProjectToBMP();
 
     void loadProjectBMP();
+
+    void buttonScript();
 
     void openServer();
 

@@ -11,8 +11,7 @@ Application::Application(int &argc, char **argv)
           server("User"),
           client("User"),
           isConnected(false),
-          isServer(false)
-{
+          isServer(false) {
     initialize();
     setupConnections();
 }
@@ -49,13 +48,39 @@ void Application::initialize() {
 }
 
 void Application::setupConnections() {
-    QObject::connect(&w, &MainWindow::parameterChanged,[this](unsigned long long id, const std::vector<double> &parameters) {
-        w.setSave(false);
-        screen.paint();
-        painter->draw();
-    });
+    QObject::connect(&w, &MainWindow::parameterChanged,
+                     [this](unsigned long long id, const std::vector<double> &parameters) {
+                         w.setSave(false);
+                         screen.paint();
+                         painter->draw();
+                     });
 
-    QObject::connect(painter.get(), &QTPainter::SigPoint,[this](QPoint Position) {
+    // Choice figure
+    QObject::connect(&w, &MainWindow::SigMoving, [this]() {
+        painter->setEditor(false);
+        painter->setCircle(false);
+        painter->setSection(false);
+        painter->setPoint(false);
+    });
+    QObject::connect(&w, &MainWindow::SigPoint, [this]() {
+        painter->setEditor(true);
+        painter->setPoint(true);
+        painter->setCircle(false);
+        painter->setSection(false);
+    });
+    QObject::connect(&w, &MainWindow::SigSection, [this]() {
+        painter->setEditor(true);
+        painter->setSection(true);
+        painter->setCircle(false);
+        painter->setPoint(false);
+    });
+    QObject::connect(&w, &MainWindow::SigCircle, [this]() {
+        painter->setEditor(true);
+        painter->setCircle(true);
+        painter->setSection(false);
+        painter->setPoint(false);
+    });
+    QObject::connect(painter.get(), &QTPainter::SigPoint, [this](QPoint Position) {
         if (isConnected) {
             if (isServer) {
                 ElementData point;
@@ -80,8 +105,7 @@ void Application::setupConnections() {
             updateState();
         }
     });
-
-    QObject::connect(painter.get(), &QTPainter::SigCircle,[this](QPoint centerPoint, int radius) {
+    QObject::connect(painter.get(), &QTPainter::SigCircle, [this](QPoint centerPoint, int radius) {
         ElementData circle;
         if (isConnected) {
             if (isServer) {
@@ -108,8 +132,7 @@ void Application::setupConnections() {
             updateState();
         }
     });
-
-    QObject::connect(painter.get(), &QTPainter::SigSection,[this](int startX,int startY,int endX,int endY) {
+    QObject::connect(painter.get(), &QTPainter::SigSection, [this](int startX, int startY, int endX, int endY) {
         ElementData section;
         if (isConnected) {
             if (isServer) {
@@ -140,59 +163,15 @@ void Application::setupConnections() {
         }
     });
 
-    // Choice figure
-    QObject::connect(&w, &MainWindow::SigMoving, [this]() {
-        painter->setEditor(false);
-        painter->setCircle(false);
-        painter->setSection(false);
-        painter->setPoint(false);
-    });
-    QObject::connect(&w, &MainWindow::SigPoint, [this]() {
-        painter->setEditor(true);
-        painter->setPoint(true);
-        painter->setCircle(false);
-        painter->setSection(false);
-    });
-    QObject::connect(&w, &MainWindow::SigSection, [this]() {
-        painter->setEditor(true);
-        painter->setSection(true);
-        painter->setCircle(false);
-        painter->setPoint(false);
-    });
-    QObject::connect(&w, &MainWindow::SigCircle, [this]() {
-        painter->setEditor(true);
-        painter->setCircle(true);
-        painter->setSection(false);
-        painter->setPoint(false);
-    });
-
     // Settings
     QObject::connect(&w, &MainWindow::GridOn, [this](bool T) {
         painter->setCell(T);
-    });
-
-    // Chat
-    QObject::connect(&w, &MainWindow::EnterMessage, [this](const QString &text) {
-        if (isConnected) {
-            if (isServer) {
-                w.setMessage(username.toStdString(), text.toStdString());
-                server.sendChatToClients(text, username);
-            } else {
-                if (!text.isEmpty()) {
-                    client.sendChatMessage(text);
-                }
-            }
-        } else {
-            w.showError("Firstly connect to server!");
-            return;
-        }
     });
     QObject::connect(&client, &Client::serverShutdown, [this]() {
         w.showSuccess("Server shutdown!(");
         isConnected = false;
         isServer = false;
     });
-
     QObject::connect(&w, &MainWindow::NameUsers, [this](const QString &text) {
         username = text;
         if (!isConnected) {
@@ -200,10 +179,15 @@ void Application::setupConnections() {
             client.setName(username);
         }
     });
-
     QObject::connect(&client, &Client::disconnectedFromServer, [this]() {
         isConnected = false;
         w.showSuccess("You disconnected from server");
+    });
+    QObject::connect(&w, &MainWindow::changeSettings, [this]() {
+        SaveSettingsApplications saveSet("Settings", &w);
+        saveSet.clear();
+        auto [figures, requirements, settings, name] = w.saveSettings();
+        saveSet.SaveSettings(settings, name);
     });
 
     // Server button
@@ -276,10 +260,26 @@ void Application::setupConnections() {
         w.setMessage(name.toStdString(), msg.toStdString());
         updateState();
     });
-    QObject::connect(&server, &Server::newConnection, [this](){
+    QObject::connect(&server, &Server::newConnection, [this]() {
         server.sendToClients(QString::fromStdString(screen.to_string()));
     });
+    QObject::connect(&w, &MainWindow::EnterMessage, [this](const QString &text) {
+        if (isConnected) {
+            if (isServer) {
+                w.setMessage(username.toStdString(), text.toStdString());
+                server.sendChatToClients(text, username);
+            } else {
+                if (!text.isEmpty()) {
+                    client.sendChatMessage(text);
+                }
+            }
+        } else {
+            w.showError("Firstly connect to server!");
+            return;
+        }
+    });
 
+    // Console
     QObject::connect(&w, &MainWindow::EnterPressed, [&](const QString &command) {
         QStringList commandParts = command.split(' ');
         if (isConnected) {
@@ -322,11 +322,11 @@ void Application::setupConnections() {
         painter->draw();
     });
 
+    // Resize
     QObject::connect(&w, &MainWindow::resized, [this]() {
         screen.paint();
         painter->draw();
     });
-
     QObject::connect(&w, &MainWindow::KeyPlus, [this]() {
         painter->getUsers(true);
         painter->setZoomPlus();
@@ -347,6 +347,7 @@ void Application::setupConnections() {
         painter->draw();
     });
 
+    // Undo/Redo
     QObject::connect(&w, &MainWindow::REDO, [this]() {
         try {
             screen.redo();
@@ -398,7 +399,6 @@ void Application::setupConnections() {
         }
 
     });
-
     QObject::connect(&w, &MainWindow::UNDO, [this]() {
         try {
             screen.undo();
@@ -449,27 +449,18 @@ void Application::setupConnections() {
         }
     });
 
-
-    QObject::connect(&w, &MainWindow::changeSettings, [this]() {
-        SaveSettingsApplications saveSet("Settings", &w);
-        saveSet.clear();
-        auto [figures, requirements, settings, name] = w.saveSettings();
-        saveSet.SaveSettings(settings, name);
-    });
-
+    // Save/Load
     QObject::connect(&w, &MainWindow::saveBMP, [this](const QString &fileName) {
         try {
             screen.exportToBMP(fileName.toStdString().c_str());
             w.showSuccess("Saved to " + fileName);
-        }catch (std::exception &e) {
+        } catch (std::exception &e) {
             w.showWarning(e.what());
         }
     });
-
     QObject::connect(&w, &MainWindow::loadBMP, [&](const QString &fileName) {
 
     });
-
     QObject::connect(&w, &MainWindow::projectSaved, [this](const QString &fileName) {
         std::string File = fileName.toStdString();
         auto [figures, requirements, settings, name] = w.saveSettings();
@@ -482,7 +473,6 @@ void Application::setupConnections() {
         screen.paint();
         painter->draw();
     });
-
     QObject::connect(&w, &MainWindow::LoadFile, [&](const QString &fileName) {
         painter->clear();
         w.Print_LeftMenu(0, "Clear", {});
@@ -544,6 +534,37 @@ void Application::setupConnections() {
 
         w.loadSettings(settings, NameUsers);
 
+
+    });
+    QObject::connect(&w, &MainWindow::EmitScript, [&](const QString &fileName) {
+        std::string File = fileName.toStdString();  // Конвертируем имя файла в std::string
+
+        std::ifstream Script(File);  // Открываем файл для чтения
+
+        if (!Script) {  // Проверяем, успешно ли открылся файл
+            std::cerr << "Ошибка открытия файла: " << File << std::endl;
+            return;
+        }
+
+        // TODO logs
+
+        std::string command;
+        while (std::getline(Script, command)) {  // Читаем строку из файла в std::string
+            QString qCommand = QString::fromStdString(command);  // Преобразуем std::string обратно в QString, если нужно
+
+            // TODO logs
+
+            if (isConnected) {
+                if (isServer) {
+                    handler(qCommand);  // Обрабатываем команду
+                    server.sendToClients(QString::fromStdString(screen.to_string()));  // Отправляем данные клиентам
+                } else {
+                    client.sendCommandToServer(qCommand);  // Отправляем команду на сервер
+                }
+            } else {
+                handler(qCommand);
+            }
+        }
 
     });
 }
