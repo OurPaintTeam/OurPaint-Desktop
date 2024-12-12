@@ -34,7 +34,7 @@ QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow {
 public:
-    // Действия (Actions)
+    // Actions
     QAction *actionSave_project_to;
     QAction *actionImport_project;
     QAction *actionExport_bmp;
@@ -47,7 +47,7 @@ public:
     QAction *actionExit_from_session;
     QAction *action_help;
 
-    // Основные виджеты
+    // Main widgets
     QWidget *centralwindow;
     QGridLayout *gridLayout_2;
     QGridLayout *gridLayout;
@@ -59,22 +59,22 @@ public:
     QPushButton *enterConsole;
     QHBoxLayout *layoutConsole;
 
-    // Меню
+    // Menu
     QMenu *menuProject;
     QMenu *menuCollaboration;
 
-    // Кнопки меню
+    // Menu buttons
     QPushButton *projectButton;
     QPushButton *collaborationButton;
     QPushButton *helpButton;
     QPushButton *settings;
 
-    // Кнопки управления окном
+    // Window control buttons
     QPushButton *closeButton;
     QPushButton *minimizeButton;
     QPushButton *maximizeButton;
 
-    // Левое меню
+    // Left menu
     QPushButton *collapseButton;
     QWidget *leftMenuContainer;
     QGridLayout *leftMenuLayout;
@@ -86,17 +86,17 @@ public:
     QPushButton *leftMenuMessage;
     QPushButton *Figures;
 
-    // Панель и кнопки фигур
+    // Panel and figures buttons
     QWidget *figuresPanel;
     QPushButton *figureMoving;
     QPushButton *figurePoint;
     QPushButton *figureSection;
     QPushButton *figureCircle;
 
-    // Анимация для панели
+    // Animation for panel
     QPropertyAnimation *figuresPanelAnimation;
 
-    // Чат
+    // Chat
     QFrame *message;
     QLineEdit *messageConsole;
     QPushButton *messageCollapseButton;
@@ -113,7 +113,7 @@ public:
     QHBoxLayout *nameLayout;
     QLabel *nameLabel;
 
-    // Панель настроек
+    // Settings panel
     QWidget *settingsPanel;
     QVBoxLayout *settingsLayout;
     QCheckBox *componentGrid;
@@ -218,7 +218,7 @@ public:
 
         MainWindow->setCentralWidget(centralwindow);
 
-        retranslateUi(MainWindow);
+        reTranslateUi(MainWindow);
 
         QMetaObject::connectSlotsByName(MainWindow);
 
@@ -1000,14 +1000,14 @@ public:
         });
     }
 
-    void retranslateUi(QMainWindow *MainWindow) {
-        // Установка текста элементов интерфейса
+    void reTranslateUi(QMainWindow *MainWindow) const {
+        // Set text for interface elements
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
 
         actionSave_project_to->setText(QCoreApplication::translate("MainWindow", "Save project to...", nullptr));
         actionImport_project->setText(QCoreApplication::translate("MainWindow", "Import project", nullptr));
-        actionExport_bmp->setText(QCoreApplication::translate("MainWindow", "Export bmp", nullptr));
-        actionOpen_bmp->setText(QCoreApplication::translate("MainWindow", "Open bmp", nullptr));
+        actionExport_bmp->setText(QCoreApplication::translate("MainWindow", "Export BMP", nullptr));
+        actionOpen_bmp->setText(QCoreApplication::translate("MainWindow", "Open BMP", nullptr));
         actionScript->setText(QCoreApplication::translate("MainWindow", "Script", nullptr));
 
         actionOpen_server->setText(QCoreApplication::translate("MainWindow", "Open server", nullptr));
@@ -1016,7 +1016,7 @@ public:
         actionExit_from_session->setText(QCoreApplication::translate("MainWindow", "Exit from session", nullptr));
         action_help->setText(QCoreApplication::translate("MainWindow", "Help", nullptr));
 
-        // Установка текста элементов левого меню
+        // Set elements left menu
         const bool __sortingEnabled = leftMenu->isSortingEnabled();
         leftMenu->setSortingEnabled(false);
 
@@ -1025,15 +1025,15 @@ public:
 
         leftMenu->setSortingEnabled(__sortingEnabled);
 
-        // Очистка текста консоли
+        // Clear console
         console->setText(QCoreApplication::translate("MainWindow", "", nullptr));
 
-        // Установка текста кнопок меню
+        // Set text for button menu
         projectButton->setText(QCoreApplication::translate("MainWindow", "Project", nullptr));
         collaborationButton->setText(QCoreApplication::translate("MainWindow", "Collaboration", nullptr));
         helpButton->setText(QCoreApplication::translate("MainWindow", "Help", nullptr));
 
-        // Установка текста настроек
+        // Set settings text
         componentGrid->setText(QCoreApplication::translate("MainWindow", "Grid", nullptr));
     }
 };

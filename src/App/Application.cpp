@@ -537,29 +537,26 @@ void Application::setupConnections() {
 
     });
     QObject::connect(&w, &MainWindow::EmitScript, [&](const QString &fileName) {
-        std::string File = fileName.toStdString();  // Конвертируем имя файла в std::string
+        std::string File = fileName.toStdString();
 
-        std::ifstream Script(File);  // Открываем файл для чтения
-
-        if (!Script) {  // Проверяем, успешно ли открылся файл
-            std::cerr << "Ошибка открытия файла: " << File << std::endl;
-            return;
-        }
+        std::ifstream Script(File);
 
         // TODO logs
 
+        // TODO UNDO/REDO
+
         std::string command;
-        while (std::getline(Script, command)) {  // Читаем строку из файла в std::string
-            QString qCommand = QString::fromStdString(command);  // Преобразуем std::string обратно в QString, если нужно
+        while (std::getline(Script, command)) {
+            QString qCommand = QString::fromStdString(command);
 
             // TODO logs
 
             if (isConnected) {
                 if (isServer) {
-                    handler(qCommand);  // Обрабатываем команду
-                    server.sendToClients(QString::fromStdString(screen.to_string()));  // Отправляем данные клиентам
+                    handler(qCommand);
+                    server.sendToClients(QString::fromStdString(screen.to_string()));
                 } else {
-                    client.sendCommandToServer(qCommand);  // Отправляем команду на сервер
+                    client.sendCommandToServer(qCommand);
                 }
             } else {
                 handler(qCommand);
