@@ -666,7 +666,7 @@ void Application::handler(const QString &command) {
     QStringList commandParts = command.split(' ');
     bool commandRight = false;
 
-    if (commandParts[0] == "point" && commandParts.size() == 3) {
+    if (commandParts[0] == "point" && commandParts.size() >= 3) {
         bool xOk, yOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
@@ -681,7 +681,7 @@ void Application::handler(const QString &command) {
             commandRight = true;
         }
 
-    } else if (commandParts[0] == "circle" && commandParts.size() == 4) {
+    } else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
         bool xOk, yOk, rOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
@@ -699,7 +699,7 @@ void Application::handler(const QString &command) {
             commandRight = true;
         }
 
-    } else if (commandParts[0] == "section" && commandParts.size() == 5) {
+    } else if (commandParts[0] == "section" && commandParts.size() >= 5) {
         bool xOk, yOk, zOk, rOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
@@ -735,7 +735,7 @@ void Application::handler(const QString &command) {
         Requirement type;
         double parameters = 0;
 
-        if (commandParts.size() == 5) {
+        if (commandParts.size() >= 5) {
             parameters = commandParts[4].toDouble();
         }
         try {
