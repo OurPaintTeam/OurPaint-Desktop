@@ -20,11 +20,15 @@ MainWindow::MainWindow(QWidget *parent)
     setAllMouseTracking(this); // Отслеживание мыши
     setAttribute(Qt::WA_OpaquePaintEvent);
 
-    connect(ui->figureMoving, &QPushButton::clicked, this, &MainWindow::Moving);
+
     connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
     connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
     connect(ui->figureSection, &QPushButton::clicked, this, &MainWindow::Section);
-    connect(ui->toolMoving, &QPushButton::clicked, this, &MainWindow::ToolsMoving);
+    connect(ui->figureMoving, &QPushButton::clicked, this, &MainWindow::FigMoving);
+    connect(ui->toolMoving, &QPushButton::clicked, this, &MainWindow::ToolMoving);
+    connect(ui->toolRotation, &QPushButton::clicked, this, &MainWindow::ToolRotation);
+    connect(ui->toolResize, &QPushButton::clicked, this, &MainWindow::ToolResize);
+
 
     // Кнопки сохранение/импорт
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
@@ -337,6 +341,8 @@ void MainWindow::saveProjectToFile() {
     }
 }
 
+
+
 // Подсветка по ID
 void MainWindow::FocusOnItemById(unsigned long long id) {
     QTreeWidgetItem *itemFigures = ui->leftMenu->topLevelItem(1);
@@ -382,6 +388,38 @@ QTreeWidgetItem* MainWindow::findItemById(QTreeWidgetItem *item, unsigned long l
 }
 
 
+
+// Двойное нажатие на левое меню
+void MainWindow::onItemDoubleClicked(QTreeWidgetItem *item, int column) {
+
+    QString itemText = item->text(0);
+    bool ok;
+    unsigned long long id = itemText.split(":").first().toULongLong(&ok); // Извлекаем ID
+    if (ok) {
+        QList<QTreeWidgetItem*> childItems = getAllChildItems(item);
+        processChildItems(childItems);
+    }
+}
+
+// Элементы левого меню
+QList<QTreeWidgetItem*> MainWindow::getAllChildItems(QTreeWidgetItem *item) {
+    QList<QTreeWidgetItem*> childItems;
+    for (int i = 0; i < item->childCount(); ++i) {
+        childItems.append(item->child(i)); // Добавляем дочерний элемент
+        // Рекурсивно добавляем дочерние элементы
+        QList<QTreeWidgetItem*> grandChildItems = getAllChildItems(item->child(i));
+        childItems.append(grandChildItems);
+    }
+    return childItems;
+}
+
+// Передача координат
+void MainWindow::processChildItems(const QList<QTreeWidgetItem*> &childItems) {
+
+    for (const auto &child : childItems) {
+        qDebug() << "Child Item:" << child->text(0);
+    }
+}
 
 // Добавление элементов в левое меню
 void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, const std::vector<double> &object) {
@@ -441,6 +479,10 @@ void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, 
 
         if (paramNames[i] != "ID") {
             paramItem->setFlags(paramItem->flags() | Qt::ItemIsEditable); // Для изменения параметров
+        }
+        else {
+            paramItem->setFlags(paramItem->flags() & ~Qt::ItemIsEditable); // Убираем редактируемость для ID
+            paramItem->setFlags(paramItem->flags() | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         }
 
         QIcon paramIcon("../Static/icons/Database.ico");

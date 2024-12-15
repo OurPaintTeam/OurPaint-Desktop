@@ -31,6 +31,7 @@ private:
 
     bool isConnected;
     bool isServer;
+    bool move;
 
     void updateState();
     void handler(const QString &command);

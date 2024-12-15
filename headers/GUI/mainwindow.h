@@ -100,6 +100,9 @@ public:
 
     void FocusOnItemById(unsigned long long id);
     QTreeWidgetItem* findItemById(QTreeWidgetItem *item, unsigned long long id);
+    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+    QList<QTreeWidgetItem*> getAllChildItems(QTreeWidgetItem *item);
+    void processChildItems(const QList<QTreeWidgetItem*> &childItems);
 
 protected:
     // Обработчики событий клавиатуры и мыши
@@ -164,7 +167,6 @@ signals:
     //Настройки
     void GridOn(bool T);
 
-    void ToolMoving();
 
     void SigMoving();
 
@@ -173,6 +175,10 @@ signals:
     void SigCircle();
 
     void SigPoint();
+
+    void toolMoving();
+    void toolRotation();
+    void toolResize();
 
     void NameUsers(const QString &text);
 
@@ -218,14 +224,13 @@ public slots:
     void LeftMenuChanged(QTreeWidgetItem *item);
 
     void Point() { emit SigPoint(); };
-
-    void Moving() { emit SigMoving(); };
-
     void Section() { emit SigSection(); };
-
     void Circle() { emit SigCircle(); };
 
-    void ToolsMoving() { emit ToolMoving(); };
+    void FigMoving() { emit SigMoving(); };
+    void ToolMoving() { emit toolMoving(); };
+    void ToolRotation() { emit toolRotation(); };
+    void ToolResize() { emit toolResize(); };
 
 };
 
