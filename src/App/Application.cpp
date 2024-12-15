@@ -117,6 +117,7 @@ void Application::setupConnections() {
                      [this](Element F, int x, int y, int x1, int y1) {
                          qDebug() << "Move with 4 params:" << x << ":" << y << "to" << x1<<":" << y1;
                          if(painter->getDoubleClick()){
+                           //  w.FocusOnItemById(1);
                              //подсветка левого меню по айди
                          }
                      }

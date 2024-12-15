@@ -98,6 +98,8 @@ public:
 
     void loadSettings(std::vector<bool> settings, const QString &name);
 
+    void FocusOnItemById(unsigned long long id);
+    QTreeWidgetItem* findItemById(QTreeWidgetItem *item, unsigned long long id);
 
 protected:
     // Обработчики событий клавиатуры и мыши

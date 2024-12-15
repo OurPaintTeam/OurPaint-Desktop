@@ -95,6 +95,7 @@ MainWindow::MainWindow(QWidget *parent)
     frameOverlay->hide(); // Скрытие наложения рамки
 }
 
+
 // Добавление сообщений
 void MainWindow::setMessage(const std::string &name, const std::string &message) {
     QString messageText = QString::fromStdString(name) + ": " + QString::fromStdString(message);
@@ -335,6 +336,51 @@ void MainWindow::saveProjectToFile() {
         save = false;
     }
 }
+
+// Подсветка по ID
+void MainWindow::FocusOnItemById(unsigned long long id) {
+    QTreeWidgetItem *itemFigures = ui->leftMenu->topLevelItem(1);
+    QTreeWidgetItem *foundItem = nullptr;
+
+    // Сброс состояния всех элементов
+    for (int i = 0; i < itemFigures->childCount(); ++i) {
+        itemFigures->child(i)->setSelected(false); // Снимаем выделение со всех
+    }
+
+    // Поиск элемента по ID
+    for (int i = 0; i < itemFigures->childCount(); ++i) {
+        foundItem = findItemById(itemFigures->child(i), id);
+        if (foundItem) {
+            break;
+        }
+    }
+
+    if (foundItem) {
+        ui->leftMenu->setCurrentItem(foundItem); // Устанавливаем текущий элемент
+        foundItem->setSelected(true); // Подсвечиваем элемент
+        foundItem->setExpanded(true); // Разворачиваем элемент
+        ui->leftMenu->scrollToItem(foundItem); // Прокручиваем к элементу
+    } else {
+        qDebug() << "Item with ID" << id << "not found.";
+    }
+}
+
+QTreeWidgetItem* MainWindow::findItemById(QTreeWidgetItem *item, unsigned long long id) {
+    // Проверка ID элемента
+    if (item->text(0).contains(QString::number(id))) {
+        return item;
+    }
+
+    for (int i = 0; i < item->childCount(); ++i) {
+        QTreeWidgetItem *found = findItemById(item->child(i), id);
+        if (found) {
+            return found;
+        }
+    }
+
+    return nullptr;
+}
+
 
 
 // Добавление элементов в левое меню
