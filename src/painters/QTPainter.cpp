@@ -125,17 +125,21 @@ bool QTPainter::moving(int x0, int y0, int r) {
     int p = 1 - r;
 
     while (x <= y) {
-
-        if ((x0 + x == cursorX && y0 + y == cursorY) ||
-            (x0 - x == cursorX && y0 + y == cursorY) ||
-            (x0 + x == cursorX && y0 - y == cursorY) ||
-            (x0 - x == cursorX && y0 - y == cursorY) ||
-            (x0 + y == cursorX && y0 + x == cursorY) ||
-            (x0 - y == cursorX && y0 + x == cursorY) ||
-            (x0 + y == cursorX && y0 - x == cursorY) ||
-            (x0 - y == cursorX && y0 - x == cursorY)) {
-              emit Move(ET_CIRCLE,x0, y0,r);
-            return true;
+        // Проверка с учетом погрешности ±1 пиксель
+        for (int dx = -1; dx <= 1; ++dx) {
+            for (int dy = -1; dy <= 1; ++dy) {
+                if ((x0 + x + dx == cursorX && y0 + y + dy == cursorY) ||
+                    (x0 - x + dx == cursorX && y0 + y + dy == cursorY) ||
+                    (x0 + x + dx == cursorX && y0 - y + dy == cursorY) ||
+                    (x0 - x + dx == cursorX && y0 - y + dy == cursorY) ||
+                    (x0 + y + dx == cursorX && y0 + x + dy == cursorY) ||
+                    (x0 - y + dx == cursorX && y0 + x + dy == cursorY) ||
+                    (x0 + y + dx == cursorX && y0 - x + dy == cursorY) ||
+                    (x0 - y + dx == cursorX && y0 - x + dy == cursorY)) {
+                    emit Move(ET_CIRCLE, x0, y0, r);
+                    return true;
+                }
+            }
         }
 
         x++;
@@ -151,11 +155,7 @@ bool QTPainter::moving(int x0, int y0, int r) {
     return false;
 }
 
-
-
-
 bool QTPainter::moving(int x0, int y0, int x1, int y1) {
-
     int dx = x1 - x0;
     int dy = y1 - y0;
     int stepX = (dx > 0) ? 1 : -1;
@@ -167,9 +167,12 @@ bool QTPainter::moving(int x0, int y0, int x1, int y1) {
     if (dx > dy) {
         int p = 2 * dy - dx;
         for (int x = x0, y = y0; x != x1; x += stepX) {
-            if (x==cursorX && y==cursorY) {
-                emit Move(ET_SECTION,x0, y0,x1,y1);
-                return true;
+            // Проверка с учетом погрешности ±1 пиксель
+            for (int dyOffset = -1; dyOffset <= 1; ++dyOffset) {
+                if (x == cursorX && (y + dyOffset) == cursorY) {
+                    emit Move(ET_SECTION, x0, y0, x1, y1);
+                    return true;
+                }
             }
             if (p > 0) {
                 y += stepY;
@@ -180,9 +183,12 @@ bool QTPainter::moving(int x0, int y0, int x1, int y1) {
     } else {
         int p = 2 * dx - dy;
         for (int y = y0, x = x0; y != y1; y += stepY) {
-            if (x==cursorX && y==cursorY) {
-                emit Move(ET_SECTION,x0, y0,x1,y1);
-                return true;
+            // Проверка с учетом погрешности ±1 пиксель
+            for (int dxOffset = -1; dxOffset <= 1; ++dxOffset) {
+                if (y == cursorY && (x + dxOffset) == cursorX) {
+                    emit Move(ET_SECTION, x0, y0, x1, y1);
+                    return true;
+                }
             }
             if (p > 0) {
                 x += stepX;
@@ -275,12 +281,36 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width );
         int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height );
 
-        painter.setPen(Qt::black);
-        if (leftClick && moving(X, Y)) {
-            painter.setPen(Qt::blue);
-        }
 
-        painter.drawEllipse(X, Y, 1, 1);
+        if (leftClick && moving(X, Y)) {
+            qreal glowRadius = 5.0;
+
+            // Создаем радиальный градиент для свечения
+            QRadialGradient radialGradient(X, Y, glowRadius, X, Y);
+            radialGradient.setColorAt(0.0, QColor(0, 255, 255, 150)); // Циановый цвет в центре (полупрозрачный)
+            radialGradient.setColorAt(1.0, QColor(0, 255, 255, 0));   // Прозрачный цвет на краю градиента
+
+            // Настраиваем кисть с градиентом
+            QBrush glowBrush(radialGradient);
+            painter.setBrush(glowBrush);
+            painter.setPen(Qt::NoPen); // Без обводки для свечения
+            painter.drawEllipse(X - glowRadius, Y - glowRadius, glowRadius * 2, glowRadius * 2); // Рисуем свечение
+
+            // Рисуем основную черную точку поверх свечения
+            qreal pointRadius = 2.0; // Радиус точки
+            QBrush pointBrush(Qt::black);
+            painter.setBrush(pointBrush);
+            painter.setPen(Qt::NoPen); // Без обводки для точки
+            painter.drawEllipse(X - pointRadius, Y - pointRadius, pointRadius * 2, pointRadius * 2); // Рисуем точку
+        }
+        else {
+            // Рисуем обычную черную точку без свечения
+            qreal pointRadius = 1.0; // Радиус точки
+            QBrush pointBrush(Qt::black);
+            painter.setBrush(pointBrush);
+            painter.setPen(Qt::NoPen); // Без обводки для точки
+            painter.drawEllipse(X - pointRadius, Y - pointRadius, pointRadius * 2, pointRadius * 2); // Рисуем точку
+        }
     }
 
 
@@ -289,11 +319,49 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
         int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
 
-        painter.setPen(Qt::black);
         if (leftClick && moving(X, Y, Radius/ 2)) {
-            painter.setPen(Qt::blue);
+            // Параметры свечения
+            qreal glowDistance = 20.0; // Расстояние свечения от обводки
+            qreal gradientRadius = (Radius / 2.0) + glowDistance; // Общий радиус градиента
+
+            // Вычисляем относительные позиции для цветовых остановок
+            qreal stopTransparent1 = (Radius / 2.0 - glowDistance) / gradientRadius;
+            qreal stopCyan = (Radius / 2.0) / gradientRadius;
+            qreal stopTransparent2 = (Radius / 2.0 + glowDistance) / gradientRadius;
+
+            // Создаем радиальный градиент
+            QRadialGradient radialGradient(X, Y, gradientRadius, X, Y);
+            radialGradient.setColorAt(0.0, QColor(0, 255, 255, 0));         // Прозрачный в центре
+            radialGradient.setColorAt(stopTransparent1, QColor(0, 255, 255, 0));   // Прозрачный до внутренней границы свечения
+            radialGradient.setColorAt(stopCyan, QColor(0, 255, 255, 150));   // Насыщенный циан на обводке
+            radialGradient.setColorAt(stopTransparent2, QColor(0, 255, 255, 0));   // Прозрачный после внешней границы свечения
+            radialGradient.setColorAt(1.0, QColor(0, 255, 255, 0));         // Прозрачный за пределами свечения
+
+            // Настраиваем перо для свечения
+            QPen glowPen(QBrush(radialGradient), 4); // Толщина пера 4 пикселя
+            glowPen.setJoinStyle(Qt::RoundJoin);
+            glowPen.setCapStyle(Qt::RoundCap);
+            painter.setPen(glowPen);
+            painter.setBrush(Qt::NoBrush); // Без заливки
+
+            // Рисуем круг с градиентной обводкой для свечения
+            painter.drawEllipse(X - Radius / 2.0, Y - Radius / 2.0, Radius, Radius);
+
+            // Рисуем основную обводку черного круга поверх свечения
+            QPen mainPen(Qt::black, 2);
+            mainPen.setJoinStyle(Qt::RoundJoin);
+            mainPen.setCapStyle(Qt::RoundCap);
+            painter.setPen(mainPen);
+            painter.setBrush(Qt::NoBrush);
+            painter.drawEllipse(X - Radius / 2.0, Y - Radius / 2.0, Radius, Radius);
+        } else {
+            QPen blackPen(Qt::black, 1);
+            blackPen.setJoinStyle(Qt::RoundJoin);
+            blackPen.setCapStyle(Qt::RoundCap);
+            painter.setPen(blackPen);
+            painter.setBrush(Qt::NoBrush);
+            painter.drawEllipse(X - Radius / 2.0, Y - Radius / 2.0, Radius, Radius);
         }
-        painter.drawEllipse(X- Radius / 2, Y - Radius / 2, Radius, Radius);
     }
 
     for (const auto &sec: sections) {
@@ -302,13 +370,55 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int EndX = static_cast<int>(scaling.scaleCoordinateX(sec.end->x) + _width );
         int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
 
-        painter.setPen(Qt::black);
-qDebug()<<leftClick<<" "<<leftDoubleClick;
-        if ( leftClick && moving(BegX, BegY, EndX,EndY)) {
-            painter.setPen(Qt::blue);
+        if (leftClick && moving(BegX, BegY, EndX, EndY)) {
+            // Вычисляем направление линии
+            qreal dx = EndX - BegX;
+            qreal dy = EndY - BegY;
+            qreal length = qSqrt(dx * dx + dy * dy);
+
+            if (length == 0) length = 1; // Избегаем деления на ноль
+
+            // Перпендикулярный вектор
+            qreal perpX = -dy / length;
+            qreal perpY = dx / length;
+
+            // Задаем расстояние для градиента
+            qreal glowDistance = 10.0;
+
+            // Определяем точки начала и конца градиента
+            qreal gradStartX = BegX + perpX * glowDistance;
+            qreal gradStartY = BegY + perpY * glowDistance;
+            qreal gradEndX = BegX - perpX * glowDistance;
+            qreal gradEndY = BegY - perpY * glowDistance;
+
+            // Создаём линейный градиент перпендикулярный линии
+            QLinearGradient gradient(gradStartX, gradStartY, gradEndX, gradEndY);
+            gradient.setColorAt(0.0, QColor(0, 255, 255, 150)); // Голубой с прозрачностью
+            gradient.setColorAt(1.0, QColor(0, 255, 255, 0));   // Прозрачный
+
+            QPen glowPen;
+            glowPen.setWidth(8);
+            glowPen.setBrush(gradient);
+            glowPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
+            painter.setPen(glowPen);
+
+            painter.drawLine(BegX, BegY, EndX, EndY);
+
+            // Рисуем основную линию поверх свечения
+            QPen blackPen(Qt::black);
+            blackPen.setWidth(2);
+            blackPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
+            painter.setPen(blackPen);
+            painter.drawLine(BegX, BegY, EndX, EndY);
+        }
+        else {
+            QPen blackPen(Qt::black);
+            blackPen.setWidth(1);
+            blackPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
+            painter.setPen(blackPen);
+            painter.drawLine(BegX, BegY, EndX, EndY);
         }
 
-        painter.drawLine(BegX, BegY, EndX, EndY);
     }
 
     if (editor) {
