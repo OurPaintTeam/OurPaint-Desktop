@@ -61,25 +61,58 @@ void Application::setupConnections() {
         painter->setCircle(false);
         painter->setSection(false);
         painter->setPoint(false);
+
     });
     QObject::connect(&w, &MainWindow::SigPoint, [this]() {
         painter->setEditor(true);
         painter->setPoint(true);
         painter->setCircle(false);
         painter->setSection(false);
+
     });
     QObject::connect(&w, &MainWindow::SigSection, [this]() {
         painter->setEditor(true);
         painter->setSection(true);
         painter->setCircle(false);
         painter->setPoint(false);
+
     });
     QObject::connect(&w, &MainWindow::SigCircle, [this]() {
         painter->setEditor(true);
         painter->setCircle(true);
         painter->setSection(false);
         painter->setPoint(false);
+
     });
+    QObject::connect(&w, &MainWindow::ToolMoving, [this]() {
+        painter->setEditor(true);
+        painter->setCircle(false);
+        painter->setSection(false);
+        painter->setPoint(false);
+    });
+
+    QObject::connect(painter.get(),
+                     static_cast<void (QTPainter::*)(Element, int, int)>(&QTPainter::Move),
+                     [this](Element F, int x, int y) {
+                         qDebug() << "Move with 2 params:" << x << ":" << y;
+                     }
+    );
+
+    QObject::connect(painter.get(),
+                     static_cast<void (QTPainter::*)(Element, int, int, int)>(&QTPainter::Move),
+                     [this](Element F, int x, int y, int r) {
+                         qDebug() << "Move with 3 params:" << x << ":" << y << " with r:" << r;
+                     }
+    );
+
+
+    QObject::connect(painter.get(),
+                     static_cast<void (QTPainter::*)(Element, int, int, int, int)>(&QTPainter::Move),
+                     [this](Element F, int x, int y, int x1, int y1) {
+                         qDebug() << "Move with 4 params:" << x << ":" << y << "to" << x1<<":" << y1;
+                     }
+    );
+
     QObject::connect(painter.get(), &QTPainter::SigPoint, [this](QPoint Position) {
         if (isConnected) {
             if (isServer) {

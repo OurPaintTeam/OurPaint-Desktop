@@ -162,6 +162,7 @@ signals:
     //Настройки
     void GridOn(bool T);
 
+    void ToolMoving();
 
     void SigMoving();
 
@@ -221,6 +222,8 @@ public slots:
     void Section() { emit SigSection(); };
 
     void Circle() { emit SigCircle(); };
+
+    void ToolsMoving() { emit ToolMoving(); };
 
 };
 

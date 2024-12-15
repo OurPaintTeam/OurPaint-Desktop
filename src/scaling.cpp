@@ -22,7 +22,7 @@ double Scaling::logic(double X) {
 }
 
 double Scaling::logicX(double X) {
-    qDebug()<<(X-deltaX) / (scale * zoom);
+ //   qDebug()<<(X-deltaX) / (scale * zoom);
     return (X-deltaX) / (scale * zoom);
 }
 

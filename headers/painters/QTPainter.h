@@ -42,6 +42,9 @@ public:
     void setSection(bool T){Section=T;}
     void setPoint(bool T){Point=T;}
 
+    bool moving(int x,int y);
+    bool moving(int x,int y,int r);
+    bool moving(int x1, int y1, int x2,int y2);
     // Функция включения сетки
     void setCell(bool On_Off);
 
@@ -93,6 +96,10 @@ signals:
     void SigPoint(QPoint Position);
     void SigCircle(QPoint centerPoint, int radius);
     void SigSection(int startX, int startY, int endX, int endY);
+    void Move(Element F,int x,int y);
+    void Move(Element F,int x,int y,int r);
+    void Move(Element F,int x,int y,int x1,int y1);
+
 
 
 

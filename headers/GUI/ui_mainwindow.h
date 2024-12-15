@@ -85,6 +85,7 @@ public:
     QTreeWidgetItem *itemRequirements;
     QPushButton *leftMenuMessage;
     QPushButton *Figures;
+    QPushButton *Tools;
 
     // Panel and figures buttons
     QWidget *figuresPanel;
@@ -93,8 +94,12 @@ public:
     QPushButton *figureSection;
     QPushButton *figureCircle;
 
+    QWidget *toolPanel;
+    QPushButton *toolMoving;
+
     // Animation for panel
     QPropertyAnimation *figuresPanelAnimation;
+    QPropertyAnimation *toolsPanelAnimation;
 
     // Chat
     QFrame *message;
@@ -168,6 +173,8 @@ public:
 
         // Настройка редактора
         setupButtonFigures();
+        // Настройка редактора
+        setupButtonTool();
 
         // Настройка свернутой панели
         setupCollapsedPanel();
@@ -735,6 +742,45 @@ public:
         figuresPanel->setMaximumWidth(0);
     }
 
+    void setupButtonTool() {
+        // Создаем панель для кнопок фигур
+        toolPanel = new QWidget(nullptr, Qt::Popup);
+        toolPanel->setObjectName("toolPanel");
+        toolPanel->setFixedHeight(40);
+        toolPanel->setStyleSheet("background-color: #494850; border: none;");
+        toolPanel->hide();
+
+        QHBoxLayout *toolsLayout = new QHBoxLayout(toolPanel);
+        toolsLayout->setContentsMargins(0, 0, 0, 0);
+        toolsLayout->setSpacing(0);
+
+
+        toolMoving = new QPushButton("", toolPanel);
+
+        QIcon IcoMoving("../Static/icons/move.ico");
+
+
+        toolMoving->setIcon(IcoMoving);
+
+
+        toolMoving->setFixedSize(40, 40);
+
+
+        QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
+                              "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }";
+
+        toolMoving->setStyleSheet(buttonStyle);
+
+        toolsLayout->addWidget(toolMoving);
+
+
+        toolsPanelAnimation = new QPropertyAnimation(toolPanel, "maximumWidth");
+        toolsPanelAnimation->setDuration(200);
+        toolsPanelAnimation->setEasingCurve(QEasingCurve::OutQuad);
+
+       toolPanel->setMaximumWidth(0);
+    }
+
 
     void setupCollapsedPanel() {
         // Создание свернутой панели
@@ -781,6 +827,17 @@ public:
                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 0; }"
         );
         collapsedPanelLayout->addWidget(Figures);
+
+        // Создание кнопки для открытия панели инструментов
+        Tools = new QPushButton("", collapsedPanel);
+        Tools->setFixedSize(40, 40);
+        QIcon IcoT("../Static/icons/modeButton.ico");
+        Tools->setIcon(IcoT);
+        Tools->setStyleSheet(
+                "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
+                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); border-radius: 0; }"
+        );
+        collapsedPanelLayout->addWidget(Tools);
     }
 
     void setupConsole() {
@@ -946,6 +1003,11 @@ public:
                 figuresPanelAnimation->setStartValue(figuresPanel->maximumWidth());
                 figuresPanelAnimation->setEndValue(0);
                 figuresPanelAnimation->start();
+            }else if(toolPanel->isVisible()){
+                toolsPanelAnimation->stop();
+                toolsPanelAnimation->setStartValue(figuresPanel->maximumWidth());
+                toolsPanelAnimation->setEndValue(0);
+                toolsPanelAnimation->start();
             } else {
                 QPoint globalPos = Figures->mapToGlobal(QPoint(0, 0));
                 figuresPanel->move(globalPos.x() + Figures->width(), globalPos.y());
@@ -998,6 +1060,46 @@ public:
                 figuresPanel->hide();
             }
         });
+
+        QObject::connect(Tools, &QPushButton::clicked, [=]() {
+            if (figuresPanel->isVisible()) {
+                figuresPanelAnimation->stop();
+                figuresPanelAnimation->setStartValue(figuresPanel->maximumWidth());
+                figuresPanelAnimation->setEndValue(0);
+                figuresPanelAnimation->start();
+            }else if(toolPanel->isVisible()){
+                toolsPanelAnimation->stop();
+                toolsPanelAnimation->setStartValue(toolPanel->maximumWidth());
+                toolsPanelAnimation->setEndValue(0);
+                toolsPanelAnimation->start();
+            } else {
+                QPoint globalPos = Tools->mapToGlobal(QPoint(0, 0));
+                toolPanel->move(globalPos.x() + Tools->width(), globalPos.y());
+
+                toolPanel->show();
+                toolPanel->raise(); // Поднимаем панель на передний план
+
+                toolsPanelAnimation->stop();
+                toolsPanelAnimation->setStartValue(0);
+                toolsPanelAnimation->setEndValue(1 * 40); // 1 кнопки по 40 пикселей
+                toolsPanelAnimation->start();
+            }
+        });
+
+        QObject::connect(toolMoving, &QPushButton::clicked, [=]() {
+            if (toolPanel->isVisible()) {
+                toolsPanelAnimation->stop();
+                toolsPanelAnimation->setStartValue(toolPanel->maximumWidth());
+                toolsPanelAnimation->setEndValue(0);
+                toolsPanelAnimation->start();
+            }
+        });
+        QObject::connect(toolsPanelAnimation, &QPropertyAnimation::finished, [=]() {
+            if (toolPanel->maximumWidth() == 0) {
+                toolPanel->hide();
+            }
+        });
+
     }
 
     void reTranslateUi(QMainWindow *MainWindow) const {

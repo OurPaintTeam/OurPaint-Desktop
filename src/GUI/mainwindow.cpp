@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
     connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
     connect(ui->figureSection, &QPushButton::clicked, this, &MainWindow::Section);
+    connect(ui->toolMoving, &QPushButton::clicked, this, &MainWindow::ToolsMoving);
 
     // Кнопки сохранение/импорт
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);

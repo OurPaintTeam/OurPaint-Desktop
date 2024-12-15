@@ -3,7 +3,7 @@
 QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
         : QFrame(parent), ui(ui), scaling(ui->workWindow->width(), ui->workWindow->height()),
           minCellSize(10), maxCellSize(20), CellSize(8), CellView(true), currentCellSize(1), cursorX(0), cursorY(0),
-          editor(false), Circle(false), Section(false), Point(false),Drawing(false) {
+          editor(false), Circle(false), Section(false), Point(false), Drawing(false) {
 
     setMouseTracking(true);
 
@@ -111,6 +111,89 @@ std::vector<double> QTPainter::FindMaxMin() {
     return size;
 }
 
+bool QTPainter::moving(int x, int y) {
+    if (cursorX >= x - 1 && cursorX <= x + 1 && cursorY >= y - 1 && cursorY <= y + 1) {
+        emit Move(ET_POINT,x, y);
+        return true;
+    }
+return false;
+}
+
+bool QTPainter::moving(int x0, int y0, int r) {
+    int x = 0;
+    int y = r;
+    int p = 1 - r;
+
+    while (x <= y) {
+
+        if ((x0 + x == cursorX && y0 + y == cursorY) ||
+            (x0 - x == cursorX && y0 + y == cursorY) ||
+            (x0 + x == cursorX && y0 - y == cursorY) ||
+            (x0 - x == cursorX && y0 - y == cursorY) ||
+            (x0 + y == cursorX && y0 + x == cursorY) ||
+            (x0 - y == cursorX && y0 + x == cursorY) ||
+            (x0 + y == cursorX && y0 - x == cursorY) ||
+            (x0 - y == cursorX && y0 - x == cursorY)) {
+              emit Move(ET_CIRCLE,x0, y0,r);
+            return true;
+        }
+
+        x++;
+
+        if (p < 0) {
+            p = p + 2 * x + 1;
+        } else {
+            y--;
+            p = p + 2 * x - 2 * y + 1;
+        }
+    }
+
+    return false;
+}
+
+
+
+
+bool QTPainter::moving(int x0, int y0, int x1, int y1) {
+
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+    int stepX = (dx > 0) ? 1 : -1;
+    int stepY = (dy > 0) ? 1 : -1;
+
+    dx = abs(dx);
+    dy = abs(dy);
+
+    if (dx > dy) {
+        int p = 2 * dy - dx;
+        for (int x = x0, y = y0; x != x1; x += stepX) {
+            if (x==cursorX && y==cursorY) {
+                emit Move(ET_SECTION,x0, y0,x1,y1);
+                return true;
+            }
+            if (p > 0) {
+                y += stepY;
+                p -= 2 * dx;
+            }
+            p += 2 * dy;
+        }
+    } else {
+        int p = 2 * dx - dy;
+        for (int y = y0, x = x0; y != y1; y += stepY) {
+            if (x==cursorX && y==cursorY) {
+                emit Move(ET_SECTION,x0, y0,x1,y1);
+                return true;
+            }
+            if (p > 0) {
+                x += stepX;
+                p -= 2 * dy;
+            }
+            p += 2 * dx;
+        }
+    }
+    return false;
+}
+
 void QTPainter::paintEvent(QPaintEvent *event) {
     QFrame::paintEvent(event);
     QPainter painter(this);
@@ -119,7 +202,8 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     painter.setPen(Qt::lightGray);
 
     // Масштабируем
- //   Scaling.scaling(width(), height(), FindMaxMin());
+    //   Scaling.scaling(width(), height(), FindMaxMin());
+
 
     double scale = scaling.getScale();
     double zoom = scaling.getZoom();
@@ -190,14 +274,26 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     for (const auto &pt: points) {
         int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width );
         int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height );
-        painter.drawPoint(X, Y);
+
+        painter.setPen(Qt::black);
+        if (moving(X, Y)) {
+            painter.setPen(Qt::blue);
+        }
+
+        painter.drawEllipse(X, Y, 1, 1);
     }
+
 
     for (const auto &c: circles) {
         int X = static_cast<int>(scaling.scaleCoordinateX(c.center->x) + _width );
         int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
         int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
-        painter.drawEllipse(X - Radius / 2, Y - Radius / 2, Radius, Radius);
+
+        painter.setPen(Qt::black);
+        if (moving(X, Y, Radius/ 2)) {
+            painter.setPen(Qt::blue);
+        }
+        painter.drawEllipse(X- Radius / 2, Y - Radius / 2, Radius, Radius);
     }
 
     for (const auto &sec: sections) {
@@ -205,6 +301,13 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int BegY = static_cast<int>(scaling.scaleCoordinateY(-sec.beg->y) + _height );
         int EndX = static_cast<int>(scaling.scaleCoordinateX(sec.end->x) + _width );
         int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
+
+        painter.setPen(Qt::black);
+
+        if (moving(BegX, BegY, EndX,EndY)) {
+            painter.setPen(Qt::blue);
+        }
+
         painter.drawLine(BegX, BegY, EndX, EndY);
     }
 
@@ -212,7 +315,9 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         painter.setPen(Qt::black);
         int logicalX = static_cast<int>(scaling.logicX(cursorX - _width));
         int logicalY = static_cast<int>(scaling.logicY(_height - cursorY));
-        painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY));
+        painter.
+                drawText(cursorX+ 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY)
+        );
 
         if (Circle && Drawing) {
             int logicalPerimeterX = perimeterPoint.x();
@@ -224,17 +329,32 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             int screenCenterX = static_cast<int>(scaling.scaleCoordinateX(centerX) + _width);
             int screenCenterY = static_cast<int>(scaling.scaleCoordinateY(-centerY) + _height);
             int scaledRadius = static_cast<int>(scaling.scaleCoordinate(radius));
-            painter.drawEllipse(screenCenterX - scaledRadius, screenCenterY - scaledRadius, 2 * scaledRadius, 2 * scaledRadius);
-        }
-        else if (Section && Drawing) {
+            painter.
+                    drawEllipse(screenCenterX
+                                - scaledRadius, screenCenterY - scaledRadius, 2 * scaledRadius,
+                                2 * scaledRadius);
+        } else if (
+                Section && Drawing
+                ) {
             int screenStartX = static_cast<int>(scaling.scaleCoordinateX(sectionStartPoint.x()) + _width);
             int screenStartY = static_cast<int>(scaling.scaleCoordinateY(-sectionStartPoint.y()) + _height);
-            painter.drawLine(screenStartX, screenStartY, cursorX, cursorY);
+            painter.
+                    drawLine(screenStartX, screenStartY, cursorX, cursorY
+            );
         }
     }
-    points.clear();
-    circles.clear();
-    sections.clear();
+    points.
+
+            clear();
+
+    circles.
+
+            clear();
+
+    sections.
+
+            clear();
+
 }
 
 void QTPainter::changeSize(const rectangle &allObjects) {}
