@@ -3,7 +3,7 @@
 QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
         : QFrame(parent), ui(ui), scaling(ui->workWindow->width(), ui->workWindow->height()),
           minCellSize(10), maxCellSize(20), CellSize(8), CellView(true), currentCellSize(1), cursorX(0), cursorY(0),
-          editor(false), Circle(false), Section(false), Point(false), Drawing(false) {
+          editor(false), Circle(false), Section(false), Point(false), Drawing(false),leftClick(false),leftDoubleClick(false) {
 
     setMouseTracking(true);
 
@@ -276,7 +276,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height );
 
         painter.setPen(Qt::black);
-        if (moving(X, Y)) {
+        if (leftClick && moving(X, Y)) {
             painter.setPen(Qt::blue);
         }
 
@@ -290,7 +290,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
 
         painter.setPen(Qt::black);
-        if (moving(X, Y, Radius/ 2)) {
+        if (leftClick && moving(X, Y, Radius/ 2)) {
             painter.setPen(Qt::blue);
         }
         painter.drawEllipse(X- Radius / 2, Y - Radius / 2, Radius, Radius);
@@ -303,8 +303,8 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
 
         painter.setPen(Qt::black);
-
-        if (moving(BegX, BegY, EndX,EndY)) {
+qDebug()<<leftClick<<" "<<leftDoubleClick;
+        if ( leftClick && moving(BegX, BegY, EndX,EndY)) {
             painter.setPen(Qt::blue);
         }
 
@@ -379,6 +379,12 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         update();
     }
 
+if(!editor && !leftClick &&  event->button() == Qt::LeftButton){
+    leftClick=true;
+
+}
+
+
     if (editor && event->button() == Qt::LeftButton) {
 
         QPoint Position = event->pos();
@@ -426,14 +432,17 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
 void QTPainter::mouseMoveEvent(QMouseEvent *event) {
     scaling.mouseMove(event->pos());
 
-    if (editor) {
+
         cursorX = event->pos().x();
         cursorY = event->pos().y();
-    }
+
 
     if (scaling.isRightMousePressed()) {
         emit RightPress();
     }
+
+    leftClick=false;
+    leftDoubleClick=false;
     update();
 }
 
@@ -441,9 +450,20 @@ void QTPainter::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         scaling.endMousePress();
     }
+   // if(event->button() == Qt::LeftButton){leftClick=false;}
 }
 
 void QTPainter::onWorkWindowResized() {
     // При изменении размера окна родителя меняем размер
     resize(ui->workWindow->size());
+}
+
+void QTPainter::mouseDoubleClickEvent(QMouseEvent *event) {
+
+    if (event->button() == Qt::LeftButton) {
+        leftDoubleClick=true;
+    }
+
+
+    QWidget::mouseDoubleClickEvent(event);
 }

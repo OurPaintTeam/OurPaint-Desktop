@@ -85,7 +85,7 @@ void Application::setupConnections() {
 
     });
     QObject::connect(&w, &MainWindow::ToolMoving, [this]() {
-        painter->setEditor(true);
+        painter->setEditor(false);
         painter->setCircle(false);
         painter->setSection(false);
         painter->setPoint(false);
@@ -95,6 +95,9 @@ void Application::setupConnections() {
                      static_cast<void (QTPainter::*)(Element, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y) {
                          qDebug() << "Move with 2 params:" << x << ":" << y;
+                         if(painter->getDoubleClick()){
+                             //подсветка левого меню по айди
+                         }
                      }
     );
 
@@ -102,6 +105,9 @@ void Application::setupConnections() {
                      static_cast<void (QTPainter::*)(Element, int, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y, int r) {
                          qDebug() << "Move with 3 params:" << x << ":" << y << " with r:" << r;
+                         if(painter->getDoubleClick()){
+                             //подсветка левого меню по айди
+                         }
                      }
     );
 
@@ -110,6 +116,9 @@ void Application::setupConnections() {
                      static_cast<void (QTPainter::*)(Element, int, int, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y, int x1, int y1) {
                          qDebug() << "Move with 4 params:" << x << ":" << y << "to" << x1<<":" << y1;
+                         if(painter->getDoubleClick()){
+                             //подсветка левого меню по айди
+                         }
                      }
     );
 

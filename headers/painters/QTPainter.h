@@ -36,11 +36,14 @@ private:
     QPoint sectionStartPoint;
     QPoint sectionEndPoint;
     bool Drawing;
+    bool leftClick;
+    bool leftDoubleClick;
 
 public:
     void setCircle(bool T){Circle=T;}
     void setSection(bool T){Section=T;}
     void setPoint(bool T){Point=T;}
+    bool getDoubleClick(){return leftDoubleClick;}
 
     bool moving(int x,int y);
     bool moving(int x,int y,int r);
@@ -88,6 +91,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
 
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 
 signals:
