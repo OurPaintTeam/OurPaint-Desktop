@@ -3,7 +3,8 @@
 QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
         : QFrame(parent), ui(ui), scaling(ui->workWindow->width(), ui->workWindow->height()),
           minCellSize(10), maxCellSize(20), CellSize(8), CellView(true), currentCellSize(1), cursorX(0), cursorY(0),
-          editor(false), Circle(false), Section(false), Point(false), Drawing(false),leftClick(false),leftDoubleClick(false) {
+          editor(false), Circle(false), Section(false), Point(false), Drawing(false),leftClick(false),leftDoubleClick(false),Shift(false)
+          ,tab(0){
 
     setMouseTracking(true);
 
@@ -200,6 +201,29 @@ bool QTPainter::moving(int x0, int y0, int x1, int y1) {
     return false;
 }
 
+QPoint QTPainter::findPoint() {
+    QPoint closest;
+    float minDistance = std::numeric_limits<float>::max(); // Инициализация максимальным значением
+    double _width = width() / 2.0;
+    double _height = height() / 2.0;
+    for (const auto &pt : points) {
+        int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width);
+        int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height);
+
+        // Вычисление расстояния до курсора
+        float distance = std::sqrt(std::pow(X - cursorX, 2) + std::pow(Y - cursorY, 2));
+
+        // Проверка, является ли текущая точка ближайшей
+        if (distance < minDistance) {
+            minDistance = distance;
+            closest.setX(X);
+            closest.setY(Y);
+        }
+    }
+
+    return closest;
+}
+
 void QTPainter::paintEvent(QPaintEvent *event) {
     QFrame::paintEvent(event);
     QPainter painter(this);
@@ -275,6 +299,28 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         painter.drawText(static_cast<int>(_width) + deltaX - 30, deltaY + 10, QString::number(heightY));
     }
 
+   /* if(Section) {
+        if(editor ){
+        QPoint closestPoint = findPoint();
+            if(tab==0){
+             painter.setPen(QPen(QColor(169, 169, 169, 128), 2)); // Тускло-серая линия
+             // Рисуем линию от ближайшей точки до курсора
+             painter.drawLine(closestPoint, QPoint(cursorX, cursorY));
+             }
+            /*else if(tab==1){
+              painter.setPen(QPen(QColor(169, 169, 169, 128), 2)); // Тускло-серая линия
+                QPoint closestPointNext = findPoint();
+
+             // Рисуем линию от ближайшей точки до курсора
+          if(!Drawing)    painter.drawLine(closestPoint, closestPointNext);
+          else painter.drawLine(sectionStartPoint.x(),sectionStartPoint.y(), closestPointNext);
+             }
+             else if(tab==2){
+              emit SigSection(closestPoint.x(), closestPoint.y(), closestPointNext.x(), closestPointNext.y());
+             }
+
+         }
+    }*/
 
     // Отрисовка фигур
     for (const auto &pt: points) {
@@ -370,6 +416,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int EndX = static_cast<int>(scaling.scaleCoordinateX(sec.end->x) + _width );
         int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
 
+
         if (leftClick && moving(BegX, BegY, EndX, EndY)) {
             // Вычисляем направление линии
             qreal dx = EndX - BegX;
@@ -430,6 +477,8 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         );
 
         if (Circle && Drawing) {
+
+
             int logicalPerimeterX = perimeterPoint.x();
             int logicalPerimeterY = perimeterPoint.y();
             int centerX = (logicalPerimeterX + logicalX) / 2;
@@ -448,9 +497,13 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                 ) {
             int screenStartX = static_cast<int>(scaling.scaleCoordinateX(sectionStartPoint.x()) + _width);
             int screenStartY = static_cast<int>(scaling.scaleCoordinateY(-sectionStartPoint.y()) + _height);
-            painter.
-                    drawLine(screenStartX, screenStartY, cursorX, cursorY
-            );
+            if(Shift && abs(cursorX-currentCurcsorX)>abs(cursorY-currentCurcsorY)){
+  painter.drawLine(screenStartX, screenStartY, screenStartX, cursorY);
+            }else if(Shift){
+                painter.drawLine(screenStartX, screenStartY, screenStartX, cursorY);
+            }else {
+                painter.drawLine(screenStartX, screenStartY, cursorX, cursorY);
+            }
         }
     }
     points.
@@ -576,4 +629,27 @@ void QTPainter::mouseDoubleClickEvent(QMouseEvent *event) {
 
 
     QWidget::mouseDoubleClickEvent(event);
+}
+
+void QTPainter::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Shift) {
+        Shift = true;
+        currentCurcsorX=cursorX;
+        currentCurcsorY=cursorY;
+    }
+
+    if (event->key() == Qt::Key_Tab) {
+        if(tab<3){
+          ++tab;
+        }
+        else{
+            tab=0;
+        }
+    }
+}
+
+void QTPainter::keyReleaseEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Shift) {
+        Shift = false;
+    }
 }

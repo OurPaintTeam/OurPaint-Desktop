@@ -38,6 +38,10 @@ private:
     bool Drawing;
     bool leftClick;
     bool leftDoubleClick;
+    bool Shift;
+    int tab;
+    int currentCurcsorX;
+    int currentCurcsorY;
 
 public:
     void setCircle(bool T){Circle=T;}
@@ -69,6 +73,8 @@ public:
 
     std::vector<double> FindMaxMin();
 
+    QPoint findPoint();
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
 
@@ -93,6 +99,10 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
+    void keyPressEvent(QKeyEvent *event) override;
+
+    void keyReleaseEvent(QKeyEvent *event) override;
+
 
 signals:
 
@@ -113,5 +123,6 @@ private slots:
 
 
 };
+
 
 #endif // QTPAINTER_H

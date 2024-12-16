@@ -122,10 +122,10 @@ void Application::setupConnections() {
     QObject::connect(painter.get(),
                      static_cast<void (QTPainter::*)(Element, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y) {
-        if(move){
+                         if(move){
 
-        }
-                     //    qDebug() << "Move with 2 params:" << x << ":" << y;
+                         }
+                         //    qDebug() << "Move with 2 params:" << x << ":" << y;
                          if(painter->getDoubleClick()){
                              //подсветка левого меню по айди
                          }
@@ -138,7 +138,7 @@ void Application::setupConnections() {
                          if(move){
 
                          }
-                     //    qDebug() << "Move with 3 params:" << x << ":" << y << " with r:" << r;
+                         //    qDebug() << "Move with 3 params:" << x << ":" << y << " with r:" << r;
                          if(painter->getDoubleClick()){
                              //подсветка левого меню по айди
                          }
@@ -152,9 +152,9 @@ void Application::setupConnections() {
                          if(move){
 
                          }
-                      //   qDebug() << "Move with 4 params:" << x << ":" << y << "to" << x1<<":" << y1;
+                         //   qDebug() << "Move with 4 params:" << x << ":" << y << "to" << x1<<":" << y1;
                          if(painter->getDoubleClick()){
-                           //  w.FocusOnItemById(1);
+                             //  w.FocusOnItemById(1);
                              //подсветка левого меню по айди
                          }
                      }
