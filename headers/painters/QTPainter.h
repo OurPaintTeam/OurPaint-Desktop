@@ -69,9 +69,9 @@ public:
     bool getDoubleClick(){return leftDoubleClick;}
     void getUsers(bool var) { scaling.getUsers(var); }
 
-    bool moving(int x,int y); // Проверяем координаты фигуры с координатами курсора
-    bool moving(int x,int y,int r);
-    bool moving(int x1, int y1, int x2,int y2);
+    bool moving(double x,double y); // Проверяем координаты фигуры с координатами курсора
+    bool moving(double x0, double y0, double r);
+    bool moving(double x1, double y1, double x2,double y2);
 
     // Функция включения сетки
     void setCell(bool On_Off);
@@ -124,9 +124,9 @@ signals:
     void SigSection(int startX, int startY, int endX, int endY);
 
     // Сигналы для перемещения
-    void Move(Element F,int x,int y);
-    void Move(Element F,int x,int y,int r);
-    void Move(Element F,int x,int y,int x1,int y1);
+    void Move(Element F,double x,double y);
+    void Move(Element F,double x,double y,double r);
+    void Move(Element F,double x,double y,double x1,double y1);
     void MovingFigures();
 
 private slots:
