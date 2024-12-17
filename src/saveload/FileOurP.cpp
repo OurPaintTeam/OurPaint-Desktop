@@ -27,11 +27,32 @@ void FileOurP::parseFile(std::istream &file) {
             std::string type;
             data >> type;
             if (type == "addreq") {
+                data >> type;
                 ID id1;
                 ID id2;
                 double param;
                 data >> id1.id >> id2.id >> param;
                 RequirementData req;
+                if (type == "1")
+                    req.req = ET_POINTSECTIONDIST;
+                else if (type == "2")
+                    req.req = ET_POINTONSECTION;
+                else if (type == "3")
+                    req.req = ET_POINTPOINTDIST;
+                else if (type == "4")
+                    req.req = ET_POINTONPOINT;
+                else if (type == "5")
+                    req.req = ET_SECTIONCIRCLEDIST;
+                else if (type == "6")
+                    req.req = ET_SECTIONONCIRCLE;
+                else if (type == "7")
+                    req.req = ET_SECTIONINCIRCLE;
+                else if (type == "8")
+                    req.req = ET_SECTIONSECTIONPARALLEL;
+                else if (type == "9")
+                    req.req = ET_SECTIONSECTIONPERPENDICULAR;
+                else if (type == "10")
+                    req.req = ET_SECTIONSECTIONANGEL;
                 req.objects.push_back(id1);
                 req.objects.push_back(id2);
                 req.params.push_back(param);
