@@ -58,12 +58,16 @@ private:
     QRect frameRect; // Геометрия рамки
     FrameOverlay *frameOverlay; // Объект наложения рамки
     Help *helpWindow; // Окно справки
+    int currentMouseX ;
+    int currentMouseY ;
 
 public:
 
     MainWindow(QWidget *parent = nullptr);
 
     ~MainWindow();
+
+    QPoint MouseCoordinate();
 
     void setAllMouseTracking(QWidget *widget); // Отслеживание мыши
 

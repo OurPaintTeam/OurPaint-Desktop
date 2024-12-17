@@ -15,7 +15,9 @@ MainWindow::MainWindow(QWidget *parent)
           addElem(true),
           error(nullptr),
           warning(nullptr),
-          success(nullptr){
+          success(nullptr),
+ currentMouseX(0),
+ currentMouseY(0){
 
     ui->setupUi(this);
     setAllMouseTracking(this); // Отслеживание мыши
@@ -100,6 +102,9 @@ MainWindow::MainWindow(QWidget *parent)
     frameOverlay->hide(); // Скрытие наложения рамки
 }
 
+QPoint MainWindow::MouseCoordinate(){
+    return QPoint(currentMouseX,currentMouseY);
+}
 
 // Добавление сообщений
 void MainWindow::setMessage(const std::string &name, const std::string &message) {
@@ -967,6 +972,9 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event) {
         }
         QMainWindow::mouseMoveEvent(event);
     }
+
+    currentMouseX = event->pos().x()-currentMouseX;
+    currentMouseY = event->pos().y()-currentMouseY;
 }
 
 
@@ -1092,6 +1100,7 @@ void MainWindow::showSuccess(const QString &text) {
     success->move(pos);
     success->show();
 }
+
 
 
 

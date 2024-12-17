@@ -77,6 +77,7 @@ add_executable(ourpaint
         headers/GUI/Windows/WindowServer.h
         headers/GUI/Windows/SaveDialog.h
         headers/GUI/Windows/ui_help.h
+        headers/GUI/DrawMode.h
 
         headers/GUI/CastomeConsole.h
         headers/GUI/EmojiWidget.h

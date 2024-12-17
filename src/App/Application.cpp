@@ -11,8 +11,7 @@ Application::Application(int &argc, char **argv)
           server("User"),
           client("User"),
           isConnected(false),
-          isServer(false),
-          move(false){
+          isServer(false) {
     initialize();
     setupConnections();
 }
@@ -58,75 +57,45 @@ void Application::setupConnections() {
 
     // Choice figure
     QObject::connect(&w, &MainWindow::SigPoint, [this]() {
-        painter->setEditor(true);
-        painter->setPoint(true);
-        painter->setCircle(false);
-        painter->setSection(false);
-        move=false;
-
+        painter->setMode(DrawMode::Point);
     });
+
     QObject::connect(&w, &MainWindow::SigSection, [this]() {
-        painter->setEditor(true);
-        painter->setSection(true);
-        painter->setCircle(false);
-        painter->setPoint(false);
-        move=false;
-
+        painter->setMode(DrawMode::Section);
     });
+
     QObject::connect(&w, &MainWindow::SigCircle, [this]() {
-        painter->setEditor(true);
-        painter->setCircle(true);
-        painter->setSection(false);
-        painter->setPoint(false);
-        move=false;
-    });
-    QObject::connect(&w, &MainWindow::SigMoving, [this]() {
-        painter->setEditor(false);
-        painter->setCircle(false);
-        painter->setSection(false);
-        painter->setPoint(false);
-        move=false;
-
+        painter->setMode(DrawMode::Circle);
     });
 
-    // Choice mode
     QObject::connect(&w, &MainWindow::SigMoving, [this]() {
-        painter->setEditor(false);
-        painter->setCircle(false);
-        painter->setSection(false);
-        painter->setPoint(false);
-        move=true;
+        painter->setMode(DrawMode::Editor);
     });
+
     QObject::connect(&w, &MainWindow::toolMoving, [this]() {
-        painter->setEditor(false);
-        painter->setCircle(false);
-        painter->setSection(false);
-        painter->setPoint(false);
-        move=true;
+        painter->setMode(DrawMode::Move);
+
     });
+
     QObject::connect(&w, &MainWindow::toolResize, [this]() {
-        painter->setEditor(false);
-        painter->setCircle(false);
-        painter->setSection(false);
-        painter->setPoint(false);
-        move=true;
+        painter->setMode(DrawMode::Resize);
     });
+
     QObject::connect(&w, &MainWindow::toolRotation, [this]() {
-        painter->setEditor(false);
-        painter->setCircle(false);
-        painter->setSection(false);
-        painter->setPoint(false);
-        move=true;
+        painter->setMode(DrawMode::Rotate);
+    });
+
+    QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
+       // Ф-я перемещения
+       //  QPoint XY = w.MouseCoordinate();<-трекер мышки
     });
 
     QObject::connect(painter.get(),
                      static_cast<void (QTPainter::*)(Element, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y) {
-                         if(move){
 
-                         }
                          //    qDebug() << "Move with 2 params:" << x << ":" << y;
-                         if(painter->getDoubleClick()){
+                         if (painter->getDoubleClick()) {
                              //подсветка левого меню по айди
                          }
                      }
@@ -135,11 +104,9 @@ void Application::setupConnections() {
     QObject::connect(painter.get(),
                      static_cast<void (QTPainter::*)(Element, int, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y, int r) {
-                         if(move){
-
-                         }
+                         QPoint XY = w.MouseCoordinate();
                          //    qDebug() << "Move with 3 params:" << x << ":" << y << " with r:" << r;
-                         if(painter->getDoubleClick()){
+                         if (painter->getDoubleClick()) {
                              //подсветка левого меню по айди
                          }
                      }
@@ -149,11 +116,9 @@ void Application::setupConnections() {
     QObject::connect(painter.get(),
                      static_cast<void (QTPainter::*)(Element, int, int, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y, int x1, int y1) {
-                         if(move){
 
-                         }
                          //   qDebug() << "Move with 4 params:" << x << ":" << y << "to" << x1<<":" << y1;
-                         if(painter->getDoubleClick()){
+                         if (painter->getDoubleClick()) {
                              //  w.FocusOnItemById(1);
                              //подсветка левого меню по айди
                          }

@@ -9,6 +9,7 @@
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
+#include "DrawMode.h"
 
 class Application {
 public:
@@ -31,7 +32,6 @@ private:
 
     bool isConnected;
     bool isServer;
-    bool move;
 
     void updateState();
     void handler(const QString &command);

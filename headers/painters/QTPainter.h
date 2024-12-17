@@ -9,6 +9,7 @@
 #include "paint.h"
 #include "mainwindow.h"
 #include "scaling.h"
+#include "DrawMode.h"
 
 class QTPainter : public QFrame, public Painter {
 Q_OBJECT
@@ -18,62 +19,68 @@ private:
     std::vector<point> points;
     std::vector<circle> circles;
     std::vector<section> sections;
-    Scaling scaling;
+    Scaling scaling; // Масштабирование
 
     const int CellSize;    // Изначальный размер клетки при отрисовке
     const int maxCellSize; // Максимальный размер клетки при масштабировании
     const int minCellSize; // Минимальный размер клетки при масштабировании
     int currentCellSize;   // Текущий размер клетки
-    int cursorX;
+    int cursorX; // Координаты курсора
     int cursorY;
-    bool CellView;         // Флаг отрисовки сетки
-    bool editor;
-    bool Circle;
-    bool Section;
-    bool Point;
-    QPoint centerPoint;
-    QPoint perimeterPoint;
-    QPoint sectionStartPoint;
-    QPoint sectionEndPoint;
-    bool Drawing;
-    bool leftClick;
-    bool leftDoubleClick;
-    bool Shift;
     int tab;
     int currentCurcsorX;
     int currentCurcsorY;
+    bool CellView;         // Флаг отрисовки сетки
+    bool editor; // Обычный режим
+    bool Circle;
+    bool Section;
+    bool Point;
+    bool Drawing; // Режим отрисовки за курсором после одного клика
+    bool leftClick;
+    bool leftDoubleClick;
+    bool Shift;
+    bool Moving; // Режим перемещения
+    bool ReleaseLeftClick; // Отпускание левой кноки
+    QPoint centerPoint; // Координаты центра круга
+    QPoint perimeterPoint; // Для круга
+    QPoint sectionStartPoint;
+    QPoint sectionEndPoint;
+
+
 
 public:
+    QTPainter(Ui::MainWindow *ui, QWidget *parent);
+
     void setCircle(bool T){Circle=T;}
     void setSection(bool T){Section=T;}
     void setPoint(bool T){Point=T;}
+    void setMoving(bool T){Moving=T;}
+    void setMode(DrawMode mode);
+    void setEditor(bool T){editor=T;}
+    void setZoomPlus();
+    void setZoomMinus();
+    void setZoomZero();
     bool getDoubleClick(){return leftDoubleClick;}
+    void getUsers(bool var) { scaling.getUsers(var); }
 
-    bool moving(int x,int y);
+    bool moving(int x,int y); // Проверяем координаты фигуры с координатами курсора
     bool moving(int x,int y,int r);
     bool moving(int x1, int y1, int x2,int y2);
+
     // Функция включения сетки
     void setCell(bool On_Off);
 
     void draw();
 
-    void setEditor(bool T){editor=T;}
-
-    void getUsers(bool var) { scaling.getUsers(var); }
-
-    void setZoomPlus();
-
-    void setZoomMinus();
-
-    void setZoomZero();
-
-    QTPainter(Ui::MainWindow *ui, QWidget *parent);
-
     void clear(); // Очистка
 
-    std::vector<double> FindMaxMin();
+    void drawBackground(QPainter &painter); // Отрисовка фона
+    void drawFigures(QPainter &painter); // Отрисовка фигур
+    void drawMouse(QPainter &painter); // Отрисовка мышью
 
-    QPoint findPoint();
+    std::vector<double> FindMaxMin(); // Поиск крайних точек
+
+    QPoint findPoint(); // Ближайшие точки к курсору
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -89,33 +96,31 @@ protected:
     void changeSize(const rectangle &allObjects) override;
 
     unsigned long long getWeight() override;
-
     unsigned long long getHeight() override;
 
     void mousePressEvent(QMouseEvent *event) override;
-
     void mouseMoveEvent(QMouseEvent *event) override;
-
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
     void keyPressEvent(QKeyEvent *event) override;
-
     void keyReleaseEvent(QKeyEvent *event) override;
 
 
 signals:
 
-    void RightPress();
+    void RightPress(); // Нажатие правой кнопки мыши
+
+    // Сигналы для отрисовки мышкой
     void SigPoint(QPoint Position);
     void SigCircle(QPoint centerPoint, int radius);
     void SigSection(int startX, int startY, int endX, int endY);
+
+    // Сигналы для перемещения
     void Move(Element F,int x,int y);
     void Move(Element F,int x,int y,int r);
     void Move(Element F,int x,int y,int x1,int y1);
-
-
-
+    void MovingFigures();
 
 private slots:
 

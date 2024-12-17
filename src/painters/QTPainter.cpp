@@ -3,10 +3,10 @@
 QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
         : QFrame(parent), ui(ui), scaling(ui->workWindow->width(), ui->workWindow->height()),
           minCellSize(10), maxCellSize(20), CellSize(8), CellView(true), currentCellSize(1), cursorX(0), cursorY(0),
-          editor(false), Circle(false), Section(false), Point(false), Drawing(false),leftClick(false),leftDoubleClick(false),Shift(false)
-          ,tab(0){
+          editor(true), Circle(false), Section(false), Point(false), Drawing(false), leftClick(false),ReleaseLeftClick(false),
+          leftDoubleClick(false), Shift(false), tab(0) {
 
-    setMouseTracking(true);
+    setMouseTracking(true); // Отслеживанием мышь
 
     resize(parent->size());
     setStyleSheet("background: \"#ffffff\"");
@@ -114,10 +114,10 @@ std::vector<double> QTPainter::FindMaxMin() {
 
 bool QTPainter::moving(int x, int y) {
     if (cursorX >= x - 1 && cursorX <= x + 1 && cursorY >= y - 1 && cursorY <= y + 1) {
-        emit Move(ET_POINT,x, y);
+        emit Move(ET_POINT, x, y);
         return true;
     }
-return false;
+    return false;
 }
 
 bool QTPainter::moving(int x0, int y0, int r) {
@@ -201,19 +201,18 @@ bool QTPainter::moving(int x0, int y0, int x1, int y1) {
     return false;
 }
 
+// Поиск ближайших точек к курсору
 QPoint QTPainter::findPoint() {
     QPoint closest;
     float minDistance = std::numeric_limits<float>::max(); // Инициализация максимальным значением
     double _width = width() / 2.0;
     double _height = height() / 2.0;
-    for (const auto &pt : points) {
+    for (const auto &pt: points) {
         int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width);
         int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height);
 
-        // Вычисление расстояния до курсора
         float distance = std::sqrt(std::pow(X - cursorX, 2) + std::pow(Y - cursorY, 2));
 
-        // Проверка, является ли текущая точка ближайшей
         if (distance < minDistance) {
             minDistance = distance;
             closest.setX(X);
@@ -224,17 +223,8 @@ QPoint QTPainter::findPoint() {
     return closest;
 }
 
-void QTPainter::paintEvent(QPaintEvent *event) {
-    QFrame::paintEvent(event);
-    QPainter painter(this);
-
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(Qt::lightGray);
-
-    // Масштабируем
-    //   Scaling.scaling(width(), height(), FindMaxMin());
-
-
+// Отрисовка фона
+void QTPainter::drawBackground(QPainter &painter) {
     double scale = scaling.getScale();
     double zoom = scaling.getZoom();
     double _width = width() / 2.0;
@@ -242,12 +232,11 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     int deltaX = scaling.getDeltaX();
     int deltaY = scaling.getDeltaY();
 
-
-    // Отрисовка клетчатого фона
+// Отрисовка клетчатого фона
     if (CellView) {
         double ZoomCell = zoom;
         currentCellSize = static_cast<int>(CellSize * scale * ZoomCell);
-        // Изменяем размер клетки
+// Изменяем размер клетки
         if (currentCellSize > maxCellSize) {
             while (currentCellSize > maxCellSize) {
                 ZoomCell /= 2.0;
@@ -278,7 +267,8 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         }
     }
 
-    // Оси координат
+
+// Оси координат
     painter.setPen(Qt::black);
     painter.drawLine(static_cast<int>(_width) + deltaX, 0, static_cast<int>(_width) + deltaX,
                      static_cast<int>(height()));
@@ -286,7 +276,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                      static_cast<int>(_height) + deltaY);
 
 
-    // Отрисовка координат
+// Отрисовка координат
     int widthX = static_cast<int>(_width / (scale * zoom));
     int heightY = static_cast<int>(_height / (scale * zoom));
     if ((width() + deltaX - 30 > width()) || (_height + deltaY - 5 > height()) ||
@@ -298,64 +288,48 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                          QString::number(widthX));
         painter.drawText(static_cast<int>(_width) + deltaX - 30, deltaY + 10, QString::number(heightY));
     }
+}
 
-   /* if(Section) {
-        if(editor ){
-        QPoint closestPoint = findPoint();
-            if(tab==0){
-             painter.setPen(QPen(QColor(169, 169, 169, 128), 2)); // Тускло-серая линия
-             // Рисуем линию от ближайшей точки до курсора
-             painter.drawLine(closestPoint, QPoint(cursorX, cursorY));
-             }
-            /*else if(tab==1){
-              painter.setPen(QPen(QColor(169, 169, 169, 128), 2)); // Тускло-серая линия
-                QPoint closestPointNext = findPoint();
 
-             // Рисуем линию от ближайшей точки до курсора
-          if(!Drawing)    painter.drawLine(closestPoint, closestPointNext);
-          else painter.drawLine(sectionStartPoint.x(),sectionStartPoint.y(), closestPointNext);
-             }
-             else if(tab==2){
-              emit SigSection(closestPoint.x(), closestPoint.y(), closestPointNext.x(), closestPointNext.y());
-             }
+// Отрисовка фигур
+void QTPainter::drawFigures(QPainter &painter) {
 
-         }
-    }*/
+    double _width = width() / 2.0;
+    double _height = height() / 2.0;
 
-    // Отрисовка фигур
     for (const auto &pt: points) {
         int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width );
         int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height );
 
 
-        if (leftClick && moving(X, Y)) {
+        if ((editor  || Moving) && leftClick && moving(X, Y)) {
             qreal glowRadius = 5.0;
-
-            // Создаем радиальный градиент для свечения
+            // Создаем радиальный градиент для неонового голубого свечения
             QRadialGradient radialGradient(X, Y, glowRadius, X, Y);
-            radialGradient.setColorAt(0.0, QColor(0, 255, 255, 150)); // Циановый цвет в центре (полупрозрачный)
-            radialGradient.setColorAt(1.0, QColor(0, 255, 255, 0));   // Прозрачный цвет на краю градиента
+            // Яркий голубой цвет в центре с большей непрозрачностью
+            radialGradient.setColorAt(0.0, QColor(0, 128, 255, 200));
+            // К краю градиента цвет переходит в прозрачный
+            radialGradient.setColorAt(1.0, QColor(0, 128, 255, 0));
 
             // Настраиваем кисть с градиентом
             QBrush glowBrush(radialGradient);
             painter.setBrush(glowBrush);
-            painter.setPen(Qt::NoPen); // Без обводки для свечения
+            painter.setPen(Qt::NoPen); // Без обводки
             painter.drawEllipse(X - glowRadius, Y - glowRadius, glowRadius * 2, glowRadius * 2); // Рисуем свечение
 
             // Рисуем основную черную точку поверх свечения
-            qreal pointRadius = 2.0; // Радиус точки
+            qreal pointRadius = 2.0;
             QBrush pointBrush(Qt::black);
             painter.setBrush(pointBrush);
-            painter.setPen(Qt::NoPen); // Без обводки для точки
-            painter.drawEllipse(X - pointRadius, Y - pointRadius, pointRadius * 2, pointRadius * 2); // Рисуем точку
-        }
-        else {
+            painter.setPen(Qt::NoPen); // Без обводки
+            painter.drawEllipse(X - pointRadius, Y - pointRadius, pointRadius * 2, pointRadius * 2);
+        } else {
             // Рисуем обычную черную точку без свечения
-            qreal pointRadius = 1.0; // Радиус точки
+            qreal pointRadius = 1.0;
             QBrush pointBrush(Qt::black);
             painter.setBrush(pointBrush);
-            painter.setPen(Qt::NoPen); // Без обводки для точки
-            painter.drawEllipse(X - pointRadius, Y - pointRadius, pointRadius * 2, pointRadius * 2); // Рисуем точку
+            painter.setPen(Qt::NoPen); // Без обводки
+            painter.drawEllipse(X - pointRadius, Y - pointRadius, pointRadius * 2, pointRadius * 2);
         }
     }
 
@@ -365,7 +339,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
         int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
 
-        if (leftClick && moving(X, Y, Radius/ 2)) {
+        if ((editor  || Moving) && leftClick && moving(X, Y, Radius / 2)) {
             // Параметры свечения
             qreal glowDistance = 20.0; // Расстояние свечения от обводки
             qreal gradientRadius = (Radius / 2.0) + glowDistance; // Общий радиус градиента
@@ -378,9 +352,11 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             // Создаем радиальный градиент
             QRadialGradient radialGradient(X, Y, gradientRadius, X, Y);
             radialGradient.setColorAt(0.0, QColor(0, 255, 255, 0));         // Прозрачный в центре
-            radialGradient.setColorAt(stopTransparent1, QColor(0, 255, 255, 0));   // Прозрачный до внутренней границы свечения
+            radialGradient.setColorAt(stopTransparent1,
+                                      QColor(0, 255, 255, 0));   // Прозрачный до внутренней границы свечения
             radialGradient.setColorAt(stopCyan, QColor(0, 255, 255, 150));   // Насыщенный циан на обводке
-            radialGradient.setColorAt(stopTransparent2, QColor(0, 255, 255, 0));   // Прозрачный после внешней границы свечения
+            radialGradient.setColorAt(stopTransparent2,
+                                      QColor(0, 255, 255, 0));   // Прозрачный после внешней границы свечения
             radialGradient.setColorAt(1.0, QColor(0, 255, 255, 0));         // Прозрачный за пределами свечения
 
             // Настраиваем перо для свечения
@@ -417,7 +393,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
 
 
-        if (leftClick && moving(BegX, BegY, EndX, EndY)) {
+        if ((editor  || Moving) && leftClick && moving(BegX, BegY, EndX, EndY)) {
             // Вычисляем направление линии
             qreal dx = EndX - BegX;
             qreal dy = EndY - BegY;
@@ -457,8 +433,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             blackPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
             painter.setPen(blackPen);
             painter.drawLine(BegX, BegY, EndX, EndY);
-        }
-        else {
+        } else {
             QPen blackPen(Qt::black);
             blackPen.setWidth(1);
             blackPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
@@ -467,18 +442,15 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         }
 
     }
+}
 
-    if (editor) {
-        painter.setPen(Qt::black);
-        int logicalX = static_cast<int>(scaling.logicX(cursorX - _width));
-        int logicalY = static_cast<int>(scaling.logicY(_height - cursorY));
-        painter.
-                drawText(cursorX+ 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY)
-        );
-
-        if (Circle && Drawing) {
-
-
+// Отрисовка фигур мышью
+void QTPainter::drawMouse(QPainter &painter) {
+    double _width = width() / 2.0;
+    double _height = height() / 2.0;
+    int logicalX = static_cast<int>(scaling.logicX(cursorX - _width));
+    int logicalY = static_cast<int>(scaling.logicY(_height - cursorY));
+     if (Circle && Drawing) {
             int logicalPerimeterX = perimeterPoint.x();
             int logicalPerimeterY = perimeterPoint.y();
             int centerX = (logicalPerimeterX + logicalX) / 2;
@@ -488,35 +460,74 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             int screenCenterX = static_cast<int>(scaling.scaleCoordinateX(centerX) + _width);
             int screenCenterY = static_cast<int>(scaling.scaleCoordinateY(-centerY) + _height);
             int scaledRadius = static_cast<int>(scaling.scaleCoordinate(radius));
-            painter.
-                    drawEllipse(screenCenterX
-                                - scaledRadius, screenCenterY - scaledRadius, 2 * scaledRadius,
-                                2 * scaledRadius);
-        } else if (
-                Section && Drawing
-                ) {
+            painter.drawEllipse(screenCenterX- scaledRadius, screenCenterY - scaledRadius, 2 * scaledRadius,2 * scaledRadius);
+        } else if (Section && Drawing) {
             int screenStartX = static_cast<int>(scaling.scaleCoordinateX(sectionStartPoint.x()) + _width);
             int screenStartY = static_cast<int>(scaling.scaleCoordinateY(-sectionStartPoint.y()) + _height);
-            if(Shift && abs(cursorX-currentCurcsorX)>abs(cursorY-currentCurcsorY)){
-  painter.drawLine(screenStartX, screenStartY, screenStartX, cursorY);
-            }else if(Shift){
+            if (Shift && abs(cursorX - currentCurcsorX) > abs(cursorY - currentCurcsorY)) {
                 painter.drawLine(screenStartX, screenStartY, screenStartX, cursorY);
-            }else {
+            } else if (Shift) {
+                painter.drawLine(screenStartX, screenStartY, screenStartX, cursorY);
+            } else {
                 painter.drawLine(screenStartX, screenStartY, cursorX, cursorY);
             }
         }
-    }
-    points.
+}
 
-            clear();
+// Отрисовка
+void QTPainter::paintEvent(QPaintEvent *event) {
+    QFrame::paintEvent(event);
+    QPainter painter(this);
 
-    circles.
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(Qt::lightGray);
 
-            clear();
+    // Масштабируем
+    //   Scaling.scaling(width(), height(), FindMaxMin());
 
-    sections.
 
-            clear();
+    double _width = width() / 2.0;
+    double _height = height() / 2.0;
+
+
+    drawBackground(painter); // Фон
+    drawFigures(painter); // Фигуры
+    drawMouse(painter); // Отрисовка мышью
+
+    // Отрисовка координат
+        painter.setPen(Qt::black);
+        int logicalX = static_cast<int>(scaling.logicX(cursorX - _width));
+        int logicalY = static_cast<int>(scaling.logicY(_height - cursorY));
+        painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY)
+        );
+
+    /* if(Section) {
+         if(editor ){
+         QPoint closestPoint = findPoint();
+             if(tab==0){
+              painter.setPen(QPen(QColor(169, 169, 169, 128), 2)); // Тускло-серая линия
+              // Рисуем линию от ближайшей точки до курсора
+              painter.drawLine(closestPoint, QPoint(cursorX, cursorY));
+              }
+             /*else if(tab==1){
+               painter.setPen(QPen(QColor(169, 169, 169, 128), 2)); // Тускло-серая линия
+                 QPoint closestPointNext = findPoint();
+
+              // Рисуем линию от ближайшей точки до курсора
+           if(!Drawing)    painter.drawLine(closestPoint, closestPointNext);
+           else painter.drawLine(sectionStartPoint.x(),sectionStartPoint.y(), closestPointNext);
+              }
+              else if(tab==2){
+               emit SigSection(closestPoint.x(), closestPoint.y(), closestPointNext.x(), closestPointNext.y());
+              }
+
+          }
+     }*/
+
+
+    points.clear();
+    circles.clear();
+    sections.clear();
 
 }
 
@@ -542,13 +553,12 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         update();
     }
 
-if(!editor && !leftClick &&  event->button() == Qt::LeftButton){
-    leftClick=true;
+    if ( event->button() == Qt::LeftButton) {
+        leftClick = true;
+    }
 
-}
 
-
-    if (editor && event->button() == Qt::LeftButton) {
+    if (Point || Section || Circle && event->button() == Qt::LeftButton) {
 
         QPoint Position = event->pos();
         double _width = width() / 2.0;
@@ -596,16 +606,22 @@ void QTPainter::mouseMoveEvent(QMouseEvent *event) {
     scaling.mouseMove(event->pos());
 
 
-        cursorX = event->pos().x();
-        cursorY = event->pos().y();
+    cursorX = event->pos().x();
+    cursorY = event->pos().y();
 
 
     if (scaling.isRightMousePressed()) {
         emit RightPress();
     }
 
-    leftClick=false;
-    leftDoubleClick=false;
+    if (!ReleaseLeftClick) {
+        emit MovingFigures();
+    } else {
+        leftClick = false;
+    }
+
+    ReleaseLeftClick = false;
+    leftDoubleClick = false;
     update();
 }
 
@@ -613,7 +629,7 @@ void QTPainter::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         scaling.endMousePress();
     }
-   // if(event->button() == Qt::LeftButton){leftClick=false;}
+    if (event->button() == Qt::LeftButton) { ReleaseLeftClick = true; }
 }
 
 void QTPainter::onWorkWindowResized() {
@@ -624,7 +640,7 @@ void QTPainter::onWorkWindowResized() {
 void QTPainter::mouseDoubleClickEvent(QMouseEvent *event) {
 
     if (event->button() == Qt::LeftButton) {
-        leftDoubleClick=true;
+        leftDoubleClick = true;
     }
 
 
@@ -634,16 +650,15 @@ void QTPainter::mouseDoubleClickEvent(QMouseEvent *event) {
 void QTPainter::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Shift) {
         Shift = true;
-        currentCurcsorX=cursorX;
-        currentCurcsorY=cursorY;
+        currentCurcsorX = cursorX;
+        currentCurcsorY = cursorY;
     }
 
     if (event->key() == Qt::Key_Tab) {
-        if(tab<3){
-          ++tab;
-        }
-        else{
-            tab=0;
+        if (tab < 3) {
+            ++tab;
+        } else {
+            tab = 0;
         }
     }
 }
@@ -652,4 +667,13 @@ void QTPainter::keyReleaseEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Shift) {
         Shift = false;
     }
+}
+
+void QTPainter::setMode(DrawMode mode) {
+    setEditor(mode == DrawMode::Editor);
+    setPoint(mode == DrawMode::Point);
+    setSection(mode == DrawMode::Section);
+    setCircle(mode == DrawMode::Circle);
+    bool movingMode = (mode == DrawMode::Move || mode == DrawMode::Resize || mode == DrawMode::Rotate);
+    setMoving(movingMode);
 }
