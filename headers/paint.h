@@ -98,10 +98,16 @@ public:
     // Save data in file
     void saveToFile(const char *filename);
     std::string to_string() const;
-    
+
+    // Move element
+    void moveElement(const ElementData& currentPos, const ElementData& newPos);
+
+    //Find element by ID
+    ID findElement(const ElementData& ed);
+
     // Export to BMP file
     void exportToBMP(const char *file);
-    
+
     // Upload data from file
     void loadFromFile(const char *file);
 

@@ -231,9 +231,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
     VarsStorage::clearVars();
     std::cout << "Requirement in component: " << countOfReq << std::endl;
 
-    std::cout << "Component count of req: " << countOfReq << std::endl;
-
-    if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
+    if (!solver.isConverged()){
         for (const auto& req: m_reqStorage){
             for (auto i: req.objects){
                 info.m_paramsAfter.push_back(getElementInfo(i).params);
@@ -414,6 +412,31 @@ void Paint::paint() {
     for (auto &section: m_sectionStorage) {
         c_bmpPainter->drawSection(section, false);
     }
+}
+
+ID Paint::findElement(const ElementData &ed) {
+    if (ed.et == ET_POINT) {
+        for (auto &pointID: m_pointIDs) {
+            if ((*pointID.second).x == ed.params[0] and (*pointID.second).y == ed.params[1]) {
+                return pointID.first;
+            }
+        }
+    }
+    if (ed.et == ET_SECTION) {
+        for (auto &sectionID: m_sectionIDs) {
+            if ((*sectionID.second).beg->x == ed.params[0] and (*sectionID.second).beg->y == ed.params[1] and (*sectionID.second).end->x == ed.params[2] and (*sectionID.second).end->y == ed.params[3]) {
+                return sectionID.first;
+            }
+        }
+    }
+    if (ed.et == ET_CIRCLE) {
+        for (auto &circleID: m_circleIDs) {
+            if ((*circleID.second).center->x == ed.params[0] and (*circleID.second).center->y == ed.params[1] and (*circleID.second).R == ed.params[2]) {
+                return circleID.first;
+            }
+        }
+    }
+    return ID{-1};
 }
 
 void Paint::exportToBMP(const char *file) {
@@ -771,6 +794,25 @@ std::string Paint::to_string() const {
         saver.addRequirement(m);
     }
     return saver.to_string();
+}
+
+void Paint::moveElement(const ElementData &currentPos, const ElementData &newPos) {
+    if (currentPos.et == ET_POINT) {
+        point *p = &(*m_pointIDs.at(findElement(currentPos)));
+        p->x = newPos.params[0];
+        p->y = newPos.params[1];
+    } else if (currentPos.et == ET_SECTION) {
+        section *s = &(*m_sectionIDs.at(findElement(currentPos)));
+        s->beg->x = newPos.params[0];
+        s->beg->y = newPos.params[1];
+        s->end->x = newPos.params[2];
+        s->end->y = newPos.params[3];
+    } else if (currentPos.et == ET_CIRCLE) {
+        circle *c = &(*m_circleIDs.at(findElement(currentPos)));
+        c->center->x = newPos.params[0];
+        c->center->y = newPos.params[1];
+        c->R = newPos.params[2];
+    }
 }
 
 std::vector<std::pair<ID, RequirementData>> Paint::getAllRequirementsInfo() {
