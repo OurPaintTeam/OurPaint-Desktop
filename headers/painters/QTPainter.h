@@ -21,6 +21,7 @@ private:
     std::vector<section> sections;
     Scaling scaling; // Масштабирование
 
+    unsigned long long id; // Айди фигуры
     const int CellSize;    // Изначальный размер клетки при отрисовке
     const int maxCellSize; // Максимальный размер клетки при масштабировании
     const int minCellSize; // Минимальный размер клетки при масштабировании
@@ -51,6 +52,8 @@ private:
 public:
     QTPainter(Ui::MainWindow *ui, QWidget *parent);
 
+    void setIdFigures(unsigned long long ID){id=ID;}
+    unsigned long long getIdFigures(){return id;}
     void setCircle(bool T){Circle=T;}
     void setSection(bool T){Section=T;}
     void setPoint(bool T){Point=T;}

@@ -87,6 +87,7 @@ void Application::setupConnections() {
 
     QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
        // Ф-я перемещения
+       // painter->getIdFigures(); <- id фигуры перемещения
        //  QPoint XY = w.MouseCoordinate();<-трекер мышки
     });
 
