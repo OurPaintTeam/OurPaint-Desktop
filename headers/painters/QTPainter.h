@@ -55,8 +55,8 @@ public:
     QTPainter(Ui::MainWindow *ui, QWidget *parent);
 
     QPoint MouseCoordinate(){return QPoint(cursorX-currentCursorX,-cursorY+currentCursorY);}
-    void setIdFigures(unsigned long long ID){id=ID;}
-    unsigned long long getIdFigures(){return id;}
+    void setIdFigures(unsigned long long ID){if(id==0)id=ID;}
+    unsigned long long getIdFigures(){  return id;}
     void setCircle(bool T){Circle=T;}
     void setSection(bool T){Section=T;}
     void setPoint(bool T){Point=T;}
