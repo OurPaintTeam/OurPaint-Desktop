@@ -5,11 +5,8 @@ ElementData::ElementData() {
 }
 
 ID Paint::addRequirement(const RequirementData &rd) {
-    std::vector<IReq *> allRequirements;
     ActionsInfo info;
     auto it = m_reqStorage.addElement(rd);
-    int countOfReq = 0;
-
     // Update graph: add vertex and edges for new req
     for (const auto& obj : rd.objects) {
         m_graph.addVertex(obj);
@@ -19,9 +16,47 @@ ID Paint::addRequirement(const RequirementData &rd) {
             m_graph.addEdge(rd, rd.objects[i], rd.objects[j]);
         }
     }
+    for (const auto& req: m_reqStorage){
+        for (auto i: req.objects){
+            info.m_objects.push_back(i);
+            info.m_paramsBefore.push_back(getElementInfo(i).params);
+        }
+    }
 
+    try {
+        updateRequirement(rd.objects[0]);
+    } catch (const std::invalid_argument& i) {
+        m_reqStorage.remove(it);
+        throw i;
+    } catch (const std::runtime_error& i) {
+        for (const auto& req: m_reqStorage){
+            for (auto i: req.objects){
+                info.m_paramsAfter.push_back(getElementInfo(i).params);
+            }
+        }
+        info.m_objects.emplace_back(++s_maxID.id);
+        c_undoRedo.add(info);
+        m_reqIDs[s_maxID.id] = it;
+        undo();
+        throw std::runtime_error("Not converged");
+    }
+    for (const auto& req: m_reqStorage){
+        for (auto i: req.objects){
+            info.m_paramsAfter.push_back(getElementInfo(i).params);
+        }
+    }
+
+    info.m_objects.emplace_back(++s_maxID.id);
+    c_undoRedo.add(info);
+    m_reqIDs[s_maxID.id] = it;
+    return s_maxID;
+}
+
+void Paint::updateRequirement(ID id) {
+    std::vector<IReq *> allRequirements;
+    int countOfReq = 0;
     // Find component
-    std::vector<ID> connectedComponent = m_graph.findConnectedComponent(rd.objects[0]);
+    std::vector<ID> connectedComponent = m_graph.findConnectedComponent(id);
     std::unordered_set<ID> connectedObjects(connectedComponent.begin(), connectedComponent.end());
 
 
@@ -53,8 +88,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     p_it = &(*(m_pointIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 } catch (...) {
-                    m_reqStorage.remove(it);
-                    throw std::runtime_error("No such point or section");
+                    throw std::invalid_argument("No such point or section");
                 }
             }
             requirement = new ReqPointSecDist(p_it, s_it, r.params[0]);
@@ -72,8 +106,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     p_it = &(*(m_pointIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 } catch (...) {
-                    m_reqStorage.remove(it);
-                    throw std::runtime_error("No such point or section");
+                    throw std::invalid_argument("No such point or section");
                 }
             }
             requirement = new ReqPointOnSec(p_it, s_it);
@@ -87,8 +120,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 p1_it = &(*(m_pointIDs.at(r.objects[0])));
                 p2_it = &(*(m_pointIDs.at(r.objects[1])));
             } catch (...) {
-                m_reqStorage.remove(it);
-                throw std::runtime_error("No such point");
+
+                throw std::invalid_argument("No such point");
             }
             requirement = new ReqPointPointDist(p1_it, p2_it, r.params[0]);
         }
@@ -101,8 +134,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 p1_it = &(*(m_pointIDs.at(r.objects[0])));
                 p2_it = &(*(m_pointIDs.at(r.objects[1])));
             } catch (...) {
-                m_reqStorage.remove(it);
-                throw std::runtime_error("No such point");
+
+                throw std::invalid_argument("No such point");
             }
             requirement = new ReqPointOnPoint(p1_it, p2_it);
         }
@@ -119,8 +152,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     c_it = &(*(m_circleIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 }catch(...) {
-                    m_reqStorage.remove(it);
-                    throw std::runtime_error("No such circle or section");
+                    throw std::invalid_argument("No such circle or section");
                 }
             }
             requirement = new ReqSecCircleDist(s_it, c_it, r.params[0]);
@@ -138,8 +170,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     c_it = &(*(m_circleIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 }catch(...) {
-                    m_reqStorage.remove(it);
-                    throw std::runtime_error("No such circle or section");
+                    throw std::invalid_argument("No such circle or section");
                 }
             }
             requirement = new ReqSecOnCircle(s_it, c_it);
@@ -157,8 +188,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
                     c_it = &(*(m_circleIDs.at(r.objects[1])));
                     s_it = &(*(m_sectionIDs.at(r.objects[0])));
                 }catch(...) {
-                    m_reqStorage.remove(it);
-                    throw std::runtime_error("No such circle or section");
+                    throw std::invalid_argument("No such circle or section");
                 }
             }
             requirement = new ReqSecInCircle(s_it, c_it);
@@ -172,8 +202,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 s1_it = &(*(m_sectionIDs.at(r.objects[0])));
                 s2_it = &(*(m_sectionIDs.at(r.objects[1])));
             }catch(...){
-                m_reqStorage.remove(it);
-                throw std::runtime_error("No such section");
+
+                throw std::invalid_argument("No such section");
             }
             requirement = new ReqSecSecParallel(s1_it, s2_it);
         }
@@ -186,8 +216,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 s1_it = &(*(m_sectionIDs.at(r.objects[0])));
                 s2_it = &(*(m_sectionIDs.at(r.objects[1])));
             }catch(...){
-                m_reqStorage.remove(it);
-                throw std::runtime_error("No such section");
+
+                throw std::invalid_argument("No such section");
             }
             requirement = new ReqSecSecPerpendicular(s1_it, s2_it);
         }
@@ -200,8 +230,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
                 s1_it = &(*(m_sectionIDs.at(r.objects[0])));
                 s2_it = &(*(m_sectionIDs.at(r.objects[1])));
             }catch(...){
-                m_reqStorage.remove(it);
-                throw std::runtime_error("No such section");
+
+                throw std::invalid_argument("No such section");
             }
             requirement = new ReqSecSecAngel(s1_it, s2_it, r.params[0]);
         }
@@ -213,15 +243,11 @@ ID Paint::addRequirement(const RequirementData &rd) {
     }
 
     std::vector<Function*> allFunctions;
+    if (allRequirements.empty()) {
+        return;
+    }
     for (auto requirement: allRequirements) {
         allFunctions.push_back(requirement->getFunction());
-    }
-
-    for (const auto& req: m_reqStorage){
-        for (auto i: req.objects){
-            info.m_objects.push_back(i);
-            info.m_paramsBefore.push_back(getElementInfo(i).params);
-        }
     }
 
     LSMTask* task = new LSMTask(allFunctions, VarsStorage::getVars());
@@ -232,11 +258,6 @@ ID Paint::addRequirement(const RequirementData &rd) {
     std::cout << "Requirement in component: " << countOfReq << std::endl;
 
     if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
-        for (const auto& req: m_reqStorage){
-            for (auto i: req.objects){
-                info.m_paramsAfter.push_back(getElementInfo(i).params);
-            }
-        }
         for (const auto &req: allRequirements) {
             s_allFigures = s_allFigures || req->getRectangle();
         }
@@ -244,16 +265,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
         for (auto requirement: allRequirements) {
             delete requirement;
         }
-        info.m_objects.emplace_back(++s_maxID.id);
-        c_undoRedo.add(info);
-        m_reqIDs[s_maxID.id] = it;
-        undo();
         throw std::runtime_error("Not converged");
-    }
-    for (const auto& req: m_reqStorage){
-        for (auto i: req.objects){
-            info.m_paramsAfter.push_back(getElementInfo(i).params);
-        }
     }
     for (const auto &req: allRequirements) {
         s_allFigures = s_allFigures || req->getRectangle();
@@ -262,10 +274,6 @@ ID Paint::addRequirement(const RequirementData &rd) {
     for (auto requirement: allRequirements) {
         delete requirement;
     }
-    info.m_objects.emplace_back(++s_maxID.id);
-    c_undoRedo.add(info);
-    m_reqIDs[s_maxID.id] = it;
-    return s_maxID;
 }
 
 ID Paint::addElement(const ElementData &ed) {
@@ -675,6 +683,7 @@ void Paint::loadFromFile(const char *file) {
             m_pointIDs[i.to_pair().first] = m_pointStorage.addElement(*p);
             m_graph.addVertex(i.to_pair().first);
             s_allFigures = s_allFigures || p->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_CIRCLE) {
             circle *c = static_cast<circle *>(i.to_pair().second);
             m_circleIDs[i.to_pair().first] = m_circleStorage.addElement(*c);
@@ -684,6 +693,7 @@ void Paint::loadFromFile(const char *file) {
             rd.req = ET_POINTINOBJECT;
             m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
             s_allFigures = s_allFigures || c->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_SECTION) {
             section *s = static_cast<section *>(i.to_pair().second);
             m_sectionIDs[i.to_pair().first] = m_sectionStorage.addElement(*s);
@@ -696,12 +706,14 @@ void Paint::loadFromFile(const char *file) {
             m_graph.addEdge(rd, i.to_pair().first.id - 2, i.to_pair().first);
             m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
             s_allFigures = s_allFigures || s->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         }
     }
     for (const auto &i: loader.getRequirements()) {
         auto it = m_reqStorage.addElement(i.to_pair().second);
         m_reqIDs[i.to_pair().first] = it;
         m_graph.addEdge(i.to_pair().second, i.to_pair().second.objects[0], i.to_pair().second.objects[1]);
+        s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
     }
 }
 
@@ -767,12 +779,14 @@ void Paint::loadFromString(const std::string &str) {
     FileOurP loader;
     loader.loadString(str);
     clear();
+    s_maxID = ID(0);
     for (const auto &i: loader.getObjects()) {
         if (i.to_pair().second->type() == ET_POINT) {
             point *p = static_cast<point *>(i.to_pair().second);
             m_pointIDs[i.to_pair().first] = m_pointStorage.addElement(*p);
             m_graph.addVertex(i.to_pair().first);
             s_allFigures = s_allFigures || p->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_CIRCLE) {
             circle *c = static_cast<circle *>(i.to_pair().second);
             m_circleIDs[i.to_pair().first] = m_circleStorage.addElement(*c);
@@ -782,6 +796,7 @@ void Paint::loadFromString(const std::string &str) {
             rd.req = ET_POINTINOBJECT;
             m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
             s_allFigures = s_allFigures || c->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_SECTION) {
             section *s = static_cast<section *>(i.to_pair().second);
             m_sectionIDs[i.to_pair().first] = m_sectionStorage.addElement(*s);
@@ -794,12 +809,14 @@ void Paint::loadFromString(const std::string &str) {
             m_graph.addEdge(rd, i.to_pair().first.id - 2, i.to_pair().first);
             m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
             s_allFigures = s_allFigures || s->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         }
     }
     for (const auto &i: loader.getRequirements()) {
         auto it = m_reqStorage.addElement(i.to_pair().second);
         m_reqIDs[i.to_pair().first] = it;
         m_graph.addEdge(i.to_pair().second, i.to_pair().second.objects[0], i.to_pair().second.objects[1]);
+        s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
     }
 }
 
@@ -828,39 +845,52 @@ std::string Paint::to_string() const {
 }
 
 void Paint::moveElement(const ElementData &currentPos, const ElementData &newPos) {
+    ID find = findElement(currentPos);
     if (currentPos.et == ET_POINT) {
-        point *p = &(*m_pointIDs.at(findElement(currentPos)));
+        point *p = &(*m_pointIDs.at(find));
         p->x = newPos.params[0];
         p->y = newPos.params[1];
+        updateRequirement(find);
     } else if (currentPos.et == ET_SECTION) {
-        section *s = &(*m_sectionIDs.at(findElement(currentPos)));
+        section *s = &(*m_sectionIDs.at(find));
         s->beg->x = newPos.params[0];
         s->beg->y = newPos.params[1];
         s->end->x = newPos.params[2];
         s->end->y = newPos.params[3];
+        updateRequirement(find);
     } else if (currentPos.et == ET_CIRCLE) {
-        circle *c = &(*m_circleIDs.at(findElement(currentPos)));
+        circle *c = &(*m_circleIDs.at(find));
         c->center->x = newPos.params[0];
         c->center->y = newPos.params[1];
         c->R = newPos.params[2];
+        updateRequirement(find);
     }
+
 }
 
 void Paint::parallelMove(ID id, double dx, double dy) {
+    if (dx == 0 && dy == 0) {
+        return;
+    }
     if (m_pointIDs.contains(id)) {
         point *p = &(*m_pointIDs.at(id));
         p->x += dx;
         p->y += dy;
+        updateRequirement(id);
+
     } else if (m_sectionIDs.contains(id)) {
         section *s = &(*m_sectionIDs.at(id));
         s->beg->x += dx;
         s->beg->y += dy;
         s->end->x += dx;
         s->end->y += dy;
+        updateRequirement(id);
+
     } else if (m_circleIDs.contains(id)) {
         circle *c = &(*m_circleIDs.at(id));
         c->center->x += dx;
         c->center->y += dy;
+        updateRequirement(id);
     }else{
         throw std::invalid_argument("No such element!");
     }

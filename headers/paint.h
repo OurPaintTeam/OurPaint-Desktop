@@ -88,7 +88,7 @@ public:
     
     // Addition requirement
     ID addRequirement(const RequirementData &rd);
-
+    void updateRequirement(ID id);
     // Get information about object
     ElementData getElementInfo(ID id);
     std::vector<std::pair<ID, ElementData>> getAllElementsInfo();
