@@ -117,13 +117,15 @@ std::vector<double> QTPainter::FindMaxMin() {
 }
 
 bool QTPainter::moving(double x, double y) {
-    const double RANGE = 1.0;
+     double RANGE = 1.0;
+     if(RANGE/scaling.getZoom()>1.0){
+         RANGE/=scaling.getZoom();
+     }
     double _width = width() / 2.0;
     double _height = height() / 2.0;
 
     double cursorXDouble = scaling.logicX(cursorX - _width);
     double cursorYDouble =scaling.logicY(_height - cursorY);
-
 
     if (std::abs(cursorXDouble  - x) <= RANGE &&
         std::abs(cursorYDouble  - y) <= RANGE) {
@@ -157,52 +159,53 @@ bool QTPainter::moving(double x0, double y0, double r) {
 
 
 bool QTPainter::moving(double x0, double y0, double x1, double y1) {
-    int dx = x1 - x0;
-    int dy = y1 - y0;
-    int stepX = (dx > 0) ? 1 : -1;
-    int stepY = (dy > 0) ? 1 : -1;
+    double RANGE = 5.0;
+
+    if (RANGE / scaling.getZoom() > 1.0) {
+        RANGE /= scaling.getZoom();
+    }
+
     double _width = width() / 2.0;
     double _height = height() / 2.0;
+
     double mouseX = scaling.logicX(cursorX - _width);
-    double mouseY =scaling.logicY(_height - cursorY);
+    double mouseY = scaling.logicY(_height - cursorY);
 
-    dx = abs(dx);
-    dy = abs(dy);
+    double distance = distancePointToSection(mouseX, mouseY, x0, y0, x1, y1);
 
-    if (dx > dy) {
-        int p = 2 * dy - dx;
-        for (int x = x0, y = y0; x != x1; x += stepX) {
-            // Проверка с учетом погрешности ±1 пиксель
-            for (int dyOffset = -1; dyOffset <= 1; ++dyOffset) {
-                if (x == mouseX && (y + dyOffset) == mouseY) {
-                    emit Move(ET_SECTION, x0, y0, x1, y1);
-                    return true;
-                }
-            }
-            if (p > 0) {
-                y += stepY;
-                p -= 2 * dx;
-            }
-            p += 2 * dy;
-        }
-    } else {
-        int p = 2 * dx - dy;
-        for (int y = y0, x = x0; y != y1; y += stepY) {
-            // Проверка с учетом погрешности ±1 пиксель
-            for (int dxOffset = -1; dxOffset <= 1; ++dxOffset) {
-                if (y == mouseY && (x + dxOffset) == mouseX) {
-                    emit Move(ET_SECTION, x0, y0, x1, y1);
-                    return true;
-                }
-            }
-            if (p > 0) {
-                x += stepX;
-                p -= 2 * dy;
-            }
-            p += 2 * dx;
-        }
+    if (distance <= RANGE) {
+        emit Move(ET_SECTION, x0, y0, x1, y1);
+        return true;
     }
+
     return false;
+}
+
+double QTPainter::distancePointToSection(double px, double py, double x0, double y0, double x1, double y1) {
+    double dx = x1 - x0;
+    double dy = y1 - y0;
+
+    if (dx*dx + dy*dy == 0.0) {
+        dx = px - x0;
+        dy = py - y0;
+        return std::sqrt(dx*dx + dy*dy);
+    }
+
+    // Вычисляем параметр t для проекции точки на линию
+    double t = ((px - x0) * dx + (py - y0) * dy) / (dx*dx+dy*dy);
+
+    // Ограничиваем t диапазоном [0,1]
+    t = std::max(0.0, std::min(1.0, t));
+
+    // Находим ближайшую точку на отрезке
+    double nearestX = x0 + t * dx;
+    double nearestY = y0 + t * dy;
+
+    // Вычисляем расстояние до ближайшей точки
+    dx = px - nearestX;
+    dy = py - nearestY;
+
+    return std::sqrt(dx*dx+dy*dy);
 }
 
 // Поиск ближайших точек к курсору

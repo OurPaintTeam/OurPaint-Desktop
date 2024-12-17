@@ -54,7 +54,8 @@ private:
 public:
     QTPainter(Ui::MainWindow *ui, QWidget *parent);
 
-    QPoint MouseCoordinate(){return QPoint(cursorX-currentCursorX,-cursorY+currentCursorY);}
+    QPoint MouseCoordinate(){
+        return QPoint(scaling.logic(cursorX-currentCursorX),scaling.logic(-cursorY+currentCursorY));}
     void setIdFigures(unsigned long long ID){if(id==0)id=ID;}
     unsigned long long getIdFigures(){  return id;}
     void setCircle(bool T){Circle=T;}
@@ -72,6 +73,7 @@ public:
     bool moving(double x,double y); // Проверяем координаты фигуры с координатами курсора
     bool moving(double x0, double y0, double r);
     bool moving(double x1, double y1, double x2,double y2);
+    double distancePointToSection(double px, double py, double x0, double y0, double x1, double y1); // Вспомогательная функция
 
     // Функция включения сетки
     void setCell(bool On_Off);
