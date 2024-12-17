@@ -543,7 +543,7 @@ public:
         settings = new QPushButton("", topBar);
         settings->setToolTip("Settings");
         settings->setFixedSize(25, 25);
-        settings->setIcon(QIcon("../Static/icons/Vertical_Dots_Icon.ico"));
+        settings->setIcon(QIcon("../Static/icons/SettingsIco.ico"));
         settings->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
                                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
     }
@@ -629,7 +629,7 @@ public:
         // Создание кнопки свернуть влево
         collapseButton = new QPushButton("");
         collapseButton->setToolTip("Hide");
-        collapseButton->setIcon(QIcon("../Static/icons/Chevron_right.ico"));
+        collapseButton->setIcon(QIcon("../Static/icons/LeftIco.ico"));
         collapseButton->setFixedSize(30, 30);
         collapseButton->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; }"
@@ -809,7 +809,7 @@ public:
         // Создание кнопки свернуть
         messageCollapseButton = new QPushButton("");
         messageCollapseButton->setToolTip("Hide");
-        messageCollapseButton->setIcon(QIcon("../Static/icons/Chevron_right.ico"));
+        messageCollapseButton->setIcon(QIcon("../Static/icons/LeftIco.ico"));
         messageCollapseButton->setFixedSize(30, 30);
         messageCollapseButton->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; }"
