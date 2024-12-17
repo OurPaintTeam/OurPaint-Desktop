@@ -54,9 +54,10 @@ private:
 public:
     QTPainter(Ui::MainWindow *ui, QWidget *parent);
 
-    QPoint MouseCoordinate(){return QPoint(cursorX-currentCursorX,-cursorY+currentCursorY);}
-    void setIdFigures(unsigned long long ID){id=ID;}
-    unsigned long long getIdFigures(){return id;}
+    QPoint MouseCoordinate(){
+        return QPoint(scaling.logic(cursorX-currentCursorX),scaling.logic(-cursorY+currentCursorY));}
+    void setIdFigures(unsigned long long ID){if(id==0)id=ID;}
+    unsigned long long getIdFigures(){  return id;}
     void setCircle(bool T){Circle=T;}
     void setSection(bool T){Section=T;}
     void setPoint(bool T){Point=T;}
@@ -69,9 +70,10 @@ public:
     bool getDoubleClick(){return leftDoubleClick;}
     void getUsers(bool var) { scaling.getUsers(var); }
 
-    bool moving(int x,int y); // Проверяем координаты фигуры с координатами курсора
-    bool moving(int x,int y,int r);
-    bool moving(int x1, int y1, int x2,int y2);
+    bool moving(double x,double y); // Проверяем координаты фигуры с координатами курсора
+    bool moving(double x0, double y0, double r);
+    bool moving(double x1, double y1, double x2,double y2);
+    double distancePointToSection(double px, double py, double x0, double y0, double x1, double y1); // Вспомогательная функция
 
     // Функция включения сетки
     void setCell(bool On_Off);
@@ -124,9 +126,9 @@ signals:
     void SigSection(int startX, int startY, int endX, int endY);
 
     // Сигналы для перемещения
-    void Move(Element F,int x,int y);
-    void Move(Element F,int x,int y,int r);
-    void Move(Element F,int x,int y,int x1,int y1);
+    void Move(Element F,double x,double y);
+    void Move(Element F,double x,double y,double r);
+    void Move(Element F,double x,double y,double x1,double y1);
     void MovingFigures();
 
 private slots:

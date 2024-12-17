@@ -97,12 +97,12 @@ void Application::setupConnections() {
     });
 
     QObject::connect(painter.get(),
-                     static_cast<void (QTPainter::*)(Element, int, int)>(&QTPainter::Move),
-                     [this](Element F, int x, int y) {
+                     static_cast<void (QTPainter::*)(Element, double, double)>(&QTPainter::Move),
+                     [this](Element F, double x, double y) {
                          ElementData elem;
                          elem.et = F;
-                         double X = double(x);
-                         double Y = double(y);
+                         double X = x;
+                         double Y = y;
                          elem.params = {X, Y};
                          ID id = screen.findElement(elem);
                          painter->setIdFigures(id.id);
@@ -114,13 +114,13 @@ void Application::setupConnections() {
     );
 
     QObject::connect(painter.get(),
-                     static_cast<void (QTPainter::*)(Element, int, int, int)>(&QTPainter::Move),
-                     [this](Element F, int x, int y, int r) {
+                     static_cast<void (QTPainter::*)(Element, double, double, double)>(&QTPainter::Move),
+                     [this](Element F, double x, double y, double r) {
                          ElementData elem;
                          elem.et = F;
-                         double X = double(x);
-                         double Y = double(y);
-                         double R = double(r);
+                         double X = x;
+                         double Y =y;
+                         double R = r;
                          elem.params = {X, Y, R};
                          ID id = screen.findElement(elem);
                          painter->setIdFigures(id.id);
@@ -133,14 +133,14 @@ void Application::setupConnections() {
 
 
     QObject::connect(painter.get(),
-                     static_cast<void (QTPainter::*)(Element, int, int, int, int)>(&QTPainter::Move),
-                     [this](Element F, int x, int y, int x1, int y1) {
+                     static_cast<void (QTPainter::*)(Element, double, double, double, double)>(&QTPainter::Move),
+                     [this](Element F, double x, double y, double x1, double y1) {
                          ElementData elem;
                          elem.et = F;
-                         double X = double(x);
-                         double Y = double(y);
-                         double X1 = double(x1);
-                         double Y1 = double(y1);
+                         double X = x;
+                         double Y = y;
+                         double X1 = x1;
+                         double Y1 = y1;
                          elem.params = {X, Y, X1, Y1};
                          ID id = screen.findElement(elem);
                          painter->setIdFigures(id.id);

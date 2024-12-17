@@ -116,111 +116,96 @@ std::vector<double> QTPainter::FindMaxMin() {
     return size;
 }
 
-bool QTPainter::moving(int x, int y) {
+bool QTPainter::moving(double x, double y) {
+     double RANGE = 1.0;
+     if(RANGE/scaling.getZoom()>1.0){
+         RANGE/=scaling.getZoom();
+     }
     double _width = width() / 2.0;
     double _height = height() / 2.0;
-    if (cursorX >= x - 1 && cursorX <= x + 1 && cursorY >= y - 1 && cursorY <= y + 1) {
-        int logicalX = static_cast<int>(scaling.logicX(x - _width));
-        int logicalY = static_cast<int>(scaling.logicY(_height - y));
-        emit Move(ET_POINT, logicalX, logicalY);
+
+    double cursorXDouble = scaling.logicX(cursorX - _width);
+    double cursorYDouble =scaling.logicY(_height - cursorY);
+
+    if (std::abs(cursorXDouble  - x) <= RANGE &&
+        std::abs(cursorYDouble  - y) <= RANGE) {
+        emit Move(ET_POINT, x, y);
         return true;
     }
+
     return false;
 }
 
-bool QTPainter::moving(int x0, int y0, int r) {
-    int x = 0;
-    int y = r;
-    int p = 1 - r;
+
+bool QTPainter::moving(double x0, double y0, double r) {
     double _width = width() / 2.0;
     double _height = height() / 2.0;
-    while (x <= y) {
-        // Проверка с учетом погрешности ±1 пиксель
-        for (int dx = -1; dx <= 1; ++dx) {
-            for (int dy = -1; dy <= 1; ++dy) {
-                if ((x0 + x + dx == cursorX && y0 + y + dy == cursorY) ||
-                    (x0 - x + dx == cursorX && y0 + y + dy == cursorY) ||
-                    (x0 + x + dx == cursorX && y0 - y + dy == cursorY) ||
-                    (x0 - x + dx == cursorX && y0 - y + dy == cursorY) ||
-                    (x0 + y + dx == cursorX && y0 + x + dy == cursorY) ||
-                    (x0 - y + dx == cursorX && y0 + x + dy == cursorY) ||
-                    (x0 + y + dx == cursorX && y0 - x + dy == cursorY) ||
-                    (x0 - y + dx == cursorX && y0 - x + dy == cursorY)) {
-                    int X = static_cast<int>(scaling.scaleCoordinateX(x0) - _width );
-                    int Y = static_cast<int>(scaling.scaleCoordinateY(-y0) + _height );
-                    int Radius = static_cast<int>(scaling.scaleCoordinate(r));
-                    emit Move(ET_CIRCLE, X, Y, Radius);
-                    return true;
-                }
-            }
-        }
 
-        x++;
+    double mouseX = scaling.logicX(cursorX - _width);
+    double mouseY =scaling.logicY(_height - cursorY);
 
-        if (p < 0) {
-            p = p + 2 * x + 1;
-        } else {
-            y--;
-            p = p + 2 * x - 2 * y + 1;
-        }
+    double dx = (mouseX - x0);
+    double dy = (mouseY - y0);
+
+    double distance = std::sqrt(dx * dx + dy * dy);
+
+    if (std::abs(distance - r) <= 1.0) {
+        emit Move(ET_CIRCLE, x0, y0, r);
+        return true;
     }
 
     return false;
 }
 
-bool QTPainter::moving(int x0, int y0, int x1, int y1) {
-    int dx = x1 - x0;
-    int dy = y1 - y0;
-    int stepX = (dx > 0) ? 1 : -1;
-    int stepY = (dy > 0) ? 1 : -1;
+
+bool QTPainter::moving(double x0, double y0, double x1, double y1) {
+    double RANGE = 5.0;
+
+    if (RANGE / scaling.getZoom() > 1.0) {
+        RANGE /= scaling.getZoom();
+    }
+
     double _width = width() / 2.0;
     double _height = height() / 2.0;
 
-    dx = abs(dx);
-    dy = abs(dy);
+    double mouseX = scaling.logicX(cursorX - _width);
+    double mouseY = scaling.logicY(_height - cursorY);
 
-    if (dx > dy) {
-        int p = 2 * dy - dx;
-        for (int x = x0, y = y0; x != x1; x += stepX) {
-            // Проверка с учетом погрешности ±1 пиксель
-            for (int dyOffset = -1; dyOffset <= 1; ++dyOffset) {
-                if (x == cursorX && (y + dyOffset) == cursorY) {
-                    int BegX = static_cast<int>(scaling.scaleCoordinateX(x0) - _width );
-                    int BegY = static_cast<int>(scaling.scaleCoordinateY(-y0) + _height );
-                    int EndX = static_cast<int>(scaling.scaleCoordinateX(x1) - _width );
-                    int EndY = static_cast<int>(scaling.scaleCoordinateY(-y1) + _height );
-                    emit Move(ET_SECTION, BegX, BegY, EndX,EndY);
-                    return true;
-                }
-            }
-            if (p > 0) {
-                y += stepY;
-                p -= 2 * dx;
-            }
-            p += 2 * dy;
-        }
-    } else {
-        int p = 2 * dx - dy;
-        for (int y = y0, x = x0; y != y1; y += stepY) {
-            // Проверка с учетом погрешности ±1 пиксель
-            for (int dxOffset = -1; dxOffset <= 1; ++dxOffset) {
-                if (y == cursorY && (x + dxOffset) == cursorX) {
-                    int BegX = static_cast<int>(scaling.scaleCoordinateX(x0) - _width );
-                    int BegY = static_cast<int>(scaling.scaleCoordinateY(-y0) + _height );
-                    int EndX = static_cast<int>(scaling.scaleCoordinateX(x1) - _width );
-                    int EndY = static_cast<int>(scaling.scaleCoordinateY(-y1) + _height );
-                    emit Move(ET_SECTION, BegX, BegY, EndX,EndY);
-                    return true;
-                }
-            }
-            if (p > 0) {
-                x += stepX;
-                p -= 2 * dy;
-            }
-            p += 2 * dx;
-        }
+    double distance = distancePointToSection(mouseX, mouseY, x0, y0, x1, y1);
+
+    if (distance <= RANGE) {
+        emit Move(ET_SECTION, x0, y0, x1, y1);
+        return true;
     }
+
     return false;
+}
+
+double QTPainter::distancePointToSection(double px, double py, double x0, double y0, double x1, double y1) {
+    double dx = x1 - x0;
+    double dy = y1 - y0;
+
+    if (dx*dx + dy*dy == 0.0) {
+        dx = px - x0;
+        dy = py - y0;
+        return std::sqrt(dx*dx + dy*dy);
+    }
+
+    // Вычисляем параметр t для проекции точки на линию
+    double t = ((px - x0) * dx + (py - y0) * dy) / (dx*dx+dy*dy);
+
+    // Ограничиваем t диапазоном [0,1]
+    t = std::max(0.0, std::min(1.0, t));
+
+    // Находим ближайшую точку на отрезке
+    double nearestX = x0 + t * dx;
+    double nearestY = y0 + t * dy;
+
+    // Вычисляем расстояние до ближайшей точки
+    dx = px - nearestX;
+    dy = py - nearestY;
+
+    return std::sqrt(dx*dx+dy*dy);
 }
 
 // Поиск ближайших точек к курсору
@@ -320,11 +305,10 @@ void QTPainter::drawFigures(QPainter &painter) {
     double _height = height() / 2.0;
 
     for (const auto &pt: points) {
-        int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width );
-        int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height );
 
-
-        if ((editor || Moving) && leftClick && moving(X, Y)) {
+        if ((editor || Moving) && leftClick && moving(pt.x, pt.y)) {
+            int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width );
+            int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height );
             qreal glowRadius = 5.0;
             // Создаем радиальный градиент для неонового голубого свечения
             QRadialGradient radialGradient(X, Y, glowRadius, X, Y);
@@ -347,6 +331,8 @@ void QTPainter::drawFigures(QPainter &painter) {
             painter.drawEllipse(X - pointRadius, Y - pointRadius, pointRadius * 2, pointRadius * 2);
 
         } else {
+            int X = static_cast<int>(scaling.scaleCoordinateX(pt.x) + _width );
+            int Y = static_cast<int>(scaling.scaleCoordinateY(-pt.y) + _height );
             // Рисуем обычную черную точку без свечения
             qreal pointRadius = 1.0;
             QBrush pointBrush(Qt::black);
@@ -358,11 +344,11 @@ void QTPainter::drawFigures(QPainter &painter) {
 
 
     for (const auto &c: circles) {
-        int X = static_cast<int>(scaling.scaleCoordinateX(c.center->x) + _width );
-        int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
-        int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
 
-        if ((editor || Moving) && leftClick && moving(X, Y, Radius / 2)) {
+        if ((editor || Moving) && leftClick && moving(c.center->x,c.center->y, c.R)) {
+            int X = static_cast<int>(scaling.scaleCoordinateX(c.center->x) + _width );
+            int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
+            int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
             // Параметры свечения
             qreal glowDistance = 20.0; // Расстояние свечения от обводки
             qreal gradientRadius = (Radius / 2.0) + glowDistance; // Общий радиус градиента
@@ -400,6 +386,9 @@ void QTPainter::drawFigures(QPainter &painter) {
             painter.setBrush(Qt::NoBrush);
             painter.drawEllipse(X - Radius / 2.0, Y - Radius / 2.0, Radius, Radius);
         } else {
+            int X = static_cast<int>(scaling.scaleCoordinateX(c.center->x) + _width );
+            int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
+            int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
             QPen blackPen(Qt::black, 1);
             blackPen.setJoinStyle(Qt::RoundJoin);
             blackPen.setCapStyle(Qt::RoundCap);
@@ -410,13 +399,11 @@ void QTPainter::drawFigures(QPainter &painter) {
     }
 
     for (const auto &sec: sections) {
-        int BegX = static_cast<int>(scaling.scaleCoordinateX(sec.beg->x) + _width );
-        int BegY = static_cast<int>(scaling.scaleCoordinateY(-sec.beg->y) + _height );
-        int EndX = static_cast<int>(scaling.scaleCoordinateX(sec.end->x) + _width );
-        int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
-
-
-        if ((editor || Moving) && leftClick && moving(BegX, BegY, EndX, EndY)) {
+        if ((editor || Moving) && leftClick && moving(sec.beg->x, sec.beg->y, sec.end->x, sec.end->y)) {
+            int BegX = static_cast<int>(scaling.scaleCoordinateX(sec.beg->x) + _width );
+            int BegY = static_cast<int>(scaling.scaleCoordinateY(-sec.beg->y) + _height );
+            int EndX = static_cast<int>(scaling.scaleCoordinateX(sec.end->x) + _width );
+            int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
             // Вычисляем направление линии
             qreal dx = EndX - BegX;
             qreal dy = EndY - BegY;
@@ -457,6 +444,10 @@ void QTPainter::drawFigures(QPainter &painter) {
             painter.setPen(blackPen);
             painter.drawLine(BegX, BegY, EndX, EndY);
         } else {
+            int BegX = static_cast<int>(scaling.scaleCoordinateX(sec.beg->x) + _width );
+            int BegY = static_cast<int>(scaling.scaleCoordinateY(-sec.beg->y) + _height );
+            int EndX = static_cast<int>(scaling.scaleCoordinateX(sec.end->x) + _width );
+            int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
             QPen blackPen(Qt::black);
             blackPen.setWidth(1);
             blackPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
@@ -633,9 +624,11 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
                     int dX = cursorX - currentCursorX;
                     int dY = cursorY - currentCursorY;
                     if (std::abs(dX) > std::abs(dY)) {
-                        emit SigSection(sectionStartPoint.x(), sectionStartPoint.y(), EndPoint.x(), sectionStartPoint.y());
+                        emit SigSection(sectionStartPoint.x(), sectionStartPoint.y(), EndPoint.x(),
+                                        sectionStartPoint.y());
                     } else {
-                        emit SigSection(sectionStartPoint.x(), sectionStartPoint.y(), sectionStartPoint.x(), EndPoint.y());
+                        emit SigSection(sectionStartPoint.x(), sectionStartPoint.y(), sectionStartPoint.x(),
+                                        EndPoint.y());
                     }
                 } else {
                     emit SigSection(sectionStartPoint.x(), sectionStartPoint.y(), EndPoint.x(), EndPoint.y());
@@ -665,7 +658,7 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
 }
 
 void QTPainter::mouseMoveEvent(QMouseEvent *event) {
-    if(!Shift){
+    if (!Shift) {
         currentCursorX = cursorX;
         currentCursorY = cursorY;
     }
@@ -680,11 +673,12 @@ void QTPainter::mouseMoveEvent(QMouseEvent *event) {
         emit RightPress();
     }
 
-    if (!ReleaseLeftClick && leftClick ) {
-        if(Moving) {
+    if (!ReleaseLeftClick && leftClick) {
+        if (Moving && id!=0) {
             emit MovingFigures();
         }
     } else {
+        id = 0;
         leftClick = false;
     }
 
