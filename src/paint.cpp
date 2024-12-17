@@ -673,20 +673,35 @@ void Paint::loadFromFile(const char *file) {
         if (i.to_pair().second->type() == ET_POINT) {
             point *p = static_cast<point *>(i.to_pair().second);
             m_pointIDs[i.to_pair().first] = m_pointStorage.addElement(*p);
+            m_graph.addVertex(i.to_pair().first);
             s_allFigures = s_allFigures || p->rect();
         } else if (i.to_pair().second->type() == ET_CIRCLE) {
             circle *c = static_cast<circle *>(i.to_pair().second);
             m_circleIDs[i.to_pair().first] = m_circleStorage.addElement(*c);
+            RequirementData rd;
+            rd.objects.push_back(i.to_pair().first.id - 1);
+            rd.objects.push_back(i.to_pair().first);
+            rd.req = ET_POINTINOBJECT;
+            m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
             s_allFigures = s_allFigures || c->rect();
         } else if (i.to_pair().second->type() == ET_SECTION) {
             section *s = static_cast<section *>(i.to_pair().second);
             m_sectionIDs[i.to_pair().first] = m_sectionStorage.addElement(*s);
+            m_graph.addVertex(i.to_pair().first);
+            RequirementData rd;
+            rd.objects.push_back(i.to_pair().first.id - 2);
+            rd.objects.push_back(i.to_pair().first.id - 1);
+            rd.objects.push_back(i.to_pair().first);
+            rd.req = ET_POINTINOBJECT;
+            m_graph.addEdge(rd, i.to_pair().first.id - 2, i.to_pair().first);
+            m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
             s_allFigures = s_allFigures || s->rect();
         }
     }
     for (const auto &i: loader.getRequirements()) {
         auto it = m_reqStorage.addElement(i.to_pair().second);
         m_reqIDs[i.to_pair().first] = it;
+        m_graph.addEdge(i.to_pair().second, i.to_pair().second.objects[0], i.to_pair().second.objects[1]);
     }
 }
 
@@ -756,19 +771,35 @@ void Paint::loadFromString(const std::string &str) {
         if (i.to_pair().second->type() == ET_POINT) {
             point *p = static_cast<point *>(i.to_pair().second);
             m_pointIDs[i.to_pair().first] = m_pointStorage.addElement(*p);
+            m_graph.addVertex(i.to_pair().first);
             s_allFigures = s_allFigures || p->rect();
         } else if (i.to_pair().second->type() == ET_CIRCLE) {
             circle *c = static_cast<circle *>(i.to_pair().second);
             m_circleIDs[i.to_pair().first] = m_circleStorage.addElement(*c);
+            RequirementData rd;
+            rd.objects.push_back(i.to_pair().first.id - 1);
+            rd.objects.push_back(i.to_pair().first);
+            rd.req = ET_POINTINOBJECT;
+            m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
             s_allFigures = s_allFigures || c->rect();
         } else if (i.to_pair().second->type() == ET_SECTION) {
             section *s = static_cast<section *>(i.to_pair().second);
             m_sectionIDs[i.to_pair().first] = m_sectionStorage.addElement(*s);
+            m_graph.addVertex(i.to_pair().first);
+            RequirementData rd;
+            rd.objects.push_back(i.to_pair().first.id - 2);
+            rd.objects.push_back(i.to_pair().first.id - 1);
+            rd.objects.push_back(i.to_pair().first);
+            rd.req = ET_POINTINOBJECT;
+            m_graph.addEdge(rd, i.to_pair().first.id - 2, i.to_pair().first);
+            m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
             s_allFigures = s_allFigures || s->rect();
         }
     }
-    for (const auto &m_reqID: loader.getRequirements()) {
-        m_reqIDs[m_reqID.to_pair().first] = m_reqStorage.addElement(m_reqID.to_pair().second);
+    for (const auto &i: loader.getRequirements()) {
+        auto it = m_reqStorage.addElement(i.to_pair().second);
+        m_reqIDs[i.to_pair().first] = it;
+        m_graph.addEdge(i.to_pair().second, i.to_pair().second.objects[0], i.to_pair().second.objects[1]);
     }
 }
 
