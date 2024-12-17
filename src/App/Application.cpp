@@ -86,17 +86,26 @@ void Application::setupConnections() {
     });
 
     QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
-       // Ф-я перемещения
-       // painter->getIdFigures(); <- id фигуры перемещения
-       //  QPoint XY = w.MouseCoordinate();<-трекер мышки
+
+        // Ф-я перемещения
+        QPoint XY = w.MouseCoordinate();// <-трекер мышки
+        ID id = ID(painter->getIdFigures());// <- id фигуры перемещения
+       // screen.moveElement();
+
     });
 
     QObject::connect(painter.get(),
                      static_cast<void (QTPainter::*)(Element, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y) {
-
-                         //    qDebug() << "Move with 2 params:" << x << ":" << y;
+                         ElementData elem;
+                         elem.et = F;
+                         double X = double(x);
+                         double Y = double(y);
+                         elem.params = {X, Y};
+                         ID id = screen.findElement(elem);
+                         painter->setIdFigures(id.id);
                          if (painter->getDoubleClick()) {
+                             //  w.FocusOnItemById(1);
                              //подсветка левого меню по айди
                          }
                      }
@@ -105,9 +114,16 @@ void Application::setupConnections() {
     QObject::connect(painter.get(),
                      static_cast<void (QTPainter::*)(Element, int, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y, int r) {
-                         QPoint XY = w.MouseCoordinate();
-                         //    qDebug() << "Move with 3 params:" << x << ":" << y << " with r:" << r;
+                         ElementData elem;
+                         elem.et = F;
+                         double X = double(x);
+                         double Y = double(y);
+                         double R = double(r);
+                         elem.params = {X, Y, R};
+                         ID id = screen.findElement(elem);
+                         painter->setIdFigures(id.id);
                          if (painter->getDoubleClick()) {
+                             //  w.FocusOnItemById(1);
                              //подсветка левого меню по айди
                          }
                      }
@@ -117,14 +133,22 @@ void Application::setupConnections() {
     QObject::connect(painter.get(),
                      static_cast<void (QTPainter::*)(Element, int, int, int, int)>(&QTPainter::Move),
                      [this](Element F, int x, int y, int x1, int y1) {
-
-                         //   qDebug() << "Move with 4 params:" << x << ":" << y << "to" << x1<<":" << y1;
+                         ElementData elem;
+                         elem.et = F;
+                         double X = double(x);
+                         double Y = double(y);
+                         double X1 = double(x1);
+                         double Y1 = double(y1);
+                         elem.params = {X, Y, X1, Y1};
+                         ID id = screen.findElement(elem);
+                         painter->setIdFigures(id.id);
                          if (painter->getDoubleClick()) {
                              //  w.FocusOnItemById(1);
                              //подсветка левого меню по айди
                          }
                      }
     );
+
 
     QObject::connect(painter.get(), &QTPainter::SigPoint, [this](QPoint Position) {
         if (isConnected) {
