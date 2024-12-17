@@ -225,13 +225,13 @@ ID Paint::addRequirement(const RequirementData &rd) {
     }
 
     LSMTask* task = new LSMTask(allFunctions, VarsStorage::getVars());
-    LMSolver solver;
+    LMSolver solver(0.5, 2, 4, 1e-06, 1e-06, 10000);
     solver.setTask(task);
     solver.optimize();
     VarsStorage::clearVars();
     std::cout << "Requirement in component: " << countOfReq << std::endl;
 
-    if (!solver.isConverged()){
+    if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
         for (const auto& req: m_reqStorage){
             for (auto i: req.objects){
                 info.m_paramsAfter.push_back(getElementInfo(i).params);
@@ -813,6 +813,25 @@ void Paint::moveElement(const ElementData &currentPos, const ElementData &newPos
         c->center->y = newPos.params[1];
         c->R = newPos.params[2];
     }
+}
+
+void Paint::parallelMove(ID id, double dx, double dy) {
+    if (m_pointIDs.contains(id)) {
+        point *p = &(*m_pointIDs.at(id));
+        p->x += dx;
+        p->y += dy;
+    } else if (m_sectionIDs.contains(id)) {
+        section *s = &(*m_sectionIDs.at(id));
+        s->beg->x += dx;
+        s->beg->y += dy;
+        s->end->x += dx;
+        s->end->y += dy;
+    } else if (m_circleIDs.contains(id)) {
+        circle *c = &(*m_circleIDs.at(id));
+        c->center->x += dx;
+        c->center->y += dy;
+    }
+    throw std::invalid_argument("No such element!");
 }
 
 std::vector<std::pair<ID, RequirementData>> Paint::getAllRequirementsInfo() {

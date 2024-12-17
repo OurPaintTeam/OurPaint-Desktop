@@ -101,7 +101,7 @@ public:
 
     // Move element
     void moveElement(const ElementData& currentPos, const ElementData& newPos);
-
+    void parallelMove(ID id, double dx, double dy);
     //Find element by ID
     ID findElement(const ElementData& ed);
 
