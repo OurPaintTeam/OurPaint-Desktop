@@ -5,7 +5,7 @@ QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
           minCellSize(10), maxCellSize(20), CellSize(8), CellView(true), currentCellSize(1), cursorX(0), cursorY(0),
           editor(true), Circle(false), Section(false), Point(false), Drawing(false), leftClick(false),
           ReleaseLeftClick(false),
-          leftDoubleClick(false), Shift(false), tab(0) {
+          leftDoubleClick(false), Shift(false), tab(0), id(0) {
 
     setMouseTracking(true); // Отслеживанием мышь
 
@@ -117,8 +117,12 @@ std::vector<double> QTPainter::FindMaxMin() {
 }
 
 bool QTPainter::moving(int x, int y) {
+    double _width = width() / 2.0;
+    double _height = height() / 2.0;
     if (cursorX >= x - 1 && cursorX <= x + 1 && cursorY >= y - 1 && cursorY <= y + 1) {
-        emit Move(ET_POINT, x, y);
+        int logicalX = static_cast<int>(scaling.logicX(x - _width));
+        int logicalY = static_cast<int>(scaling.logicY(_height - y));
+        emit Move(ET_POINT, logicalX, logicalY);
         return true;
     }
     return false;
@@ -128,7 +132,8 @@ bool QTPainter::moving(int x0, int y0, int r) {
     int x = 0;
     int y = r;
     int p = 1 - r;
-
+    double _width = width() / 2.0;
+    double _height = height() / 2.0;
     while (x <= y) {
         // Проверка с учетом погрешности ±1 пиксель
         for (int dx = -1; dx <= 1; ++dx) {
@@ -141,7 +146,10 @@ bool QTPainter::moving(int x0, int y0, int r) {
                     (x0 - y + dx == cursorX && y0 + x + dy == cursorY) ||
                     (x0 + y + dx == cursorX && y0 - x + dy == cursorY) ||
                     (x0 - y + dx == cursorX && y0 - x + dy == cursorY)) {
-                    emit Move(ET_CIRCLE, x0, y0, r);
+                    int X = static_cast<int>(scaling.scaleCoordinateX(x0) - _width );
+                    int Y = static_cast<int>(scaling.scaleCoordinateY(-y0) + _height );
+                    int Radius = static_cast<int>(scaling.scaleCoordinate(r));
+                    emit Move(ET_CIRCLE, X, Y, Radius);
                     return true;
                 }
             }
@@ -165,6 +173,8 @@ bool QTPainter::moving(int x0, int y0, int x1, int y1) {
     int dy = y1 - y0;
     int stepX = (dx > 0) ? 1 : -1;
     int stepY = (dy > 0) ? 1 : -1;
+    double _width = width() / 2.0;
+    double _height = height() / 2.0;
 
     dx = abs(dx);
     dy = abs(dy);
@@ -175,7 +185,11 @@ bool QTPainter::moving(int x0, int y0, int x1, int y1) {
             // Проверка с учетом погрешности ±1 пиксель
             for (int dyOffset = -1; dyOffset <= 1; ++dyOffset) {
                 if (x == cursorX && (y + dyOffset) == cursorY) {
-                    emit Move(ET_SECTION, x0, y0, x1, y1);
+                    int BegX = static_cast<int>(scaling.scaleCoordinateX(x0) - _width );
+                    int BegY = static_cast<int>(scaling.scaleCoordinateY(-y0) + _height );
+                    int EndX = static_cast<int>(scaling.scaleCoordinateX(x1) - _width );
+                    int EndY = static_cast<int>(scaling.scaleCoordinateY(-y1) + _height );
+                    emit Move(ET_SECTION, BegX, BegY, EndX,EndY);
                     return true;
                 }
             }
@@ -191,7 +205,11 @@ bool QTPainter::moving(int x0, int y0, int x1, int y1) {
             // Проверка с учетом погрешности ±1 пиксель
             for (int dxOffset = -1; dxOffset <= 1; ++dxOffset) {
                 if (y == cursorY && (x + dxOffset) == cursorX) {
-                    emit Move(ET_SECTION, x0, y0, x1, y1);
+                    int BegX = static_cast<int>(scaling.scaleCoordinateX(x0) - _width );
+                    int BegY = static_cast<int>(scaling.scaleCoordinateY(-y0) + _height );
+                    int EndX = static_cast<int>(scaling.scaleCoordinateX(x1) - _width );
+                    int EndY = static_cast<int>(scaling.scaleCoordinateY(-y1) + _height );
+                    emit Move(ET_SECTION, BegX, BegY, EndX,EndY);
                     return true;
                 }
             }
@@ -327,6 +345,7 @@ void QTPainter::drawFigures(QPainter &painter) {
             painter.setBrush(pointBrush);
             painter.setPen(Qt::NoPen); // Без обводки
             painter.drawEllipse(X - pointRadius, Y - pointRadius, pointRadius * 2, pointRadius * 2);
+
         } else {
             // Рисуем обычную черную точку без свечения
             qreal pointRadius = 1.0;
@@ -471,8 +490,8 @@ void QTPainter::drawMouse(QPainter &painter) {
         int screenStartY = static_cast<int>(scaling.scaleCoordinateY(-sectionStartPoint.y()) + _height);
 
         if (Shift) {
-            int dX = cursorX - currentCurcsorX;
-            int dY = cursorY - currentCurcsorY;
+            int dX = cursorX - currentCursorX;
+            int dY = cursorY - currentCursorY;
             if (std::abs(dX) > std::abs(dY)) {
                 painter.drawLine(screenStartX, screenStartY, cursorX, screenStartY);
             } else {
@@ -503,7 +522,6 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
     if (Section && (!points.empty() || !sections.empty() || !circles.empty())) {
 
-         //qDebug() << tab;
         if (tab == 0) {
             closestPoint = findPoint();
             painter.setPen(QPen(QColor(169, 169, 169, 128), 2)); // Тускло-серая линия
@@ -612,8 +630,8 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
             } else {
                 QPoint EndPoint(logicalX, logicalY);
                 if (Shift) {
-                    int dX = cursorX - currentCurcsorX;
-                    int dY = cursorY - currentCurcsorY;
+                    int dX = cursorX - currentCursorX;
+                    int dY = cursorY - currentCursorY;
                     if (std::abs(dX) > std::abs(dY)) {
                         emit SigSection(sectionStartPoint.x(), sectionStartPoint.y(), EndPoint.x(), sectionStartPoint.y());
                     } else {
@@ -647,6 +665,10 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
 }
 
 void QTPainter::mouseMoveEvent(QMouseEvent *event) {
+    if(!Shift){
+        currentCursorX = cursorX;
+        currentCursorY = cursorY;
+    }
     scaling.mouseMove(event->pos());
 
 
@@ -658,8 +680,10 @@ void QTPainter::mouseMoveEvent(QMouseEvent *event) {
         emit RightPress();
     }
 
-    if (!ReleaseLeftClick) {
-        emit MovingFigures();
+    if (!ReleaseLeftClick && leftClick ) {
+        if(Moving) {
+            emit MovingFigures();
+        }
     } else {
         leftClick = false;
     }
@@ -694,12 +718,12 @@ void QTPainter::mouseDoubleClickEvent(QMouseEvent *event) {
 void QTPainter::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Shift) {
         Shift = true;
-        currentCurcsorX = cursorX;
-        currentCurcsorY = cursorY;
+        currentCursorX = cursorX;
+        currentCursorY = cursorY;
     }
 
     if (event->key() == Qt::Key_Tab) {
-//qDebug()<<tab;
+
         if (tab == 2) {
             tab = 0;
         } else {

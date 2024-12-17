@@ -88,11 +88,11 @@ void Application::setupConnections() {
     QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
 
         // Ф-я перемещения
-        QPoint XY = w.MouseCoordinate();// <-трекер мышки
+        QPoint XY = painter->MouseCoordinate();// <-трекер мышки
         double x=XY.x();
         double y=XY.y();
         ID id = ID(painter->getIdFigures());// <- id фигуры перемещения
-       // screen.moveElement();
+        screen.parallelMove(id,x,y);
 
     });
 

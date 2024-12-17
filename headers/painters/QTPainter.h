@@ -27,10 +27,10 @@ private:
     const int minCellSize; // Минимальный размер клетки при масштабировании
     int currentCellSize;   // Текущий размер клетки
     int cursorX; // Координаты курсора
+    int currentCursorX;
+    int currentCursorY;
     int cursorY;
     int tab;
-    int currentCurcsorX;
-    int currentCurcsorY;
     bool CellView;         // Флаг отрисовки сетки
     bool editor; // Обычный режим
     bool Circle;
@@ -54,6 +54,7 @@ private:
 public:
     QTPainter(Ui::MainWindow *ui, QWidget *parent);
 
+    QPoint MouseCoordinate(){return QPoint(cursorX-currentCursorX,-cursorY+currentCursorY);}
     void setIdFigures(unsigned long long ID){id=ID;}
     unsigned long long getIdFigures(){return id;}
     void setCircle(bool T){Circle=T;}

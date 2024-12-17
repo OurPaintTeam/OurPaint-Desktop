@@ -830,8 +830,9 @@ void Paint::parallelMove(ID id, double dx, double dy) {
         circle *c = &(*m_circleIDs.at(id));
         c->center->x += dx;
         c->center->y += dy;
+    }else{
+        throw std::invalid_argument("No such element!");
     }
-    throw std::invalid_argument("No such element!");
 }
 
 std::vector<std::pair<ID, RequirementData>> Paint::getAllRequirementsInfo() {
