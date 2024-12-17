@@ -46,6 +46,8 @@ private:
     QPoint perimeterPoint; // Для круга
     QPoint sectionStartPoint;
     QPoint sectionEndPoint;
+    QPoint closestPoint; // Крайние точки
+    QPoint closestPointNext;
 
 
 
@@ -109,6 +111,7 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
 
+    bool focusNextPrevChild(bool next) override;
 
 signals:
 
