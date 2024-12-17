@@ -89,6 +89,8 @@ void Application::setupConnections() {
 
         // Ф-я перемещения
         QPoint XY = w.MouseCoordinate();// <-трекер мышки
+        double x=XY.x();
+        double y=XY.y();
         ID id = ID(painter->getIdFigures());// <- id фигуры перемещения
        // screen.moveElement();
 
