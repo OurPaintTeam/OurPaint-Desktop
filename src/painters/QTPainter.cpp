@@ -20,6 +20,22 @@ QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
     setFocus();
 }
 
+QPointF QTPainter::MouseCoordinate() {
+    double dX = cursorX - currentCursorX;
+    double dY = -cursorY + currentCursorY;
+   /* const double EPS=0.00001;
+
+   if (Shift) {
+        if (std::abs(dX) - std::abs(dY)>EPS) {
+            return {scaling.logic(cursorX - currentCursorX), 0.0};
+        } else {
+            return {0.0, scaling.logic(dY)};
+        }
+
+    }*/
+    return {scaling.logic(dX), scaling.logic(dY)};
+}
+
 void QTPainter::clear() {
     points.clear();
     circles.clear();
@@ -149,7 +165,9 @@ bool QTPainter::moving(double x0, double y0, double r) {
 
     double distance = std::sqrt(dx * dx + dy * dy);
 
-    if (std::abs(distance - r) <= 1.0) {
+    const double RANGE=5.0;
+
+    if (std::abs(distance - r) <= RANGE) {
         emit Move(ET_CIRCLE, x0, y0, r);
         return true;
     }
@@ -191,17 +209,17 @@ double QTPainter::distancePointToSection(double px, double py, double x0, double
         return std::sqrt(dx*dx + dy*dy);
     }
 
-    // Вычисляем параметр t для проекции точки на линию
+    // Параметр t для проекции
     double t = ((px - x0) * dx + (py - y0) * dy) / (dx*dx+dy*dy);
 
-    // Ограничиваем t диапазоном [0,1]
+    // Погрешность
     t = std::max(0.0, std::min(1.0, t));
 
-    // Находим ближайшую точку на отрезке
+    // Ближайшая точка на отрезке
     double nearestX = x0 + t * dx;
     double nearestY = y0 + t * dy;
 
-    // Вычисляем расстояние до ближайшей точки
+    // Расстояние до ближайшей точки
     dx = px - nearestX;
     dy = py - nearestY;
 
@@ -439,6 +457,7 @@ void QTPainter::drawFigures(QPainter &painter) {
 
             // Рисуем основную линию поверх свечения
             QPen blackPen(Qt::black);
+            QBrush circleBrush(Qt::NoBrush);
             blackPen.setWidth(2);
             blackPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
             painter.setPen(blackPen);
@@ -449,6 +468,8 @@ void QTPainter::drawFigures(QPainter &painter) {
             int EndX = static_cast<int>(scaling.scaleCoordinateX(sec.end->x) + _width );
             int EndY = static_cast<int>(scaling.scaleCoordinateY(-sec.end->y) + _height );
             QPen blackPen(Qt::black);
+            QBrush circleBrush(Qt::NoBrush);
+
             blackPen.setWidth(1);
             blackPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
             painter.setPen(blackPen);
@@ -561,8 +582,12 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     painter.setPen(Qt::black);
     int logicalX = static_cast<int>(scaling.logicX(cursorX - _width));
     int logicalY = static_cast<int>(scaling.logicY(_height - cursorY));
-    painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY)
-    );
+    if(id==0) {
+        painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY));
+    }
+    else{
+        painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2, ID: %3").arg(logicalX).arg(logicalY).arg(id));
+    }
 
 
     points.clear();
