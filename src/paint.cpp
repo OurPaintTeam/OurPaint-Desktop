@@ -228,6 +228,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
     LMSolver solver;
     solver.setTask(task);
     solver.optimize();
+    VarsStorage::clearVars();
+    std::cout << "Requirement in component: " << countOfReq << std::endl;
 
     std::cout << "Component count of req: " << countOfReq << std::endl;
 
