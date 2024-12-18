@@ -91,7 +91,7 @@ void Application::setupConnections() {
         QPointF XY = painter->MouseCoordinate();// <-трекер мышки
         double x=XY.x();
         double y=XY.y();
-        ID id = ID(painter->getIdFigures());// <- id фигуры перемещения
+        ID id = painter->getIdFigures();// <- id фигуры перемещения
         screen.parallelMove(id,x,y);
 
     });
@@ -151,6 +151,58 @@ void Application::setupConnections() {
                      }
     );
 
+    QObject::connect(&w, &MainWindow::oneReqirements, [this]() {
+        std::vector<ID> vec_id=painter->getVecID();
+        for (const auto &id : vec_id) {
+            qDebug() << id.id; }
+    });
+
+    QObject::connect(&w, &MainWindow::twoReqirements, [this]() {
+        // Обработка сигнала twoReqirements
+    });
+
+    QObject::connect(&w, &MainWindow::threeReqirements, [this]() {
+        // Обработка сигнала threeReqirements
+    });
+
+    QObject::connect(&w, &MainWindow::fourReqirements, [this]() {
+        // Обработка сигнала fourReqirements
+    });
+
+    QObject::connect(&w, &MainWindow::fiveReqirements, [this]() {
+        // Обработка сигнала fiveReqirements
+    });
+
+    QObject::connect(&w, &MainWindow::sixReqirements, [this]() {
+        // Обработка сигнала sixReqirements
+    });
+
+    QObject::connect(&w, &MainWindow::sevenReqirements, [this]() {
+        // Обработка сигнала sevenReqirements
+    });
+
+    QObject::connect(&w, &MainWindow::eightReqirements, [this]() {
+        std::vector<ID> vec_id=painter->getVecID();
+        for (const auto &id : vec_id) {
+            qDebug() << id.id; }
+        if(!vec_id.empty()) {
+            ID obj1 = vec_id[0];
+            ID obj2 = vec_id[1];
+            RequirementData reqData;
+            Requirement type;
+            type = ET_SECTIONSECTIONPARALLEL;
+            reqData.req = type;
+            reqData.objects.push_back(obj1);
+            reqData.objects.push_back(obj2);
+            screen.addRequirement(reqData);
+            w.setSave(false);
+        }
+
+    });
+
+    QObject::connect(&w, &MainWindow::nineReqirements, [this]() {
+        // Обработка сигнала nineReqirements
+    });
 
     QObject::connect(painter.get(), &QTPainter::SigPoint, [this](QPoint Position) {
         if (isConnected) {
@@ -204,7 +256,7 @@ void Application::setupConnections() {
             updateState();
         }
     });
-    QObject::connect(painter.get(), &QTPainter::SigSection, [this](int startX, int startY, int endX, int endY) {
+    QObject::connect(painter.get(), &QTPainter::SigSection, [this](double startX, double startY, double endX, double endY) {
         ElementData section;
         if (isConnected) {
             if (isServer) {

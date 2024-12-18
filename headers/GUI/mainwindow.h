@@ -190,6 +190,17 @@ signals:
 
     void saveBMP(const QString &fileName);
 
+    void oneReqirements();
+    void twoReqirements();
+    void threeReqirements();
+    void fourReqirements();
+    void fiveReqirements();
+    void sixReqirements();
+    void sevenReqirements();
+    void eightReqirements();
+    void nineReqirements();
+    void tenReqirements();
+
 public slots:
 
     // Кнопки
@@ -233,6 +244,46 @@ public slots:
     void ToolMoving() { emit toolMoving(); };
     void ToolRotation() { emit toolRotation(); };
     void ToolResize() { emit toolResize(); };
+    void firstReq() {
+        emit oneReqirements();
+    }
+
+    void secondReq() {
+        emit twoReqirements();
+    }
+
+    void thirdReq() {
+        emit threeReqirements();
+    }
+
+    void fourthReq() {
+        emit fourReqirements();
+    }
+
+    void fifthReq() {
+        emit fiveReqirements();
+    }
+
+    void sixthReq() {
+        emit sixReqirements();
+    }
+
+    void seventhReq() {
+        emit sevenReqirements();
+    }
+
+    void eighthReq() {
+        emit eightReqirements();
+    }
+
+    void ninthReq() {
+        emit nineReqirements();
+    }
+
+    void tenthReq() {
+        emit tenReqirements();
+    }
+
 
 };
 
