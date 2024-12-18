@@ -30,6 +30,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->toolRotation, &QPushButton::clicked, this, &MainWindow::ToolRotation);
     connect(ui->toolResize, &QPushButton::clicked, this, &MainWindow::ToolResize);
 
+    connect(ui->oneReq, &QPushButton::clicked, this, &MainWindow::firstReq);
+    connect(ui->twoReq, &QPushButton::clicked, this, &MainWindow::secondReq);
+    connect(ui->threeReq, &QPushButton::clicked, this, &MainWindow::thirdReq);
+    connect(ui->fourReq, &QPushButton::clicked, this, &MainWindow::fourthReq);
+    connect(ui->fiveReq, &QPushButton::clicked, this, &MainWindow::fifthReq);
+    connect(ui->sixReq, &QPushButton::clicked, this, &MainWindow::sixthReq);
+    connect(ui->sevenReq, &QPushButton::clicked, this, &MainWindow::seventhReq);
+    connect(ui->eightReq, &QPushButton::clicked, this, &MainWindow::eighthReq);
+    connect(ui->nineReq, &QPushButton::clicked, this, &MainWindow::ninthReq);
+
+
 
     // Кнопки сохранение/импорт
     connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
