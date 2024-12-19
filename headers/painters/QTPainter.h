@@ -56,6 +56,7 @@ private:
 
 
 public:
+    void drawExp(QPainter &painter);
     QTPainter(Ui::MainWindow *ui, QWidget *parent);
 
     QPointF MouseCoordinate();
@@ -104,7 +105,10 @@ public:
     void clear(); // Очистка
 
     void drawBackground(QPainter &painter); // Отрисовка фона
-    void drawFigures(QPainter &painter); // Отрисовка фигур
+    void drawPoints(QPainter &painter); // Отрисовка фигур
+    void drawCircles(QPainter &painter); // Отрисовка фигур
+    void drawSections(QPainter &painter); // Отрисовка фигур
+    void drawHints(QPainter &painter);
     void drawMouse(QPainter &painter); // Отрисовка мышью
     void drawCoordinateLine(QPainter &painter, double BegX, double BegY, double EndX, double EndY);
 
@@ -155,10 +159,7 @@ protected:
 
     void keyReleaseEvent(QKeyEvent *event)
     override;
-
-    bool focusNextPrevChild(bool next)
-    override;
-
+    
 signals:
 
     void RightPress(); // Нажатие правой кнопки мыши
