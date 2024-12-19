@@ -1283,8 +1283,8 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     double _height = height() / 2.0;
 
     drawBackground(painter); // Фон
-    //так drawPoints(painter); // Точки
-    drawExp(painter);
+    drawPoints(painter); // Точки
+  //  drawExp(painter);
     drawCircles(painter); // Круги
     drawSections(painter); // Отрезки
     drawHints(painter); // Отрисовка линий для подсказок
