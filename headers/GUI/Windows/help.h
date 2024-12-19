@@ -20,6 +20,8 @@ private slots:
     void showCommands();
     void showRequirements();
     void showAbout();
+    void GuideInf();
+    void handleAnchorClicked(const QUrl &url);
 
 private:
     Ui::Help *ui;

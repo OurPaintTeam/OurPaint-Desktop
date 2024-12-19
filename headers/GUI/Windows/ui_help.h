@@ -14,6 +14,10 @@
 #include <QtWidgets/QSpacerItem>
 #include <QSizePolicy>
 #include <QDesktopServices>
+#include <QScrollArea>
+#include <QSizePolicy>
+#include <QDesktopServices>
+#include <QTextBrowser>
 
 QT_BEGIN_NAMESPACE
 
@@ -34,12 +38,13 @@ public:
     QPushButton *commandsButton;
     QPushButton *requirementsButton;
     QPushButton *aboutButton;
+    QPushButton *guide;
     QPushButton *supportButton;
 
     // Content area
     QFrame *contentFrame;
     QVBoxLayout *contentLayout;
-    QLabel *helpContentLabel;
+    QTextBrowser *helpContentBrowser;
 
     void setupUi(QMainWindow *HelpWindow)
     {
@@ -142,26 +147,32 @@ public:
         QFont buttonFont;
         buttonFont.setPointSize(10);
 
-        commandsButton = new QPushButton("Commands", leftMenu);
+        commandsButton = new QPushButton("Команды", leftMenu);
         commandsButton->setObjectName("commandsButton");
         commandsButton->setFont(buttonFont);
         commandsButton->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(commandsButton);
 
-        requirementsButton = new QPushButton("Requirements", leftMenu);
+        requirementsButton = new QPushButton("Требования", leftMenu);
         requirementsButton->setObjectName("requirementsButton");
         requirementsButton->setFont(buttonFont);
         requirementsButton->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(requirementsButton);
 
-        aboutButton = new QPushButton("About", leftMenu);
+        aboutButton = new QPushButton("О программе", leftMenu);
         aboutButton->setObjectName("aboutButton");
         aboutButton->setFont(buttonFont);
         aboutButton->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(aboutButton);
 
-        supportButton = new QPushButton("Support", leftMenu);
-        supportButton->setObjectName("aboutButton");
+        guide = new QPushButton("Руководство", leftMenu);
+        guide->setObjectName("guideButton");
+        guide->setFont(buttonFont);
+        guide->setStyleSheet(buttonStyle());
+        leftMenuLayout->addWidget(guide);
+
+        supportButton = new QPushButton("Поддержка", leftMenu);
+        supportButton->setObjectName("supportButton");
         supportButton->setFont(buttonFont);
         supportButton->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(supportButton);
@@ -206,22 +217,30 @@ public:
         contentLayout->setContentsMargins(15, 15, 15, 15);
         contentLayout->setSpacing(0);
 
-        helpContentLabel = new QLabel(contentFrame);
-        helpContentLabel->setObjectName("helpContentLabel");
-        helpContentLabel->setWordWrap(true);
-        helpContentLabel->setStyleSheet("QLabel { color: #D8D8F6; font-size: 12px; }");
+        helpContentBrowser = new QTextBrowser(contentFrame);
+        helpContentBrowser->setObjectName("helpContentBrowser");
+        helpContentBrowser->setStyleSheet("QTextBrowser { "
+                                          "background-color: #3e3d3d; "
+                                          "color: #D8D8F6; "
+                                          "font-size: 12px; "
+                                          "border: none; }");
+        helpContentBrowser->setReadOnly(true);
+        helpContentBrowser->setOpenExternalLinks(false); // Чтобы ссылки обрабатывались внутри приложения
 
-        contentLayout->addWidget(helpContentLabel);
+        contentLayout->addWidget(helpContentBrowser);
     }
+
 
     void retranslateUi(QMainWindow *HelpWindow)
     {
-        HelpWindow->setWindowTitle(QCoreApplication::translate("HelpWindow", "Help", nullptr));
-        titleLabel->setText(QCoreApplication::translate("HelpWindow", "Help", nullptr));
+        HelpWindow->setWindowTitle(QCoreApplication::translate("HelpWindow", "Помощь", nullptr));
+        titleLabel->setText(QCoreApplication::translate("HelpWindow", "Помощь", nullptr));
 
-        commandsButton->setText(QCoreApplication::translate("HelpWindow", "Commands", nullptr));
-        requirementsButton->setText(QCoreApplication::translate("HelpWindow", "Requirements", nullptr));
-        aboutButton->setText(QCoreApplication::translate("HelpWindow", "About", nullptr));
+        commandsButton->setText(QCoreApplication::translate("HelpWindow", "Команды", nullptr));
+        requirementsButton->setText(QCoreApplication::translate("HelpWindow", "Требования", nullptr));
+        aboutButton->setText(QCoreApplication::translate("HelpWindow", "О программе", nullptr));
+        guide->setText(QCoreApplication::translate("HelpWindow", "Руководство", nullptr));
+        supportButton->setText(QCoreApplication::translate("HelpWindow", "Поддержка", nullptr));
     }
 };
 
