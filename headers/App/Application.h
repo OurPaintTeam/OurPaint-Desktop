@@ -5,7 +5,7 @@
 #include <QPixmap>
 #include <memory>
 #include <QApplication>
-#include "MainWindow.h"
+#include "mainwindow.h"
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
