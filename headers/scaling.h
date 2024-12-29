@@ -8,14 +8,14 @@
 
 class Scaling {
 private:
-    double scale;      // Коэффициент при сужении окна
-    double width_;     // Начальная ширина окна
-    double height_;    // Начальная высота окна
-    double zoom;       // Увеличение
-    bool usersResize;  // Флаг масштабирования от пользователя
-    int deltaX;        // Перемещение по оси X
-    int deltaY;        // Перемещение по оси Y
-    QPoint lastMousePos; // Предыдущее положение мыши
+    double scale;           // Коэффициент при сужении окна
+    double width_;          // Начальная ширина окна
+    double height_;         // Начальная высота окна
+    double zoom;            // Увеличение
+    bool usersResize;       // Флаг масштабирования от пользователя
+    int deltaX;             // Перемещение по оси X
+    int deltaY;             // Перемещение по оси Y
+    QPoint lastMousePos;    // Предыдущее положение мыши
     bool rightMousePressed; // Флаг нажатия правой кнопки мыши
 
 public:

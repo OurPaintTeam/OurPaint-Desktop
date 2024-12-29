@@ -671,7 +671,7 @@ public:
         leftMenuElements = new QPushButton("", collapsedPanel);
         leftMenuElements->setToolTip("Information");
         leftMenuElements->setFixedSize(40, 40);
-        QIcon IcoElem("../Static/icons/icoLeftMenu.ico");
+        QIcon IcoElem("../Static/icons/LeftBar/Info.png");
         leftMenuElements->setIcon(IcoElem);
         leftMenuElements->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -683,7 +683,7 @@ public:
         leftMenuMessage = new QPushButton("", collapsedPanel);
         leftMenuMessage->setToolTip("Message");
         leftMenuMessage->setFixedSize(40, 40);
-        QIcon IcoMes("../Static/icons/icoMes.ico");
+        QIcon IcoMes("../Static/icons/leftBar/Message.png");
         leftMenuMessage->setIcon(IcoMes);
         leftMenuMessage->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -695,7 +695,7 @@ public:
         Figures = new QPushButton("", collapsedPanel);
         Figures->setToolTip("Primitives");
         Figures->setFixedSize(40, 40);
-        QIcon IcoM("../Static/icons/Figures.ico");
+        QIcon IcoM("../Static/icons/leftBar/Primitives.png");
         Figures->setIcon(IcoM);
         Figures->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -707,7 +707,7 @@ public:
         Tools = new QPushButton("", collapsedPanel);
         Tools->setToolTip("Tools");
         Tools->setFixedSize(40, 40);
-        QIcon IcoT("../Static/icons/tools.ico");
+        QIcon IcoT("../Static/icons/leftBar/Pointer.png");
         Tools->setIcon(IcoT);
         Tools->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -719,7 +719,7 @@ public:
         Req = new QPushButton("", collapsedPanel);
         Req->setToolTip("Requirements");
         Req->setFixedSize(40, 40);
-        QIcon IcoR("../Static/icons/icoReq.ico");
+        QIcon IcoR("../Static/icons/leftBar/Req.png");
         Req->setIcon(IcoR);
         Req->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -876,9 +876,9 @@ public:
         figureSection->setToolTip("Section");
         figureCircle->setToolTip("Circle");
 
-        QIcon IcoCircle("../Static/icons/circle.ico");
-        QIcon IcoPoint("../Static/icons/point.ico");
-        QIcon IcoLine("../Static/icons/line.ico");
+        QIcon IcoCircle("../Static/icons/LeftBar/Primitives/Circle.png");
+        QIcon IcoPoint("../Static/icons/LeftBar/Primitives/Point.png");
+        QIcon IcoLine("../Static/icons/LeftBar/Primitives/Line.png");
 
         figurePoint->setIcon(IcoPoint);
         figureSection->setIcon(IcoLine);

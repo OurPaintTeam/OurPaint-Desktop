@@ -133,6 +133,25 @@ void Paint::updateRequirement(ID id) {
             try {
                 p1_it = &(*(m_pointIDs.at(r.objects[0])));
                 p2_it = &(*(m_pointIDs.at(r.objects[1])));
+                if (p1_it == p2_it) {
+                    continue;
+                }
+                for (const ID &i : connectedComponent) {
+                    if (m_sectionIDs.find(i) != m_sectionIDs.end()) {
+                        section* sec = &(*(m_sectionIDs[i]));
+                        if (sec->beg == p1_it) {
+                            sec->beg = p2_it;
+                            break;
+                        }
+                        if (sec->end == p1_it) {
+                            sec->end = p2_it;
+                            break;
+                        }
+                    }
+                }
+                auto it = m_pointIDs[r.objects[0]];
+                m_pointIDs[r.objects[0]] = m_pointIDs[r.objects[1]];
+                m_pointStorage.remove(it);
             } catch (...) {
 
                 throw std::invalid_argument("No such point");
