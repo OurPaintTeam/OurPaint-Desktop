@@ -11,8 +11,6 @@
 #include "Matrix.h"
 #include "FileOurP.h"
 #include "LSMFORLMTask.h"
-#include "GradientOptimizer.h"
-#include "LevenbergMarquardtSolver.h"
 #include "LMForTest.h"
 #include "simpleGraph.h"
 #include "enums.h"

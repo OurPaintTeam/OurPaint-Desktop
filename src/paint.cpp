@@ -679,13 +679,14 @@ void Paint::loadFromFile(const char *file) {
     clear();
     for (const auto &i: loader.getObjects()) {
         if (i.to_pair().second->type() == ET_POINT) {
-            point *p = static_cast<point *>(i.to_pair().second);
+            point *p = dynamic_cast<point *>(i.to_pair().second);
             m_pointIDs[i.to_pair().first] = m_pointStorage.addElement(*p);
             m_graph.addVertex(i.to_pair().first);
             s_allFigures = s_allFigures || p->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_CIRCLE) {
-            circle *c = static_cast<circle *>(i.to_pair().second);
+            circle *c = dynamic_cast<circle *>(i.to_pair().second);
+            c->center = &(*m_pointIDs.at(i.to_pair().first.id - 1));
             m_circleIDs[i.to_pair().first] = m_circleStorage.addElement(*c);
             RequirementData rd;
             rd.objects.push_back(i.to_pair().first.id - 1);
@@ -695,7 +696,9 @@ void Paint::loadFromFile(const char *file) {
             s_allFigures = s_allFigures || c->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_SECTION) {
-            section *s = static_cast<section *>(i.to_pair().second);
+            section *s = dynamic_cast<section *>(i.to_pair().second);
+            s->beg = &(*m_pointIDs.at(i.to_pair().first.id - 2));
+            s->end = &(*m_pointIDs.at(i.to_pair().first.id - 1));
             m_sectionIDs[i.to_pair().first] = m_sectionStorage.addElement(*s);
             m_graph.addVertex(i.to_pair().first);
             RequirementData rd;
@@ -782,13 +785,14 @@ void Paint::loadFromString(const std::string &str) {
     s_maxID = ID(0);
     for (const auto &i: loader.getObjects()) {
         if (i.to_pair().second->type() == ET_POINT) {
-            point *p = static_cast<point *>(i.to_pair().second);
+            point *p = dynamic_cast<point *>(i.to_pair().second);
             m_pointIDs[i.to_pair().first] = m_pointStorage.addElement(*p);
             m_graph.addVertex(i.to_pair().first);
             s_allFigures = s_allFigures || p->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_CIRCLE) {
-            circle *c = static_cast<circle *>(i.to_pair().second);
+            circle *c = dynamic_cast<circle *>(i.to_pair().second);
+            c->center = &(*m_pointIDs.at(i.to_pair().first.id - 1));
             m_circleIDs[i.to_pair().first] = m_circleStorage.addElement(*c);
             RequirementData rd;
             rd.objects.push_back(i.to_pair().first.id - 1);
@@ -798,7 +802,9 @@ void Paint::loadFromString(const std::string &str) {
             s_allFigures = s_allFigures || c->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_SECTION) {
-            section *s = static_cast<section *>(i.to_pair().second);
+            section *s = dynamic_cast<section *>(i.to_pair().second);
+            s->beg = &(*m_pointIDs.at(i.to_pair().first.id - 2));
+            s->end = &(*m_pointIDs.at(i.to_pair().first.id - 1));
             m_sectionIDs[i.to_pair().first] = m_sectionStorage.addElement(*s);
             m_graph.addVertex(i.to_pair().first);
             RequirementData rd;
