@@ -1,23 +1,25 @@
-#pragma once
 #ifndef PAINT_23
 #define PAINT_23
 
 #include "BMPfile.h"
-#include "List.h"
 #include "objects.h"
 #include "BMPpainter.h"
 #include "QTPainter.h"
-#include "Assoc.h"
 #include "Matrix.h"
 #include "FileOurP.h"
 #include "LSMFORLMTask.h"
 #include "LMForTest.h"
-#include "simpleGraph.h"
+#include "LSMTask.h"
+#include "LevenbergMarquardtSolver.h"
+#include "InheritanceGraph.h"
 #include "enums.h"
 #include "requirements.h"
 #include "UndoRedo.h"
 #include <map>
 
+// TODO
+#include "List.h"
+//#include <list>
 
 struct ElementData {
     Element et;
@@ -68,7 +70,7 @@ class Paint {
     ID s_maxID;
 
     // The graph. The edges are represented by requirements and the vertices are represented by objects.
-    Graph<RequirementData, ID> m_graph;
+    UndirectedWeightedGraph<ID, RequirementData> m_graph;
 
 public:
 
@@ -87,6 +89,9 @@ public:
     // Addition requirement
     ID addRequirement(const RequirementData &rd);
     void updateRequirement(ID id);
+
+    ID mergePointsIntoNew(ID v1, ID v2);
+
     // Get information about object
     ElementData getElementInfo(ID id);
     std::vector<std::pair<ID, ElementData>> getAllElementsInfo();

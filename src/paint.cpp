@@ -13,7 +13,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
     }
     for (size_t i = 0; i < rd.objects.size(); ++i) {
         for (size_t j = i + 1; j < rd.objects.size(); ++j) {
-            m_graph.addEdge(rd, rd.objects[i], rd.objects[j]);
+            m_graph.addEdge(rd.objects[i], rd.objects[j], rd);
         }
     }
     for (const auto& req: m_reqStorage){
@@ -23,11 +23,16 @@ ID Paint::addRequirement(const RequirementData &rd) {
         }
     }
 
+    // Update and compute requirements
     try {
         updateRequirement(rd.objects[0]);
+
+    // Error for invalid input arguments
     } catch (const std::invalid_argument& i) {
         m_reqStorage.remove(it);
         throw i;
+
+    // If this is not possible, we will print a message that this not converged
     } catch (const std::runtime_error& i) {
         for (const auto& req: m_reqStorage){
             for (auto i: req.objects){
@@ -40,6 +45,8 @@ ID Paint::addRequirement(const RequirementData &rd) {
         undo();
         throw std::runtime_error("Not converged");
     }
+
+    // Add info to ActionsInfo
     for (const auto& req: m_reqStorage){
         for (auto i: req.objects){
             info.m_paramsAfter.push_back(getElementInfo(i).params);
@@ -54,14 +61,18 @@ ID Paint::addRequirement(const RequirementData &rd) {
 
 void Paint::updateRequirement(ID id) {
     std::vector<IReq *> allRequirements;
-    int countOfReq = 0;
-    // Find component
+
+    // Count of current requirements
+    size_t countOfReq = 0;
+
+    // Find component in graph
     std::vector<ID> connectedComponent = m_graph.findConnectedComponent(id);
     std::unordered_set<ID> connectedObjects(connectedComponent.begin(), connectedComponent.end());
 
-
     // Getting all req and parameters
     for (const auto &r: m_reqStorage) {
+
+        //
         bool isConnected = false;
         for (const auto& obj : r.objects) {
             if (connectedObjects.find(obj) != connectedObjects.end()) {
@@ -75,6 +86,9 @@ void Paint::updateRequirement(ID id) {
 
         countOfReq++;
         IReq *requirement = nullptr;
+
+
+        // -------------------  1-10 requirements  -------------------
 
         // 1
         if (r.req == ET_POINTSECTIONDIST) {
@@ -133,10 +147,15 @@ void Paint::updateRequirement(ID id) {
             try {
                 p1_it = &(*(m_pointIDs.at(r.objects[0])));
                 p2_it = &(*(m_pointIDs.at(r.objects[1])));
+
+                // Same points
                 if (p1_it == p2_it) {
+                    // Next req
                     continue;
                 }
-                for (const ID &i : connectedComponent) {
+
+                // do replace that P1 and P2 is one point
+                /*for (const ID &i : connectedComponent) {
                     if (m_sectionIDs.find(i) != m_sectionIDs.end()) {
                         section* sec = &(*(m_sectionIDs[i]));
                         if (sec->beg == p1_it) {
@@ -148,12 +167,17 @@ void Paint::updateRequirement(ID id) {
                             break;
                         }
                     }
-                }
+                }*/
+                //bool mergeSuccess = m_graph.mergeVertices(r.objects[0], r.objects[1]);
+                //if (!mergeSuccess) {
+                //    throw std::runtime_error("Failed to merge vertices in the graph");
+                //}
+
+                // Update containers
                 auto it = m_pointIDs[r.objects[0]];
                 m_pointIDs[r.objects[0]] = m_pointIDs[r.objects[1]];
                 m_pointStorage.remove(it);
             } catch (...) {
-
                 throw std::invalid_argument("No such point");
             }
             requirement = new ReqPointOnPoint(p1_it, p2_it);
@@ -256,11 +280,13 @@ void Paint::updateRequirement(ID id) {
         }
 
 
+        // Addition new requirement to requirements container
         if (requirement) {
             allRequirements.push_back(requirement);
         }
     }
 
+    //
     std::vector<Function*> allFunctions;
     if (allRequirements.empty()) {
         return;
@@ -269,13 +295,20 @@ void Paint::updateRequirement(ID id) {
         allFunctions.push_back(requirement->getFunction());
     }
 
+    // --------------------------- Main Optimizing and Computing Algorithm ---------------------------
     LSMTask* task = new LSMTask(allFunctions, VarsStorage::getVars());
     LMSolver solver(0.5, 2, 4, 1e-06, 1e-06, 10000);
     solver.setTask(task);
     solver.optimize();
+    // -----------------------------------------------------------------------------------------------
+
+    delete task;
+
     VarsStorage::clearVars();
+
     std::cout << "Requirement in component: " << countOfReq << std::endl;
 
+    // Check converging
     if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
         for (const auto &req: allRequirements) {
             s_allFigures = s_allFigures || req->getRectangle();
@@ -286,9 +319,12 @@ void Paint::updateRequirement(ID id) {
         }
         throw std::runtime_error("Not converged");
     }
+
+    // Rectangle
     for (const auto &req: allRequirements) {
         s_allFigures = s_allFigures || req->getRectangle();
     }
+
     // Clear
     for (auto requirement: allRequirements) {
         delete requirement;
@@ -343,10 +379,10 @@ ID Paint::addElement(const ElementData &ed) {
         sectionReq.objects.emplace_back(s_maxID.id);
         sectionReq.objects.emplace_back(s_maxID.id-2);
         sectionReq.req = ET_POINTINOBJECT;
-        m_graph.addEdge(sectionReq, s_maxID.id, s_maxID.id-2);
+        m_graph.addEdge(s_maxID.id, s_maxID.id-2, sectionReq);
         sectionReq.objects.pop_back();
         sectionReq.objects.emplace_back(s_maxID.id-1);
-        m_graph.addEdge(sectionReq, s_maxID.id, s_maxID.id-1);
+        m_graph.addEdge(s_maxID.id, s_maxID.id-1, sectionReq);
 
         info.m_objects.push_back(s_maxID);
         info.m_paramsAfter.push_back(ed.params);
@@ -379,7 +415,7 @@ ID Paint::addElement(const ElementData &ed) {
         circleReq.objects.emplace_back(s_maxID.id);
         circleReq.objects.emplace_back(s_maxID.id-1);
         circleReq.req = ET_POINTINOBJECT;
-        m_graph.addEdge(circleReq, s_maxID.id, s_maxID.id-1);
+        m_graph.addEdge(s_maxID.id, s_maxID.id-1, circleReq);
 
         info.m_objects.push_back(s_maxID);
         params1.push_back(ed.params[2]);
@@ -428,7 +464,6 @@ RequirementData Paint::getRequirementInfo(ID id) {
 }
 
 void Paint::paint() {
-
     c_bmpPainter->changeSize(s_allFigures);
     for (auto &point: m_pointStorage) {
         c_bmpPainter->drawPoint(point, false);
@@ -531,10 +566,6 @@ void Paint::makeMyCircleEqual(const ElementData& ed, ElementData& changing) {
     changing.radius = ed.radius;
 }
 */
-
-
-
-
 
 void Paint::deleteRequirement(ID req) {
     if (!m_reqIDs.contains(req)) {
@@ -711,7 +742,7 @@ void Paint::loadFromFile(const char *file) {
             rd.objects.push_back(i.to_pair().first.id - 1);
             rd.objects.push_back(i.to_pair().first);
             rd.req = ET_POINTINOBJECT;
-            m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
+            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
             s_allFigures = s_allFigures || c->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_SECTION) {
@@ -725,8 +756,8 @@ void Paint::loadFromFile(const char *file) {
             rd.objects.push_back(i.to_pair().first.id - 1);
             rd.objects.push_back(i.to_pair().first);
             rd.req = ET_POINTINOBJECT;
-            m_graph.addEdge(rd, i.to_pair().first.id - 2, i.to_pair().first);
-            m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
+            m_graph.addEdge(i.to_pair().first.id - 2, i.to_pair().first, rd);
+            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
             s_allFigures = s_allFigures || s->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         }
@@ -734,7 +765,7 @@ void Paint::loadFromFile(const char *file) {
     for (const auto &i: loader.getRequirements()) {
         auto it = m_reqStorage.addElement(i.to_pair().second);
         m_reqIDs[i.to_pair().first] = it;
-        m_graph.addEdge(i.to_pair().second, i.to_pair().second.objects[0], i.to_pair().second.objects[1]);
+        m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
         s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
     }
 }
@@ -817,7 +848,7 @@ void Paint::loadFromString(const std::string &str) {
             rd.objects.push_back(i.to_pair().first.id - 1);
             rd.objects.push_back(i.to_pair().first);
             rd.req = ET_POINTINOBJECT;
-            m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
+            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
             s_allFigures = s_allFigures || c->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_SECTION) {
@@ -831,8 +862,8 @@ void Paint::loadFromString(const std::string &str) {
             rd.objects.push_back(i.to_pair().first.id - 1);
             rd.objects.push_back(i.to_pair().first);
             rd.req = ET_POINTINOBJECT;
-            m_graph.addEdge(rd, i.to_pair().first.id - 2, i.to_pair().first);
-            m_graph.addEdge(rd, i.to_pair().first.id - 1, i.to_pair().first);
+            m_graph.addEdge(i.to_pair().first.id - 2, i.to_pair().first, rd);
+            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
             s_allFigures = s_allFigures || s->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         }
@@ -840,7 +871,7 @@ void Paint::loadFromString(const std::string &str) {
     for (const auto &i: loader.getRequirements()) {
         auto it = m_reqStorage.addElement(i.to_pair().second);
         m_reqIDs[i.to_pair().first] = it;
-        m_graph.addEdge(i.to_pair().second, i.to_pair().second.objects[0], i.to_pair().second.objects[1]);
+        m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
         s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
     }
 }
