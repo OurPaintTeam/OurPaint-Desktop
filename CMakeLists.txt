@@ -100,20 +100,12 @@ add_executable(ourpaint
         )
 
 
-
-include_directories(additions)
-include_directories(UndoRedo)
-include_directories(BMPfile/code)
 include_directories(math/headers)
 include_directories(math/headers/decomposition)
 include_directories(math/headers/Optimizers)
 include_directories(math/headers/graph)
 
-add_subdirectory(BMPfile)
-add_subdirectory(test)
-add_subdirectory(math)
-
-target_link_libraries(ourpaint bitmap)
+add_subdirectory(Tests)
 
 target_link_libraries(ourpaint
         Qt6::Core
