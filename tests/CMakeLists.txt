@@ -18,15 +18,15 @@ endif()
 
 enable_testing()
 set(SOURCES
-        ../src/objects.cpp
-        ../src/requirements.cpp
-        ../src/saveload/objectInFile.cpp
-        ../src/saveload/FileOurP.cpp
-        ../src/saveload/requirementInFile.cpp
+        ../src/objects.cc
+        ../src/requirements.cc
+        ../src/saveload/objectInFile.cc
+        ../src/saveload/FileOurP.cc
+        ../src/saveload/requirementInFile.cc
     )
 add_executable(
   savergtest
-  savergtests.cpp
+        savergtests.cc
   ${SOURCES}
 )
 include_directories(../math)
@@ -40,9 +40,9 @@ target_link_libraries(
 
 add_executable(
         addReqInComponentGtest
-        addReqInComponentTests.cpp
+        addReqInComponentTests.cc
         ${SOURCES}
-        addReqInComponentTests.cpp)
+        addReqInComponentTests.cc)
 
 target_link_libraries(
         addReqInComponentGtest

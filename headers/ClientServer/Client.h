@@ -1,9 +1,5 @@
-//
-// Created by Eugene Bychkov on 13.10.2024.
-//
-
-#ifndef OURPAINT_CLIENT_H
-#define OURPAINT_CLIENT_H
+#ifndef OURPAINT_HEADERS_CLIENTSERVER_CLIENT_H_
+#define OURPAINT_HEADERS_CLIENTSERVER_CLIENT_H_
 
 #include <QTcpSocket>
 #include <QObject>
@@ -38,4 +34,4 @@ private:
 };
 
 
-#endif //OURPAINT_CLIENT_H
+#endif // ! OURPAINT_HEADERS_CLIENTSERVER_CLIENT_H_

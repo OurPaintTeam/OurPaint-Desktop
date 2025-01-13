@@ -1,9 +1,5 @@
-//
-// Created by Ardrass on 010, 10.07.2024.
-//
-
-#ifndef OURPAINT_REQUIREMENTS_H
-#define OURPAINT_REQUIREMENTS_H
+#ifndef OURPAINT_HEADERS_REQUIREMENTS_H_
+#define OURPAINT_HEADERS_REQUIREMENTS_H_
 
 #define PARAMID double*
 #include <vector>
@@ -156,4 +152,4 @@ public:
 };
 
 
-#endif //OURPAINT_REQUIREMENTS_H
+#endif // ! OURPAINT_HEADERS_REQUIREMENTS_H_

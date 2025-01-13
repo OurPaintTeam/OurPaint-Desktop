@@ -2,8 +2,8 @@
  *     Окошко для кнопки сервера
  * */
 
-#ifndef OURPAINT_WINDOWSERVER_H
-#define OURPAINT_WINDOWSERVER_H
+#ifndef OURPAINT_HEADERS_GUI_WINDOWS_WINDOWSERVER_H_
+#define OURPAINT_HEADERS_GUI_WINDOWS_WINDOWSERVER_H_
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -101,4 +101,4 @@ protected:
     }
 };
 
-#endif // OURPAINT_WINDOWSERVER_H
+#endif // ! OURPAINT_HEADERS_GUI_WINDOWS_WINDOWSERVER_H_

@@ -1,5 +1,5 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef OURPAINT_HEADERS_GUI_MAINWINDOW_H_
+#define OURPAINT_HEADERS_GUI_MAINWINDOW_H_
 
 #include <QMainWindow>
 #include <QKeyEvent>
@@ -287,4 +287,4 @@ public slots:
 
 };
 
-#endif // MAINWINDOW_H
+#endif // ! OURPAINT_HEADERS_GUI_MAINWINDOW_H_

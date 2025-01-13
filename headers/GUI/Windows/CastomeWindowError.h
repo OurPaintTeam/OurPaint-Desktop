@@ -1,10 +1,5 @@
-/*
- * Окошко ошибка (уведомление)
- *
- */
-
-#ifndef OURPAINT_CATOMEWINDOWERROR_H
-#define OURPAINT_CATOMEWINDOWERROR_H
+#ifndef OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWERROR_H_
+#define OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWERROR_H_
 
 #include <QWidget>
 #include <QHBoxLayout>
@@ -70,4 +65,4 @@ protected:
     }
 };
 
-#endif // OURPAINT_CATOMEWINDOWERROR_H
+#endif // ! OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWERROR_H_

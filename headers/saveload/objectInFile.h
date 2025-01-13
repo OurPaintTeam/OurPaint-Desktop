@@ -1,9 +1,5 @@
-//
-// Created by Eugene Bychkov on 28.09.2024.
-//
-
-#ifndef OURPAINT_OBJECTINFILE_H
-#define OURPAINT_OBJECTINFILE_H
+#ifndef OURPAINT_HEADERS_SAVELOAD_OBJECTINFILE_H_
+#define OURPAINT_HEADERS_SAVELOAD_OBJECTINFILE_H_
 
 #include "objects.h"
 #include <string>
@@ -27,4 +23,4 @@ public:
 };
 
 
-#endif //OURPAINT_OBJECTINFILE_H
+#endif // ! OURPAINT_HEADERS_SAVELOAD_OBJECTINFILE_H_

@@ -1,9 +1,5 @@
-//
-// Created by Eugene Bychkov on 13.10.2024.
-//
-
-#ifndef OURPAINT_SERVER_H
-#define OURPAINT_SERVER_H
+#ifndef OURPAINT_HEADERS_CLIENTSERVER_SERVER_H_
+#define OURPAINT_HEADERS_CLIENTSERVER_SERVER_H_
 
 
 #include <QTcpServer>
@@ -48,4 +44,4 @@ private slots:
 };
 
 
-#endif //OURPAINT_SERVER_H
+#endif // ! OURPAINT_HEADERS_CLIENTSERVER_SERVER_H_

@@ -7,8 +7,8 @@
  * */
 
 
-#ifndef FRAMEOVERLAY_H
-#define FRAMEOVERLAY_H
+#ifndef OURPAINT_HEADERS_GUI_FRAMEOVERLAY_H_
+#define OURPAINT_HEADERS_GUI_FRAMEOVERLAY_H_
 
 #include <QWidget>
 #include <QRect>
@@ -34,4 +34,4 @@ private:
     void updateFrameColor(); // Обновляет цвет рамки на основе фона
 };
 
-#endif // FRAMEOVERLAY_H
+#endif // ! OURPAINT_HEADERS_GUI_FRAMEOVERLAY_H_

@@ -1,5 +1,5 @@
-#ifndef OURPAINT_RIGHTCLICKFILTER_H
-#define OURPAINT_RIGHTCLICKFILTER_H
+#ifndef OURPAINT_HEADERS_GUI_RIGHTCLICKFILTER_H_
+#define OURPAINT_HEADERS_GUI_RIGHTCLICKFILTER_H_
 
 #include <QMouseEvent>
 class RightClickFilter : public QObject {
@@ -23,4 +23,4 @@ protected:
         return QObject::eventFilter(obj, event);
     }
 };
-#endif //OURPAINT_RIGHTCLICKFILTER_H
+#endif // ! OURPAINT_HEADERS_GUI_RIGHTCLICKFILTER_H_

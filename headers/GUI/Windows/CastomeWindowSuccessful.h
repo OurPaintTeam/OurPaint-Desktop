@@ -1,10 +1,5 @@
-/*
- * Окошко успешно (уведомление)
- * */
-
-
-#ifndef OURPAINT_CATOMEWINDOWSUCCESSFUL_H
-#define OURPAINT_CATOMEWINDOWSUCCESSFUL_H
+#ifndef OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWSUCCESSFUL_H_
+#define OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWSUCCESSFUL_H_
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QLabel>
@@ -69,4 +64,4 @@ protected:
         animation->start();
     }
 };
-#endif //OURPAINT_CATOMEWINDOWSUCCESSFUL_H
+#endif // ! OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWSUCCESSFUL_H_

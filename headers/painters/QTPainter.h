@@ -1,5 +1,5 @@
-#ifndef QTPAINTER_H
-#define QTPAINTER_H
+#ifndef OURPAINT_HEADERS_PAINTERS_QTPAINTER_H_
+#define OURPAINT_HEADERS_PAINTERS_QTPAINTER_H_
 
 #include <QPainter>
 #include <QWidget>
@@ -188,4 +188,4 @@ private slots:
 };
 
 
-#endif // QTPAINTER_H
+#endif // OURPAINT_HEADERS_PAINTERS_QTPAINTER_H_

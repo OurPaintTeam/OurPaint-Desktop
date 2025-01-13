@@ -1,5 +1,5 @@
-#ifndef UI_MAINWINDOW_H
-#define UI_MAINWINDOW_H
+#ifndef OURPAINT_HEADERS_GUI_UIMAINWINDOW_H_
+#define OURPAINT_HEADERS_GUI_UIMAINWINDOW_H_
 
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
@@ -1326,4 +1326,4 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-#endif // UI_MAINWINDOW_H
+#endif // ! OURPAINT_HEADERS_GUI_UIMAINWINDOW_H_

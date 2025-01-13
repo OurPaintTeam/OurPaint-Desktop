@@ -1,5 +1,5 @@
-#ifndef LIST_PVM_2023
-#define LIST_PVM_2023
+#ifndef OURPAINT_HEADERS_LIST_H_
+#define OURPAINT_HEADERS_LIST_H_
 
 #include <stdexcept>
 #include <iostream>
@@ -409,4 +409,4 @@ T& List<T>::operator[](size_t pos)
     return getElement(pos);
 }
 
-#endif // !LIST_PVM_2023
+#endif // ! OURPAINT_HEADERS_LIST_H_

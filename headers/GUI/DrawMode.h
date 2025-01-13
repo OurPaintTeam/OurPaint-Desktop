@@ -1,5 +1,5 @@
-#ifndef OURPAINT_DRAWMODE_H
-#define OURPAINT_DRAWMODE_H
+#ifndef OURPAINT_HEADERS_GUI_DRAWMODE_H_
+#define OURPAINT_HEADERS_GUI_DRAWMODE_H_
 
 
 enum class DrawMode {
@@ -12,4 +12,4 @@ enum class DrawMode {
     Editor
 };
 
-#endif //OURPAINT_DRAWMODE_H
+#endif // ! OURPAINT_HEADERS_GUI_DRAWMODE_H_

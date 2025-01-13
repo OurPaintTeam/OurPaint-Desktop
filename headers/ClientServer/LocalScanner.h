@@ -1,5 +1,5 @@
-#ifndef PORTSCANNER_H
-#define PORTSCANNER_H
+#ifndef OURPAINT_HEADERS_CLIENTSERVER_PORTSCANNER_H_
+#define OURPAINT_HEADERS_CLIENTSERVER_PORTSCANNER_H_
 
 #include <QObject>
 #include <QStringList>
@@ -23,4 +23,4 @@ private:
     QList<QPair<QHostAddress, int>> getLocalNetworks();
 };
 
-#endif // PORTSCANNER_H
+#endif // ! OURPAINT_HEADERS_CLIENTSERVER_PORTSCANNER_H_

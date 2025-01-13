@@ -20,7 +20,7 @@ enable_testing()
 
 add_executable(
   tests
-  test1.cpp
+        test1.cc
 )
 target_link_libraries(
   tests

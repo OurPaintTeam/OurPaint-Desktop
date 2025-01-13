@@ -1,5 +1,5 @@
-#ifndef UI_HELP_H
-#define UI_HELP_H
+#ifndef OURPAINT_HEADERS_GUI_WINDOWS_UIHELP_H_
+#define OURPAINT_HEADERS_GUI_WINDOWS_UIHELP_H_
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
@@ -250,4 +250,4 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-#endif // UI_HELP_H
+#endif // ! OURPAINT_HEADERS_GUI_WINDOWS_UIHELP_H_

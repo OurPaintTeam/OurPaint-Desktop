@@ -1,5 +1,5 @@
-#ifndef EMOJIWIDGET_H
-#define EMOJIWIDGET_H
+#ifndef OURPAINT_HEADERS_GUI_EMOJIWIDGET_H_
+#define OURPAINT_HEADERS_GUI_EMOJIWIDGET_H_
 
 #include <QWidget>
 #include <QGridLayout>
@@ -29,4 +29,4 @@ private:
     QStringList emojiList;
 };
 
-#endif // EMOJIWIDGET_H
+#endif // ! OURPAINT_HEADERS_GUI_EMOJIWIDGET_H_

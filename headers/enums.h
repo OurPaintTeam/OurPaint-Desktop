@@ -1,8 +1,10 @@
-#ifndef OURPAINT_ENUMS_H
-#define OURPAINT_ENUMS_H
+#ifndef OURPAINT_HEADERS_ENUMS_H_
+#define OURPAINT_HEADERS_ENUMS_H_
+
 enum Element {
     ET_POINT, ET_SECTION, ET_CIRCLE
 };
+
 enum Requirement {
     ET_POINTSECTIONDIST,
     ET_POINTONSECTION,
@@ -17,4 +19,5 @@ enum Requirement {
     ET_POINTONCIRCLE,
     ET_POINTINOBJECT
 };
-#endif //OURPAINT_ENUMS_H
+
+#endif // ! OURPAINT_HEADERS_ENUMS_H_

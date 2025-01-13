@@ -1,9 +1,6 @@
-//
-// Created by Eugene Bychkov on 24.10.2024.
-//
+#ifndef OURPAINT_HEADERS_SAVELOAD_REQUIREMENTINFILE_H_
+#define OURPAINT_HEADERS_SAVELOAD_REQUIREMENTINFILE_H_
 
-#ifndef OURPAINT_REQUIREMENTINFILE_H
-#define OURPAINT_REQUIREMENTINFILE_H
 #include "requirements.h"
 #include <string>
 
@@ -25,4 +22,4 @@ class requirementInFile {
 };
 
 
-#endif //OURPAINT_REQUIREMENTINFILE_H
+#endif // ! OURPAINT_HEADERS_SAVELOAD_REQUIREMENTINFILE_H_

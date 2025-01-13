@@ -1,6 +1,5 @@
-#pragma once
-#ifndef BMP_FILES_PVM
-#define BMP_FILES_PVM
+#ifndef OURPAINT_HEADERS_BMPFILES_H_
+#define OURPAINT_HEADERS_BMPFILES_H_
 
 #include <iostream>
 #include <cstdint>
@@ -38,4 +37,4 @@ public:
 	bool getPixel(unsigned int, unsigned int) const;//black - false, white - true
 };
 
-#endif
+#endif // ! OURPAINT_HEADERS_BMPFILES_H_

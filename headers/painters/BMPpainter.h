@@ -1,5 +1,6 @@
-#ifndef OURPAINT_BMPPAINTER_H
-#define OURPAINT_BMPPAINTER_H
+#ifndef OURPAINT_HEADERS_PAINTERS_BMPPAINTER_H_
+#define OURPAINT_HEADERS_PAINTERS_BMPPAINTER_H_
+
 #include "BMPfile.h"
 #include "objects.h"
 #include "Painter.h"
@@ -26,4 +27,4 @@ public:
     void saveBMP(const char* filename="print.bmp");
 };
 
-#endif //OURPAINT_BMPPAINTER_H
+#endif // ! OURPAINT_HEADERS_PAINTERS_BMPPAINTER_H_

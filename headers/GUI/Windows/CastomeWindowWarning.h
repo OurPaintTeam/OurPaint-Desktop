@@ -1,12 +1,5 @@
-/*
- *
- *  Окошко предупреждение (уведомление)
- *
- * */
-
-
-#ifndef OURPAINT_CATOMEWINDOWWARNING_H
-#define OURPAINT_CATOMEWINDOWWARNING_H
+#ifndef OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWWARNING_H_
+#define OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWWARNING_H_
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -73,4 +66,4 @@ protected:
     }
 };
 
-#endif //OURPAINT_CATOMEWINDOWWARNING_H
+#endif // ! OURPAINT_HEADERS_GUI_WINDOWS_CATOMEWINDOWWARNING_H_

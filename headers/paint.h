@@ -1,5 +1,5 @@
-#ifndef PAINT_23
-#define PAINT_23
+#ifndef OURPAINT_HEADERS_PAINT_H_
+#define OURPAINT_HEADERS_PAINT_H_
 
 #include "BMPfile.h"
 #include "objects.h"
@@ -132,4 +132,4 @@ public:
     void paint();
 };
 
-#endif
+#endif // ! OURPAINT_HEADERS_PAINT_H_

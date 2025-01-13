@@ -25,38 +25,38 @@ include_directories(headers/saveload)
 include_directories(headers/ClientServer)
 include_directories(headers/GUI)
 include_directories(headers/GUI/Windows)
-include_directories(headers/App)
+include_directories(headers/app)
 
 add_executable(ourpaint
         main.cpp
-        src/paint.cpp
-        src/objects.cpp
-        src/requirements.cpp
-        src/scaling.cpp
+        src/paint.cc
+        src/objects.cc
+        src/requirements.cc
+        src/scaling.cc
 
-        src/painters/BMPpainter.cpp
-        src/painters/QTPainter.cpp
+        src/painters/BMPpainter.cc
+        src/painters/QTPainter.cc
 
-        src/GUI/mainwindow.cpp
-        src/GUI/FrameOverlay.cpp
-        src/GUI/CastomeConsole.cpp
-        src/GUI/RightClickFilter.cpp
-        src/GUI/EmojiWidget.cpp
+        src/GUI/mainwindow.cc
+        src/GUI/FrameOverlay.cc
+        src/GUI/CastomeConsole.cc
+        src/GUI/RightClickFilter.cc
+        src/GUI/EmojiWidget.cc
 
-        src/GUI/Windows/help.cpp
+        src/GUI/Windows/help.cc
 
-        src/saveload/objectInFile.cpp
-        src/saveload/FileOurP.cpp
-        src/saveload/requirementInFile.cpp
-        src/saveload/SaveSettingsApplications.cpp
-        src/saveload/LoadSettingsApplications.cpp
+        src/saveload/objectInFile.cc
+        src/saveload/FileOurP.cc
+        src/saveload/requirementInFile.cc
+        src/saveload/SaveSettingsApplications.cc
+        src/saveload/LoadSettingsApplications.cc
 
-        src/ClientServer/Server.cpp
-        src/ClientServer/Client.cpp
-        src/ClientServer/LocalScanner.cpp
-        src/ClientServer/PortCheckTask.cpp
+        src/client_server/Server.cc
+        src/client_server/Client.cc
+        src/client_server/LocalScanner.cc
+        src/client_server/PortCheckTask.cc
 
-        src/App/Application.cpp
+        src/App/Application.cc
 
         headers/enums.h
         headers/objects.h
@@ -96,7 +96,7 @@ add_executable(ourpaint
         headers/saveload/objectInFile.h
         headers/saveload/SaveSettingsApplications.h
 
-        headers/App/Application.h
+        headers/app/Application.h
         )
 
 
@@ -105,7 +105,7 @@ include_directories(math/headers/decomposition)
 include_directories(math/headers/Optimizers)
 include_directories(math/headers/graph)
 
-add_subdirectory(Tests)
+add_subdirectory(tests)
 
 target_link_libraries(ourpaint
         Qt6::Core
@@ -114,4 +114,5 @@ target_link_libraries(ourpaint
         Qt6::Network
         Eigen3::Eigen
         )
+
 target_link_libraries(ourpaint MinimizerOptimizer)

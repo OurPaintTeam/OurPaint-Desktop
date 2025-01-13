@@ -1,5 +1,5 @@
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#ifndef OURPAINT_HEADERS_APPLICATION_H_
+#define OURPAINT_HEADERS_APPLICATION_H_
 
 #include <QTranslator>
 #include <QPixmap>
@@ -37,4 +37,4 @@ private:
     void handler(const QString &command);
 };
 
-#endif // APPLICATION_H
+#endif // ! OURPAINT_HEADERS_APPLICATION_H_

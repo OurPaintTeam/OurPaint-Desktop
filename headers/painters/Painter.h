@@ -1,9 +1,5 @@
-//
-// Created by Tim on 25.09.2024.
-//
-
-#ifndef OURPAINT_PAINTER_H
-#define OURPAINT_PAINTER_H
+#ifndef OURPAINT_HEADERS_PAINTERS_PAINTER_H_
+#define OURPAINT_HEADERS_PAINTERS_PAINTER_H_
 
 #include "objects.h"
 
@@ -20,4 +16,4 @@ public:
 };
 
 
-#endif //OURPAINT_PAINTER_H
+#endif // ! OURPAINT_HEADERS_PAINTERS_PAINTER_H_

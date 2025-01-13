@@ -1,6 +1,5 @@
-#pragma once
-#ifndef MRETOR
-#define MRETOR
+#ifndef OURPAINT_HEADERS_OBJECTS_H_
+#define OURPAINT_HEADERS_OBJECTS_H_
 
 #include <fstream>
 #include "enums.h"
@@ -74,4 +73,4 @@ struct circle : public primitive {
     }
 };
 
-#endif
+#endif // ! OURPAINT_HEADERS_OBJECTS_H_
