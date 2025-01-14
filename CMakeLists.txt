@@ -25,7 +25,6 @@ include_directories(headers/saveload)
 include_directories(headers/ClientServer)
 include_directories(headers/GUI)
 include_directories(headers/GUI/Windows)
-include_directories(headers/app)
 
 add_executable(ourpaint
         main.cpp
@@ -56,7 +55,8 @@ add_executable(ourpaint
         src/client_server/LocalScanner.cc
         src/client_server/PortCheckTask.cc
 
-        src/App/Application.cc
+        src/Application.cc
+        src/BMPfile.cc
 
         headers/enums.h
         headers/objects.h
@@ -96,7 +96,9 @@ add_executable(ourpaint
         headers/saveload/objectInFile.h
         headers/saveload/SaveSettingsApplications.h
 
-        headers/app/Application.h
+        headers/Application.h
+        headers/UndoRedo.h
+        headers/BMPfile.h
         )
 
 
@@ -107,6 +109,8 @@ include_directories(math/headers/graph)
 
 add_subdirectory(tests)
 
+add_subdirectory(Math)
+
 target_link_libraries(ourpaint
         Qt6::Core
         Qt6::Gui
@@ -115,4 +119,4 @@ target_link_libraries(ourpaint
         Eigen3::Eigen
         )
 
-target_link_libraries(ourpaint MinimizerOptimizer)
+target_link_libraries(ourpaint Math)

@@ -2,6 +2,7 @@
 #define OURPAINT_HEADERS_REQUIREMENTS_H_
 
 #define PARAMID double*
+
 #include <vector>
 #include "objects.h"
 #include <cmath>
@@ -16,11 +17,22 @@ public:
     static Variable* getVar(PARAMID id);
     static void clearVars();
 };
+
 struct RequirementData {
     Requirement req;
     std::vector<ID> objects;
     std::vector<double> params;
     RequirementData();
+
+    bool operator==(const RequirementData& other) const {
+    return req == other.req
+        && objects == other.objects
+        && params == other.params;
+    }
+
+    bool operator!=(const RequirementData& other) const {
+    return !(*this == other);
+    }
 };
 
 // Abstract class
