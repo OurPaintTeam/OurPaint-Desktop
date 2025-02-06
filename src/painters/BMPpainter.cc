@@ -19,7 +19,7 @@ BMPpainter::BMPpainter(const BMPfile &file): c_file(file), v_height(file.getHeig
  * сделаем некоторые преобразования, чтобы центр СК всегда была в середине листа
  * x = v_height - y; y = v_weight + x
  */
-void BMPpainter::drawSection(section s, bool isWhite) {
+void BMPpainter::drawSection(Section s, bool isWhite) {
     //Алгоритм Брезенхема
     int x0 = static_cast<int>(-s.beg->y + v_height / 2);
     int y0 = static_cast<int>(s.beg->x + v_weight / 2);
@@ -40,11 +40,11 @@ void BMPpainter::drawSection(section s, bool isWhite) {
     }
 }
 
-void BMPpainter::drawPoint(point p, bool isWhite) {
+void BMPpainter::drawPoint(Point p, bool isWhite) {
     c_file.setPixel(static_cast<int>(v_height/2 - p.y), static_cast<int>( v_weight / 2 + p.x ), isWhite);
 }
 
-void BMPpainter::drawCircle(circle c, bool isWhite) {
+void BMPpainter::drawCircle(Circle c, bool isWhite) {
     int x = 0;
     int y = static_cast<int>(c.R);
     int x0 = v_height/2 - c.center->y;

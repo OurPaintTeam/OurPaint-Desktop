@@ -22,16 +22,17 @@ FetchContent_MakeAvailable(Eigen)
 include_directories(headers)
 include_directories(headers/painters)
 include_directories(headers/saveload)
-include_directories(headers/ClientServer)
+include_directories(headers/client_server)
 include_directories(headers/GUI)
 include_directories(headers/GUI/Windows)
 
 add_executable(ourpaint
-        main.cpp
-        src/paint.cc
-        src/objects.cc
-        src/requirements.cc
-        src/scaling.cc
+        main.cc
+        src/Paint.cc
+        src/Objects.cc
+        src/Requirements.cc
+        src/Scaling.cc
+        src/ID.cc
 
         src/painters/BMPpainter.cc
         src/painters/QTPainter.cc
@@ -58,16 +59,17 @@ add_executable(ourpaint
         src/Application.cc
         src/BMPfile.cc
 
-        headers/enums.h
-        headers/objects.h
-        headers/paint.h
-        headers/requirements.h
-        headers/scaling.h
+        headers/Enums.h
+        headers/Objects.h
+        headers/Paint.h
+        headers/Requirements.h
+        headers/Scaling.h
+        headers/ID.h
 
-        headers/ClientServer/Client.h
-        headers/ClientServer/LocalScanner.h
-        headers/ClientServer/PortCheckTask.h
-        headers/ClientServer/Server.h
+        headers/client_server/Client.h
+        headers/client_server/LocalScanner.h
+        headers/client_server/PortCheckTask.h
+        headers/client_server/Server.h
 
         headers/GUI/Windows/CastomeWindowError.h
         headers/GUI/Windows/CastomeWindowWarning.h

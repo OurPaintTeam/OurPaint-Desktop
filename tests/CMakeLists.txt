@@ -18,8 +18,8 @@ endif()
 
 enable_testing()
 set(SOURCES
-        ../src/objects.cc
-        ../src/requirements.cc
+        ../src/Objects.cc
+        ../src/Requirements.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/requirementInFile.cc

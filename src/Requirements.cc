@@ -1,4 +1,4 @@
-#include "requirements.h"
+#include "Requirements.h"
 std::map<PARAMID, Variable*> VarsStorage::m_vars;
 std::vector<Variable *> VarsStorage::getVars() {
     std::vector<Variable *> vars;
@@ -43,7 +43,7 @@ std::vector<PARAMID> ReqPointSecDist::getParams() {
     res.push_back(&(m_s->end->y));
     return res;
 }
-ReqPointSecDist::ReqPointSecDist(point* p, section* s, double dist) {
+ReqPointSecDist::ReqPointSecDist(Point* p, Section* s, double dist) {
     m_p = p;
     m_s = s;
     d = dist;
@@ -63,7 +63,7 @@ rectangle ReqPointSecDist::getRectangle() {
 
 
 // 2
-ReqPointOnSec::ReqPointOnSec(point* p, section* s) {
+ReqPointOnSec::ReqPointOnSec(Point* p, Section* s) {
     m_p = p;
     m_s = s;
     Variable* x1 = VarsStorage::addVar(&p->x);
@@ -94,7 +94,7 @@ rectangle ReqPointOnSec::getRectangle() {
 
 
 // 3
-ReqPointPointDist::ReqPointPointDist(point* p1, point* p2, double dist) {
+ReqPointPointDist::ReqPointPointDist(Point* p1, Point* p2, double dist) {
     m_p1 = p1;
     m_p2 = p2;
     v_dist = dist;
@@ -122,7 +122,7 @@ rectangle ReqPointPointDist::getRectangle() {
 
 
 // 4
-ReqPointOnPoint::ReqPointOnPoint(point* p1, point* p2) {
+ReqPointOnPoint::ReqPointOnPoint(Point* p1, Point* p2) {
     m_p1 = p1;
     m_p2 = p2;
     Variable* x1 = VarsStorage::addVar(&p1->x);
@@ -149,7 +149,7 @@ rectangle ReqPointOnPoint::getRectangle() {
 
 
 // 5
-ReqSecCircleDist::ReqSecCircleDist(section* s, circle* c, double dist) {
+ReqSecCircleDist::ReqSecCircleDist(Section* s, Circle* c, double dist) {
     m_s = s;
     m_c = c;
     v_dist = dist;
@@ -183,7 +183,7 @@ rectangle ReqSecCircleDist::getRectangle() {
 
 
 // 6
-ReqSecOnCircle::ReqSecOnCircle(section* s, circle* c) {
+ReqSecOnCircle::ReqSecOnCircle(Section* s, Circle* c) {
     m_s = s;
     m_c = c;
 
@@ -217,7 +217,7 @@ rectangle ReqSecOnCircle::getRectangle() {
 
 
 // 7
-ReqSecInCircle::ReqSecInCircle(section* s, circle* c) {
+ReqSecInCircle::ReqSecInCircle(Section* s, Circle* c) {
     m_s = s;
     m_c = c;
     throw std::runtime_error("Not implemented");
@@ -243,7 +243,7 @@ rectangle ReqSecInCircle::getRectangle() {
 
 
 // 8
-ReqSecSecParallel::ReqSecSecParallel(section* s1, section* s2) {
+ReqSecSecParallel::ReqSecSecParallel(Section* s1, Section* s2) {
     m_s1 = s1;
     m_s2 = s2;
     Variable* x1 = VarsStorage::addVar(&s1->beg->x);
@@ -280,7 +280,7 @@ rectangle ReqSecSecParallel::getRectangle() {
 
 
 // 9
-ReqSecSecPerpendicular::ReqSecSecPerpendicular(section* s1, section* s2) {
+ReqSecSecPerpendicular::ReqSecSecPerpendicular(Section* s1, Section* s2) {
     m_s1 = s1;
     m_s2 = s2;
     Variable* x1 = VarsStorage::addVar(&s1->beg->x);
@@ -315,7 +315,7 @@ rectangle ReqSecSecPerpendicular::getRectangle() {
 
 
 // 10
-ReqSecSecAngel::ReqSecSecAngel(section* s1, section* s2, double angle) {
+ReqSecSecAngel::ReqSecSecAngel(Section* s1, Section* s2, double angle) {
     m_s1 = s1;
     m_s2 = s2;
     desired_angle = angle;

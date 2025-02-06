@@ -3,11 +3,12 @@
 
 #define PARAMID double*
 
-#include <vector>
-#include "objects.h"
 #include <cmath>
-#include "enums.h"
+#include <vector>
+
+#include "Enums.h"
 #include "ErrorFunctions.h"
+#include "Objects.h"
 
 class VarsStorage{
     static std::map<PARAMID, Variable*> m_vars;
@@ -51,11 +52,11 @@ public:
 
 // 1
 class ReqPointSecDist : public IReq {
-    point* m_p;
-    section* m_s;
+    Point* m_p;
+    Section* m_s;
     double d;
 public:
-    ReqPointSecDist(point* p, section* s, double dist);
+    ReqPointSecDist(Point* p, Section* s, double dist);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -63,10 +64,10 @@ public:
 
 // 2
 class ReqPointOnSec : public IReq {
-    point* m_p;
-    section* m_s;
+    Point* m_p;
+    Section* m_s;
 public:
-    ReqPointOnSec(point* p, section* s);
+    ReqPointOnSec(Point* p, Section* s);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -74,11 +75,11 @@ public:
 
 // 3
 class ReqPointPointDist : public IReq {
-    point* m_p1;
-    point* m_p2;
+    Point* m_p1;
+    Point* m_p2;
     double v_dist;
 public:
-    ReqPointPointDist(point* p1, point* p2, double dist);
+    ReqPointPointDist(Point* p1, Point* p2, double dist);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -86,10 +87,10 @@ public:
 
 // 4
 class ReqPointOnPoint : public IReq {
-    point* m_p1;
-    point* m_p2;
+    Point* m_p1;
+    Point* m_p2;
 public:
-    ReqPointOnPoint(point* p1, point* p2);
+    ReqPointOnPoint(Point* p1, Point* p2);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -97,11 +98,11 @@ public:
 
 // 5
 class ReqSecCircleDist : public IReq {
-    section* m_s;
-    circle* m_c;
+    Section* m_s;
+    Circle* m_c;
     double v_dist;
 public:
-    ReqSecCircleDist(section* m_s, circle* m_c, double dist);
+    ReqSecCircleDist(Section* m_s, Circle* m_c, double dist);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -109,10 +110,10 @@ public:
 
 // 6
 class ReqSecOnCircle : public IReq {
-    section* m_s;
-    circle* m_c;
+    Section* m_s;
+    Circle* m_c;
 public:
-    ReqSecOnCircle(section* m_s, circle* m_c);
+    ReqSecOnCircle(Section* m_s, Circle* m_c);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -120,10 +121,10 @@ public:
 
 // 7
 class ReqSecInCircle : public IReq {
-    section* m_s;
-    circle* m_c;
+    Section* m_s;
+    Circle* m_c;
 public:
-    ReqSecInCircle(section* m_s, circle* m_c);
+    ReqSecInCircle(Section* m_s, Circle* m_c);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -131,10 +132,10 @@ public:
 
 // 8
 class ReqSecSecParallel : public IReq {
-    section* m_s1;
-    section* m_s2;
+    Section* m_s1;
+    Section* m_s2;
 public:
-    ReqSecSecParallel(section* m_s1, section* m_s2);
+    ReqSecSecParallel(Section* m_s1, Section* m_s2);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -142,10 +143,10 @@ public:
 
 // 9
 class ReqSecSecPerpendicular : public IReq {
-    section* m_s1;
-    section* m_s2;
+    Section* m_s1;
+    Section* m_s2;
 public:
-    ReqSecSecPerpendicular(section* m_s1, section* m_s2);
+    ReqSecSecPerpendicular(Section* m_s1, Section* m_s2);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;
@@ -153,11 +154,11 @@ public:
 
 // 10
 class ReqSecSecAngel : public IReq {
-    section* m_s1;
-    section* m_s2;
+    Section* m_s1;
+    Section* m_s2;
     double desired_angle;
 public:
-    ReqSecSecAngel(section* m_s1, section* m_s2, double desired_dist);
+    ReqSecSecAngel(Section* m_s1, Section* m_s2, double desired_dist);
     ErrorFunctions* getFunction() override;
     std::vector<PARAMID> getParams() override;
     rectangle getRectangle() override;

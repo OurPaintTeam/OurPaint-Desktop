@@ -1,27 +1,29 @@
 #ifndef OURPAINT_HEADERS_PAINTERS_QTPAINTER_H_
 #define OURPAINT_HEADERS_PAINTERS_QTPAINTER_H_
 
+#include <QFrame>
+#include <QPaintEvent>
 #include <QPainter>
 #include <QWidget>
-#include <QPaintEvent>
-#include <QFrame>
 #include <vector>
-#include "paint.h"
-#include "mainwindow.h"
-#include "scaling.h"
+
 #include "DrawMode.h"
+#include "Objects.h"
+#include "Paint.h"
+#include "Scaling.h"
+#include "mainwindow.h"
 
 class QTPainter : public QFrame, public Painter {
 Q_OBJECT
 
 private:
     Ui::MainWindow *ui;
-    std::vector<point> points;
-    std::vector<circle> circles;
-    std::vector<section> sections;
-    std::vector<point> ReqieredPoints;
-    std::vector<circle> ReqieredCircles;
-    std::vector<section> ReqieredSections;
+    std::vector<Point> points;
+    std::vector<Circle> circles;
+    std::vector<Section> sections;
+    std::vector<Point> ReqieredPoints;
+    std::vector<Circle> ReqieredCircles;
+    std::vector<Section> ReqieredSections;
     std::vector<ID> vec_id;
     Scaling scaling; // Масштабирование
 
@@ -37,9 +39,9 @@ private:
     int tab;
     bool CellView;         // Флаг отрисовки сетки
     bool editor; // Обычный режим
-    bool Circle;
-    bool Section;
-    bool Point;
+    bool Circle_;
+    bool Section_;
+    bool Point_;
     bool Drawing; // Режим отрисовки за курсором после одного клика
     bool leftClick;
     bool leftDoubleClick;
@@ -67,11 +69,11 @@ public:
 
     std::vector<ID> getVecID() { return vec_id; }
 
-    void setCircle(bool T) { Circle = T; }
+    void setCircle(bool T) { Circle_ = T; }
 
-    void setSection(bool T) { Section = T; }
+    void setSection(bool T) { Section_ = T; }
 
-    void setPoint(bool T) { Point = T; }
+    void setPoint(bool T) { Point_ = T; }
 
     void setMoving(bool T) { Moving = T; }
 
@@ -121,13 +123,13 @@ protected:
     void resizeEvent(QResizeEvent *event)
     override;
 
-    void drawPoint(point pt, bool isWhite = false)
+    void drawPoint(struct Point pt, bool isWhite = false)
     override;
 
-    void drawCircle(circle c, bool isWhite = false)
+    void drawCircle(struct Circle c, bool isWhite = false)
     override;
 
-    void drawSection(section sec, bool isWhite = false)
+    void drawSection(struct Section sec, bool isWhite = false)
     override;
 
     void paintEvent(QPaintEvent *event)

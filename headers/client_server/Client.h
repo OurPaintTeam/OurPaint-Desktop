@@ -1,10 +1,11 @@
 #ifndef OURPAINT_HEADERS_CLIENTSERVER_CLIENT_H_
 #define OURPAINT_HEADERS_CLIENTSERVER_CLIENT_H_
 
-#include <QTcpSocket>
-#include <QObject>
-#include "paint.h"
 #include <QMessageBox>
+#include <QObject>
+#include <QTcpSocket>
+
+#include "Paint.h"
 class Client : public QObject {
 Q_OBJECT
 

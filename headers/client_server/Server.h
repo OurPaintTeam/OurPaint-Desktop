@@ -1,13 +1,13 @@
 #ifndef OURPAINT_HEADERS_CLIENTSERVER_SERVER_H_
 #define OURPAINT_HEADERS_CLIENTSERVER_SERVER_H_
 
-
-#include <QTcpServer>
-#include <QTcpSocket>
+#include <QDataStream>
 #include <QObject>
 #include <QSet>
-#include <QDataStream>
-#include "paint.h"
+#include <QTcpServer>
+#include <QTcpSocket>
+
+#include "Paint.h"
 
 class Server : public QObject {
 Q_OBJECT

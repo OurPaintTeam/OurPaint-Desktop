@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "../headers/paint.h"
 
+#include "../headers/Paint.h"
 
 TEST(PaintTest, PointSecDist) {
     Painter *painter;

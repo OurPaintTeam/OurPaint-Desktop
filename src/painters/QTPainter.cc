@@ -3,7 +3,7 @@
 QTPainter::QTPainter(Ui::MainWindow *ui, QWidget *parent)
         : QFrame(parent), ui(ui), scaling(ui->workWindow->width(), ui->workWindow->height()),
           minCellSize(10), maxCellSize(20), CellSize(8), CellView(true), currentCellSize(1), cursorX(0), cursorY(0),
-          editor(true), Circle(false), Section(false), Point(false), Drawing(false), leftClick(false),
+          editor(true), Circle_(false), Section_(false), Point_(false), Drawing(false), leftClick(false),
           ReleaseLeftClick(false),
           leftDoubleClick(false), Shift(false), tab(0), id(0) {
 
@@ -49,15 +49,15 @@ void QTPainter::resizeEvent(QResizeEvent *event) {
     QFrame::resizeEvent(event);
 }
 
-void QTPainter::drawPoint(point pt, bool isWhite) {
+void QTPainter::drawPoint(struct Point pt, bool isWhite) {
     points.push_back(pt);
 }
 
-void QTPainter::drawCircle(circle c, bool isWhite) {
+void QTPainter::drawCircle(struct Circle c, bool isWhite) {
     circles.push_back(c);
 }
 
-void QTPainter::drawSection(section sec, bool isWhite) {
+void QTPainter::drawSection(struct Section sec, bool isWhite) {
     sections.push_back(sec);
 }
 
@@ -329,9 +329,9 @@ void QTPainter::drawSections(QPainter &painter) {
 
     bool AllClicked = false;
 
-    std::vector<point> newSelectedPoints;
-    std::vector<circle> newSelectedCircles;
-    std::vector<section> newSelectedSections;
+    std::vector<Point> newSelectedPoints;
+    std::vector<Circle> newSelectedCircles;
+    std::vector<Section> newSelectedSections;
 
 
     if (leftClick && (Moving || editor)) {
@@ -350,7 +350,7 @@ void QTPainter::drawSections(QPainter &painter) {
 
 
                 if (!selected) {
-                    point ptr;
+                    Point ptr;
                     ptr.x = pt.x;
                     ptr.y = pt.y;
                     newSelectedPoints.push_back(ptr);
@@ -371,8 +371,8 @@ void QTPainter::drawSections(QPainter &painter) {
                 }
 
                 if (!selected) {
-                    circle cir;
-                    cir.center = new point();
+                    Circle cir;
+                    cir.center = new Point();
                     cir.center->x = pt.center->x;
                     cir.center->y = pt.center->y;
                     cir.R = pt.R;
@@ -395,9 +395,9 @@ void QTPainter::drawSections(QPainter &painter) {
                 }
 
                 if (!selected) {
-                    section newSec;
-                    newSec.beg = new point();
-                    newSec.end = new point();
+                    Section newSec;
+                    newSec.beg = new Point();
+                    newSec.end = new Point();
 
                     newSec.beg->x = sec.beg->x;
                     newSec.beg->y = sec.beg->y;
@@ -625,9 +625,9 @@ void QTPainter::drawCircles(QPainter &painter) {
 
     bool AllClicked = false;
 
-    std::vector<point> newSelectedPoints;
-    std::vector<circle> newSelectedCircles;
-    std::vector<section> newSelectedSections;
+    std::vector<Point> newSelectedPoints;
+    std::vector<Circle> newSelectedCircles;
+    std::vector<Section> newSelectedSections;
 
 
     if (leftClick && (Moving || editor)) {
@@ -646,7 +646,7 @@ void QTPainter::drawCircles(QPainter &painter) {
 
 
                 if (!selected) {
-                    point ptr;
+                    Point ptr;
                     ptr.x = pt.x;
                     ptr.y = pt.y;
                     newSelectedPoints.push_back(ptr);
@@ -667,8 +667,8 @@ void QTPainter::drawCircles(QPainter &painter) {
                 }
 
                 if (!selected) {
-                    circle cir;
-                    cir.center = new point();
+                    Circle cir;
+                    cir.center = new Point();
                     cir.center->x = pt.center->x;
                     cir.center->y = pt.center->y;
                     cir.R = pt.R;
@@ -691,9 +691,9 @@ void QTPainter::drawCircles(QPainter &painter) {
                 }
 
                 if (!selected) {
-                    section newSec;
-                    newSec.beg = new point();
-                    newSec.end = new point();
+                    Section newSec;
+                    newSec.beg = new Point();
+                    newSec.end = new Point();
 
                     newSec.beg->x = sec.beg->x;
                     newSec.beg->y = sec.beg->y;
@@ -936,7 +936,7 @@ void QTPainter::drawExp(QPainter &painter) {
                 }
 
                 if(key) {
-                    point ptr;
+                    Point ptr;
                     ptr.x = pt.x;
                     ptr.y = pt.y;
                     ReqieredPoints.push_back(ptr);
@@ -994,7 +994,7 @@ void QTPainter::drawPoints(QPainter &painter) {
 
     bool NotClicked = false;
 
-    std::vector<point> newSelectedPoints;
+    std::vector<Point> newSelectedPoints;
 
     if (leftClick && (Moving || editor)) {
 
@@ -1013,13 +1013,13 @@ void QTPainter::drawPoints(QPainter &painter) {
 
 
                     if (!selected) {
-                        point ptr;
+                        Point ptr;
                         ptr.x = pt.x;
                         ptr.y = pt.y;
                         newSelectedPoints.push_back(ptr);
                     }
                 } else {
-                    point ptr;
+                    Point ptr;
                     ptr.x = pt.x;
                     ptr.y = pt.y;
                     newSelectedPoints.push_back(ptr);
@@ -1098,7 +1098,7 @@ void QTPainter::drawHints(QPainter &painter) {
     double _height = height() / 2.0;
 
 
-    if (Section && (!points.empty() || !sections.empty() || !circles.empty())) {
+    if (Section_ && (!points.empty() || !sections.empty() || !circles.empty())) {
         if (tab == 0) {
             closestPoint = findPoint();
             int X = static_cast<int>(scaling.scaleCoordinateX(closestPoint.x()) + _width);
@@ -1229,7 +1229,7 @@ void QTPainter::drawMouse(QPainter &painter) {
     int logicalX = static_cast<int>(scaling.logicX(cursorX - _width));
     int logicalY = static_cast<int>(scaling.logicY(_height - cursorY));
 
-    if (Circle && Drawing) {
+    if (Circle_ && Drawing) {
         int logicalPerimeterX = perimeterPoint.x();
         int logicalPerimeterY = perimeterPoint.y();
         int centerX = (logicalPerimeterX + logicalX) / 2;
@@ -1241,7 +1241,7 @@ void QTPainter::drawMouse(QPainter &painter) {
         int scaledRadius = static_cast<int>(scaling.scaleCoordinate(radius));
         painter.drawEllipse(screenCenterX - scaledRadius, screenCenterY - scaledRadius, 2 * scaledRadius,
                             2 * scaledRadius);
-    } else if (Section && Drawing) {
+    } else if (Section_ && Drawing) {
         int screenStartX = static_cast<int>(scaling.scaleCoordinateX(sectionStartPoint.x()) + _width);
         int screenStartY = static_cast<int>(scaling.scaleCoordinateY(-sectionStartPoint.y()) + _height);
 
@@ -1312,7 +1312,7 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         scaling.startMousePress(event->pos());
         emit RightPress();
 
-        if ((Circle || Section || Point) && Drawing) {
+        if ((Circle_ || Section_ || Point_) && Drawing) {
             scaling.resetUsersResize();
             Drawing = false;
         }
@@ -1325,7 +1325,7 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
     }
 
 
-    if ((Point || Section || Circle) && event->button() == Qt::LeftButton) {
+    if ((Point_ || Section_ || Circle_) && event->button() == Qt::LeftButton) {
 
         QPoint Position = event->pos();
         double _width = width() / 2.0;
@@ -1333,13 +1333,13 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
         int logicalX = static_cast<int>(scaling.logicX(Position.x() - _width));
         int logicalY = static_cast<int>(scaling.logicY(_height - Position.y()));
 
-        if (Point) {
+        if (Point_) {
             Position.setX(logicalX);
             Position.setY(logicalY);
             emit SigPoint(Position);
         }
 
-        if (Section) {
+        if (Section_) {
             if (!Drawing) {
                 Drawing = true;
                 sectionStartPoint.setX(logicalX);
@@ -1363,7 +1363,7 @@ void QTPainter::mousePressEvent(QMouseEvent *event) {
             }
         }
 
-        if (Circle) {
+        if (Circle_) {
             if (!Drawing) {
                 Drawing = true;
                 perimeterPoint.setX(logicalX);

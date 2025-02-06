@@ -1,8 +1,9 @@
 #ifndef OURPAINT_HEADERS_SAVELOAD_REQUIREMENTINFILE_H_
 #define OURPAINT_HEADERS_SAVELOAD_REQUIREMENTINFILE_H_
 
-#include "requirements.h"
 #include <string>
+
+#include "Requirements.h"
 
 class requirementInFile {
     ID id;

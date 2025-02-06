@@ -1,14 +1,10 @@
-//
-// Created by Eugene Bychkov on 28.09.2024.
-//
-
 #include "FileOurP.h"
 
 void FileOurP::parseFile(std::istream &file) {
     std::vector<objectInFile> objects;
     std::vector<requirementInFile> requirements;
     std::string line;
-    std::queue<std::pair<ID, primitive *>> q;
+    std::queue<std::pair<ID, IGeometricObject *>> q;
     std::queue<std::pair<ID, RequirementData>> q2;
     while (std::getline(file, line)) {
         if (file.fail()) {
@@ -39,45 +35,45 @@ void FileOurP::parseFile(std::istream &file) {
                 req.params.push_back(param);
                 std::pair<ID, RequirementData> ll = {object_id, req};
                 requirements.emplace_back(ll);
-            } else if (type == "point") {
+            } else if (type == "Point") {
                 double x, y;
                 data >> x >> y;
-                point *p = new point;
+                Point *p = new Point;
                 p->x = x;
                 p->y = y;
-                std::pair<ID, primitive *> a = {object_id, p};
+                std::pair<ID, IGeometricObject *> a = {object_id, p};
                 if (q.size() == 2) {
                     objects.emplace_back(q.front());
                     q.pop();
                 }
                 q.push(a);
 
-            } else if (type == "section") {
+            } else if (type == "Section") {
                 if (q.size() != 2) {
                     throw std::runtime_error("Invalid file format. Check instruction on rules.md");
                 }
 
-                primitive *p1 = q.front().second;
+                IGeometricObject *p1 = q.front().second;
                 objects.emplace_back(q.front());
                 q.pop();
-                primitive *p2 = q.front().second;
+                IGeometricObject *p2 = q.front().second;
                 objects.emplace_back(q.front());
                 q.pop();
-                section *sec = new section;
-                sec->beg = dynamic_cast<point *>(p1);
-                sec->end = dynamic_cast<point *>(p2);
-                std::pair<ID, primitive *> a = {object_id, sec};
+                Section *sec = new Section;
+                sec->beg = dynamic_cast<Point *>(p1);
+                sec->end = dynamic_cast<Point *>(p2);
+                std::pair<ID, IGeometricObject *> a = {object_id, sec};
                 objects.emplace_back(a);
-            } else if (type == "circle") {
+            } else if (type == "Circle") {
                 double r;
                 data >> r;
-                primitive *center = q.front().second;
+                IGeometricObject *center = q.front().second;
                 objects.emplace_back(q.front());
                 q.pop();
-                circle *c = new circle;
-                c->center = dynamic_cast<point *>(center);
+                Circle *c = new Circle;
+                c->center = dynamic_cast<Point *>(center);
                 c->R = r;
-                std::pair<ID, primitive *> a = {object_id, c};
+                std::pair<ID, IGeometricObject *> a = {object_id, c};
                 objects.emplace_back(a);;
             }
         }
@@ -104,7 +100,7 @@ FileOurP &FileOurP::operator=(FileOurP &&other) noexcept {
     return *this;
 }
 
-void FileOurP::addObject(std::pair<ID, primitive *> &obj) {
+void FileOurP::addObject(std::pair<ID, IGeometricObject *> &obj) {
     m_objects.emplace_back(obj);
 }
 

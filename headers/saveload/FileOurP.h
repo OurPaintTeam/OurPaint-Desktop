@@ -27,7 +27,7 @@ public:
 
     FileOurP &operator=(FileOurP &&other) noexcept;
 
-    void addObject(std::pair<ID, primitive*> &obj);
+    void addObject(std::pair<ID, IGeometricObject*> &obj);
     void addRequirement(std::pair<ID, RequirementData> &req);
     void saveToOurP(const std::string &fileName) const;
 

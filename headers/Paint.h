@@ -1,21 +1,22 @@
 #ifndef OURPAINT_HEADERS_PAINT_H_
 #define OURPAINT_HEADERS_PAINT_H_
 
+#include <map>
+
 #include "BMPfile.h"
-#include "objects.h"
 #include "BMPpainter.h"
-#include "QTPainter.h"
-#include "Matrix.h"
+#include "Enums.h"
 #include "FileOurP.h"
-#include "LSMFORLMTask.h"
+#include "InheritanceGraph.h"
 #include "LMForTest.h"
+#include "LSMFORLMTask.h"
 #include "LSMTask.h"
 #include "LevenbergMarquardtSolver.h"
-#include "InheritanceGraph.h"
-#include "enums.h"
-#include "requirements.h"
+#include "Matrix.h"
+#include "Objects.h"
+#include "QTPainter.h"
+#include "Requirements.h"
 #include "UndoRedo.h"
-#include <map>
 
 // TODO
 #include "List.h"
@@ -45,14 +46,14 @@ class Paint {
     UndoRedo<ActionsInfo> c_undoRedo;
 
     // Point, Section, Circle ID-containers
-    std::map<ID, List<point>::iterator> m_pointIDs;
-    std::map<ID, List<section>::iterator> m_sectionIDs;
-    std::map<ID, List<circle>::iterator> m_circleIDs;
+    std::map<ID, List<Point>::iterator> m_pointIDs;
+    std::map<ID, List<Section>::iterator> m_sectionIDs;
+    std::map<ID, List<Circle>::iterator> m_circleIDs;
 
     // Point, Section, Circle containers
-    List<point> m_pointStorage;
-    List<section> m_sectionStorage;
-    List<circle> m_circleStorage;
+    List<Point> m_pointStorage;
+    List<Section> m_sectionStorage;
+    List<Circle> m_circleStorage;
 
     // Requirements ID-container
     std::map<ID, List<RequirementData>::iterator> m_reqIDs;
@@ -82,6 +83,8 @@ public:
         s_allFigures.y_1 = -10;
         s_allFigures.y_2 = 10;
     }
+
+    // нет деструктора
         
     // Addition elements by specifying their type and needed parameters
     ID addElement(const ElementData &ed);

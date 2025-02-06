@@ -1,10 +1,11 @@
 #ifndef OURPAINT_HEADERS_PAINTERS_BMPPAINTER_H_
 #define OURPAINT_HEADERS_PAINTERS_BMPPAINTER_H_
 
-#include "BMPfile.h"
-#include "objects.h"
-#include "Painter.h"
 #include <cmath>
+
+#include "BMPfile.h"
+#include "Objects.h"
+#include "Painter.h"
 
 class BMPpainter : public Painter{
     BMPfile c_file;
@@ -20,9 +21,9 @@ public:
     unsigned long long getHeight();
     void changeSize(const rectangle& allObjects);
 
-    void drawPoint(point pt, bool isWhite = false);
-    void drawSection(section sec, bool isWhite = false);
-    void drawCircle(circle c, bool isWhite = false);
+    void drawPoint(Point pt, bool isWhite = false);
+    void drawSection(Section sec, bool isWhite = false);
+    void drawCircle(Circle c, bool isWhite = false);
 
     void saveBMP(const char* filename="print.bmp");
 };
