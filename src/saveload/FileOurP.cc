@@ -35,7 +35,7 @@ void FileOurP::parseFile(std::istream &file) {
                 req.params.push_back(param);
                 std::pair<ID, RequirementData> ll = {object_id, req};
                 requirements.emplace_back(ll);
-            } else if (type == "Point") {
+            } else if (type == "point") {
                 double x, y;
                 data >> x >> y;
                 Point *p = new Point;
@@ -48,7 +48,7 @@ void FileOurP::parseFile(std::istream &file) {
                 }
                 q.push(a);
 
-            } else if (type == "Section") {
+            } else if (type == "section") {
                 if (q.size() != 2) {
                     throw std::runtime_error("Invalid file format. Check instruction on rules.md");
                 }
