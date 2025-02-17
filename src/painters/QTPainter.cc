@@ -182,8 +182,7 @@ bool QTPainter::moving(double x0, double y0, double x1, double y1) {
     double dx = x1 - x0;
     double dy = y1 - y0;
     double dist = sqrt(dx * dx + dy * dy);
-
-    if (dist > 7) {
+/*    if (dist > 7) {
         // Нормализуем вектор направления
         double unitX = dx / dist;
         double unitY = dy / dist;
@@ -194,8 +193,8 @@ bool QTPainter::moving(double x0, double y0, double x1, double y1) {
         x1 -= unitX * 7;
         y1 -= unitY * 7;
     }
-
-    double RANGE = 5.0;
+*/
+    double RANGE = 2.0;
 
     if (RANGE / scaling.getZoom() > 1.0) {
         RANGE /= scaling.getZoom();
@@ -210,7 +209,8 @@ bool QTPainter::moving(double x0, double y0, double x1, double y1) {
     double distance = distancePointToSection(mouseX, mouseY, x0, y0, x1, y1);
 
     if (distance <= RANGE) {
-        emit Move(ET_SECTION, x0, y0, x1, y1);
+        emit Move(ET_SECTION,x0, y0, x1, y1);
+        std::cout << x0 << " " << y0 << " " << x1 << " " << y1 << std::endl;
         return true;
     }
 
