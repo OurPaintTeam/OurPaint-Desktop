@@ -9,18 +9,11 @@
 #include "FileOurP.h"
 #include "InheritanceGraph.h"
 #include "LMForTest.h"
-#include "LSMFORLMTask.h"
-#include "LSMTask.h"
-#include "LevenbergMarquardtSolver.h"
-#include "Matrix.h"
 #include "Objects.h"
 #include "QTPainter.h"
 #include "Requirements.h"
 #include "UndoRedo.h"
-
-// TODO
-#include "List.h"
-//#include <list>
+#include <list>
 
 struct ElementData {
     Element et;
@@ -38,7 +31,7 @@ struct ActionsInfo{
 // c_ class
 // v_ variable
 // s_ structure
-// m_ containers(List, Array and other)
+// m_ containers(std::list, Array and other)
 // f_ private class method
 
 class Paint {
@@ -46,20 +39,20 @@ class Paint {
     UndoRedo<ActionsInfo> c_undoRedo;
 
     // Point, Section, Circle ID-containers
-    std::map<ID, List<Point>::iterator> m_pointIDs;
-    std::map<ID, List<Section>::iterator> m_sectionIDs;
-    std::map<ID, List<Circle>::iterator> m_circleIDs;
+    std::map<ID, std::list<Point>::iterator> m_pointIDs;
+    std::map<ID, std::list<Section>::iterator> m_sectionIDs;
+    std::map<ID, std::list<Circle>::iterator> m_circleIDs;
 
     // Point, Section, Circle containers
-    List<Point> m_pointStorage;
-    List<Section> m_sectionStorage;
-    List<Circle> m_circleStorage;
+    std::list<Point> m_pointStorage;
+    std::list<Section> m_sectionStorage;
+    std::list<Circle> m_circleStorage;
 
     // Requirements ID-container
-    std::map<ID, List<RequirementData>::iterator> m_reqIDs;
+    std::map<ID, std::list<RequirementData>::iterator> m_reqIDs;
 
     // Requirements container
-    List<RequirementData> m_reqStorage;
+    std::list<RequirementData> m_reqStorage;
 
     // BMP painting structure
     Painter* c_bmpPainter;

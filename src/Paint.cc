@@ -6,7 +6,8 @@ ElementData::ElementData() {
 
 ID Paint::addRequirement(const RequirementData &rd) {
     ActionsInfo info;
-    auto it = m_reqStorage.addElement(rd);
+    m_reqStorage.push_back(rd);
+    auto it = std::prev(m_reqStorage.end());
     // Update graph: add vertex and edges for new req
     for (const auto& obj : rd.objects) {
         m_graph.addVertex(obj);
@@ -29,7 +30,7 @@ ID Paint::addRequirement(const RequirementData &rd) {
 
     // Error for invalid input arguments
     } catch (const std::invalid_argument& i) {
-        m_reqStorage.remove(it);
+        m_reqStorage.erase(it);
         throw i;
 
     // If this is not possible, we will print a message that this not converged
@@ -176,7 +177,7 @@ void Paint::updateRequirement(ID id) {
                 // Update containers
                 auto it = m_pointIDs[r.objects[0]];
                 m_pointIDs[r.objects[0]] = m_pointIDs[r.objects[1]];
-                m_pointStorage.remove(it);
+                m_pointStorage.erase(it);
             } catch (...) {
                 throw std::invalid_argument("No such Point");
             }
@@ -338,7 +339,8 @@ ID Paint::addElement(const ElementData &ed) {
         tmp.x = ed.params[0];
         tmp.y = ed.params[1];
         s_allFigures = s_allFigures || tmp.rect();
-        m_pointIDs[++s_maxID.id] = m_pointStorage.addElement(tmp);
+        m_pointStorage.push_back(tmp);
+        m_pointIDs[++s_maxID.id] = std::prev(m_pointStorage.end());
         m_graph.addVertex(s_maxID);
         info.m_objects.push_back(s_maxID);
         info.m_paramsAfter.push_back(ed.params);
@@ -349,7 +351,8 @@ ID Paint::addElement(const ElementData &ed) {
         Point tmp1;
         tmp1.x = ed.params[0];
         tmp1.y = ed.params[1];
-        auto beg = m_pointStorage.addElement(tmp1);
+        m_pointStorage.push_back(tmp1);
+        auto beg = std::prev(m_pointStorage.end());
         m_pointIDs[++s_maxID.id] = beg;
         m_graph.addVertex(s_maxID);
         std::vector<double> params1;
@@ -360,7 +363,8 @@ ID Paint::addElement(const ElementData &ed) {
         Point tmp2;
         tmp2.x = ed.params[2];
         tmp2.y = ed.params[3];
-        auto end = m_pointStorage.addElement(tmp2);
+        m_pointStorage.push_back(tmp2);
+        auto end = std::prev(m_pointStorage.end());
         m_pointIDs[++s_maxID.id] = end;
         m_graph.addVertex(s_maxID);
         std::vector<double> params2;
@@ -372,7 +376,8 @@ ID Paint::addElement(const ElementData &ed) {
         tmp.beg = &(*beg);
         tmp.end = &(*end);
         s_allFigures = s_allFigures || tmp.rect();
-        m_sectionIDs[++s_maxID.id] = m_sectionStorage.addElement(tmp);
+        m_sectionStorage.push_back(tmp);
+        m_sectionIDs[++s_maxID.id] = std::prev(m_sectionStorage.end());
 
         m_graph.addVertex(s_maxID);
         RequirementData sectionReq;
@@ -397,7 +402,8 @@ ID Paint::addElement(const ElementData &ed) {
         params1.push_back(ed.params[0]);
         params1.push_back(ed.params[1]);
         info.m_paramsAfter.push_back(params1);
-        auto cent = m_pointStorage.addElement(center);
+        m_pointStorage.push_back(center);
+        auto cent = std::prev(m_pointStorage.end());
         m_pointIDs[++s_maxID.id] = cent;
 
         m_graph.addVertex(s_maxID);
@@ -407,7 +413,8 @@ ID Paint::addElement(const ElementData &ed) {
         tmp.center = &(*cent);
         tmp.R = ed.params[2];
         s_allFigures = s_allFigures || tmp.rect();
-        m_circleIDs[++s_maxID.id] = m_circleStorage.addElement(tmp);
+        m_circleStorage.push_back(tmp);
+        m_circleIDs[++s_maxID.id] = std::prev(m_circleStorage.end());
 
         // add vertexes and edge to graph
         m_graph.addVertex(s_maxID);
@@ -571,7 +578,7 @@ void Paint::deleteRequirement(ID req) {
     if (!m_reqIDs.contains(req)) {
         throw std::invalid_argument("No such requirement!");
     }
-    m_reqStorage.remove(m_reqIDs[req]);
+    m_reqStorage.erase(m_reqIDs[req]);
     m_reqIDs.erase(req);
 }
 
@@ -584,13 +591,13 @@ void Paint::undo() {
         int i = 0;
         while (!info.m_objects.empty()) {
             if (m_pointIDs.contains(info.m_objects[i])) {
-                m_pointStorage.remove(m_pointIDs[info.m_objects[i]]);
+                m_pointStorage.erase(m_pointIDs[info.m_objects[i]]);
                 m_pointIDs.erase(info.m_objects[i]);
             } else if (m_sectionIDs.contains(info.m_objects[i])) {
-                m_sectionStorage.remove(m_sectionIDs[info.m_objects[i]]);
+                m_sectionStorage.erase(m_sectionIDs[info.m_objects[i]]);
                 m_sectionIDs.erase(info.m_objects[i]);
             } else if (m_circleIDs.contains(info.m_objects[i])) {
-                m_circleStorage.remove(m_circleIDs[info.m_objects[i]]);
+                m_circleStorage.erase(m_circleIDs[info.m_objects[i]]);
                 m_circleIDs.erase(info.m_objects[i]);
             } else {
                 std::cout << "No ID to undo" << std::endl;
@@ -619,7 +626,7 @@ void Paint::undo() {
                     c->center->y = info.m_paramsBefore[i][1];
                 } catch (...) {
                     try{
-                        m_reqStorage.remove(m_reqIDs.at(info.m_objects[i]));
+                        m_reqStorage.erase(m_reqIDs.at(info.m_objects[i]));
                         m_reqIDs.erase(info.m_objects[i]);
                     } catch (...) {
                         std::cout << "No ID to redo" << std::endl;
@@ -641,34 +648,40 @@ void Paint::redo() {
             Point beg;
             beg.x = info.m_paramsAfter[0][0];
             beg.y = info.m_paramsAfter[0][1];
-            auto p1 = m_pointStorage.addElement(beg);
+            m_pointStorage.push_back(beg);
+            auto p1 = std::prev(m_pointStorage.end());
             m_pointIDs[info.m_objects[0]] = p1;
             Point end;
             end.x = info.m_paramsAfter[1][0];
             end.y = info.m_paramsAfter[1][1];
-            auto p2 = m_pointStorage.addElement(end);
+            m_pointStorage.push_back(end);
+            auto p2 = std::prev(m_pointStorage.end());
             m_pointIDs[info.m_objects[1]] = p2;
             Section sec;
             sec.beg = &(*(p1));
             sec.end = &(*(p2));
-            m_sectionIDs[info.m_objects[2]] = m_sectionStorage.addElement(sec);
+            m_sectionStorage.push_back(sec);
+            m_sectionIDs[info.m_objects[2]] = std::prev(m_sectionStorage.end());
             s_allFigures = s_allFigures || sec.rect();
         } else if (info.m_objects.size() == 2) {
             Point center;
             center.x = info.m_paramsAfter[0][0];
             center.y = info.m_paramsAfter[0][1];
             Circle circ;
-            auto p1 = m_pointStorage.addElement(center);
+            m_pointStorage.push_back(center);
+            auto p1 = std::prev(m_pointStorage.end());
             m_pointIDs[info.m_objects[0]] = p1;
             circ.center = &(*(p1));
             circ.R = info.m_paramsAfter[1][2];
-            m_circleIDs[info.m_objects[1]] = m_circleStorage.addElement(circ);
+            m_circleStorage.push_back(circ);
+            m_circleIDs[info.m_objects[1]] = std::prev(m_circleStorage.end());
             s_allFigures = s_allFigures || circ.rect();
         } else if (info.m_objects.size() == 1) {
             Point pt;
             pt.x = info.m_paramsAfter[0][0];
             pt.y = info.m_paramsAfter[0][1];
-            m_pointIDs[info.m_objects[0]] = m_pointStorage.addElement(pt);
+            m_pointStorage.push_back(pt);
+            m_pointIDs[info.m_objects[0]] = std::prev(m_pointStorage.end());
             s_allFigures = s_allFigures || pt.rect();
         }
         return;
@@ -730,14 +743,16 @@ void Paint::loadFromFile(const char *file) {
     for (const auto &i: loader.getObjects()) {
         if (i.to_pair().second->type() == ET_POINT) {
             Point *p = dynamic_cast<Point *>(i.to_pair().second);
-            m_pointIDs[i.to_pair().first] = m_pointStorage.addElement(*p);
+            m_pointStorage.push_back(*p);
+            m_pointIDs[i.to_pair().first] = std::prev(m_pointStorage.end());
             m_graph.addVertex(i.to_pair().first);
             s_allFigures = s_allFigures || p->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_CIRCLE) {
             Circle *c = dynamic_cast<Circle *>(i.to_pair().second);
             c->center = &(*m_pointIDs.at(i.to_pair().first.id - 1));
-            m_circleIDs[i.to_pair().first] = m_circleStorage.addElement(*c);
+            m_circleStorage.push_back(*c);
+            m_circleIDs[i.to_pair().first] = std::prev(m_circleStorage.end());
             RequirementData rd;
             rd.objects.push_back(i.to_pair().first.id - 1);
             rd.objects.push_back(i.to_pair().first);
@@ -749,7 +764,8 @@ void Paint::loadFromFile(const char *file) {
             Section *s = dynamic_cast<Section *>(i.to_pair().second);
             s->beg = &(*m_pointIDs.at(i.to_pair().first.id - 2));
             s->end = &(*m_pointIDs.at(i.to_pair().first.id - 1));
-            m_sectionIDs[i.to_pair().first] = m_sectionStorage.addElement(*s);
+            m_sectionStorage.push_back(*s);
+            m_sectionIDs[i.to_pair().first] = std::prev(m_sectionStorage.end());
             m_graph.addVertex(i.to_pair().first);
             RequirementData rd;
             rd.objects.push_back(i.to_pair().first.id - 2);
@@ -763,7 +779,8 @@ void Paint::loadFromFile(const char *file) {
         }
     }
     for (const auto &i: loader.getRequirements()) {
-        auto it = m_reqStorage.addElement(i.to_pair().second);
+        m_reqStorage.push_back(i.to_pair().second);
+        auto it = std::prev(m_reqStorage.end());
         m_reqIDs[i.to_pair().first] = it;
         m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
         s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
@@ -776,16 +793,16 @@ void Paint::clear() {
     m_circleIDs.clear();
     m_reqIDs.clear();
     for (auto i = m_reqStorage.begin(); i != m_reqStorage.end(); ++i) {
-        m_reqStorage.remove(i);
+        m_reqStorage.erase(i);
     }
     for (auto i = m_pointStorage.begin(); i != m_pointStorage.end(); ++i) {
-        m_pointStorage.remove(i);
+        m_pointStorage.erase(i);
     }
     for (auto i = m_sectionStorage.begin(); i != m_sectionStorage.end(); ++i) {
-        m_sectionStorage.remove(i);
+        m_sectionStorage.erase(i);
     }
     for (auto i = m_circleStorage.begin(); i != m_circleStorage.end(); ++i) {
-        m_circleStorage.remove(i);
+        m_circleStorage.erase(i);
     }
     s_allFigures = rectangle(10, 10, 10, 10);
     s_maxID = ID(0);
@@ -836,14 +853,16 @@ void Paint::loadFromString(const std::string &str) {
     for (const auto &i: loader.getObjects()) {
         if (i.to_pair().second->type() == ET_POINT) {
             Point *p = dynamic_cast<Point *>(i.to_pair().second);
-            m_pointIDs[i.to_pair().first] = m_pointStorage.addElement(*p);
+            m_pointStorage.push_back(*p);
+            m_pointIDs[i.to_pair().first] = std::prev(m_pointStorage.end());
             m_graph.addVertex(i.to_pair().first);
             s_allFigures = s_allFigures || p->rect();
             s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
         } else if (i.to_pair().second->type() == ET_CIRCLE) {
             Circle *c = dynamic_cast<Circle *>(i.to_pair().second);
             c->center = &(*m_pointIDs.at(i.to_pair().first.id - 1));
-            m_circleIDs[i.to_pair().first] = m_circleStorage.addElement(*c);
+            m_circleStorage.push_back(*c);
+            m_circleIDs[i.to_pair().first] = std::prev(m_circleStorage.end());
             RequirementData rd;
             rd.objects.push_back(i.to_pair().first.id - 1);
             rd.objects.push_back(i.to_pair().first);
@@ -855,7 +874,8 @@ void Paint::loadFromString(const std::string &str) {
             Section *s = dynamic_cast<Section *>(i.to_pair().second);
             s->beg = &(*m_pointIDs.at(i.to_pair().first.id - 2));
             s->end = &(*m_pointIDs.at(i.to_pair().first.id - 1));
-            m_sectionIDs[i.to_pair().first] = m_sectionStorage.addElement(*s);
+            m_sectionStorage.push_back(*s);
+            m_sectionIDs[i.to_pair().first] = std::prev(m_sectionStorage.end());
             m_graph.addVertex(i.to_pair().first);
             RequirementData rd;
             rd.objects.push_back(i.to_pair().first.id - 2);
@@ -869,7 +889,8 @@ void Paint::loadFromString(const std::string &str) {
         }
     }
     for (const auto &i: loader.getRequirements()) {
-        auto it = m_reqStorage.addElement(i.to_pair().second);
+        m_reqStorage.push_back(i.to_pair().second);
+        auto it = std::prev(m_reqStorage.end());
         m_reqIDs[i.to_pair().first] = it;
         m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
         s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
