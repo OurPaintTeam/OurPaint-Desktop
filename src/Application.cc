@@ -91,8 +91,12 @@ void Application::setupConnections() {
         QPointF XY = painter->MouseCoordinate();// <-трекер мышки
         double x=XY.x();
         double y=XY.y();
-        ID id = painter->getIdFigures();// <- id фигуры перемещения
-        screen.parallelMove(id,x,y);
+        try {
+            ID id = painter->getIdFigures();// <- id фигуры перемещения
+            screen.parallelMove(id,x,y);
+        } catch (const std::exception & e) {
+            w.showError(e.what());
+        }
 
     });
 
