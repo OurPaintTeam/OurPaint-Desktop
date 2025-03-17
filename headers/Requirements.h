@@ -46,6 +46,9 @@ public:
     virtual ErrorFunctions* getFunction() = 0;
     virtual std::vector<PARAMID> getParams() = 0;
     virtual rectangle getRectangle() = 0;
+    virtual ~IReq() {
+        delete c_f;
+    }
 };
 
 

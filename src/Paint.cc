@@ -296,15 +296,11 @@ void Paint::updateRequirement(ID id) {
     }
 
     // --------------------------- Main Optimizing and Computing Algorithm ---------------------------
-    LSMTask* task = new LSMTask(allFunctions, VarsStorage::getVars());
-    LMSolver solver(0.5, 2, 4, 1e-06, 1e-06, 10000);
+    LSMFORLMTask* task = new LSMFORLMTask(allFunctions, VarsStorage::getVars());
+    LevenbergMarquardtSolver solver(10000, 0.5, 2, 4, 1e-07, 1e-07);
     solver.setTask(task);
     solver.optimize();
     // -----------------------------------------------------------------------------------------------
-
-    delete task;
-
-    VarsStorage::clearVars();
 
     std::cout << "Requirement in component: " << countOfReq << std::endl;
 
@@ -317,6 +313,8 @@ void Paint::updateRequirement(ID id) {
         for (auto requirement: allRequirements) {
             delete requirement;
         }
+        delete task;
+        VarsStorage::clearVars();
         throw std::runtime_error("Not converged");
     }
 
@@ -329,6 +327,8 @@ void Paint::updateRequirement(ID id) {
     for (auto requirement: allRequirements) {
         delete requirement;
     }
+    delete task;
+    VarsStorage::clearVars();
 }
 
 ID Paint::addElement(const ElementData &ed) {
