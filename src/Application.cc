@@ -153,8 +153,7 @@ void Application::setupConnections() {
 
     QObject::connect(&w, &MainWindow::oneReqirements, [this]() {
         std::vector<ID> vec_id=painter->getVecID();
-        for (const auto &id : vec_id) {
-            qDebug() << id.id; }
+
     });
 
     QObject::connect(&w, &MainWindow::twoReqirements, [this]() {
@@ -183,8 +182,6 @@ void Application::setupConnections() {
 
     QObject::connect(&w, &MainWindow::eightReqirements, [this]() {
         std::vector<ID> vec_id=painter->getVecID();
-        for (const auto &id : vec_id) {
-            qDebug() << id.id; }
         if(!vec_id.empty()) {
             ID obj1 = vec_id[0];
             ID obj2 = vec_id[1];
@@ -354,7 +351,6 @@ void Application::setupConnections() {
         }
         bool ok = false;
         QStringList texts = text.split(':');
-        qDebug() << texts[1];
         texts[1].toUShort(&ok);
         if (!ok) {
             w.showError("Error! This is not valid port!");

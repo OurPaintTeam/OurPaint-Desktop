@@ -210,7 +210,6 @@ bool QTPainter::moving(double x0, double y0, double x1, double y1) {
 
     if (distance <= RANGE) {
         emit Move(ET_SECTION,x0, y0, x1, y1);
-        std::cout << x0 << " " << y0 << " " << x1 << " " << y1 << std::endl;
         return true;
     }
 
@@ -409,7 +408,6 @@ void QTPainter::drawSections(QPainter &painter) {
                 }
             }
         }
-        qDebug() << Shift;
 
         if (Shift) {
             if (id != 0) {
@@ -705,7 +703,6 @@ void QTPainter::drawCircles(QPainter &painter) {
                 }
             }
         }
-        qDebug() << Shift;
 
         if (Shift) {
             if (id != 0) {
