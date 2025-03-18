@@ -15,13 +15,23 @@ if (NOT TARGET gtest)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 endif()
+
+
 include_directories(../headers)
+include_directories(../Math/headers)
 enable_testing()
-set(SOURCES ../src/ID.cc ../src/Objects.cc)
+set(SOURCES ../src/ID.cc ../src/Objects.cc ../src/Requirements.cc ../Math/src/ErrorFunctions.cc
+    ../Math/src/Function.cc)
 #Test for ID
-add_executable(IDGTEST IDGTEST.cc ${SOURCES})
+add_executable(IDGTEST IDGTEST.cc ${SOURCES}
+        RequirementsGTEST.cc)
 target_link_libraries(IDGTEST GTest::gtest_main)
 #Test for objects
 add_executable(ObjectsGTEST ObjectsGTEST.cc ${SOURCES})
 target_link_libraries(ObjectsGTEST GTest::gtest_main)
-
+#Test for VarsStorage
+add_executable(VarsStorageGTEST VarsStorageGTEST.cc ${SOURCES})
+target_link_libraries(VarsStorageGTEST GTest::gtest_main)
+#Test for Requirement
+add_executable(RequirementsGTEST RequirementsGTEST.cc ${SOURCES})
+target_link_libraries(RequirementsGTEST GTest::gtest_main)
