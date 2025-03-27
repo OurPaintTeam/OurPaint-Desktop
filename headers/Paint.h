@@ -10,7 +10,6 @@
 #include "InheritanceGraph.h"
 #include "LMForTest.h"
 #include "Objects.h"
-//#include "QTPainter.h"
 #include "Requirements.h"
 #include "UndoRedo.h"
 #include <list>
