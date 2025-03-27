@@ -10,7 +10,7 @@
 #include "InheritanceGraph.h"
 #include "LMForTest.h"
 #include "Objects.h"
-#include "QTPainter.h"
+//#include "QTPainter.h"
 #include "Requirements.h"
 #include "UndoRedo.h"
 #include <list>
@@ -18,7 +18,6 @@
 struct ElementData {
     Element et;
     std::vector<double> params;
-    ElementData();
 };
 
 struct ActionsInfo{

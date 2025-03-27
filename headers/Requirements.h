@@ -23,7 +23,6 @@ struct RequirementData {
     Requirement req;
     std::vector<ID> objects;
     std::vector<double> params;
-    RequirementData();
 
     bool operator==(const RequirementData& other) const {
     return req == other.req

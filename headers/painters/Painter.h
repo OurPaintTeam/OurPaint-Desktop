@@ -13,6 +13,8 @@ public:
     virtual void drawPoint(Point pt, bool isWhite = false)=0;
     virtual void drawSection(Section sec, bool isWhite = false)=0;
     virtual void drawCircle(Circle c, bool isWhite = false)=0;
+
+    virtual ~Painter() = default;
 };
 
 

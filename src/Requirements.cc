@@ -23,11 +23,11 @@ Variable* VarsStorage::getVar(PARAMID id) {
 void VarsStorage::clearVars() {
     m_vars.clear();
 }
-
+/*
 RequirementData::RequirementData() {
     objects = std::vector<ID>();
     params = std::vector<double>();
-}
+}*/
 
 // 1
 ErrorFunctions* ReqPointSecDist::getFunction() {

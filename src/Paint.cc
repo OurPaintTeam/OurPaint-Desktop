@@ -1,9 +1,5 @@
 #include "Paint.h"
 
-ElementData::ElementData() {
-    params = std::vector<double>();
-}
-
 ID Paint::addRequirement(const RequirementData &rd) {
     ActionsInfo info;
     m_reqStorage.push_back(rd);
