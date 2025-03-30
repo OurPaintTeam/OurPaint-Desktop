@@ -470,7 +470,7 @@ void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, 
 
     itemFigure->setFlags(itemFigure->flags() | Qt::ItemIsEditable); // Для изменения имён
 
-    QIcon figureIcon("../Static/icons/Icon.ico");
+    static QIcon figureIcon("../Static/icons/Icon.ico");
     itemFigure->setIcon(0, figureIcon);
 
     itemFigures->addChild(itemFigure);
@@ -487,6 +487,7 @@ void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, 
     }
 
 
+    static QIcon paramIcon("../Static/icons/Database.ico");
     for (size_t i = 0; i < paramNames.size() && i < object.size() + 1; ++i) {
         QTreeWidgetItem *paramItem = new QTreeWidgetItem(itemFigure);
 
@@ -498,7 +499,6 @@ void MainWindow::Print_LeftMenu(unsigned long long id, const std::string &text, 
             paramItem->setFlags(paramItem->flags() | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         }
 
-        QIcon paramIcon("../Static/icons/Database.ico");
         paramItem->setIcon(0, paramIcon);
         if (paramNames[i] == "ID") {
             paramItem->setText(0, QString("%1: %2").arg(paramNames[i]).arg(id));

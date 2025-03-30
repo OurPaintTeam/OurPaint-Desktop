@@ -34,7 +34,7 @@ private:
     bool isServer;
 
     void updateState();
-    void handler(const QString &command);
+    bool handler(const QString &command);
 };
 
 #endif // ! OURPAINT_HEADERS_APPLICATION_H_

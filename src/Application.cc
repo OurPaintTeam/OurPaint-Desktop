@@ -368,6 +368,7 @@ void Application::setupConnections() {
     // Servers
     QObject::connect(&server, &Server::newCommandReceived, [&](const QString &cmd) {
         handler(cmd);
+        updateState();
         server.sendToClients(QString::fromStdString(screen.to_string()));
     });
     QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
@@ -408,13 +409,21 @@ void Application::setupConnections() {
         QStringList commandParts = command.split(' ');
         if (isConnected) {
             if (isServer) {
-                handler(command);
-                server.sendToClients(QString::fromStdString(screen.to_string()));
+                if (handler(command)) {
+                    updateState();
+                    server.sendToClients(QString::fromStdString(screen.to_string()));
+                } else {
+                    //throw std::invalid_argument("Error: invalid argument in console");
+                }
             } else {
                 client.sendCommandToServer(command);
             }
         } else {
-            handler(command);
+            if (handler(command)) {
+                updateState();
+            } else {
+                //throw std::invalid_argument("Error: invalid argument in console");
+            }
         }
     });
 
@@ -663,30 +672,33 @@ void Application::setupConnections() {
     QObject::connect(&w, &MainWindow::EmitScript, [&](const QString &fileName) {
         std::string File = fileName.toStdString();
 
-        std::ifstream Script(File);
-
-        // TODO logs
+        std::ifstream scriptFile(File);
+        if (!scriptFile) {
+            throw std::runtime_error("Error: Script file doesn't opened");
+        }
 
         // TODO UNDO/REDO
 
         std::string command;
-        while (std::getline(Script, command)) {
-            QString qCommand = QString::fromStdString(command);
-
-            // TODO logs
-
-            if (isConnected) {
-                if (isServer) {
-                    handler(qCommand);
-                    server.sendToClients(QString::fromStdString(screen.to_string()));
-                } else {
-                    client.sendCommandToServer(qCommand);
+        if (isConnected) {
+            if (isServer) {
+                while (std::getline(scriptFile, command)) {
+                    if (handler(QString::fromStdString(command))) {
+                        server.sendToClients(QString::fromStdString(screen.to_string()));
+                    }
                 }
+                updateState();
             } else {
-                handler(qCommand);
+                while (std::getline(scriptFile, command)) {
+                    client.sendCommandToServer(QString::fromStdString(command));
+                }
             }
+        } else {
+            while (std::getline(scriptFile, command)) {
+                handler(QString::fromStdString(command));
+            }
+            updateState();
         }
-
     });
 }
 
@@ -786,7 +798,7 @@ void Application::updateState() {
     }
 }
 
-void Application::handler(const QString &command) {
+bool Application::handler(const QString &command) {
     QStringList commandParts = command.split(' ');
     bool commandRight = false;
 
@@ -958,7 +970,5 @@ void Application::handler(const QString &command) {
             w.showError(e.what());
         }
     }
-    if (commandRight) {
-        updateState();
-    }
+    return commandRight;
 }
