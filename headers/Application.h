@@ -26,15 +26,14 @@ private:
 
     Server server;
     Client client;
+    bool isConnected;
+    bool isServer;
 
     void initialize();
     void setupConnections();
 
-    bool isConnected;
-    bool isServer;
-
     void updateState();
-    bool handler(const QString &command);
+    void handler(const QString &command);
 };
 
 #endif // ! OURPAINT_HEADERS_APPLICATION_H_

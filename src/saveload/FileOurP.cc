@@ -64,7 +64,7 @@ void FileOurP::parseFile(std::istream &file) {
                 sec->end = dynamic_cast<Point *>(p2);
                 std::pair<ID, IGeometricObject *> a = {object_id, sec};
                 objects.emplace_back(a);
-            } else if (type == "Circle") {
+            } else if (type == "circle") {
                 double r;
                 data >> r;
                 IGeometricObject *center = q.front().second;

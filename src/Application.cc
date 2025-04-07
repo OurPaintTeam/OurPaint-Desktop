@@ -368,7 +368,6 @@ void Application::setupConnections() {
     // Servers
     QObject::connect(&server, &Server::newCommandReceived, [&](const QString &cmd) {
         handler(cmd);
-        updateState();
         server.sendToClients(QString::fromStdString(screen.to_string()));
     });
     QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
@@ -406,24 +405,17 @@ void Application::setupConnections() {
 
     // Console
     QObject::connect(&w, &MainWindow::EnterPressed, [&](const QString &command) {
-        QStringList commandParts = command.split(' ');
+        //QStringList commandParts = command.split(' ');
         if (isConnected) {
             if (isServer) {
-                if (handler(command)) {
-                    updateState();
-                    server.sendToClients(QString::fromStdString(screen.to_string()));
-                } else {
-                    //throw std::invalid_argument("Error: invalid argument in console");
-                }
+                updateState();
+                server.sendToClients(QString::fromStdString(screen.to_string()));
             } else {
                 client.sendCommandToServer(command);
             }
         } else {
-            if (handler(command)) {
-                updateState();
-            } else {
-                //throw std::invalid_argument("Error: invalid argument in console");
-            }
+            handler(command);
+            updateState();
         }
     });
 
@@ -583,17 +575,6 @@ void Application::setupConnections() {
     });
 
     // Save/Load
-    QObject::connect(&w, &MainWindow::saveBMP, [this](const QString &fileName) {
-        try {
-            screen.exportToBMP(fileName.toStdString().c_str());
-            w.showSuccess("Saved to " + fileName);
-        } catch (std::exception &e) {
-            w.showWarning(e.what());
-        }
-    });
-    QObject::connect(&w, &MainWindow::loadBMP, [&](const QString &fileName) {
-
-    });
     QObject::connect(&w, &MainWindow::projectSaved, [this](const QString &fileName) {
         std::string File = fileName.toStdString();
         auto [figures, requirements, settings, name] = w.saveSettings();
@@ -664,9 +645,17 @@ void Application::setupConnections() {
             }
         }
 
-
         w.loadSettings(settings, NameUsers);
-
+    });
+    QObject::connect(&w, &MainWindow::saveBMP, [this](const QString &fileName) {
+        try {
+            screen.exportToBMP(fileName.toStdString().c_str());
+            w.showSuccess("Saved to " + fileName);
+        } catch (std::exception &e) {
+            w.showWarning(e.what());
+        }
+    });
+    QObject::connect(&w, &MainWindow::loadBMP, [&](const QString &fileName) {
 
     });
     QObject::connect(&w, &MainWindow::EmitScript, [&](const QString &fileName) {
@@ -683,9 +672,8 @@ void Application::setupConnections() {
         if (isConnected) {
             if (isServer) {
                 while (std::getline(scriptFile, command)) {
-                    if (handler(QString::fromStdString(command))) {
-                        server.sendToClients(QString::fromStdString(screen.to_string()));
-                    }
+                    handler(QString::fromStdString(command));
+                    server.sendToClients(QString::fromStdString(screen.to_string()));
                 }
                 updateState();
             } else {
@@ -710,8 +698,12 @@ void Application::updateState() {
     w.Print_LeftMenu(0, "Clear", {});
     std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
 
-    for (auto element: elements) {
+    int i{};
+    for (const auto& element: elements) {
         std::string name;
+
+        ++i;
+        qDebug() << i << '\n';
 
         for (int i = 0; i < figures.size(); ++i) {
             if (element.first.id == figures[i][1].toLongLong()) {
@@ -798,7 +790,7 @@ void Application::updateState() {
     }
 }
 
-bool Application::handler(const QString &command) {
+void Application::handler(const QString &command) {
     QStringList commandParts = command.split(' ');
     bool commandRight = false;
 
@@ -970,5 +962,4 @@ bool Application::handler(const QString &command) {
             w.showError(e.what());
         }
     }
-    return commandRight;
 }
