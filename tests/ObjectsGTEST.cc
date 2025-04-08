@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "Objects.h"
+#include "GeometricObjects.h"
 
 TEST(PointTest, RectMethod) {
     Point p;

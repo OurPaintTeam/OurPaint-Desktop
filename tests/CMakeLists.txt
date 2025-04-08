@@ -21,12 +21,12 @@ endif()
 include_directories(../headers)
 include_directories(../Math/headers)
 enable_testing()
-set(SOURCES ../src/ID.cc ../src/Objects.cc ../src/Requirements.cc ../Math/src/ErrorFunctions.cc
+set(SOURCES ../src/ID.cc ../src/GeometricObjects.cc ../src/Requirements.cc ../Math/src/ErrorFunctions.cc
         ../Math/src/Function.cc
         ../src/Paint.cc
         ../src/BMPfile.cc
         ../src/painters/BMPpainter.cc
-        ../src/Objects.cc
+        ../src/GeometricObjects.cc
         ../src/Requirements.cc
         ../src/ID.cc
         ../src/saveload/objectInFile.cc

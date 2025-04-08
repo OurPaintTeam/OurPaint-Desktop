@@ -9,7 +9,7 @@
 #include "FileOurP.h"
 #include "InheritanceGraph.h"
 #include "LMForTest.h"
-#include "Objects.h"
+#include "GeometricObjects.h"
 #include "Requirements.h"
 #include "UndoRedo.h"
 #include <list>
@@ -83,8 +83,6 @@ public:
     // Addition requirement
     ID addRequirement(const RequirementData &rd);
     void updateRequirement(ID id);
-
-    ID mergePointsIntoNew(ID v1, ID v2);
 
     // Get information about object
     ElementData getElementInfo(ID id);

@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include "BMPfile.h"
-#include "Objects.h"
+#include "GeometricObjects.h"
 #include "Painter.h"
 
 class BMPpainter : public Painter{

@@ -1,7 +1,7 @@
 #ifndef OURPAINT_HEADERS_PAINTERS_PAINTER_H_
 #define OURPAINT_HEADERS_PAINTERS_PAINTER_H_
 
-#include "Objects.h"
+#include "GeometricObjects.h"
 
 class Painter {
 

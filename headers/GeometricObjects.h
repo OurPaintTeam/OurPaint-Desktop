@@ -15,8 +15,6 @@ struct rectangle {
     rectangle operator||(const rectangle &r);
 };
 
-
-
 struct IGeometricObject {
 public:
     virtual rectangle rect() = 0;
@@ -30,9 +28,7 @@ struct Point : public IGeometricObject {
     double y;
 
     rectangle rect() override;
-    inline Element type(){
-        return ET_POINT;
-    }
+    inline Element type() override;
 };
 
 std::ifstream &operator>>(std::ifstream &in, Point &x);
@@ -42,9 +38,7 @@ struct Section : public IGeometricObject {
     Point *end;
 
     rectangle rect() override;
-    inline Element type(){
-        return ET_SECTION;
-    }
+    inline Element type() override;
 };
 
 struct Circle : public IGeometricObject {
@@ -52,9 +46,7 @@ struct Circle : public IGeometricObject {
     double R;
 
     rectangle rect() override;
-    inline Element type(){
-        return ET_CIRCLE;
-    }
+    inline Element type() override;
 };
 
 #endif // ! OURPAINT_HEADERS_OBJECTS_H_

@@ -698,12 +698,8 @@ void Application::updateState() {
     w.Print_LeftMenu(0, "Clear", {});
     std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
 
-    int i{};
     for (const auto& element: elements) {
         std::string name;
-
-        ++i;
-        qDebug() << i << '\n';
 
         for (int i = 0; i < figures.size(); ++i) {
             if (element.first.id == figures[i][1].toLongLong()) {

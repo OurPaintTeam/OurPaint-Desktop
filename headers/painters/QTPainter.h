@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "DrawMode.h"
-#include "Objects.h"
+#include "GeometricObjects.h"
 #include "Paint.h"
 #include "Scaling.h"
 #include "mainwindow.h"

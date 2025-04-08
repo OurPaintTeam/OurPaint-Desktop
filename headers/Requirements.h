@@ -8,7 +8,7 @@
 
 #include "Enums.h"
 #include "ErrorFunctions.h"
-#include "Objects.h"
+#include "GeometricObjects.h"
 
 class VarsStorage{
     static std::map<PARAMID, Variable*> m_vars;
