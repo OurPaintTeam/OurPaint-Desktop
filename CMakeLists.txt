@@ -37,11 +37,20 @@ add_executable(ourpaint
         src/painters/BMPpainter.cc
         src/painters/QTPainter.cc
 
+        src/GUI/ClosesPoint.cc
+        src/GUI/DrawAddirionalInf.cc
+        src/GUI/DrawBackgrond.cc
+        src/GUI/DrawFigures.cc
+        src/GUI/Modes.cc
+        src/GUI/MouseEventWorkWindow.cc
         src/GUI/Mainwindow.cc
+        src/GUI/LeftMenuBar.cc
         src/GUI/FrameOverlay.cc
         src/GUI/CastomeConsole.cc
         src/GUI/SmileRightClickFilter.cc
         src/GUI/EmojiWidget.cc
+        src/GUI/DrawMouse.cc
+        src/GUI/KeyWorkWindow.cc
 
         src/GUI/Windows/Help.cc
 
@@ -80,6 +89,12 @@ add_executable(ourpaint
         headers/GUI/Windows/SaveDialog.h
         headers/GUI/Windows/ui_help.h
         headers/GUI/DrawMode.h
+        headers/GUI/KeyEventToolPanel.h
+        headers/GUI/GlobalEventFilter.h
+        headers/GUI/KeyEventCollapsedPanel.h
+        headers/GUI/KeyTopBar.h
+        headers/GUI/LeftMenuBar.h
+        headers/GUI/KeyWorkWindow.h
 
         headers/GUI/CastomeConsole.h
         headers/GUI/EmojiWidget.h
