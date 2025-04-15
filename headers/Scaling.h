@@ -1,63 +1,119 @@
 #ifndef SCALING_H
 #define SCALING_H
 
-#include <QWidget>
-#include <QPoint>
+
 #include <algorithm>
 #include <cmath>
+#include <vector>
+#include <QVector>
+#include <immintrin.h>
+#include "GUI/control/Modes.h"
+#include "shell/objects.h"
+#include "List.h"
 
 class Scaling {
 private:
-    double scale;           // Коэффициент при сужении окна
-    double width_;          // Начальная ширина окна
-    double height_;         // Начальная высота окна
-    double zoom;            // Увеличение
-    bool usersResize;       // Флаг масштабирования от пользователя
-    int deltaX;             // Перемещение по оси X
-    int deltaY;             // Перемещение по оси Y
-    QPoint lastMousePos;    // Предыдущее положение мыши
-    bool rightMousePressed; // Флаг нажатия правой кнопки мыши
+    static double scale;      // Scale factor for window resizing
+    static double zoom;       // Zoom level
+    static bool usersResize;  // Flag for user resizing
+
+    struct Delta {
+        static double X;        // Movement along the X axis
+        static double Y;        // Movement along the Y axis
+    };
+    static Delta delta;
+
+    struct LastMousePos {
+        static int x;
+        static int y;
+    };
+    static LastMousePos lastMouse;
+
+    struct StartMonitorSize {
+        static short int width_;     // Initial width of the window
+        static short int height_;    // Initial height of the window
+    };
+    static StartMonitorSize startDisplaySize;
+
+    struct CenteredCoordinates {
+        static double CenteredCoordinatesX;
+        static double CenteredCoordinatesY;
+    };
+    static CenteredCoordinates centeredDisplay;
+
+    struct Display {
+        static short int width;
+        static int short height;
+    };
+    static Display monitor;
+
+    struct Cursor {
+        static int x;
+        static int y;
+    };
+    static Cursor cursor;
+
 
 public:
-    Scaling(double width, double height);
+    struct ScaledCircle {
+        int x, y, radius;
+    };
 
-    double scaleCoordinate(double X);
-    double scaleCoordinateX(double X);
-    double scaleCoordinateY(double Y);
-    double logic(double X);
-    double logicX(double X);
-    double logicY(double Y);
-    void scaling(int widgetWidth, int widgetHeight,std::vector<double> size);
+    // Methods to get various properties of the scaling and window size
+    static short int getStartWidth();
+    static short int getStartHeight();
 
-    void setZoomPlus(double maxZoom);
+    static short int getDisplayCoordinateX();
+    static short int getDisplayCoordinateY();
+    static double getCenteredCoordinatesX();
+    static double getCenteredCoordinatesY();
+    static void setDisplayCoordinateX(int x);
+    static void  setDisplayCoordinateY(int y);
 
-    void setZoomMinus();
+    static void updateScaling();
+    static void setStartSize(short int x, short int y);
+    static void setActualSize(int x, int y);
 
-    void getUsers(bool var){usersResize=var;}
+    static double scaleCoordinate(double X);
+    static double scaleCoordinateX(double X);
+    static double scaleCoordinateY(double Y);
+    static double logicInt(int X);
+    static double logicXInt(int X);
+    static double logicYInt(int Y);
+    static double logicDouble(double X);
+    static double logicXDouble(double X);
+    static double logicYDouble(double Y);
 
-    void setZoomZero();
+    static void scaling(int widgetWidth, int widgetHeight, const std::vector<double>& size);
+    static void setZoomPlus();
+    static void setZoomMinus();
+    static void setZoomZero();
+    static void setDelta(double dx, double dy);
+    static void setDeltaX(double X);
+    static void setDeltaY(double Y);
+    static void setCursor(int x, int y);
+    static void setLastMouse(int x,int y);
 
-    double getScale() const;
+    static double getScale();
+    static double getZoom();
+    static double getDeltaX();
+    static double getDeltaY();
+    static int getCursorX();
+    static int getCursorY();
 
-    double getZoom() const;
+    static void startMousePress(int x, int y);
+    static void mouseMove();
+    static void resetUsersResize();
+    static int getCursorDeltaX();
+    static int getCursorDeltaY();
+    static int centedX(double X);
+    static int centedY(double Y);
+    static double logicCursorX();
+    static double logicCursorY();
 
-    int getDeltaX() const;
-
-    int getDeltaY() const;
-
-    void setDelta(int dx, int dy);
-
-    void startMousePress(const QPoint& pos);
-
-    void mouseMove(const QPoint& pos);
-
-    void endMousePress();
-
-    bool isRightMousePressed() const;
-
-    bool isUsersResize() const;
-
-    void resetUsersResize();
+    // Метод для масштабирования круга
+    static QVector<ScaledCircle> scaleVectorCircle(const List<circle>& c);
+    static QVector<ScaledCircle> scaleVectorCircleSIMD(const List<circle>& c);
 };
 
 #endif // SCALING_H
