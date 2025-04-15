@@ -73,7 +73,12 @@ void Application::setupConnections() {
 
         ID id = painter->getIdFigures();// <- id фигуры перемещения
 
-        screen.parallelMove(id, Cx, Cy, dx, dy);
+        try {
+            screen.parallelMove(id, Cx, Cy, dx, dy);
+        } catch (const std::exception &a) {
+            // если не прошло 20 мс не выполняй функцию
+            w.showError("Zheny kosyk ");
+        }
 
         updateState();
 
