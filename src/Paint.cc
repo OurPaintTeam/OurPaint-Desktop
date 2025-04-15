@@ -299,13 +299,13 @@ void Paint::updateRequirement(ID id) {
     solver.optimize();
     // -----------------------------------------------------------------------------------------------
 
-    std::cout << "Requirement in component: " << countOfReq << std::endl;
+   // std::cout << "Requirement in component: " << countOfReq << std::endl;
 
     // Check converging
     if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
-        for (const auto &req: allRequirements) {
+        /*for (const auto &req: allRequirements) {
             s_allFigures = s_allFigures || req->getRectangle();
-        }
+        }*/
         // Clear
         for (auto requirement: allRequirements) {
             delete requirement;
@@ -316,9 +316,10 @@ void Paint::updateRequirement(ID id) {
     }
 
     // Rectangle
+    /*
     for (const auto &req: allRequirements) {
         s_allFigures = s_allFigures || req->getRectangle();
-    }
+    }*/
 
     // Clear
     for (auto requirement: allRequirements) {
@@ -467,7 +468,11 @@ RequirementData Paint::getRequirementInfo(ID id) {
 }
 
 void Paint::paint() {
-    c_bmpPainter->changeSize(s_allFigures);
+    c_bmpPainter->drawPointt(m_pointStorage);
+    c_bmpPainter->drawCirclee(m_circleStorage);
+    c_bmpPainter->drawSectionn(m_sectionStorage);
+
+  /*  c_bmpPainter->changeSize(s_allFigures);
     for (auto &Point: m_pointStorage) {
         c_bmpPainter->drawPoint(Point, false);
     }
@@ -476,7 +481,7 @@ void Paint::paint() {
     }
     for (auto &Section: m_sectionStorage) {
         c_bmpPainter->drawSection(Section, false);
-    }
+    }*/
 }
 
 ID Paint::findElement(const ElementData &ed) {
