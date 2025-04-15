@@ -95,6 +95,7 @@ add_executable(ourpaint
         headers/GUI/KeyTopBar.h
         headers/GUI/LeftMenuBar.h
         headers/GUI/KeyWorkWindow.h
+        headers/GUI/DrawMouse.h
 
         headers/GUI/CastomeConsole.h
         headers/GUI/EmojiWidget.h
