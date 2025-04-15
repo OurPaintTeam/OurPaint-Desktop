@@ -1,6 +1,6 @@
-#include "GUI/filterEvent/MouseEventWorkWindow.h"
-#include "GUI/control/Modes.h"
-#include "GUI/control/scaling.h"
+#include "MouseEventWorkWindow.h"
+#include "Modes.h"
+#include "Scaling.h"
 
 MouseWorkWindow::MouseWorkWindow(QWidget *parent)
         : QObject(parent), m_parent(parent) {
