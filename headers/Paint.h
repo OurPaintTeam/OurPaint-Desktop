@@ -122,6 +122,7 @@ public:
     void redo();
 
     void paint();
+    void LeftMenuMove(ID id, const std::vector<double> &parametrs);
 };
 
 #endif // ! OURPAINT_HEADERS_PAINT_H_

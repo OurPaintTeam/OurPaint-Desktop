@@ -977,3 +977,36 @@ std::vector<std::pair<ID, RequirementData>> Paint::getAllRequirementsInfo() {
     return data;
 }
 
+void Paint::LeftMenuMove(ID id,const std::vector<double> &parametrs) {
+    if (parametrs.empty()) {
+        return;
+    }
+    if (m_pointIDs.contains(id)) {
+        Point *p = &(*m_pointIDs.at(id));
+        if(parametrs.size()==2) {
+            p->x = parametrs[0];
+            p->y = parametrs[1];
+        }
+        updateRequirement(id);
+    } else if (m_sectionIDs.contains(id)) {
+        Section *s = &(*m_sectionIDs.at(id));
+        if(parametrs.size()==4) {
+            s->beg->x = parametrs[0];
+            s->beg->y = parametrs[1];
+            s->end->x = parametrs[2];
+            s->end->y = parametrs[3];
+        }
+        updateRequirement(id);
+
+    } else if (m_circleIDs.contains(id)) {
+        Circle *c = &(*m_circleIDs.at(id));
+        if(parametrs.size()==3) {
+            c->center->x =parametrs[0];
+            c->center->y =parametrs[1];
+            c->R=parametrs[2];
+        }
+        updateRequirement(id);
+    }else{
+        throw std::invalid_argument("No such element!");
+    }
+}
