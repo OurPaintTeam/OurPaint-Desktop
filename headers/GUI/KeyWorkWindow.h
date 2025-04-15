@@ -5,8 +5,8 @@
 #include <QWidget>
 #include <QKeyEvent>
 #include <QPushButton>
-#include "GUI/control/Modes.h"
-#include "GUI/control/scaling.h"
+#include "Modes.h"
+#include "Scaling.h"
 
 class KeyWorkWindow : public QObject
 {
