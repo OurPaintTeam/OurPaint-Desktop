@@ -6,11 +6,11 @@
 #include <QPainter>
 #include <cmath>
 #include <qDebug>
-#include "scaling.h"
-#include "drawAdditionalInf.h"
-#include "drawFigures.h"
+#include "Scaling.h"
+#include "DrawAdditionalInf.h"
+#include "DrawFigures.h"
 
-class drawMouse : public QObject {
+class DrawMouse : public QObject {
 Q_OBJECT
 //  Класс для отрисовки мышью
 // Добавлены подсказки по ближайшим точкам
@@ -50,19 +50,19 @@ private:
     }
 
     static void drawPreviewSection(QPainter &painter, const QPointF &start, const QPointF &end) {
-        drawFigures::setPen(QPen(hintColor()));
-        drawFigures::drawSection(painter, start, end, false);
+        DrawFigures::setPen(QPen(hintColor()));
+        DrawFigures::drawSection(painter, start, end, false);
     }
 
 public:
-    explicit drawMouse(QObject *parent = nullptr)
+    explicit DrawMouse(QObject *parent = nullptr)
             : QObject(parent), drawingInProgress(false), tabPressCount(0) {}
 
     static double snapAngle(double angle) {
         return std::round(angle / 45.0) * 45.0;
     }
 
-    void drawFiguresMouse(QPainter &painter) {
+    void DrawFiguresMouse(QPainter &painter) {
 
         painter.setPen(Qt::black);
 
@@ -80,8 +80,8 @@ public:
         bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 
         if (modePoint && !leftClick) {
-            drawFigures::setPen(hintColor());
-            drawFigures::drawPoint(painter, Cursor, false);
+            DrawFigures::setPen(hintColor());
+            DrawFigures::drawPoint(painter, Cursor, false);
         }
 
         if (leftClick) {
@@ -137,11 +137,11 @@ public:
                 double centerY = (startCoordinates.y() + cursorY) / 2;
                 double radius = std::hypot(startCoordinates.x() - centerX, startCoordinates.y() - centerY);
 
-                drawFigures::drawCircle(painter, QPointF(centerX, centerY), radius, false);
-                drawFigures::drawPoint(painter, QPointF(centerX, centerY), false);
+                DrawFigures::drawCircle(painter, QPointF(centerX, centerY), radius, false);
+                DrawFigures::drawPoint(painter, QPointF(centerX, centerY), false);
 
-                drawFigures::setPen(hintColor());
-                drawFigures::drawSection(painter, QPointF(centerX, centerY), QPointF(cursorX, cursorY), false);
+                DrawFigures::setPen(hintColor());
+                DrawFigures::drawSection(painter, QPointF(centerX, centerY), QPointF(cursorX, cursorY), false);
 
             } else if (modeSection) {
                 drawSections(painter, startCoordinates);
@@ -159,9 +159,9 @@ public:
 
         if (shiftPressed) {
             QPointF snapped = getSnappedPoint(startCoordinates, Cursor);
-            drawFigures::drawSection(painter, startCoordinates, snapped.toPoint(), false);
+            DrawFigures::drawSection(painter, startCoordinates, snapped.toPoint(), false);
         } else {
-            drawFigures::drawSection(painter, startCoordinates, Cursor, false);
+            DrawFigures::drawSection(painter, startCoordinates, Cursor, false);
         }
     }
 
