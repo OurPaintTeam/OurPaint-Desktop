@@ -29,7 +29,7 @@ include_directories(headers/GUI/Windows)
 add_executable(ourpaint
         main.cc
         src/Paint.cc
-        src/Objects.cc
+        src/GeometricObjects.cc
         src/Requirements.cc
         src/Scaling.cc
         src/ID.cc
@@ -60,7 +60,7 @@ add_executable(ourpaint
         src/BMPfile.cc
 
         headers/Enums.h
-        headers/Objects.h
+        headers/GeometricObjects.h
         headers/Paint.h
         headers/Requirements.h
         headers/Scaling.h
@@ -101,7 +101,7 @@ add_executable(ourpaint
         headers/Application.h
         headers/UndoRedo.h
         headers/BMPfile.h
-        )
+)
 
 
 include_directories(math/headers)
@@ -119,6 +119,6 @@ target_link_libraries(ourpaint
         Qt6::Widgets
         Qt6::Network
         Eigen3::Eigen
-        )
+)
 
 target_link_libraries(ourpaint Math)
