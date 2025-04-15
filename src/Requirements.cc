@@ -21,6 +21,9 @@ Variable* VarsStorage::getVar(PARAMID id) {
 }
 
 void VarsStorage::clearVars() {
+    for (auto var : m_vars) {
+        delete var.second;
+    }
     m_vars.clear();
 }
 /*
@@ -160,7 +163,7 @@ ReqSecCircleDist::ReqSecCircleDist(Section* s, Circle* c, double dist) {
     Variable* xc = VarsStorage::addVar(&c->center->x);
     Variable* yc = VarsStorage::addVar(&c->center->y);
     Variable* r = VarsStorage::addVar(&c->R);
-    c_f = new SectionCircleDistanceError({x1->clone(), y1->clone(), x2->clone(), y2->clone(), xc->clone(), yc->clone(), r->clone()}, v_dist);
+    c_f = new SectionCircleDistanceError({x1, y1, x2, y2, xc, yc, r}, v_dist);
 }
 ErrorFunctions* ReqSecCircleDist::getFunction() {
     return c_f;
