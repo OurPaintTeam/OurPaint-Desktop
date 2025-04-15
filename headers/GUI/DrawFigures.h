@@ -6,10 +6,11 @@
 #include <QElapsedTimer>
 #include <QPainterPath>
 #include <QGraphicsEllipseItem>
+#include <list>
 
-#include "scaling.h"
-#include "drawAdditionalInf.h"
-#include "objects.h"
+#include "Scaling.h"
+#include "DrawAdditionalInf.h"
+#include "GeometricObjects.h"
 
 // Класс для отрисовки фигур
 // Преобразует координаты с учётом масштабирования и инвертированной оси Y,
@@ -24,8 +25,8 @@ public:
     }
 
     // Функция для отрисовки точек
-    static void drawPoint(QPainter &painter, const List<point> &points) {
-        if (points.getSize() == 0) return;
+    static void drawPoint(QPainter &painter, const std::list<Point> &points) {
+        if (points.size() == 0) return;
 
         // Настройка кисти и отключение обводки
         QBrush pointBrush = (QColor(Qt::black));
@@ -42,8 +43,8 @@ public:
     }
 
     // Функция для отрисовки кругов
-    static void drawCircle(QPainter &painter, const List<circle> &circles) {
-        if (circles.getSize() == 0) return;
+    static void drawCircle(QPainter &painter, const std::list<Circle> &circles) {
+        if (circles.size() == 0) return;
 
         // Настройка пера для рисования кругов
         QPen currentPen = QColor(Qt::black);
@@ -64,8 +65,8 @@ public:
     }
 
     // Функция для отрисовки сечений (линий)
-    static void drawSection(QPainter &painter, const List<section> &sections) {
-        if (sections.getSize() == 0) return;
+    static void drawSection(QPainter &painter, const std::list<Section> &sections) {
+        if (sections.size() == 0) return;
 
         painter.setRenderHint(QPainter::Antialiasing);  // Включаем сглаживание
         QPen currentPen = QPen(Qt::black);
