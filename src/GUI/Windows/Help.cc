@@ -1,5 +1,5 @@
 #include <QTextBlock>
-#include "help.h"
+#include "Help.h"
 
 Help::Help(QWidget *parent) :
         QMainWindow(parent),

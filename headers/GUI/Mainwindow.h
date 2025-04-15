@@ -19,7 +19,7 @@
 #include <QScreen>
 #include <QGestureEvent>
 
-#include "help.h"
+#include "Help.h"
 #include "CastomeWindowError.h"
 #include "CastomeWindowSuccessful.h"
 #include "CastomeWindowWarning.h"

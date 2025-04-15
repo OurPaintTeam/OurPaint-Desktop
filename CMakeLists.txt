@@ -43,7 +43,7 @@ add_executable(ourpaint
         src/GUI/SmileRightClickFilter.cc
         src/GUI/EmojiWidget.cc
 
-        src/GUI/Windows/help.cc
+        src/GUI/Windows/Help.cc
 
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
@@ -74,7 +74,7 @@ add_executable(ourpaint
         headers/GUI/Windows/CastomeWindowError.h
         headers/GUI/Windows/CastomeWindowWarning.h
         headers/GUI/Windows/CastomeWindowSuccessful.h
-        headers/GUI/Windows/help.h
+        headers/GUI/Windows/Help.h
         headers/GUI/Windows/CastomeIpListWindow.h
         headers/GUI/Windows/WindowServer.h
         headers/GUI/Windows/SaveDialog.h
