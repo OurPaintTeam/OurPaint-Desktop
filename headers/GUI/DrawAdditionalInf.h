@@ -1,11 +1,11 @@
 #ifndef OURPAINT_DRAWADDITIONALINF_H
 #define OURPAINT_DRAWADDITIONALINF_H
 #include <QPainter>
-#include "scaling.h"
+#include "Scaling.h"
 
 // Класс для отрисовки доп информации (обводки, цифр)
 
-class drawAdditionalInf {
+class DrawAdditionalInf {
     static unsigned long long id; // айди для вывода
     static unsigned long long LeftMenuID;
 public:
@@ -18,7 +18,7 @@ public:
         id = ID;
     }
 
-    explicit drawAdditionalInf() = default;
+    explicit DrawAdditionalInf() = default;
     static void drawCoordinateLabels(QPainter &painter, const std::vector<QPointF> &pointXR,const std::vector<QPointF> &pointXL,const std::vector<QPointF> &pointYU,const std::vector<QPointF> &pointYD) {
 
         // Устанавливаем фиксированный размер шрифта для текста
