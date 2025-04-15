@@ -146,8 +146,12 @@ void Application::setupConnections() {
                          double X1 = x1;
                          double Y1 = y1;
                          elem.params = {X, Y, X1, Y1};
-                         ID id = screen.findElement(elem);
-                         painter->setIdFigures(id.id);
+                         try {
+                             ID id = screen.findElement(elem);
+                             painter->setIdFigures(id.id);
+                         } catch (const std::exception & e) {
+                             w.showError(e.what());
+                         }
                          if (painter->getDoubleClick()) {
                              //  w.FocusOnItemById(1);
                              //подсветка левого меню по айди
