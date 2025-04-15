@@ -1,15 +1,19 @@
-#ifndef OURPAINT_HEADERS_GUI_RIGHTCLICKFILTER_H_
-#define OURPAINT_HEADERS_GUI_RIGHTCLICKFILTER_H_
+#ifndef OURPAINT_SMILERIGHTCLICKFILTER_H
+#define OURPAINT_SMILERIGHTCLICKFILTER_H
 
 #include <QMouseEvent>
-class RightClickFilter : public QObject {
-    Q_OBJECT
+
+class SmileRightClickFilter : public QObject {
+Q_OBJECT
+
+// Используется для отслеживания нажатий правой кнопки мыши для открытия смайликов в диалоге
 
 public:
-    RightClickFilter(QObject *parent = nullptr) : QObject(parent) {}
+    SmileRightClickFilter(QObject *parent = nullptr) : QObject(parent) {}
 
-    signals:
-            void rightClicked(QObject *obj);
+signals:
+
+    void rightClicked(QObject *obj);
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override {
@@ -23,4 +27,5 @@ protected:
         return QObject::eventFilter(obj, event);
     }
 };
-#endif // ! OURPAINT_HEADERS_GUI_RIGHTCLICKFILTER_H_
+
+#endif //OURPAINT_SMILERIGHTCLICKFILTER_H
