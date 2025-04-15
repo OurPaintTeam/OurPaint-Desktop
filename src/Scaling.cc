@@ -1,7 +1,7 @@
 #include <QPointF>
-#include "GUI/control/scaling.h"
-#include "shell/objects.h"
-#include "List.h"
+#include "Scaling.h"
+#include "GeometricObjects.h"
+
 
 // Static member initializations
 double Scaling::scale = 1.0;

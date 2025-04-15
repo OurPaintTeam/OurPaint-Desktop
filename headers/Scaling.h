@@ -7,9 +7,9 @@
 #include <vector>
 #include <QVector>
 #include <immintrin.h>
-#include "GUI/control/Modes.h"
-#include "shell/objects.h"
-#include "List.h"
+#include "Modes.h"
+#include "GeometricObjects.h"
+#include <list>
 
 class Scaling {
 private:
@@ -112,8 +112,8 @@ public:
     static double logicCursorY();
 
     // Метод для масштабирования круга
-    static QVector<ScaledCircle> scaleVectorCircle(const List<circle>& c);
-    static QVector<ScaledCircle> scaleVectorCircleSIMD(const List<circle>& c);
+    static QVector<ScaledCircle> scaleVectorCircle(const std::list<Circle>& c);
+    static QVector<ScaledCircle> scaleVectorCircleSIMD(const std::list<Circle>& c);
 };
 
 #endif // SCALING_H
