@@ -11,24 +11,25 @@
 #include <QMessageBox>
 #include <QThread>
 #include <QtConcurrent/QtConcurrent>
+#include <list>
 
-#include "objects.h"
+#include "GeometricObjects.h"
 #include "Painter.h"
-#include "scaling.h"
-#include "drawAdditionalInf.h"
-#include "drawFigures.h"
+#include "Scaling.h"
+#include "DrawAdditionalInf.h"
+#include "DrawFigures.h"
 #include "ClosesPoint.h"
-#include "drawBackground.h"
-#include "drawMouse.h"
+#include "DrawBackground.h"
+#include "DrawMouse.h"
 
 class QTPainter : public QFrame, public Painter {
 Q_OBJECT
 
 private:
     // Актуальные обьеткы
-    std::vector<point> points;
-    std::vector<circle> circles;
-    std::vector<section> sections;
+    std::vector<Point> points;
+    std::vector<Circle> circles;
+    std::vector<Section> sections;
 
 
     //  Выделенные обьекты
@@ -36,9 +37,9 @@ private:
     std::vector<ID> selectedIdCircle;
     std::vector<ID> selectedIdSection;
 
-    const List<point>* pointStorage ;
-    const List<circle>* circleStorage ;
-    const List<section>* sectionStorage ;
+    const std::list<Point>* pointStorage ;
+    const std::list<Circle>* circleStorage ;
+    const std::list<Section>* sectionStorage ;
 
     std::vector<double> LeftMenuElem; // Элемент левого меню
 
@@ -99,13 +100,13 @@ public:
         drawAdditionalInf::setLeftMenuID(IDselected);
     }
 
-    void emitId(Element type, const point& p) {
+    void emitId(Element type, const Point& p) {
         emit getIdFigure(type, p.x, p.y);
     }
-    void emitId(Element type, const section& s) {
+    void emitId(Element type, const Section& s) {
         emit getIdFigure(type, s.beg->x, s.beg->y, s.end->x, s.end->y);
     }
-    void emitId(Element type, const circle& c) {
+    void emitId(Element type, const Circle& c) {
         emit getIdFigure(type, c.center->x, c.center->y, c.R);
     }
 
@@ -122,30 +123,30 @@ protected:
         return Scaling::getDisplayCoordinateY();
     }
 
-    void drawPointt(const List<point>& p) override {
+    void drawPointt(const std::list<Point>& p) override {
         pointStorage = &p;
     }
 
-    void drawCirclee(const List<circle>& c) override {
+    void drawCirclee(const std::list<Circle>& c) override {
         circleStorage = &c;
     }
 
-    void drawSectionn(const List<section>& s) override {
+    void drawSectionn(const std::list<Section>& s) override {
         sectionStorage = &s;
     }
 
     // Для отрисовки точек
-    void drawPoint(point pt, bool isWhite) override {
+    void drawPoint(Point pt, bool isWhite) override {
         points.push_back(pt);
     }
 
     // Для отрисовки кругов
-    void drawCircle(circle c, bool isWhite) override {
+    void drawCircle(Circle c, bool isWhite) override {
         circles.push_back(c);
     }
 
     // Для отрисовки линий
-    void drawSection(section sec, bool isWhite) override {
+    void drawSection(Section sec, bool isWhite) override {
         sections.push_back(sec);
     }
 

@@ -88,7 +88,7 @@ void QTPainter::selectedClear() {
 void QTPainter::drawingFigures(QPainter &painter) {
 
     // Обработка точек
-    if (pointStorage != nullptr && pointStorage->getSize() > 0)
+    if (pointStorage != nullptr && pointStorage->size() > 0)
         for (auto &pt: *pointStorage) {
             bool isSelected = false;
 
@@ -124,7 +124,7 @@ void QTPainter::drawingFigures(QPainter &painter) {
 
 
     // Аналогично отрезки
-    if (sectionStorage != nullptr && sectionStorage->getSize() > 0)
+    if (sectionStorage != nullptr && sectionStorage->size() > 0)
         for (auto &sec: *sectionStorage) {
 
             if (selectedIdSection.empty() && LeftMenuElem.size() != 4) {
@@ -159,7 +159,7 @@ void QTPainter::drawingFigures(QPainter &painter) {
         }
 
     // Аналогично круги
-    if (sectionStorage != nullptr && circleStorage->getSize() > 0)
+    if (sectionStorage != nullptr && circleStorage->size() > 0)
         for (auto &c: *circleStorage) {
 
             bool isSelected = false;
@@ -207,7 +207,7 @@ bool QTPainter::findClosesObject() {
             bool Delete = true; // Если не находим нужный обьект(курсор был нажат в пустой области) - очищаем выделение
 
             // Обработка точек
-            if (pointStorage != nullptr && pointStorage->getSize() > 0)
+            if (pointStorage != nullptr && pointStorage->size() > 0)
                 for (auto &pt: *pointStorage) {
 
                     bool near = ClosesPoint::checkFigure(pt.x,pt.y); // Функция сравнения координат курсора и обьекта
@@ -252,7 +252,7 @@ bool QTPainter::findClosesObject() {
 
             if (flag) {
                 // Если не нашли аналогично обработаем отрезки
-                if (sectionStorage != nullptr && sectionStorage->getSize() > 0)
+                if (sectionStorage != nullptr && sectionStorage->size() > 0)
                     for (auto &sec: *sectionStorage) {
 
                         bool near = ClosesPoint::checkFigure(sec.beg->x, sec.beg->y, sec.end->x, sec.end->y);
@@ -293,7 +293,7 @@ bool QTPainter::findClosesObject() {
 
             if (flag) {
                 // Аналогично
-                if (circleStorage != nullptr && circleStorage->getSize() > 0)
+                if (circleStorage != nullptr && circleStorage->size() > 0)
                     for (auto &c: *circleStorage) {
                         bool near = ClosesPoint::checkFigure(c.center->x, c.center->y, c.R);
 
@@ -429,7 +429,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
             drawFigM.drawFiguresMouse(painter);
 
-            if (pointStorage != nullptr && pointStorage->getSize() > 0) {
+            if (pointStorage != nullptr && pointStorage->size() > 0) {
                 QPointF closes = ClosesPoint::findClosestPoint(*pointStorage); // Ищем ближайшие точки
                 drawFigM.drawHints(painter, closes);
             }
@@ -444,15 +444,15 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     // Выделение
     if (ModeManager::getActiveMode(WorkModes::Editor)) {
         if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
-            if (circleStorage != nullptr && circleStorage->getSize() > 0 ||
-                sectionStorage != nullptr && sectionStorage->getSize() > 0 ||
-                pointStorage != nullptr && pointStorage->getSize() > 0)
+            if (circleStorage != nullptr && circleStorage->size() > 0 ||
+                sectionStorage != nullptr && sectionStorage->size() > 0 ||
+                pointStorage != nullptr && pointStorage->size() > 0)
                 findClosesObject();
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
             id = 0;
-            if (circleStorage != nullptr && circleStorage->getSize() > 0 ||
-                sectionStorage != nullptr && sectionStorage->getSize() > 0 ||
-                pointStorage != nullptr && pointStorage->getSize() > 0)
+            if (circleStorage != nullptr && circleStorage->size() > 0 ||
+                sectionStorage != nullptr && sectionStorage->size() > 0 ||
+                pointStorage != nullptr && pointStorage->size() > 0)
                 findClosesObject();
 
             if (id != 0) {
@@ -467,9 +467,9 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             if (IDmove.id != 0) {
                 emit MovingFigures(); // Даем сигнал перемещения
             } else {
-                if (circleStorage != nullptr && circleStorage->getSize() > 0 ||
-                    sectionStorage != nullptr && sectionStorage->getSize() > 0 ||
-                    pointStorage != nullptr && pointStorage->getSize() > 0)
+                if (circleStorage != nullptr && circleStorage->size() > 0 ||
+                    sectionStorage != nullptr && sectionStorage->size() > 0 ||
+                    pointStorage != nullptr && pointStorage->size() > 0)
                     if( findClosesObject()) {
                         IDmove = id;
                         selectedClear();
