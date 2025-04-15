@@ -13,8 +13,8 @@ class ClosesPoint {
 public:
 
     // Функция поиска ближайшей точки
-    static QPointF findClosestPoint(const List<point> &points) {
-        if (points.getSize()>0) {
+    static QPointF findClosestPoint(const std::list<Point> &points) {
+        if (points.size()>0) {
             QPointF closest;
             double minDistance = std::numeric_limits<float>::max();
 
