@@ -15,7 +15,7 @@
 // Класс для отрисовки фигур
 // Преобразует координаты с учётом масштабирования и инвертированной оси Y,
 // а также использует дополнительные функции для выделения объектов.
-class drawFigures {
+class DrawFigures {
     static QPen MyColor;  // Статическая переменная для хранения текущего цвета кисти
 
 public:
@@ -80,7 +80,7 @@ public:
             QPointF end(sec.end->x*Scaling::getZoom(), -sec.end->y*Scaling::getZoom());
             painter.drawLine(start, end);
             // Если нужно, можно включить дополнительные элементы для рисования
-            drawAdditionalInf::drawCoordinateLine(painter, start, end);
+            DrawAdditionalInf::drawCoordinateLine(painter, start, end);
         }
 
         MyColor = QPen(Qt::black);  // Сброс цвета
@@ -94,8 +94,8 @@ public:
         // Если точка выбрана, рисуем дополнительные элементы (например, подсветку)
         QPointF logicPoint((point.x()*Scaling::getZoom()), (-point.y()*Scaling::getZoom()));
         if (selected) {
-            drawAdditionalInf::drawPointID(painter, logicPoint);
-            drawAdditionalInf::drawPointGlow(painter, logicPoint);
+            DrawAdditionalInf::drawPointID(painter, logicPoint);
+            DrawAdditionalInf::drawPointGlow(painter, logicPoint);
         }
 
         // Устанавливаем кисть для рисования точки
@@ -126,11 +126,11 @@ public:
 
         // Если круг выбран, рисуем дополнительные элементы
         if (selected) {
-            drawAdditionalInf::drawCircleID(painter, logicCenter, scaledRadius);
-            drawAdditionalInf::drawCircleGlow(painter, logicCenter, scaledRadius);
+            DrawAdditionalInf::drawCircleID(painter, logicCenter, scaledRadius);
+            DrawAdditionalInf::drawCircleGlow(painter, logicCenter, scaledRadius);
         } else if (currentPen.color() == QColor(Qt::red)) {
             currentPen.setWidth(2);
-            drawAdditionalInf::drawCircleLeftID(painter, logicCenter, scaledRadius);
+            DrawAdditionalInf::drawCircleLeftID(painter, logicCenter, scaledRadius);
         }
 
         // Отрисовываем круг
@@ -158,14 +158,14 @@ public:
         painter.setPen(currentPen);
 
         // Рисуем дополнительные элементы для линии (например, координатные линии)
-        drawAdditionalInf::drawCoordinateLine(painter, start, endLogic);
+        DrawAdditionalInf::drawCoordinateLine(painter, start, endLogic);
 
         // Если линия выбрана, рисуем дополнительные элементы
         if (selected) {
-            drawAdditionalInf::drawSectionID(painter, start, endLogic);
-            drawAdditionalInf::drawSectionGlow(painter, start, endLogic);
+            DrawAdditionalInf::drawSectionID(painter, start, endLogic);
+            DrawAdditionalInf::drawSectionGlow(painter, start, endLogic);
         } else if (MyColor.color() == QColor(Qt::red)) {
-            drawAdditionalInf::drawSectionLeftID(painter, start, endLogic);
+            DrawAdditionalInf::drawSectionLeftID(painter, start, endLogic);
         }
 
         MyColor = QPen(Qt::black);  // Сброс цвета
