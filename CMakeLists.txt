@@ -40,7 +40,7 @@ add_executable(ourpaint
         src/GUI/mainwindow.cc
         src/GUI/FrameOverlay.cc
         src/GUI/CastomeConsole.cc
-        src/GUI/RightClickFilter.cc
+        src/GUI/SmileRightClickFilter.cc
         src/GUI/EmojiWidget.cc
 
         src/GUI/Windows/help.cc
@@ -85,7 +85,7 @@ add_executable(ourpaint
         headers/GUI/EmojiWidget.h
         headers/GUI/FrameOverlay.h
         headers/GUI/mainwindow.h
-        headers/GUI/RightClickFilter.h
+        headers/GUI/SmileRightClickFilter.h
         headers/GUI/ui_mainwindow.h
 
         headers/painters/Painter.h
