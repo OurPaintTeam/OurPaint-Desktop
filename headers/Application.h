@@ -1,5 +1,5 @@
-#ifndef OURPAINT_HEADERS_APPLICATION_H_
-#define OURPAINT_HEADERS_APPLICATION_H_
+#ifndef APPLICATION_H
+#define APPLICATION_H
 
 #include <QTranslator>
 #include <QPixmap>
@@ -9,31 +9,35 @@
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
-#include "DrawMode.h"
 
 class Application {
 public:
+
     Application(int &argc, char **argv);
+
     int exec();
 
 private:
     QApplication app;
-    MainWindow w;
     std::unique_ptr<QTPainter> painter;
+    MainWindow w;
     Paint screen;
 
     QString username;
 
     Server server;
     Client client;
+
+    void initialize();
+
+    void setupConnections();
+
     bool isConnected;
     bool isServer;
 
-    void initialize();
-    void setupConnections();
-
     void updateState();
+
     void handler(const QString &command);
 };
 
-#endif // ! OURPAINT_HEADERS_APPLICATION_H_
+#endif // APPLICATION_H
