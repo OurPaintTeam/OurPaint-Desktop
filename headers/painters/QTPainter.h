@@ -1,186 +1,177 @@
-#ifndef OURPAINT_HEADERS_PAINTERS_QTPAINTER_H_
-#define OURPAINT_HEADERS_PAINTERS_QTPAINTER_H_
+#ifndef QTPAINTER_H
+#define QTPAINTER_H
 
-#include <QFrame>
-#include <QPaintEvent>
 #include <QPainter>
+#include <QPdfWriter>
 #include <QWidget>
+#include <QPaintEvent>
+#include <QFrame>
 #include <vector>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QThread>
+#include <QtConcurrent/QtConcurrent>
 
-#include "DrawMode.h"
-#include "GeometricObjects.h"
-#include "Paint.h"
-#include "Scaling.h"
-#include "mainwindow.h"
+#include "objects.h"
+#include "Painter.h"
+#include "scaling.h"
+#include "drawAdditionalInf.h"
+#include "drawFigures.h"
+#include "ClosesPoint.h"
+#include "drawBackground.h"
+#include "drawMouse.h"
 
 class QTPainter : public QFrame, public Painter {
 Q_OBJECT
 
 private:
-    Ui::MainWindow *ui;
-    std::vector<Point> points;
-    std::vector<Circle> circles;
-    std::vector<Section> sections;
-    std::vector<Point> ReqieredPoints;
-    std::vector<Circle> ReqieredCircles;
-    std::vector<Section> ReqieredSections;
-    std::vector<ID> vec_id;
-    Scaling scaling; // Масштабирование
-
-    ID id; // Айди фигуры
-    const int CellSize;    // Изначальный размер клетки при отрисовке
-    const int maxCellSize; // Максимальный размер клетки при масштабировании
-    const int minCellSize; // Минимальный размер клетки при масштабировании
-    int currentCellSize;   // Текущий размер клетки
-    int cursorX; // Координаты курсора
-    int currentCursorX;
-    int currentCursorY;
-    int cursorY;
-    int tab;
-    bool CellView;         // Флаг отрисовки сетки
-    bool editor; // Обычный режим
-    bool Circle_;
-    bool Section_;
-    bool Point_;
-    bool Drawing; // Режим отрисовки за курсором после одного клика
-    bool leftClick;
-    bool leftDoubleClick;
-    bool Shift;
-    bool Moving; // Режим перемещения
-    bool ReleaseLeftClick; // Отпускание левой кноки
-    QPoint centerPoint; // Координаты центра круга
-    QPoint perimeterPoint; // Для круга
-    QPoint sectionStartPoint;
-    QPoint sectionEndPoint;
-    QPointF closestPoint; // Крайние точки
-    QPointF closestPointNext;
+    // Актуальные обьеткы
+    std::vector<point> points;
+    std::vector<circle> circles;
+    std::vector<section> sections;
 
 
+    //  Выделенные обьекты
+    std::vector<ID> selectedIdPoint;
+    std::vector<ID> selectedIdCircle;
+    std::vector<ID> selectedIdSection;
+
+    const List<point>* pointStorage ;
+    const List<circle>* circleStorage ;
+    const List<section>* sectionStorage ;
+
+    std::vector<double> LeftMenuElem; // Элемент левого меню
+
+    drawMouse drawFigM;  // Класс для отрисовки мышкой
+
+    ID id; // Айди фигуры выделения
+    ID IDmove; // Айди фигуры перемещения
+
+    std::chrono::steady_clock::time_point lastClickTime;
 
 public:
-    void drawExp(QPainter &painter);
-    QTPainter(Ui::MainWindow *ui, QWidget *parent);
 
-    QPointF MouseCoordinate();
+    QTPainter(QWidget *parent);
 
-    void setIdFigures(ID ID) { if (id == 0)id = ID; }
+    void draw(); // Обновляет экран отрисовки
 
-    ID getIdFigures() { return id; }
+    void clear(); // Очистка экрана и приводит все параметры к базовым
 
-    std::vector<ID> getVecID() { return vec_id; }
+    void figureDelete(); // Удаление данных о фигурах
 
-    void setCircle(bool T) { Circle_ = T; }
+    void setIdFigures(ID Id); // Присвоение айди выделенной фигуры
 
-    void setSection(bool T) { Section_ = T; }
+    ID getIdFigures(); // Получение айди фигуры перемещения
 
-    void setPoint(bool T) { Point_ = T; }
+    std::vector<ID> getVecID(); // Получение вектора айди для требований
 
-    void setMoving(bool T) { Moving = T; }
+    void selectedClear();  // Очистка данных выделенных обьектов
 
-    void setMode(DrawMode mode);
+    void drawingFigures(QPainter &painter); // Отрисовка всех фигур, дополняется отрисовкой выделений
 
-    void setEditor(bool T) { editor = T; }
+    bool findClosesObject(); // Функция проверки курсора мышки и обьекта
 
-    void setZoomPlus();
+    void saveToImage(const QString &format); // Функция сохранения изображения в указанный формат
 
-    void setZoomMinus();
+    // Обработка сигналов если была отрисовка мышкой
+    void onSigPoint(double x, double y) {
+        emit SigPoint(x, y);
+    }
 
-    void setZoomZero();
+    void onSigCircle(double x, double y, double r) {
+        emit SigCircle(x, y, r);
+    }
 
-    bool getDoubleClick() { return leftDoubleClick; }
+    void onSigSection(double x, double y, double x1, double y1) {
+        emit SigSection(x, y, x1, y1);
+    }
 
-    void getUsers(bool var) { scaling.getUsers(var); }
+    void selectedElemByID(std::vector<double> &parameters,unsigned long long int IDselected){
+        if(!LeftMenuElem.empty()){
+            LeftMenuElem.clear();
+        }
 
-    bool moving(double x, double y); // Проверяем координаты фигуры с координатами курсора
-    bool moving(double x0, double y0, double r);
+        if(parameters.size()>4 || parameters.size()==0 || IDselected==0){
+            return;
+        }
 
-    bool moving(double x1, double y1, double x2, double y2);
+        LeftMenuElem=parameters;
+        drawAdditionalInf::setLeftMenuID(IDselected);
+    }
 
-    double distancePointToSection(double px, double py, double x0, double y0, double x1,
-                                  double y1); // Вспомогательная функция
-
-    // Функция включения сетки
-    void setCell(bool On_Off);
-
-    void draw();
-
-    void clear(); // Очистка
-
-    void drawBackground(QPainter &painter); // Отрисовка фона
-    void drawPoints(QPainter &painter); // Отрисовка фигур
-    void drawCircles(QPainter &painter); // Отрисовка фигур
-    void drawSections(QPainter &painter); // Отрисовка фигур
-    void drawHints(QPainter &painter);
-    void drawMouse(QPainter &painter); // Отрисовка мышью
-    void drawCoordinateLine(QPainter &painter, double BegX, double BegY, double EndX, double EndY);
-
-    std::vector<double> FindMaxMin(); // Поиск крайних точек
-
-    QPointF findPoint(); // Ближайшие точки к курсору
+    void emitId(Element type, const point& p) {
+        emit getIdFigure(type, p.x, p.y);
+    }
+    void emitId(Element type, const section& s) {
+        emit getIdFigure(type, s.beg->x, s.beg->y, s.end->x, s.end->y);
+    }
+    void emitId(Element type, const circle& c) {
+        emit getIdFigure(type, c.center->x, c.center->y, c.R);
+    }
 
 
 protected:
+    // При выходе за границы мы масштабируем
+    void changeSize(const rectangle &allObjects) override {}
+
+    unsigned long long getWeight() override {
+        return Scaling::getDisplayCoordinateX();
+    }
+
+    unsigned long long getHeight() override {
+        return Scaling::getDisplayCoordinateY();
+    }
+
+    void drawPointt(const List<point>& p) override {
+        pointStorage = &p;
+    }
+
+    void drawCirclee(const List<circle>& c) override {
+        circleStorage = &c;
+    }
+
+    void drawSectionn(const List<section>& s) override {
+        sectionStorage = &s;
+    }
+
+    // Для отрисовки точек
+    void drawPoint(point pt, bool isWhite) override {
+        points.push_back(pt);
+    }
+
+    // Для отрисовки кругов
+    void drawCircle(circle c, bool isWhite) override {
+        circles.push_back(c);
+    }
+
+    // Для отрисовки линий
+    void drawSection(section sec, bool isWhite) override {
+        sections.push_back(sec);
+    }
+
+    // Функция для изменения размеров окна
     void resizeEvent(QResizeEvent *event)
     override;
 
-    void drawPoint(struct Point pt, bool isWhite = false)
-    override;
-
-    void drawCircle(struct Circle c, bool isWhite = false)
-    override;
-
-    void drawSection(struct Section sec, bool isWhite = false)
-    override;
 
     void paintEvent(QPaintEvent *event)
-    override; // Отрисовка
+    override; // Стартовая точка для отрисовки всего холста
 
-    void changeSize(const rectangle &allObjects)
-    override;
-
-    unsigned long long getWeight()
-    override;
-
-    unsigned long long getHeight()
-    override;
-
-    void mousePressEvent(QMouseEvent *event)
-    override;
-
-    void mouseMoveEvent(QMouseEvent *event)
-    override;
-
-    void mouseReleaseEvent(QMouseEvent *event)
-    override;
-
-    void mouseDoubleClickEvent(QMouseEvent *event)
-    override;
-
-    void keyPressEvent(QKeyEvent *event)
-    override;
-
-    void keyReleaseEvent(QKeyEvent *event)
-    override;
-    
 signals:
+// Это невалидные сигналы. Сигналы не должны иметь реализацию
+    void MovingFigures(); // При перемещении
 
-    void RightPress(); // Нажатие правой кнопки мыши
+    // При отрисовке мышкой
+    void SigPoint(double x, double y);
+    void SigCircle(double x, double y, double r);
+    void SigSection(double x, double y, double x1, double y1);
 
-    // Сигналы для отрисовки мышкой
-    void SigPoint(QPoint Position);
+    // При выделении
+    void getIdFigure(Element F, double x, double y);
+    void getIdFigure(Element F, double x, double y, double r);
+    void getIdFigure(Element F, double x, double y, double x1, double y1);
 
-    void SigCircle(QPoint centerPoint, int radius);
-
-    void SigSection(double startX, double startY, double endX, double endY);
-
-    // Сигналы для перемещения
-    void Move(Element F, double x, double y);
-
-    void Move(Element F, double x, double y, double r);
-
-    void Move(Element F, double x, double y, double x1, double y1);
-
-    void MovingFigures();
+    void DoubleClickOnObject(ID id);
 
 private slots:
 
@@ -190,4 +181,4 @@ private slots:
 };
 
 
-#endif // OURPAINT_HEADERS_PAINTERS_QTPAINTER_H_
+#endif // QTPAINTER_H
