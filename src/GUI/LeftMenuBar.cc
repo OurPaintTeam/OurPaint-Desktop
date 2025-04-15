@@ -1,4 +1,4 @@
-#include "GUI/widgets/LeftMenuBar.h"
+#include "LeftMenuBar.h"
 
 LeftMenuBar::LeftMenuBar(QTreeWidget *leftMenu) : menu(leftMenu) {
     connect(menu, &QTreeWidget::itemChanged, this, &LeftMenuBar::LeftMenuChanged);
