@@ -1,5 +1,5 @@
 #include <bitset>
-#include "GUI/control/Modes.h"
+#include "Modes.h"
 
 // Инициализация статических переменных
 std::bitset<static_cast<size_t>(WorkModes::Editor) + 1> ModeManager::workModes{
