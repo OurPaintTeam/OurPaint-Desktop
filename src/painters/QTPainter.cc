@@ -10,9 +10,9 @@ QTPainter::QTPainter(QWidget *parent) : QFrame(parent) {
         connect(parent->window(), SIGNAL(resized()), this, SLOT(onWorkWindowResized()));
 
         // Ловим сигналы от рисования мышкой
-        connect(&drawFigM, &drawMouse::SigPoint, this, &QTPainter::onSigPoint);
-        connect(&drawFigM, &drawMouse::SigSection, this, &QTPainter::onSigSection);
-        connect(&drawFigM, &drawMouse::SigCircle, this, &QTPainter::onSigCircle);
+        connect(&drawFigM, &DrawMouse::SigPoint, this, &QTPainter::onSigPoint);
+        connect(&drawFigM, &DrawMouse::SigSection, this, &QTPainter::onSigSection);
+        connect(&drawFigM, &DrawMouse::SigCircle, this, &QTPainter::onSigCircle);
     }
 
     // Установим стили
@@ -40,8 +40,8 @@ void QTPainter::clear() {
     Scaling::setZoomZero();
     selectedClear();
     LeftMenuElem.clear();
-    drawAdditionalInf::setLeftMenuID(0);
-    drawAdditionalInf::setID(0);
+    DrawAdditionalInf::setLeftMenuID(0);
+    DrawAdditionalInf::setID(0);
     id = 0;
 }
 
@@ -93,7 +93,7 @@ void QTPainter::drawingFigures(QPainter &painter) {
             bool isSelected = false;
 
             if (selectedIdPoint.empty() && LeftMenuElem.size() != 2) {
-                drawFigures::drawPoint(painter, *pointStorage);
+                DrawFigures::drawPoint(painter, *pointStorage);
                 break;
             }
 
@@ -105,7 +105,7 @@ void QTPainter::drawingFigures(QPainter &painter) {
 
 
                 if (isSelected) {
-                    drawAdditionalInf::setID(id.id); // Отрисовка айди
+                    DrawAdditionalInf::setID(id.id); // Отрисовка айди
                 }
 
             }
@@ -114,11 +114,11 @@ void QTPainter::drawingFigures(QPainter &painter) {
                 if (std::abs(pt.x - LeftMenuElem[0]) < 1e-5 &&
                     std::abs(pt.y - LeftMenuElem[1]) < 1e-5) {
 
-                    drawFigures::setPen(QColor(Qt::red));
+                    DrawFigures::setPen(QColor(Qt::red));
                 }
             }
 
-            drawFigures::drawPoint(painter, QPointF(pt.x, pt.y), isSelected);
+            DrawFigures::drawPoint(painter, QPointF(pt.x, pt.y), isSelected);
 
         }
 
@@ -128,7 +128,7 @@ void QTPainter::drawingFigures(QPainter &painter) {
         for (auto &sec: *sectionStorage) {
 
             if (selectedIdSection.empty() && LeftMenuElem.size() != 4) {
-                drawFigures::drawSection(painter, *sectionStorage);
+                DrawFigures::drawSection(painter, *sectionStorage);
 
                 break;
             }
@@ -142,18 +142,18 @@ void QTPainter::drawingFigures(QPainter &painter) {
 
 
                 if (isSelected) {
-                    drawAdditionalInf::setID(id.id); // Отрисовка айди
+                    DrawAdditionalInf::setID(id.id); // Отрисовка айди
                 }
             }
 
             if (LeftMenuElem.size() == 4) {
                 if (std::abs(sec.beg->x - LeftMenuElem[0]) < 1e-3 && std::abs(sec.beg->y - LeftMenuElem[1]) < 1e-3 &&
                     std::abs(sec.end->x - LeftMenuElem[2]) < 1e-3 && std::abs(sec.end->y - LeftMenuElem[3]) < 1e-3) {
-                    drawFigures::setPen(QColor(Qt::red));
+                    DrawFigures::setPen(QColor(Qt::red));
                 }
             }
 
-            drawFigures::drawSection(painter, QPointF(sec.beg->x, sec.beg->y), QPointF(sec.end->x, sec.end->y),
+            DrawFigures::drawSection(painter, QPointF(sec.beg->x, sec.beg->y), QPointF(sec.end->x, sec.end->y),
                                      isSelected);
 
         }
@@ -165,7 +165,7 @@ void QTPainter::drawingFigures(QPainter &painter) {
             bool isSelected = false;
 
             if (selectedIdCircle.empty() && LeftMenuElem.size() != 3) {
-                drawFigures::drawCircle(painter, *circleStorage);
+                DrawFigures::drawCircle(painter, *circleStorage);
                 break;
             }
 
@@ -174,18 +174,18 @@ void QTPainter::drawingFigures(QPainter &painter) {
                 isSelected = std::find(selectedIdCircle.begin(), selectedIdCircle.end(), id) !=
                              selectedIdCircle.end();
                 if (isSelected) {
-                    drawAdditionalInf::setID(id.id); // Отрисовка айди
+                    DrawAdditionalInf::setID(id.id); // Отрисовка айди
                 }
             }
 
             if (LeftMenuElem.size() == 3) {
                 if (std::abs(c.center->x - LeftMenuElem[0]) < 1e-5 && std::abs(c.center->y - LeftMenuElem[1]) < 1e-5
                     && std::abs(c.R - LeftMenuElem[2]) < 1e-5) {
-                    drawFigures::setPen(QColor(Qt::red));
+                    DrawFigures::setPen(QColor(Qt::red));
                 }
             }
 
-            drawFigures::drawCircle(painter, QPointF(c.center->x, c.center->y), c.R, isSelected);
+            DrawFigures::drawCircle(painter, QPointF(c.center->x, c.center->y), c.R, isSelected);
 
         }
 }
@@ -402,14 +402,14 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     drawBackground::drawFon(painter);
 
     if(ModeManager::getCursor())
-        drawAdditionalInf::drawCursor(painter);
+        DrawAdditionalInf::drawCursor(painter);
 
     if (!LeftMenuElem.empty() &&
         ModeManager::getActiveMode(MouseMode::LeftClick) || ModeManager::getActiveMode(MouseMode::RightClick)) {
         LeftMenuElem.clear();
     } else if (LeftMenuElem.size() > 4) {
         LeftMenuElem.clear();
-        drawAdditionalInf::setLeftMenuID(0);
+        DrawAdditionalInf::setLeftMenuID(0);
     }
 
     // Отрисовка фигур мышкой
@@ -420,14 +420,14 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         if (!(ModeManager::getActiveMode(MouseMode::MouseMove)) &&
             ModeManager::getActiveMode(WorkModes::Point)) {
 
-            drawFigM.drawFiguresMouse(painter);
+            drawFigM.DrawFiguresMouse(painter);
 
         } else if (ModeManager::getActiveMode(WorkModes::Circle)) {
-            drawFigM.drawFiguresMouse(painter);
+            drawFigM.DrawFiguresMouse(painter);
         } else if (ModeManager::getActiveMode(WorkModes::Section)) {
 
 
-            drawFigM.drawFiguresMouse(painter);
+            drawFigM.DrawFiguresMouse(painter);
 
             if (pointStorage != nullptr && pointStorage->size() > 0) {
                 QPointF closes = ClosesPoint::findClosestPoint(*pointStorage); // Ищем ближайшие точки

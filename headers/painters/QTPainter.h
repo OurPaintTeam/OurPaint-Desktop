@@ -43,7 +43,7 @@ private:
 
     std::vector<double> LeftMenuElem; // Элемент левого меню
 
-    drawMouse drawFigM;  // Класс для отрисовки мышкой
+    DrawMouse drawFigM;  // Класс для отрисовки мышкой
 
     ID id; // Айди фигуры выделения
     ID IDmove; // Айди фигуры перемещения
@@ -97,7 +97,7 @@ public:
         }
 
         LeftMenuElem=parameters;
-        drawAdditionalInf::setLeftMenuID(IDselected);
+        DrawAdditionalInf::setLeftMenuID(IDselected);
     }
 
     void emitId(Element type, const Point& p) {
