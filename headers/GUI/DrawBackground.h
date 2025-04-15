@@ -2,8 +2,8 @@
 #define OURPAINT_DRAWBACKGROUND_H
 
 #include <QPainter>
-#include "scaling.h"
-#include "drawAdditionalInf.h"
+#include "Scaling.h"
+#include "DrawAdditionalInf.h"
 #include <qDebug>
 
 // Класс отвечающий за отрисовку фона виджета
@@ -76,7 +76,7 @@ public:
                 ++index;
             }
 
-            drawAdditionalInf::drawCoordinateLabels(painter, pointXL,pointXR,pointYU,pointYD);
+            DrawAdditionalInf::drawCoordinateLabels(painter, pointXL,pointXR,pointYU,pointYD);
         }
 
         // Оси координат
@@ -112,7 +112,7 @@ public:
             painter.drawLine(QPointF((-_width - deltaX), 0), QPointF((_width - deltaX), 0));  // Ox
         }
 
-        //   drawAdditionalInf::drawAxes(painter);
+        //   DrawAdditionalInf::drawAxes(painter);
 
     }
 
