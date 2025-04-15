@@ -1,5 +1,5 @@
-#ifndef OURPAINT_HEADERS_GUI_MAINWINDOW_H_
-#define OURPAINT_HEADERS_GUI_MAINWINDOW_H_
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
 #include <QMainWindow>
 #include <QKeyEvent>
@@ -28,8 +28,11 @@
 #include "SaveDialog.h"
 #include "WindowServer.h"
 #include "ui_mainwindow.h"
-#include "FrameOverlay.h"
-
+#include "QTPainter.h"
+#include "Modes.h"
+#include "MouseEventWorkWindow.h"
+#include "KeyWorkWindow.h"
+#include "LeftMenuBar.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -41,50 +44,59 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 private:
+    std::unique_ptr<QTPainter> painter;
+    std::unique_ptr<MouseWorkWindow> mouseWW;             //  для обработки событий мыши
+    std::unique_ptr<KeyWorkWindow> keyWW;                 //  для обработки событий клавиш
+    std::unique_ptr<LeftMenuBar> leftMenuBar; // Класс для управления левым меню
+
+
     CastomeWindowError *error;
     CastomeWindowWarning *warning;
     CastomeWindowSuccessful *success;
     Ui::MainWindow *ui;
     std::vector<QString> commands; // Буфер команд для консоли
-    const int resizeMargin = 10; // Коэф для рисования закруглений
     int Index; // Индекс для навигации по командам
-    bool moving; // Флаг перемещения окна
-    bool drawingFrame; // Флаг отображения рамки
     bool save; // Флаг сохранения проекта
-    bool resizing; // Флаг изменения размера окна
-    bool addElem; // Флаг для изменеия обьектов левого меню
-    Qt::Edges resizingEdges; // Грани, которые изменяются при изменении размера
-    QPoint lastMousePosition; // Последняя позиция мыши
-    QRect frameRect; // Геометрия рамки
-    FrameOverlay *frameOverlay; // Объект наложения рамки
+
     Help *helpWindow; // Окно справки
+
+    enum ResizeRegion {
+        None,
+        Top, Bottom, Left, Right,
+        TopLeft, TopRight, BottomLeft, BottomRight
+    };
+
+    bool resizing = false;
+    bool moving = false;
+    QPoint dragStartPos;
+    QRect originalGeometry;
+    ResizeRegion currentRegion = None;
+    const int edgeMargin = 8;
 
 
 public:
-
     MainWindow(QWidget *parent = nullptr);
-
     ~MainWindow();
 
+    void initConnections(); // Инициализация сигналов
+
+    // Добавление сообщений
+    void setMessage(const std::string &name, const std::string &message);
+
+    void showHelp(); // Обработка кнопки помощи
 
     void setAllMouseTracking(QWidget *widget); // Отслеживание мыши
 
-    // Добавление элементов в левое меню
-    void Print_LeftMenu(unsigned long long id, const std::string &text, const std::vector<double> &object);
+    /***********************/
+    // левое меню
 
-    // Добавление требований в левое меню
-    void Requar_LeftMenu(unsigned long long id, const std::string &text, unsigned long long id1, unsigned long long id2,
-                         double parametr);
 
-    QWidget *getWorkWindow() const { return ui->workWindow; }
+    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>, QString>
+    saveSettings();
 
-    Ui::MainWindow *getUi() const { return ui; }
+    ///////////////////////////////////////////////////////////////
 
-    void setSave(bool T) {
-        save = T;
-    }
-
-    void showHelp();
+    void loadSettings(std::vector<bool> settings, const QString &name);
 
     void showError(const QString &text);
 
@@ -92,26 +104,45 @@ public:
 
     void showWarning(const QString &text);
 
-// Добавление сообщений
-    void setMessage(const std::string &name, const std::string &message);
+    void setSave(bool T) {
+        save = T;
+    }
 
-    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>, QString>
-    saveSettings();
 
-    void loadSettings(std::vector<bool> settings, const QString &name);
+    void WorkWindowClear(){
+        painter->clear();
+    }
 
-    void FocusOnItemById(unsigned long long id);
-    QTreeWidgetItem* findItemById(QTreeWidgetItem *item, unsigned long long id);
-    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
-    QList<QTreeWidgetItem*> getAllChildItems(QTreeWidgetItem *item);
-    void processChildItems(const QList<QTreeWidgetItem*> &childItems);
+    void Draw(){
+        painter->draw();
+    }
+
+    QTPainter *getQTPainter(){
+        return painter.get();
+    }
+
+    LeftMenuBar* getLeftMenuBar() const {
+        return leftMenuBar.get();
+    }
+
+    void updateStyle();
+    void updateShapeCursor(const QPoint &pos);
 
 protected:
-    // Обработчики событий клавиатуры и мыши
-    void keyPressEvent(QKeyEvent *event) override;
+
+    // экран
 
     // Закрытие
     void closeEvent(QCloseEvent *event) override;
+
+    // Изменение размеров
+    void resizeEvent(QResizeEvent *event) override;
+
+    // Обработка отрисовки окна
+    void paintEvent(QPaintEvent *event) override;
+    /////////////////////////////////////////////////
+
+    // Мышь
 
     // Нажатие мыши
     void mousePressEvent(QMouseEvent *event) override;
@@ -125,99 +156,33 @@ protected:
     // Двойное нажатие клавиши
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
-    // Изменение размеров
-    void resizeEvent(QResizeEvent *event) override;
-
-    // Обработка отрисовки окна
-    void paintEvent(QPaintEvent *event) override;
-
     // Кручение колёсиком или тачпадом
     void wheelEvent(QWheelEvent *event) override;
 
     // Жесты в тачпаде в области workWindow
     bool event(QEvent *event) override;
+//////////////////////////////////////////////////////////////
 
-signals:
+// клава
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
-    void EnterPressed(const QString &command); // Сигнал при нажатии Enter
-    void resized(); // Сигнал при изменении размера окна
-    void projectSaved(const QString &fileName); // Сигнал о сохранении проекта
-    void LoadFile(const QString &fileName); // Сигнал для загрузки файла
-    void EmitScript(const QString &fileName);
-
-    void KeyPlus(); // Сигнал увелечения при тачпаде,колёсике и ctrl +
-    void KeyMinus(); // Сигнал уменьшения при тачпаде,колёсике и ctrl -
-    void KeyZero(); // Обнуление
-    void REDO(); // Сигнал для повторения действия
-    void UNDO(); // Сигнал для отмены действия
-
-    void ChangeLeftMenu(); // Сигнал изменения параметров левого меню
-    void parameterChanged(unsigned long long id, const std::vector<double> &parameters);
-
-    // Кнопки сервера
-    void SigOpenServer(const QString &text);
-
-    void SigJoinServer(const QString &text);
-
-    void SigJoinLocalServer(const QString &text);
-
-    void SigExitSession();
-
-    // Чат
-    void EnterMessage(const QString &text);
-
-    //Настройки
-    void GridOn(bool T);
+    // Обработчики событий клавиатуры и мыши
+    void keyPressEvent(QKeyEvent *event) override;
 
 
-    void SigMoving();
-
-    void SigSection();
-
-    void SigCircle();
-
-    void SigPoint();
-
-    void toolMoving();
-    void toolRotation();
-    void toolResize();
-
-    void NameUsers(const QString &text);
-
-    void changeSettings();
-
-    void loadBMP(const QString &fileName);
-
-    void saveBMP(const QString &fileName);
-
-    void oneReqirements();
-    void twoReqirements();
-    void threeReqirements();
-    void fourReqirements();
-    void fiveReqirements();
-    void sixReqirements();
-    void sevenReqirements();
-    void eightReqirements();
-    void nineReqirements();
-    void tenReqirements();
 
 public slots:
 
     // Кнопки
+    void loadProjectFile();
+    void saveProjectToBMP();
+    void loadProjectBMP();
     void saveProjectToFile();
 
-    void loadProjectFile();
-
-    void saveProjectToBMP();
-
-    void loadProjectBMP();
 
     void buttonScript();
-
     void openServer();
-
     void joinServer();
-
     void joinLocalServer();
 
 
@@ -229,21 +194,42 @@ public slots:
         }
     }
 
-
     void exitSession() {
         emit SigExitSession();
     }
 
-    void LeftMenuChanged(QTreeWidgetItem *item);
 
-    void Point() { emit SigPoint(); };
-    void Section() { emit SigSection(); };
-    void Circle() { emit SigCircle(); };
+    void Point() {
+        ModeManager::setActiveMode(WorkModes::Point);
+    };
+    void Section() {
+        ModeManager::setActiveMode(WorkModes::Section);
+    };
+    void Circle() {
+        ModeManager::setActiveMode(WorkModes::Circle);
+    };
 
-    void FigMoving() { emit SigMoving(); };
-    void ToolMoving() { emit toolMoving(); };
-    void ToolRotation() { emit toolRotation(); };
-    void ToolResize() { emit toolResize(); };
+    void FigMoving() {
+        ModeManager::setActiveMode(WorkModes::Editor);
+    };
+    void ToolMoving() {
+        ModeManager::setActiveMode(WorkModes::Move);
+    };
+
+    void ToolRotation() {
+        ModeManager::setActiveMode(WorkModes::Rotate);
+        //  painter->setMode(DrawMode::Rotate);
+        // emit toolRotation();
+    };
+    void ToolResize() {
+        ModeManager::setActiveMode(WorkModes::Resize);
+        //  painter->setMode(DrawMode::Resize);
+        emit toolResize();
+    };
+
+    ////////////////////////////////////////////////////
+    // Требования
+
     void firstReq() {
         emit oneReqirements();
     }
@@ -284,7 +270,54 @@ public slots:
         emit tenReqirements();
     }
 
+signals:
+
+    void EnterPressed(const QString &command); // Сигнал при нажатии Enter
+    void resized(); // Сигнал при изменении размера окна
+    void projectSaved(const QString &fileName); // Сигнал о сохранении проекта
+    void LoadFile(const QString &fileName); // Сигнал для загрузки файла
+    void EmitScript(const QString &fileName);
+
+    void KeyPlus(); // Сигнал увелечения при тачпаде,колёсике и ctrl +
+    void KeyMinus(); // Сигнал уменьшения при тачпаде,колёсике и ctrl -
+    void KeyZero(); // Обнуление
+    void REDO(); // Сигнал для повторения действия
+    void UNDO(); // Сигнал для отмены действия
+
+
+
+    // Кнопки сервера
+    void SigOpenServer(const QString &text);
+    void SigJoinServer(const QString &text);
+    void SigJoinLocalServer(const QString &text);
+    void SigExitSession();
+
+    // Чат
+    void EnterMessage(const QString &text);
+
+
+    void toolMoving();
+    void toolRotation();
+    void toolResize();
+
+    void NameUsers(const QString &text);
+    void changeSettings();
+
+    void loadBMP(const QString &fileName);
+    void saveBMP(const QString &fileName);
+
+    void oneReqirements();
+    void twoReqirements();
+    void threeReqirements();
+    void fourReqirements();
+    void fiveReqirements();
+    void sixReqirements();
+    void sevenReqirements();
+    void eightReqirements();
+    void nineReqirements();
+    void tenReqirements();
+
 
 };
 
-#endif // ! OURPAINT_HEADERS_GUI_MAINWINDOW_H_
+#endif // MAINWINDOW_H
