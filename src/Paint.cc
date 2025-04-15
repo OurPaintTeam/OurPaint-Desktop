@@ -941,14 +941,14 @@ void Paint::moveElement(const ElementData &currentPos, const ElementData &newPos
 
 }
 
-void Paint::parallelMove(ID id, double dx, double dy) {
+void Paint::parallelMove(ID id, double Cx, double Cy, double dx, double dy) {
     if (dx == 0 && dy == 0) {
         return;
     }
     if (m_pointIDs.contains(id)) {
         Point *p = &(*m_pointIDs.at(id));
-        p->x += dx;
-        p->y += dy;
+        p->x = Cx;
+        p->y = Cy;
         updateRequirement(id);
 
     } else if (m_sectionIDs.contains(id)) {
