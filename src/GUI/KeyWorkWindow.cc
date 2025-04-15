@@ -1,4 +1,4 @@
-#include "GUI/filterEvent/KeyWorkWindow.h"
+#include "KeyWorkWindow.h"
 
 KeyWorkWindow::KeyWorkWindow(QWidget *parent)
         : QObject(parent)
