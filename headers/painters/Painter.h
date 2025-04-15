@@ -2,6 +2,7 @@
 #define OURPAINT_HEADERS_PAINTERS_PAINTER_H_
 
 #include "GeometricObjects.h"
+#include <list>
 
 class Painter {
 
@@ -10,9 +11,9 @@ public:
     virtual unsigned long long getHeight()=0;
     virtual void changeSize(const rectangle& allObjects)=0;
 
-    virtual void drawPoint(Point pt, bool isWhite = false)=0;
-    virtual void drawSection(Section sec, bool isWhite = false)=0;
-    virtual void drawCircle(Circle c, bool isWhite = false)=0;
+    virtual void drawPointt(const std::list<Point>& p) =0;
+    virtual void drawSectionn(const std::list<Section>& c)=0;
+    virtual void drawCirclee(const std::list<Circle>& s) =0;
     virtual void drawPoint(Point pt, bool isWhite = false)=0;
     virtual void drawSection(Section sec, bool isWhite = false)=0;
     virtual void drawCircle(Circle c, bool isWhite = false)=0;
