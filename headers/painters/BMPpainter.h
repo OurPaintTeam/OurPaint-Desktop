@@ -24,6 +24,9 @@ public:
     void drawPoint(Point pt, bool isWhite = false);
     void drawSection(Section sec, bool isWhite = false);
     void drawCircle(Circle c, bool isWhite = false);
+    void drawPointt(const List<Point>& p) {}
+    void drawSectionn(const List<Section>& c) {}
+    void drawCirclee(const List<Circle>& s) {}
 
     void saveBMP(const char* filename="print.bmp");
 };
