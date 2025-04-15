@@ -5,7 +5,8 @@
 #include <limits>
 #include <cmath>
 #include <QPointF>
-#include "paint.h"
+#include "Paint.h"
+#include "Scaling.h"
 
 // Класс для поиска ближайших точек к курсору
 class ClosesPoint {
