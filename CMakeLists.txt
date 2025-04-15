@@ -37,7 +37,7 @@ add_executable(ourpaint
         src/painters/BMPpainter.cc
         src/painters/QTPainter.cc
 
-        src/GUI/mainwindow.cc
+        src/GUI/Mainwindow.cc
         src/GUI/FrameOverlay.cc
         src/GUI/CastomeConsole.cc
         src/GUI/SmileRightClickFilter.cc
@@ -84,7 +84,7 @@ add_executable(ourpaint
         headers/GUI/CastomeConsole.h
         headers/GUI/EmojiWidget.h
         headers/GUI/FrameOverlay.h
-        headers/GUI/mainwindow.h
+        headers/GUI/Mainwindow.h
         headers/GUI/SmileRightClickFilter.h
         headers/GUI/ui_mainwindow.h
 
@@ -101,6 +101,7 @@ add_executable(ourpaint
         headers/Application.h
         headers/UndoRedo.h
         headers/BMPfile.h
+        headers/GeometricObjects.h
 )
 
 
