@@ -3,47 +3,81 @@
 DrawMouse::DrawMouse(QObject *parent)
         : QObject(parent), drawingInProgress(false), tabPressCount(0) {}
 
+        // Серый цвет
 QColor DrawMouse::hintColor() {
     return {169, 169, 169, 128};
 }
 
+// Сброс
 void DrawMouse::resetCoordinates() {
     startCoordinates = QPoint(0, 0);
     closestStartPoint = QPoint(0, 0);
     closestPointNext = QPoint(0, 0);
 }
 
+// Нажатие таба
 void DrawMouse::releaseTabIfPressed() {
     if (ModeManager::getActiveMode(KeyMode::Tab)) {
         ModeManager::setActiveMode(KeyMode::ReleasingTab);
     }
 }
 
+// Вычисление угла
 double DrawMouse::snapAngle(double angle) {
     return std::round(angle / 45.0) * 45.0;
 }
 
+// Для отрисовки с шифтом
 QPointF DrawMouse::getSnappedPoint(const QPointF &start, const QPointF &current) {
     double dx = current.x() - start.x();
     double dy = current.y() - start.y();
     double angle = std::atan2(dy, dx) * 180.0 / M_PI;
     double snappedAngle = snapAngle(angle);
-    double radians = snappedAngle * M_PI / 180.0;
     double length = std::hypot(dx, dy);
-    return {start.x() + length * std::cos(radians), start.y() + length * std::sin(radians)};
+
+    double offsetX = 0;
+    double offsetY = 0;
+
+    const double diag = length / std::sqrt(2.0);
+
+    if (snappedAngle == 0 || snappedAngle == 360 ) {
+        offsetX = length; offsetY = 0;
+    } else if (snappedAngle == 45) {
+        offsetX = diag; offsetY = diag;
+    } else if (snappedAngle == 90) {
+        offsetX = 0; offsetY = length;
+    } else if (snappedAngle == 135) {
+        offsetX = -diag; offsetY = diag;
+    } else if (snappedAngle == 180 || snappedAngle == -180) {
+        offsetX = -length; offsetY = 0;
+    } else if (snappedAngle == -135) {
+        offsetX = -diag; offsetY = -diag;
+    } else if (snappedAngle == -90) {
+        offsetX = 0; offsetY = -length;
+    } else if (snappedAngle == -45) {
+        offsetX = diag; offsetY = -diag;
+    }
+
+    double snappedX = start.x() + offsetX;
+    double snappedY = start.y() + offsetY;
+
+    return {snappedX, snappedY};
 }
 
+// Предварительная серая линия
 void DrawMouse::drawPreviewSection(QPainter &painter, const QPointF &start, const QPointF &end){
     DrawFigures::setPen(QPen(hintColor()));
     DrawFigures::drawSection(painter, start, end, false);
 }
 
+// Отрисовка мышью
 void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
     painter.setPen(Qt::black);
 
-    double cursorX = Scaling::logicCursorX();
-    double cursorY = Scaling::logicCursorY();
+    // Округление мыши до 1 знака после запятой
+    double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
+    double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
     QPointF Cursor(cursorX, cursorY);
 
     bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
@@ -62,7 +96,8 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
     if (leftClick) {
         if (modePoint) {
-            emit SigPoint(cursorX,cursorY);  // так как у qt инвертированная ось у
+            // Если одно нажатие и точка => точка
+            emit SigPoint(cursorX,cursorY);
         } else {
             if (!drawingInProgress) {
                 ++tabPressCount;
@@ -75,6 +110,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
                 if (modeSection) {
 
                     if (shiftPressed) {
+                        // При нажатии фиксированы углы под 45
                         QPointF snapped = getSnappedPoint(startCoordinates, Cursor);
                         double x1 = snapped.x();
                         double y1 = snapped.y();
@@ -102,6 +138,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
     }
 
     if (rightClick) {
+        // Сброс всего правой клавишей
         resetCoordinates();
         tabPressCount = 0;
         drawingInProgress = false;
@@ -109,6 +146,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
     if (drawingInProgress) {
         if (modeCircle) {
+            // Отрисовка круга
             double centerX = (startCoordinates.x() + cursorX) / 2;
             double centerY = (startCoordinates.y() + cursorY) / 2;
             double radius = std::hypot(startCoordinates.x() - centerX, startCoordinates.y() - centerY);
@@ -125,22 +163,24 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
     }
 }
 
+// Отрисовка линии
 void DrawMouse::drawSections(QPainter &painter, const QPointF &startCoordinates)  {
     if (!ModeManager::getActiveMode(WorkModes::Section)) return;
-
-    double cursorX =Scaling::logicCursorX();
-    double cursorY = Scaling::logicCursorY();
+    // Округление мыши до 1 знака после запятой
+    double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
+    double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
     QPointF Cursor(cursorX, cursorY);
     bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 
     if (shiftPressed) {
         QPointF snapped = getSnappedPoint(startCoordinates, Cursor);
-        DrawFigures::drawSection(painter, startCoordinates, snapped.toPoint(), false);
+        DrawFigures::drawSection(painter, startCoordinates, snapped, false);
     } else {
         DrawFigures::drawSection(painter, startCoordinates, Cursor, false);
     }
 }
 
+// Отрисовка подсказок
 void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
 
     bool tabPressed = ModeManager::getActiveMode(KeyMode::Tab);
@@ -156,7 +196,10 @@ void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
 
         if (tabPressCount == 0) {
             closestStartPoint = closesPoint;
-            QPointF Cursor = QPointF(Scaling::logicCursorX(), Scaling::logicCursorY());
+            // Округление мыши до 1 знака после запятой
+            double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
+            double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+            QPointF Cursor = QPointF(cursorX, cursorY);
             drawPreviewSection(painter, closestStartPoint, Cursor);
             releaseTabIfPressed();
         } else if (tabPressCount == 1) {

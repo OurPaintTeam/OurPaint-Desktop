@@ -5,7 +5,7 @@
 #include <QPointF>
 #include <QPainter>
 #include <cmath>
-#include <QDebug>
+
 
 #include "Modes.h"
 #include "Scaling.h"
@@ -14,35 +14,40 @@
 
 class DrawMouse : public QObject {
 Q_OBJECT
+
 //  Класс для отрисовки мышью
-// Добавлены подсказки по ближайшим точкам
+//  Добавлены подсказки по ближайшим точкам
 
 private:
+    QPointF closestStartPoint; // Ближайшая точка
+    QPointF closestPointNext;  // Следующая ближайшая точка
+    QPointF startCoordinates; // Точка нажатия курсора
+    bool drawingInProgress; // Для отслеживания состояния
+    short int tabPressCount; // Для подсказок
 
-    QPointF closestStartPoint;
-    QPointF closestPointNext;
-    QPointF startCoordinates;
-    bool drawingInProgress;
-    int tabPressCount;
+    static QColor hintColor(); // Серая линия
 
-    static QColor hintColor() ;
+    void resetCoordinates(); // Обнуление всего
 
-    void resetCoordinates();
+    static void releaseTabIfPressed(); // Нажатие таба
 
-    static void releaseTabIfPressed() ;
-
+    // Для отрисовки с шифтом
     static QPointF getSnappedPoint(const QPointF &start, const QPointF &current) ;
 
+    // Предварительная отрисовка серых линий подсказок
     static void drawPreviewSection(QPainter &painter, const QPointF &start, const QPointF &end) ;
 
 public:
     explicit DrawMouse(QObject *parent = nullptr);
 
+    // Вычисление угла
     static double snapAngle(double angle) ;
 
+    // Отрисовка фигур мышью
     void DrawFiguresMouse(QPainter &painter);
-
     static void drawSections(QPainter &painter, const QPointF &startCoordinates);
+
+    // Отрисовка подсказок
     void drawHints(QPainter &painter, const QPointF &closesPoint) ;
 
 signals:
