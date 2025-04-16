@@ -28,13 +28,13 @@ bool Help::eventFilter(QObject *obj, QEvent *event) {
         if (event->type() == QEvent::MouseButtonPress) {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
             if (mouseEvent->button() == Qt::LeftButton) {
-                dragPosition = mouseEvent->globalPos() - frameGeometry().topLeft();
+                dragPosition = mouseEvent->globalPosition().toPoint() - frameGeometry().topLeft();
                 return true;
             }
         } else if (event->type() == QEvent::MouseMove) {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
             if (mouseEvent->buttons() & Qt::LeftButton) {
-                move(mouseEvent->globalPos() - dragPosition);
+                move(mouseEvent->globalPosition().toPoint() - dragPosition);
                 return true;
             }
         }
