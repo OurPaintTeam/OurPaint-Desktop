@@ -6,6 +6,8 @@
 #include <QPainter>
 #include <cmath>
 #include <QDebug>
+
+#include "Modes.h"
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
 #include "DrawFigures.h"

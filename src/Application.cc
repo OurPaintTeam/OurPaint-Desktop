@@ -66,23 +66,20 @@ void Application::setupConnections() {
     QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
 
         double Cx = Scaling::logicCursorX();
-        double Cy = Scaling::logicCursorY();// так как ось инвертирована
+        double Cy = Scaling::logicCursorY();
 
-        double dx = Scaling::logicInt(Scaling::getCursorDeltaX());
-        double dy = Scaling::logicInt(Scaling::getCursorDeltaY());
+        double dx = Scaling::logic(Scaling::getCursorDeltaX());
+        double dy = Scaling::logic(Scaling::getCursorDeltaY());
 
         ID id = painter->getIdFigures();// <- id фигуры перемещения
 
         try {
             screen.parallelMove(id, Cx, Cy, dx, dy);
         } catch (const std::exception &a) {
-            // если не прошло 20 мс не выполняй функцию
             w.showError("Zheny kosyk ");
         }
 
         updateState();
-
-
     });
 
     QObject::connect(painter.get(),

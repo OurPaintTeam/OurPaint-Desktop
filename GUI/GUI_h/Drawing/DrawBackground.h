@@ -2,10 +2,11 @@
 #define OURPAINT_DRAWBACKGROUND_H
 
 #include <QPainter>
-#include "Scaling.h"
-#include "DrawAdditionalInf.h"
 #include <QDebug>
 
+#include "DrawAdditionalInf.h"
+#include "Scaling.h"
+#include "Modes.h"
 // Класс отвечающий за отрисовку фона виджета
 // Центр у нас в центре виджета
 // Клетки создают эффект передвижения
@@ -39,8 +40,8 @@ public:
 
         double _width = Scaling::getCenteredCoordinatesX();
         double _height = Scaling::getCenteredCoordinatesY();
-        short int width = Scaling::getDisplayCoordinateX();
-        short int height = Scaling::getDisplayCoordinateY();
+        short int width = Scaling::getActualMonitorWidth();
+        short int height = Scaling::getActualMonitorHeight();
 
         double deltaX = Scaling::getDeltaX();
         double deltaY = Scaling::getDeltaY();

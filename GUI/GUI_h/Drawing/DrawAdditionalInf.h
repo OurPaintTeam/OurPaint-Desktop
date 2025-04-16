@@ -85,14 +85,14 @@ public:
         int deltaX = Scaling::getDeltaX();
         int deltaY = Scaling::getDeltaY();
 
-        double logicXR = Scaling::logicDouble(_width) - Scaling::logicInt(deltaX); // х правый
-        double logicYU = Scaling::logicDouble(_height) + Scaling::logicInt(deltaY); // у верхний
-        double logicXL = -Scaling::logicDouble(_width) - Scaling::logicInt(deltaX); // х левый
-        double logicYD = -Scaling::logicDouble(_height) + Scaling::logicInt(deltaY); // у нижний
+        double logicXR = Scaling::logic(_width) - Scaling::logic(deltaX); // х правый
+        double logicYU = Scaling::logic(_height) + Scaling::logic(deltaY); // у верхний
+        double logicXL = -Scaling::logic(_width) - Scaling::logic(deltaX); // х левый
+        double logicYD = -Scaling::logic(_height) + Scaling::logic(deltaY); // у нижний
 
         // Размеры окна
-        short int width = Scaling::getDisplayCoordinateX();
-        short int height = Scaling::getDisplayCoordinateY();
+        short int width = Scaling::getActualMonitorWidth();
+        short int height = Scaling::getActualMonitorHeight();
 
         QFontMetrics metrics(painter.font());
         int textHeight = metrics.height(); // Размер текста
@@ -475,7 +475,7 @@ public:
         double dx = start.x() - end.x();
         double dy = start.y() - end.y();
 
-        qreal length = Scaling::logicDouble(qSqrt(dx * dx + dy * dy));
+        qreal length = Scaling::logic(qSqrt(dx * dx + dy * dy));
 
         QString lengthText = QString::number(length, 'f', 2);
         QFontMetrics metrics(painter.font());
