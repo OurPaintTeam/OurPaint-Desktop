@@ -1,11 +1,12 @@
 
+#include <cmath>
 #include "Scaling.h"
 
 
 // Static member initializations
 const short int Scaling::userUnitSize = 20;
-double Scaling::scale = 1.0;
 double Scaling::zoom = userUnitSize;
+double Scaling::scale =1.0;
 bool Scaling::usersResize = false;
 
 
@@ -107,7 +108,7 @@ double Scaling::logicCursorY() {
 
 
 double Scaling::scaleCoordinate(double X) {
-    return X * scale * zoom;
+    return (X * scale * zoom);
 }
 
 double Scaling::scaleCoordinateX(double X) {
@@ -124,15 +125,20 @@ void Scaling::scaling(int widgetWidth, int widgetHeight, const std::vector<doubl
 
 }
 
+void Scaling::setZoom(double z){
+    zoom=z;
+}
+
 void Scaling::setZoomPlus() {
     usersResize = true;
-    const short int MAXSIZE =125;
+    const short int MAXSIZE =100;
     if (zoom < MAXSIZE) {
         zoom *= 1.1;
     }
     else {
         zoom = MAXSIZE;
     }
+    scale = 1.0;
 }
 
 void Scaling::setZoomMinus() {
@@ -144,13 +150,19 @@ void Scaling::setZoomMinus() {
     else {
         zoom = MINSIZE;
     }
+    scale = 1.0;
 }
 
 void Scaling::setZoomZero() {
     usersResize = true;
     zoom = usersResize;
+    scale=1.0;
     Scaling::Delta::X = 0;
     Scaling::Delta::Y = 0;
+}
+
+short int Scaling::getUserUnitSize() {
+    return userUnitSize;
 }
 
 double Scaling::getScale() {

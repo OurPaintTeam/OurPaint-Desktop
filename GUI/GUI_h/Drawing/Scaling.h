@@ -67,12 +67,14 @@ public:
     static void setZoomPlus();
     static void setZoomMinus();
     static void setZoomZero();
+    static void setZoom(double z);
     static void setDelta(double dx, double dy);
     static void setDeltaX(double X);
     static void setDeltaY(double Y);
     static void setCursor(short int x,short int y);
 
     static double getScale();
+    static short int getUserUnitSize();
     static double getZoom();
     static double getDeltaX();
     static double getDeltaY();
