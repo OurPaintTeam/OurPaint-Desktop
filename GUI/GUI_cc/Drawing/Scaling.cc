@@ -5,7 +5,7 @@
 
 // Static member initializations
 double Scaling::scale = 1.0;
-double Scaling::zoom = 30;
+double Scaling::zoom = 20;
 bool Scaling::usersResize = false;
 
 double Scaling::Delta::X = 0;
@@ -61,7 +61,7 @@ double Scaling::getCenteredCoordinatesY() {
 
 void Scaling::updateScaling() {
     scale = 1.0;
-    zoom = 30;
+    zoom = 20;
     usersResize = false;
 }
 
@@ -173,22 +173,24 @@ void Scaling::scaling(int widgetWidth, int widgetHeight, const std::vector<doubl
     }
 }
 
-#include <QDebug>
-
 void Scaling::setZoomPlus() {
-    const short int MAX_ZOOM = 100;
     usersResize = true;
-    if (zoom < MAX_ZOOM) {
-        zoom += 10;
+    if (zoom < 125) {
+        zoom *= 1.1;
     }
-
+    else {
+        zoom = 125;
+    }
 }
 
 void Scaling::setZoomMinus() {
-    const short int MIN_ZOOM = 10;
     usersResize = true;
-    if (zoom > MIN_ZOOM)
-        zoom -= 10;
+    if (zoom > 9.80891e-08) {
+        zoom /= 1.1;
+    }
+    else {
+        zoom = 9.80891e-08;
+    }
 }
 
 void Scaling::setZoomZero() {

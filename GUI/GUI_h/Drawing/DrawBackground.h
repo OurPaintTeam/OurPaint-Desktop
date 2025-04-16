@@ -17,6 +17,23 @@ private:
 public:
     explicit drawBackground() = default;
 
+    static double niceStep(double rawStep) {
+        double exponent = std::floor(std::log10(rawStep));
+        double fraction = rawStep / std::pow(10.0, exponent);
+
+        double niceFraction;
+        if (fraction < 1.5)
+            niceFraction = 1;
+        else if (fraction < 3)
+            niceFraction = 2;
+        else if (fraction < 7)
+            niceFraction = 5;
+        else
+            niceFraction = 10;
+
+        return niceFraction * std::pow(10.0, exponent);
+    }
+
 // Отрисовка фона
     static void drawFon(QPainter &painter) {
 
@@ -24,25 +41,23 @@ public:
         double _height = Scaling::getCenteredCoordinatesY();
         short int width = Scaling::getDisplayCoordinateX();
         short int height = Scaling::getDisplayCoordinateY();
-        int zoom = Scaling::getZoom();
+
         double deltaX = Scaling::getDeltaX();
         double deltaY = Scaling::getDeltaY();
 
-        const int maxCellSize = 60; // Максимальный размер клетки при масштабировании
-        const int minCellSize = 10; // Минимальный размер клетки при масштабировании
-        const int CellSize = 45;
 
+        double zoom = Scaling::getZoom();
 
-
-
-
-        // Отрисовка клетчатого фона
+// Отрисовка клетчатого фона
         if (ModeManager::getCell()) {
-            // Размер клетки
-            int currentCellSize=zoom;
+            double userSize = 20.0;
+            double scale = zoom / userSize;
+            double unitsPixel = 1.0 / scale;
+            double minPixelSpacing = 20.0; // минимальное расстояние между линиями
 
-
-
+            double Step = unitsPixel * minPixelSpacing;
+            double step = niceStep(Step);
+            double currentCellSize = step * scale; // сколько пикселей занимает шаг
 
             std::vector<QPointF> pointXR;
             std::vector<QPointF> pointXL;
@@ -76,7 +91,7 @@ public:
                 ++index;
             }
 
-            DrawAdditionalInf::drawCoordinateLabels(painter, pointXL,pointXR,pointYU,pointYD);
+            DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD, scale);
         }
 
         // Оси координат

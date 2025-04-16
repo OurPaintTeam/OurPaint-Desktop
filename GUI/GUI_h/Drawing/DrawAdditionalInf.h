@@ -19,7 +19,7 @@ public:
     }
 
     explicit DrawAdditionalInf() = default;
-    static void drawCoordinateLabels(QPainter &painter, const std::vector<QPointF> &pointXR,const std::vector<QPointF> &pointXL,const std::vector<QPointF> &pointYU,const std::vector<QPointF> &pointYD) {
+    static void drawCoordinateLabels(QPainter &painter, const std::vector<QPointF> &pointXR,const std::vector<QPointF> &pointXL,const std::vector<QPointF> &pointYU,const std::vector<QPointF> &pointYD,double scale) {
 
         // Устанавливаем фиксированный размер шрифта для текста
         QFont font = painter.font();
@@ -32,44 +32,49 @@ public:
         // Рисуем текст — координаты остаются трансформированными
         painter.setPen(Qt::black);
 
-        int i = -1;
+        int i = 1;  // по X влево
         for (const QPointF &point: pointXR) {
             QString text;
             QPointF newPoint = point;
             newPoint.setY(point.y() + heightOfText-MARGINS);
             newPoint.setX(point.x() + MARGINS);
-            text = QString::number(i-- * 5);
+            long long int value = static_cast<int>(point.x() / (30 * scale));
+            text = QString::number(value);
             painter.drawText(newPoint, text);
         }
-        int j = 1;
+        int j = 1;  // по Y вниз
         for (const QPointF &point: pointXL) {
             QString text;
             QPointF newPoint = point;
             newPoint.setY(point.y() + heightOfText-MARGINS);
             newPoint.setX(point.x() + MARGINS);
-            text = QString::number(j++ * 5);
+            long long int value = static_cast<int>(-point.x() / (30 * scale));
+            text = QString::number(value);
             painter.drawText(newPoint, text);
         }
-        int k = 1;
+        int k = 1;  // по Y вверх
         for (const QPointF &point: pointYD) {
             QString text;
             QPointF newPoint = point;
             newPoint.setX(point.x() + MARGINS);
             newPoint.setY(point.y() - MARGINS);
-            text = QString::number(k++ * 5);
+            long long int value = static_cast<int>(point.y() / (30 * scale));
+            text = QString::number(value);
             painter.drawText(newPoint, text);
         }
-        int m = -1;
+        int m = -1;  // по Y вниз
         for (const QPointF &point: pointYU) {
             QString text;
             QPointF newPoint = point;
             newPoint.setX(point.x() + MARGINS);
             newPoint.setY(point.y() - MARGINS);
-            text = QString::number(m-- * 5);
+            long long int value = static_cast<int>(point.y() / (30 * scale));
+            text = QString::number(value);
             painter.drawText(newPoint, text);
         }
 
     }
+
 // Рисуем значения координат на осях
     static void drawAxes(QPainter &painter) {
         // Центрируем
