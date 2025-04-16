@@ -2,15 +2,16 @@
 #define OURPAINT_DRAWBACKGROUND_H
 
 #include <QPainter>
-#include <QDebug>
 
 #include "DrawAdditionalInf.h"
 #include "Scaling.h"
 #include "Modes.h"
-// Класс отвечающий за отрисовку фона виджета
-// Центр у нас в центре виджета
-// Клетки создают эффект передвижения
-// Оси создают эффект бесконечности
+
+//  Класс отвечающий за отрисовку фона виджета
+//  Центр у нас в центре виджета
+//  Клетки создают эффект передвижения
+//  Оси создают эффект бесконечности
+
 
 class DrawBackground {
 private:
@@ -18,11 +19,12 @@ private:
 public:
     explicit DrawBackground() = default;
 
+    // Чтобы на сетке не было сильно дробных чисел ищем близкое значение размера клетки
     static double Step(double rawStep) {
         double exp = std::floor(std::log10(rawStep));
         double fraction = rawStep / std::pow(10.0, exp);
-
         double newFraction=0;
+
         if (fraction < 1.5) { newFraction = 1; }
         else if (fraction < 2.5) { newFraction = 2; }
         else if (fraction < 3.5) { newFraction = 2.5; }
@@ -55,14 +57,17 @@ public:
             double stepLogical = Step(minStep / zoom);
             double currentCellSize = stepLogical * zoom;
 
+            // Для записи координат для отрисовки
             std::vector<QPointF> pointXR;
             std::vector<QPointF> pointXL;
             std::vector<QPointF> pointYU;
             std::vector<QPointF> pointYD;
-            int index = 1; // Делаем блоки 5 на 5
+
+            short int index = 1; // Делаем блоки 5 на 5
 
             painter.setPen(QPen(Qt::lightGray, 1));
-            // Вертикальные линии (оси Y), симметрично от центра
+
+            // Вертикальные линии
             for (double x = currentCellSize; x <= (_width + abs(deltaX)); x += currentCellSize) {
                 painter.setPen(index % 5 == 0 ? Qt::darkGray : Qt::lightGray);
                 if (index % 5 == 0) {
@@ -74,7 +79,7 @@ public:
                 ++index;
             }
 
-            // Горизонтальные линии (оси X), симметрично от центра
+            // Горизонтальные линии
             index = 1;
             for (double y = currentCellSize; y <= (_height + abs(deltaY)); y += currentCellSize) {
                 painter.setPen(index % 5 == 0 ? Qt::darkGray : Qt::lightGray);
@@ -87,10 +92,11 @@ public:
                 ++index;
             }
 
+            // Отрисовка значений
             DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD);
-
-
         }
+
+
 
         // Оси координат
         painter.setPen(Qt::black);
@@ -125,31 +131,7 @@ public:
             painter.drawLine(QPointF((-_width - deltaX), 0), QPointF((_width - deltaX), 0));  // Ox
         }
 
-        //   DrawAdditionalInf::drawAxes(painter);
-
     }
-
-    static double computeCyclicCellSize(double baseSize, double minSize, double maxSize) {
-        // Применяем масштабирование:
-        double scaledValue = Scaling::scaleCoordinate(baseSize);
-
-        // Зададим диапазон изменения:
-        double cycleRange = maxSize - minSize;
-
-        // Приведём scaledValue к циклической форме:
-        // Сместим на minSize, чтобы цикл шел от 0 до cycleRange
-        double modValue = fmod(scaledValue - minSize, cycleRange);
-
-        // fmod может вернуть отрицательное значение, выправим его:
-        if (modValue < 0) {
-            modValue += cycleRange;
-        }
-
-        // Теперь текущий размер клетки будет циклически меняться от minSize до maxSize.
-        double currentCellSize = minSize + modValue;
-        return currentCellSize;
-    }
-
 
 };
 
