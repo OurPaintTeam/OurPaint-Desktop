@@ -143,7 +143,7 @@ void Scaling::setZoomPlus() {
 
 void Scaling::setZoomMinus() {
     usersResize = true;
-    const double MINSIZE=9.80891e-08;
+    const double MINSIZE=9e-07;
     if (zoom > MINSIZE) {
         zoom /= 1.1;
     }

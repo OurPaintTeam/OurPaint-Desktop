@@ -18,25 +18,25 @@ private:
 public:
     explicit DrawBackground() = default;
 
-    static double niceStep(double rawStep) {
-        double exponent = std::floor(std::log10(rawStep));
-        double fraction = rawStep / std::pow(10.0, exponent);
+    static double Step(double rawStep) {
+        double exp = std::floor(std::log10(rawStep));
+        double fraction = rawStep / std::pow(10.0, exp);
 
-        double niceFraction;
-        if (fraction < 1.5)
-            niceFraction = 1;
-        else if (fraction < 3)
-            niceFraction = 2;
-        else if (fraction < 7)
-            niceFraction = 5;
-        else
-            niceFraction = 10;
+        double newFraction=0;
+        if (fraction < 1.5) { newFraction = 1; }
+        else if (fraction < 2.5) { newFraction = 2; }
+        else if (fraction < 3.5) { newFraction = 2.5; }
+        else if (fraction < 5.0) { newFraction = 4; }
+        else if (fraction < 7.5) { newFraction = 5; }
+        else { newFraction = 10; }
 
-        return niceFraction * std::pow(10.0, exponent);
+        return newFraction * std::pow(10.0, exp);
     }
 
-// Отрисовка фона
+
+    // Отрисовка фона
     static void drawFon(QPainter &painter) {
+
         double _width = Scaling::getCenteredCoordinatesX();
         double _height = Scaling::getCenteredCoordinatesY();
         short int width = Scaling::getActualMonitorWidth();
@@ -48,16 +48,12 @@ public:
 
         double zoom = Scaling::getZoom();
 
-// Отрисовка клетчатого фона
+        // Отрисовка клетчатого фона
         if (ModeManager::getCell()) {
-            double userSize = 20.0;
-            double scale = zoom / userSize;
-            double unitsPixel = 1.0 / scale;
-            double minPixelSpacing = 20.0; // минимальное расстояние между линиями
 
-            double Step = unitsPixel * minPixelSpacing;
-            double step = niceStep(Step);
-            double currentCellSize = step * scale; // сколько пикселей занимает шаг
+            const double minStep = Scaling::getUserUnitSize();
+            double stepLogical = Step(minStep / zoom);
+            double currentCellSize = stepLogical * zoom;
 
             std::vector<QPointF> pointXR;
             std::vector<QPointF> pointXL;
@@ -67,7 +63,7 @@ public:
 
             painter.setPen(QPen(Qt::lightGray, 1));
             // Вертикальные линии (оси Y), симметрично от центра
-            for (int x = currentCellSize; x <= (_width + abs(deltaX)); x += currentCellSize) {
+            for (double x = currentCellSize; x <= (_width + abs(deltaX)); x += currentCellSize) {
                 painter.setPen(index % 5 == 0 ? Qt::darkGray : Qt::lightGray);
                 if (index % 5 == 0) {
                     pointXR.emplace_back(x, 0);
@@ -91,7 +87,8 @@ public:
                 ++index;
             }
 
-            DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD, currentCellSize, zoom);
+            DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD);
+
 
         }
 

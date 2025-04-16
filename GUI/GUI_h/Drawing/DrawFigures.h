@@ -61,7 +61,8 @@ public:
 
         // Отрисовываем каждый круг
         for (const auto &cir: circles) {
-            painter.drawEllipse(QPointF(cir.center->x*Scaling::getZoom(), -cir.center->y*Scaling::getZoom()), cir.R*Scaling::getZoom(), cir.R*Scaling::getZoom());
+            painter.drawEllipse(QPointF(Scaling::scaleCoordinate(cir.center->x), Scaling::scaleCoordinate(-cir.center->y)),
+                                        Scaling::scaleCoordinate(cir.R), Scaling::scaleCoordinate(cir.R));
         }
 
         MyColor = QPen(Qt::black);  // Сброс цвета
@@ -79,8 +80,8 @@ public:
 
         // Отрисовываем каждое сечение
         for (const auto &sec: sections) {
-            QPointF start(sec.beg->x*Scaling::getZoom(), -sec.beg->y*Scaling::getZoom());
-            QPointF end(sec.end->x*Scaling::getZoom(), -sec.end->y*Scaling::getZoom());
+            QPointF start(Scaling::scaleCoordinate(sec.beg->x), Scaling::scaleCoordinate(-sec.beg->y));
+            QPointF end(Scaling::scaleCoordinate(sec.end->x), Scaling::scaleCoordinate(-sec.end->y));
             painter.drawLine(start, end);
             // Если нужно, можно включить дополнительные элементы для рисования
             DrawAdditionalInf::drawCoordinateLine(painter, start, end);
@@ -95,7 +96,7 @@ public:
         short int pointRadius = selected ? 2 : 1;  // Устанавливаем радиус точки в зависимости от того, выбрана ли она
 
         // Если точка выбрана, рисуем дополнительные элементы (например, подсветку)
-        QPointF logicPoint((point.x()*Scaling::getZoom()), (-point.y()*Scaling::getZoom()));
+        QPointF logicPoint(Scaling::scaleCoordinate(point.x()), Scaling::scaleCoordinate(-point.y()));
         if (selected) {
             DrawAdditionalInf::drawPointID(painter, logicPoint);
             DrawAdditionalInf::drawPointGlow(painter, logicPoint);
@@ -119,7 +120,7 @@ public:
     // Функция для отрисовки круга с учётом его состояния (выбран или нет)
     static void drawCircle(QPainter &painter, QPointF center, double radius, bool selected) {
         double scaledRadius = radius*Scaling::getZoom();
-        QPointF logicCenter((center.x()*Scaling::getZoom()), (-center.y()*Scaling::getZoom()));
+        QPointF logicCenter(Scaling::scaleCoordinate(center.x()), Scaling::scaleCoordinate(-center.y()));
 
         QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
         currentPen.setWidth(selected ? 2 : 1);  // Устанавливаем толщину линии в зависимости от выбранности
@@ -151,8 +152,8 @@ public:
         currentPen.setCapStyle(Qt::RoundCap);
         painter.setPen(currentPen);
 
-        QPointF start((beg.x()*Scaling::getZoom()), (-beg.y()*Scaling::getZoom()));
-        QPointF endLogic((end.x()*Scaling::getZoom()), (-end.y()*Scaling::getZoom()));
+        QPointF start(Scaling::scaleCoordinate(beg.x()), Scaling::scaleCoordinate(-beg.y()));
+        QPointF endLogic(Scaling::scaleCoordinate(end.x()), Scaling::scaleCoordinate(-end.y()));
 
         // Отрисовываем линию
         painter.drawLine(start, endLogic);
