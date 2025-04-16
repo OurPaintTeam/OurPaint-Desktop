@@ -1,7 +1,6 @@
 #ifndef SCALING_H
 #define SCALING_H
 
-#include "GeometricObjects.h"
 #include <vector>
 
 class Scaling {
