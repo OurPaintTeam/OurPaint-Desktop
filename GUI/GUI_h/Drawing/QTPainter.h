@@ -115,11 +115,11 @@ protected:
     void changeSize(const rectangle &allObjects) override {}
 
     unsigned long long getWeight() override {
-        return Scaling::getDisplayCoordinateX();
+        return Scaling::getActualMonitorWidth();
     }
 
     unsigned long long getHeight() override {
-        return Scaling::getDisplayCoordinateY();
+        return Scaling::getActualMonitorHeight();
     }
 
     void drawPointt(const std::list<Point>& p) override {
