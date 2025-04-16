@@ -1,7 +1,8 @@
 #include "QTPainter.h"
 
-QTPainter::QTPainter(QWidget *parent) : QFrame(parent) {
-    //setAttribute(Qt::WA_OpaquePaintEvent); // ускоряет отрисовку
+QTPainter::QTPainter(QWidget *parent) : QFrame(parent), IDmove(0), id(0), circleStorage(nullptr),
+                                        sectionStorage(nullptr), pointStorage(nullptr) {
+
     if (parent) {
         // Получение сигналов
         resize(parentWidget()->size()); // Берем размер от отца
@@ -19,41 +20,57 @@ QTPainter::QTPainter(QWidget *parent) : QFrame(parent) {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setStyleSheet("background: \"#ffffff\"");
     setAttribute(Qt::WA_AcceptTouchEvents);
+
     // Базовые параметры
     Scaling::updateScaling();
     Scaling::setStartMonitorSize((short int) width(), (short int) height());
-    IDmove = 0;
+}
+
+
+// Обновляет экран отрисовки
+void QTPainter::draw() {
+    update();
+}
+
+
+// Очистка экрана и приводит все параметры к базовым
+void QTPainter::clear() {
     id = 0;
+    IDmove = 0;
+    selectedClear();
+    LeftMenuElem.clear();
+    Scaling::setZoomZero();
+    DrawAdditionalInf::setID(0);
+    DrawAdditionalInf::setLeftMenuID(0);
+
     circleStorage = nullptr;
     pointStorage = nullptr;
     sectionStorage = nullptr;
 }
 
-void QTPainter::draw() // Обновляет экран отрисовки
-{
-    update();
-}
-
-// Очистка экрана и приводит все параметры к базовым
-void QTPainter::clear() {
-    Scaling::setZoomZero();
-    selectedClear();
-    LeftMenuElem.clear();
-    DrawAdditionalInf::setLeftMenuID(0);
-    DrawAdditionalInf::setID(0);
-    id = 0;
-}
 
 // Удаление данных о фигурах
 void QTPainter::figureDelete() {
     points.clear();
     circles.clear();
     sections.clear();
-    //pointStorage= nullptr;
-    //sectionStorage= nullptr;
-    //circleStorage= nullptr;
-    //  id=0;
 }
+
+
+// Выделение обьекта в левом меню
+void QTPainter::selectedElemByID(std::vector<double> &parameters, unsigned long long int IDselected) {
+    if (!LeftMenuElem.empty()) {
+        LeftMenuElem.clear();
+    }
+
+    if (parameters.size() > 4 || parameters.size() == 0 || IDselected == 0) {
+        return;
+    }
+
+    LeftMenuElem = parameters;
+    DrawAdditionalInf::setLeftMenuID(IDselected);
+}
+
 
 // Присвоение айди выделенной фигуры
 void QTPainter::setIdFigures(ID Id) {
@@ -62,19 +79,22 @@ void QTPainter::setIdFigures(ID Id) {
     }
 }
 
+
 // Получение айди фигуры перемещения
 ID QTPainter::getIdFigures() {
     return IDmove;
 }
 
+
 // Получение вектора айди для требований
-std::vector <ID> QTPainter::getVecID() {
-    std::vector <ID> vec_id; // Обьеденияем все в один вектор
+std::vector<ID> QTPainter::getVecID() {
+    std::vector<ID> vec_id; // Обьеденияем все в один вектор
     vec_id.insert(vec_id.end(), selectedIdPoint.begin(), selectedIdPoint.end());
     vec_id.insert(vec_id.end(), selectedIdCircle.begin(), selectedIdCircle.end());
     vec_id.insert(vec_id.end(), selectedIdSection.begin(), selectedIdSection.end());
     return vec_id;
 }
+
 
 // Очистка данных выделенных обьектов
 void QTPainter::selectedClear() {
@@ -84,268 +104,168 @@ void QTPainter::selectedClear() {
 }
 
 
-void QTPainter::drawingFigures(QPainter &painter) {
-
-    // Обработка точек
-    if (pointStorage != NULL) {
-        if (pointStorage->size() > 0) {
-
-            for (auto &pt: *pointStorage) {
-                bool isSelected = false;
-
-                if (selectedIdPoint.empty() && LeftMenuElem.size() != 2) {
-                    DrawFigures::drawPoint(painter, *pointStorage);
-                    break;
-                }
-
-                // Если вектор не пуст мы ищем нужный айди для выделения, чтобы получить координаты и сопоставить нужный ему ID
-                if (!selectedIdPoint.empty()) {
-                    emit getIdFigure(ET_POINT, pt.x, pt.y);
-                    isSelected = std::find(selectedIdPoint.begin(), selectedIdPoint.end(), id) !=
-                                 selectedIdPoint.end();
-
-
-                    if (isSelected) {
-                        DrawAdditionalInf::setID(id.id); // Отрисовка айди
-                    }
-
-
-                    if (LeftMenuElem.size() == 2) {
-                        if (std::abs(pt.x - LeftMenuElem[0]) < 1e-5 &&
-                            std::abs(pt.y - LeftMenuElem[1]) < 1e-5) {
-
-                            DrawFigures::setPen(QColor(Qt::red));
-                        }
-                    }
-
-                    DrawFigures::drawPoint(painter, QPointF(pt.x, pt.y), isSelected);
-
-                }
-            }
-        }
+// Вспомогательная функция
+bool QTPainter::matchesLeftMenu(const std::vector<double> &menu, const std::vector<double> &coords) {
+    const double eps = 1e-5;
+    if (menu.size() != coords.size()) {
+        return false;
     }
-
-
-    // Аналогично отрезки
-    if (sectionStorage != nullptr && sectionStorage->size() > 0)
-        for (auto &sec: *sectionStorage) {
-
-            if (selectedIdSection.empty() && LeftMenuElem.size() != 4) {
-                DrawFigures::drawSection(painter, *sectionStorage);
-
-                break;
-            }
-
-            bool isSelected = false;
-
-            if (!selectedIdSection.empty()) {
-                emit getIdFigure(ET_SECTION, sec.beg->x, sec.beg->y, sec.end->x, sec.end->y);
-                isSelected = std::find(selectedIdSection.begin(), selectedIdSection.end(), id) !=
-                             selectedIdSection.end();
-
-
-                if (isSelected) {
-                    DrawAdditionalInf::setID(id.id); // Отрисовка айди
-                }
-            }
-
-            if (LeftMenuElem.size() == 4) {
-                if (std::abs(sec.beg->x - LeftMenuElem[0]) < 1e-3 &&
-                    std::abs(sec.beg->y - LeftMenuElem[1]) < 1e-3 &&
-                    std::abs(sec.end->x - LeftMenuElem[2]) < 1e-3 &&
-                    std::abs(sec.end->y - LeftMenuElem[3]) < 1e-3) {
-                    DrawFigures::setPen(QColor(Qt::red));
-                }
-            }
-
-            DrawFigures::drawSection(painter, QPointF(sec.beg->x, sec.beg->y), QPointF(sec.end->x, sec.end->y),
-                                     isSelected);
-
-        }
-
-    // Аналогично круги
-    if (sectionStorage != nullptr && circleStorage->size() > 0)
-        for (auto &c: *circleStorage) {
-
-            bool isSelected = false;
-
-            if (selectedIdCircle.empty() && LeftMenuElem.size() != 3) {
-                DrawFigures::drawCircle(painter, *circleStorage);
-                break;
-            }
-
-            if (!selectedIdCircle.empty()) {
-                emit getIdFigure(ET_CIRCLE, c.center->x, c.center->y, c.R);
-                isSelected = std::find(selectedIdCircle.begin(), selectedIdCircle.end(), id) !=
-                             selectedIdCircle.end();
-                if (isSelected) {
-                    DrawAdditionalInf::setID(id.id); // Отрисовка айди
-                }
-            }
-
-            if (LeftMenuElem.size() == 3) {
-                if (std::abs(c.center->x - LeftMenuElem[0]) < 1e-5 &&
-                    std::abs(c.center->y - LeftMenuElem[1]) < 1e-5
-                    && std::abs(c.R - LeftMenuElem[2]) < 1e-5) {
-                    DrawFigures::setPen(QColor(Qt::red));
-                }
-            }
-
-            DrawFigures::drawCircle(painter, QPointF(c.center->x, c.center->y), c.R, isSelected);
-
-        }
-}
-
-// Функция проверки курсора мышки и обьекта
-bool QTPainter::findClosesObject() {
-
-    // Используем только если было нажатие
-    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-    bool DoubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
-    bool flag = true; // Если нашли нужный обьект к следующим не идем
-
-    if (leftClick || DoubleClick) {
-
-        // Так как работа идет real time замедляем процесс, чтобы обработать одно нажатие один раз
-        auto currentTime = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastClickTime).count() >= 300) {
-
-            bool Delete = true; // Если не находим нужный обьект(курсор был нажат в пустой области) - очищаем выделение
-
-            // Обработка точек
-            if (pointStorage != nullptr && pointStorage->size() > 0)
-                for (auto &pt: *pointStorage) {
-
-                    bool near = ClosesPoint::checkFigure(pt.x,
-                                                         pt.y); // Функция сравнения координат курсора и обьекта
-
-                    if (near) {
-                        Delete = false;
-                        flag = false;
-
-                        lastClickTime = currentTime;
-                        emit getIdFigure(ET_POINT, pt.x, pt.y); // Получем айди
-
-                        bool isSelected =
-                                std::find(selectedIdPoint.begin(), selectedIdPoint.end(), id) !=
-                                selectedIdPoint.end();
-
-                        // Если айди уже существует снимаем выделение иначе добавляем
-
-                        if (!ModeManager::getActiveMode(KeyMode::Shift)) {
-                            // Если не нажат шифт убираем остальные выделения
-                            selectedClear();
-                            if (id.id > 0) {
-                                selectedIdPoint.push_back(id);
-                            }
-                        } else {
-                            if (isSelected) {
-                                // Снимаем выделение
-                                selectedIdPoint.erase(
-                                        std::remove(selectedIdPoint.begin(), selectedIdPoint.end(), id.id),
-                                        selectedIdPoint.end());
-                            } else {
-                                // Добавляем в выделенные
-                                if (id.id > 0) {
-                                    selectedIdPoint.push_back(id);
-                                }
-                            }
-                        }
-                        break; // Закончили поиск
-                    }
-
-
-                }
-
-            if (flag) {
-                // Если не нашли аналогично обработаем отрезки
-                if (sectionStorage != nullptr && sectionStorage->size() > 0)
-                    for (auto &sec: *sectionStorage) {
-
-                        bool near = ClosesPoint::checkFigure(sec.beg->x, sec.beg->y, sec.end->x, sec.end->y);
-
-                        if (near) {
-                            Delete = false;
-                            flag = false;
-                            lastClickTime = currentTime;
-                            emit getIdFigure(ET_SECTION, sec.beg->x, sec.beg->y, sec.end->x, sec.end->y);
-
-                            bool isSelected =
-                                    std::find(selectedIdSection.begin(), selectedIdSection.end(), id) !=
-                                    selectedIdSection.end();
-
-                            if (!ModeManager::getActiveMode(KeyMode::Shift)) {
-                                selectedClear();
-                                if (id.id > 0) {
-                                    selectedIdSection.push_back(id);
-                                }
-                            } else {
-                                if (isSelected) {
-                                    // Снимаем выделение
-                                    selectedIdSection.erase(
-                                            std::remove(selectedIdSection.begin(), selectedIdSection.end(), id),
-                                            selectedIdSection.end());
-                                } else {
-                                    // Добавляем в выделенные
-                                    if (id.id > 0) {
-                                        selectedIdSection.push_back(id);
-                                    }
-                                }
-                            }
-                            break;
-                        }
-
-                    }
-            }
-
-            if (flag) {
-                // Аналогично
-                if (circleStorage != nullptr && circleStorage->size() > 0)
-                    for (auto &c: *circleStorage) {
-                        bool near = ClosesPoint::checkFigure(c.center->x, c.center->y, c.R);
-
-                        if (near) {
-                            Delete = false;
-                            lastClickTime = currentTime;
-                            emit getIdFigure(ET_CIRCLE, c.center->x, c.center->y, c.R);
-
-                            bool isSelected =
-                                    std::find(selectedIdCircle.begin(), selectedIdCircle.end(), id) !=
-                                    selectedIdCircle.end();
-
-                            if (!ModeManager::getActiveMode(KeyMode::Shift)) {
-                                selectedClear();
-                                if (id.id > 0)
-                                    selectedIdCircle.push_back(id);
-                            } else {
-                                if (isSelected) {
-                                    // Снимаем выделение
-                                    selectedIdCircle.erase(
-                                            std::remove(selectedIdSection.begin(), selectedIdCircle.end(), id),
-                                            selectedIdCircle.end());
-                                } else {
-                                    // Добавляем в выделенные
-                                    if (id.id > 0)
-                                        selectedIdCircle.push_back(id);
-                                }
-                            }
-                            break;
-                        }
-                    }
-            }
-
-
-            if (Delete) { // Очистка если нажали в пустую область
-                selectedClear();
-                return false;
-            }
-
-        }
-    }
+    for (size_t i = 0; i < menu.size(); ++i)
+        if (std::abs(menu[i] - coords[i]) > eps)
+            return false;
     return true;
 }
 
 
+// Поиск выделенных обьектов
+bool QTPainter::checkSelection(Element type, std::vector<ID> &selected, const std::vector<double> &coords) {
+    if (type == ET_POINT) { emit getIdFigure(type, coords[0],coords[1]); }
+    else if (type == ET_SECTION) { emit getIdFigure(type, coords[0],coords[1],coords[2],coords[3]); }
+    else { emit getIdFigure(type, coords[0],coords[1],coords[2]);  }
+
+    if (std::find(selected.begin(), selected.end(), id) != selected.end()) {
+        DrawAdditionalInf::setID(id.id);
+        return true;
+    }
+    return false;
+}
+
+
+// Отрисовка фигур
+void QTPainter::drawingFigures(QPainter &painter) {
+
+    // Обработка точек
+    if (pointStorage != nullptr && !pointStorage->empty()) {
+        if (selectedIdPoint.empty() && LeftMenuElem.size() != 2) {
+            DrawFigures::drawPoint(painter, *pointStorage);
+        } else {
+            for (const auto &pt: *pointStorage) {
+                bool isSelected = checkSelection(ET_POINT, selectedIdPoint, {pt.x, pt.y});
+                if (matchesLeftMenu(LeftMenuElem, {pt.x, pt.y})) {
+                    DrawFigures::setPen(QColor(Qt::red));
+                }
+                DrawFigures::drawPoint(painter, QPointF(pt.x, pt.y), isSelected);
+            }
+        }
+    }
+
+    // Обработка отрезков
+    if (sectionStorage != nullptr && !sectionStorage->empty()) {
+        if (selectedIdSection.empty() && LeftMenuElem.size() != 4) {
+            DrawFigures::drawSection(painter, *sectionStorage);
+        } else {
+            for (const auto &sec: *sectionStorage) {
+                bool isSelected = checkSelection(ET_SECTION, selectedIdSection,
+                                                 {sec.beg->x, sec.beg->y, sec.end->x, sec.end->y});
+                if (matchesLeftMenu(LeftMenuElem, {sec.beg->x, sec.beg->y, sec.end->x, sec.end->y})) {
+                    DrawFigures::setPen(QColor(Qt::red));
+                }
+                DrawFigures::drawSection(painter, QPointF(sec.beg->x, sec.beg->y), QPointF(sec.end->x, sec.end->y),
+                                         isSelected);
+            }
+        }
+    }
+
+    // Обработка кругов
+    if (circleStorage != nullptr && !circleStorage->empty()) {
+        if (selectedIdCircle.empty() && LeftMenuElem.size() != 3) {
+            DrawFigures::drawCircle(painter, *circleStorage);
+        } else {
+            for (const auto &c: *circleStorage) {
+                bool isSelected = checkSelection(ET_CIRCLE, selectedIdCircle, {c.center->x, c.center->y, c.R});
+                if (matchesLeftMenu(LeftMenuElem, {c.center->x, c.center->y, c.R})) {
+                    DrawFigures::setPen(QColor(Qt::red));
+                }
+                DrawFigures::drawCircle(painter, QPointF(c.center->x, c.center->y), c.R, isSelected);
+            }
+        }
+    }
+}
+
+
+// Функция проверки курсора мышки и обьекта
+bool QTPainter::findClosesObject() {
+    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
+    bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
+
+    if (!leftClick && !doubleClick) {
+        return true;
+    }
+
+    auto currentTime = std::chrono::steady_clock::now();
+    if (currentTime - lastClickTime < std::chrono::milliseconds(300)) {
+        return true;
+    }
+
+    lastClickTime = currentTime;
+
+    bool objectFound = false;
+
+
+    // Шаблонная обработка выбора
+    auto processSelection = [this, &objectFound](auto *storage, auto checkFunc, auto emitFunc, auto &selectionList) {
+        if (!storage || storage->empty() || objectFound) {
+            return;
+        }
+
+        for (const auto &item: *storage) {
+            if (checkFunc(item)) {
+                emitFunc(item);
+                objectFound = true;
+
+                bool isSelected = std::find(selectionList.begin(), selectionList.end(), id) != selectionList.end();
+
+                if (!ModeManager::getActiveMode(KeyMode::Shift)) {
+                    selectedClear();
+                    if (id.id > 0) selectionList.push_back(id);
+                } else {
+                    if (isSelected) {
+                        selectionList.erase(std::remove(selectionList.begin(), selectionList.end(), id),
+                                            selectionList.end());
+                    } else if (id.id > 0) {
+                        selectionList.push_back(id);
+                    }
+                }
+                break;
+            }
+        }
+    };
+
+    // Обработка точек
+    processSelection(pointStorage,
+                     [](const Point &pt) {
+                         return ClosesPoint::checkFigure(pt.x, pt.y);
+                     },
+                     [this](const Point &pt) { emit getIdFigure(ET_POINT, pt.x, pt.y); }, selectedIdPoint);
+
+    // Обработка отрезков
+    processSelection(sectionStorage,
+                     [](const Section &sec) {
+                         return ClosesPoint::checkFigure(sec.beg->x, sec.beg->y, sec.end->x, sec.end->y);
+                     },
+                     [this](const Section &sec) {
+                         emit getIdFigure(ET_SECTION, sec.beg->x, sec.beg->y, sec.end->x, sec.end->y);
+                     }, selectedIdSection);
+
+    // Обработка кругов
+    processSelection(circleStorage,
+                     [](const Circle &c) {
+                         return ClosesPoint::checkFigure(c.center->x, c.center->y, c.R);
+                     },
+                     [this](const Circle &c) {
+                         emit getIdFigure(ET_CIRCLE, c.center->x, c.center->y, c.R);
+                     }, selectedIdCircle);
+
+    if (!objectFound) {
+        selectedClear();
+        return false;
+    }
+
+    return true;
+}
+
+
+// Сохрание в разные форматы
 void QTPainter::saveToImage(const QString &format) {
     QPixmap pixmap = grab();
 
@@ -382,6 +302,7 @@ void QTPainter::saveToImage(const QString &format) {
     }
 }
 
+
 // Функция для изменения размеров окна
 void QTPainter::resizeEvent(QResizeEvent *event) {
     QFrame::resizeEvent(event);
@@ -393,10 +314,10 @@ void QTPainter::resizeEvent(QResizeEvent *event) {
 // Стартовая точка для отрисовки всего холста
 void QTPainter::paintEvent(QPaintEvent *event) {
 
-
     // Инициализация QPainter для текущего виджета
     QPainter painter(this);
 
+    // Если не активен то не рисуем
     if (!painter.isActive()) {
         return;
     }
@@ -405,13 +326,19 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     painter.setRenderHint(QPainter::Antialiasing, true);
 
 
+    // Переносим на центр экрана
     painter.translate((int) (width() / 2 + Scaling::getDeltaX()), (int) (height() / 2 + Scaling::getDeltaY()));
+
+    // Отрисовка фона
     DrawBackground::drawFon(painter);
 
-    if (ModeManager::getCursor())
+    // Если курсор в области то рисуем его значения
+    if (ModeManager::getCursor()) {
         DrawAdditionalInf::drawCursor(painter);
+    }
 
 
+    // Выделение обьекта левого меню
     if (!LeftMenuElem.empty() &&
         ModeManager::getActiveMode(MouseMode::LeftClick) || ModeManager::getActiveMode(MouseMode::RightClick)) {
         LeftMenuElem.clear();
@@ -420,10 +347,13 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         DrawAdditionalInf::setLeftMenuID(0);
     }
 
-    // Отрисовка фигур мышкой
+
+
+    /*************** Отрисовка фигур мышкой ********************/
 
     // Чтобы не рисовать много точек перемещая мышь и удерживая кнопку
     // Рисуем одну точку одним нажатием
+
     if (ModeManager::getCursor()) {
         if (!(ModeManager::getActiveMode(MouseMode::MouseMove)) &&
             ModeManager::getActiveMode(WorkModes::Point)) {
@@ -434,20 +364,20 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             drawFigM.DrawFiguresMouse(painter);
         } else if (ModeManager::getActiveMode(WorkModes::Section)) {
 
-
             drawFigM.DrawFiguresMouse(painter);
 
             if (pointStorage != nullptr && pointStorage->size() > 0) {
                 QPointF closes = ClosesPoint::findClosestPoint(*pointStorage); // Ищем ближайшие точки
                 drawFigM.drawHints(painter, closes);
             }
-
         }
-
 
     }
 
-    // Функции выделения и перемещения
+
+
+    /****************** Функции выделения и перемещения  ********************/
+
 
     // Выделение
     if (ModeManager::getActiveMode(WorkModes::Editor)) {
@@ -470,13 +400,11 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         }
     } else if (ModeManager::getActiveMode(WorkModes::Move)) {
         if (!ModeManager::getActiveMode(MouseMode::ReleasingLeft) &&
-            ModeManager::getActiveMode(MouseMode::LeftClick)) {
+            ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
             // Перемещение только если зажата левая клавиша
             if (IDmove.id != 0) {
 
                 emit MovingFigures(); // Даем сигнал перемещения
-
-
             } else {
                 if (circleStorage != nullptr && circleStorage->size() > 0 ||
                     sectionStorage != nullptr && sectionStorage->size() > 0 ||
@@ -496,9 +424,9 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         selectedClear();
     }
 
+
     QElapsedTimer timer;
     timer.start();  // Начинаем отсчет времени
-
 
 
     // Вызов функции рисования
@@ -515,9 +443,10 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 }
 
 
+// Изменение размера окна
 void QTPainter::onWorkWindowResized() {
     // При изменении размера окна родителя меняем размер
-    Scaling::setActualMonitorSize(parentWidget()->width(),parentWidget()->height());
+    Scaling::setActualMonitorSize(parentWidget()->width(), parentWidget()->height());
     resize(parentWidget()->size());
 }
 

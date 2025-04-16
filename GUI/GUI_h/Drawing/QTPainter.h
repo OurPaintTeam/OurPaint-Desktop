@@ -9,8 +9,6 @@
 #include <vector>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QThread>
-#include <QtConcurrent/QtConcurrent>
 #include <list>
 
 #include "GeometricObjects.h"
@@ -36,13 +34,16 @@ private:
     std::vector<ID> selectedIdCircle;
     std::vector<ID> selectedIdSection;
 
-    const std::list<Point>* pointStorage ;
-    const std::list<Circle>* circleStorage ;
-    const std::list<Section>* sectionStorage ;
+    // Указатели
+    const std::list<Point>* pointStorage;
+    const std::list<Circle>* circleStorage;
+    const std::list<Section>* sectionStorage;
 
-    std::vector<double> LeftMenuElem; // Элемент левого меню
+    // Элемент левого меню
+    std::vector<double> LeftMenuElem;
 
-    DrawMouse drawFigM;  // Класс для отрисовки мышкой
+    // Класс для отрисовки мышкой
+    DrawMouse drawFigM;
 
     ID id; // Айди фигуры выделения
     ID IDmove; // Айди фигуры перемещения
@@ -67,11 +68,18 @@ public:
 
     void selectedClear();  // Очистка данных выделенных обьектов
 
+    bool matchesLeftMenu(const std::vector<double> &menu, const std::vector<double> &coords); // Вспомогательная функция поиска
+
+    bool checkSelection(Element type, std::vector<ID> &selected, const std::vector<double> &coords); // Поиск выделенных обьектов
+
     void drawingFigures(QPainter &painter); // Отрисовка всех фигур, дополняется отрисовкой выделений
 
     bool findClosesObject(); // Функция проверки курсора мышки и обьекта
 
     void saveToImage(const QString &format); // Функция сохранения изображения в указанный формат
+
+    // Функция выделения обьекта в левом меню
+    void selectedElemByID(std::vector<double> &parameters,unsigned long long int IDselected);
 
     // Обработка сигналов если была отрисовка мышкой
     void onSigPoint(double x, double y) {
@@ -84,19 +92,6 @@ public:
 
     void onSigSection(double x, double y, double x1, double y1) {
         emit SigSection(x, y, x1, y1);
-    }
-
-    void selectedElemByID(std::vector<double> &parameters,unsigned long long int IDselected){
-        if(!LeftMenuElem.empty()){
-            LeftMenuElem.clear();
-        }
-
-        if(parameters.size()>4 || parameters.size()==0 || IDselected==0){
-            return;
-        }
-
-        LeftMenuElem=parameters;
-        DrawAdditionalInf::setLeftMenuID(IDselected);
     }
 
     void emitId(Element type, const Point& p) {
