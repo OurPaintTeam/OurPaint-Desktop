@@ -39,7 +39,6 @@ add_executable(ourpaint
         src/ID.cc
 
         src/painters/BMPpainter.cc
-        src/painters/QTPainter.cc
 
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
@@ -82,6 +81,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Drawing/DrawFigures.cc
         GUI/GUI_cc/Drawing/Modes.cc
         GUI/GUI_cc/Drawing/DrawMouse.cc
+        GUI/GUI_cc/Drawing/QTPainter.cc
 
         GUI/GUI_cc/Events/SmileRightClickFilter.cc
         GUI/GUI_cc/Events/KeyWorkWindow.cc
