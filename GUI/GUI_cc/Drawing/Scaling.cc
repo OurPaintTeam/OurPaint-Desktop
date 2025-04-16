@@ -3,10 +3,11 @@
 
 
 // Static member initializations
-double Scaling::scale = 1.0;
-double Scaling::zoom = 20;
-bool Scaling::usersResize = false;
 const short int Scaling::userUnitSize = 20;
+double Scaling::scale = 1.0;
+double Scaling::zoom = userUnitSize;
+bool Scaling::usersResize = false;
+
 
 double Scaling::Delta::X = 0;
 double Scaling::Delta::Y = 0;
@@ -136,17 +137,18 @@ void Scaling::setZoomPlus() {
 
 void Scaling::setZoomMinus() {
     usersResize = true;
-    if (zoom > 9.80891e-08) {
+    const double MINSIZE=9.80891e-08;
+    if (zoom > MINSIZE) {
         zoom /= 1.1;
     }
     else {
-        zoom = 9.80891e-08;
+        zoom = MINSIZE;
     }
 }
 
 void Scaling::setZoomZero() {
     usersResize = true;
-    zoom = 50;
+    zoom = usersResize;
     Scaling::Delta::X = 0;
     Scaling::Delta::Y = 0;
 }
@@ -186,11 +188,13 @@ void Scaling::setDelta(double dx, double dy) {
 }
 
 void Scaling::setDeltaX(double X) {
-    Scaling::Delta::X += 10;
+    const short int step=10;
+    Scaling::Delta::X += step;
 }
 
 void Scaling::setDeltaY(double Y) {
-    Scaling::Delta::Y += 10;
+    const short int step=10;
+    Scaling::Delta::Y += step;
 }
 
 void Scaling::startMousePress(int x, int y) {
