@@ -1,4 +1,4 @@
-#include "Drawing/QTPainter.h"
+#include "QTPainter.h"
 
 QTPainter::QTPainter(QWidget *parent) : QFrame(parent) {
     //setAttribute(Qt::WA_OpaquePaintEvent); // ускоряет отрисовку

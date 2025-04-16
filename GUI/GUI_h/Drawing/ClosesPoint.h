@@ -5,6 +5,7 @@
 #include <limits>
 #include <cmath>
 #include <QPointF>
+#include <QDebug>
 
 #include "Paint.h"
 #include "Scaling.h"
@@ -43,7 +44,7 @@ public:
 
     // Функция проверки координат курсора и точки для перемещения
     static bool checkFigure(double x, double y) {
-        double RANGE = 3.0; // Задаем погрешность
+        double RANGE = 3.0/Scaling::getZoom(); // Задаем погрешность
 
         double logicalX = Scaling::logicCursorX();
         double logicalY = Scaling::logicCursorY();
@@ -67,7 +68,7 @@ public:
 
         double distance = std::sqrt(dx * dx + dy * dy);
 
-        double RANGE = 5.0; // Погрешность
+        double RANGE = 3.0/Scaling::getZoom();; // Погрешность
 
         if (std::abs(distance - r) <= RANGE) {
             return true;
@@ -97,7 +98,7 @@ public:
             y1 -= unitY * 7;
         }
 
-        double RANGE = 5.0; // Погрешность
+        double RANGE = 7.0/Scaling::getZoom(); // Погрешность
 
         double mouseX = Scaling::logicCursorX();
         double mouseY = Scaling::logicCursorY();
