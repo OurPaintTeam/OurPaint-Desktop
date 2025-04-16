@@ -1,5 +1,3 @@
-
-#include <cmath>
 #include "Scaling.h"
 
 
