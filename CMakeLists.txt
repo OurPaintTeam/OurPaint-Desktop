@@ -24,6 +24,7 @@ include_directories(headers/painters)
 include_directories(headers/saveload)
 
 include_directories(GUI/GUI_h)
+include_directories(GUI/GUI_h/Unnecessary)
 include_directories(GUI/GUI_h/client_server)
 include_directories(GUI/GUI_h/Windows)
 include_directories(GUI/GUI_h/Events)
