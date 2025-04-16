@@ -38,7 +38,10 @@ public:
 
         // Отрисовываем каждую точку
         for (const auto &pt: points) {
-            painter.drawEllipse(QPointF(pt.x*Scaling::getZoom(), -pt.y*Scaling::getZoom()), pointRadius, pointRadius);
+
+            painter.drawEllipse(QPointF(Scaling::scaleCoordinate(pt.x),
+                                        Scaling::scaleCoordinate(-pt.y)),
+                                pointRadius, pointRadius);
         }
     }
 

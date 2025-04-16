@@ -19,8 +19,14 @@ public:
     }
 
     explicit DrawAdditionalInf() = default;
-    static void drawCoordinateLabels(QPainter &painter, const std::vector<QPointF> &pointXR,const std::vector<QPointF> &pointXL,const std::vector<QPointF> &pointYU,const std::vector<QPointF> &pointYD,double scale) {
-
+    static void drawCoordinateLabels(QPainter &painter,
+                                     const std::vector<QPointF> &pointXR,
+                                     const std::vector<QPointF> &pointXL,
+                                     const std::vector<QPointF> &pointYU,
+                                     const std::vector<QPointF> &pointYD,
+                                     double step,
+                                     double scale)
+    {
         // Устанавливаем фиксированный размер шрифта для текста
         QFont font = painter.font();
         font.setPointSize(8);  // фиксированный размер шрифта
@@ -32,13 +38,13 @@ public:
         // Рисуем текст — координаты остаются трансформированными
         painter.setPen(Qt::black);
 
-        int i = 1;  // по X влево
+          // по X влево
         for (const QPointF &point: pointXR) {
             QString text;
             QPointF newPoint = point;
             newPoint.setY(point.y() + heightOfText-MARGINS);
             newPoint.setX(point.x() + MARGINS);
-            long long int value = static_cast<int>(point.x() / (30 * scale));
+            long long int value = static_cast<int>(point.x() / ( step * scale));
             text = QString::number(value);
             painter.drawText(newPoint, text);
         }
@@ -48,7 +54,7 @@ public:
             QPointF newPoint = point;
             newPoint.setY(point.y() + heightOfText-MARGINS);
             newPoint.setX(point.x() + MARGINS);
-            long long int value = static_cast<int>(-point.x() / (30 * scale));
+            long long int value = static_cast<int>(-point.x() / (  step * scale));
             text = QString::number(value);
             painter.drawText(newPoint, text);
         }
@@ -58,7 +64,7 @@ public:
             QPointF newPoint = point;
             newPoint.setX(point.x() + MARGINS);
             newPoint.setY(point.y() - MARGINS);
-            long long int value = static_cast<int>(point.y() / (30 * scale));
+            long long int value = static_cast<int>(point.y() / ( step * scale));
             text = QString::number(value);
             painter.drawText(newPoint, text);
         }
@@ -68,7 +74,7 @@ public:
             QPointF newPoint = point;
             newPoint.setX(point.x() + MARGINS);
             newPoint.setY(point.y() - MARGINS);
-            long long int value = static_cast<int>(point.y() / (30 * scale));
+            long long int value = static_cast<int>(point.y() / ( step * scale));
             text = QString::number(value);
             painter.drawText(newPoint, text);
         }

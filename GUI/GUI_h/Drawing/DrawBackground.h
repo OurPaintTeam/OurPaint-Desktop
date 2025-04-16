@@ -12,11 +12,11 @@
 // Клетки создают эффект передвижения
 // Оси создают эффект бесконечности
 
-class drawBackground {
+class DrawBackground {
 private:
 
 public:
-    explicit drawBackground() = default;
+    explicit DrawBackground() = default;
 
     static double niceStep(double rawStep) {
         double exponent = std::floor(std::log10(rawStep));
@@ -37,7 +37,6 @@ public:
 
 // Отрисовка фона
     static void drawFon(QPainter &painter) {
-
         double _width = Scaling::getCenteredCoordinatesX();
         double _height = Scaling::getCenteredCoordinatesY();
         short int width = Scaling::getActualMonitorWidth();
@@ -81,7 +80,7 @@ public:
 
             // Горизонтальные линии (оси X), симметрично от центра
             index = 1;
-            for (int y = currentCellSize; y <= (_height + abs(deltaY)); y += currentCellSize) {
+            for (double y = currentCellSize; y <= (_height + abs(deltaY)); y += currentCellSize) {
                 painter.setPen(index % 5 == 0 ? Qt::darkGray : Qt::lightGray);
                 if (index % 5 == 0) {
                     pointYU.emplace_back(0, y);
@@ -92,7 +91,8 @@ public:
                 ++index;
             }
 
-            DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD, scale);
+            DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD, currentCellSize, zoom);
+
         }
 
         // Оси координат

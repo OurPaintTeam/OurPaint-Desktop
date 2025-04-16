@@ -406,7 +406,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
 
     painter.translate((int) (width() / 2 + Scaling::getDeltaX()), (int) (height() / 2 + Scaling::getDeltaY()));
-    drawBackground::drawFon(painter);
+    DrawBackground::drawFon(painter);
 
     if (ModeManager::getCursor())
         DrawAdditionalInf::drawCursor(painter);
