@@ -1,6 +1,6 @@
 #include "ClosesPoint.h"
 
-
+#include <QDebug>
 // Функция поиска ближайшей точки
 QPointF ClosesPoint::findClosestPoint(const std::list<Point> &points) {
     if (points.size()>0) {
@@ -35,24 +35,19 @@ bool ClosesPoint::checkFigure(double x, double y) {
     double logicalX = Scaling::logicCursorX();
     double logicalY = Scaling::logicCursorY();
 
-    if (std::abs(logicalX - x) <= RANGE &&
-        std::abs(logicalY - y) <= RANGE) {
-
-        return true;
-    }
-
-    return false;
+    double dx = logicalX - x;
+    double dy = logicalY - y;
+    return std::sqrt(dx * dx + dy * dy) <= RANGE;
 }
 
 
 // Функция проверки координат курсора и круга для перемещения
  bool ClosesPoint::checkFigure(double x0, double y0, double r) {
-    int cursorX = Scaling::logicCursorX();
-    int cursorY = Scaling::logicCursorY();
+    double cursorX = Scaling::logicCursorX();
+    double cursorY = Scaling::logicCursorY();
 
     double dx = (cursorX - x0);
     double dy = (cursorY - y0);
-
     double distance = std::sqrt(dx * dx + dy * dy);
 
     double RANGE = 3.0/Scaling::getZoom();; // Погрешность
@@ -73,25 +68,30 @@ bool ClosesPoint::checkFigure(double x0, double y0, double x1, double y1) {
     double dy = y1 - y0;
     double dist = sqrt(dx * dx + dy * dy);
 
-    if (dist > 7) {
+    if (dist > 14.0) {
         // Нормализуем вектор направления
         double unitX = dx / dist;
         double unitY = dy / dist;
 
-        // Сдвигаем начальную и конечную точки на 7 в сторону друг друга
+        // Сдвигаем начальную и конечную точки на 3 в сторону друг друга
         // Чтобы не задеть точку
-        x0 += unitX * 7;
-        y0 += unitY * 7;
-        x1 -= unitX * 7;
-        y1 -= unitY * 7;
+        x0 += unitX * 3;
+        y0 += unitY * 3;
+        x1 -= unitX * 3;
+        y1 -= unitY * 3;
     }
 
-    double RANGE = 7.0/Scaling::getZoom(); // Погрешность
+    double RANGE = 5.0/Scaling::getZoom(); // Погрешность
 
     double mouseX = Scaling::logicCursorX();
     double mouseY = Scaling::logicCursorY();
 
     double distance = distancePointToSection(mouseX, mouseY, x0, y0, x1, y1);
+
+    qDebug() << "Cursor:" << mouseX << mouseY;
+    qDebug() << "Line: (" << x0 << "," << y0 << ") to (" << x1 << "," << y1 << ")";
+    qDebug() << "Distance to line:" << distance;
+    qDebug() << "Range:" << RANGE;
 
     if (distance <= RANGE) {
         return true;
