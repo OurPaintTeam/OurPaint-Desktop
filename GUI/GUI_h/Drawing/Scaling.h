@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include <QDebug>
 class Scaling {
 private:
     static double scale;      // Scale factor for window resizing

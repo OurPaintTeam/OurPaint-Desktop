@@ -50,7 +50,7 @@ public:
             QPointF newPoint = point;
             newPoint.setY(point.y() + heightOfText-MARGINS);
             newPoint.setX(point.x() + MARGINS);
-            double  value = Scaling::logic(-point.x());
+            double  value = Scaling::logic(point.x());
             QString text = QString::number(value, 'f', 1);
             painter.drawText(newPoint, text);
         }

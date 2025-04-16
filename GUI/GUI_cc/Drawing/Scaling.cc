@@ -131,7 +131,8 @@ void Scaling::setZoom(double z){
 
 void Scaling::setZoomPlus() {
     usersResize = true;
-    const short int MAXSIZE =100;
+
+    const short int MAXSIZE =50;
     if (zoom < MAXSIZE) {
         zoom *= 1.1;
     }
