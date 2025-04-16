@@ -173,7 +173,7 @@ void Scaling::scaling(int widgetWidth, int widgetHeight, const std::vector<doubl
     }
 }
 
-#include <qDebug>
+#include <QDebug>
 
 void Scaling::setZoomPlus() {
     const short int MAX_ZOOM = 100;

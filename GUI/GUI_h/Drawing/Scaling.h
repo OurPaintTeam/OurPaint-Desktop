@@ -7,9 +7,11 @@
 #include <vector>
 #include <QVector>
 #include <immintrin.h>
+#include <list>
+
 #include "Modes.h"
 #include "GeometricObjects.h"
-#include <list>
+
 
 class Scaling {
 private:

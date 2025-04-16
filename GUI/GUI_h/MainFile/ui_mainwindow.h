@@ -26,11 +26,12 @@
 #include <QPropertyAnimation>
 #include <QTextEdit>
 #include <QLabel>
+#include <QScrollArea>
 
 #include "CastomeConsole.h"
 #include "SmileRightClickFilter.h"
 #include "EmojiWidget.h"
-#include <QScrollArea>
+
 
 
 QT_BEGIN_NAMESPACE

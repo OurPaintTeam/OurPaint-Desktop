@@ -4,7 +4,7 @@
 #include <QPainter>
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
-#include <qDebug>
+#include <QDebug>
 
 // Класс отвечающий за отрисовку фона виджета
 // Центр у нас в центре виджета

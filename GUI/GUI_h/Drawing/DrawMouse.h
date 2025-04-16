@@ -5,7 +5,7 @@
 #include <QPointF>
 #include <QPainter>
 #include <cmath>
-#include <qDebug>
+#include <QDebug>
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
 #include "DrawFigures.h"

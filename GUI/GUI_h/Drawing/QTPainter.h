@@ -31,7 +31,6 @@ private:
     std::vector<Circle> circles;
     std::vector<Section> sections;
 
-
     //  Выделенные обьекты
     std::vector<ID> selectedIdPoint;
     std::vector<ID> selectedIdCircle;
