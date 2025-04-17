@@ -31,6 +31,7 @@ include_directories(GUI/GUI_h/Events)
 include_directories(GUI/GUI_h/Drawing)
 include_directories(GUI/GUI_h/MainFile)
 include_directories(GUI/GUI_h/Widgets)
+include_directories(GUI/GUI_h/Logger)
 
 add_executable(ourpaint
         main.cc
@@ -101,6 +102,8 @@ add_executable(ourpaint
 
         GUI/GUI_cc/Unnecessary/FrameOverlay.cc
 
+        GUI/GUI_cc/Logger/GUI_Logger.cc
+
 
         GUI/GUI_h/client_server/Client.h
         GUI/GUI_h/client_server/LocalScanner.h
@@ -137,6 +140,7 @@ add_executable(ourpaint
 
         GUI/GUI_h/Unnecessary/FrameOverlay.h
 
+        GUI/GUI_h/Logger/GUI_Logger.h
 )
 
 
