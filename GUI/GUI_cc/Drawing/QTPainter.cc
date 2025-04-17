@@ -386,8 +386,10 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                 sectionStorage != nullptr && sectionStorage->size() > 0 ||
                 pointStorage != nullptr && pointStorage->size() > 0)
                 findClosesObject();
+                 IDmove=0;
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
             id = 0;
+            IDmove=0;
             if (circleStorage != nullptr && circleStorage->size() > 0 ||
                 sectionStorage != nullptr && sectionStorage->size() > 0 ||
                 pointStorage != nullptr && pointStorage->size() > 0)
@@ -398,30 +400,30 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             }
 
         }
-    } else if (ModeManager::getActiveMode(WorkModes::Move)) {
-        if (!ModeManager::getActiveMode(MouseMode::ReleasingLeft) &&
-            ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
-            // Перемещение только если зажата левая клавиша
-            if (IDmove.id != 0) {
+    }  else if (ModeManager::getActiveMode(WorkModes::Move)) {
 
-                emit MovingFigures(); // Даем сигнал перемещения
+        //  Кнопка мыши зажата
+        bool isDragging = ModeManager::getActiveMode(MouseMode::LeftClick) &&
+                          !ModeManager::getActiveMode(MouseMode::ReleasingLeft);
+
+        if (isDragging) {
+            //  Уже что-то выбрано для перемещения
+            if (IDmove != 0) {
+                    emit MovingFigures();
             } else {
-                if (circleStorage != nullptr && circleStorage->size() > 0 ||
-                    sectionStorage != nullptr && sectionStorage->size() > 0 ||
-                    pointStorage != nullptr && pointStorage->size() > 0)
-                    if (findClosesObject()) {
-                        IDmove = id;
-                        selectedClear();
-                    } else {
-                        IDmove.id = 0;
-                    }
+                // Поиск
+                if (findClosesObject()) {
+                    IDmove = id;
+
+                }
             }
         } else {
-            IDmove.id = 0;
+            IDmove = 0; // сброс при отпускании
         }
     } else {
+        // сброс
         id = 0;
-        selectedClear();
+        IDmove = 0;
     }
 
 
