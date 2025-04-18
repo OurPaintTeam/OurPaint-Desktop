@@ -1069,6 +1069,7 @@ public:
         sevenReq = new QPushButton("7", reqPanel);
         eightReq = new QPushButton("8", reqPanel);
         nineReq = new QPushButton("9", reqPanel);
+        tenReq = new QPushButton("10", reqPanel);
 
         oneReq->setToolTip("Request 1");
         twoReq->setToolTip("Request 2");
@@ -1079,6 +1080,7 @@ public:
         sevenReq->setToolTip("Request 7");
         eightReq->setToolTip("Request 8");
         nineReq->setToolTip("Request 9");
+        tenReq->setToolTip("Request 9");
 
         oneReq->setObjectName("Request 1");
         twoReq->setObjectName("Request 2");
@@ -1089,9 +1091,10 @@ public:
         sevenReq->setObjectName("Request 7");
         eightReq->setObjectName("Request 8");
         nineReq->setObjectName("Request 9");
+        tenReq->setObjectName("Request 10");
 
         // Настройка кнопок
-        QPushButton* buttons[] = {oneReq, twoReq, threeReq, fourReq, fiveReq, sixReq, sevenReq, eightReq, nineReq};
+        QPushButton* buttons[] = {oneReq, twoReq, threeReq, fourReq, fiveReq, sixReq, sevenReq, eightReq, nineReq,tenReq};
         for (auto *button : buttons) {
             button->setFixedSize(40, 40);
             button->setStyleSheet(buttonStyle);
@@ -1369,7 +1372,7 @@ public:
             }
         });
 
-        QPushButton* reqButtons[] = {oneReq, twoReq, threeReq, fourReq, fiveReq, sixReq, sevenReq, eightReq, nineReq};
+        QPushButton* reqButtons[] = {oneReq, twoReq, threeReq, fourReq, fiveReq, sixReq, sevenReq, eightReq, nineReq,tenReq};
         for (QPushButton* button : reqButtons) {
             QObject::connect(button, &QPushButton::clicked, [&]() {
                 if (reqPanel->isVisible()) {
