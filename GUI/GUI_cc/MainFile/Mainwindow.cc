@@ -29,6 +29,13 @@ MainWindow::MainWindow(QWidget *parent)
     this->setFocusPolicy(Qt::StrongFocus);
     this->installEventFilter(this);
     this->setFocus();
+
+    ui->actionSave_project_to->installEventFilter(this);
+    ui->projectButton->installEventFilter(this);
+    ui->collaborationButton->installEventFilter(this);
+    ui->menuProject->installEventFilter(this);
+    ui->formatMenu->installEventFilter(this);
+    ui->menuCollaboration->installEventFilter(this);
 }
 
 
@@ -55,17 +62,15 @@ void MainWindow::initConnections() {
     connect(ui->nineReq, &QPushButton::clicked, this, &MainWindow::ninthReq);
 
     // Кнопки сохранение/импорт
-    connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
-    connect(ui->actionImport_project, &QAction::triggered, this, &MainWindow::loadProjectFile);
-    connect(ui->actionExport_bmp, &QAction::triggered, this, &MainWindow::saveProjectToBMP);
-    connect(ui->actionOpen_bmp, &QAction::triggered, this, &MainWindow::loadProjectBMP);
-    connect(ui->actionScript, &QAction::triggered, this, &MainWindow::buttonScript);
+   // connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
+ //   connect(ui->actionImport_project, &QAction::triggered, this, &MainWindow::loadProjectFile);
+   // connect(ui->actionScript, &QAction::triggered, this, &MainWindow::buttonScript);
 
     // Кнопки сервера
-    connect(ui->actionOpen_server, &QAction::triggered, this, &MainWindow::openServer);
-    connect(ui->actionJoin_server, &QAction::triggered, this, &MainWindow::joinServer);
-    connect(ui->actionJoin_local_server, &QAction::triggered, this, &MainWindow::joinLocalServer);
-    connect(ui->actionExit_from_session, &QAction::triggered, this, &MainWindow::exitSession);
+   // connect(ui->actionOpen_server, &QAction::triggered, this, &MainWindow::openServer);
+    //connect(ui->actionJoin_server, &QAction::triggered, this, &MainWindow::joinServer);
+    //connect(ui->actionJoin_local_server, &QAction::triggered, this, &MainWindow::joinLocalServer);
+    //connect(ui->actionExit_from_session, &QAction::triggered, this, &MainWindow::exitSession);
 
     // Кнопка помощь
     connect(ui->helpButton, &QPushButton::clicked, this, &MainWindow::showHelp);
@@ -713,6 +718,48 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
             return true;
             // Я красивый белорус!!!
         }
+    }else if (obj == ui->actionSave_project_to) {
+        if (event->type() == QEvent::Enter) {
+            QPoint pos = ui->actionSave_project_to->mapToGlobal(QPoint(ui->actionSave_project_to->width(), 0));
+            ui->formatMenu->popup(pos);
+            return true;
+        }
+    }else if (obj == ui->projectButton && event->type() == QEvent::Enter) {
+        QPoint pos = ui->projectButton->mapToGlobal(QPoint(0, ui->projectButton->height()));
+        ui->menuProject->exec(pos);
+        return true;
+    }
+    else if (obj == ui->collaborationButton && event->type() == QEvent::Enter) {
+        QPoint pos = ui->collaborationButton->mapToGlobal(QPoint(0, ui->collaborationButton->height()));
+        ui->menuCollaboration->exec(pos);
+        return true;
+    }
+    else if (obj == ui->menuCollaboration && event->type() == QEvent::Leave) {
+        QTimer::singleShot(100, this, [this]() {
+            if (!ui->menuCollaboration->underMouse()) {
+                ui->menuCollaboration->close();
+            }
+        });
+        return true;
+    }
+    else if (obj == ui->menuProject && event->type() == QEvent::Leave) {
+        QTimer::singleShot(100, this, [this]() {
+            if (!ui->menuProject->underMouse() && !ui->formatMenu->underMouse()) {
+                ui->menuProject->close();
+                ui->formatMenu->close();
+            }
+        });
+        return true;
+    }
+    else if (obj == ui->formatMenu && event->type() == QEvent::Leave) {
+        QTimer::singleShot(100, this, [this]() {
+            if (!ui->formatMenu->underMouse()) {
+                ui->formatMenu->close();
+                if (!ui->menuProject->underMouse()) {
+                    ui->menuProject->close();
+                }
+            }
+        });
     }
 
     return QObject::eventFilter(obj, event);

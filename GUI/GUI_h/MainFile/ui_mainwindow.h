@@ -27,29 +27,50 @@
 #include <QTextEdit>
 #include <QLabel>
 #include <QScrollArea>
+#include <QToolButton>
+#include <QWidgetAction>
 
 #include "CastomeConsole.h"
 #include "SmileRightClickFilter.h"
 #include "EmojiWidget.h"
-
-
 
 QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow {
 public:
     // Actions
-    QAction *actionSave_project_to;
-    QAction *actionImport_project;
-    QAction *actionExport_bmp;
-    QAction *actionOpen_bmp;
-    QAction *actionScript;
+    QToolButton *actionSave_project_to;
+    QToolButton* actionJPG;
+    QToolButton* actionJPEG;
+    QToolButton* actionPNG;
+    QToolButton* actionBMP;
+    QToolButton* actionTIFF;
+    QToolButton* actionPDF;
+    QToolButton* actionOURP;
+    QToolButton *actionImport_project;
+    QToolButton *actionScript;
 
-    QAction *actionOpen_server;
-    QAction *actionJoin_server;
-    QAction *actionJoin_local_server;
-    QAction *actionExit_from_session;
+    QWidgetAction* saveAction;
+    QWidgetAction* widgetJPG;
+    QWidgetAction* widgetJPEG;
+    QWidgetAction* widgetPNG;
+    QWidgetAction* widgetBMP;
+    QWidgetAction* widgetTIFF;
+    QWidgetAction* widgetPDF;
+    QWidgetAction* widgetOURP;
+    QWidgetAction *widgetImport_project;
+    QWidgetAction *widgetScript;
+
+    QToolButton *actionOpen_server;
+    QToolButton *actionJoin_server;
+    QToolButton *actionJoin_local_server;
+    QToolButton *actionExit_from_session;
     QAction *action_help;
+
+    QWidgetAction *widgetOpen_server;
+    QWidgetAction *widgetJoin_server;
+    QWidgetAction *widgetJoin_local_server;
+    QWidgetAction *widgetExit_from_session;
 
     // Main widgets
     QWidget *centralwindow;
@@ -65,6 +86,7 @@ public:
 
     // Menu
     QMenu *menuProject;
+    QMenu* formatMenu;
     QMenu *menuCollaboration;
 
     // Menu buttons
@@ -105,6 +127,7 @@ public:
     QPushButton *toolMoving;
     QPushButton *toolRotation;
     QPushButton *toolResize;
+    QPushButton *toolSelected;
 
     // Panel for requirements
     QWidget *reqPanel;
@@ -145,6 +168,7 @@ public:
     QWidget *settingsPanel;
     QVBoxLayout *settingsLayout;
     QCheckBox *componentGrid;
+    QCheckBox *componentAxis;
     QLineEdit *nameUsers;
 
     void setupUi(QMainWindow *MainWindow) {
@@ -383,40 +407,364 @@ public:
 
         QIcon fileIn("../Static/icons/filein.ico");
         QIcon fileOn("../Static/icons/fileon.ico");
-        QIcon bmpIn("../Static/icons/bmpSave.ico");
-        QIcon bmpOn("../Static/icons/bmpImp.ico");
 
-        actionSave_project_to = new QAction(MainWindow);
+        actionSave_project_to = new QToolButton(MainWindow);
         actionSave_project_to->setObjectName("actionSave_project_to");
+
+        saveAction = new QWidgetAction(menuProject);
+        saveAction->setDefaultWidget(actionSave_project_to);
+        saveAction->setObjectName("saveAction");
+
+        // Создание действий для каждого формата
+        actionJPG = new QToolButton( MainWindow);
+        actionJPG->setText("JPG");
+        actionJPEG = new QToolButton( MainWindow);
+        actionJPEG->setText("JPEG");
+        actionPNG = new QToolButton( MainWindow);
+        actionPNG->setText("PNG");
+        actionBMP = new QToolButton( MainWindow);
+        actionBMP->setText("BMP");
+        actionTIFF = new QToolButton( MainWindow);
+        actionTIFF->setText("TIFF");
+        actionPDF = new QToolButton( MainWindow);
+        actionPDF->setText("PDF");
+        actionOURP = new QToolButton( MainWindow);
+        actionOURP->setText("OURP");
+
+        // Создание действий для каждого формата
+        actionJPG ->setObjectName("actionJPG");
+        actionJPEG ->setObjectName("actionJPEG");
+        actionPNG ->setObjectName("actionPNG");
+        actionBMP ->setObjectName("actionBMP");
+        actionTIFF->setObjectName("actionTIFF");;
+        actionPDF ->setObjectName("actionPDF");
+        actionOURP ->setObjectName("actionOURP");
+
+
+        actionOURP->setStyleSheet(
+                "QToolButton {"
+                "   background-color: transparent;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px 10px;"
+                "   text-align: left;"
+                "   border: none;"
+                "}"
+                "QToolButton:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+                "QToolButton:pressed {"
+                "   background-color: rgba(255, 255, 255, 0.1);"
+                "}"
+        );
+
+        actionPDF->setStyleSheet(
+                "QToolButton {"
+                "   background-color: transparent;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px 10px;"
+                "   text-align: left;"
+                "   border: none;"
+                "}"
+                "QToolButton:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+                "QToolButton:pressed {"
+                "   background-color: rgba(255, 255, 255, 0.1);"
+                "}"
+        );
+        actionTIFF->setStyleSheet(
+                "QToolButton {"
+                "   background-color: transparent;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px 10px;"
+                "   text-align: left;"
+                "   border: none;"
+                "}"
+                "QToolButton:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+                "QToolButton:pressed {"
+                "   background-color: rgba(255, 255, 255, 0.1);"
+                "}"
+        );
+        actionBMP->setStyleSheet(
+                "QToolButton {"
+                "   background-color: transparent;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px 10px;"
+                "   text-align: left;"
+                "   border: none;"
+                "}"
+                "QToolButton:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+                "QToolButton:pressed {"
+                "   background-color: rgba(255, 255, 255, 0.1);"
+                "}"
+        );
+        actionJPG->setStyleSheet(
+                "QToolButton {"
+                "   background-color: transparent;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px 10px;"
+                "   text-align: left;"
+                "   border: none;"
+                "}"
+                "QToolButton:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+                "QToolButton:pressed {"
+                "   background-color: rgba(255, 255, 255, 0.1);"
+                "}"
+        );
+        actionJPEG->setStyleSheet(
+                "QToolButton {"
+                "   background-color: transparent;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px 10px;"
+                "   text-align: left;"
+                "   border: none;"
+                "}"
+                "QToolButton:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+                "QToolButton:pressed {"
+                "   background-color: rgba(255, 255, 255, 0.1);"
+                "}"
+        );
+        actionPNG->setStyleSheet(
+                "QToolButton {"
+                "   background-color: transparent;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px 10px;"
+                "   text-align: left;"
+                "   border: none;"
+                "}"
+                "QToolButton:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+                "QToolButton:pressed {"
+                "   background-color: rgba(255, 255, 255, 0.1);"
+                "}"
+        );
+
+        widgetJPG = new QWidgetAction(formatMenu);
+        widgetJPG->setDefaultWidget(actionJPG);
+        widgetJPG->setObjectName("widgetJPG");
+
+        widgetJPEG = new QWidgetAction(formatMenu);
+        widgetJPEG->setDefaultWidget(actionJPEG);
+        widgetJPEG->setObjectName("widgetJPEG");
+
+        widgetPNG = new QWidgetAction(formatMenu);
+        widgetPNG->setDefaultWidget(actionPNG);
+        widgetPNG->setObjectName("widgetPNG");
+
+        widgetBMP = new QWidgetAction(formatMenu);
+        widgetBMP->setDefaultWidget(actionBMP);
+        widgetBMP->setObjectName("widgetBMP");
+
+        widgetTIFF = new QWidgetAction(formatMenu);
+        widgetTIFF->setDefaultWidget(actionTIFF);
+        widgetTIFF->setObjectName("widgetTIFF");
+
+        widgetPDF = new QWidgetAction(formatMenu);
+        widgetPDF->setDefaultWidget(actionPDF);
+        widgetPDF->setObjectName("widgetPDF");
+
+        widgetOURP = new QWidgetAction(formatMenu);
+        widgetOURP->setDefaultWidget(actionOURP);
+        widgetOURP->setObjectName("widgetOURP");
+
         actionSave_project_to->setIcon(fileIn);
         actionSave_project_to->setFont(font);
+        actionSave_project_to->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        actionSave_project_to->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-        actionImport_project = new QAction(MainWindow);
+        // Используем стиль, чтобы расположить иконку справа и текст слева
+        actionSave_project_to->setStyleSheet(
+                "QToolButton#actionSave_project_to {"
+                "   background-color: transparent;"  // Прозрачная кнопка
+                "   border: none;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px;"
+                "   padding-left: 10px;"  // Отступ текста от левого края
+                "   text-align: left;"
+                "   qproperty-iconSize: 16px;"  // Размер иконки
+                "   display: flex;"  // Добавляем flex для управления расположением
+                "   justify-content: space-between;"  // Раздвигаем текст и иконку
+                "}"
+                "QToolButton#actionSave_project_to::icon {"
+                "   margin-left: 10px;"  // Отступ между текстом и иконкой
+                "   width: 16px; height: 16px;"  // Размер иконки
+                "}"
+                "QToolButton#actionSave_project_to:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"  // Подсветка при наведении
+                "   border-radius: 4px;"
+                "}"
+        );
+
+
+        actionImport_project = new QToolButton(MainWindow);
+
+        widgetImport_project = new QWidgetAction(menuProject);
+        widgetImport_project->setDefaultWidget(actionImport_project);
+        widgetImport_project->setObjectName("widgetImport_project");
+
+        actionImport_project->setFont(font);
+        actionImport_project->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        actionImport_project->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         actionImport_project->setObjectName("actionImport_project");
         actionImport_project->setIcon(fileOn);
 
-        actionExport_bmp = new QAction(MainWindow);
-        actionExport_bmp->setObjectName("actionExport_bmp");
-        actionExport_bmp->setIcon(bmpIn);
+        actionImport_project->setStyleSheet(
+                "QToolButton#actionImport_project {"
+                "   background-color: transparent;"  // Прозрачная кнопка
+                "   border: none;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px;"
+                "   padding-left: 10px;"  // Отступ текста от левого края
+                "   text-align: left;"
+                "   qproperty-iconSize: 16px;"  // Размер иконки
+                "   display: flex;"  // Добавляем flex для управления расположением
+                "   justify-content: space-between;"  // Раздвигаем текст и иконку
+                "}"
+                "QToolButton#actionImport_project::icon {"
+                "   margin-left: 10px;"  // Отступ между текстом и иконкой
+                "   width: 16px; height: 16px;"  // Размер иконки
+                "}"
+                "QToolButton#actionImport_project:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"  // Подсветка при наведении
+                "   border-radius: 4px;"
+                "}"
+        );
 
-        actionOpen_bmp = new QAction(MainWindow);
-        actionOpen_bmp->setObjectName("actionOpen_bmp");
-        actionOpen_bmp->setIcon(bmpOn);
 
-        actionScript = new QAction(MainWindow);
+        actionScript = new QToolButton(MainWindow);
+        actionScript->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        actionScript->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        actionScript->setLayoutDirection(Qt::LeftToRight);
+        widgetScript = new QWidgetAction(menuProject);
+        widgetScript->setDefaultWidget(actionScript);
+        widgetScript->setObjectName("widgetScript");
         actionScript->setObjectName("actionScript");
+        actionScript->setStyleSheet(
+                "QToolButton#actionScript {"
+                "   background-color: transparent;"
+                "   border: none;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px;"
+                "}"
+                "QToolButton#actionScript:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+        );
 
-        actionOpen_server = new QAction(MainWindow);
+        actionOpen_server = new QToolButton(MainWindow);
         actionOpen_server->setObjectName("actionOpen_server");
+        actionOpen_server->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        actionOpen_server->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        actionOpen_server->setLayoutDirection(Qt::LeftToRight);
+        widgetOpen_server = new QWidgetAction(menuCollaboration);
+        widgetOpen_server->setDefaultWidget(actionOpen_server);
+        widgetOpen_server->setObjectName("widgetOpen_server");
+        actionOpen_server->setStyleSheet(
+                "QToolButton#actionOpen_server {"
+                "   background-color: transparent;"
+                "   border: none;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px;"
+                "}"
+                "QToolButton#actionOpen_server:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+        );
 
-        actionJoin_server = new QAction(MainWindow);
+        actionJoin_server = new QToolButton(MainWindow);
         actionJoin_server->setObjectName("actionJoin_server");
 
-        actionJoin_local_server = new QAction(MainWindow);
+        actionJoin_server->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        actionJoin_server->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        actionJoin_server->setLayoutDirection(Qt::LeftToRight);
+        widgetJoin_server = new QWidgetAction(menuCollaboration);
+        widgetJoin_server->setDefaultWidget(actionJoin_server);
+        widgetJoin_server->setObjectName("widgetJoin");
+        actionJoin_server->setStyleSheet(
+                "QToolButton#actionJoin_server {"
+                "   background-color: transparent;"
+                "   border: none;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px;"
+                "}"
+                "QToolButton#actionJoin_server:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+        );
+
+        actionJoin_local_server = new QToolButton(MainWindow);
         actionJoin_local_server->setObjectName("actionJoin_local_server");
 
-        actionExit_from_session = new QAction(MainWindow);
+        actionJoin_local_server->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        actionJoin_local_server->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        actionJoin_local_server->setLayoutDirection(Qt::LeftToRight);
+        widgetJoin_local_server = new QWidgetAction(menuCollaboration);
+        widgetJoin_local_server->setDefaultWidget(actionJoin_local_server);
+        widgetJoin_local_server->setObjectName("widgetJoin_local_server");
+        actionJoin_local_server->setStyleSheet(
+                "QToolButton#actionJoin_local_server {"
+                "   background-color: transparent;"
+                "   border: none;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px;"
+                "}"
+                "QToolButton#actionJoin_local_server:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+        );
+
+        actionExit_from_session = new QToolButton(MainWindow);
         actionExit_from_session->setObjectName("actionExit_from_session");
+
+        actionExit_from_session->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        actionExit_from_session->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        actionExit_from_session->setLayoutDirection(Qt::LeftToRight);
+        widgetExit_from_session= new QWidgetAction(menuCollaboration);
+        widgetExit_from_session->setDefaultWidget(actionExit_from_session);
+        widgetExit_from_session->setObjectName("widgetExitS");
+        actionExit_from_session->setObjectName("actionExit_from_session");
+        actionExit_from_session->setStyleSheet(
+                "QToolButton#actionExit_from_session {"
+                "   background-color: transparent;"
+                "   border: none;"
+                "   font-size: 9pt;"
+                "   color: #8888A0;"
+                "   padding: 5px;"
+                "}"
+        );
 
         action_help = new QAction(MainWindow);
         action_help->setObjectName("action_help");
@@ -433,14 +781,15 @@ public:
                 "QMenu#menuProject { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }"
                 "QMenu#menuProject::indicator { image: none; width: 0px; height: 0px; }"
                 "::menu-indicator{ image: none; }"
+                "QMenu#formatMenu::item:hover {"
+                "   background-color: rgba(255, 255, 255, 0.3); "  // Подсветка при наведении
+                "}"
         );
 
         menuProject->setFont(font);
-        menuProject->addAction(actionSave_project_to);
-        menuProject->addAction(actionImport_project);
-        menuProject->addAction(actionExport_bmp);
-        menuProject->addAction(actionOpen_bmp);
-        menuProject->addAction(actionScript);
+        menuProject->addAction(saveAction);
+        menuProject->addAction(widgetImport_project);
+        menuProject->addAction(widgetScript);
 
         // Меню "Collaboration"
         menuCollaboration = new QMenu(MainWindow);
@@ -448,13 +797,39 @@ public:
         menuCollaboration->setStyleSheet(
                 "QMenu#menuCollaboration { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }"
                 "QMenu#menuCollaboration::indicator { image: none; width: 0px; height: 0px; }"
+                "QMenu#formatMenu::item:hover {"
+                "   background-color: rgba(255, 255, 255, 0.3); "  // Подсветка при наведении
+                "}"
         );
         menuCollaboration->setFont(font);
-        menuCollaboration->addAction(actionOpen_server);
-        menuCollaboration->addAction(actionJoin_server);
-        menuCollaboration->addAction(actionJoin_local_server);
+
+        menuCollaboration->addAction(widgetOpen_server);
+        menuCollaboration->addAction(widgetJoin_server);
+        menuCollaboration->addAction(widgetJoin_local_server);
         menuCollaboration->addSeparator();
-        menuCollaboration->addAction(actionExit_from_session);
+        menuCollaboration->addAction(widgetExit_from_session);
+
+
+        // Меню "Format"
+        formatMenu = new QMenu(MainWindow);
+        formatMenu->setObjectName("formatMenu");
+        formatMenu->setStyleSheet(
+                "QMenu#formatMenu { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }"
+                "QMenu#formatMenu::indicator { image: none; width: 0px; height: 0px; }"
+                "::menu-indicator{ image: none; }"
+                "QMenu#formatMenu::item:hover {"
+                "   background-color: rgba(255, 255, 255, 0.3); "  // Подсветка при наведении
+                "}"
+        );
+        formatMenu->setFont(font);
+        formatMenu->addAction(widgetOURP);
+        formatMenu->addAction(widgetJPG);
+        formatMenu->addAction(widgetJPEG);
+        formatMenu->addAction(widgetPNG);
+        formatMenu->addAction(widgetBMP);
+        formatMenu->addAction(widgetTIFF);
+        formatMenu->addAction(widgetPDF);
+
     }
 
     void setupMenuButtons() {
@@ -594,6 +969,12 @@ public:
         componentGrid->setStyleSheet("color: #D8D8F6;background-color: #494850; border: none");
         componentGrid->setChecked(true);
         settingsLayout->addWidget(componentGrid);
+
+        componentAxis = new QCheckBox("Axis", settingsPanel);
+        componentAxis->setObjectName("componentAxis");
+        componentAxis->setStyleSheet("color: #D8D8F6;background-color: #494850; border: none");
+        componentAxis->setChecked(true);
+        settingsLayout->addWidget(componentAxis);
 
         nameLayout = new QHBoxLayout();
         nameLayout->setObjectName("nameLayout");
@@ -1035,10 +1416,23 @@ public:
         toolResize->setStyleSheet(buttonStyle);
         toolsLayout->addWidget(toolResize);
 
+        // TODO add ico!!!
+        // SELECTED
+        toolSelected = new QPushButton("", toolPanel);
+        toolSelected->setToolTip("Selected");
+        toolSelected->setObjectName("Resize");
+        QIcon IcoSel("../Static/icons/icoResize.ico");
+        toolSelected->setIcon(IcoSel);
+        toolSelected->setFixedSize(40, 40);
+        toolSelected->setStyleSheet(buttonStyle);
+        toolsLayout->addWidget(toolSelected);
+
         toolsPanelAnimation = new QPropertyAnimation(toolPanel, "maximumWidth");
         toolsPanelAnimation->setObjectName("toolsPanelAnimation");
         toolsPanelAnimation->setDuration(200);
         toolsPanelAnimation->setEasingCurve(QEasingCurve::OutQuad);
+
+
 
         toolPanel->setMaximumWidth(0);
     }
@@ -1331,6 +1725,15 @@ public:
             }
         });
 
+        QObject::connect(toolSelected, &QPushButton::clicked, [&]() {
+            if (toolPanel->isVisible()) {
+                toolsPanelAnimation->stop();
+                toolsPanelAnimation->setStartValue(toolPanel->maximumWidth());
+                toolsPanelAnimation->setEndValue(0);
+                toolsPanelAnimation->start();
+            }
+        });
+
         QObject::connect(toolsPanelAnimation, &QPropertyAnimation::finished, [&]() {
             if (toolPanel->maximumWidth() == 0) {
                 toolPanel->hide();
@@ -1390,6 +1793,20 @@ public:
             }
         });
 
+        QObject::connect(projectButton, &QPushButton::clicked, [&]() {
+            if (menuProject->isVisible()) {
+                menuProject->close();
+               formatMenu->close(); // если открыто
+            }
+        });
+
+        QObject::connect(collaborationButton, &QPushButton::clicked, [&]() {
+            if (menuCollaboration->isVisible()) {
+                menuCollaboration->close();
+            }
+        });
+
+
     }
 
     void reTranslateUi(QMainWindow *MainWindow) const {
@@ -1398,14 +1815,12 @@ public:
 
         actionSave_project_to->setText(QCoreApplication::translate("MainWindow", "Save project to...", nullptr));
         actionImport_project->setText(QCoreApplication::translate("MainWindow", "Import project", nullptr));
-        actionExport_bmp->setText(QCoreApplication::translate("MainWindow", "Export BMP", nullptr));
-        actionOpen_bmp->setText(QCoreApplication::translate("MainWindow", "Open BMP", nullptr));
-        actionScript->setText(QCoreApplication::translate("MainWindow", "Script", nullptr));
+        actionScript->setText(QCoreApplication::translate("MainWindow", "Script                        ", nullptr));
 
-        actionOpen_server->setText(QCoreApplication::translate("MainWindow", "Open server", nullptr));
-        actionJoin_server->setText(QCoreApplication::translate("MainWindow", "Join server", nullptr));
-        actionJoin_local_server->setText(QCoreApplication::translate("MainWindow", "Join local server", nullptr));
-        actionExit_from_session->setText(QCoreApplication::translate("MainWindow", "Exit from session", nullptr));
+        actionOpen_server->setText(QCoreApplication::translate("MainWindow", "Open server           ", nullptr));
+        actionJoin_server->setText(QCoreApplication::translate("MainWindow", "Join server             ", nullptr));
+        actionJoin_local_server->setText(QCoreApplication::translate("MainWindow", "Join local server     ", nullptr));
+        actionExit_from_session->setText(QCoreApplication::translate("MainWindow", "Exit from session   ", nullptr));
         action_help->setText(QCoreApplication::translate("MainWindow", "Help", nullptr));
 
 // Установка элементов левого меню
@@ -1427,6 +1842,7 @@ public:
 
 // Установка текста для настроек
         componentGrid->setText(QCoreApplication::translate("MainWindow", "Grid", nullptr));
+        componentAxis->setText(QCoreApplication::translate("MainWindow", "Axis", nullptr));
     }
 };
 
