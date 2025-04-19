@@ -56,7 +56,6 @@ private:
     Ui::MainWindow *ui;
     std::vector<QString> commands; // Буфер команд для консоли
     int Index; // Индекс для навигации по командам
-    bool save; // Флаг сохранения проекта
 
     Help *helpWindow; // Окно справки
 
@@ -104,18 +103,7 @@ public:
 
     void showWarning(const QString &text);
 
-    void setSave(bool T) {
-        save = T;
-    }
 
-
-    void WorkWindowClear(){
-        painter->clear();
-    }
-
-    void Draw(){
-        painter->draw();
-    }
 
     QTPainter *getQTPainter(){
         return painter.get();
@@ -206,6 +194,12 @@ public slots:
     void Circle() {
         ModeManager::setActiveMode(WorkModes::Circle);
     };
+    void Sector() {
+        ModeManager::setActiveMode(WorkModes::Sector);
+    };
+    void Arc() {
+        ModeManager::setActiveMode(WorkModes::Arc);
+    };
 
     void FigMoving() {
         ModeManager::setActiveMode(WorkModes::Editor);
@@ -216,13 +210,12 @@ public slots:
 
     void ToolRotation() {
         ModeManager::setActiveMode(WorkModes::Rotate);
-        //  painter->setMode(DrawMode::Rotate);
-        // emit toolRotation();
     };
     void ToolResize() {
         ModeManager::setActiveMode(WorkModes::Resize);
-        //  painter->setMode(DrawMode::Resize);
-        emit toolResize();
+    };
+    void ToolSelected() {
+        ModeManager::setActiveMode(WorkModes::Selected);
     };
 
     ////////////////////////////////////////////////////
@@ -296,15 +289,12 @@ signals:
     // Кнопки сервера
     void SigOpenServer(const QString &text);
     void SigJoinServer(const QString &text);
-    void SigJoinLocalServer(const QString &text);
     void SigExitSession();
 
     // Чат
     void EnterMessage(const QString &text);
 
 
-    void toolMoving();
-    void toolRotation();
     void toolResize();
 
     void NameUsers(const QString &text);

@@ -68,8 +68,8 @@ public:
     static void setZoomZero();
     static void setZoom(double z);
     static void setDelta(double dx, double dy);
-    static void setDeltaX(double X);
-    static void setDeltaY(double Y);
+    static void setDeltaX();
+    static void setDeltaY();
     static void setCursor(short int x,short int y);
 
     static double getScale();

@@ -75,8 +75,8 @@ void DrawAdditionalInf::drawAxes(QPainter &painter) {
     double _height = Scaling::getCenteredCoordinatesY();
 
     // Смещение
-    int deltaX = Scaling::getDeltaX();
-    int deltaY = Scaling::getDeltaY();
+    double deltaX = Scaling::getDeltaX();
+    double deltaY = Scaling::getDeltaY();
 
     double logicXR = Scaling::logic(_width) - Scaling::logic(deltaX); // х правый
     double logicYU = Scaling::logic(_height) + Scaling::logic(deltaY); // у верхний

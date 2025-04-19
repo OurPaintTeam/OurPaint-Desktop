@@ -39,6 +39,7 @@ private:
     const std::list<Point>* pointStorage;
     const std::list<Circle>* circleStorage;
     const std::list<Section>* sectionStorage;
+    const rectangle* Rectangle;
 
     // Элемент левого меню
     std::vector<double> LeftMenuElem;
@@ -82,6 +83,7 @@ public:
     // Функция выделения обьекта в левом меню
     void selectedElemByID(std::vector<double> &parameters,unsigned long long int IDselected);
 
+    void resizeRectangle();
     // Обработка сигналов если была отрисовка мышкой
     void onSigPoint(double x, double y) {
         emit SigPoint(x, y);
@@ -108,7 +110,9 @@ public:
 
 protected:
     // При выходе за границы мы масштабируем
-    void changeSize(const rectangle &allObjects) override {}
+    void changeSize(const rectangle &allObjects) override {
+        Rectangle=&allObjects;
+    }
 
     unsigned long long getWeight() override {
         return Scaling::getActualMonitorWidth();
@@ -161,6 +165,8 @@ signals:
     void SigPoint(double x, double y);
     void SigCircle(double x, double y, double r);
     void SigSection(double x, double y, double x1, double y1);
+    void SigSector();
+    void SigArc();
 
     // При выделении
     void getIdFigure(Element F, double x, double y);

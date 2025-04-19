@@ -122,6 +122,7 @@ public:
     QPushButton *figureSection;
     QPushButton *figureCircle;
     QPushButton *figureSector;
+    QPushButton *figureArc;
 
     // Tools panel
     QWidget *toolPanel;
@@ -1357,6 +1358,7 @@ public:
         figureSection = new QPushButton("", figuresPanel);
         figureCircle = new QPushButton("", figuresPanel);
         figureSector = new QPushButton("", figuresPanel);
+        figureArc = new QPushButton("", figuresPanel);
 
         figurePoint->setToolTip("Point");
         figurePoint->setObjectName("Point");
@@ -1370,21 +1372,27 @@ public:
         figureSector->setToolTip("Sector");
         figureSector->setObjectName("Sector");
 
+        figureArc->setToolTip("Arc");
+        figureArc->setObjectName("Arc");
+
         QIcon IcoCircle("../Static/icons/LeftBar/Primitives/Circle.png");
         QIcon IcoPoint("../Static/icons/LeftBar/Primitives/Point.png");
         QIcon IcoLine("../Static/icons/LeftBar/Primitives/Line.png");
         QIcon IcoSector("../Static/icons/LeftBar/Primitives/Line.png");
-        //  TODO  Добавить иконку
+        QIcon IcoArc("../Static/icons/LeftBar/Primitives/Line.png");
+        //  TODO  Добавить иконки
 
         figurePoint->setIcon(IcoPoint);
         figureSection->setIcon(IcoLine);
         figureCircle->setIcon(IcoCircle);
         figureSector->setIcon(IcoSector);
+        figureSector->setIcon(IcoArc);
 
         figurePoint->setFixedSize(40, 40);
         figureSection->setFixedSize(40, 40);
         figureCircle->setFixedSize(40, 40);
         figureSector->setFixedSize(40, 40);
+        figureArc->setFixedSize(40, 40);
 
         QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
                               "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }";
@@ -1393,11 +1401,13 @@ public:
         figureSection->setStyleSheet(buttonStyle);
         figureCircle->setStyleSheet(buttonStyle);
         figureSector->setStyleSheet(buttonStyle);
+        figureArc->setStyleSheet(buttonStyle);
 
         figuresLayout->addWidget(figurePoint);
         figuresLayout->addWidget(figureSection);
         figuresLayout->addWidget(figureCircle);
         figuresLayout->addWidget(figureSector);
+        figuresLayout->addWidget(figureArc);
 
         figuresPanelAnimation = new QPropertyAnimation(figuresPanel, "maximumWidth");
         figuresPanelAnimation->setObjectName("figuresPanelAnimation");
@@ -1687,6 +1697,15 @@ public:
         });
 
         QObject::connect(figureSector, &QPushButton::clicked, [&]() {
+            if (figuresPanel->isVisible()) {
+                figuresPanelAnimation->stop();
+                figuresPanelAnimation->setStartValue(figuresPanel->maximumWidth());
+                figuresPanelAnimation->setEndValue(0);
+                figuresPanelAnimation->start();
+            }
+        });
+
+        QObject::connect(figureArc, &QPushButton::clicked, [&]() {
             if (figuresPanel->isVisible()) {
                 figuresPanelAnimation->stop();
                 figuresPanelAnimation->setStartValue(figuresPanel->maximumWidth());

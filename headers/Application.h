@@ -21,6 +21,7 @@ public:
 private:
     QApplication app;
     std::unique_ptr<QTPainter> painter;
+    std::unique_ptr<LeftMenuBar> leftMenu;
     MainWindow w;
     Paint screen;
 

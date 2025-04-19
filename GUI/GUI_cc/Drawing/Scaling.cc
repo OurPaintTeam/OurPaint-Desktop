@@ -154,7 +154,7 @@ void Scaling::setZoomMinus() {
 
 void Scaling::setZoomZero() {
     usersResize = true;
-    zoom = usersResize;
+    zoom = userUnitSize;
     scale=1.0;
     Scaling::Delta::X = 0;
     Scaling::Delta::Y = 0;
@@ -198,12 +198,12 @@ void Scaling::setDelta(double dx, double dy) {
     Scaling::Delta::Y += dy;
 }
 
-void Scaling::setDeltaX(double X) {
+void Scaling::setDeltaX() {
     const short int step=10;
     Scaling::Delta::X += step;
 }
 
-void Scaling::setDeltaY(double Y) {
+void Scaling::setDeltaY() {
     const short int step=10;
     Scaling::Delta::Y += step;
 }

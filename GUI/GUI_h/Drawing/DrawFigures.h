@@ -92,7 +92,31 @@ public:
         MyColor = QPen(Qt::black);  // Сброс цвета
     }
 
+    // Функция для рисования сектора
+    static void drawSector(QPainter &painter,bool selected) {
+        // Настройка пера
+        QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+        currentPen.setWidth(selected ? 2 : 1);
+        currentPen.setCapStyle(Qt::RoundCap);
+        painter.setPen(currentPen);
 
+
+        // Сброс цвета
+        MyColor = QPen(Qt::black);
+    }
+
+    // Функция для рисования дуги
+    static void drawArc(QPainter &painter, bool selected) {
+        // Настройка пера
+        QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+        currentPen.setWidth(selected ? 2 : 1);
+        currentPen.setCapStyle(Qt::RoundCap);
+        painter.setPen(currentPen);
+
+
+        // Сброс пера в черный
+        MyColor = QPen(Qt::black);
+    }
     //////////// Функции для одиночной отрисовки (мышью) или если выделен обьект
 
     // Функция для отрисовки одной точки
@@ -175,6 +199,65 @@ public:
 
         MyColor = QPen(Qt::black);  // Сброс цвета
     }
+
+    // Функция для рисования сектора
+    static void drawSector(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg, bool selected) {
+        // Настройка пера
+        QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+        currentPen.setWidth(selected ? 2 : 1);
+        currentPen.setCapStyle(Qt::RoundCap);
+        painter.setPen(currentPen);
+
+        // Масштабирование центра
+        QPointF scaledCenter(Scaling::scaleCoordinate(center.x()), Scaling::scaleCoordinate(-center.y()));
+        double scaledRadius = Scaling::scaleCoordinate(radius);
+
+        // Прямоугольник, в который вписана дуга
+        QRectF arcRect(scaledCenter.x() - scaledRadius, scaledCenter.y() - scaledRadius,
+                       2 * scaledRadius, 2 * scaledRadius);
+
+
+        double startAngle16 =Scaling::scaleCoordinate(-startAngleDeg ); // Минус, т.к. Y идёт вниз
+        double spanAngle16 =Scaling::scaleCoordinate(-spanAngleDeg);
+
+        painter.drawPie(arcRect, startAngle16, spanAngle16);
+
+        // Сброс цвета
+        MyColor = QPen(Qt::black);
+    }
+
+    // Функция для рисования дуги
+    static void drawArc(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg, bool selected) {
+        // Настройка пера
+        QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+        currentPen.setWidth(selected ? 2 : 1);
+        currentPen.setCapStyle(Qt::RoundCap);
+        painter.setPen(currentPen);
+
+        // Масштабирование координат
+        QPointF scaledCenter(Scaling::scaleCoordinate(center.x()), Scaling::scaleCoordinate(-center.y()));
+        double scaledRadius = Scaling::scaleCoordinate(radius);
+
+        // Прямоугольник, в который вписана дуга
+        QRectF arcRect(
+                scaledCenter.x() - scaledRadius,
+                scaledCenter.y() - scaledRadius,
+                2 * scaledRadius,
+                2 * scaledRadius
+        );
+
+        // QPainter работает с углами в 1/16 градуса, по часовой стрелке
+        int startAngle16 = static_cast<int>(-startAngleDeg * 16); // знак минус — переворот по Y
+        int spanAngle16 = static_cast<int>(-spanAngleDeg * 16);
+
+        painter.drawArc(arcRect, startAngle16, spanAngle16);
+
+        // Сброс пера в черный
+        MyColor = QPen(Qt::black);
+    }
+
+
+
 };
 
 #endif // OURPAINT_DRAWFIGURES_H

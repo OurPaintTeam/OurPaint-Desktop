@@ -471,9 +471,8 @@ void Paint::paint() {
     c_bmpPainter->drawPointt(m_pointStorage);
     c_bmpPainter->drawCirclee(m_circleStorage);
     c_bmpPainter->drawSectionn(m_sectionStorage);
-
-  /*  c_bmpPainter->changeSize(s_allFigures);
-    for (auto &Point: m_pointStorage) {
+    c_bmpPainter->changeSize(s_allFigures);
+   /* for (auto &Point: m_pointStorage) {
         c_bmpPainter->drawPoint(Point, false);
     }
     for (auto &Circle: m_circleStorage) {

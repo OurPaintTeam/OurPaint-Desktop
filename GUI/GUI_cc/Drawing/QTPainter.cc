@@ -267,6 +267,8 @@ bool QTPainter::findClosesObject() {
 // Сохранение в файл
 void QTPainter::saveToImage(const QString &fileName, QString &format) {
 
+    resizeRectangle();
+
     if (format.startsWith('.'))
         format = format.mid(1);
 
@@ -471,7 +473,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     QElapsedTimer timer;
     timer.start();  // Начинаем отсчет времени
 
-
+    qDebug()<<Scaling::getDeltaX()<<" "<<Scaling::getDeltaY();
     // Вызов функции рисования
     drawingFigures(painter);
 
@@ -492,4 +494,9 @@ void QTPainter::onWorkWindowResized() {
     Scaling::setActualMonitorSize(parentWidget()->width(), parentWidget()->height());
     resize(parentWidget()->size());
 }
+void QTPainter::resizeRectangle() {
+
+}
+
+
 

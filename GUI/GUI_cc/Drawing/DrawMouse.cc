@@ -86,6 +86,8 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
     bool modePoint = ModeManager::getActiveMode(WorkModes::Point);
     bool modeSection = ModeManager::getActiveMode(WorkModes::Section);
     bool modeCircle = ModeManager::getActiveMode(WorkModes::Circle);
+    bool modeSector = ModeManager::getActiveMode(WorkModes::Sector);
+    bool modeArc = ModeManager::getActiveMode(WorkModes::Arc);
 
     bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 

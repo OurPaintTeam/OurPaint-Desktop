@@ -3,7 +3,6 @@
 MainWindow::MainWindow(QWidget *parent)
         : QMainWindow(parent),
           ui(new Ui::MainWindow),
-          save(true),
           moving(false),
           resizing(false),
           Index(0),
@@ -45,10 +44,13 @@ void MainWindow::initConnections() {
     connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
     connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
     connect(ui->figureSection, &QPushButton::clicked, this, &MainWindow::Section);
+    connect(ui->figureSector, &QPushButton::clicked, this, &MainWindow::Sector);
+    connect(ui->figureArc, &QPushButton::clicked, this, &MainWindow::Arc);
     connect(ui->figureMoving, &QPushButton::clicked, this, &MainWindow::FigMoving);
     connect(ui->toolMoving, &QPushButton::clicked, this, &MainWindow::ToolMoving);
     connect(ui->toolRotation, &QPushButton::clicked, this, &MainWindow::ToolRotation);
     connect(ui->toolResize, &QPushButton::clicked, this, &MainWindow::ToolResize);
+    connect(ui->toolSelected, &QPushButton::clicked, this, &MainWindow::ToolSelected);
 
     // Кнопки Требований
     connect(ui->oneReq, &QPushButton::clicked, this, &MainWindow::firstReq);
@@ -60,6 +62,7 @@ void MainWindow::initConnections() {
     connect(ui->sevenReq, &QPushButton::clicked, this, &MainWindow::seventhReq);
     connect(ui->eightReq, &QPushButton::clicked, this, &MainWindow::eighthReq);
     connect(ui->nineReq, &QPushButton::clicked, this, &MainWindow::ninthReq);
+    connect(ui->tenReq, &QPushButton::clicked, this, &MainWindow::tenthReq);
 
     // Кнопки сохранение/импорт
     connect(ui->actionJPG,  &QToolButton::clicked, this, &MainWindow::onExportJPG);
@@ -823,16 +826,16 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
             Scaling::setZoomZero();
             ui->workWindow->update();
         }else if (event->key() == Qt::Key_Down) {
-            Scaling::setDeltaY(-10);
+            Scaling::setDelta(0,-10);
             ui->workWindow->update();
         }else if (event->key() == Qt::Key_Up) {
-            Scaling::setDeltaY(10);
+            Scaling::setDelta(0,10);
             ui->workWindow->update();
         }else if (event->key() == Qt::Key_Left) {
-            Scaling::setDeltaX(-10);
+            Scaling::setDelta(-10,0);
             ui->workWindow->update();
         }else if (event->key() == Qt::Key_Right) {
-            Scaling::setDeltaX(10);
+            Scaling::setDelta(10,0);
             ui->workWindow->update();
         }
     }

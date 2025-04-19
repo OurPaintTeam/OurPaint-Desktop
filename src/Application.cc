@@ -16,6 +16,7 @@ Application::Application(int &argc, char **argv)
 
     painter.reset(w.getQTPainter());
     Paint screen_copy(painter.get());
+    leftMenu.reset(w.getLeftMenuBar());
     screen = screen_copy;
 
     initialize();
@@ -60,7 +61,7 @@ void Application::setupConnections() {
     // Двойное нажатие на обьект и открытие его в левом меню
     QObject::connect(painter.get(), &QTPainter::DoubleClickOnObject, [this](ID id) {
         unsigned long long obj = id.id;
-        w.getLeftMenuBar()->FocusOnItemById(obj);
+        leftMenu->FocusOnItemById(obj);
     });
 
     QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
@@ -182,12 +183,15 @@ void Application::setupConnections() {
             screen.addRequirement(reqData);
            ModeManager::setSave(false);
             updateState();
-            // w.getLeftMenuBar()->printReq(8,"ParallelSections",vec_id[0].id,vec_id[1].id,0);
+            // leftMenu->printReq(8,"ParallelSections",vec_id[0].id,vec_id[1].id,0);
         }
 
     });
 
     QObject::connect(&w, &MainWindow::nineReqirements, [this]() {
+
+    });
+    QObject::connect(&w, &MainWindow::tenReqirements, [this]() {
 
     });
 
@@ -277,6 +281,10 @@ void Application::setupConnections() {
                          }
                      });
 
+    QObject::connect(painter.get(), &QTPainter::SigSector,
+                     [this]() {  });
+    QObject::connect(painter.get(), &QTPainter::SigArc,
+                     [this]() {  });
 
     QObject::connect(&client, &Client::serverShutdown, [this]() {
         w.showSuccess("Server shutdown!(");
@@ -405,9 +413,9 @@ void Application::setupConnections() {
     });
 
 
-    QObject::connect(w.getLeftMenuBar(), &LeftMenuBar::parameterChanged,
+    QObject::connect(leftMenu.get(), &LeftMenuBar::parameterChanged,
                      [this](unsigned long long Id, const std::vector<double> &parameters) {
-                         if (w.getLeftMenuBar()->isFiguresExpanded()) {
+                         if (leftMenu->isFiguresExpanded()) {
                              ID id = 0;
                              id.id = Id;
                              screen.LeftMenuMove(id, parameters);
@@ -419,9 +427,9 @@ void Application::setupConnections() {
                          }
                      });
 
-    QObject::connect(w.getLeftMenuBar(), &LeftMenuBar::DoubleClickLeftMenu,
+    QObject::connect(leftMenu.get(), &LeftMenuBar::DoubleClickLeftMenu,
                      [this](std::vector<double> &parameters, unsigned long long int ID) {
-                         if (w.getLeftMenuBar()->isFiguresExpanded()) {
+                         if (leftMenu->isFiguresExpanded()) {
 
                              painter->selectedElemByID(parameters, ID);
                          }
@@ -452,7 +460,7 @@ void Application::setupConnections() {
             ModeManager::setSave(true);
 
             auto [figures, requirements, settings, name] = w.saveSettings();
-            w.getLeftMenuBar()->printObject(0, "Clear", {});
+            leftMenu->printObject(0, "Clear", {});
 
             std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
             for (auto element: elements) {
@@ -467,18 +475,18 @@ void Application::setupConnections() {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
                     if (!name.empty()) {
-                        w.getLeftMenuBar()->printObject(element.first.id, name, {x, y});
+                        leftMenu->printObject(element.first.id, name, {x, y});
                     } else {
-                        w.getLeftMenuBar()->printObject(element.first.id, "Point", {x, y});
+                        leftMenu->printObject(element.first.id, "Point", {x, y});
                     }
                 } else if (element.second.et == ET_CIRCLE) {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
                     double r = element.second.params[2];
                     if (!name.empty()) {
-                        w.getLeftMenuBar()->printObject(element.first.id, name, {x, y, r});
+                        leftMenu->printObject(element.first.id, name, {x, y, r});
                     } else {
-                        w.getLeftMenuBar()->printObject(element.first.id, "Circle", {x, y, r});
+                        leftMenu->printObject(element.first.id, "Circle", {x, y, r});
                     }
                 } else if (element.second.et == ET_SECTION) {
                     double x1 = element.second.params[0];
@@ -486,9 +494,9 @@ void Application::setupConnections() {
                     double x2 = element.second.params[2];
                     double y2 = element.second.params[3];
                     if (!name.empty()) {
-                        w.getLeftMenuBar()->printObject(element.first.id, name, {x1, y1, x2, y2});
+                        leftMenu->printObject(element.first.id, name, {x1, y1, x2, y2});
                     } else {
-                        w.getLeftMenuBar()->printObject(element.first.id, "Section", {x1, y1, x2, y2});
+                        leftMenu->printObject(element.first.id, "Section", {x1, y1, x2, y2});
                     }
                 }
             }
@@ -504,7 +512,7 @@ void Application::setupConnections() {
             ModeManager::setSave(true);
 
             auto [figures, requirements, settings, name] = w.saveSettings();
-            w.getLeftMenuBar()->printObject(0, "Clear", {});
+            leftMenu->printObject(0, "Clear", {});
             std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
             for (auto element: elements) {
                 std::string name;
@@ -518,18 +526,18 @@ void Application::setupConnections() {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
                     if (!name.empty()) {
-                        w.getLeftMenuBar()->printObject(element.first.id, name, {x, y});
+                        leftMenu->printObject(element.first.id, name, {x, y});
                     } else {
-                        w.getLeftMenuBar()->printObject(element.first.id, "Point", {x, y});
+                        leftMenu->printObject(element.first.id, "Point", {x, y});
                     }
                 } else if (element.second.et == ET_CIRCLE) {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
                     double r = element.second.params[2];
                     if (!name.empty()) {
-                        w.getLeftMenuBar()->printObject(element.first.id, name, {x, y, r});
+                        leftMenu->printObject(element.first.id, name, {x, y, r});
                     } else {
-                        w.getLeftMenuBar()->printObject(element.first.id, "Circle", {x, y, r});
+                        leftMenu->printObject(element.first.id, "Circle", {x, y, r});
                     }
                 } else if (element.second.et == ET_SECTION) {
                     double x1 = element.second.params[0];
@@ -537,9 +545,9 @@ void Application::setupConnections() {
                     double x2 = element.second.params[2];
                     double y2 = element.second.params[3];
                     if (!name.empty()) {
-                        w.getLeftMenuBar()->printObject(element.first.id, name, {x1, y1, x2, y2});
+                        leftMenu->printObject(element.first.id, name, {x1, y1, x2, y2});
                     } else {
-                        w.getLeftMenuBar()->printObject(element.first.id, "Section", {x1, y1, x2, y2});
+                        leftMenu->printObject(element.first.id, "Section", {x1, y1, x2, y2});
                     }
                 }
             }
@@ -566,8 +574,8 @@ void Application::setupConnections() {
         }
     });
     QObject::connect(&w, &MainWindow::LoadFile, [&](const QString &fileName) {
-        w.WorkWindowClear();
-        w.getLeftMenuBar()->printObject(0, "Clear", {});
+       painter->clear();
+        leftMenu->printObject(0, "Clear", {});
         std::string File = fileName.toStdString();
         screen.loadFromFile(File.c_str());
         screen.paint();
@@ -595,18 +603,18 @@ void Application::setupConnections() {
                 double x = element.second.params[0];
                 double y = element.second.params[1];
                 if (!name.empty()) {
-                    w.getLeftMenuBar()->printObject(element.first.id, name, {x, y});
+                    leftMenu->printObject(element.first.id, name, {x, y});
                 } else {
-                    w.getLeftMenuBar()->printObject(element.first.id, "Point", {x, y});
+                    leftMenu->printObject(element.first.id, "Point", {x, y});
                 }
             } else if (element.second.et == ET_CIRCLE) {
                 double x = element.second.params[0];
                 double y = element.second.params[1];
                 double r = element.second.params[2];
                 if (!name.empty()) {
-                    w.getLeftMenuBar()->printObject(element.first.id, name, {x, y, r});
+                    leftMenu->printObject(element.first.id, name, {x, y, r});
                 } else {
-                    w.getLeftMenuBar()->printObject(element.first.id, "Circle", {x, y, r});
+                    leftMenu->printObject(element.first.id, "Circle", {x, y, r});
                 }
                 break;
             } else if (element.second.et == ET_SECTION) {
@@ -615,9 +623,9 @@ void Application::setupConnections() {
                 double x2 = element.second.params[2];
                 double y2 = element.second.params[3];
                 if (!name.empty()) {
-                    w.getLeftMenuBar()->printObject(element.first.id, name, {x1, y1, x2, y2});
+                    leftMenu->printObject(element.first.id, name, {x1, y1, x2, y2});
                 } else {
-                    w.getLeftMenuBar()->printObject(element.first.id, "Section", {x1, y1, x2, y2});
+                    leftMenu->printObject(element.first.id, "Section", {x1, y1, x2, y2});
                 }
                 break;
             }
@@ -661,14 +669,13 @@ void Application::setupConnections() {
 
 void Application::updateState() {
 
-    //painter->getUsers(false);
-    screen.paint();
 
+    screen.paint();
     painter->draw();
-/*
+
     auto [figures, requirements, settings, name] = w.saveSettings();
-    w.getLeftMenuBar()->printObject(0, "Clear", {});
-    w.getLeftMenuBar()->printReq(0, "Clear", 0, 0, 0);
+    leftMenu->printObject(0, "Clear", {});
+    leftMenu->printReq(0, "Clear", 0, 0, 0);
     std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
 
     for (auto element: elements) {
@@ -685,9 +692,9 @@ void Application::updateState() {
             double x = element.second.params[0];
             double y = element.second.params[1];
             if (!name.empty()) {
-                w.getLeftMenuBar()->printObject(element.first.id, name, {x, y});
+                leftMenu->printObject(element.first.id, name, {x, y});
             } else {
-                w.getLeftMenuBar()->printObject(element.first.id, "Point", {x, y});
+                leftMenu->printObject(element.first.id, "Point", {x, y});
             }
         } else if (element.second.et == ET_SECTION) {
             double x1 = element.second.params[0];
@@ -695,18 +702,18 @@ void Application::updateState() {
             double x2 = element.second.params[2];
             double y2 = element.second.params[3];
             if (!name.empty()) {
-                w.getLeftMenuBar()->printObject(element.first.id, name, {x1, y1, x2, y2});
+                leftMenu->printObject(element.first.id, name, {x1, y1, x2, y2});
             } else {
-                w.getLeftMenuBar()->printObject(element.first.id, "Section", {x1, y1, x2, y2});
+                leftMenu->printObject(element.first.id, "Section", {x1, y1, x2, y2});
             }
         } else if (element.second.et == ET_CIRCLE) {
             double x = element.second.params[0];
             double y = element.second.params[1];
             double r = element.second.params[2];
             if (!name.empty()) {
-                w.getLeftMenuBar()->printObject(element.first.id, name, {x, y, r});
+                leftMenu->printObject(element.first.id, name, {x, y, r});
             } else {
-                w.getLeftMenuBar()->printObject(element.first.id, "Circle", {x, y, r});
+                leftMenu->printObject(element.first.id, "Circle", {x, y, r});
             }
         }
 
@@ -714,7 +721,7 @@ void Application::updateState() {
 
     std::vector<std::pair<ID, RequirementData>> req = screen.getAllRequirementsInfo();
 
-    w.getLeftMenuBar()->printReq(0, "Clear", 0, 0, 0);
+    leftMenu->printReq(0, "Clear", 0, 0, 0);
 
     for (const auto &element: req) {
         QString text;
@@ -757,10 +764,10 @@ void Application::updateState() {
                 text = QString("PointOnCircle");
                 break;
         }
-        w.getLeftMenuBar()->printReq(element.first.id + 1, text.toStdString(), element.second.objects[0].id,
+        leftMenu->printReq(element.first.id + 1, text.toStdString(), element.second.objects[0].id,
                                      element.second.objects[1].id, param);
     }
-*/
+
 }
 
 void Application::handler(const QString &command) {
@@ -824,9 +831,9 @@ void Application::handler(const QString &command) {
     } else if (commandParts[0] == "clear") {
         commandRight = true;
         ModeManager::setSave(true);
-        w.WorkWindowClear();
-        w.getLeftMenuBar()->printObject(0, "Clear", {});
-        w.getLeftMenuBar()->printReq(0, "Clear", 0, 0, 0);
+       painter->clear();
+        leftMenu->printObject(0, "Clear", {});
+        leftMenu->printReq(0, "Clear", 0, 0, 0);
         screen.clear();
     } else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
         commandRight = true;
