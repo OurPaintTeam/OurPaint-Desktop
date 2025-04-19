@@ -1,15 +1,18 @@
 #include <gtest/gtest.h>
-#include "GeometricObjects.h"
+
+#include "objects/GeometricObjects.h"
+#include "objects/BoundingBox.h"
+#include "objects/ID.h"
 
 TEST(PointTest, RectMethod) {
     Point p;
     p.x = 3;
     p.y = 4;
-    rectangle r = p.rect();
-    EXPECT_EQ(r.x_1, 3);
-    EXPECT_EQ(r.x_2, 3);
-    EXPECT_EQ(r.y_1, 4);
-    EXPECT_EQ(r.y_2, 4);
+    BoundingBox r = p.getBox();
+    EXPECT_EQ(r.min_x, 3);
+    EXPECT_EQ(r.max_x, 3);
+    EXPECT_EQ(r.min_y, 4);
+    EXPECT_EQ(r.max_y, 4);
 }
 
 TEST(CircleTest, RectMethod) {
@@ -18,12 +21,12 @@ TEST(CircleTest, RectMethod) {
     center.y = 0;
     Circle c;
     c.center = &center;
-    c.R = 5;
-    rectangle r = c.rect();
-    EXPECT_EQ(r.x_1, -5);
-    EXPECT_EQ(r.x_2, 5);
-    EXPECT_EQ(r.y_1, -5);
-    EXPECT_EQ(r.y_2, 5);
+    c.r = 5;
+    BoundingBox r = c.getBox();
+    EXPECT_EQ(r.min_x, -5);
+    EXPECT_EQ(r.max_x, 5);
+    EXPECT_EQ(r.min_y, -5);
+    EXPECT_EQ(r.max_y, 5);
 }
 
 TEST(SectionTest, RectMethod) {
@@ -36,21 +39,35 @@ TEST(SectionTest, RectMethod) {
     Section s;
     s.beg = &beg;
     s.end = &end;
-    rectangle r = s.rect();
-    EXPECT_EQ(r.x_1, 1);
-    EXPECT_EQ(r.x_2, 3);
-    EXPECT_EQ(r.y_1, 2);
-    EXPECT_EQ(r.y_2, 4);
+    BoundingBox r = s.getBox();
+    EXPECT_EQ(r.min_x, 1);
+    EXPECT_EQ(r.max_x, 3);
+    EXPECT_EQ(r.min_y, 2);
+    EXPECT_EQ(r.max_y, 4);
 }
 
 TEST(RectangleTest, UnionOperator) {
-    rectangle r1{1, 3, 2, 4};
-    rectangle r2{2, 4, 1, 3};
-    rectangle r3 = r1 || r2;
-    EXPECT_EQ(r3.x_1, 1);
-    EXPECT_EQ(r3.x_2, 4);
-    EXPECT_EQ(r3.y_1, 1);
-    EXPECT_EQ(r3.y_2, 4);
+    BoundingBox r1{1, 3, 2, 4};
+    BoundingBox r2{2, 4, 1, 3};
+    BoundingBox r3 = r1 | r2;
+    EXPECT_EQ(r3.min_x, 1);
+    EXPECT_EQ(r3.max_x, 4);
+    EXPECT_EQ(r3.min_y, 1);
+    EXPECT_EQ(r3.max_y, 4);
+}
+
+TEST(IDTest, IDTest) {
+    ID id1(1);
+    ID id5(5);
+    ID id10(10);
+    ID id10again(10);
+
+    EXPECT_TRUE(id1 < id5);
+    EXPECT_TRUE(id5 > id1);
+    EXPECT_TRUE(id10 == id10again);
+    EXPECT_TRUE(id10 <= id10again);
+    EXPECT_TRUE(id10 >= id10again);
+    EXPECT_TRUE(id1 <= id10);
 }
 
 int main(int argc, char **argv) {

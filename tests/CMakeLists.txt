@@ -21,31 +21,45 @@ endif()
 include_directories(../headers)
 include_directories(../Math/headers)
 enable_testing()
-set(SOURCES ../src/ID.cc ../src/GeometricObjects.cc ../src/Requirements.cc ../Math/src/ErrorFunctions.cc
-        ../Math/src/Function.cc
-        ../src/Paint.cc
-        ../src/BMPfile.cc
-        ../src/painters/BMPpainter.cc
-        ../src/GeometricObjects.cc
-        ../src/Requirements.cc
-        ../src/ID.cc
-        ../src/saveload/objectInFile.cc
-        ../src/saveload/FileOurP.cc
-        ../src/saveload/requirementInFile.cc)
+set(SOURCES
+        ../src/objects/GeometricObjects.cc
+        ../src/objects/BoundingBox.cc
+#        ../src/Requirements.cc
+#        ../Math/src/ErrorFunctions.cc
+#        ../Math/src/Function.cc
+#        ../src/Paint.cc
+#        ../src/BMPfile.cc
+#        ../src/painters/BMPpainter.cc
+#        ../src/Requirements.cc
+#        ../src/saveload/objectInFile.cc
+#        ../src/saveload/FileOurP.cc
+#        ../src/saveload/requirementInFile.cc
+)
+
 #Test for ID
-add_executable(IDGTEST IDGTEST.cc ${SOURCES}
-        RequirementsGTEST.cc)
+add_executable(IDGTEST IDGTEST.cc ${SOURCES} RequirementsGTEST.cc)
 target_link_libraries(IDGTEST GTest::gtest_main)
+
 #Test for objects
 add_executable(ObjectsGTEST ObjectsGTEST.cc ${SOURCES})
 target_link_libraries(ObjectsGTEST GTest::gtest_main)
+
 #Test for VarsStorage
 add_executable(VarsStorageGTEST VarsStorageGTEST.cc ${SOURCES})
 target_link_libraries(VarsStorageGTEST GTest::gtest_main)
+
 #Test for Requirement
 add_executable(RequirementsGTEST RequirementsGTEST.cc ${SOURCES})
 target_link_libraries(RequirementsGTEST GTest::gtest_main)
+
 #Test for Paint
-add_executable(PaintGTEST
-        PaintGTEST.cc ${SOURCES})
+add_executable(PaintGTEST PaintGTEST.cc ${SOURCES})
 target_link_libraries(PaintGTEST GTest::gtest_main)
+
+#Test for UndoRedo
+add_executable(UndoRedoGTEST UndoRedoTests.cc ../src/UndoRedo/Transactions.cc ../src/UndoRedo/UndoRedo.cc)
+target_link_libraries(UndoRedoGTEST GTest::gtest_main)
+
+#Test for UndoRedoTemplate
+add_executable(UndoRedoTemplateGTEST UndoRedoGTEST.cc ../src/UndoRedo/UndoRedoTemplate.cc)
+target_link_libraries(UndoRedoTemplateGTEST GTest::gtest_main)
