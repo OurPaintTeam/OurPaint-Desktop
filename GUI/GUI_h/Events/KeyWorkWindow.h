@@ -23,6 +23,12 @@ public:
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
+    signals:
+    void REDO();
+    void UNDO();
+    void DELETE();
+
+
 };
 
 #endif // OURPAINT_KEYWORKWINDOW_H

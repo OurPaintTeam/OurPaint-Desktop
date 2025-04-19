@@ -38,8 +38,9 @@ public:
         // Учитываем масштабирование
         for (const auto &pt: points) {
             painter.drawEllipse(QPointF(Scaling::scaleCoordinate(pt.x),
-                                               Scaling::scaleCoordinate(-pt.y)),
-                                                 pointRadius, pointRadius);}
+                                        Scaling::scaleCoordinate(-pt.y)),
+                                pointRadius, pointRadius);
+        }
     }
 
 
@@ -49,7 +50,7 @@ public:
 
         // Настройка пера для рисования кругов
         QPen currentPen = QColor(Qt::black);
-        currentPen.setWidth(1 );
+        currentPen.setWidth(1);
         currentPen.setJoinStyle(Qt::RoundJoin);
         currentPen.setCapStyle(Qt::RoundCap);
 
@@ -60,9 +61,9 @@ public:
         // Учитываем масштабирование
         for (const auto &cir: circles) {
             painter.drawEllipse(QPointF(Scaling::scaleCoordinate(cir.center->x),
-                                               Scaling::scaleCoordinate(-cir.center->y)),
-                                                 Scaling::scaleCoordinate(cir.R),
-                                                 Scaling::scaleCoordinate(cir.R));
+                                        Scaling::scaleCoordinate(-cir.center->y)),
+                                Scaling::scaleCoordinate(cir.R),
+                                Scaling::scaleCoordinate(cir.R));
         }
 
         MyColor = QPen(Qt::black);  // Сброс цвета
@@ -93,7 +94,7 @@ public:
     }
 
     // Функция для рисования сектора
-    static void drawSector(QPainter &painter,bool selected) {
+    static void drawSector(QPainter &painter, bool selected) {
         // Настройка пера
         QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
         currentPen.setWidth(selected ? 2 : 1);
@@ -147,7 +148,7 @@ public:
 
     // Функция для отрисовки круга
     static void drawCircle(QPainter &painter, QPointF center, double radius, bool selected) {
-        double scaledRadius = radius*Scaling::getZoom();
+        double scaledRadius = radius * Scaling::getZoom();
 
         QPointF logicCenter(Scaling::scaleCoordinate(center.x()), Scaling::scaleCoordinate(-center.y()));
 
@@ -201,7 +202,8 @@ public:
     }
 
     // Функция для рисования сектора
-    static void drawSector(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg, bool selected) {
+    static void drawSector(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg,
+                           bool selected) {
         // Настройка пера
         QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
         currentPen.setWidth(selected ? 2 : 1);
@@ -217,8 +219,8 @@ public:
                        2 * scaledRadius, 2 * scaledRadius);
 
 
-        double startAngle16 =Scaling::scaleCoordinate(-startAngleDeg ); // Минус, т.к. Y идёт вниз
-        double spanAngle16 =Scaling::scaleCoordinate(-spanAngleDeg);
+        double startAngle16 = Scaling::scaleCoordinate(-startAngleDeg); // Минус, т.к. Y идёт вниз
+        double spanAngle16 = Scaling::scaleCoordinate(-spanAngleDeg);
 
         painter.drawPie(arcRect, startAngle16, spanAngle16);
 
@@ -227,7 +229,8 @@ public:
     }
 
     // Функция для рисования дуги
-    static void drawArc(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg, bool selected) {
+    static void drawArc(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg,
+                        bool selected) {
         // Настройка пера
         QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
         currentPen.setWidth(selected ? 2 : 1);
@@ -256,6 +259,24 @@ public:
         MyColor = QPen(Qt::black);
     }
 
+    // Функция для рисования прямоугольника
+    static void drawRectangle(QPainter &painter, QPointF &X,QPointF &Y) {
+        // Настройка пера
+        QPen currentPen = QPen(Qt::blue);
+        currentPen.setCapStyle(Qt::RoundCap); // Устанавливаем стиль окончания линии
+        painter.setPen(currentPen);
+
+        QPointF start(Scaling::scaleCoordinate(X.x()), Scaling::scaleCoordinate(-X.y()));
+        QPointF end(Scaling::scaleCoordinate(Y.x()), Scaling::scaleCoordinate(-Y.y()));
+
+        painter.setBrush(QBrush(QColor(173, 216, 230, 128), Qt::SolidPattern)); // Цвет: светло-голубой с 50% прозрачностью
+
+        // Рисуем прямоугольник
+        painter.drawRect(QRectF(start,end));
+
+        // Сброс цвета (если нужно)
+        MyColor = QPen(Qt::black);
+    }
 
 
 };

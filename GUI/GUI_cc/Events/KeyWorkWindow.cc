@@ -58,7 +58,31 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
             Scaling::setZoomZero();
             m_parent->update();
         }
-    }}
+    }else if (event->key() == Qt::Key_Down) {
+        Scaling::setDelta(0,-10);
+        m_parent->update();
+    }else if (event->key() == Qt::Key_Up) {
+        Scaling::setDelta(0,10);
+        m_parent->update();
+    }else if (event->key() == Qt::Key_Left) {
+        Scaling::setDelta(-10,0);
+        m_parent->update();
+    }else if (event->key() == Qt::Key_Right) {
+        Scaling::setDelta(10,0);
+        m_parent->update();
+    }
+
+    if (event->key() == Qt::Key_Delete ||event->key() == Qt::Key_Backspace ) {
+        emit DELETE();
+        m_parent->update();
+    }else if (event->key() == Qt::Key_W) { // Ctrl+W
+        emit REDO(); // Сигнал
+        m_parent->update();
+    } else if (event->key() == Qt::Key_Z) { // Ctrl+Z
+        emit UNDO(); // Сигнал
+        m_parent->update();
+    }
+}
 
 void KeyWorkWindow::handleKeyRelease(QKeyEvent *event)
 {

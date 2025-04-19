@@ -46,6 +46,8 @@ void QTPainter::clear() {
     circleStorage = nullptr;
     pointStorage = nullptr;
     sectionStorage = nullptr;
+
+    SelectedRectangle.clear();
 }
 
 
@@ -443,6 +445,9 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             }
 
         }
+    }else if(ModeManager::getActiveMode(WorkModes::Selected)){
+        QRectF rect=SelectedRectangle.selected(painter);
+
     }  else if (ModeManager::getActiveMode(WorkModes::Move)) {
 
         //  Кнопка мыши зажата
@@ -470,17 +475,12 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     }
 
 
-    QElapsedTimer timer;
-    timer.start();  // Начинаем отсчет времени
 
-    qDebug()<<Scaling::getDeltaX()<<" "<<Scaling::getDeltaY();
+
     // Вызов функции рисования
     drawingFigures(painter);
 
-    // Получаем прошедшее время в миллисекундах
-    qint64 elapsedTime = timer.elapsed();
 
-    // qDebug() << "Time for drawingFigures: " << elapsedTime << "ms";
 
     figureDelete();
 

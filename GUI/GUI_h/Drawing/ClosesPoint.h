@@ -17,6 +17,10 @@ public:
     // Функция поиска ближайшей точки
     static QPointF findClosestPoint(const std::list<Point> &points);
 
+    static void enteringInRect(const std::list<Point> &points,QRectF &rect);
+    static void enteringInRect(const std::list<Circle> &circle,QRectF &rect);
+    static void enteringInRect(const std::list<Section> &section,QRectF &rect);
+
     // Функция проверки координат курсора и точки для перемещения
     static bool checkFigure(double x, double y);
 

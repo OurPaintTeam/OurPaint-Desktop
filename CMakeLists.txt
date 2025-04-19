@@ -142,6 +142,7 @@ add_executable(ourpaint
         GUI/GUI_h/Unnecessary/FrameOverlay.h
 
         GUI/GUI_h/Logger/GUI_Logger.h
+        GUI/GUI_h/Drawing/SelectedRectangle.h
 )
 
 

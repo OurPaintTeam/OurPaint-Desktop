@@ -160,6 +160,15 @@ protected:
 
 
 public slots:
+    void redo() {
+        emit REDO();
+    };
+    void undo(){
+        emit UNDO();
+    };
+    void delet(){
+        emit DELETE();
+    };
 
     // Кнопки
     void loadProjectFile();
@@ -283,6 +292,7 @@ signals:
     void KeyZero(); // Обнуление
     void REDO(); // Сигнал для повторения действия
     void UNDO(); // Сигнал для отмены действия
+    void DELETE();
 
 
 

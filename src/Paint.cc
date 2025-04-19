@@ -582,6 +582,7 @@ void Paint::deleteRequirement(ID req) {
     m_reqIDs.erase(req);
 }
 
+
 void Paint::undo() {
     ActionsInfo info = c_undoRedo.undo();
     Point *p = nullptr;
@@ -784,6 +785,27 @@ void Paint::loadFromFile(const char *file) {
         m_reqIDs[i.to_pair().first] = it;
         m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
         s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
+    }
+}
+
+void Paint::deleteElement(ID elem) {
+    if (m_pointIDs.contains(elem)) {
+        m_pointStorage.erase(m_pointIDs[elem]);
+        m_pointIDs.erase(elem);
+    } else if (m_sectionIDs.contains(elem)) {
+        m_pointStorage.erase(m_pointIDs[elem.id-1]);
+        m_pointIDs.erase(elem.id-1);
+        m_pointStorage.erase(m_pointIDs[elem.id-2]);
+        m_pointIDs.erase(elem.id-2);
+        m_sectionStorage.erase(m_sectionIDs[elem]);
+        m_sectionIDs.erase(elem);
+    } else if (m_circleIDs.contains(elem)) {
+        m_pointStorage.erase(m_pointIDs[elem.id-1]);
+        m_pointIDs.erase(elem.id-1);
+        m_circleStorage.erase(m_circleIDs[elem]);
+        m_circleIDs.erase(elem);
+    }else{
+        throw std::invalid_argument("No such element!");
     }
 }
 

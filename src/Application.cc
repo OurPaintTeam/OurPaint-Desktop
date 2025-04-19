@@ -138,6 +138,16 @@ void Application::setupConnections() {
                      }
     );
 
+    QObject::connect(&w, &MainWindow::DELETE, [this]() {
+        std::vector<ID> vec_id = painter->getVecID();
+        for(int i=0;i<vec_id.size();++i) {
+            qDebug()<<vec_id[i].id;
+            screen.deleteElement(vec_id[i]);
+        }
+        painter->selectedClear();
+        painter->update();
+    });
+
     QObject::connect(&w, &MainWindow::oneReqirements, [this]() {
         std::vector<ID> vec_id = painter->getVecID();
         for (const auto &id: vec_id) {

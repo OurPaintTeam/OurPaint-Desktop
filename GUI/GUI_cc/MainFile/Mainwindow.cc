@@ -149,6 +149,9 @@ void MainWindow::initConnections() {
     connect(ui->leftMenu, &QTreeWidget::itemCollapsed, leftMenuBar.get(), &LeftMenuBar::onItemCollapsed);
     //  connect(ui->leftMenuElements, &QPushButton::clicked , leftMenuBar.get(),&LeftMenuBar::onItemCollapsed);
 
+    connect(keyWW.get(), &KeyWorkWindow::UNDO,this, &MainWindow::undo);
+    connect(keyWW.get(), &KeyWorkWindow::REDO,this, &MainWindow::redo);
+    connect(keyWW.get(), &KeyWorkWindow::DELETE,this, &MainWindow::delet);
 
 }
 
@@ -809,36 +812,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
             } else {
                 this->showMinimized();
             }
-            // Обработка других комбинаций
-        } else if (event->key() == Qt::Key_W) { // Ctrl+W
-            emit REDO(); // Сигнал
-            ui->workWindow->update();
-        } else if (event->key() == Qt::Key_Z) { // Ctrl+Z
-            emit UNDO(); // Сигнал
-            ui->workWindow->update();
-        } else if (event->key() == Qt::Key_Plus) {
-            Scaling::setZoomPlus();
-            ui->workWindow->update();
-        } else if (event->key() == Qt::Key_Minus) {
-            Scaling::setZoomMinus();
-            ui->workWindow->update();
-        } else if (event->key() == Qt::Key_0) {
-            Scaling::setZoomZero();
-            ui->workWindow->update();
-        }else if (event->key() == Qt::Key_Down) {
-            Scaling::setDelta(0,-10);
-            ui->workWindow->update();
-        }else if (event->key() == Qt::Key_Up) {
-            Scaling::setDelta(0,10);
-            ui->workWindow->update();
-        }else if (event->key() == Qt::Key_Left) {
-            Scaling::setDelta(-10,0);
-            ui->workWindow->update();
-        }else if (event->key() == Qt::Key_Right) {
-            Scaling::setDelta(10,0);
-            ui->workWindow->update();
+
         }
     }
+
 
     // Буфер команд
     if (ui->console->isActiveWindow()) { // Если консоль активна
@@ -854,6 +831,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
             ui->console->setText(commands[Index]);
         }
     }
+
+
 
     if (event->key() == Qt::Key_Tab) {
         event->ignore();

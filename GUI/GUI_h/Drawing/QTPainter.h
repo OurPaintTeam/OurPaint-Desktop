@@ -20,6 +20,7 @@
 #include "ClosesPoint.h"
 #include "DrawBackground.h"
 #include "DrawMouse.h"
+#include "SelectedRectangle.h"
 
 class QTPainter : public QFrame, public Painter {
 Q_OBJECT
@@ -51,6 +52,8 @@ private:
     ID IDmove; // Айди фигуры перемещения
 
     std::chrono::steady_clock::time_point lastClickTime;
+
+    SelectedRectangle SelectedRectangle;
 
 public:
 

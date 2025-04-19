@@ -1,3 +1,6 @@
+#include <QRectF>
+#include <QLineF>
+#include <QPolygonF>
 #include "ClosesPoint.h"
 
 // Функция поиска ближайшей точки
@@ -122,3 +125,54 @@ double ClosesPoint::distancePointToSection(double px, double py, double x0, doub
 
     return std::sqrt(dx * dx + dy * dy);
 }
+
+void ClosesPoint::enteringInRect(const std::list<Point> &points, QRectF &rect) {
+
+    for (const Point &p : points) {
+        QPointF pt(p.x, p.y);
+        if (rect.contains(pt)) {
+
+        }
+    }
+}
+
+void ClosesPoint::enteringInRect(const std::list<Circle> &circles, QRectF &rect) {
+    for (const Circle &c : circles) {
+        QPointF center(c.center->x, c.center->y);
+        double radius = c.R;
+
+        QRectF circleBounds(center.x() - radius, center.y() - radius,
+                            2 * radius, 2 * radius);
+
+        if (rect.contains(circleBounds)) {
+
+        }
+    }
+}
+
+void ClosesPoint::enteringInRect(const std::list<Section> &sections, QRectF &rect) {
+    for (const Section &s : sections) {
+        QPointF p1(s.beg->x, s.beg->y);
+        QPointF p2(s.end->x, s.end->y);
+
+        if (rect.contains(p1) || rect.contains(p2)) {
+
+        }
+        else {
+            QLineF line(p1, p2);
+            QPolygonF polygon;
+            polygon << rect.topLeft() << rect.topRight()
+                    << rect.bottomRight() << rect.bottomLeft();
+
+            for (int i = 0; i < polygon.size(); ++i) {
+                QLineF edge(polygon[i], polygon[(i + 1) % polygon.size()]);
+                QPointF intersection;
+                if (line.intersects(edge, &intersection) == QLineF::BoundedIntersection) {
+
+                    break;
+                }
+            }
+        }
+    }
+}
+
