@@ -77,8 +77,7 @@ void DrawBackground::drawFon(QPainter &painter) {
     }
 
 
-
-    // Оси координат
+if(ModeManager::getAxis()) { // Оси координат
     painter.setPen(Qt::black);
 
     // Если ось становится невидимой мы ее рисуем на границе
@@ -112,5 +111,5 @@ void DrawBackground::drawFon(QPainter &painter) {
     } else {
         painter.drawLine(QPointF((-_width - deltaX), 0), QPointF((_width - deltaX), 0));  // Ox
     }
-
+}
 }

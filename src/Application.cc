@@ -180,7 +180,7 @@ void Application::setupConnections() {
             reqData.objects.push_back(obj1);
             reqData.objects.push_back(obj2);
             screen.addRequirement(reqData);
-            w.setSave(false);
+           ModeManager::setSave(false);
             updateState();
             // w.getLeftMenuBar()->printReq(8,"ParallelSections",vec_id[0].id,vec_id[1].id,0);
         }
@@ -188,7 +188,7 @@ void Application::setupConnections() {
     });
 
     QObject::connect(&w, &MainWindow::nineReqirements, [this]() {
-        painter->saveToImage("pdf");
+
     });
 
     QObject::connect(painter.get(), &QTPainter::SigPoint, [this](double x, double y) {
@@ -199,7 +199,7 @@ void Application::setupConnections() {
                 point.params.push_back(x);
                 point.params.push_back(y);
                 ID id = screen.addElement(point);
-                w.setSave(false);
+                ModeManager::setSave(false);
                 updateState();
                 server.sendToClients(QString::fromStdString(screen.to_string()));
             } else {
@@ -212,7 +212,7 @@ void Application::setupConnections() {
             point.params.push_back(x);
             point.params.push_back(y);
             ID id = screen.addElement(point);
-            w.setSave(false);
+            ModeManager::setSave(false);
             updateState();
         }
     });
@@ -226,7 +226,7 @@ void Application::setupConnections() {
                 circle.params.push_back(y);
                 circle.params.push_back(radius);
                 ID id = screen.addElement(circle);
-                w.setSave(false);
+                ModeManager::setSave(false);
                 updateState();
                 server.sendToClients(QString::fromStdString(screen.to_string()));
             } else {
@@ -240,7 +240,7 @@ void Application::setupConnections() {
             circle.params.push_back(y);
             circle.params.push_back(radius);
             ID id = screen.addElement(circle);
-            w.setSave(false);
+            ModeManager::setSave(false);
             updateState();
         }
     });
@@ -256,7 +256,7 @@ void Application::setupConnections() {
                                  section.params.push_back(endX);
                                  section.params.push_back(endY);
                                  ID id = screen.addElement(section);
-                                 w.setSave(false);
+                                 ModeManager::setSave(false);
                                  updateState();
                                  server.sendToClients(QString::fromStdString(screen.to_string()));
                              } else {
@@ -272,7 +272,7 @@ void Application::setupConnections() {
                              section.params.push_back(endX);
                              section.params.push_back(endY);
                              ID id = screen.addElement(section);
-                             w.setSave(false);
+                             ModeManager::setSave(false);
                              updateState();
                          }
                      });
@@ -412,10 +412,10 @@ void Application::setupConnections() {
                              id.id = Id;
                              screen.LeftMenuMove(id, parameters);
                              // Сеттинг состояния для отмены сохранения
-                             w.setSave(false);
+                             ModeManager::setSave(false);
 
                              screen.paint();
-                             w.Draw();
+                             painter->draw();
                          }
                      });
 
@@ -430,11 +430,11 @@ void Application::setupConnections() {
     // Resize
     QObject::connect(&w, &MainWindow::resized, [this]() {
         screen.paint();
-        w.Draw();
+        painter->draw();
     });
     QObject::connect(&w, &MainWindow::KeyPlus, [this]() {
         screen.paint();
-        w.Draw();
+        painter->draw();
 
     });
     QObject::connect(&w, &MainWindow::KeyMinus, [this]() {
@@ -449,7 +449,7 @@ void Application::setupConnections() {
         try {
             screen.redo();
             updateState();
-            w.setSave(true);
+            ModeManager::setSave(true);
 
             auto [figures, requirements, settings, name] = w.saveSettings();
             w.getLeftMenuBar()->printObject(0, "Clear", {});
@@ -501,7 +501,7 @@ void Application::setupConnections() {
         try {
             screen.undo();
             updateState();
-            w.setSave(true);
+            ModeManager::setSave(true);
 
             auto [figures, requirements, settings, name] = w.saveSettings();
             w.getLeftMenuBar()->printObject(0, "Clear", {});
@@ -548,28 +548,22 @@ void Application::setupConnections() {
     });
 
     // Save/Load
-    QObject::connect(&w, &MainWindow::saveBMP, [this](const QString &fileName) {
-        try {
-            screen.exportToBMP(fileName.toStdString().c_str());
-            w.showSuccess("Saved to " + fileName);
-        } catch (std::exception &e) {
-            w.showWarning(e.what());
-        }
-    });
-    QObject::connect(&w, &MainWindow::loadBMP, [&](const QString &fileName) {
 
-    });
-    QObject::connect(&w, &MainWindow::projectSaved, [this](const QString &fileName) {
-        std::string File = fileName.toStdString();
-        auto [figures, requirements, settings, name] = w.saveSettings();
-        SaveSettingsApplications saveSet(File.c_str(), &w);
-        saveSet.clear();
-        saveSet.SaveFigures(figures);
-        saveSet.SaveRequirements(requirements);
-        saveSet.SaveSettings(settings, name);
-        screen.saveToFile(File.c_str());
-        screen.paint();
-        w.Draw();
+    QObject::connect(&w, &MainWindow::projectSaved, [this](const QString &fileName,QString format) {
+        if(format!=(".ourp"))
+            painter->saveToImage(fileName,format);
+        else {
+            std::string File = fileName.toStdString();
+            auto [figures, requirements, settings, name] = w.saveSettings();
+            SaveSettingsApplications saveSet(File.c_str(), &w);
+            saveSet.clear();
+            saveSet.SaveFigures(figures);
+            saveSet.SaveRequirements(requirements);
+            saveSet.SaveSettings(settings, name);
+            screen.saveToFile(File.c_str());
+            screen.paint();
+            painter->draw();
+        }
     });
     QObject::connect(&w, &MainWindow::LoadFile, [&](const QString &fileName) {
         w.WorkWindowClear();
@@ -577,7 +571,7 @@ void Application::setupConnections() {
         std::string File = fileName.toStdString();
         screen.loadFromFile(File.c_str());
         screen.paint();
-        w.Draw();
+        painter->draw();
 
         LoadSettingsApplications LoadSet(File.c_str(), &w);
         std::vector<std::vector<QString>> figures;
@@ -670,7 +664,7 @@ void Application::updateState() {
     //painter->getUsers(false);
     screen.paint();
 
-    w.Draw();
+    painter->draw();
 /*
     auto [figures, requirements, settings, name] = w.saveSettings();
     w.getLeftMenuBar()->printObject(0, "Clear", {});
@@ -784,7 +778,7 @@ void Application::handler(const QString &command) {
             point.params.push_back(x);
             point.params.push_back(y);
             ID id = screen.addElement(point);
-            w.setSave(false);
+            ModeManager::setSave(false);
             commandRight = true;
         }
 
@@ -802,7 +796,7 @@ void Application::handler(const QString &command) {
             circle.params.push_back(y);
             circle.params.push_back(r);
             ID id = screen.addElement(circle);
-            w.setSave(false);
+            ModeManager::setSave(false);
             commandRight = true;
         }
 
@@ -820,7 +814,7 @@ void Application::handler(const QString &command) {
             section.params.push_back(z);
             section.params.push_back(r);
             ID id = screen.addElement(section);
-            w.setSave(false);
+            ModeManager::setSave(false);
             commandRight = true;
         }
 
@@ -829,7 +823,7 @@ void Application::handler(const QString &command) {
         w.close();
     } else if (commandParts[0] == "clear") {
         commandRight = true;
-        w.setSave(true);
+        ModeManager::setSave(true);
         w.WorkWindowClear();
         w.getLeftMenuBar()->printObject(0, "Clear", {});
         w.getLeftMenuBar()->printReq(0, "Clear", 0, 0, 0);
@@ -855,7 +849,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj2);
                     reqData.params.push_back(parameters);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 2:
                     type = ET_POINTONSECTION;
@@ -863,7 +857,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj1);
                     reqData.objects.push_back(obj2);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 3:
                     type = ET_POINTPOINTDIST;
@@ -872,7 +866,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj2);
                     reqData.params.push_back(parameters);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 4:
                     type = ET_POINTONPOINT;
@@ -880,7 +874,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj1);
                     reqData.objects.push_back(obj2);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 5:
                     type = ET_SECTIONCIRCLEDIST;
@@ -889,7 +883,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj2);
                     reqData.params.push_back(parameters);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 6:
                     type = ET_SECTIONONCIRCLE;
@@ -897,7 +891,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj1);
                     reqData.objects.push_back(obj2);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 7:
                     type = ET_SECTIONINCIRCLE;
@@ -905,7 +899,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj1);
                     reqData.objects.push_back(obj2);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 8:
                     type = ET_SECTIONSECTIONPARALLEL;
@@ -913,7 +907,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj1);
                     reqData.objects.push_back(obj2);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 9:
                     type = ET_SECTIONSECTIONPERPENDICULAR;
@@ -921,7 +915,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj1);
                     reqData.objects.push_back(obj2);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 case 10:
                     type = ET_SECTIONSECTIONANGEL;
@@ -930,7 +924,7 @@ void Application::handler(const QString &command) {
                     reqData.objects.push_back(obj2);
                     reqData.params.push_back(parameters);
                     screen.addRequirement(reqData);
-                    w.setSave(false);
+                    ModeManager::setSave(false);
                     break;
                 default:
                     commandRight = false;
