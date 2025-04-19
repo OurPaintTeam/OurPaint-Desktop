@@ -1,7 +1,7 @@
 //
 // Created by Ardrass on 014, 14.07.2024.
 //
-#include "UndoRedo.h"
+#include "UndoRedo/UndoRedo.h"
 #include <gtest/gtest.h>
 TEST(UndoRedoTest, AddAndUndo) {
     UndoRedo<int> undoRedo;
