@@ -49,6 +49,10 @@ public:
     ID generate() {
         return ID(++last_id);
     }
+
+    void reset() {
+        last_id = 0;
+    }
 };
 
 #endif // ! OURPAINT_HEADERS_ID_H_
