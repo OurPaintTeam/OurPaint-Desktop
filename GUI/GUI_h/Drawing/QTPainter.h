@@ -10,6 +10,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <list>
+#include <QSvgGenerator>
 
 #include "GeometricObjects.h"
 #include "Painter.h"
@@ -76,7 +77,7 @@ public:
 
     bool findClosesObject(); // Функция проверки курсора мышки и обьекта
 
-    void saveToImage(const QString &format); // Функция сохранения изображения в указанный формат
+    void saveToImage(const QString &fileName, QString &format); // Функция сохранения изображения в указанный формат
 
     // Функция выделения обьекта в левом меню
     void selectedElemByID(std::vector<double> &parameters,unsigned long long int IDselected);

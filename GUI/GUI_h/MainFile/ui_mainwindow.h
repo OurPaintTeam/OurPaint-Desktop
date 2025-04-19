@@ -46,6 +46,7 @@ public:
     QToolButton* actionBMP;
     QToolButton* actionTIFF;
     QToolButton* actionPDF;
+    QToolButton* actionSVG;
     QToolButton* actionOURP;
     QToolButton *actionImport_project;
     QToolButton *actionScript;
@@ -58,6 +59,7 @@ public:
     QWidgetAction* widgetTIFF;
     QWidgetAction* widgetPDF;
     QWidgetAction* widgetOURP;
+    QWidgetAction* widgetSVG;
     QWidgetAction *widgetImport_project;
     QWidgetAction *widgetScript;
 
@@ -189,9 +191,6 @@ public:
         MainWindow->resize(960, 540);
         MainWindow->setMinimumSize(QSize(672, 378));
 
-        // Настройка действий
-        setupActions(MainWindow);
-
         // Создание центрального виджета и основного макета
         centralwindow = new QWidget(MainWindow);
         centralwindow->setObjectName("centralwindow");
@@ -211,6 +210,7 @@ public:
 
         // Создание верхней панели с меню и кнопками управления окном
         setupTopBar(MainWindow);
+
 
         // Добавление верхней панели в основной макет
         gridLayout_2->addWidget(topBar, 0, 0, 1, 1, Qt::AlignTop);
@@ -400,7 +400,19 @@ public:
         topBarLayout->addWidget(closeButton);
     }
 
-    void setupActions(QMainWindow *MainWindow) {
+    void setupActionsSaveLoad(QMainWindow *MainWindow) {
+        saveAction = new QWidgetAction(menuProject);
+        widgetImport_project = new QWidgetAction(menuProject);
+        widgetScript = new QWidgetAction(menuProject);
+        widgetPDF = new QWidgetAction(formatMenu);
+        widgetSVG = new QWidgetAction(formatMenu);
+        widgetOURP = new QWidgetAction(formatMenu);
+        widgetTIFF = new QWidgetAction(formatMenu);
+        widgetBMP = new QWidgetAction(formatMenu);
+        widgetPNG = new QWidgetAction(formatMenu);
+        widgetJPG = new QWidgetAction(formatMenu);
+        widgetJPEG = new QWidgetAction(formatMenu);
+
         // Инициализация действий меню
         QFont font;
         font.setPointSize(9);
@@ -411,34 +423,37 @@ public:
         actionSave_project_to = new QToolButton(MainWindow);
         actionSave_project_to->setObjectName("actionSave_project_to");
 
-        saveAction = new QWidgetAction(menuProject);
+
         saveAction->setDefaultWidget(actionSave_project_to);
         saveAction->setObjectName("saveAction");
 
         // Создание действий для каждого формата
-        actionJPG = new QToolButton( MainWindow);
+        actionJPG = new QToolButton(MainWindow);
         actionJPG->setText("JPG");
-        actionJPEG = new QToolButton( MainWindow);
+        actionJPEG = new QToolButton(MainWindow);
         actionJPEG->setText("JPEG");
-        actionPNG = new QToolButton( MainWindow);
+        actionPNG = new QToolButton(MainWindow);
         actionPNG->setText("PNG");
-        actionBMP = new QToolButton( MainWindow);
+        actionBMP = new QToolButton(MainWindow);
         actionBMP->setText("BMP");
-        actionTIFF = new QToolButton( MainWindow);
+        actionTIFF = new QToolButton(MainWindow);
         actionTIFF->setText("TIFF");
-        actionPDF = new QToolButton( MainWindow);
+        actionPDF = new QToolButton(MainWindow);
         actionPDF->setText("PDF");
-        actionOURP = new QToolButton( MainWindow);
+        actionSVG = new QToolButton(MainWindow);
+        actionSVG->setText("SVG");
+        actionOURP = new QToolButton(MainWindow);
         actionOURP->setText("OURP");
 
         // Создание действий для каждого формата
-        actionJPG ->setObjectName("actionJPG");
-        actionJPEG ->setObjectName("actionJPEG");
-        actionPNG ->setObjectName("actionPNG");
-        actionBMP ->setObjectName("actionBMP");
+        actionJPG->setObjectName("actionJPG");
+        actionJPEG->setObjectName("actionJPEG");
+        actionPNG->setObjectName("actionPNG");
+        actionBMP->setObjectName("actionBMP");
         actionTIFF->setObjectName("actionTIFF");;
-        actionPDF ->setObjectName("actionPDF");
-        actionOURP ->setObjectName("actionOURP");
+        actionPDF->setObjectName("actionPDF");
+        actionSVG->setObjectName("actionSVG");
+        actionOURP->setObjectName("actionOURP");
 
 
         actionOURP->setStyleSheet(
@@ -458,7 +473,23 @@ public:
                 "   background-color: rgba(255, 255, 255, 0.1);"
                 "}"
         );
-
+        actionSVG->setStyleSheet(
+                "QToolButton {"
+                "   background-color: transparent;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px 10px;"
+                "   text-align: left;"
+                "   border: none;"
+                "}"
+                "QToolButton:hover {"
+                "   background-color: rgba(255, 255, 255, 0.2);"
+                "   border-radius: 4px;"
+                "}"
+                "QToolButton:pressed {"
+                "   background-color: rgba(255, 255, 255, 0.1);"
+                "}"
+        );
         actionPDF->setStyleSheet(
                 "QToolButton {"
                 "   background-color: transparent;"
@@ -562,31 +593,32 @@ public:
                 "}"
         );
 
-        widgetJPG = new QWidgetAction(formatMenu);
+
         widgetJPG->setDefaultWidget(actionJPG);
         widgetJPG->setObjectName("widgetJPG");
 
-        widgetJPEG = new QWidgetAction(formatMenu);
         widgetJPEG->setDefaultWidget(actionJPEG);
         widgetJPEG->setObjectName("widgetJPEG");
 
-        widgetPNG = new QWidgetAction(formatMenu);
+
         widgetPNG->setDefaultWidget(actionPNG);
         widgetPNG->setObjectName("widgetPNG");
 
-        widgetBMP = new QWidgetAction(formatMenu);
+
         widgetBMP->setDefaultWidget(actionBMP);
         widgetBMP->setObjectName("widgetBMP");
 
-        widgetTIFF = new QWidgetAction(formatMenu);
+
         widgetTIFF->setDefaultWidget(actionTIFF);
         widgetTIFF->setObjectName("widgetTIFF");
 
-        widgetPDF = new QWidgetAction(formatMenu);
+
         widgetPDF->setDefaultWidget(actionPDF);
         widgetPDF->setObjectName("widgetPDF");
 
-        widgetOURP = new QWidgetAction(formatMenu);
+        widgetSVG->setDefaultWidget(actionSVG);
+        widgetSVG->setObjectName("widgetSVG");
+
         widgetOURP->setDefaultWidget(actionOURP);
         widgetOURP->setObjectName("widgetOURP");
 
@@ -622,7 +654,6 @@ public:
 
         actionImport_project = new QToolButton(MainWindow);
 
-        widgetImport_project = new QWidgetAction(menuProject);
         widgetImport_project->setDefaultWidget(actionImport_project);
         widgetImport_project->setObjectName("widgetImport_project");
 
@@ -660,7 +691,7 @@ public:
         actionScript->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         actionScript->setToolButtonStyle(Qt::ToolButtonTextOnly);
         actionScript->setLayoutDirection(Qt::LeftToRight);
-        widgetScript = new QWidgetAction(menuProject);
+
         widgetScript->setDefaultWidget(actionScript);
         widgetScript->setObjectName("widgetScript");
         actionScript->setObjectName("actionScript");
@@ -678,12 +709,18 @@ public:
                 "}"
         );
 
+    }
+    void setupServerActions(QMainWindow *MainWindow){
+        widgetOpen_server = new QWidgetAction(menuCollaboration);
+        widgetJoin_server = new QWidgetAction(menuCollaboration);
+        widgetJoin_local_server = new QWidgetAction(menuCollaboration);
+        widgetExit_from_session= new QWidgetAction(menuCollaboration);
         actionOpen_server = new QToolButton(MainWindow);
         actionOpen_server->setObjectName("actionOpen_server");
         actionOpen_server->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         actionOpen_server->setToolButtonStyle(Qt::ToolButtonTextOnly);
         actionOpen_server->setLayoutDirection(Qt::LeftToRight);
-        widgetOpen_server = new QWidgetAction(menuCollaboration);
+
         widgetOpen_server->setDefaultWidget(actionOpen_server);
         widgetOpen_server->setObjectName("widgetOpen_server");
         actionOpen_server->setStyleSheet(
@@ -706,7 +743,7 @@ public:
         actionJoin_server->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         actionJoin_server->setToolButtonStyle(Qt::ToolButtonTextOnly);
         actionJoin_server->setLayoutDirection(Qt::LeftToRight);
-        widgetJoin_server = new QWidgetAction(menuCollaboration);
+
         widgetJoin_server->setDefaultWidget(actionJoin_server);
         widgetJoin_server->setObjectName("widgetJoin");
         actionJoin_server->setStyleSheet(
@@ -729,7 +766,7 @@ public:
         actionJoin_local_server->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         actionJoin_local_server->setToolButtonStyle(Qt::ToolButtonTextOnly);
         actionJoin_local_server->setLayoutDirection(Qt::LeftToRight);
-        widgetJoin_local_server = new QWidgetAction(menuCollaboration);
+
         widgetJoin_local_server->setDefaultWidget(actionJoin_local_server);
         widgetJoin_local_server->setObjectName("widgetJoin_local_server");
         actionJoin_local_server->setStyleSheet(
@@ -752,7 +789,7 @@ public:
         actionExit_from_session->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         actionExit_from_session->setToolButtonStyle(Qt::ToolButtonTextOnly);
         actionExit_from_session->setLayoutDirection(Qt::LeftToRight);
-        widgetExit_from_session= new QWidgetAction(menuCollaboration);
+
         widgetExit_from_session->setDefaultWidget(actionExit_from_session);
         widgetExit_from_session->setObjectName("widgetExitS");
         actionExit_from_session->setObjectName("actionExit_from_session");
@@ -787,27 +824,8 @@ public:
         );
 
         menuProject->setFont(font);
-        menuProject->addAction(saveAction);
-        menuProject->addAction(widgetImport_project);
-        menuProject->addAction(widgetScript);
 
-        // Меню "Collaboration"
-        menuCollaboration = new QMenu(MainWindow);
-        menuCollaboration->setObjectName("menuCollaboration");
-        menuCollaboration->setStyleSheet(
-                "QMenu#menuCollaboration { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }"
-                "QMenu#menuCollaboration::indicator { image: none; width: 0px; height: 0px; }"
-                "QMenu#formatMenu::item:hover {"
-                "   background-color: rgba(255, 255, 255, 0.3); "  // Подсветка при наведении
-                "}"
-        );
-        menuCollaboration->setFont(font);
 
-        menuCollaboration->addAction(widgetOpen_server);
-        menuCollaboration->addAction(widgetJoin_server);
-        menuCollaboration->addAction(widgetJoin_local_server);
-        menuCollaboration->addSeparator();
-        menuCollaboration->addAction(widgetExit_from_session);
 
 
         // Меню "Format"
@@ -822,6 +840,13 @@ public:
                 "}"
         );
         formatMenu->setFont(font);
+        setupActionsSaveLoad(MainWindow);
+
+
+        menuProject->addAction(saveAction);
+        menuProject->addAction(widgetImport_project);
+        menuProject->addAction(widgetScript);
+
         formatMenu->addAction(widgetOURP);
         formatMenu->addAction(widgetJPG);
         formatMenu->addAction(widgetJPEG);
@@ -829,6 +854,28 @@ public:
         formatMenu->addAction(widgetBMP);
         formatMenu->addAction(widgetTIFF);
         formatMenu->addAction(widgetPDF);
+        formatMenu->addAction(widgetSVG);
+
+
+        // Меню "Collaboration"
+        menuCollaboration = new QMenu(MainWindow);
+        menuCollaboration->setObjectName("menuCollaboration");
+        menuCollaboration->setStyleSheet(
+                "QMenu#menuCollaboration { background-color: #494850; color: #D8D8F6; border: 1px solid #443d3c; border-radius: 5px; }"
+                "QMenu#menuCollaboration::indicator { image: none; width: 0px; height: 0px; }"
+                "QMenu#formatMenu::item:hover {"
+                "   background-color: rgba(255, 255, 255, 0.3); "  // Подсветка при наведении
+                "}"
+        );
+        menuCollaboration->setFont(font);
+        setupServerActions(MainWindow);
+
+        menuCollaboration->addAction(widgetOpen_server);
+        menuCollaboration->addAction(widgetJoin_server);
+        menuCollaboration->addAction(widgetJoin_local_server);
+        menuCollaboration->addSeparator();
+        menuCollaboration->addAction(widgetExit_from_session);
+
 
     }
 

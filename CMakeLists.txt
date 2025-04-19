@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_STANDARD 20)
 
 project(ourpaint)
+
 # Для использования этого приложения необходимо установить QT6. Если у вас есть вопросы, обращайтесь к @ardrasss
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Svg)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -159,6 +160,7 @@ target_link_libraries(ourpaint
         Qt6::Widgets
         Qt6::Network
         Eigen3::Eigen
+        Qt6::Svg
 )
 
 target_link_libraries(ourpaint Math)

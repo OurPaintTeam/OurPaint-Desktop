@@ -62,15 +62,22 @@ void MainWindow::initConnections() {
     connect(ui->nineReq, &QPushButton::clicked, this, &MainWindow::ninthReq);
 
     // Кнопки сохранение/импорт
-   // connect(ui->actionSave_project_to, &QAction::triggered, this, &MainWindow::saveProjectToFile);
- //   connect(ui->actionImport_project, &QAction::triggered, this, &MainWindow::loadProjectFile);
-   // connect(ui->actionScript, &QAction::triggered, this, &MainWindow::buttonScript);
+    connect(ui->actionJPG,  &QToolButton::clicked, this, &MainWindow::onExportJPG);
+    connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
+    connect(ui->actionPNG,  &QToolButton::clicked, this, &MainWindow::onExportPNG);
+    connect(ui->actionBMP,  &QToolButton::clicked, this, &MainWindow::onExportBMP);
+    connect(ui->actionTIFF, &QToolButton::clicked, this, &MainWindow::onExportTIFF);
+    connect(ui->actionPDF,  &QToolButton::clicked, this, &MainWindow::onExportPDF);
+    connect(ui->actionSVG,  &QToolButton::clicked, this, &MainWindow::onExportSVG);
+    connect(ui->actionOURP, &QToolButton::clicked, this, &MainWindow::onExportOURP);
+    connect(ui->actionImport_project, &QToolButton::clicked,this, &MainWindow::loadProjectFile);
+    connect(ui->actionScript,&QToolButton::clicked, this, &MainWindow::buttonScript);
 
     // Кнопки сервера
-   // connect(ui->actionOpen_server, &QAction::triggered, this, &MainWindow::openServer);
-    //connect(ui->actionJoin_server, &QAction::triggered, this, &MainWindow::joinServer);
-    //connect(ui->actionJoin_local_server, &QAction::triggered, this, &MainWindow::joinLocalServer);
-    //connect(ui->actionExit_from_session, &QAction::triggered, this, &MainWindow::exitSession);
+    connect(ui->actionOpen_server, &QToolButton::clicked, this, &MainWindow::openServer);
+    connect(ui->actionJoin_server, &QToolButton::clicked, this, &MainWindow::joinServer);
+    connect(ui->actionJoin_local_server, &QToolButton::clicked, this, &MainWindow::joinLocalServer);
+    connect(ui->actionExit_from_session, &QToolButton::clicked, this, &MainWindow::exitSession);
 
     // Кнопка помощь
     connect(ui->helpButton, &QPushButton::clicked, this, &MainWindow::showHelp);
@@ -90,6 +97,11 @@ void MainWindow::initConnections() {
     // Настройки сетка
     connect(ui->componentGrid, &QCheckBox::toggled, [&](bool checked) {
         ModeManager::setCell(checked);
+        ui->workWindow->update();
+    });
+    connect(ui->componentAxis, &QCheckBox::toggled, [&](bool checked) {
+        ModeManager::setAxis(checked);
+        ui->workWindow->update();
     });
 
     // Обработка ввода в консоли
@@ -178,12 +190,12 @@ void MainWindow::setAllMouseTracking(QWidget *widget) {
 
 // Загрузка файла проекта
 void MainWindow::loadProjectFile() {
-    if (!save) {
+    if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
         int result = dialog.exec(); // Показать диалог
 
         if (result == QMessageBox::Yes) {
-            saveProjectToFile();
+            saveProjectToFile(".ourp");
         } else if (result == QMessageBox::Cancel) {
             return;
         }
@@ -200,73 +212,9 @@ void MainWindow::loadProjectFile() {
 }
 
 
-void MainWindow::saveProjectToBMP() {
-    QString baseName = "project";
-    QString extension = ".bmp";
-    QString fileName;
-    int index = 1; // Уникальности имени
-
-    // Директория по умолчанию
-    QString defaultDir = QDir::homePath() + "/OurPaint/project";
-
-    QDir dir(defaultDir);
-    if (!dir.exists()) {
-        dir.mkpath("."); // Создание директории, если она не существует
-    }
-
-
-    fileName = QString("%1/%2%3").arg(defaultDir, baseName, extension); // Формирование полного имени файла
-
-
-    while (QFile::exists(fileName)) { // Проверка на существование файла
-        fileName = QString("%1/%2_%3%4").arg(defaultDir).arg(baseName).arg(index).arg(extension);
-        index++;
-    }
-
-
-    // Открытие диалога для сохранения файла
-    QString selectedFileName = QFileDialog::getSaveFileName(this, tr("Save Project"), fileName,
-                                                            tr("Project Files (*.bmp);;All Files (*)"));
-
-
-    if (!selectedFileName.isEmpty()) {
-        save = true;
-        emit saveBMP(selectedFileName); //Сигнал
-    } else {
-        save = false;
-    }
-
-}
-
-
-void MainWindow::loadProjectBMP() {
-    if (!save) {
-        SaveDialog dialog(this);
-        int result = dialog.exec(); // Показать диалог
-
-        if (result == QMessageBox::Yes) {
-            saveProjectToFile();
-        } else if (result == QMessageBox::Cancel) {
-            return;
-        }
-    }
-
-    // Открытие диалога выбора файла проекта
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
-                                                    QDir::homePath() + "/OurPaint/project",
-                                                    tr("Project Files (*.ourp);;All Files (*)"));
-
-    if (!fileName.isEmpty()) {
-        emit loadBMP(fileName); // Сигнал
-    }
-
-}
-
-
 // Сохранение текущего проекта в файл
-void MainWindow::saveProjectToFile() {
+void MainWindow::saveProjectToFile(QString format) {
     QString baseName = "project";
-    QString extension = ".ourp";
     QString fileName;
     int index = 1; // Уникальности имени
 
@@ -279,25 +227,25 @@ void MainWindow::saveProjectToFile() {
     }
 
 
-    fileName = QString("%1/%2%3").arg(defaultDir, baseName, extension); // Формирование полного имени файла
+    fileName = QString("%1/%2%3").arg(defaultDir, baseName, format); // Формирование полного имени файла
 
 
     while (QFile::exists(fileName)) { // Проверка на существование файла
-        fileName = QString("%1/%2_%3%4").arg(defaultDir).arg(baseName).arg(index).arg(extension);
+        fileName = QString("%1/%2_%3%4").arg(defaultDir).arg(baseName).arg(index).arg(format);
         index++;
     }
 
 
     // Открытие диалога для сохранения файла
     QString selectedFileName = QFileDialog::getSaveFileName(this, tr("Save Project"), fileName,
-                                                            tr("Project Files (*.ourp);;All Files (*)"));
+                                                            tr("Project Files (*format);;All Files (*)"));
 
 
     if (!selectedFileName.isEmpty()) {
-        save = true;
-        emit projectSaved(selectedFileName); //Сигнал
+        ModeManager::setSave(true);
+        emit projectSaved(selectedFileName,format); //Сигнал
     } else {
-        save = false;
+       ModeManager::setSave(false);
     }
 }
 
@@ -510,7 +458,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
         int result = dialog.exec(); // Показать окно
 
         if (result == QMessageBox::Yes) {
-            saveProjectToFile();
+            saveProjectToFile(".ourp");
             if (ModeManager::getSave()) {
                 event->accept();
                 close();

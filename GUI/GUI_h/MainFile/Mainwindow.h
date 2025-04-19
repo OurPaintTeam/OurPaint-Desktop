@@ -175,9 +175,7 @@ public slots:
 
     // Кнопки
     void loadProjectFile();
-    void saveProjectToBMP();
-    void loadProjectBMP();
-    void saveProjectToFile();
+    void saveProjectToFile(QString format);
 
 
     void buttonScript();
@@ -270,11 +268,20 @@ public slots:
         emit tenReqirements();
     }
 
-signals:
 
+    void onExportJPG(){saveProjectToFile(QString(".jpg"));};
+    void onExportJPEG(){saveProjectToFile(".jpeg");};
+    void onExportPNG(){  saveProjectToFile(".png");};
+    void onExportBMP(){  saveProjectToFile(".bmp");};
+    void onExportTIFF(){  saveProjectToFile(".tiff");};
+    void onExportPDF(){  saveProjectToFile(".pdf");};
+    void onExportOURP(){  saveProjectToFile(".ourp");};
+    void onExportSVG(){  saveProjectToFile(".svg");};
+
+signals:
     void EnterPressed(const QString &command); // Сигнал при нажатии Enter
     void resized(); // Сигнал при изменении размера окна
-    void projectSaved(const QString &fileName); // Сигнал о сохранении проекта
+    void projectSaved(const QString &fileName,QString format); // Сигнал о сохранении проекта
     void LoadFile(const QString &fileName); // Сигнал для загрузки файла
     void EmitScript(const QString &fileName);
 
@@ -302,9 +309,6 @@ signals:
 
     void NameUsers(const QString &text);
     void changeSettings();
-
-    void loadBMP(const QString &fileName);
-    void saveBMP(const QString &fileName);
 
     void oneReqirements();
     void twoReqirements();
