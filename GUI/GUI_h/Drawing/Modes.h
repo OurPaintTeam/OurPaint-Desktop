@@ -42,6 +42,7 @@ enum class KeyMode {
 
 enum class SettingsMode {
     Cell,
+    Axis
 };
 
 class ModeManager {
@@ -53,6 +54,7 @@ private:
 
     // Переменные для флагов состояния
     static bool cellEnabled;
+    static bool axisEnabled;
     static bool cursorInArea;
     static bool saveFileMode;
 
@@ -71,6 +73,8 @@ public:
     // Методы для работы с флагами состояния
     static void setCell(bool flag);
     static bool getCell();
+    static void setAxis(bool flag);
+    static bool getAxis();
 
     static void setCursor(bool flag);
     static bool getCursor();

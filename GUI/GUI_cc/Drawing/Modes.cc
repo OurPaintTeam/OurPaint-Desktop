@@ -30,6 +30,7 @@ std::bitset<static_cast<size_t>(KeyMode::ReleasingShift) + 1> ModeManager::keyMo
 };
 
 bool ModeManager::cellEnabled = true;
+bool ModeManager::axisEnabled = true;
 bool ModeManager::cursorInArea = true;
 bool ModeManager::saveFileMode = false;
 
@@ -75,11 +76,19 @@ bool ModeManager::getActiveMode(KeyMode mode) {
 }
 
 void ModeManager::setCell(bool flag) {
-    cellEnabled = flag;
+    cellEnabled= flag;
 }
 
 bool ModeManager::getCell() {
     return cellEnabled;
+}
+
+void ModeManager::setAxis(bool flag) {
+   axisEnabled=flag;
+}
+
+bool ModeManager::getAxis() {
+    return  axisEnabled;
 }
 
 void ModeManager::setCursor(bool flag) {
