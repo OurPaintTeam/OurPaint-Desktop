@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "objects/GeometricObjects.h"
-#include "objects/BoundingBox.h"
+#include "objects/BoundBox.h"
 #include "objects/ID.h"
 
 TEST(PointTest, RectMethod) {

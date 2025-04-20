@@ -1,54 +1,89 @@
 #include <gtest/gtest.h>
 
-#include "Paint.h"
+#include "Scene.h"
 #include "Painter.h"
 #include "BMPpainter.h"
+#include "ID.h"
 
-TEST(PaintTest, addReq) {
-    BMPpainter* painter = new BMPpainter();
-    Paint screen(painter);
+class SceneFixture : public testing::Test {
+protected:
+    Scene scene;
+    Painter* p;
 
-    ElementData section1 = {
-            .et = ET_SECTION,
-            .params = { 0.0, 0.0, 100.0, 100.0 }
-    };
+    SceneFixture() : p(new BMPpainter), scene(p) {}
 
-    ElementData section2 = {
-            .et = ET_SECTION,
-            .params = { 200.0, 0.0, 200.0, 100.0 }
-    };
+    void SetUp() override {
+        scene.setPainter(p);
+    }
 
-    screen.addElement(section1);
-    screen.addElement(section2);
+    void TearDown() override {
+        delete p;
+    }
+};
 
-    RequirementData rP1 = {
-            .req = ET_POINTPOINTDIST,
-            .objects = {1, 2},
-            .params = {90.0}
-    };
+TEST_F(SceneFixture, add_object) {
+    ObjectData obj1;
+    obj1.et = ET_POINT;
+    obj1.params = {0, 0};
 
-    RequirementData rP2 = {
-            .req = ET_POINTPOINTDIST,
-            .objects = {4, 5},
-            .params = {90.0}
-    };
+    ID id = scene.addObject(obj1);
+    ObjectData obj2 = scene.getObjectInfo(id);
+    EXPECT_EQ(obj1, obj2);
 
-    RequirementData rD = {
-            .req = ET_SECTIONSECTIONPARALLEL,
-            .objects = {3, 6}
-    };
-
-    screen.addRequirement(rP1);
-    screen.addRequirement(rP2);
-    screen.addRequirement(rD);
-
-    screen.updateRequirement(1);
-    screen.updateRequirement(2);
-    screen.updateRequirement(3);
-    screen.updateRequirement(4);
-    screen.updateRequirement(5);
-
-    EXPECT_EQ(1, 1);
-    delete painter;
+    scene.deleteObject(id);
+    EXPECT_ANY_THROW(scene.getObjectInfo(id));
 }
 
+TEST_F(SceneFixture, boundingBox_and_moveObject) {
+    ObjectData obj1;
+    obj1.et = ET_POINT;
+    obj1.params = {0, 0};
+
+    ObjectData obj2;
+    obj2.et = ET_POINT;
+    obj2.params = {1000, 0};
+
+    ObjectData obj3;
+    obj3.et = ET_POINT;
+    obj3.params = {0, 1000};
+
+    ObjectData obj4;
+    obj4.et = ET_POINT;
+    obj4.params = {1000, 1000};
+
+    scene.addObject(obj1);
+    scene.addObject(obj2);
+    scene.addObject(obj3);
+    scene.addObject(obj4);
+
+    std::unordered_map<ID, IGeometricObject*> allObjects = scene.getAllObjects();
+    EXPECT_EQ(allObjects.size(), 4);
+
+    //scene.updateBoundingBox();
+
+    BoundBox2D bbox = scene.getBoundingBox();
+    EXPECT_EQ(bbox.min_x, 0);
+    EXPECT_EQ(bbox.max_x, 1000);
+    EXPECT_EQ(bbox.min_y, 0);
+    EXPECT_EQ(bbox.max_y, 1000);
+
+    scene.moveObject(ID(4), 5000, 5000);
+    bbox = scene.getBoundingBox();
+    EXPECT_EQ(bbox.min_x, 0);
+    EXPECT_EQ(bbox.max_x, 6000);
+    EXPECT_EQ(bbox.min_y, 0);
+    EXPECT_EQ(bbox.max_y, 6000);
+
+    scene.deleteObject(ID(4));
+    bbox = scene.getBoundingBox();
+    EXPECT_EQ(bbox.min_x, 0);
+    EXPECT_EQ(bbox.max_x, 1000);
+    EXPECT_EQ(bbox.min_y, 0);
+    EXPECT_EQ(bbox.max_y, 1000);
+
+    EXPECT_EQ(bbox.width(), 1000);
+    EXPECT_EQ(bbox.height(), 1000);
+
+    EXPECT_EQ(scene.vertexCount(), 4);
+    EXPECT_EQ(scene.edgeCount(), 0);
+}

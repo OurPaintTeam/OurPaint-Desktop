@@ -20,10 +20,14 @@ endif()
 
 include_directories(../headers)
 include_directories(../Math/headers)
+
+include_directories(../headers/objects)
+
 enable_testing()
 set(SOURCES
         ../src/objects/GeometricObjects.cc
-        ../src/objects/BoundingBox.cc
+        ../src/objects/BoundBox.cc
+        ../src/Scene.cc
 #        ../src/Requirements.cc
 #        ../Math/src/ErrorFunctions.cc
 #        ../Math/src/Function.cc
@@ -53,8 +57,14 @@ add_executable(RequirementsGTEST RequirementsGTEST.cc ${SOURCES})
 target_link_libraries(RequirementsGTEST GTest::gtest_main)
 
 #Test for Paint
-add_executable(PaintGTEST PaintGTEST.cc ${SOURCES})
-target_link_libraries(PaintGTEST GTest::gtest_main)
+add_executable(SceneGTEST SceneGTEST.cc
+        ../src/Scene.cc
+        ../src/objects/GeometricObjects.cc
+        ../src/objects/BoundBox.cc
+        ../src/painters/BMPpainter.cc
+        ../src/BMPfile.cc
+)
+target_link_libraries(SceneGTEST GTest::gtest_main)
 
 #Test for UndoRedo
 add_executable(UndoRedoGTEST UndoRedoTests.cc ../src/UndoRedo/Transactions.cc ../src/UndoRedo/UndoRedo.cc)
