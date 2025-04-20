@@ -6,20 +6,18 @@
 #include "Requirements.h"
 
 class requirementInFile {
-    ID id;
+    unsigned int id;
     RequirementData s_req;
     public:
-    explicit requirementInFile(const std::pair<ID, RequirementData> &obj);
+    explicit requirementInFile(const std::pair<unsigned int, RequirementData> &obj);
 
     requirementInFile(const requirementInFile &other);
-
     requirementInFile(requirementInFile &&other) noexcept;
-
     requirementInFile &operator=(const requirementInFile &other);
-
     requirementInFile &operator=(requirementInFile &&other) noexcept;
-    [[nodiscard]] std::pair<ID, RequirementData> to_pair() const;
-    [[nodiscard]] std::string to_string() const;
+
+    std::pair<unsigned int, RequirementData> to_pair() const;
+    std::string to_string() const;
 };
 
 

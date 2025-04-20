@@ -1,16 +1,16 @@
 #include "objectInFile.h"
 
 std::string objectInFile::to_string() const {
-    if (s_obj->type() == ET_POINT) {
+    if (s_obj->getElementType() == ET_POINT) {
         Point *p = dynamic_cast<Point *>(s_obj);
-        return "{\nID " + std::to_string(id.id) + "\npoint " + std::to_string(p->x) + " " + std::to_string(p->y) +
+        return "{\nID " + std::to_string(id) + "\npoint " + std::to_string(p->x) + " " + std::to_string(p->y) +
                "\n}";
-    } else if (s_obj->type() == ET_SECTION) {
+    } else if (s_obj->getElementType() == ET_SECTION) {
         Section *s = dynamic_cast<Section *>(s_obj);
-        return "{\nID " + std::to_string(id.id) + "\nsection" + "\n}";
-    } else if (s_obj->type() == ET_CIRCLE) {
+        return "{\nID " + std::to_string(id) + "\nsection" + "\n}";
+    } else if (s_obj->getElementType() == ET_CIRCLE) {
         Circle *s = dynamic_cast<Circle *>(s_obj);
-        return "{\nID " + std::to_string(id.id) + "\ncircle " + std::to_string(s->R) + "\n}";
+        return "{\nID " + std::to_string(id) + "\ncircle " + std::to_string(s->r) + "\n}";
     }
     return "error";
 }
@@ -45,13 +45,6 @@ objectInFile &objectInFile::operator=(objectInFile &&other) noexcept {
     return *this;
 }
 
-std::pair<ID, IGeometricObject *> objectInFile::to_pair() const { return std::make_pair(id, s_obj); };
+std::pair<unsigned int, IGeometricObject *> objectInFile::to_pair() const { return std::make_pair(id, s_obj); };
 
-objectInFile::objectInFile(std::pair<ID, IGeometricObject *> &obj) {
-    s_obj = obj.second;
-    id = obj.first;
-}
-
-
-
-
+objectInFile::objectInFile(std::pair<unsigned int, IGeometricObject *> &obj) : s_obj(obj.second), id(obj.first) {}

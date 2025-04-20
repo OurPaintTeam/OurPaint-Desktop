@@ -1,12 +1,5 @@
-//
-// Created by Eugene Bychkov on 24.10.2024.
-//
-
 #include "requirementInFile.h"
-requirementInFile::requirementInFile(const std::pair<ID, RequirementData> &obj) {
-    id = obj.first;
-    s_req = obj.second;
-}
+requirementInFile::requirementInFile(const std::pair<unsigned int, RequirementData> &obj) : id(obj.first), s_req(obj.second) {}
 
 requirementInFile::requirementInFile(const requirementInFile &other) {
     id = other.id;
@@ -23,16 +16,16 @@ requirementInFile &requirementInFile::operator=(requirementInFile &&other) noexc
     return *this;
 }
 
-std::pair<ID, RequirementData> requirementInFile::to_pair() const {
+std::pair<unsigned int, RequirementData> requirementInFile::to_pair() const {
     return {id, s_req};
 }
 
 std::string requirementInFile::to_string() const {
     std::string s;
     s+= "{\n";
-    s += "ID " + std::to_string(id.id) + "\n";
-    s += "addreq " + std::to_string(s_req.req) + " " + std::to_string(s_req.objects[0].id) + " " +
-            std::to_string(s_req.objects[1].id) + " " + (!s_req.params.empty() ? std::to_string(s_req.params[0]): "0") + "\n";
+    s += "ID " + std::to_string(id) + "\n";
+    s += "addreq " + std::to_string(s_req.req) + " " + std::to_string(s_req.objects[0]) + " " +
+            std::to_string(s_req.objects[1]) + " " + (!s_req.params.empty() ? std::to_string(s_req.params[0]): "0") + "\n";
     s += "}";
     return s;
 }

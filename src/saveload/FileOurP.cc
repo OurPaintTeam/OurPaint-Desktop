@@ -4,8 +4,8 @@ void FileOurP::parseFile(std::istream &file) {
     std::vector<objectInFile> objects;
     std::vector<requirementInFile> requirements;
     std::string line;
-    std::queue<std::pair<ID, IGeometricObject *>> q;
-    std::queue<std::pair<ID, RequirementData>> q2;
+    std::queue<std::pair<unsigned int, IGeometricObject *>> q;
+    std::queue<std::pair<unsigned int, RequirementData>> q2;
     while (std::getline(file, line)) {
         if (file.fail()) {
             throw std::runtime_error("Failed to read line from file");
@@ -16,7 +16,7 @@ void FileOurP::parseFile(std::istream &file) {
             long long id;
             ss >> id_str >> id;
 
-            ID object_id(id);
+            unsigned int object_id(id);
             std::getline(file, line);
 
             std::stringstream data(line);
@@ -24,16 +24,19 @@ void FileOurP::parseFile(std::istream &file) {
             data >> type;
             if (type == "addreq") {
                 data >> type;
-                ID id1;
-                ID id2;
+                long long int i1, i2;
+                data >> i1;
+                data >> i2;
+                unsigned int id1(i1);
+                unsigned int id2(i2);
                 double param;
-                data >> id1.id >> id2.id >> param;
+                data >> param;
                 RequirementData req;
                 req.req = static_cast<enum Requirement>(type.c_str()[0] - '0');
                 req.objects.push_back(id1);
                 req.objects.push_back(id2);
                 req.params.push_back(param);
-                std::pair<ID, RequirementData> ll = {object_id, req};
+                std::pair<unsigned int, RequirementData> ll = {object_id, req};
                 requirements.emplace_back(ll);
             } else if (type == "point") {
                 double x, y;
@@ -41,7 +44,7 @@ void FileOurP::parseFile(std::istream &file) {
                 Point *p = new Point;
                 p->x = x;
                 p->y = y;
-                std::pair<ID, IGeometricObject *> a = {object_id, p};
+                std::pair<unsigned int, IGeometricObject *> a = {object_id, p};
                 if (q.size() == 2) {
                     objects.emplace_back(q.front());
                     q.pop();
@@ -62,7 +65,7 @@ void FileOurP::parseFile(std::istream &file) {
                 Section *sec = new Section;
                 sec->beg = dynamic_cast<Point *>(p1);
                 sec->end = dynamic_cast<Point *>(p2);
-                std::pair<ID, IGeometricObject *> a = {object_id, sec};
+                std::pair<unsigned int, IGeometricObject *> a = {object_id, sec};
                 objects.emplace_back(a);
             } else if (type == "circle") {
                 double r;
@@ -72,8 +75,8 @@ void FileOurP::parseFile(std::istream &file) {
                 q.pop();
                 Circle *c = new Circle;
                 c->center = dynamic_cast<Point *>(center);
-                c->R = r;
-                std::pair<ID, IGeometricObject *> a = {object_id, c};
+                c->r = r;
+                std::pair<unsigned int, IGeometricObject *> a = {object_id, c};
                 objects.emplace_back(a);;
             }
         }
@@ -100,7 +103,7 @@ FileOurP &FileOurP::operator=(FileOurP &&other) noexcept {
     return *this;
 }
 
-void FileOurP::addObject(std::pair<ID, IGeometricObject *> &obj) {
+void FileOurP::addObject(std::pair<unsigned int, IGeometricObject *> &obj) {
     m_objects.emplace_back(obj);
 }
 
@@ -181,6 +184,6 @@ FileOurP::FileOurP(const std::vector<objectInFile> &obj, std::vector<requirement
     m_requirements = req;
 }
 
-void FileOurP::addRequirement(std::pair<ID, RequirementData> &req) {
+void FileOurP::addRequirement(std::pair<unsigned int, RequirementData> &req) {
     m_requirements.emplace_back(req);
 }

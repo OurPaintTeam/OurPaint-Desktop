@@ -3,25 +3,22 @@
 
 #include <string>
 
-#include "GeometricObjects.h"
+#include "objects/GeometricObjects.h"
 
 class objectInFile {
-    ID id;
+    unsigned int id;
     IGeometricObject *s_obj;
 public:
-    explicit objectInFile(std::pair<ID, IGeometricObject *> &obj);
+    explicit objectInFile(std::pair<unsigned int, IGeometricObject *> &obj);
 
     objectInFile(const objectInFile &other);
-
     objectInFile(objectInFile &&other) noexcept;
-
     objectInFile &operator=(const objectInFile &other);
-
     objectInFile &operator=(objectInFile &&other) noexcept;
-    std::pair<ID, IGeometricObject *> to_pair() const;
+
+    std::pair<unsigned int, IGeometricObject *> to_pair() const;
 
     std::string to_string() const;
 };
-
 
 #endif // ! OURPAINT_HEADERS_SAVELOAD_OBJECTINFILE_H_
