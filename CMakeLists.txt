@@ -58,10 +58,9 @@ add_executable(ourpaint
         src/Application.cc
         src/BMPfile.cc
 
-        headers/Enums.h
-        headers/GeometricObjects.h
+
         headers/Requirements.h
-        headers/ID.h
+
 
         headers/painters/Painter.h
         headers/painters/BMPpainter.h
@@ -73,9 +72,7 @@ add_executable(ourpaint
         headers/saveload/SaveSettingsApplications.h
 
         headers/Application.h
-        headers/UndoRedo.h
         headers/BMPfile.h
-        headers/GeometricObjects.h
 
         headers/UndoRedo/Command.h
         headers/UndoRedo/Transactions.h
