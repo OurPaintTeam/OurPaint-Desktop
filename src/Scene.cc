@@ -159,17 +159,12 @@ void Scene::updateBoundingBox() const {
 }
 
 void Scene::paint() const {
+    updateBoundingBox();
     _painter->changeSize(_allFiguresRectangle);
- //   _painter->drawPointt()
-  /*  for (const auto &[id, obj]: _points) {
-        _painter->drawPoint(*obj);
-    }
-    for (const auto &[id, obj]: _sections) {
-        _painter->drawSection(*obj);
-    }
-    for (const auto &[id, obj]: _circles) {
-        _painter->drawCircle(*obj);
-    }*/
+
+    _painter->drawPoint(_points);
+    _painter->drawSection(_sections);
+    _painter->drawCircle(_circles);
 }
 
 const IGeometricObject* Scene::getObject(ID id) const {
