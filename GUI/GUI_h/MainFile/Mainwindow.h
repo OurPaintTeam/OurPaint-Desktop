@@ -34,6 +34,7 @@
 #include "KeyWorkWindow.h"
 #include "LeftMenuBar.h"
 
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
     class MainWindow;
@@ -44,6 +45,8 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 private:
+
+
     std::unique_ptr<QTPainter> painter;
     std::unique_ptr<MouseWorkWindow> mouseWW;             //  для обработки событий мыши
     std::unique_ptr<KeyWorkWindow> keyWW;                 //  для обработки событий клавиш
@@ -77,6 +80,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void setupLeftMenu();
+
     void initConnections(); // Инициализация сигналов
 
     // Добавление сообщений
@@ -89,9 +94,6 @@ public:
     /***********************/
     // левое меню
 
-
-    std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>, QString>
-    saveSettings();
 
     ///////////////////////////////////////////////////////////////
 
@@ -227,47 +229,51 @@ public slots:
         ModeManager::setActiveMode(WorkModes::Selected);
     };
 
+    void onWorkWindowResized(){
+        emit resize();
+    };
+
     ////////////////////////////////////////////////////
     // Требования
 
     void firstReq() {
-        emit oneReqirements();
+        emit oneRequirements();
     }
 
     void secondReq() {
-        emit twoReqirements();
+        emit twoRequirements();
     }
 
     void thirdReq() {
-        emit threeReqirements();
+        emit threeRequirements();
     }
 
     void fourthReq() {
-        emit fourReqirements();
+        emit fourRequirements();
     }
 
     void fifthReq() {
-        emit fiveReqirements();
+        emit fiveRequirements();
     }
 
     void sixthReq() {
-        emit sixReqirements();
+        emit sixRequirements();
     }
 
     void seventhReq() {
-        emit sevenReqirements();
+        emit sevenRequirements();
     }
 
     void eighthReq() {
-        emit eightReqirements();
+        emit eightRequirements();
     }
 
     void ninthReq() {
-        emit nineReqirements();
+        emit nineRequirements();
     }
 
     void tenthReq() {
-        emit tenReqirements();
+        emit tenRequirements();
     }
 
 
@@ -282,18 +288,16 @@ public slots:
 
 signals:
     void EnterPressed(const QString &command); // Сигнал при нажатии Enter
-    void resized(); // Сигнал при изменении размера окна
     void projectSaved(const QString &fileName,QString format); // Сигнал о сохранении проекта
     void LoadFile(const QString &fileName); // Сигнал для загрузки файла
     void EmitScript(const QString &fileName);
 
-    void KeyPlus(); // Сигнал увелечения при тачпаде,колёсике и ctrl +
-    void KeyMinus(); // Сигнал уменьшения при тачпаде,колёсике и ctrl -
-    void KeyZero(); // Обнуление
+
     void REDO(); // Сигнал для повторения действия
     void UNDO(); // Сигнал для отмены действия
     void DELETE();
 
+    void resize();
 
 
     // Кнопки сервера
@@ -310,16 +314,16 @@ signals:
     void NameUsers(const QString &text);
     void changeSettings();
 
-    void oneReqirements();
-    void twoReqirements();
-    void threeReqirements();
-    void fourReqirements();
-    void fiveReqirements();
-    void sixReqirements();
-    void sevenReqirements();
-    void eightReqirements();
-    void nineReqirements();
-    void tenReqirements();
+    void oneRequirements();
+    void twoRequirements();
+    void threeRequirements();
+    void fourRequirements();
+    void fiveRequirements();
+    void sixRequirements();
+    void sevenRequirements();
+    void eightRequirements();
+    void nineRequirements();
+    void tenRequirements();
 
 
 };

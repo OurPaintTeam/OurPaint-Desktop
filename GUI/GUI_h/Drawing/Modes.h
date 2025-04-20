@@ -60,6 +60,8 @@ private:
     static bool axisEnabled;
     static bool cursorInArea;
     static bool saveFileMode;
+    static bool isServer;
+    static bool isConnected;
 
 public:
     // Методы для работы с режимами
@@ -84,6 +86,10 @@ public:
 
     static void setSave(bool flag);
     static bool getSave();
+    static void setConnection(bool flag);
+    static bool getConnection();
+    static void setFlagServer(bool flag);
+    static bool getFlagServer();
 };
 
 #endif // OURPAINT_MODES_H

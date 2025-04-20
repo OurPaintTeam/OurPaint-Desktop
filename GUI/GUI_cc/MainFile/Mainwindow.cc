@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     painter = std::make_unique<QTPainter>(ui->workWindow); // Переопределяем метод рисования в виджете
     mouseWW = std::make_unique<MouseWorkWindow>(ui->workWindow);    // Переопределяем метод мышки в виджете
     keyWW = std::make_unique<KeyWorkWindow>(ui->workWindow);       // Переопределяем метод кнопок в виджете
-    leftMenuBar = std::make_unique<LeftMenuBar>(ui->leftMenu); // Класс для управления левым меню
+   // leftMenuBar = std::make_unique<LeftMenuBar>(ui->leftMenu); // Класс для управления левым меню
 
     // painter->show();
 
@@ -35,8 +35,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->menuProject->installEventFilter(this);
     ui->formatMenu->installEventFilter(this);
     ui->menuCollaboration->installEventFilter(this);
+    setupLeftMenu();
 }
 
+void MainWindow::setupLeftMenu() {;
+    leftMenuBar = std::make_unique<LeftMenuBar>(this);
+    ui->leftMenuView->setModel(leftMenuBar->getTreeModel());
+    ui->leftMenuView->setHeaderHidden(true);
+}
 
 // Инициализация всех сигналов
 void MainWindow::initConnections() {
@@ -136,17 +142,14 @@ void MainWindow::initConnections() {
     connect(ui->enterMes, &QPushButton::clicked, this, &MainWindow::Message);
 
     // При двойном нажатии на обьект откроется левое меню
-    connect(leftMenuBar.get(), &LeftMenuBar::showMenu, this, [this]() {
+  /*  connect(leftMenuBar.get(), &LeftMenuBar::showMenu, this, [this]() {
         ui->leftMenuContainer->show();
         ui->messageContainer->hide();
-    });
+    });*/
 
-    // В конструкторе или методе, где вы инициализируете QTreeWidget
-    // В MainWindow.cpp
-    //QTreeWidget *Ui_MainWindow::leftMenu
-    // private: std::unique_ptr<LeftMenuBar> MainWindow::leftMenuBar
-    connect(ui->leftMenu, &QTreeWidget::itemExpanded, leftMenuBar.get(), &LeftMenuBar::onItemExpanded);
-    connect(ui->leftMenu, &QTreeWidget::itemCollapsed, leftMenuBar.get(), &LeftMenuBar::onItemCollapsed);
+
+   // connect(ui->leftMenu, &QTreeWidget::itemExpanded, leftMenuBar.get(), &LeftMenuBar::onItemExpanded);
+    //connect(ui->leftMenu, &QTreeWidget::itemCollapsed, leftMenuBar.get(), &LeftMenuBar::onItemCollapsed);
     //  connect(ui->leftMenuElements, &QPushButton::clicked , leftMenuBar.get(),&LeftMenuBar::onItemCollapsed);
 
     connect(keyWW.get(), &KeyWorkWindow::UNDO,this, &MainWindow::undo);
@@ -253,26 +256,6 @@ void MainWindow::saveProjectToFile(QString format) {
     } else {
        ModeManager::setSave(false);
     }
-}
-
-
-std::tuple<std::vector<std::vector<QString>>, std::vector<std::vector<QString>>, std::vector<bool>, QString>
-MainWindow::saveSettings() {
-
-    std::vector<bool> settings;
-    QString name;
-
-
-    std::vector<std::vector<QString>> figures = leftMenuBar->getListFigures();
-    std::vector<std::vector<QString>> requirements = leftMenuBar->getListReq();
-
-
-    bool isChecked = ui->componentGrid->isChecked();
-    settings.push_back(isChecked);
-
-    name = ui->nameUsers->text();
-
-    return std::make_tuple(figures, requirements, settings, name);
 }
 
 
@@ -400,13 +383,14 @@ void  MainWindow::updateStyle(){
                                   "border: none; "
                                   "border-bottom: 1px solid #262222; }");
 
-        ui->leftMenu->setStyleSheet(QString::fromUtf8(R"(
+      /*  ui->leftMenu->setStyleSheet(QString::fromUtf8(R"(
         background: #494850;
         color: #D8D8F6;
         border: none; /* Убираем все границы */
-        border-bottom-left-radius: 10px;   /* Закругление нижнего левого угла */
-        border-bottom-right-radius: 0px;
-    )"));
+      //  border-bottom-left-radius: 10px;   /* Закругление нижнего левого угла */
+        //border-bottom-right-radius: 0px;
+    //)"));
+
         ui->messageConsole->setStyleSheet(QString::fromUtf8(R"(
         background: "#3e3d3d";
         color: "#D8D8F6";
@@ -425,14 +409,14 @@ void  MainWindow::updateStyle(){
                                   "border: none; "
                                   "border-bottom: 1px solid #262222; }");
 
-        ui->leftMenu->setStyleSheet(QString::fromUtf8(R"(
-        background: #494850;
-        color: #D8D8F6;
-        QHeaderView::section {
-            background: #494850;
-            color: #D8D8F6;
-        }
-    )"));
+       // ui->leftMenu->setStyleSheet(QString::fromUtf8(R"(
+        //background: #494850;
+        //color: #D8D8F6;
+        //QHeaderView::section {
+          //  background: #494850;
+           // color: #D8D8F6;
+       // }
+   // )"));
         ui->messageConsole->setStyleSheet(QString::fromUtf8(R"(
         background: "#3e3d3d";
         color: "#D8D8F6";
@@ -450,8 +434,9 @@ void  MainWindow::updateStyle(){
 
 // Отрисовка 60 раз в секундк
 void MainWindow::resizeEvent(QResizeEvent *event) {
-    emit resized();
     updateStyle();
+    emit resize();
+    ui->workWindow->update();
     QMainWindow::resizeEvent(event);
 }
 

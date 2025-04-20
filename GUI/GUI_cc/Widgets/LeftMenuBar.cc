@@ -61,7 +61,7 @@ void LeftMenuBar::addElemLeftMenu(const QString &name, unsigned long long ID, co
 }
 
 // Добавление требований
-void LeftMenuBar::addRequirementElem(const QString &name, const unsigned long long ReqID,const unsigned long long ElemID1,const unsigned long long ElemID2, const double param) {
+void LeftMenuBar::addRequirementElem(const QString &name, const int ReqID,const unsigned long long ElemID1,const unsigned long long ElemID2, const double param) {
     if (!requirementsNode) { return; }
 
     // Создаем основной узел элемента
@@ -83,6 +83,28 @@ void LeftMenuBar::addRequirementElem(const QString &name, const unsigned long lo
     // Добавляем ID как дочерний узел
     TreeNode *paramNode = new TreeNode(QString("Param = %1").arg(param), elemNode);
     elemNode->addChild(paramNode);
+}
+
+
+// Добавление требований
+void LeftMenuBar::addRequirementElem(const QString &name, const int ReqID,const unsigned long long ElemID1,const unsigned long long ElemID2) {
+    if (!requirementsNode) { return; }
+
+    // Создаем основной узел элемента
+    TreeNode *elemNode = new TreeNode(name, requirementsNode);
+    requirementsNode->addChild(elemNode);
+
+    // Добавляем ID как дочерний узел
+    TreeNode *ReqIDNode = new TreeNode(QString("ID = %1").arg(ReqID), elemNode);
+    elemNode->addChild(ReqIDNode);
+
+    // Добавляем ID как дочерний узел
+    TreeNode *ElemID1Node = new TreeNode(QString("ID1 = %1").arg(ElemID1), elemNode);
+    elemNode->addChild(ElemID1Node);
+
+    // Добавляем ID как дочерний узел
+    TreeNode *ElemID2Node = new TreeNode(QString("ID2 = %1").arg(ElemID2), elemNode);
+    elemNode->addChild(ElemID2Node);
 }
 
 // Очистка всех элементов

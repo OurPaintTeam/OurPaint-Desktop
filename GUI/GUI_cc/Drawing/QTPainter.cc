@@ -8,7 +8,7 @@ QTPainter::QTPainter(QWidget *parent) : QFrame(parent), IDmove(0), id(0), circle
         resize(parentWidget()->size()); // Берем размер от отца
 
         // Ловим сигнал изменения размера окна
-        connect(parent->window(), SIGNAL(resized()), this, SLOT(onWorkWindowResized()));
+        connect(parent->window(), SIGNAL(resize()), this, SLOT(onWorkWindowResized()));
 
         // Ловим сигналы от рисования мышкой
         connect(&drawFigM, &DrawMouse::SigPoint, this, &QTPainter::onSigPoint);
@@ -482,7 +482,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
 
 
-    figureDelete();
+   // figureDelete();
 
     QFrame::paintEvent(event);
 }

@@ -36,6 +36,8 @@ bool ModeManager::cellEnabled = true;
 bool ModeManager::axisEnabled = true;
 bool ModeManager::cursorInArea = true;
 bool ModeManager::saveFileMode = false;
+bool ModeManager::isConnected = false;
+bool ModeManager::isServer = false;
 
 void ModeManager::setActiveMode(WorkModes mode) {
     workModes.reset();
@@ -108,4 +110,20 @@ void ModeManager::setSave(bool flag) {
 
 bool ModeManager::getSave() {
     return saveFileMode;
+}
+
+void ModeManager::setConnection(bool flag) {
+    isConnected=flag;
+}
+
+bool ModeManager::getConnection() {
+    return  isConnected;
+}
+
+void ModeManager::setFlagServer(bool flag) {
+    isServer=flag;
+}
+
+bool ModeManager::getFlagServer() {
+    return  isServer;
 }

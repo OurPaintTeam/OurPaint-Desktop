@@ -35,8 +35,12 @@ public:
     void addElemLeftMenu(const QString &name, unsigned long long ID, const std::vector<double> &params);
 
     // Добавление требований
-    void addRequirementElem(const QString &name, const unsigned long long ReqID, const unsigned long long ElemID1,
+    void addRequirementElem(const QString &name, const int ReqID, const unsigned long long ElemID1,
                             const unsigned long long ElemID2, const double param);
+
+    // Добавление требований
+    void addRequirementElem(const QString &name, const int ReqID, const unsigned long long ElemID1,
+                            const unsigned long long ElemID2);
 
     // Очистка всех элементов
     void clearAllFigures();
