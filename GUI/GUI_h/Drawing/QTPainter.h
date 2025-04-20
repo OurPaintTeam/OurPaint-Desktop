@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <list>
 #include <QSvgGenerator>
+#include <unordered_map>
 
 #include "Painter.h"
 #include "Scaling.h"
@@ -29,9 +30,9 @@ Q_OBJECT
 
 private:
     //  Выделенные обьекты
-    std::vector<ID> selectedIdPoint;
-    std::vector<ID> selectedIdCircle;
-    std::vector<ID> selectedIdSection;
+    std::vector<long long int> selectedIdPoint;
+    std::vector<long long int> selectedIdCircle;
+    std::vector<long long int> selectedIdSection;
 
     // Указатели
     const std::unordered_map<ID, const Point*>* pointStorage;
@@ -44,9 +45,6 @@ private:
 
     // Класс для отрисовки мышкой
     DrawMouse drawFigM;
-
-    ID id; // Айди фигуры выделения
-    ID IDmove; // Айди фигуры перемещения
 
     std::chrono::steady_clock::time_point lastClickTime;
 
@@ -62,11 +60,7 @@ public:
 
     void figureDelete(); // Удаление данных о фигурах
 
-    void setIdFigures(ID Id); // Присвоение айди выделенной фигуры
-
-    ID getIdFigures(); // Получение айди фигуры перемещения
-
-    std::vector<ID> getVecID(); // Получение вектора айди для требований
+    std::vector<long long int> getVecID(); // Получение вектора айди для требований
 
     void selectedClear();  // Очистка данных выделенных обьектов
 
@@ -97,15 +91,6 @@ public:
         emit SigSection(x, y, x1, y1);
     }
 
-    void emitId(Element type, const Point& p) {
-        emit getIdFigure(type, p.x, p.y);
-    }
-    void emitId(Element type, const Section& s) {
-        emit getIdFigure(type, s.beg->x, s.beg->y, s.end->x, s.end->y);
-    }
-    void emitId(Element type, const Circle& c) {
-        emit getIdFigure(type, c.center->x, c.center->y, c.R);
-    }
 
 
 protected:
@@ -154,11 +139,6 @@ signals:
     void SigSection(double x, double y, double x1, double y1);
     void SigSector();
     void SigArc();
-
-    // При выделении
-    void getIdFigure(Element F, double x, double y);
-    void getIdFigure(Element F, double x, double y, double r);
-    void getIdFigure(Element F, double x, double y, double x1, double y1);
 
     void DoubleClickOnObject(ID id);
 

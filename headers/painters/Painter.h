@@ -1,6 +1,7 @@
 #ifndef OURPAINT_HEADERS_PAINTERS_PAINTER_H_
 #define OURPAINT_HEADERS_PAINTERS_PAINTER_H_
 
+#include <unordered_map>
 #include "GeometricObjects.h"
 #include "ID.h"
 #include "BoundBox.h"

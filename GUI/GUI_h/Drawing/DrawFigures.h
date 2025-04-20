@@ -2,7 +2,7 @@
 #define OURPAINT_DRAWFIGURES_H
 
 #include <QPainter>
-#include <list>
+#include <unordered_set>
 
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
@@ -24,73 +24,154 @@ public:
     }
 
     // Функция для отрисовки точек
-    static void drawPoint(QPainter &painter, const std::list<Point> &points) {
+    static void drawPoint(QPainter &painter, const std::unordered_map<ID, const Point *> &points,
+                          std::vector<long long int> &vec_id) {
         if (points.size() == 0) { return; }
+        else {
 
-        // Настройка кисти и отключение обводки
-        QBrush pointBrush = (QColor(Qt::black));
-        painter.setRenderHint(QPainter::Antialiasing);  // Включаем сглаживание
-        painter.setBrush(pointBrush);
-        painter.setPen(Qt::NoPen);
+            QBrush pointBrush = (QColor(Qt::black));
+            painter.setBrush(pointBrush);
+            painter.setBrush(Qt::black);
+            painter.setPen(Qt::NoPen);
 
-        double pointRadius = 1;
+            if (!vec_id.empty()) {
 
-        // Учитываем масштабирование
-        for (const auto &pt: points) {
-            painter.drawEllipse(QPointF(Scaling::scaleCoordinate(pt.x),
-                                        Scaling::scaleCoordinate(-pt.y)),
-                                pointRadius, pointRadius);
+                    std::unordered_set<long long int> selectedIds(vec_id.begin(), vec_id.end());
+
+                    for (const auto &pt : points) {
+                        const Point *point = pt.second;
+                        QPointF logicPoint(Scaling::scaleCoordinate(point->x), Scaling::scaleCoordinate(-point->y));
+
+                        bool isSelected = selectedIds.contains(pt.first.get());
+                        short int pointRadius = isSelected ? 2 : 1;
+
+
+                        painter.drawEllipse(logicPoint, pointRadius, pointRadius);
+
+                        if (isSelected) {
+                            DrawAdditionalInf::drawPointID(painter, logicPoint, pt.first.get());
+                            DrawAdditionalInf::drawPointGlow(painter, logicPoint);
+                        }
+                    }
+
+            } else {
+
+                short int pointRadius = 1;
+
+                // Учитываем масштабирование
+                for (const auto &pt: points) {
+                    const Point *point = pt.second;
+                    painter.drawEllipse(QPointF(Scaling::scaleCoordinate(point->x),
+                                                Scaling::scaleCoordinate(-point->y)),
+                                        pointRadius, pointRadius);
+                }
+            }
         }
     }
 
 
     // Функция для отрисовки кругов
-    static void drawCircle(QPainter &painter, const std::list<Circle> &circles) {
+    static void drawCircle(QPainter &painter, const std::unordered_map<ID, const Circle *> &circles,std::vector<long long int> &vec_id) {
         if (circles.size() == 0) { return; }
+        else {
+            QPen pen(Qt::black);
+            pen.setWidth(1);
+            pen.setJoinStyle(Qt::RoundJoin);
+            pen.setCapStyle(Qt::RoundCap);
+            painter.setRenderHint(QPainter::Antialiasing);
+            painter.setBrush(Qt::NoBrush);
+            painter.setPen(pen);
 
-        // Настройка пера для рисования кругов
-        QPen currentPen = QColor(Qt::black);
-        currentPen.setWidth(1);
-        currentPen.setJoinStyle(Qt::RoundJoin);
-        currentPen.setCapStyle(Qt::RoundCap);
+            if(!vec_id.empty()) {
+                std::unordered_set<long long int> selectedIds(vec_id.begin(), vec_id.end());
 
-        painter.setPen(currentPen);
-        painter.setBrush(Qt::NoBrush);
-        painter.setRenderHint(QPainter::Antialiasing);
+                for (const auto &pair: circles) {
+                    const ID &id = pair.first;
+                    const Circle *circle = pair.second;
 
-        // Учитываем масштабирование
-        for (const auto &cir: circles) {
-            painter.drawEllipse(QPointF(Scaling::scaleCoordinate(cir.center->x),
-                                        Scaling::scaleCoordinate(-cir.center->y)),
-                                Scaling::scaleCoordinate(cir.R),
-                                Scaling::scaleCoordinate(cir.R));
+                    double scaledRadius = Scaling::scaleCoordinate(circle->r);
+                    QPointF logicCenter(Scaling::scaleCoordinate(circle->center->x),
+                                        Scaling::scaleCoordinate(-circle->center->y));
+
+                    bool selected = selectedIds.contains(id.get());
+
+                    QPen currentPen = selected ? QPen(Qt::blue) : QPen(Qt::black);
+                    currentPen.setWidth(selected ? 2 : 1);
+                    painter.setPen(currentPen);
+
+                    if (selected) {
+                        DrawAdditionalInf::drawCircleID(painter, logicCenter, scaledRadius,id.get());
+                        DrawAdditionalInf::drawCircleGlow(painter, logicCenter, scaledRadius);
+                    }
+
+                    painter.drawEllipse(logicCenter, scaledRadius, scaledRadius);
+                }
+            }else {
+                // Учитываем масштабирование
+                for (const auto &cir: circles) {
+                    const Circle *circle = cir.second;
+                    painter.drawEllipse(QPointF(Scaling::scaleCoordinate(circle->center->x),
+                                                Scaling::scaleCoordinate(-circle->center->y)),
+                                        Scaling::scaleCoordinate(circle->r),
+                                        Scaling::scaleCoordinate(circle->r));
+                }
+            }
+
         }
-
-        MyColor = QPen(Qt::black);  // Сброс цвета
     }
 
 
     // Функция для отрисовки линий
-    static void drawSection(QPainter &painter, const std::list<Section> &sections) {
+    static void drawSection(QPainter &painter, const std::unordered_map<ID, const Section *> &sections,std::vector<long long int> &vec_id) {
         if (sections.size() == 0) { return; }
+        else {
+            painter.setRenderHint(QPainter::Antialiasing);  // Включаем сглаживание
+            QPen currentPen = QPen(Qt::black);
+            currentPen.setWidth(1);
+            currentPen.setCapStyle(Qt::RoundCap);
+            painter.setPen(currentPen);
 
-        painter.setRenderHint(QPainter::Antialiasing);  // Включаем сглаживание
-        QPen currentPen = QPen(Qt::black);
-        currentPen.setWidth(1);
-        currentPen.setCapStyle(Qt::RoundCap);
-        painter.setPen(currentPen);
+            if(!vec_id.empty()) {
+                std::unordered_set<long long int> selectedIds(vec_id.begin(), vec_id.end());
 
-        // Учитываем масштабирование
-        for (const auto &sec: sections) {
-            QPointF start(Scaling::scaleCoordinate(sec.beg->x), Scaling::scaleCoordinate(-sec.beg->y));
-            QPointF end(Scaling::scaleCoordinate(sec.end->x), Scaling::scaleCoordinate(-sec.end->y));
-            painter.drawLine(start, end);
+                for (const auto &pair: sections) {
+                    const ID &id = pair.first;
+                    const Section *section = pair.second;
 
-            // Отрисовка длины
-            DrawAdditionalInf::drawCoordinateLine(painter, start, end);
+                    QPointF start(Scaling::scaleCoordinate(section->beg->x),
+                                  Scaling::scaleCoordinate(-section->beg->y));
+                    QPointF end(Scaling::scaleCoordinate(section->end->x),
+                                Scaling::scaleCoordinate(-section->end->y));
+
+                    bool selected = selectedIds.contains(id.get());
+
+                    currentPen.setWidth(selected ? 2 : 1);
+                    painter.setPen(currentPen);
+
+                    painter.drawLine(start, end);
+                    DrawAdditionalInf::drawCoordinateLine(painter, start, end);
+
+                    if (selected) {
+                        DrawAdditionalInf::drawSectionID(painter, start, end, id.get());
+                        DrawAdditionalInf::drawSectionGlow(painter, start, end);
+                    }
+
+                }
+            }
+            else{
+                // Учитываем масштабирование
+                for (const auto &sec: sections) {
+                    const Section *section = sec.second;
+                    QPointF start(Scaling::scaleCoordinate(section->beg->x),
+                                  Scaling::scaleCoordinate(-section->beg->y));
+                    QPointF end(Scaling::scaleCoordinate(section->end->x), Scaling::scaleCoordinate(-section->end->y));
+                    painter.drawLine(start, end);
+
+                    // Отрисовка длины
+                    DrawAdditionalInf::drawCoordinateLine(painter, start, end);
+                }
+            }
         }
-
-        MyColor = QPen(Qt::black);  // Сброс цвета
     }
 
     // Функция для рисования сектора
@@ -118,64 +199,46 @@ public:
         // Сброс пера в черный
         MyColor = QPen(Qt::black);
     }
-    //////////// Функции для одиночной отрисовки (мышью) или если выделен обьект
+
+    //////////// Функции для одиночной отрисовки (мышью) ]
 
     // Функция для отрисовки одной точки
-    static void drawPoint(QPainter &painter, QPointF point, bool selected) {
-        short int pointRadius = selected ? 2 : 1;  // Устанавливаем радиус точки в зависимости от того, выбрана ли она
+    static void drawPoint(QPainter &painter, QPointF point) {
+        short int pointRadius =  1;
 
-        // Если точка выбрана, рисуем айди и подсветку
         QPointF logicPoint(Scaling::scaleCoordinate(point.x()), Scaling::scaleCoordinate(-point.y()));
 
-        if (selected) {
-            DrawAdditionalInf::drawPointID(painter, logicPoint);
-            DrawAdditionalInf::drawPointGlow(painter, logicPoint);
-        }
-
-        // Устанавливаем кисть для рисования точки
-        QBrush pointBrush = (MyColor.color() != Qt::black) ? MyColor.brush() : Qt::black;
+        QBrush pointBrush = Qt::black;
         painter.setBrush(pointBrush);
         painter.setPen(Qt::NoPen);
 
-        if (!selected && pointBrush.color() == QColor(Qt::red)) {
-            pointRadius = 2;
-        }
 
         painter.drawEllipse(logicPoint, pointRadius, pointRadius);
-        MyColor = QPen(Qt::black);  // Сброс цвета
+        MyColor = QPen(Qt::black);
     }
 
 
     // Функция для отрисовки круга
-    static void drawCircle(QPainter &painter, QPointF center, double radius, bool selected) {
+    static void drawCircle(QPainter &painter, QPointF center, double radius) {
         double scaledRadius = radius * Scaling::getZoom();
-
         QPointF logicCenter(Scaling::scaleCoordinate(center.x()), Scaling::scaleCoordinate(-center.y()));
 
-        QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
-        currentPen.setWidth(selected ? 2 : 1);  // Устанавливаем толщину линии в зависимости от выбранности
+        QPen currentPen = QPen(Qt::black);
+        currentPen.setWidth( 1);
         currentPen.setJoinStyle(Qt::RoundJoin);
         currentPen.setCapStyle(Qt::RoundCap);
-
-        if (selected) {
-            DrawAdditionalInf::drawCircleID(painter, logicCenter, scaledRadius);
-            DrawAdditionalInf::drawCircleGlow(painter, logicCenter, scaledRadius);
-        } else if (currentPen.color() == QColor(Qt::red)) {
-            currentPen.setWidth(2);
-            DrawAdditionalInf::drawCircleLeftID(painter, logicCenter, scaledRadius);
-        }
-
         painter.setPen(currentPen);
         painter.setBrush(Qt::NoBrush);
+
         painter.drawEllipse(logicCenter, scaledRadius, scaledRadius);
 
         MyColor = QPen(Qt::black);  // Сброс цвета
     }
 
     // Функция для рисования линии
-    static void drawSection(QPainter &painter, QPointF beg, QPointF end, bool selected) {
+    static void drawSection(QPainter &painter, QPointF beg, QPointF end) {
         QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
-        currentPen.setWidth(selected ? 2 : 1);  // Устанавливаем толщину линии в зависимости от выбранности
+        currentPen.setWidth(1);
         currentPen.setCapStyle(Qt::RoundCap);
         painter.setPen(currentPen);
 
@@ -190,23 +253,14 @@ public:
         // Длина
         DrawAdditionalInf::drawCoordinateLine(painter, start, endLogic);
 
-        // Айди, подсветка
-        if (selected) {
-            DrawAdditionalInf::drawSectionID(painter, start, endLogic);
-            DrawAdditionalInf::drawSectionGlow(painter, start, endLogic);
-        } else if (MyColor.color() == QColor(Qt::red)) {
-            DrawAdditionalInf::drawSectionLeftID(painter, start, endLogic);
-        }
-
         MyColor = QPen(Qt::black);  // Сброс цвета
     }
 
     // Функция для рисования сектора
-    static void drawSector(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg,
-                           bool selected) {
+    static void drawSector(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg) {
         // Настройка пера
         QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
-        currentPen.setWidth(selected ? 2 : 1);
+        currentPen.setWidth(1);
         currentPen.setCapStyle(Qt::RoundCap);
         painter.setPen(currentPen);
 
@@ -233,7 +287,7 @@ public:
                         bool selected) {
         // Настройка пера
         QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
-        currentPen.setWidth(selected ? 2 : 1);
+        currentPen.setWidth(1);
         currentPen.setCapStyle(Qt::RoundCap);
         painter.setPen(currentPen);
 
@@ -260,7 +314,7 @@ public:
     }
 
     // Функция для рисования прямоугольника
-    static void drawRectangle(QPainter &painter, QPointF &X,QPointF &Y) {
+    static void drawRectangle(QPainter &painter, QPointF &X, QPointF &Y) {
         // Настройка пера
         QPen currentPen = QPen(Qt::blue);
         currentPen.setCapStyle(Qt::RoundCap); // Устанавливаем стиль окончания линии
@@ -269,10 +323,11 @@ public:
         QPointF start(Scaling::scaleCoordinate(X.x()), Scaling::scaleCoordinate(-X.y()));
         QPointF end(Scaling::scaleCoordinate(Y.x()), Scaling::scaleCoordinate(-Y.y()));
 
-        painter.setBrush(QBrush(QColor(173, 216, 230, 128), Qt::SolidPattern)); // Цвет: светло-голубой с 50% прозрачностью
+        painter.setBrush(
+                QBrush(QColor(173, 216, 230, 128), Qt::SolidPattern)); // Цвет: светло-голубой с 50% прозрачностью
 
         // Рисуем прямоугольник
-        painter.drawRect(QRectF(start,end));
+        painter.drawRect(QRectF(start, end));
 
         // Сброс цвета (если нужно)
         MyColor = QPen(Qt::black);

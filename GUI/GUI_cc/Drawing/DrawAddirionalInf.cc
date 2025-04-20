@@ -198,9 +198,9 @@ void DrawAdditionalInf::drawCursor(QPainter &painter) {
 
 
 // Отрисовка айди для точки
-void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point) {
-    if (id != 0) {
-        QString idText = QString("ID: %1").arg(id);
+void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,long long int ID) {
+    if (ID != 0) {
+        QString idText = QString("ID: %1").arg(ID);
 
         // Смещение вверх над точкой
         const short int offsetY = 10;
@@ -211,14 +211,13 @@ void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point) {
 
         painter.setPen(QPen(Qt::black, 1));
         painter.drawText(QPointF(textX, textY), idText);
-        id = 0;
     }
 }
 
 
 // Отрисовка айди для линии
-void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF &end) {
-    if (id != 0) {
+void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF &end,long long int ID) {
+    if (ID != 0) {
         // Преобразуем координаты
         qreal dx = start.x() - end.x();
         qreal dy = start.y() - end.y();
@@ -226,7 +225,7 @@ void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF
         double midX = (start.x() + end.x()) / 2;
         double midY = (start.y() + end.y()) / 2;
 
-        QString idText = QString("ID: %1").arg(id);
+        QString idText = QString("ID: %1").arg(ID);
         QFontMetrics metrics(painter.font());
         QRectF textRect = metrics.boundingRect(idText);
 
@@ -257,14 +256,14 @@ void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF
         painter.drawText(0, 0, idText);
         painter.restore();
 
-        id = 0;
+
     }
 }
 
 // Отрисовка айди для круга
-void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double r) {
-    if (id != 0) {
-        QString idText = QString("ID: %1").arg(id);
+void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double r,long long int ID) {
+    if (ID != 0) {
+        QString idText = QString("ID: %1").arg(ID);
 
         // Смещение над кругом
         short int offsetY = 10;
@@ -278,7 +277,6 @@ void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double 
         painter.drawText(QPointF(textX, textY), idText);
         painter.restore();
 
-        id = 0;
     }
 }
 
