@@ -10,6 +10,11 @@
 #include "Server.h"
 #include "Client.h"
 #include "DrawMode.h"
+#include "Scene.h"
+
+#include "UndoRedo.h"
+#include "Transactions.h"
+#include "Command.h"
 
 class Application {
 public:
@@ -20,7 +25,9 @@ private:
     QApplication app;
     MainWindow w;
     std::unique_ptr<QTPainter> painter;
-    Paint screen;
+    Scene scene;
+
+    UndoRedo managerUR;
 
     QString username;
 
@@ -29,7 +36,7 @@ private:
     bool isConnected;
     bool isServer;
 
-    void initialize();
+    void init();
     void setupConnections();
 
     void updateState();
