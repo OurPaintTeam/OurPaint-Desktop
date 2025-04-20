@@ -5,20 +5,16 @@
 
 #include "BMPfile.h"
 #include "BMPpainter.h"
-#include "Enums.h"
+#include "objects/Enums.h"
 #include "FileOurP.h"
 #include "InheritanceGraph.h"
 #include "LMForTest.h"
-#include "GeometricObjects.h"
+#include "objects/GeometricObjects.h"
+#include "objects/Objects.h"
 #include "Requirements.h"
-#include "UndoRedo.h"
+#include "UndoRedo/UndoRedoTemplate.h"
 #include <list>
-
-struct ElementData {
-    Element et;
-    std::vector<double> params;
-};
-
+/*
 struct ActionsInfo{
     bool isNew;
     std::vector<ID> m_objects;
@@ -56,7 +52,7 @@ class Paint {
     Painter* c_bmpPainter;
 
     // Rectangle
-    rectangle s_allFigures;
+    BoundingBox s_allFigures;
 
     //
     ID s_maxID;
@@ -69,24 +65,24 @@ public:
     // Default constructor
     Paint(Painter* p) : s_maxID(0), m_pointIDs(),c_bmpPainter(p), m_sectionIDs(), m_circleIDs(), m_pointStorage(),
         m_sectionStorage(), m_circleStorage() {
-        s_allFigures.x_1 = -10;
-        s_allFigures.x_2 = 10;
-        s_allFigures.y_1 = -10;
-        s_allFigures.y_2 = 10;
+        s_allFigures.min_x = -10;
+        s_allFigures.max_x = 10;
+        s_allFigures.min_y = -10;
+        s_allFigures.max_y = 10;
     }
 
     // нет деструктора
         
     // Addition elements by specifying their type and needed parameters
-    ID addElement(const ElementData &ed);
+    ID addElement(const ObjectData &ed);
     
     // Addition requirement
     ID addRequirement(const RequirementData &rd);
     void updateRequirement(ID id);
 
     // Get information about object
-    ElementData getElementInfo(ID id);
-    std::vector<std::pair<ID, ElementData>> getAllElementsInfo();
+    ObjectData getElementInfo(ID id);
+    std::vector<std::pair<ID, ObjectData>> getAllElementsInfo();
     RequirementData getRequirementInfo(ID id);
     std::vector<std::pair<ID, RequirementData>> getAllRequirementsInfo();
 
@@ -95,10 +91,10 @@ public:
     std::string to_string() const;
 
     // Move element
-    void moveElement(const ElementData& currentPos, const ElementData& newPos);
+    void moveElement(const ObjectData& currentPos, const ObjectData& newPos);
     void parallelMove(ID id, double dx, double dy);
     //Find element by ID
-    ID findElement(const ElementData& ed);
+    ID findElement(const ObjectData& ed);
 
     // Export to BMP file
     void exportToBMP(const char *file);
@@ -122,6 +118,6 @@ public:
     void redo();
 
     void paint();
-};
+};*/
 
 #endif // ! OURPAINT_HEADERS_PAINT_H_
