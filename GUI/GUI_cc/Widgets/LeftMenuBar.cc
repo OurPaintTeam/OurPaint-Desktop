@@ -114,7 +114,6 @@ void LeftMenuBar::clearAllFigures() {
     // Удаляем всех детей узла
     figuresNode->deleteAll();
 
-    // Сообщаем вьюшке, что структура дерева изменилась
     QModelIndex figuresIndex = treeModel->index(figuresNode->row(), 0, QModelIndex());
     treeModel->dataChanged(figuresIndex, figuresIndex);
     treeModel->layoutChanged();  // Обновляем структуру модели
@@ -198,7 +197,7 @@ void LeftMenuBar::updateParametersById(unsigned long long id, const std::vector<
                         { return; }
                     }
 
-                    int paramStartIndex = 1; // после "id = ..." идут параметры
+                    int paramStartIndex = 1;
                     for (int k = 0; k < paramNames.size() && (paramStartIndex + k) < elemNode->childCount(); ++k) {
                         TreeNode* paramNode = elemNode->child(paramStartIndex + k);
                         paramNode->setData(0, QString("%1 = %2").arg(paramNames[k]).arg(newParams[k]));
@@ -226,6 +225,58 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
     QDataStream out(&file);
     out.setVersion(QDataStream::Qt_6_9);
 
+    /********************* Сохраняем фигуры ******************************/
+    const int figureCount = figuresNode ? figuresNode->childCount() : 0;
+    out << figureCount;
+
+    for (int i = 0; i < figureCount; ++i) {
+        TreeNode* node = figuresNode->child(i);
+        QString name = node->data(0).toString();
+        unsigned long long id = 0;
+        std::vector<double> params;
+
+        for (int j = 0; j < node->childCount(); ++j) {
+            QString text = node->child(j)->data(0).toString();
+            if (text.startsWith("ID = ")) { id = text.section(" = ", 1).toULongLong(); }
+            else { params.push_back(text.section(" = ", 1).toDouble()); }
+        }
+
+        out << name;
+        out << id;
+        out << static_cast<quint32>(params.size());
+        for (double p : params) { out << p; }
+    }
+
+    /*********************** Сохраняем требования ***************************/
+    const int reqCount = requirementsNode ? requirementsNode->childCount() : 0;
+    out << reqCount;
+
+    for (int i = 0; i < reqCount; ++i) {
+        TreeNode* node = requirementsNode->child(i);
+        QString name = node->data(0).toString();
+
+        int ReqID = 0;
+        unsigned long long ElemID1 = 0;
+        unsigned long long ElemID2 = 0;
+        bool hasParam = false;
+        double param = 0.0;
+
+        for (int j = 0; j < node->childCount(); ++j) {
+            QString text = node->child(j)->data(0).toString();
+            if (text.startsWith("ID = ")) { ReqID = text.section(" = ", 1).toInt(); }
+            else if (text.startsWith("ID1 = ")) { ElemID1 = text.section(" = ", 1).toULongLong(); }
+            else if (text.startsWith("ID2 = ")) { ElemID2 = text.section(" = ", 1).toULongLong(); }
+            else if (text.startsWith("Param = ")) {
+                param = text.section(" = ", 1).toDouble();
+                hasParam = true;
+            }
+        }
+
+        out << name;
+        out << ReqID << ElemID1 << ElemID2;
+        out << hasParam;
+        if (hasParam) { out << param; }
+    }
 
     file.close();
 }
@@ -241,10 +292,50 @@ void LeftMenuBar::loadFromBinaryFile(const QString& filePath) {
     QDataStream in(&file);
     in.setVersion(QDataStream::Qt_6_9);
 
-    // Очищаем текущие объекты
     clearAllFigures();
     clearAllRequirements();
 
+    /*********************** Загружаем фигуры *****************************/
+    int figureCount=0;
+    in >> figureCount;
+
+    for (int i = 0; i < figureCount; ++i) {
+        QString name;
+        unsigned long long id=0;
+        quint32 paramCount;
+        std::vector<double> params;
+
+        in >> name >> id >> paramCount;
+        for (quint32 j = 0; j < paramCount; ++j) {
+            double p;
+            in >> p;
+            params.push_back(p);
+        }
+
+        addElemLeftMenu(name, id, params);
+    }
+
+    /********************** Загружаем требования ****************************/
+    int reqCount=0;
+    in >> reqCount;
+
+    for (int i = 0; i < reqCount; ++i) {
+        QString name;
+        int ReqID;
+        unsigned long long ElemID1=0;
+        unsigned long long ElemID2=0;
+        bool hasParam;
+
+        in >> name >> ReqID >> ElemID1 >> ElemID2 >> hasParam;
+        if (hasParam) {
+            double param=0.0;
+            in >> param;
+            addRequirementElem(name, ReqID, ElemID1, ElemID2, param);
+        } else {
+            addRequirementElem(name, ReqID, ElemID1, ElemID2);
+        }
+    }
 
     file.close();
 }
+

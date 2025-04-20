@@ -195,7 +195,6 @@ void MainWindow::setAllMouseTracking(QWidget *widget) {
 
 
 /************************************************/
-//        Левое меню
 
 // Загрузка файла проекта
 void MainWindow::loadProjectFile() {
@@ -204,7 +203,7 @@ void MainWindow::loadProjectFile() {
         int result = dialog.exec(); // Показать диалог
 
         if (result == QMessageBox::Yes) {
-            saveProjectToFile(".ourp");
+            saveProjectToFile("ourp");
         } else if (result == QMessageBox::Cancel) {
             return;
         }
@@ -216,13 +215,20 @@ void MainWindow::loadProjectFile() {
                                                     tr("Project Files (*.ourp);;All Files (*)"));
 
     if (!fileName.isEmpty()) {
+        QString binFileName = fileName;
+        if (binFileName.endsWith("ourp")) {
+            binFileName.chop(5);
+            binFileName += ".bin";
+        }
+
+        leftMenuBar->loadFromBinaryFile(binFileName);
         emit LoadFile(fileName); // Сигнал
     }
 }
 
 
 // Сохранение текущего проекта в файл
-void MainWindow::saveProjectToFile(QString format) {
+void MainWindow::saveProjectToFile(const QString& format) {
     QString baseName = "project";
     QString fileName;
     int index = 1; // Уникальности имени
@@ -236,11 +242,11 @@ void MainWindow::saveProjectToFile(QString format) {
     }
 
 
-    fileName = QString("%1/%2%3").arg(defaultDir, baseName, format); // Формирование полного имени файла
+    fileName = QString("%1/%2").arg(defaultDir, baseName); // Формирование полного имени файла
 
 
     while (QFile::exists(fileName)) { // Проверка на существование файла
-        fileName = QString("%1/%2_%3%4").arg(defaultDir).arg(baseName).arg(index).arg(format);
+        fileName = QString("%1/%2_%3").arg(defaultDir).arg(baseName).arg(index);
         index++;
     }
 
@@ -252,6 +258,8 @@ void MainWindow::saveProjectToFile(QString format) {
 
     if (!selectedFileName.isEmpty()) {
         ModeManager::setSave(true);
+        leftMenuBar->saveToBinaryFile(selectedFileName+".bin");
+        selectedFileName+=format;
         emit projectSaved(selectedFileName,format); //Сигнал
     } else {
        ModeManager::setSave(false);

@@ -174,7 +174,7 @@ public slots:
 
     // Кнопки
     void loadProjectFile();
-    void saveProjectToFile(QString format);
+    void saveProjectToFile(const QString& format);
 
 
     void buttonScript();

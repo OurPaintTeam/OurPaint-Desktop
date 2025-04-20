@@ -581,6 +581,8 @@ void Application::setupAddingCommandsConnections() {
 }
 
 void Application::updateState() {
+    screen.paint();
+    painter->draw();
 
     QFuture<void> future = QtConcurrent::run([this]() {
         for (const auto& call : this->vecCalls) {
@@ -588,8 +590,6 @@ void Application::updateState() {
         }
     });
 
-    screen.paint();
-    painter->draw();
 
 }
 
