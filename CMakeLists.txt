@@ -25,14 +25,15 @@ include_directories(headers/saveload)
 include_directories(headers/client_server)
 include_directories(headers/GUI)
 include_directories(headers/GUI/Windows)
+include_directories(headers/UndoRedo)
 
 add_executable(ourpaint
         main.cc
-        src/Paint.cc
-        src/Objects.cc
+        src/Scene.cc
         src/Requirements.cc
         src/Scaling.cc
-        src/ID.cc
+        src/objects/GeometricObjects.cc
+        src/objects/BoundBox.cc
 
         src/painters/BMPpainter.cc
         src/painters/QTPainter.cc
@@ -51,6 +52,10 @@ add_executable(ourpaint
         src/saveload/SaveSettingsApplications.cc
         src/saveload/LoadSettingsApplications.cc
 
+        src/UndoRedo/Transactions.cc
+        src/UndoRedo/UndoRedoTemplate.cc
+        src/UndoRedo/UndoRedo.cc
+
         src/client_server/Server.cc
         src/client_server/Client.cc
         src/client_server/LocalScanner.cc
@@ -59,12 +64,19 @@ add_executable(ourpaint
         src/Application.cc
         src/BMPfile.cc
 
-        headers/Enums.h
-        headers/Objects.h
-        headers/Paint.h
+        headers/UndoRedo/Command.h
+        headers/UndoRedo/Transactions.h
+        headers/UndoRedo/UndoRedoTemplate.h
+        headers/UndoRedo/UndoRedo.h
+
+        headers/objects/Enums.h
+        headers/objects/Objects.h
+        headers/objects/GeometricObjects.h
         headers/Requirements.h
         headers/Scaling.h
-        headers/ID.h
+        headers/objects/ID.h
+        headers/Scene.h
+        headers/objects/BoundBox.h
 
         headers/client_server/Client.h
         headers/client_server/LocalScanner.h
@@ -99,9 +111,9 @@ add_executable(ourpaint
         headers/saveload/SaveSettingsApplications.h
 
         headers/Application.h
-        headers/UndoRedo.h
+        headers/UndoRedo/UndoRedoTemplate.h
         headers/BMPfile.h
-        )
+)
 
 
 include_directories(math/headers)
@@ -119,6 +131,6 @@ target_link_libraries(ourpaint
         Qt6::Widgets
         Qt6::Network
         Eigen3::Eigen
-        )
+)
 
 target_link_libraries(ourpaint Math)
