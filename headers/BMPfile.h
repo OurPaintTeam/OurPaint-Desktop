@@ -1,7 +1,6 @@
 #ifndef OURPAINT_HEADERS_BMPFILES_H_
 #define OURPAINT_HEADERS_BMPFILES_H_
 
-#include <iostream>
 #include <cstdint>
 
 class BMPfile

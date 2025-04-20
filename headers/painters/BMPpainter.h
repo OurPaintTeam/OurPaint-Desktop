@@ -6,6 +6,7 @@
 #include "BMPfile.h"
 #include "objects/GeometricObjects.h"
 #include "Painter.h"
+#include <list>
 
 class BMPpainter : public Painter{
     BMPfile c_file;
@@ -24,6 +25,9 @@ public:
     void drawPoint(Point pt, bool isWhite = false);
     void drawSection(Section sec, bool isWhite = false);
     void drawCircle(Circle c, bool isWhite = false);
+    void drawPointt(const std::list<Point>& p) {}
+    void drawSectionn(const std::list<Section>& c) {}
+    void drawCirclee(const std::list<Circle>& s) {}
 
     void saveBMP(const char* filename="print.bmp");
 };

@@ -1,11 +1,7 @@
 #ifndef OURPAINT_HEADERS_PAINTERS_PAINTER_H_
 #define OURPAINT_HEADERS_PAINTERS_PAINTER_H_
 
-#include "objects/GeometricObjects.h"
-
-class Point;
-class Section;
-class Circle;
+#include "GeometricObjects.h"
 
 class Painter {
 
@@ -14,9 +10,9 @@ public:
     virtual unsigned long long getHeight()=0;
     virtual void changeSize(const BoundBox2D& allObjects)=0;
 
-    virtual void drawPoint(Point pt, bool isWhite = false)=0;
-    virtual void drawSection(Section sec, bool isWhite = false)=0;
-    virtual void drawCircle(Circle c, bool isWhite = false)=0;
+    virtual void drawPoint(const std::unordered_map<ID, const Point*> p) =0;
+    virtual void drawSection(const std::unordered_map<ID, const Section*> c)=0;
+    virtual void drawCircle(const std::unordered_map<ID, const Circle*> s) =0;
 
     virtual ~Painter() = default;
 };

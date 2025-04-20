@@ -1,44 +1,149 @@
+#include <QPointF>
 #include "Scaling.h"
+#include "GeometricObjects.h"
 
-Scaling::Scaling(double width, double height)
-        : scale(1.0), width_(width), height_(height), zoom(1.0), usersResize(false),
-          deltaX(0), deltaY(0), rightMousePressed(false) {}
 
+// Static member initializations
+double Scaling::scale = 1.0;
+double Scaling::zoom = 30;
+bool Scaling::usersResize = false;
+
+double Scaling::Delta::X = 0;
+double Scaling::Delta::Y = 0;
+
+int Scaling::LastMousePos::x = 0;
+int Scaling::LastMousePos::y = 0;
+
+short int Scaling::StartMonitorSize::width_ = 1.0;
+short int Scaling::StartMonitorSize::height_ = 1.0;
+
+double Scaling::CenteredCoordinates::CenteredCoordinatesX = 1.0;
+double Scaling::CenteredCoordinates::CenteredCoordinatesY = 1.0;
+
+short int Scaling::Display::width = 1;
+short int Scaling::Display::height = 1;
+
+int Scaling::Cursor::x = 0;
+int Scaling::Cursor::y = 0;
+
+short int Scaling::getStartWidth() {
+    return Scaling::StartMonitorSize::width_;
+}
+
+short int Scaling::getStartHeight() {
+    return Scaling::StartMonitorSize::height_;
+}
+
+short int Scaling::getDisplayCoordinateX() {
+    return Scaling::Display::width;
+}
+
+short int Scaling::getDisplayCoordinateY() {
+    return Scaling::Display::height;
+}
+
+
+void Scaling::setDisplayCoordinateX(int x) {
+    Scaling::CenteredCoordinates::CenteredCoordinatesX = x;
+}
+
+void Scaling::setDisplayCoordinateY(int y) {
+    Scaling::CenteredCoordinates::CenteredCoordinatesY = y;
+}
+
+double Scaling::getCenteredCoordinatesX() {
+    return Scaling::CenteredCoordinates::CenteredCoordinatesX;
+}
+
+double Scaling::getCenteredCoordinatesY() {
+    return Scaling::CenteredCoordinates::CenteredCoordinatesY;
+}
+
+void Scaling::updateScaling() {
+    scale = 1.0;
+    zoom = 30;
+    usersResize = false;
+}
+
+void Scaling::setStartSize(short int x, short int y) {
+    Scaling::StartMonitorSize::width_ = x;
+    Scaling::StartMonitorSize::height_ = y;
+    Scaling::CenteredCoordinates::CenteredCoordinatesX = x / 2.0;
+    Scaling::CenteredCoordinates::CenteredCoordinatesY = y / 2.0;
+}
+
+void Scaling::setActualSize(int x, int y) {
+    Scaling::Display::width = (short) x;
+    Scaling::Display::height = (short) y;
+    Scaling::CenteredCoordinates::CenteredCoordinatesX = x / 2.0;
+    Scaling::CenteredCoordinates::CenteredCoordinatesY = y / 2.0;
+}
+
+double Scaling::logicInt(int X) {
+    return X / (scale * zoom);
+}
+
+double Scaling::logicXInt(int X) {
+    return (X) / (scale * zoom);
+    //+ Scaling::CenteredCoordinates::CenteredCoordinatesX + Scaling::Delta::X
+}
+
+double Scaling::logicYInt(int Y) {
+    return (-Y) / (scale * zoom);
+    //+ Scaling::CenteredCoordinates::CenteredCoordinatesY + Scaling::Delta::Y
+}
+
+double Scaling::logicCursorX() {
+    return ((Scaling::getCursorX() - Scaling::CenteredCoordinates::CenteredCoordinatesX - Scaling::Delta::X) /
+            (scale * zoom));
+    //
+}
+
+double Scaling::logicCursorY() {
+    // У оси у ось инвертирована
+    return ((-Scaling::getCursorY() + Scaling::CenteredCoordinates::CenteredCoordinatesY + Scaling::Delta::Y) /
+            (scale * zoom));
+    //
+}
+
+double Scaling::logicDouble(double X) {
+    return X / (scale * zoom);
+}
+
+double Scaling::logicXDouble(double X) {
+    return (X - Scaling::CenteredCoordinates::CenteredCoordinatesX - Scaling::Delta::X) / (scale * zoom);
+}
+
+double Scaling::logicYDouble(double Y) {
+    return (-Y + Scaling::CenteredCoordinates::CenteredCoordinatesY + Scaling::Delta::Y) / (scale * zoom);
+}
 
 double Scaling::scaleCoordinate(double X) {
     return X * scale * zoom;
 }
 
 double Scaling::scaleCoordinateX(double X) {
-    return X * scale * zoom + deltaX;
+    return (X - Scaling::Delta::X - Scaling::CenteredCoordinates::CenteredCoordinatesX);//();
 }
 
 double Scaling::scaleCoordinateY(double Y) {
-    return Y * scale * zoom + deltaY;
+    return (Y - Scaling::Delta::Y - Scaling::CenteredCoordinates::CenteredCoordinatesY);//+ ();
 }
 
-double Scaling::logic(double X) {
-    return X /( scale * zoom);
+int Scaling::centedX(double X) {
+    return (X + Scaling::Delta::X + Scaling::CenteredCoordinates::CenteredCoordinatesX);
 }
 
-double Scaling::logicX(double X) {
-    return (X-deltaX) / (scale * zoom);
+int Scaling::centedY(double Y) {
+    return (-Y + Scaling::Delta::Y + Scaling::CenteredCoordinates::CenteredCoordinatesY);
 }
 
-double Scaling::logicY(double Y) {
-    return (Y+deltaY)/ (scale * zoom);
-}
-
-void Scaling::scaling(int widgetWidth, int widgetHeight, std::vector<double> size) {
-    double scaleX = widgetWidth / width_;
-    double scaleY = widgetHeight / height_;
+void Scaling::scaling(int widgetWidth, int widgetHeight, const std::vector<double> &size) {
+    double scaleX = static_cast<double>(widgetWidth) / Scaling::StartMonitorSize::width_;
+    double scaleY = static_cast<double>(widgetHeight) / Scaling::StartMonitorSize::height_;
     scale = std::min(scaleX, scaleY);
 
     if (!usersResize && !size.empty()) {
-        qDebug()<<"!";
-        //deltaX = 0;
-      //  deltaY = 0;
-        // Вычисление границ окна в координатах
         int widthX = static_cast<int>(widgetWidth / (2 * scale * zoom));
         int heightY = static_cast<int>(widgetHeight / (2 * scale * zoom));
 
@@ -52,93 +157,123 @@ void Scaling::scaling(int widgetWidth, int widgetHeight, std::vector<double> siz
         double scaleMinX = (minX / (scale * zoom));
         double scaleMinY = (minY / (scale * zoom));
 
-        double ZoomMaxX = abs(widthX / scaleMaxX);
-        double ZoomMinX = abs(widthX / scaleMinX);
-        double ZoomMaxY = abs(heightY / scaleMaxY);
-        double ZoomMinY = abs(heightY / scaleMinY);
+        double ZoomMaxX = std::abs(widthX / scaleMaxX);
+        double ZoomMinX = std::abs(widthX / scaleMinX);
+        double ZoomMaxY = std::abs(heightY / scaleMaxY);
+        double ZoomMinY = std::abs(heightY / scaleMinY);
 
         double newZoomX = std::min(ZoomMaxX, ZoomMinX);
         double newZoomY = std::min(ZoomMaxY, ZoomMinY);
         double newZoom = std::min(newZoomX, newZoomY);
 
-
         if (newZoom < zoom) {
             const double margin = 1.1;
-            zoom = newZoom / margin;
+            // zoom = newZoom / margin;
         }
     }
-
-
 }
 
-void Scaling::setZoomPlus(double maxZoom) {
+#include <qDebug>
+
+void Scaling::setZoomPlus() {
+    const short int MAX_ZOOM = 100;
     usersResize = true;
-    zoom *= 1.1;
-    if (zoom > maxZoom) zoom = maxZoom;
+    if (zoom < MAX_ZOOM) {
+        zoom += 10;
+    }
+
 }
 
 void Scaling::setZoomMinus() {
+    const short int MIN_ZOOM = 10;
     usersResize = true;
-    zoom /= 1.1;
+    if (zoom > MIN_ZOOM)
+        zoom -= 10;
 }
 
 void Scaling::setZoomZero() {
     usersResize = true;
-    zoom = 1.0;
-    deltaX = 0;
-    deltaY = 0;
+    zoom = 50;
+    Scaling::Delta::X = 0;
+    Scaling::Delta::Y = 0;
 }
 
-double Scaling::getScale() const {
+double Scaling::getScale() {
     return scale;
 }
 
-double Scaling::getZoom() const {
+qreal Scaling::getZoom() {
     return zoom;
 }
 
-int Scaling::getDeltaX() const {
-    return deltaX;
+double Scaling::getDeltaX() {
+    return Scaling::Delta::X;
 }
 
-int Scaling::getDeltaY() const {
-    return deltaY;
+double Scaling::getDeltaY() {
+    return Scaling::Delta::Y;
 }
 
-void Scaling::setDelta(int dx, int dy) {
-    deltaX += dx;
-    deltaY += dy;
+int Scaling::getCursorX() {
+    return Scaling::Cursor::x;
 }
 
-void Scaling::startMousePress(const QPoint &pos) {
-    rightMousePressed = true;
-    lastMousePos = pos;
+int Scaling::getCursorY() {
+    return Scaling::Cursor::y;
 }
 
-void Scaling::mouseMove(const QPoint &pos) {
-   // usersResize = true;
-    if (rightMousePressed) {
-        usersResize = true;
-        int deltaX_ = pos.x() - lastMousePos.x();
-        int deltaY_ = pos.y() - lastMousePos.y();
-        setDelta(deltaX_, deltaY_);
-        lastMousePos = pos;
-    }
+void Scaling::setCursor(int x, int y) {
+    Scaling::Cursor::x = x;
+    Scaling::Cursor::y = y;
 }
 
-void Scaling::endMousePress() {
-    rightMousePressed = false;
+void Scaling::setDelta(double dx, double dy) {
+    Scaling::Delta::X += dx;
+    Scaling::Delta::Y += dy;
 }
 
-bool Scaling::isRightMousePressed() const {
-    return rightMousePressed;
+void Scaling::setDeltaX(double X) {
+    Scaling::Delta::X += 10;
 }
 
-bool Scaling::isUsersResize() const {
-    return usersResize;
+void Scaling::setDeltaY(double Y) {
+    Scaling::Delta::Y += 10;
+}
+
+void Scaling::setLastMouse(int x, int y) {
+    Scaling::LastMousePos::x = x;
+    Scaling::LastMousePos::y = y;
+}
+
+void Scaling::startMousePress(int x, int y) {
+    Scaling::LastMousePos::x = x;
+    Scaling::LastMousePos::y = y;
+}
+
+void Scaling::mouseMove() {
+    usersResize = true;
+    int deltaX_ = Scaling::Cursor::x - Scaling::LastMousePos::x;
+    int deltaY_ = Scaling::Cursor::y - Scaling::LastMousePos::y;
+
+    setDelta(deltaX_, deltaY_);
+
+    Scaling::LastMousePos::x = Scaling::Cursor::x;
+    Scaling::LastMousePos::y = Scaling::Cursor::y;
+
+}
+
+int Scaling::getCursorDeltaX() {
+    int temp = Scaling::Cursor::x - Scaling::LastMousePos::x;
+    Scaling::LastMousePos::x = Scaling::Cursor::x;
+    return temp;
+}
+
+int Scaling::getCursorDeltaY() {
+    int temp = -Scaling::Cursor::y + Scaling::LastMousePos::y;
+    Scaling::LastMousePos::y = Scaling::Cursor::y;
+    return temp;
 }
 
 void Scaling::resetUsersResize() {
     usersResize = false;
 }
-
