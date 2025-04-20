@@ -40,10 +40,10 @@ void Application::initialize() {
 }
 
 void Application::setupQTPainterConnections(){
-    if (painter) {
+   /* if (painter) {
         // Двойное нажатие на обьект и открытие его в левом меню
         QObject::connect(painter.get(), &QTPainter::DoubleClickOnObject, [this](ID id) {
-            unsigned long long obj = id.id;
+            unsigned long long obj = id.get();
             //  leftMenu->FocusOnItemById(obj);
         });
 
@@ -65,7 +65,7 @@ void Application::setupQTPainterConnections(){
             }
             painter->draw();
             // TODO сделать изменение обьекта по айди
-            //   leftMenu->parameterChanged(id.id,)
+            //   leftMenu->parameterChanged(id.get(),)
         });
 
         // Получение айди фигуры
@@ -78,7 +78,7 @@ void Application::setupQTPainterConnections(){
                              double Y = y;
                              elem.params = {X, Y};
                              ID id = screen.findElement(elem);
-                             painter->setIdFigures(id.id);
+                             painter->setIdFigures(id.get());
                          }
         );
 
@@ -93,7 +93,7 @@ void Application::setupQTPainterConnections(){
                              double R = r;
                              elem.params = {X, Y, R};
                              ID id = screen.findElement(elem);
-                             painter->setIdFigures(id.id);
+                             painter->setIdFigures(id.get());
                          }
         );
 
@@ -110,7 +110,7 @@ void Application::setupQTPainterConnections(){
                              double Y1 = y1;
                              elem.params = {X, Y, X1, Y1};
                              ID id = screen.findElement(elem);
-                             painter->setIdFigures(id.id);
+                             painter->setIdFigures(id.get());
                          }
         );
 
@@ -126,7 +126,7 @@ void Application::setupQTPainterConnections(){
                     ModeManager::setSave(false);
                     screen.paint();
                     painter->draw();
-                    leftMenu->addElemLeftMenu("Point",id.id,{x,y});
+                    leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
                     server.sendToClients(QString::fromStdString(screen.to_string()));
                 } else {
                     client.sendCommandToServer("point " + QString::number(y) + " " +
@@ -142,7 +142,7 @@ void Application::setupQTPainterConnections(){
                 screen.paint();
                 painter->draw();
                 ID id = screen.findElement(point);
-                leftMenu->addElemLeftMenu("Point",id.id,{x,y});
+                leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
             }
         });
 
@@ -157,8 +157,8 @@ void Application::setupQTPainterConnections(){
                     circle.params.push_back(radius);
                     ModeManager::setSave(false);
                     ID id = screen.findElement(circle);
-                    leftMenu->addElemLeftMenu("Circle",id.id,{x,y,radius});
-                    leftMenu->addElemLeftMenu("Point",id.id-1,{x,y});
+                    leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
+                    leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                     screen.paint();
                     painter->draw();
                     server.sendToClients(QString::fromStdString(screen.to_string()));
@@ -174,8 +174,8 @@ void Application::setupQTPainterConnections(){
                 circle.params.push_back(radius);
                 ModeManager::setSave(false);
                 ID id = screen.findElement(circle);
-                leftMenu->addElemLeftMenu("Circle",id.id,{x,y,radius});
-                leftMenu->addElemLeftMenu("Point",id.id-1,{x,y});
+                leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
+                leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                 screen.paint();
                 painter->draw();
             }
@@ -195,9 +195,9 @@ void Application::setupQTPainterConnections(){
                                      section.params.push_back(endY);
                                      ID id = screen.addElement(section);
                                      ModeManager::setSave(false);
-                                     leftMenu->addElemLeftMenu("Section",id.id,{startX,startY,endX,endY});
-                                     leftMenu->addElemLeftMenu("Point",id.id-1,{startX,startY});
-                                     leftMenu->addElemLeftMenu("Point",id.id-2,{endX,endY});
+                                     leftMenu->addElemLeftMenu("Section",id.get(),{startX,startY,endX,endY});
+                                     leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
+                                     leftMenu->addElemLeftMenu("Point",id.get()-2,{endX,endY});
                                      screen.paint();
                                      painter->draw();
                                      server.sendToClients(QString::fromStdString(screen.to_string()));
@@ -217,9 +217,9 @@ void Application::setupQTPainterConnections(){
                                  ModeManager::setSave(false);
                                  screen.paint();
                                  painter->draw();
-                                 leftMenu->addElemLeftMenu("Point",id.id-1,{startX,startY});
-                                 leftMenu->addElemLeftMenu("Point",id.id-2,{endX,endY});
-                                 leftMenu->addElemLeftMenu("Section",id.id,{startX,startY,endX,endY});
+                                 leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
+                                 leftMenu->addElemLeftMenu("Point",id.get()-2,{endX,endY});
+                                 leftMenu->addElemLeftMenu("Section",id.get(),{startX,startY,endX,endY});
                              }
                          });
 
@@ -232,14 +232,14 @@ void Application::setupQTPainterConnections(){
                          [this]() {});
 
 
-    }
+    }*/
 
     // Удаление элемента
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
         std::vector<ID> vec_id = painter->getVecID();
         for (int i = 0; i < vec_id.size(); ++i) {
             screen.deleteElement(vec_id[i]);
-            leftMenu->removeFigureById(vec_id[i].id);
+            leftMenu->removeFigureById(vec_id[i].get());
         }
         painter->selectedClear();
         screen.paint();
@@ -395,8 +395,8 @@ void Application::setupRequirementsConnections(){
     QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
         std::vector<ID> vec_id = painter->getVecID();
         if (!vec_id.empty()) {
-            ID obj1 = vec_id[0].id;
-            ID obj2 = vec_id[1].id;
+            ID obj1 = vec_id[0].get();
+            ID obj2 = vec_id[1].get();
             RequirementData reqData;
             Requirement type;
             type = ET_SECTIONSECTIONPARALLEL;
@@ -528,18 +528,18 @@ void Application::setupAddingCommandsConnections() {
                 if (element.second.et == ET_POINT) {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
-                    leftMenu->addElemLeftMenu("Point", element.first.id, {x, y});
+                    leftMenu->addElemLeftMenu("Point", element.first.get(), {x, y});
                 } else if (element.second.et == ET_CIRCLE) {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
                     double r = element.second.params[2];
-                    leftMenu->addElemLeftMenu("Circle", element.first.id, {x, y, r});
+                    leftMenu->addElemLeftMenu("Circle", element.first.get(), {x, y, r});
                 } else if (element.second.et == ET_SECTION) {
                     double x1 = element.second.params[0];
                     double y1 = element.second.params[1];
                     double x2 = element.second.params[2];
                     double y2 = element.second.params[3];
-                    leftMenu->addElemLeftMenu("Section", element.first.id, {x1, y1, x2, y2});
+                    leftMenu->addElemLeftMenu("Section", element.first.get(), {x1, y1, x2, y2});
                 }
             }
         } catch (std::exception &e) {
@@ -560,18 +560,18 @@ void Application::setupAddingCommandsConnections() {
                 if (element.second.et == ET_POINT) {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
-                    leftMenu->addElemLeftMenu("Point", element.first.id, {x, y});
+                    leftMenu->addElemLeftMenu("Point", element.first.get(), {x, y});
                 } else if (element.second.et == ET_CIRCLE) {
                     double x = element.second.params[0];
                     double y = element.second.params[1];
                     double r = element.second.params[2];
-                    leftMenu->addElemLeftMenu("Circle", element.first.id, {x, y, r});
+                    leftMenu->addElemLeftMenu("Circle", element.first.get(), {x, y, r});
                 } else if (element.second.et == ET_SECTION) {
                     double x1 = element.second.params[0];
                     double y1 = element.second.params[1];
                     double x2 = element.second.params[2];
                     double y2 = element.second.params[3];
-                    leftMenu->addElemLeftMenu("Section", element.first.id, {x1, y1, x2, y2});
+                    leftMenu->addElemLeftMenu("Section", element.first.get(), {x1, y1, x2, y2});
                 }
             }
         } catch (std::exception &e) {
@@ -610,7 +610,7 @@ void Application::handler(const QString &command) {
             ID id = screen.addElement(point);
             ModeManager::setSave(false);
             vecCalls.push_back([=, this]() {
-                leftMenu->addElemLeftMenu("Point", id.id, {x, y});
+                leftMenu->addElemLeftMenu("Point", id.get(), {x, y});
             });
         }
 
@@ -630,8 +630,8 @@ void Application::handler(const QString &command) {
             ID id = screen.addElement(circle);
             ModeManager::setSave(false);
            vecCalls.push_back([=, this]() {
-                leftMenu->addElemLeftMenu("Circle", id.id, {x, y, r});
-                leftMenu->addElemLeftMenu("Point", id.id - 1, {x, y});
+                leftMenu->addElemLeftMenu("Circle", id.get(), {x, y, r});
+                leftMenu->addElemLeftMenu("Point", id.get() - 1, {x, y});
             });
         }
 
@@ -651,9 +651,9 @@ void Application::handler(const QString &command) {
             ID id = screen.addElement(section);
             ModeManager::setSave(false);
            vecCalls.push_back([=, this]() {
-                leftMenu->addElemLeftMenu("Point", id.id - 1, {x, y});
-                leftMenu->addElemLeftMenu("Point", id.id - 2, {z, r});
-                leftMenu->addElemLeftMenu("Section", id.id, {x, y, z, r});
+                leftMenu->addElemLeftMenu("Point", id.get() - 1, {x, y});
+                leftMenu->addElemLeftMenu("Point", id.get() - 2, {z, r});
+                leftMenu->addElemLeftMenu("Section", id.get(), {x, y, z, r});
             });
         }
 
@@ -687,8 +687,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id, parameters);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get(), parameters);
                     });
                     break;
                 case 2:
@@ -699,8 +699,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get());
                     });
                     break;
                 case 3:
@@ -712,8 +712,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id, parameters);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get(), parameters);
                     });
                     break;
                 case 4:
@@ -724,8 +724,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get());
                     });
                     break;
                 case 5:
@@ -737,8 +737,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id, parameters);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get(), parameters);
                     });
                     break;
                 case 6:
@@ -749,8 +749,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get());
                     });
                     break;
                 case 7:
@@ -761,8 +761,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get());
                     });
                     break;
                 case 8:
@@ -773,8 +773,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get());
                     });
                     break;
                 case 9:
@@ -785,8 +785,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get());
                     });
                     break;
                 case 10:
@@ -798,8 +798,8 @@ void Application::handler(const QString &command) {
                     screen.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
-                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
-                                                     obj2.id, parameters);
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
+                                                     obj2.get(), parameters);
                     });
                     break;
                 default:

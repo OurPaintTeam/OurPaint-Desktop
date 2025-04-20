@@ -23,6 +23,8 @@ FetchContent_MakeAvailable(Eigen)
 include_directories(headers)
 include_directories(headers/painters)
 include_directories(headers/saveload)
+include_directories(headers/UndoRedo)
+include_directories(headers/objects)
 
 include_directories(GUI/GUI_h)
 include_directories(GUI/GUI_h/Unnecessary)
@@ -36,12 +38,16 @@ include_directories(GUI/GUI_h/Logger)
 
 add_executable(ourpaint
         main.cc
-        src/Paint.cc
-        src/GeometricObjects.cc
+        src/Scene.cc
         src/Requirements.cc
-        src/ID.cc
+        src/objects/GeometricObjects.cc
+        src/objects/BoundBox.cc
 
         src/painters/BMPpainter.cc
+
+        src/UndoRedo/Transactions.cc
+        src/UndoRedo/UndoRedoTemplate.cc
+        src/UndoRedo/UndoRedo.cc
 
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
@@ -54,7 +60,6 @@ add_executable(ourpaint
 
         headers/Enums.h
         headers/GeometricObjects.h
-        headers/Paint.h
         headers/Requirements.h
         headers/ID.h
 
@@ -72,7 +77,19 @@ add_executable(ourpaint
         headers/BMPfile.h
         headers/GeometricObjects.h
 
+        headers/UndoRedo/Command.h
+        headers/UndoRedo/Transactions.h
+        headers/UndoRedo/UndoRedoTemplate.h
+        headers/UndoRedo/UndoRedo.h
 
+        headers/objects/Enums.h
+        headers/objects/Objects.h
+        headers/objects/GeometricObjects.h
+        headers/Requirements.h
+        headers/objects/ID.h
+        headers/Scene.h
+        headers/UndoRedo/UndoRedoTemplate.h
+        headers/objects/BoundBox.h
         ###########  GUI  ############
 
         GUI/GUI_cc/MainFile/Mainwindow.cc
