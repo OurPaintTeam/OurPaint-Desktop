@@ -12,7 +12,6 @@
 #include <list>
 #include <QSvgGenerator>
 
-#include "GeometricObjects.h"
 #include "Painter.h"
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
@@ -21,6 +20,9 @@
 #include "DrawBackground.h"
 #include "DrawMouse.h"
 #include "SelectedRectangle.h"
+#include "GeometricObjects.h"
+#include "ID.h"
+#include "BoundBox.h"
 
 class QTPainter : public QFrame, public Painter {
 Q_OBJECT
@@ -32,10 +34,10 @@ private:
     std::vector<ID> selectedIdSection;
 
     // Указатели
-    const std::unordered_map<Point>* pointStorage;
-    const std::unordered_map<Circle>* circleStorage;
-    const std::unordered_map<Section>* sectionStorage;
-    const rectangle* Rectangle;
+    const std::unordered_map<ID, const Point*>* pointStorage;
+    const std::unordered_map<ID, const Section*>* sectionStorage;
+    const std::unordered_map<ID, const Circle*>* circleStorage;
+    const BoundBox2D* Rectangle;
 
     // Элемент левого меню
     std::vector<double> LeftMenuElem;
@@ -108,7 +110,7 @@ public:
 
 protected:
     // При выходе за границы мы масштабируем
-    void changeSize(const rectangle &allObjects) override {
+    void changeSize(const BoundBox2D& allObjects) override {
         Rectangle=&allObjects;
     }
 
@@ -120,16 +122,16 @@ protected:
         return Scaling::getActualMonitorHeight();
     }
 
-    void drawPoint(const std::unordered_map<Point>& p) override {
-        pointStorage = &p;
+    void drawPoint(const std::unordered_map<ID, const Point*>& points) override {
+        pointStorage = &points;
     }
 
-    void drawCircle(const std::unordered_map<Circle>& c) override {
-        circleStorage = &c;
+    void drawSection(const std::unordered_map<ID, const Section*>& sections) override {
+        sectionStorage = &sections;
     }
 
-    void drawSection(const std::unordered_map<Section>& s) override {
-        sectionStorage = &s;
+    void drawCircle(const std::unordered_map<ID, const Circle*>& circles) override {
+        circleStorage = &circles;
     }
 
 
