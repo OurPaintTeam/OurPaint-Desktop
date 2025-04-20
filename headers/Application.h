@@ -6,7 +6,10 @@
 #include <memory>
 #include <QApplication>
 #include <QtConcurrent/QtConcurrent>
+#include <QIcon>
 
+#include "LoadSettingsApplications.h"
+#include "SaveSettingsApplications.h"
 #include "Mainwindow.h"
 #include "QTPainter.h"
 #include "Server.h"

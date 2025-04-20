@@ -12,9 +12,9 @@ public:
     virtual unsigned long long getHeight() = 0;
     virtual void changeSize(const BoundBox2D& allObjects) = 0;
 
-    virtual void drawPoint(std::unordered_map<ID, const Point*> points, bool isWhite = false) = 0;
-    virtual void drawSection(std::unordered_map<ID, const Section*> points, bool isWhite = false) = 0;
-    virtual void drawCircle(std::unordered_map<ID, const Circle*> points, bool isWhite = false) = 0;
+    virtual void drawPoint(std::unordered_map<ID, const Point*> points) = 0;
+    virtual void drawSection(std::unordered_map<ID, const Section*> points) = 0;
+    virtual void drawCircle(std::unordered_map<ID, const Circle*> points) = 0;
 
     virtual ~Painter() = default;
 };

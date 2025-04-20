@@ -26,20 +26,15 @@ class QTPainter : public QFrame, public Painter {
 Q_OBJECT
 
 private:
-    // Актуальные обьеткы
-    std::vector<Point> points;
-    std::vector<Circle> circles;
-    std::vector<Section> sections;
-
     //  Выделенные обьекты
     std::vector<ID> selectedIdPoint;
     std::vector<ID> selectedIdCircle;
     std::vector<ID> selectedIdSection;
 
     // Указатели
-    const std::list<Point>* pointStorage;
-    const std::list<Circle>* circleStorage;
-    const std::list<Section>* sectionStorage;
+    const std::unordered_map<Point>* pointStorage;
+    const std::unordered_map<Circle>* circleStorage;
+    const std::unordered_map<Section>* sectionStorage;
     const rectangle* Rectangle;
 
     // Элемент левого меню
@@ -125,32 +120,19 @@ protected:
         return Scaling::getActualMonitorHeight();
     }
 
-    void drawPointt(const std::list<Point>& p) override {
+    void drawPoint(const std::unordered_map<Point>& p) override {
         pointStorage = &p;
     }
 
-    void drawCirclee(const std::list<Circle>& c) override {
+    void drawCircle(const std::unordered_map<Circle>& c) override {
         circleStorage = &c;
     }
 
-    void drawSectionn(const std::list<Section>& s) override {
+    void drawSection(const std::unordered_map<Section>& s) override {
         sectionStorage = &s;
     }
 
-    // Для отрисовки точек
-    void drawPoint(Point pt, bool isWhite) override {
-        points.push_back(pt);
-    }
 
-    // Для отрисовки кругов
-    void drawCircle(Circle c, bool isWhite) override {
-        circles.push_back(c);
-    }
-
-    // Для отрисовки линий
-    void drawSection(Section sec, bool isWhite) override {
-        sections.push_back(sec);
-    }
 
     // Функция для изменения размеров окна
     void resizeEvent(QResizeEvent *event)

@@ -1,14 +1,12 @@
 #include "Application.h"
-#include <QIcon>
-#include "LoadSettingsApplications.h"
-#include "SaveSettingsApplications.h"
+
 
 
 Application::Application(int &argc, char **argv)
         : app(argc, argv),
           mainWind(),
           painter(nullptr),
-          scene(nullptr),
+          screen(nullptr),
           username("User"),
           server(username),
           client(username) {
