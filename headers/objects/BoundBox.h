@@ -12,8 +12,8 @@ public:
     double max_y = std::numeric_limits<double>::lowest();
 
     constexpr bool isValid() const;
-    double Width() const;
-    double Height() const;
+    double width() const;
+    double height() const;
 
     BoundBox2D unite(const BoundBox2D &other) const;
     BoundBox2D operator|(const BoundBox2D &other) const;

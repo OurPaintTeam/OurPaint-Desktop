@@ -6,15 +6,15 @@
 #include "objects/Enums.h"
 #include "objects/ID.h"
 #include "objects/Objects.h"
-#include "objects/BoundingBox.h"
+#include "objects/BoundBox.h"
 #include "Painter.h"
 
 struct IGeometricObject {
 public:
     virtual ~IGeometricObject() = default;
 
-    virtual BoundingBox getBox() = 0;
-    virtual inline Element getElementType() = 0;
+    virtual BoundBox2D getBox() const = 0;
+    virtual inline Element getElementType() const = 0;
 };
 
 struct Point : public IGeometricObject {
@@ -24,8 +24,8 @@ struct Point : public IGeometricObject {
     Point();
     Point(double x, double y);
 
-    BoundingBox getBox() override;
-    inline Element getElementType() override;
+    BoundBox2D getBox() const override;
+    inline Element getElementType() const override;
 };
 
 std::ifstream &operator>>(std::ifstream &in, Point &x);
@@ -37,8 +37,8 @@ struct Section : public IGeometricObject {
     Section();
     Section(Point* p1, Point* p2);
 
-    BoundingBox getBox() override;
-    inline Element getElementType() override;
+    BoundBox2D getBox() const override;
+    inline Element getElementType() const override;
 };
 
 struct Circle : public IGeometricObject {
@@ -48,8 +48,8 @@ struct Circle : public IGeometricObject {
     Circle();
     Circle(Point* p, double r);
 
-    BoundingBox getBox() override;
-    inline Element getElementType() override;
+    BoundBox2D getBox() const override;
+    inline Element getElementType() const override;
 };
 
 #endif // ! OURPAINT_HEADERS_GEOMETRICOBJECTS_H_
