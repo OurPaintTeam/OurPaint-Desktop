@@ -1,6 +1,4 @@
 #include "BMPpainter.h"
-#include <iostream>
-
 
 BMPpainter::BMPpainter(const BMPpainter &other): c_file(other.c_file), v_weight(other.v_weight), v_height(other.v_height){}
 
@@ -46,7 +44,7 @@ void BMPpainter::drawPoint(Point p, bool isWhite) {
 
 void BMPpainter::drawCircle(Circle c, bool isWhite) {
     int x = 0;
-    int y = static_cast<int>(c.R);
+    int y = static_cast<int>(c.r);
     int x0 = v_height/2 - c.center->y;
     int y0 = c.center->x + v_weight/2;
     int delta = 1 - 2 * y;
@@ -77,9 +75,9 @@ void BMPpainter::saveBMP(const char* filename) {
     c_file.saveBmp(filename);
 }
 
-void BMPpainter::changeSize(const rectangle &allObjects) {
-    int newWeight = allObjects.x_2 - allObjects.x_1 > 0 ? allObjects.x_2 - allObjects.x_1: -allObjects.x_2 + allObjects.x_1;
-    int newHeight = allObjects.y_2 - allObjects.y_1 > 0 ? allObjects.y_2 - allObjects.y_1: -allObjects.y_2 + allObjects.y_1;
+void BMPpainter::changeSize(const BoundBox2D &allObjects) {
+    int newWeight = allObjects.max_x - allObjects.min_x > 0 ? allObjects.max_x - allObjects.min_x: -allObjects.max_x + allObjects.min_x;
+    int newHeight = allObjects.max_y - allObjects.min_y > 0 ? allObjects.max_y - allObjects.min_y: -allObjects.max_y + allObjects.min_y;
     c_file.resize(newWeight * 2, newHeight * 2);
     v_height = newHeight * 2;
     v_weight = newWeight * 2;

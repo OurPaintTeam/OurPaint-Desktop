@@ -2,10 +2,10 @@
 
 Point::Point() : x(), y() {}
 Point::Point(double x, double y) : x(x), y(y) {}
-BoundingBox Point::getBox() {
+BoundBox2D Point::getBox() const {
     return {x, x, y, y};
 }
-inline Element Point::getElementType() {
+inline Element Point::getElementType() const {
     return ET_POINT;
 }
 std::ifstream& operator>> (std::ifstream& in, Point& x) {
@@ -16,18 +16,18 @@ std::ifstream& operator>> (std::ifstream& in, Point& x) {
 
 Section::Section() : beg(nullptr), end(nullptr) {}
 Section::Section(Point* p1, Point* p2) : beg(p1), end(p2) {}
-BoundingBox Section::getBox() {
+BoundBox2D Section::getBox() const {
     return {beg->x,end->x, beg->y, end->y};
 }
-inline Element Section::getElementType() {
+inline Element Section::getElementType() const {
     return ET_SECTION;
 }
 
 Circle::Circle() : center(nullptr), r() {}
 Circle::Circle(Point* p, double r) : center(p), r(r) {}
-BoundingBox Circle::getBox() {
+BoundBox2D Circle::getBox() const {
     return {center->x - r, center->x + r,center->y - r, center->y + r};
 }
-inline Element Circle::getElementType() {
+inline Element Circle::getElementType() const {
     return ET_CIRCLE;
 }

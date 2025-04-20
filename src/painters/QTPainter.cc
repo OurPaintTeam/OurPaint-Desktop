@@ -108,10 +108,10 @@ std::vector<double> QTPainter::FindMaxMin() {
 
         if (!circles.empty()) {
             for (const auto &c: circles) {
-                minX = std::min(minX, c.center->x - c.R);
-                maxX = std::max(maxX, c.center->x + c.R);
-                minY = std::min(minY, c.center->y - c.R);
-                maxY = std::max(maxY, c.center->y + c.R);
+                minX = std::min(minX, c.center->x - c.r);
+                maxX = std::max(maxX, c.center->x + c.r);
+                minY = std::min(minY, c.center->y - c.r);
+                maxY = std::max(maxY, c.center->y + c.r);
             }
         }
 
@@ -312,11 +312,11 @@ void QTPainter::drawBackground(QPainter &painter) {
     painter.setPen(Qt::black);
     int logicalX = static_cast<int>(scaling.logicX(cursorX - _width));
     int logicalY = static_cast<int>(scaling.logicY(_height - cursorY));
-    if (id == 0) {
+    if (id.get() == 0) {
         painter.drawText(cursorX + 10, cursorY - 10, QString("X: %1, Y: %2").arg(logicalX).arg(logicalY));
     } else {
         painter.drawText(cursorX + 10, cursorY - 10,
-                         QString("X: %1, Y: %2, ID: %3").arg(logicalX).arg(logicalY).arg(id.id));
+                         QString("X: %1, Y: %2, ID: %3").arg(logicalX).arg(logicalY).arg(id.get()));
     }
 }
 
@@ -359,11 +359,11 @@ void QTPainter::drawSections(QPainter &painter) {
 
         // Обработка кругов
         for (const auto &pt: circles) {
-            if (moving(pt.center->x, pt.center->y, pt.R)) {
+            if (moving(pt.center->x, pt.center->y, pt.r)) {
                 AllClicked = true;
                 bool selected = false;
                 for (const auto &c: ReqieredCircles) {
-                    if (c.center->x == pt.center->x && c.center->y == pt.center->y && c.R == pt.R) {
+                    if (c.center->x == pt.center->x && c.center->y == pt.center->y && c.r == pt.r) {
                         selected = true;
                         break;
                     }
@@ -374,7 +374,7 @@ void QTPainter::drawSections(QPainter &painter) {
                     cir.center = new Point();
                     cir.center->x = pt.center->x;
                     cir.center->y = pt.center->y;
-                    cir.R = pt.R;
+                    cir.r = pt.r;
                     newSelectedCircles.push_back(cir);
                 }
             }
@@ -410,7 +410,7 @@ void QTPainter::drawSections(QPainter &painter) {
         }
 
         if (Shift) {
-            if (id != 0) {
+            if (id.get() != 0) {
                 ID _id(id);
                 if (std::find(vec_id.begin(), vec_id.end(), _id) == vec_id.end()) {
                     vec_id.push_back(_id);
@@ -480,12 +480,12 @@ void QTPainter::drawSections(QPainter &painter) {
     for (const auto &c: circles) {
         int X = static_cast<int>(scaling.scaleCoordinateX(c.center->x) + _width );
         int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
-        int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
+        int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.r));
 
         bool flag = false;
         if (editor || Moving) {
             for (const auto &cir: ReqieredCircles) {
-                if (c.center->x == cir.center->x && c.center->y == cir.center->y && c.R == cir.R) {
+                if (c.center->x == cir.center->x && c.center->y == cir.center->y && c.r == cir.r) {
                     flag = true;
                     break;
                 }
@@ -654,11 +654,11 @@ void QTPainter::drawCircles(QPainter &painter) {
 
         // Обработка кругов
         for (const auto &pt: circles) {
-            if (moving(pt.center->x, pt.center->y, pt.R)) {
+            if (moving(pt.center->x, pt.center->y, pt.r)) {
                 AllClicked = true;
                 bool selected = false;
                 for (const auto &c: ReqieredCircles) {
-                    if (c.center->x == pt.center->x && c.center->y == pt.center->y && c.R == pt.R) {
+                    if (c.center->x == pt.center->x && c.center->y == pt.center->y && c.r == pt.r) {
                         selected = true;
                         break;
                     }
@@ -669,7 +669,7 @@ void QTPainter::drawCircles(QPainter &painter) {
                     cir.center = new Point();
                     cir.center->x = pt.center->x;
                     cir.center->y = pt.center->y;
-                    cir.R = pt.R;
+                    cir.r = pt.r;
                     newSelectedCircles.push_back(cir);
                 }
             }
@@ -705,7 +705,7 @@ void QTPainter::drawCircles(QPainter &painter) {
         }
 
         if (Shift) {
-            if (id != 0) {
+            if (id.get() != 0) {
                 ID _id(id);
                 if (std::find(vec_id.begin(), vec_id.end(), _id) == vec_id.end()) {
                     vec_id.push_back(_id);
@@ -775,12 +775,12 @@ void QTPainter::drawCircles(QPainter &painter) {
     for (const auto &c: circles) {
         int X = (scaling.scaleCoordinateX(c.center->x) + _width);
         int Y = static_cast<int>(scaling.scaleCoordinateY(-c.center->y) + _height );
-        int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.R));
+        int Radius = 2 * static_cast<int>(scaling.scaleCoordinate(c.r));
 
         bool flag = false;
         if (editor || Moving) {
             for (const auto &cir: ReqieredCircles) {
-                if (c.center->x == cir.center->x && c.center->y == cir.center->y && c.R == cir.R) {
+                if (c.center->x == cir.center->x && c.center->y == cir.center->y && c.r == cir.r) {
                     flag = true;
                     break;
                 }
@@ -1025,7 +1025,7 @@ void QTPainter::drawPoints(QPainter &painter) {
         }
 
         if (Shift) {
-            if (id != 0) {
+            if (id.get() != 0) {
                 ID _id(id);
                 if (std::find(vec_id.begin(), vec_id.end(), _id) == vec_id.end()) {
                     vec_id.push_back(_id);
@@ -1293,7 +1293,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
 }
 
-void QTPainter::changeSize(const rectangle &allObjects) {}
+void QTPainter::changeSize(const BoundBox2D &allObjects) {}
 
 unsigned long long QTPainter::getWeight() {
     return width();
@@ -1397,11 +1397,11 @@ void QTPainter::mouseMoveEvent(QMouseEvent *event) {
     }
 
     if (!ReleaseLeftClick && leftClick) {
-        if (Moving && id != 0) {
+        if (Moving && id.get() != 0) {
             emit MovingFigures();
         }
     } else {
-        id = 0;
+        // TODO id = 0; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         leftClick = false;
     }
 

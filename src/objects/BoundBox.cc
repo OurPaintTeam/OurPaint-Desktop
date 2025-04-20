@@ -34,11 +34,11 @@ constexpr bool BoundBox2D::isValid() const {
     return min_x <= max_x && min_y <= max_y;
 }
 
-double BoundBox2D::Width() const {
+double BoundBox2D::width() const {
     return isValid() ? (max_x - min_x) : 0.0;
 }
 
-double BoundBox2D::Height() const {
+double BoundBox2D::height() const {
     return isValid() ? (max_y - min_y) : 0.0;
 }
 
