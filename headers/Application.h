@@ -6,18 +6,22 @@
 #include <memory>
 #include <QApplication>
 #include <QtConcurrent/QtConcurrent>
+#include <QIcon>
 
+#include "LoadSettingsApplications.h"
+#include "SaveSettingsApplications.h"
 #include "Mainwindow.h"
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
-#include "TreeModelLazy.h"
+#include "Scene.h"
+
 
 class Application {
 private:
     QApplication app;
     MainWindow mainWind;
-    Paint screen;
+    Scene screen;
     std::unique_ptr<QTPainter> painter;
     std::unique_ptr<LeftMenuBar> leftMenu;
 

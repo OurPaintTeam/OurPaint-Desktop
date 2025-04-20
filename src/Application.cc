@@ -1,7 +1,5 @@
 #include "Application.h"
-#include <QIcon>
-#include "LoadSettingsApplications.h"
-#include "SaveSettingsApplications.h"
+
 
 
 Application::Application(int &argc, char **argv)
@@ -327,7 +325,7 @@ void Application::setupServerConnections(){
         server.sendToClients(QString::fromStdString(screen.to_string()));
     });
     QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
-        screen.loadFromString(state.toStdString());
+       // screen.loadFromString(state.toStdString());
         updateState();
     });
 
@@ -468,7 +466,7 @@ void Application::setupAddingCommandsConnections() {
             painter->saveToImage(fileName, format);
         else {
             std::string File = fileName.toStdString();
-            screen.saveToFile(File.c_str());
+         //   screen.saveToFile(File.c_str());
             screen.paint();
             painter->draw();
         }
@@ -478,7 +476,7 @@ void Application::setupAddingCommandsConnections() {
     QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString &fileName) {
         painter->clear();
         std::string File = fileName.toStdString();
-        screen.loadFromFile(File.c_str());
+       // screen.loadFromFile(File.c_str());
         screen.paint();
         painter->draw();
     });
