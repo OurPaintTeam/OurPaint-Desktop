@@ -8,7 +8,7 @@ Application::Application(int &argc, char **argv)
         : app(argc, argv),
           mainWind(),
           painter(nullptr),
-          screen(nullptr),
+          scene(nullptr),
           username("User"),
           server(username),
           client(username) {
@@ -31,9 +31,9 @@ void Application::initialize() {
     QApplication::setStyle("Fusion");
 
     painter.reset(mainWind.getQTPainter());
-    Paint screen_copy(painter.get());
+    Paint scene_copy(painter.get());
     leftMenu.reset(mainWind.getLeftMenuBar());
-    screen = screen_copy;
+    scene = scene_copy;
 
     mainWind.show();
     mainWind.resize();
@@ -59,7 +59,7 @@ void Application::setupQTPainterConnections(){
             ID id = painter->getIdFigures();// <- id фигуры перемещения
 
             try {
-                screen.parallelMove(id, Cx, Cy, dx, dy);
+                scene.parallelMove(id, Cx, Cy, dx, dy);
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
             }
@@ -72,12 +72,12 @@ void Application::setupQTPainterConnections(){
         QObject::connect(painter.get(),
                          static_cast<void (QTPainter::*)(Element, double, double)>(&QTPainter::getIdFigure),
                          [this](Element F, double x, double y) {
-                             ElementData elem;
+                             ObjectData elem;
                              elem.et = F;
                              double X = x;
                              double Y = y;
                              elem.params = {X, Y};
-                             ID id = screen.findElement(elem);
+                             ID id = scene.findElement(elem);
                              painter->setIdFigures(id.get());
                          }
         );
@@ -86,13 +86,13 @@ void Application::setupQTPainterConnections(){
         QObject::connect(painter.get(),
                          static_cast<void (QTPainter::*)(Element, double, double, double)>(&QTPainter::getIdFigure),
                          [this](Element F, double x, double y, double r) {
-                             ElementData elem;
+                             ObjectData elem;
                              elem.et = F;
                              double X = x;
                              double Y = y;
                              double R = r;
                              elem.params = {X, Y, R};
-                             ID id = screen.findElement(elem);
+                             ID id = scene.findElement(elem);
                              painter->setIdFigures(id.get());
                          }
         );
@@ -102,14 +102,14 @@ void Application::setupQTPainterConnections(){
                          static_cast<void (QTPainter::*)(Element, double, double, double,
                                                          double)>(&QTPainter::getIdFigure),
                          [this](Element F, double x, double y, double x1, double y1) {
-                             ElementData elem;
+                             ObjectData elem;
                              elem.et = F;
                              double X = x;
                              double Y = y;
                              double X1 = x1;
                              double Y1 = y1;
                              elem.params = {X, Y, X1, Y1};
-                             ID id = screen.findElement(elem);
+                             ID id = scene.findElement(elem);
                              painter->setIdFigures(id.get());
                          }
         );
@@ -118,37 +118,37 @@ void Application::setupQTPainterConnections(){
         QObject::connect(painter.get(), &QTPainter::SigPoint, [this](double x, double y) {
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
-                    ElementData point;
-                    ID id = screen.findElement(point);
+                    ObjectData point;
+                    ID id = scene.findElement(point);
                     point.et = ET_POINT;
                     point.params.push_back(x);
                     point.params.push_back(y);
                     ModeManager::setSave(false);
-                    screen.paint();
+                    scene.paint();
                     painter->draw();
                     leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
-                    server.sendToClients(QString::fromStdString(screen.to_string()));
+                    server.sendToClients(QString::fromStdString(scene.to_string()));
                 } else {
                     client.sendCommandToServer("point " + QString::number(y) + " " +
                                                QString::number(x));
                 }
 
             } else {
-                ElementData point;
+                ObjectData point;
                 point.et = ET_POINT;
                 point.params.push_back(x);
                 point.params.push_back(y);
                 ModeManager::setSave(false);
-                screen.paint();
+                scene.paint();
                 painter->draw();
-                ID id = screen.findElement(point);
+                ID id = scene.findElement(point);
                 leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
             }
         });
 
         // Отрисовка круга
         QObject::connect(painter.get(), &QTPainter::SigCircle, [this](double x, double y, double radius) {
-            ElementData circle;
+            ObjectData circle;
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
                     circle.et = ET_CIRCLE;
@@ -156,12 +156,12 @@ void Application::setupQTPainterConnections(){
                     circle.params.push_back(y);
                     circle.params.push_back(radius);
                     ModeManager::setSave(false);
-                    ID id = screen.findElement(circle);
+                    ID id = scene.findElement(circle);
                     leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                     leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
-                    screen.paint();
+                    scene.paint();
                     painter->draw();
-                    server.sendToClients(QString::fromStdString(screen.to_string()));
+                    server.sendToClients(QString::fromStdString(scene.to_string()));
                 } else {
                     client.sendCommandToServer("circle " + QString::number(x) + " " +
                                                QString::number(y) + " " +
@@ -173,10 +173,10 @@ void Application::setupQTPainterConnections(){
                 circle.params.push_back(y);
                 circle.params.push_back(radius);
                 ModeManager::setSave(false);
-                ID id = screen.findElement(circle);
+                ID id = scene.findElement(circle);
                 leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                 leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
-                screen.paint();
+                scene.paint();
                 painter->draw();
             }
         });
@@ -185,7 +185,7 @@ void Application::setupQTPainterConnections(){
         QObject::connect(painter.get(), &QTPainter::SigSection,
                          [this](double startX, double startY, double endX, double endY) {
 
-                             ElementData section;
+                             ObjectData section;
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
                                      section.et = ET_SECTION;
@@ -193,14 +193,14 @@ void Application::setupQTPainterConnections(){
                                      section.params.push_back(startY);
                                      section.params.push_back(endX);
                                      section.params.push_back(endY);
-                                     ID id = screen.addElement(section);
+                                     ID id = scene.addElement(section);
                                      ModeManager::setSave(false);
                                      leftMenu->addElemLeftMenu("Section",id.get(),{startX,startY,endX,endY});
                                      leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
                                      leftMenu->addElemLeftMenu("Point",id.get()-2,{endX,endY});
-                                     screen.paint();
+                                     scene.paint();
                                      painter->draw();
-                                     server.sendToClients(QString::fromStdString(screen.to_string()));
+                                     server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("section " + QString::number(startX) + " " +
                                                                 QString::number(startY) + " " +
@@ -213,9 +213,9 @@ void Application::setupQTPainterConnections(){
                                  section.params.push_back(startY);
                                  section.params.push_back(endX);
                                  section.params.push_back(endY);
-                                 ID id = screen.addElement(section);
+                                 ID id = scene.addElement(section);
                                  ModeManager::setSave(false);
-                                 screen.paint();
+                                 scene.paint();
                                  painter->draw();
                                  leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
                                  leftMenu->addElemLeftMenu("Point",id.get()-2,{endX,endY});
@@ -238,11 +238,11 @@ void Application::setupQTPainterConnections(){
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
         std::vector<ID> vec_id = painter->getVecID();
         for (int i = 0; i < vec_id.size(); ++i) {
-            screen.deleteElement(vec_id[i]);
+            scene.deleteElement(vec_id[i]);
             leftMenu->removeFigureById(vec_id[i].get());
         }
         painter->selectedClear();
-        screen.paint();
+        scene.paint();
         painter->draw();
     });
 
@@ -324,10 +324,10 @@ void Application::setupServerConnections(){
     QObject::connect(&server, &Server::newCommandReceived, [&](const QString &cmd) {
         handler(cmd);
         updateState();
-        server.sendToClients(QString::fromStdString(screen.to_string()));
+        server.sendToClients(QString::fromStdString(scene.to_string()));
     });
     QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
-        screen.loadFromString(state.toStdString());
+        scene.loadFromString(state.toStdString());
         updateState();
     });
 
@@ -341,7 +341,7 @@ void Application::setupServerConnections(){
         updateState();
     });
     QObject::connect(&server, &Server::newConnection, [this]() {
-        server.sendToClients(QString::fromStdString(screen.to_string()));
+        server.sendToClients(QString::fromStdString(scene.to_string()));
     });
     QObject::connect(&mainWind, &MainWindow::EnterMessage, [this](const QString &text) {
         if (ModeManager::getConnection()) {
@@ -395,15 +395,15 @@ void Application::setupRequirementsConnections(){
     QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
         std::vector<ID> vec_id = painter->getVecID();
         if (!vec_id.empty()) {
-            ID obj1 = vec_id[0].get();
-            ID obj2 = vec_id[1].get();
+            ID obj1(vec_id[0].get());
+            ID obj2(vec_id[1].get());
             RequirementData reqData;
             Requirement type;
             type = ET_SECTIONSECTIONPARALLEL;
             reqData.req = type;
-            reqData.objects.push_back(obj1);
-            reqData.objects.push_back(obj2);
-            screen.addRequirement(reqData);
+            reqData.objects.push_back(obj1.get());
+            reqData.objects.push_back(obj2.get());
+            scene.addRequirement(reqData);
             ModeManager::setSave(false);
             // Изменение по айди
             // leftMenu->parameterChanged()
@@ -451,7 +451,7 @@ void Application::setupAddingCommandsConnections() {
             if (ModeManager::getFlagServer()) {
                 handler(command);
                 updateState();
-                server.sendToClients(QString::fromStdString(screen.to_string()));
+                server.sendToClients(QString::fromStdString(scene.to_string()));
             } else {
                 client.sendCommandToServer(command);
             }
@@ -468,8 +468,8 @@ void Application::setupAddingCommandsConnections() {
             painter->saveToImage(fileName, format);
         else {
             std::string File = fileName.toStdString();
-            screen.saveToFile(File.c_str());
-            screen.paint();
+            scene.saveToFile(File.c_str());
+            scene.paint();
             painter->draw();
         }
     });
@@ -478,8 +478,8 @@ void Application::setupAddingCommandsConnections() {
     QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString &fileName) {
         painter->clear();
         std::string File = fileName.toStdString();
-        screen.loadFromFile(File.c_str());
-        screen.paint();
+        scene.loadFromFile(File.c_str());
+        scene.paint();
         painter->draw();
     });
 
@@ -503,7 +503,7 @@ void Application::setupAddingCommandsConnections() {
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
                     handler(qCommand);
-                    server.sendToClients(QString::fromStdString(screen.to_string()));
+                    server.sendToClients(QString::fromStdString(scene.to_string()));
                 } else {
                     client.sendCommandToServer(qCommand);
                 }
@@ -516,14 +516,14 @@ void Application::setupAddingCommandsConnections() {
         updateState();
 
     });
-
+/*
     // REDO
     QObject::connect(&mainWind, &MainWindow::REDO, [this]() {
         try {
-            screen.redo();
+            scene.redo();
             ModeManager::setSave(true);
 
-            std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
+            std::vector<std::pair<ID, ObjectData>> elements = scene.getAllElementsInfo();
             for (auto element: elements) {
                 if (element.second.et == ET_POINT) {
                     double x = element.second.params[0];
@@ -551,10 +551,10 @@ void Application::setupAddingCommandsConnections() {
     //UNDO
     QObject::connect(&mainWind, &MainWindow::UNDO, [this]() {
         try {
-            screen.undo();
+            scene.undo();
             ModeManager::setSave(true);
 
-            std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
+            std::vector<std::pair<ID, ObjectData>> elements = scene.getAllElementsInfo();
             for (auto element: elements) {
                 QString name;
                 if (element.second.et == ET_POINT) {
@@ -577,11 +577,11 @@ void Application::setupAddingCommandsConnections() {
         } catch (std::exception &e) {
         }
     });
-
+*/
 }
 
 void Application::updateState() {
-    screen.paint();
+    scene.paint();
     painter->draw();
 
     QFuture<void> future = QtConcurrent::run([this]() {
@@ -603,11 +603,11 @@ void Application::handler(const QString &command) {
         double y = commandParts[2].toDouble(&yOk);
 
         if (xOk && yOk) {
-            ElementData point;
+            ObjectData point;
             point.et = ET_POINT;
             point.params.push_back(x);
             point.params.push_back(y);
-            ID id = screen.addElement(point);
+            ID id = scene.addObject(point);
             ModeManager::setSave(false);
             vecCalls.push_back([=, this]() {
                 leftMenu->addElemLeftMenu("Point", id.get(), {x, y});
@@ -622,12 +622,12 @@ void Application::handler(const QString &command) {
 
         if (xOk && yOk && rOk) {
 
-            ElementData circle;
+            ObjectData circle;
             circle.et = ET_CIRCLE;
             circle.params.push_back(x);
             circle.params.push_back(y);
             circle.params.push_back(r);
-            ID id = screen.addElement(circle);
+            ID id = scene.addObject(circle);
             ModeManager::setSave(false);
            vecCalls.push_back([=, this]() {
                 leftMenu->addElemLeftMenu("Circle", id.get(), {x, y, r});
@@ -642,13 +642,13 @@ void Application::handler(const QString &command) {
         double z = commandParts[3].toDouble(&zOk);
         double r = commandParts[4].toDouble(&rOk);
         if (xOk && yOk && zOk && rOk) {
-            ElementData section;
+            ObjectData section;
             section.et = ET_SECTION;
             section.params.push_back(x);
             section.params.push_back(y);
             section.params.push_back(z);
             section.params.push_back(r);
-            ID id = screen.addElement(section);
+            ID id = scene.addObject(section);
             ModeManager::setSave(false);
            vecCalls.push_back([=, this]() {
                 leftMenu->addElemLeftMenu("Point", id.get() - 1, {x, y});
@@ -664,11 +664,11 @@ void Application::handler(const QString &command) {
         painter->clear();
         leftMenu->clearAllFigures();
         leftMenu->clearAllRequirements();
-        screen.clear();
+        scene.clear();
     } else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
         int req = commandParts[1].toInt();
-        ID obj1 = commandParts[2].toInt();
-        ID obj2 = commandParts[3].toInt();
+        ID obj1(commandParts[2].toInt());
+        ID obj2(commandParts[3].toInt());
         RequirementData reqData;
         Requirement type;
         double parameters = 0;
@@ -681,10 +681,10 @@ void Application::handler(const QString &command) {
                 case 1:
                     type = ET_POINTSECTIONDIST;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
                     reqData.params.push_back(parameters);
-                    screen.addRequirement(reqData);
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -694,9 +694,9 @@ void Application::handler(const QString &command) {
                 case 2:
                     type = ET_POINTONSECTION;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
-                    screen.addRequirement(reqData);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -706,10 +706,10 @@ void Application::handler(const QString &command) {
                 case 3:
                     type = ET_POINTPOINTDIST;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
                     reqData.params.push_back(parameters);
-                    screen.addRequirement(reqData);
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -719,9 +719,9 @@ void Application::handler(const QString &command) {
                 case 4:
                     type = ET_POINTONPOINT;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
-                    screen.addRequirement(reqData);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -731,10 +731,10 @@ void Application::handler(const QString &command) {
                 case 5:
                     type = ET_SECTIONCIRCLEDIST;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
                     reqData.params.push_back(parameters);
-                    screen.addRequirement(reqData);
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -744,9 +744,9 @@ void Application::handler(const QString &command) {
                 case 6:
                     type = ET_SECTIONONCIRCLE;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
-                    screen.addRequirement(reqData);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -756,9 +756,9 @@ void Application::handler(const QString &command) {
                 case 7:
                     type = ET_SECTIONINCIRCLE;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
-                    screen.addRequirement(reqData);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -768,9 +768,9 @@ void Application::handler(const QString &command) {
                 case 8:
                     type = ET_SECTIONSECTIONPARALLEL;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
-                    screen.addRequirement(reqData);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -780,9 +780,9 @@ void Application::handler(const QString &command) {
                 case 9:
                     type = ET_SECTIONSECTIONPERPENDICULAR;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
-                    screen.addRequirement(reqData);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),
@@ -790,12 +790,12 @@ void Application::handler(const QString &command) {
                     });
                     break;
                 case 10:
-                    type = ET_SECTIONSECTIONANGEL;
+                    type = ET_SECTIONSECTIONANGLE;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1);
-                    reqData.objects.push_back(obj2);
+                    reqData.objects.push_back(obj1.get());
+                    reqData.objects.push_back(obj2.get());
                     reqData.params.push_back(parameters);
-                    screen.addRequirement(reqData);
+                    scene.addRequirement(reqData);
                     ModeManager::setSave(false);
                    vecCalls.push_back([=, this]() {
                         leftMenu->addRequirementElem("PointSectionDist", req, obj1.get(),

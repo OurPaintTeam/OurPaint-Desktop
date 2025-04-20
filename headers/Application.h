@@ -13,12 +13,15 @@
 #include "Client.h"
 #include "TreeModelLazy.h"
 
+#include "Scene.h"
+#include "Painter.h"
+
 class Application {
 private:
     QApplication app;
     MainWindow mainWind;
-    Paint screen;
-    std::unique_ptr<QTPainter> painter;
+    Scene scene;
+    Painter* painter;
     std::unique_ptr<LeftMenuBar> leftMenu;
 
     std::vector<std::function<void()>> vecCalls;
