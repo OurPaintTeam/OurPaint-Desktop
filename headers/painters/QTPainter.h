@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "DrawMode.h"
-#include "GeometricObjects.h"
+#include "objects/GeometricObjects.h"
 #include "Paint.h"
 #include "Scaling.h"
 #include "mainwindow.h"
@@ -62,8 +62,6 @@ public:
     QTPainter(Ui::MainWindow *ui, QWidget *parent);
 
     QPointF MouseCoordinate();
-
-    void setIdFigures(ID ID) { if (id == 0)id = ID; }
 
     ID getIdFigures() { return id; }
 
@@ -120,22 +118,25 @@ public:
 
 
 protected:
+
+    void setIdFigures(ID Id); // Присвоение айди выделенной фигуры
+
     void resizeEvent(QResizeEvent *event)
     override;
 
-    void drawPoint(struct Point pt, bool isWhite = false)
+    void drawPoint(Point pt, bool isWhite = false)
     override;
 
-    void drawCircle(struct Circle c, bool isWhite = false)
+    void drawCircle(Circle c, bool isWhite = false)
     override;
 
-    void drawSection(struct Section sec, bool isWhite = false)
+    void drawSection(Section sec, bool isWhite = false)
     override;
 
     void paintEvent(QPaintEvent *event)
     override; // Отрисовка
 
-    void changeSize(const rectangle &allObjects)
+    void changeSize(const BoundBox2D &allObjects)
     override;
 
     unsigned long long getWeight()

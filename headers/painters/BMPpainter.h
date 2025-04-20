@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include "BMPfile.h"
-#include "GeometricObjects.h"
+#include "objects/GeometricObjects.h"
 #include "Painter.h"
 
 class BMPpainter : public Painter{
@@ -19,7 +19,7 @@ public:
 
     unsigned long long getWeight();
     unsigned long long getHeight();
-    void changeSize(const rectangle& allObjects);
+    void changeSize(const BoundBox2D& allObjects);
 
     void drawPoint(Point pt, bool isWhite = false);
     void drawSection(Section sec, bool isWhite = false);
