@@ -4,19 +4,22 @@
 #include <algorithm>
 #include <limits>
 
-struct BoundingBox {
+class BoundBox2D {
+public:
     double min_x = std::numeric_limits<double>::max();
     double max_x = std::numeric_limits<double>::lowest();
     double min_y = std::numeric_limits<double>::max();
     double max_y = std::numeric_limits<double>::lowest();
 
-    BoundingBox unite(const BoundingBox& other) const;
-    BoundingBox operator|(const BoundingBox& other) const;
+    constexpr bool isValid() const;
+    double Width() const;
+    double Height() const;
 
-    BoundingBox intersect(const BoundingBox& other) const;
-    BoundingBox operator&(const BoundingBox& other) const;
+    BoundBox2D unite(const BoundBox2D &other) const;
+    BoundBox2D operator|(const BoundBox2D &other) const;
 
-    bool isValid() const;
+    BoundBox2D intersect(const BoundBox2D &other) const;
+    BoundBox2D operator&(const BoundBox2D &other) const;
 };
 
 #endif // ! OURPAINT_HEADERS_BOUNDINGBOX_H_
