@@ -6,9 +6,10 @@
 #include <cmath>
 #include <vector>
 
-#include "Enums.h"
+#include "objects/Enums.h"
 #include "ErrorFunctions.h"
-#include "GeometricObjects.h"
+#include "objects/GeometricObjects.h"
+#include "objects/BoundBox.h"
 
 class VarsStorage{
     static std::map<PARAMID, Variable*> m_vars;
@@ -21,7 +22,7 @@ public:
 
 struct RequirementData {
     Requirement req;
-    std::vector<ID> objects;
+    std::vector<unsigned int> objects;
     std::vector<double> params;
 
     bool operator==(const RequirementData& other) const {
@@ -42,9 +43,12 @@ protected:
     std::vector<ID> objects;
     Requirement req;
 public:
-    virtual ErrorFunctions* getFunction() = 0;
-    virtual std::vector<PARAMID> getParams() = 0;
-    virtual rectangle getRectangle() = 0;
+    virtual ~IReq() = default;
+
+    virtual ErrorFunctions* getFunction() const = 0;
+    virtual std::vector<PARAMID> getParams() const = 0;
+    virtual BoundBox2D getRectangle() const = 0;
+    virtual Requirement getType() const = 0;
 };
 
 
@@ -56,9 +60,10 @@ class ReqPointSecDist : public IReq {
     double d;
 public:
     ReqPointSecDist(Point* p, Section* s, double dist);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 2
@@ -67,9 +72,10 @@ class ReqPointOnSec : public IReq {
     Section* m_s;
 public:
     ReqPointOnSec(Point* p, Section* s);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 3
@@ -79,9 +85,10 @@ class ReqPointPointDist : public IReq {
     double v_dist;
 public:
     ReqPointPointDist(Point* p1, Point* p2, double dist);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 4
@@ -90,9 +97,10 @@ class ReqPointOnPoint : public IReq {
     Point* m_p2;
 public:
     ReqPointOnPoint(Point* p1, Point* p2);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 5
@@ -102,9 +110,10 @@ class ReqSecCircleDist : public IReq {
     double v_dist;
 public:
     ReqSecCircleDist(Section* m_s, Circle* m_c, double dist);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 6
@@ -113,9 +122,10 @@ class ReqSecOnCircle : public IReq {
     Circle* m_c;
 public:
     ReqSecOnCircle(Section* m_s, Circle* m_c);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 7
@@ -124,9 +134,10 @@ class ReqSecInCircle : public IReq {
     Circle* m_c;
 public:
     ReqSecInCircle(Section* m_s, Circle* m_c);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 8
@@ -135,9 +146,10 @@ class ReqSecSecParallel : public IReq {
     Section* m_s2;
 public:
     ReqSecSecParallel(Section* m_s1, Section* m_s2);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 9
@@ -146,9 +158,10 @@ class ReqSecSecPerpendicular : public IReq {
     Section* m_s2;
 public:
     ReqSecSecPerpendicular(Section* m_s1, Section* m_s2);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 // 10
@@ -158,9 +171,10 @@ class ReqSecSecAngel : public IReq {
     double desired_angle;
 public:
     ReqSecSecAngel(Section* m_s1, Section* m_s2, double desired_dist);
-    ErrorFunctions* getFunction() override;
-    std::vector<PARAMID> getParams() override;
-    rectangle getRectangle() override;
+    ErrorFunctions* getFunction() const override;
+    std::vector<PARAMID> getParams() const override;
+    BoundBox2D getRectangle() const override;
+    Requirement getType() const override;
 };
 
 
