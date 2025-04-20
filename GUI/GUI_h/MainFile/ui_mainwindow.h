@@ -78,7 +78,6 @@ public:
     QWidget *centralwindow;
     QGridLayout *gridLayout_2;
     QGridLayout *gridLayout;
-    QTreeWidget *leftMenu;
     CastomeConsole *console;
     QFrame *workWindow;
     QWidget *topBar;
@@ -111,8 +110,6 @@ public:
     QWidget *collapsedPanel;
     QPushButton *collapseButton;
     QVBoxLayout *collapsedPanelLayout;
-    QTreeWidgetItem *itemFigures;
-    QTreeWidgetItem *itemRequirements;
     QPushButton *leftMenuMessage;
     QPushButton *Figures;
     QPushButton *Tools;
@@ -1049,38 +1046,15 @@ public:
 
 
 
-    void setupLeftMenu() {
-        // Создание и настройка левого меню
-        leftMenu = new QTreeWidget();
-        leftMenu->setObjectName("leftMenu");
-        leftMenu->headerItem()->setText(0, QString());
 
-        QFont font1;
-        QFont font2;
-        font1.setKerning(true);
-        font2.setPointSize(12);
-
-        font1.setStyleStrategy(QFont::PreferDefault);
-
-        QTreeWidgetItem *__qtreewidgetitem = new QTreeWidgetItem();
-        QTreeWidgetItem *NotSee = new QTreeWidgetItem(leftMenu); // Объект для отступа
-        NotSee->setFlags(NotSee->flags() & ~Qt::ItemIsSelectable & ~Qt::ItemIsEnabled); // Делаем неактивным
-
-        itemFigures = new QTreeWidgetItem(leftMenu);
-        itemRequirements = new QTreeWidgetItem(leftMenu);
-
-        __qtreewidgetitem->setFont(0, font1);
-        leftMenu->setHeaderItem(__qtreewidgetitem);
-        leftMenu->setHeaderHidden(true);
-
-        itemFigures->setFont(0, font2);
-        itemRequirements->setFont(0, font2);
-
-        QBrush blackBrush(QColor("#494850"));
-        __qtreewidgetitem->setBackground(0, blackBrush);
-
-        leftMenu->setStyleSheet(R"(
-        QTreeWidget {
+  void setupLeftMenu() {
+      // Создание и настройка QTreeView
+      leftMenuView = new QTreeView();
+      leftMenuView->setObjectName("leftMenuView");
+      leftMenuView->setHeaderHidden(true);
+      leftMenuView->setIndentation(16);
+      leftMenuView->setStyleSheet(R"(
+        QTreeView {
             background-color: #494850;
             color: #D8D8F6;
             border: none;
@@ -1088,39 +1062,43 @@ public:
             border-bottom-right-radius: 0px;
         }
     )");
+      leftMenuView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+      leftMenuView->setSelectionMode(QAbstractItemView::NoSelection);
+      // leftMenuView->setFocusPolicy(Qt::NoFocus); // опционально
 
-        leftMenu->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-        // Создание кнопки свернуть влево
-        collapseButton = new QPushButton("");
-        collapseButton->setObjectName("collapseButton");
-        collapseButton->setToolTip("Hide");
-        collapseButton->setIcon(QIcon("../Static/icons/LeftIco.ico"));
-        collapseButton->setFixedSize(30, 30);
-        collapseButton->setStyleSheet(
-                "QPushButton { background: none; border: none; color: #D8D8F6; }"
-                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }"
-        );
 
-        // Создание макета для leftMenuContainer
-        leftMenuLayout = new QGridLayout();
-        leftMenuLayout->setObjectName("leftMenuLayout");
-        leftMenuLayout->setContentsMargins(0, 0, 0, 0);
-        leftMenuLayout->setSpacing(0);
+      // Установка модели
 
-        // Добавление leftMenu и collapseButton в макет
-        leftMenuLayout->addWidget(leftMenu, 0, 0);
-        leftMenuLayout->addWidget(collapseButton, 0, 0, Qt::AlignTop | Qt::AlignRight);
+      leftMenuView->expandAll(); // по желанию
 
-        // Обновление контейнера для leftMenu
-        leftMenuContainer = new QWidget();
-        leftMenuContainer->setObjectName("leftMenuContainer");
-        leftMenuContainer->setLayout(leftMenuLayout);
-        leftMenuContainer->setFixedWidth(200);
-        leftMenu->setSelectionMode(QAbstractItemView::NoSelection); // Убираем выделение
-        //leftMenu->setFocusPolicy(Qt::NoFocus);
-        leftMenuContainer->hide();
-    }
+      // Кнопка "свернуть"
+      collapseButton = new QPushButton("");
+      collapseButton->setObjectName("collapseButton");
+      collapseButton->setToolTip("Hide");
+      collapseButton->setIcon(QIcon("../Static/icons/LeftIco.ico"));
+      collapseButton->setFixedSize(30, 30);
+      collapseButton->setStyleSheet(
+              "QPushButton { background: none; border: none; color: #D8D8F6; }"
+              "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }"
+      );
+
+      // Layout
+      leftMenuLayout = new QGridLayout();
+      leftMenuLayout->setObjectName("leftMenuLayout");
+      leftMenuLayout->setContentsMargins(0, 0, 0, 0);
+      leftMenuLayout->setSpacing(0);
+      leftMenuLayout->addWidget(leftMenuView, 0, 0);
+      leftMenuLayout->addWidget(collapseButton, 0, 0, Qt::AlignTop | Qt::AlignRight);
+
+      // Контейнер
+      leftMenuContainer = new QWidget();
+      leftMenuContainer->setObjectName("leftMenuContainer");
+      leftMenuContainer->setLayout(leftMenuLayout);
+      leftMenuContainer->setFixedWidth(200);
+      leftMenuContainer->hide();
+  }
+
 
     void setupCollapsedPanel() {
         // Создание свернутой панели
@@ -1890,15 +1868,6 @@ public:
         actionJoin_local_server->setText(QCoreApplication::translate("MainWindow", "Join local server     ", nullptr));
         actionExit_from_session->setText(QCoreApplication::translate("MainWindow", "Exit from session   ", nullptr));
         action_help->setText(QCoreApplication::translate("MainWindow", "Help", nullptr));
-
-// Установка элементов левого меню
-        const bool __sortingEnabled = leftMenu->isSortingEnabled();
-        leftMenu->setSortingEnabled(false);
-
-        itemFigures->setText(0, QCoreApplication::translate("MainWindow", "Figures", nullptr));
-        itemRequirements->setText(0, QCoreApplication::translate("MainWindow", "Requirements", nullptr));
-
-        leftMenu->setSortingEnabled(__sortingEnabled);
 
 // Очистка консоли
         console->setText(QCoreApplication::translate("MainWindow", "", nullptr));
