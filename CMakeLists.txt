@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_STANDARD 20)
 
 project(ourpaint)
+
 # Для использования этого приложения необходимо установить QT6. Если у вас есть вопросы, обращайтесь к @ardrasss
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Svg)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -22,38 +23,25 @@ FetchContent_MakeAvailable(Eigen)
 include_directories(headers)
 include_directories(headers/painters)
 include_directories(headers/saveload)
-include_directories(headers/client_server)
-include_directories(headers/GUI)
-include_directories(headers/GUI/Windows)
-include_directories(headers/UndoRedo)
+
+include_directories(GUI/GUI_h)
+include_directories(GUI/GUI_h/Unnecessary)
+include_directories(GUI/GUI_h/client_server)
+include_directories(GUI/GUI_h/Windows)
+include_directories(GUI/GUI_h/Events)
+include_directories(GUI/GUI_h/Drawing)
+include_directories(GUI/GUI_h/MainFile)
+include_directories(GUI/GUI_h/Widgets)
+include_directories(GUI/GUI_h/Logger)
 
 add_executable(ourpaint
         main.cc
-        src/Scene.cc
+        src/Paint.cc
+        src/GeometricObjects.cc
         src/Requirements.cc
-        src/Scaling.cc
-        src/objects/GeometricObjects.cc
-        src/objects/BoundBox.cc
+        src/ID.cc
 
         src/painters/BMPpainter.cc
-        src/painters/QTPainter.cc
-
-        src/GUI/ClosesPoint.cc
-        src/GUI/DrawAddirionalInf.cc
-        src/GUI/DrawBackgrond.cc
-        src/GUI/DrawFigures.cc
-        src/GUI/Modes.cc
-        src/GUI/MouseEventWorkWindow.cc
-        src/GUI/Mainwindow.cc
-        src/GUI/LeftMenuBar.cc
-        src/GUI/FrameOverlay.cc
-        src/GUI/CastomeConsole.cc
-        src/GUI/SmileRightClickFilter.cc
-        src/GUI/EmojiWidget.cc
-        src/GUI/DrawMouse.cc
-        src/GUI/KeyWorkWindow.cc
-
-        src/GUI/Windows/Help.cc
 
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
@@ -61,63 +49,16 @@ add_executable(ourpaint
         src/saveload/SaveSettingsApplications.cc
         src/saveload/LoadSettingsApplications.cc
 
-        src/UndoRedo/Transactions.cc
-        src/UndoRedo/UndoRedoTemplate.cc
-        src/UndoRedo/UndoRedo.cc
-
-        src/client_server/Server.cc
-        src/client_server/Client.cc
-        src/client_server/LocalScanner.cc
-        src/client_server/PortCheckTask.cc
-
         src/Application.cc
         src/BMPfile.cc
 
-        headers/UndoRedo/Command.h
-        headers/UndoRedo/Transactions.h
-        headers/UndoRedo/UndoRedoTemplate.h
-        headers/UndoRedo/UndoRedo.h
-
-        headers/objects/Enums.h
-        headers/objects/Objects.h
-        headers/objects/GeometricObjects.h
+        headers/Enums.h
+        headers/GeometricObjects.h
+        headers/Paint.h
         headers/Requirements.h
-        headers/Scaling.h
-        headers/objects/ID.h
-        headers/Scene.h
-        headers/objects/BoundBox.h
-
-        headers/client_server/Client.h
-        headers/client_server/LocalScanner.h
-        headers/client_server/PortCheckTask.h
-        headers/client_server/Server.h
-
-        headers/GUI/Windows/CastomeWindowError.h
-        headers/GUI/Windows/CastomeWindowWarning.h
-        headers/GUI/Windows/CastomeWindowSuccessful.h
-        headers/GUI/Windows/Help.h
-        headers/GUI/Windows/CastomeIpListWindow.h
-        headers/GUI/Windows/WindowServer.h
-        headers/GUI/Windows/SaveDialog.h
-        headers/GUI/Windows/ui_help.h
-        headers/GUI/DrawMode.h
-        headers/GUI/KeyEventToolPanel.h
-        headers/GUI/GlobalEventFilter.h
-        headers/GUI/KeyEventCollapsedPanel.h
-        headers/GUI/KeyTopBar.h
-        headers/GUI/LeftMenuBar.h
-        headers/GUI/KeyWorkWindow.h
-        headers/GUI/DrawMouse.h
-
-        headers/GUI/CastomeConsole.h
-        headers/GUI/EmojiWidget.h
-        headers/GUI/FrameOverlay.h
-        headers/GUI/Mainwindow.h
-        headers/GUI/SmileRightClickFilter.h
-        headers/GUI/ui_mainwindow.h
+        headers/ID.h
 
         headers/painters/Painter.h
-        headers/painters/QTPainter.h
         headers/painters/BMPpainter.h
 
         headers/saveload/FileOurP.h
@@ -127,9 +68,89 @@ add_executable(ourpaint
         headers/saveload/SaveSettingsApplications.h
 
         headers/Application.h
-        headers/UndoRedo/UndoRedoTemplate.h
+        headers/UndoRedo.h
         headers/BMPfile.h
-        )
+        headers/GeometricObjects.h
+
+
+        ###########  GUI  ############
+
+        GUI/GUI_cc/MainFile/Mainwindow.cc
+
+        GUI/GUI_cc/Drawing/Scaling.cc
+        GUI/GUI_cc/Drawing/ClosesPoint.cc
+        GUI/GUI_cc/Drawing/DrawAddirionalInf.cc
+        GUI/GUI_cc/Drawing/DrawBackgrond.cc
+        GUI/GUI_cc/Drawing/DrawFigures.cc
+        GUI/GUI_cc/Drawing/Modes.cc
+        GUI/GUI_cc/Drawing/DrawMouse.cc
+        GUI/GUI_cc/Drawing/QTPainter.cc
+
+        GUI/GUI_cc/Events/SmileRightClickFilter.cc
+        GUI/GUI_cc/Events/KeyWorkWindow.cc
+        GUI/GUI_cc/Events/MouseEventWorkWindow.cc
+
+        GUI/GUI_cc/Widgets/LeftMenuBar.cc
+        GUI/GUI_cc/Widgets/CastomeConsole.cc
+        GUI/GUI_cc/Widgets/EmojiWidget.cc
+        GUI/GUI_cc/Widgets/TreeNode.cc
+        GUI/GUI_cc/Widgets/TreeModelLazy.cc
+
+        GUI/GUI_cc/client_server/Server.cc
+        GUI/GUI_cc/client_server/Client.cc
+        GUI/GUI_cc/client_server/LocalScanner.cc
+        GUI/GUI_cc/client_server/PortCheckTask.cc
+
+        GUI/GUI_cc/Windows/Help.cc
+
+        GUI/GUI_cc/Unnecessary/FrameOverlay.cc
+
+        GUI/GUI_cc/Logger/GUI_Logger.cc
+
+
+        GUI/GUI_h/client_server/Client.h
+        GUI/GUI_h/client_server/LocalScanner.h
+        GUI/GUI_h/client_server/PortCheckTask.h
+        GUI/GUI_h/client_server/Server.h
+
+        GUI/GUI_h/Windows/CastomeWindowError.h
+        GUI/GUI_h/Windows/CastomeWindowWarning.h
+        GUI/GUI_h/Windows/CastomeWindowSuccessful.h
+        GUI/GUI_h/Windows/Help.h
+        GUI/GUI_h/Windows/CastomeIpListWindow.h
+        GUI/GUI_h/Windows/WindowServer.h
+        GUI/GUI_h/Windows/SaveDialog.h
+        GUI/GUI_h/Windows/ui_help.h
+
+        GUI/GUI_h/Events/KeyEventToolPanel.h
+        GUI/GUI_h/Events/GlobalEventFilter.h
+        GUI/GUI_h/Events/KeyEventCollapsedPanel.h
+        GUI/GUI_h/Events/KeyTopBar.h
+        GUI/GUI_h/Events/KeyWorkWindow.h
+        GUI/GUI_h/Events/SmileRightClickFilter.h
+
+        GUI/GUI_h/Widgets/LeftMenuBar.h
+        GUI/GUI_h/Widgets/CastomeConsole.h
+        GUI/GUI_h/Widgets/EmojiWidget.h
+        GUI/GUI_h/Widgets/TreeNode.h
+        GUI/GUI_h/Widgets/TreeModelLazy.h
+
+        GUI/GUI_h/Drawing/Scaling.h
+        GUI/GUI_h/Drawing/QTPainter.h
+        GUI/GUI_h/Drawing/DrawMouse.h
+        GUI/GUI_h/Drawing/DrawMode.h
+        GUI/GUI_h/Drawing/SelectedRectangle.h
+
+
+        GUI/GUI_h/MainFile/Mainwindow.h
+        GUI/GUI_h/MainFile/ui_mainwindow.h
+
+        GUI/GUI_h/Unnecessary/FrameOverlay.h
+
+        GUI/GUI_h/Logger/GUI_Logger.h
+
+
+)
 
 
 include_directories(math/headers)
@@ -147,6 +168,7 @@ target_link_libraries(ourpaint
         Qt6::Widgets
         Qt6::Network
         Eigen3::Eigen
+        Qt6::Svg
 )
 
 target_link_libraries(ourpaint Math)

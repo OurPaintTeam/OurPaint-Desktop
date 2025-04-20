@@ -3,399 +3,350 @@
 #include "LoadSettingsApplications.h"
 #include "SaveSettingsApplications.h"
 
+
 Application::Application(int &argc, char **argv)
         : app(argc, argv),
-          w(),
-          painter(std::make_unique<QTPainter>(w.getUi(), w.getWorkWindow())),
-          scene(painter.get()),
-          server("User"),
-          client("User"),
-          isConnected(false),
-          isServer(false),
-          managerUR()
-          {
-    init();
-    setupConnections();
+          mainWind(),
+          painter(nullptr),
+          screen(nullptr),
+          username("User"),
+          server(username),
+          client(username) {
+
+
+    initialize();
+    setupAddingCommandsConnections();
+    setupQTPainterConnections();
+    setupServerConnections();
+    setupLeftMenuConnections();
+    setupRequirementsConnections();
 }
 
 int Application::exec() {
     return app.exec();
 }
 
-void Application::init() {
+void Application::initialize() {
     app.setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
     QApplication::setStyle("Fusion");
-    w.show();
 
-    painter->setParent(w.getWorkWindow());
-    painter->show();
+    painter.reset(mainWind.getQTPainter());
+    Paint screen_copy(painter.get());
+    leftMenu.reset(mainWind.getLeftMenuBar());
+    screen = screen_copy;
 
-    username = "User";
-    const std::string settingsFile = "SettingsSet";
-
-    std::ifstream inFile(settingsFile);
-    if (!(inFile.good() && inFile.peek() == std::ifstream::traits_type::eof())) {
-        LoadSettingsApplications LoadSet("Settings", &w);
-        std::vector<bool> settings;
-        QString NameUsers;
-        LoadSet.LoadSettings(settings, NameUsers);
-        w.loadSettings(settings, NameUsers);
-        if (!NameUsers.isEmpty()) {
-            username = NameUsers;
-        }
-    }
-    inFile.close();
-    Server server(username);
-    Client client(username);
+    mainWind.show();
+    mainWind.resize();
 }
 
-void Application::setupConnections() {
-    QObject::connect(&w, &MainWindow::parameterChanged,
-                     [this](unsigned long long id, const std::vector<double> &parameters) {
-                         w.setSave(false);
-                         scene.paint();
-                         painter->draw();
-                     });
+void Application::setupQTPainterConnections(){
+    if (painter) {
+        // Двойное нажатие на обьект и открытие его в левом меню
+        QObject::connect(painter.get(), &QTPainter::DoubleClickOnObject, [this](ID id) {
+            unsigned long long obj = id.id;
+            //  leftMenu->FocusOnItemById(obj);
+        });
 
-    // Choice figure
-    QObject::connect(&w, &MainWindow::SigPoint, [this]() {
-        painter->setMode(DrawMode::Point);
-    });
+        // Перемещение обьекта
+        QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
 
-    QObject::connect(&w, &MainWindow::SigSection, [this]() {
-        painter->setMode(DrawMode::Section);
-    });
+            double Cx = Scaling::logicCursorX();
+            double Cy = Scaling::logicCursorY();
 
-    QObject::connect(&w, &MainWindow::SigCircle, [this]() {
-        painter->setMode(DrawMode::Circle);
-    });
+            double dx = Scaling::logic(Scaling::getCursorDeltaX());
+            double dy = Scaling::logic(Scaling::getCursorDeltaY());
 
-    QObject::connect(&w, &MainWindow::SigMoving, [this]() {
-        painter->setMode(DrawMode::Editor);
-    });
-
-    QObject::connect(&w, &MainWindow::toolMoving, [this]() {
-        painter->setMode(DrawMode::Move);
-
-    });
-
-    QObject::connect(&w, &MainWindow::toolResize, [this]() {
-        painter->setMode(DrawMode::Resize);
-    });
-
-    QObject::connect(&w, &MainWindow::toolRotation, [this]() {
-        painter->setMode(DrawMode::Rotate);
-    });
-
-    QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
-
-        // Ф-я перемещения
-        QPointF XY = painter->MouseCoordinate();// <-трекер мышки
-        double x=XY.x();
-        double y=XY.y();
-        try {
             ID id = painter->getIdFigures();// <- id фигуры перемещения
-            scene.moveObject(id,x,y);
-        } catch (const std::exception & e) {
-            w.showError(e.what());
-        }
 
-    });
+            try {
+                screen.parallelMove(id, Cx, Cy, dx, dy);
+            } catch (const std::exception &a) {
+                mainWind.showError("Zheny kosyk ");
+            }
+            painter->draw();
+            // TODO сделать изменение обьекта по айди
+            //   leftMenu->parameterChanged(id.id,)
+        });
 
-    /*QObject::connect(painter.get(),
-                     static_cast<void (QTPainter::*)(Element, double, double)>(&QTPainter::Move),
-                     [this](Element F, double x, double y) {
-                         std::unordered_map<ID, const Point*> points = scene.getPoints();
-                         for (auto& p : points) {
-                             if (p.second->x == x && p.second->y == y) {
-//                                 painter->setIdFigures(p.first.get());
-                             }
-                         }
-                         if (painter->getDoubleClick()) {
-                             //  w.FocusOnItemById(1);
-                             //подсветка левого меню по айди
-                         }
-                     }
-    );
-
-    QObject::connect(painter.get(),
-                     static_cast<void (QTPainter::*)(Element, double, double, double)>(&QTPainter::Move),
-                     [this](Element F, double x, double y, double r) {
-                         ElementData elem;
-                         elem.et = F;
-                         double X = x;
-                         double Y =y;
-                         double R = r;
-                         elem.params = {X, Y, R};
-                         ID id = scene.findElement(elem);
-                         painter->setIdFigures(id.id);
-                         if (painter->getDoubleClick()) {
-                             //  w.FocusOnItemById(1);
-                             //подсветка левого меню по айди
-                         }
-                     }
-    );
-
-
-    QObject::connect(painter.get(),
-                     static_cast<void (QTPainter::*)(Element, double, double, double, double)>(&QTPainter::Move),
-                     [this](Element F, double x, double y, double x1, double y1) {
-                         ElementData elem;
-                         elem.et = F;
-                         double X = x;
-                         double Y = y;
-                         double X1 = x1;
-                         double Y1 = y1;
-                         elem.params = {X, Y, X1, Y1};
-                         try {
-                             ID id = scene.findElement(elem);
+        // Получение айди фигуры
+        QObject::connect(painter.get(),
+                         static_cast<void (QTPainter::*)(Element, double, double)>(&QTPainter::getIdFigure),
+                         [this](Element F, double x, double y) {
+                             ElementData elem;
+                             elem.et = F;
+                             double X = x;
+                             double Y = y;
+                             elem.params = {X, Y};
+                             ID id = screen.findElement(elem);
                              painter->setIdFigures(id.id);
-                         } catch (const std::exception & e) {
-                             w.showError(e.what());
                          }
-                         if (painter->getDoubleClick()) {
-                             //  w.FocusOnItemById(1);
-                             //подсветка левого меню по айди
+        );
+
+        // Получение айди фигуры
+        QObject::connect(painter.get(),
+                         static_cast<void (QTPainter::*)(Element, double, double, double)>(&QTPainter::getIdFigure),
+                         [this](Element F, double x, double y, double r) {
+                             ElementData elem;
+                             elem.et = F;
+                             double X = x;
+                             double Y = y;
+                             double R = r;
+                             elem.params = {X, Y, R};
+                             ID id = screen.findElement(elem);
+                             painter->setIdFigures(id.id);
                          }
-                     }
-    );*/
+        );
 
-    QObject::connect(&w, &MainWindow::oneReqirements, [this]() {
-        std::vector<ID> vec_id=painter->getVecID();
+        // Получение айди фигуры
+        QObject::connect(painter.get(),
+                         static_cast<void (QTPainter::*)(Element, double, double, double,
+                                                         double)>(&QTPainter::getIdFigure),
+                         [this](Element F, double x, double y, double x1, double y1) {
+                             ElementData elem;
+                             elem.et = F;
+                             double X = x;
+                             double Y = y;
+                             double X1 = x1;
+                             double Y1 = y1;
+                             elem.params = {X, Y, X1, Y1};
+                             ID id = screen.findElement(elem);
+                             painter->setIdFigures(id.id);
+                         }
+        );
 
-    });
+        // Отрисовка точки
+        QObject::connect(painter.get(), &QTPainter::SigPoint, [this](double x, double y) {
+            if (ModeManager::getConnection()) {
+                if (ModeManager::getFlagServer()) {
+                    ElementData point;
+                    ID id = screen.findElement(point);
+                    point.et = ET_POINT;
+                    point.params.push_back(x);
+                    point.params.push_back(y);
+                    ModeManager::setSave(false);
+                    screen.paint();
+                    painter->draw();
+                    leftMenu->addElemLeftMenu("Point",id.id,{x,y});
+                    server.sendToClients(QString::fromStdString(screen.to_string()));
+                } else {
+                    client.sendCommandToServer("point " + QString::number(y) + " " +
+                                               QString::number(x));
+                }
 
-    QObject::connect(&w, &MainWindow::twoReqirements, [this]() {
-        // Обработка сигнала twoReqirements
-    });
-
-    QObject::connect(&w, &MainWindow::threeReqirements, [this]() {
-        // Обработка сигнала threeReqirements
-    });
-
-    QObject::connect(&w, &MainWindow::fourReqirements, [this]() {
-        // Обработка сигнала fourReqirements
-    });
-
-    QObject::connect(&w, &MainWindow::fiveReqirements, [this]() {
-        // Обработка сигнала fiveReqirements
-    });
-
-    QObject::connect(&w, &MainWindow::sixReqirements, [this]() {
-        // Обработка сигнала sixReqirements
-    });
-
-    QObject::connect(&w, &MainWindow::sevenReqirements, [this]() {
-        // Обработка сигнала sevenReqirements
-    });
-
-    QObject::connect(&w, &MainWindow::eightReqirements, [this]() {
-        std::vector<ID> vec_id=painter->getVecID();
-        if(!vec_id.empty()) {
-            ID obj1 = vec_id[0];
-            ID obj2 = vec_id[1];
-            RequirementData reqData;
-            Requirement type;
-            type = ET_SECTIONSECTIONPARALLEL;
-            reqData.req = type;
-            reqData.objects.push_back(obj1.get());
-            reqData.objects.push_back(obj2.get());
-            scene.addRequirement(reqData);
-            w.setSave(false);
-        }
-
-    });
-
-    QObject::connect(&w, &MainWindow::nineReqirements, [this]() {
-        // Обработка сигнала nineReqirements
-    });
-
-    QObject::connect(painter.get(), &QTPainter::SigPoint, [this](QPoint Position) {
-        if (isConnected) {
-            if (isServer) {
-                ObjectData point;
+            } else {
+                ElementData point;
                 point.et = ET_POINT;
-                point.params.push_back(Position.x());
-                point.params.push_back(Position.y());
-                ID id = scene.addObject(point);
-                w.setSave(false);
-                updateState();
-                //TODO server.sendToClients(QString::fromStdString(scene.to_string());
-            } else {
-                client.sendCommandToServer("point " + QString::number(Position.x()) + " " +
-                                           QString::number(Position.y()));
+                point.params.push_back(x);
+                point.params.push_back(y);
+                ModeManager::setSave(false);
+                screen.paint();
+                painter->draw();
+                ID id = screen.findElement(point);
+                leftMenu->addElemLeftMenu("Point",id.id,{x,y});
             }
-        } else {
-            ObjectData point;
-            point.et = ET_POINT;
-            point.params.push_back(Position.x());
-            point.params.push_back(Position.y());
-            ID id = scene.addObject(point);
-            w.setSave(false);
-            updateState();
-        }
-    });
-    QObject::connect(painter.get(), &QTPainter::SigCircle, [this](QPoint centerPoint, int radius) {
-        ObjectData circle;
-        if (isConnected) {
-            if (isServer) {
+        });
+
+        // Отрисовка круга
+        QObject::connect(painter.get(), &QTPainter::SigCircle, [this](double x, double y, double radius) {
+            ElementData circle;
+            if (ModeManager::getConnection()) {
+                if (ModeManager::getFlagServer()) {
+                    circle.et = ET_CIRCLE;
+                    circle.params.push_back(x);
+                    circle.params.push_back(y);
+                    circle.params.push_back(radius);
+                    ModeManager::setSave(false);
+                    ID id = screen.findElement(circle);
+                    leftMenu->addElemLeftMenu("Circle",id.id,{x,y,radius});
+                    leftMenu->addElemLeftMenu("Point",id.id-1,{x,y});
+                    screen.paint();
+                    painter->draw();
+                    server.sendToClients(QString::fromStdString(screen.to_string()));
+                } else {
+                    client.sendCommandToServer("circle " + QString::number(x) + " " +
+                                               QString::number(y) + " " +
+                                               QString::number(radius));
+                }
+            } else {
                 circle.et = ET_CIRCLE;
-                circle.params.push_back(centerPoint.x());
-                circle.params.push_back(centerPoint.y());
+                circle.params.push_back(x);
+                circle.params.push_back(y);
                 circle.params.push_back(radius);
-                ID id = scene.addObject(circle);
-                w.setSave(false);
-                updateState();
-                // TODO server.sendToClients(QString::fromStdString(scene.to_string()));
-            } else {
-                client.sendCommandToServer("circle " + QString::number(centerPoint.x()) + " " +
-                                           QString::number(centerPoint.y()) + " " +
-                                           QString::number(radius));
+                ModeManager::setSave(false);
+                ID id = screen.findElement(circle);
+                leftMenu->addElemLeftMenu("Circle",id.id,{x,y,radius});
+                leftMenu->addElemLeftMenu("Point",id.id-1,{x,y});
+                screen.paint();
+                painter->draw();
             }
-        } else {
-            circle.et = ET_CIRCLE;
-            circle.params.push_back(centerPoint.x());
-            circle.params.push_back(centerPoint.y());
-            circle.params.push_back(radius);
-            ID id = scene.addObject(circle);
-            w.setSave(false);
-            updateState();
+        });
+
+        // Отрисовка линии
+        QObject::connect(painter.get(), &QTPainter::SigSection,
+                         [this](double startX, double startY, double endX, double endY) {
+
+                             ElementData section;
+                             if (ModeManager::getConnection()) {
+                                 if (ModeManager::getFlagServer()) {
+                                     section.et = ET_SECTION;
+                                     section.params.push_back(startX);
+                                     section.params.push_back(startY);
+                                     section.params.push_back(endX);
+                                     section.params.push_back(endY);
+                                     ID id = screen.addElement(section);
+                                     ModeManager::setSave(false);
+                                     leftMenu->addElemLeftMenu("Section",id.id,{startX,startY,endX,endY});
+                                     leftMenu->addElemLeftMenu("Point",id.id-1,{startX,startY});
+                                     leftMenu->addElemLeftMenu("Point",id.id-2,{endX,endY});
+                                     screen.paint();
+                                     painter->draw();
+                                     server.sendToClients(QString::fromStdString(screen.to_string()));
+                                 } else {
+                                     client.sendCommandToServer("section " + QString::number(startX) + " " +
+                                                                QString::number(startY) + " " +
+                                                                QString::number(endX) + " " +
+                                                                QString::number(endY));
+                                 }
+                             } else {
+                                 section.et = ET_SECTION;
+                                 section.params.push_back(startX);
+                                 section.params.push_back(startY);
+                                 section.params.push_back(endX);
+                                 section.params.push_back(endY);
+                                 ID id = screen.addElement(section);
+                                 ModeManager::setSave(false);
+                                 screen.paint();
+                                 painter->draw();
+                                 leftMenu->addElemLeftMenu("Point",id.id-1,{startX,startY});
+                                 leftMenu->addElemLeftMenu("Point",id.id-2,{endX,endY});
+                                 leftMenu->addElemLeftMenu("Section",id.id,{startX,startY,endX,endY});
+                             }
+                         });
+
+        // Отрисовка сектора
+        QObject::connect(painter.get(), &QTPainter::SigSector,
+                         [this]() {});
+
+        // Отрисовка арки
+        QObject::connect(painter.get(), &QTPainter::SigArc,
+                         [this]() {});
+
+
+    }
+
+    // Удаление элемента
+    QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
+        std::vector<ID> vec_id = painter->getVecID();
+        for (int i = 0; i < vec_id.size(); ++i) {
+            screen.deleteElement(vec_id[i]);
+            leftMenu->removeFigureById(vec_id[i].id);
         }
-    });
-    QObject::connect(painter.get(), &QTPainter::SigSection, [this](double startX, double startY, double endX, double endY) {
-        ObjectData section;
-        if (isConnected) {
-            if (isServer) {
-                section.et = ET_SECTION;
-                section.params.push_back(startX);
-                section.params.push_back(startY);
-                section.params.push_back(endX);
-                section.params.push_back(endY);
-                ID id = scene.addObject(section);
-                w.setSave(false);
-                updateState();
-                // TODO server.sendToClients(QString::fromStdString(scene.to_string()));
-            } else {
-                client.sendCommandToServer("section " + QString::number(startX) + " " +
-                                           QString::number(startY) + " " +
-                                           QString::number(endX) + " " +
-                                           QString::number(endY));
-            }
-        } else {
-            section.et = ET_SECTION;
-            section.params.push_back(startX);
-            section.params.push_back(startY);
-            section.params.push_back(endX);
-            section.params.push_back(endY);
-            ID id = scene.addObject(section);
-            w.setSave(false);
-            updateState();
-        }
+        painter->selectedClear();
+        screen.paint();
+        painter->draw();
     });
 
-    // Settings
-    QObject::connect(&w, &MainWindow::GridOn, [this](bool T) {
-        painter->setCell(T);
-    });
+    // Изменение размера
+    QObject::connect(&mainWind, &MainWindow::resize, [this]() {painter->update();});
+}
+
+void Application::setupServerConnections(){
     QObject::connect(&client, &Client::serverShutdown, [this]() {
-        w.showSuccess("Server shutdown!(");
-        isConnected = false;
-        isServer = false;
+        mainWind.showSuccess("Server shutdown!(");
+        ModeManager::setConnection(false);
+        ModeManager::setFlagServer(false);
+
     });
-    QObject::connect(&w, &MainWindow::NameUsers, [this](const QString &text) {
+    QObject::connect(&mainWind, &MainWindow::NameUsers, [this](const QString &text) {
         username = text;
-        if (!isConnected) {
+        if (!ModeManager::getConnection()) {
             server.setName(username);
             client.setName(username);
         }
     });
     QObject::connect(&client, &Client::disconnectedFromServer, [this]() {
-        isConnected = false;
-        w.showSuccess("You disconnected from server");
-    });
-    QObject::connect(&w, &MainWindow::changeSettings, [this]() {
-        SaveSettingsApplications saveSet("Settings", &w);
-        saveSet.clear();
-        auto [figures, requirements, settings, name] = w.saveSettings();
-        saveSet.SaveSettings(settings, name);
+        ModeManager::setConnection(false);
+        mainWind.showSuccess("You disconnected from server");
     });
 
+
     // Server button
-    QObject::connect(&w, &MainWindow::SigExitSession, [this]() {
-        if (isConnected) {
-            if (isServer) {
+    QObject::connect(&mainWind, &MainWindow::SigExitSession, [this]() {
+        if (ModeManager::getConnection()) {
+            if (ModeManager::getFlagServer()) {
                 server.stopServer();
-                isServer = false;
-                isConnected = false;
-                w.showSuccess("Successfully stopped!");
+                ModeManager::setConnection(false);
+                ModeManager::setFlagServer(false);
+                mainWind.showSuccess("Successfully stopped!");
             } else {
                 client.disconnectFromServer();
-                isConnected = false;
-                w.showSuccess("Successfully disconnected!");
+                ModeManager::setConnection(false);
+                mainWind.showSuccess("Successfully disconnected!");
             }
         } else {
-            w.showError("Firstly connect to server!");
+            mainWind.showError("Firstly connect to server!");
         }
     });
-    QObject::connect(&w, &MainWindow::SigOpenServer, [&](const QString &text) {
-        if (isConnected || isServer) {
-            w.showError("Firstly disconnect!");
+    QObject::connect(&mainWind, &MainWindow::SigOpenServer, [&](const QString &text) {
+        if (ModeManager::getConnection() || ModeManager::getFlagServer()) {
+            mainWind.showError("Firstly disconnect!");
             return;
         }
         bool ok = false;
         text.toUShort(&ok);
         if (!ok) {
-            w.showError("Error! This is not valid port!");
+            mainWind.showError("Error! This is not valid port!");
             return;
         }
         server.startServer(text.toUShort(&ok));
-        isServer = true;
-        isConnected = true;
-        w.showSuccess("Successfully connected to server!");
+        ModeManager::setConnection(true);
+        ModeManager::setFlagServer(true);
+        mainWind.showSuccess("Successfully connected to server!");
     });
-    QObject::connect(&w, &MainWindow::SigJoinServer, [&](const QString &text) {
-        if (isConnected || isServer) {
-            w.showError("Firstly disconnect!");
+    QObject::connect(&mainWind, &MainWindow::SigJoinServer, [&](const QString &text) {
+        if (ModeManager::getConnection() || ModeManager::getFlagServer()) {
+            mainWind.showError("Firstly disconnect!");
             return;
         }
         bool ok = false;
         QStringList texts = text.split(':');
         texts[1].toUShort(&ok);
         if (!ok) {
-            w.showError("Error! This is not valid port!");
+            mainWind.showError("Error! This is not valid port!");
             return;
         }
         client.connectToServer(texts[0], texts[1].toUShort(&ok));
-        isConnected = true;
-        w.showSuccess("Successfully connected to server!");
+        ModeManager::setConnection(true);
+        mainWind.showSuccess("Successfully connected to server!");
     });
-/*
+
     // Servers
     QObject::connect(&server, &Server::newCommandReceived, [&](const QString &cmd) {
         handler(cmd);
-        server.sendToClients(QString::fromStdString(scene.to_string()));
+        updateState();
+        server.sendToClients(QString::fromStdString(screen.to_string()));
     });
     QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
-        scene.loadFromString(state.toStdString());
+        screen.loadFromString(state.toStdString());
         updateState();
     });
 
     // Chat
     QObject::connect(&client, &Client::newChatMessageReceived, [&](const QString &msg, const QString &name) {
-        w.setMessage(name.toStdString(), msg.toStdString());
+        mainWind.setMessage(name.toStdString(), msg.toStdString());
         updateState();
     });
     QObject::connect(&server, &Server::newMessageReceived, [&](const QString &msg, const QString &name) {
-        w.setMessage(name.toStdString(), msg.toStdString());
+        mainWind.setMessage(name.toStdString(), msg.toStdString());
         updateState();
     });
     QObject::connect(&server, &Server::newConnection, [this]() {
-        server.sendToClients(QString::fromStdString(scene.to_string()));
+        server.sendToClients(QString::fromStdString(screen.to_string()));
     });
-    QObject::connect(&w, &MainWindow::EnterMessage, [this](const QString &text) {
-        if (isConnected) {
-            if (isServer) {
-                w.setMessage(username.toStdString(), text.toStdString());
+    QObject::connect(&mainWind, &MainWindow::EnterMessage, [this](const QString &text) {
+        if (ModeManager::getConnection()) {
+            if (ModeManager::getFlagServer()) {
+                mainWind.setMessage(username.toStdString(), text.toStdString());
                 server.sendChatToClients(text, username);
             } else {
                 if (!text.isEmpty()) {
@@ -403,18 +354,104 @@ void Application::setupConnections() {
                 }
             }
         } else {
-            w.showError("Firstly connect to server!");
+            mainWind.showError("Firstly connect to server!");
             return;
         }
     });
+}
+
+void Application::setupRequirementsConnections(){
+    // Требования
+    QObject::connect(&mainWind, &MainWindow::oneRequirements, [this]() {
+        std::vector<ID> vec_id = painter->getVecID();
+        for (const auto &id: vec_id) {
+        }
+    });
+
+    QObject::connect(&mainWind, &MainWindow::twoRequirements, [this]() {
+        // Обработка сигнала twoReqirements
+    });
+
+    QObject::connect(&mainWind, &MainWindow::threeRequirements, [this]() {
+        // Обработка сигнала threeReqirements
+    });
+
+    QObject::connect(&mainWind, &MainWindow::fourRequirements, [this]() {
+        // Обработка сигнала fourReqirements
+    });
+
+    QObject::connect(&mainWind, &MainWindow::fiveRequirements, [this]() {
+        // Обработка сигнала fiveReqirements
+    });
+
+    QObject::connect(&mainWind, &MainWindow::sixRequirements, [this]() {
+        // Обработка сигнала sixReqirements
+    });
+
+    QObject::connect(&mainWind, &MainWindow::sevenRequirements, [this]() {
+        // Обработка сигнала sevenReqirements
+    });
+
+    QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
+        std::vector<ID> vec_id = painter->getVecID();
+        if (!vec_id.empty()) {
+            ID obj1 = vec_id[0].id;
+            ID obj2 = vec_id[1].id;
+            RequirementData reqData;
+            Requirement type;
+            type = ET_SECTIONSECTIONPARALLEL;
+            reqData.req = type;
+            reqData.objects.push_back(obj1);
+            reqData.objects.push_back(obj2);
+            screen.addRequirement(reqData);
+            ModeManager::setSave(false);
+            // Изменение по айди
+            // leftMenu->parameterChanged()
+
+        }
+
+    });
+
+    QObject::connect(&mainWind, &MainWindow::nineRequirements, [this]() {
+
+    });
+    QObject::connect(&mainWind, &MainWindow::tenRequirements, [this]() {
+
+    });
+}
+
+void Application::setupLeftMenuConnections() {
+    // Изменение параметра в левом меню
+    /*
+    QObject::connect(leftMenu.get(), &LeftMenuBar::parameterChanged,
+                     [this](unsigned long long Id, const std::vector<double> &parameters) {
+
+                     });
+
+    // Двойное нажатие левого меню
+    QObject::connect(leftMenu.get(), &LeftMenuBar::DoubleClickLeftMenu,
+                     [this](std::vector<double> &parameters, unsigned long long int ID) {
+
+                     });
 */
+
+}
+
+void Application::setupAddingCommandsConnections() {
+
+    // Изменение настроек
+    QObject::connect(&mainWind, &MainWindow::changeSettings, [this]() {
+
+    });
+
     // Console
-    QObject::connect(&w, &MainWindow::EnterPressed, [&](const QString &command) {
-        //QStringList commandParts = command.split(' ');
-        if (isConnected) {
-            if (isServer) {
+    QObject::connect(&mainWind, &MainWindow::EnterPressed, [&](const QString &command) {
+        QStringList commandParts = command.split(' ');
+        if (ModeManager::getConnection()) {
+            if (ModeManager::getFlagServer()) {
+                handler(command);
                 updateState();
-                // TODO server.sendToClients(QString::fromStdString(scene.to_string()));
+                server.sendToClients(QString::fromStdString(screen.to_string()));
             } else {
                 client.sendCommandToServer(command);
             }
@@ -424,385 +461,141 @@ void Application::setupConnections() {
         }
     });
 
-    // Change object left menu
-    QObject::connect(&w, &MainWindow::ChangeLeftMenu, [this]() {
-        w.setSave(false);
-        w.Print_LeftMenu(0, "Clear", {});
-        std::unordered_map<ID, const IGeometricObject*> elements = scene.getAllObjects();
-        for (auto& [id, obj]: elements) {
-            if (obj->getElementType() == ET_POINT) {
-                const Point* p = static_cast<const Point*>(obj);
-                double x = p->x;
-                double y = p->y;
-                w.Print_LeftMenu(id.get(), "Point", {x, y});
-            } else if (obj->getElementType() == ET_SECTION) {
-                const Section* s = static_cast<const Section*>(obj);
-                double x1 = s->beg->x;
-                double y1 = s->beg->y;
-                double x2 = s->end->x;
-                double y2 = s->end->y;;
-                w.Print_LeftMenu(id.get(), "Section", {x1, y1, x2, y2});
-            } else if (obj->getElementType() == ET_CIRCLE) {
-                const Circle* c = static_cast<const Circle*>(obj);
-                double x = c->center->x;
-                double y = c->center->y;
-                double r = c->r;
-                w.Print_LeftMenu(id.get(), "Circle", {x, y, r});
-            }
-        }
 
-        scene.paint();
-        painter->draw();
-    });
-
-    // Resize
-    QObject::connect(&w, &MainWindow::resized, [this]() {
-        scene.paint();
-        painter->draw();
-    });
-    QObject::connect(&w, &MainWindow::KeyPlus, [this]() {
-        painter->getUsers(true);
-        painter->setZoomPlus();
-        scene.paint();
-        painter->draw();
-    });
-    QObject::connect(&w, &MainWindow::KeyMinus, [this]() {
-        painter->getUsers(true);
-        painter->setZoomMinus();
-        scene.paint();
-        painter->draw();
-        painter->draw();
-    });
-    QObject::connect(&w, &MainWindow::KeyZero, [this]() {
-        painter->getUsers(true);
-        painter->setZoomZero();
-        scene.paint();
-        painter->draw();
-    });
-/*
-    // Undo/Redo
-    QObject::connect(&w, &MainWindow::REDO, [this]() {
-        try {
-            scene.redo();
-            updateState();
-            w.setSave(true);
-
-            auto [figures, requirements, settings, name] = w.saveSettings();
-            w.Print_LeftMenu(0, "Clear", {});
-            std::vector<std::pair<ID, ElementData>> elements = scene.getAllElementsInfo();
-            for (auto element: elements) {
-                std::string name;
-                for (int i = 0; i < figures.size(); ++i) {
-                    if (element.first.id == figures[i][1].toLongLong()) {
-                        name = figures[i][0].toStdString();
-                        break;
-                    }
-                }
-                if (element.second.et == ET_POINT) {
-                    double x = element.second.params[0];
-                    double y = element.second.params[1];
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id, name, {x, y});
-                    } else {
-                        w.Print_LeftMenu(element.first.id, "Point", {x, y});
-                    }
-                } else if (element.second.et == ET_CIRCLE) {
-                    double x = element.second.params[0];
-                    double y = element.second.params[1];
-                    double r = element.second.params[2];
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id, name, {x, y, r});
-                    } else {
-                        w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
-                    }
-                } else if (element.second.et == ET_SECTION) {
-                    double x1 = element.second.params[0];
-                    double y1 = element.second.params[1];
-                    double x2 = element.second.params[2];
-                    double y2 = element.second.params[3];
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
-                    } else {
-                        w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
-                    }
-                }
-            }
-        } catch (std::exception &e) {
-            w.showWarning(e.what());
-        }
-
-    });
-    QObject::connect(&w, &MainWindow::UNDO, [this]() {
-        try {
-            scene.undo();
-            updateState();
-            w.setSave(true);
-
-            auto [figures, requirements, settings, name] = w.saveSettings();
-            w.Print_LeftMenu(0, "Clear", {});
-            std::vector<std::pair<ID, ElementData>> elements = scene.getAllElementsInfo();
-            for (auto element: elements) {
-                std::string name;
-                for (int i = 0; i < figures.size(); ++i) {
-                    if (element.first.id == figures[i][1].toLongLong()) {
-                        name = figures[i][0].toStdString();
-                        break;
-                    }
-                }
-                if (element.second.et == ET_POINT) {
-                    double x = element.second.params[0];
-                    double y = element.second.params[1];
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id, name, {x, y});
-                    } else {
-                        w.Print_LeftMenu(element.first.id, "Point", {x, y});
-                    }
-                } else if (element.second.et == ET_CIRCLE) {
-                    double x = element.second.params[0];
-                    double y = element.second.params[1];
-                    double r = element.second.params[2];
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id, name, {x, y, r});
-                    } else {
-                        w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
-                    }
-                } else if (element.second.et == ET_SECTION) {
-                    double x1 = element.second.params[0];
-                    double y1 = element.second.params[1];
-                    double x2 = element.second.params[2];
-                    double y2 = element.second.params[3];
-                    if (!name.empty()) {
-                        w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
-                    } else {
-                        w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
-                    }
-                }
-            }
-        } catch (std::exception &e) {
+    // Save
+    QObject::connect(&mainWind, &MainWindow::projectSaved, [this](const QString &fileName, QString format) {
+        if (format != (".ourp"))
+            painter->saveToImage(fileName, format);
+        else {
+            std::string File = fileName.toStdString();
+            screen.saveToFile(File.c_str());
+            screen.paint();
+            painter->draw();
         }
     });
-*/
-    // Save/Load
-    /*
-    QObject::connect(&w, &MainWindow::projectSaved, [this](const QString &fileName) {
-        std::string File = fileName.toStdString();
-        auto [figures, requirements, settings, name] = w.saveSettings();
-        SaveSettingsApplications saveSet(File.c_str(), &w);
-        saveSet.clear();
-        saveSet.SaveFigures(figures);
-        saveSet.SaveRequirements(requirements);
-        saveSet.SaveSettings(settings, name);
-        scene.saveToFile(File.c_str());
-        scene.paint();
-        painter->draw();
-    });
-    QObject::connect(&w, &MainWindow::LoadFile, [&](const QString &fileName) {
+
+    //Load
+    QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString &fileName) {
         painter->clear();
-        w.Print_LeftMenu(0, "Clear", {});
         std::string File = fileName.toStdString();
-        scene.loadFromFile(File.c_str());
-        scene.paint();
+        screen.loadFromFile(File.c_str());
+        screen.paint();
         painter->draw();
-
-        LoadSettingsApplications LoadSet(File.c_str(), &w);
-        std::vector<std::vector<QString>> figures;
-        std::vector<std::vector<QString>> requirements;
-        std::vector<bool> settings;
-        QString NameUsers;
-        LoadSet.LoadFigures(figures);
-        LoadSet.LoadRequirements(requirements);
-        LoadSet.LoadSettings(settings, NameUsers);
-
-        std::vector<std::pair<ID, ElementData>> elements = scene.getAllElementsInfo();
-        for (auto element: elements) {
-            std::string name;
-            for (int i = 0; i < figures.size(); ++i) {
-                if (element.first.id == figures[i][1].toLongLong()) {
-                    name = figures[i][0].toStdString();
-                    break;
-                }
-            }
-            if (element.second.et == ET_POINT) {
-                double x = element.second.params[0];
-                double y = element.second.params[1];
-                if (!name.empty()) {
-                    w.Print_LeftMenu(element.first.id, name, {x, y});
-                } else {
-                    w.Print_LeftMenu(element.first.id, "Point", {x, y});
-                }
-            } else if (element.second.et == ET_CIRCLE) {
-                double x = element.second.params[0];
-                double y = element.second.params[1];
-                double r = element.second.params[2];
-                if (!name.empty()) {
-                    w.Print_LeftMenu(element.first.id, name, {x, y, r});
-                } else {
-                    w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
-                }
-                break;
-            } else if (element.second.et == ET_SECTION) {
-                double x1 = element.second.params[0];
-                double y1 = element.second.params[1];
-                double x2 = element.second.params[2];
-                double y2 = element.second.params[3];
-                if (!name.empty()) {
-                    w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
-                } else {
-                    w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
-                }
-                break;
-            }
-        }
-
-        w.loadSettings(settings, NameUsers);
-    });
-    */
-    /*
-    QObject::connect(&w, &MainWindow::saveBMP, [this](const QString &fileName) {
-        try {
-            scene.exportToBMP(fileName.toStdString().c_str());
-            w.showSuccess("Saved to " + fileName);
-        } catch (std::exception &e) {
-            w.showWarning(e.what());
-        }
-    });
-    QObject::connect(&w, &MainWindow::loadBMP, [&](const QString &fileName) {
-
     });
 
-    QObject::connect(&w, &MainWindow::EmitScript, [&](const QString &fileName) {
+    // Script
+    QObject::connect(&mainWind, &MainWindow::EmitScript, [&](const QString &fileName) {
         std::string File = fileName.toStdString();
 
-        std::ifstream scriptFile(File);
-        if (!scriptFile) {
-            throw std::runtime_error("Error: Script file doesn't opened");
-        }
+        std::ifstream Script(File);
+
+        // TODO logs
 
         // TODO UNDO/REDO
 
         std::string command;
-        if (isConnected) {
-            if (isServer) {
-                while (std::getline(scriptFile, command)) {
-                    handler(QString::fromStdString(command));
-                    server.sendToClients(QString::fromStdString(scene.to_string()));
+
+        while (std::getline(Script, command)) {
+            QString qCommand = QString::fromStdString(command);
+
+            // TODO logs
+
+            if (ModeManager::getConnection()) {
+                if (ModeManager::getFlagServer()) {
+                    handler(qCommand);
+                    server.sendToClients(QString::fromStdString(screen.to_string()));
+                } else {
+                    client.sendCommandToServer(qCommand);
                 }
-                updateState();
             } else {
-                while (std::getline(scriptFile, command)) {
-                    client.sendCommandToServer(QString::fromStdString(command));
+                handler(qCommand);
+            }
+        }
+
+
+        updateState();
+
+    });
+
+    // REDO
+    QObject::connect(&mainWind, &MainWindow::REDO, [this]() {
+        try {
+            screen.redo();
+            ModeManager::setSave(true);
+
+            std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
+            for (auto element: elements) {
+                if (element.second.et == ET_POINT) {
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
+                    leftMenu->addElemLeftMenu("Point", element.first.id, {x, y});
+                } else if (element.second.et == ET_CIRCLE) {
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
+                    double r = element.second.params[2];
+                    leftMenu->addElemLeftMenu("Circle", element.first.id, {x, y, r});
+                } else if (element.second.et == ET_SECTION) {
+                    double x1 = element.second.params[0];
+                    double y1 = element.second.params[1];
+                    double x2 = element.second.params[2];
+                    double y2 = element.second.params[3];
+                    leftMenu->addElemLeftMenu("Section", element.first.id, {x1, y1, x2, y2});
                 }
             }
-        } else {
-            while (std::getline(scriptFile, command)) {
-                handler(QString::fromStdString(command));
+        } catch (std::exception &e) {
+            mainWind.showWarning(e.what());
+        }
+
+    });
+
+    //UNDO
+    QObject::connect(&mainWind, &MainWindow::UNDO, [this]() {
+        try {
+            screen.undo();
+            ModeManager::setSave(true);
+
+            std::vector<std::pair<ID, ElementData>> elements = screen.getAllElementsInfo();
+            for (auto element: elements) {
+                QString name;
+                if (element.second.et == ET_POINT) {
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
+                    leftMenu->addElemLeftMenu("Point", element.first.id, {x, y});
+                } else if (element.second.et == ET_CIRCLE) {
+                    double x = element.second.params[0];
+                    double y = element.second.params[1];
+                    double r = element.second.params[2];
+                    leftMenu->addElemLeftMenu("Circle", element.first.id, {x, y, r});
+                } else if (element.second.et == ET_SECTION) {
+                    double x1 = element.second.params[0];
+                    double y1 = element.second.params[1];
+                    double x2 = element.second.params[2];
+                    double y2 = element.second.params[3];
+                    leftMenu->addElemLeftMenu("Section", element.first.id, {x1, y1, x2, y2});
+                }
             }
-            updateState();
+        } catch (std::exception &e) {
         }
     });
+
 }
 
 void Application::updateState() {
-    painter->getUsers(false);
-    scene.paint();
+    screen.paint();
     painter->draw();
-    /*
-    auto [figures, requirements, settings, name] = w.saveSettings();
-    w.Print_LeftMenu(0, "Clear", {});
-    std::vector<std::pair<ID, ObjectData>> elements = scene.getAllElementsInfo();
 
-    for (const auto& element: elements) {
-        std::string name;
+    QFuture<void> future = QtConcurrent::run([this]() {
+        for (const auto& call : this->vecCalls) {
+            call();
+        }
+    });
 
-        for (int i = 0; i < figures.size(); ++i) {
-            if (element.first.id == figures[i][1].toLongLong()) {
-                name = figures[i][0].toStdString();
-                break;
-            }
-        }
 
-        if (element.second.et == ET_POINT) {
-            double x = element.second.params[1];
-            double y = element.second.params[1];
-            if (!name.empty()) {
-                w.Print_LeftMenu(element.first.id, name, {x, y});
-            } else {
-                w.Print_LeftMenu(element.first.id, "Point", {x, y});
-            }
-        } else if (element.second.et == ET_SECTION) {
-            double x1 = element.second.params[0];
-            double y1 = element.second.params[1];
-            double x2 = element.second.params[2];
-            double y2 = element.second.params[3];
-            if (!name.empty()) {
-                w.Print_LeftMenu(element.first.id, name, {x1, y1, x2, y2});
-            } else {
-                w.Print_LeftMenu(element.first.id, "Section", {x1, y1, x2, y2});
-            }
-        } else if (element.second.et == ET_CIRCLE) {
-            double x = element.second.params[0];
-            double y = element.second.params[1];
-            double r = element.second.params[2];
-            if (!name.empty()) {
-                w.Print_LeftMenu(element.first.id, name, {x, y, r});
-            } else {
-                w.Print_LeftMenu(element.first.id, "Circle", {x, y, r});
-            }
-        }
-    }
-    std::vector<std::pair<ID, RequirementData>> req = scene.getAllRequirementsInfo();
-
-    w.Requar_LeftMenu(0, "Clear", 0, 0, 0);
-    for (const auto &element: req) {
-        QString text;
-        double param = 0;
-        if (element.second.params.size() == 1) {
-            param = element.second.params[0];
-        }
-        switch (element.second.req) {
-            case ET_POINTSECTIONDIST:
-                text = QString("PointSectionDist");
-                break;
-            case ET_POINTONSECTION:
-                text = QString("PointOnSection");
-                break;
-            case ET_POINTPOINTDIST:
-                text = QString("PointPointDist");
-                break;
-            case ET_POINTONPOINT:
-                text = QString("PointOnPoint");
-                break;
-            case ET_SECTIONCIRCLEDIST:
-                text = QString("SectionCircleDist");
-                break;
-            case ET_SECTIONONCIRCLE:
-                text = QString("SectionOnCircle");
-                break;
-            case ET_SECTIONINCIRCLE:
-                text = QString("SectionInCircle");
-                break;
-            case ET_SECTIONSECTIONPARALLEL:
-                text = QString("ParallelSections");
-                break;
-            case ET_SECTIONSECTIONPERPENDICULAR:
-                text = QString("PerpendicularSections");
-                break;
-            case ET_SECTIONSECTIONANGEL:
-                text = QString("AngleBetweenSections");
-                break;
-            case ET_POINTONCIRCLE:
-                text = QString("PointOnCircle");
-                break;
-        }
-        w.Requar_LeftMenu(element.first.id, text.toStdString(), element.second.objects[0].id,
-                          element.second.objects[1].id, param);
-    }
-     */
 }
 
 void Application::handler(const QString &command) {
+
     QStringList commandParts = command.split(' ');
-    bool commandRight = false;
 
     if (commandParts[0] == "point" && commandParts.size() >= 3) {
         bool xOk, yOk;
@@ -810,13 +603,15 @@ void Application::handler(const QString &command) {
         double y = commandParts[2].toDouble(&yOk);
 
         if (xOk && yOk) {
-            ObjectData point;
+            ElementData point;
             point.et = ET_POINT;
             point.params.push_back(x);
             point.params.push_back(y);
-            ID id = scene.addObject(point);
-            w.setSave(false);
-            commandRight = true;
+            ID id = screen.addElement(point);
+            ModeManager::setSave(false);
+            vecCalls.push_back([=, this]() {
+                leftMenu->addElemLeftMenu("Point", id.id, {x, y});
+            });
         }
 
     } else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
@@ -827,14 +622,17 @@ void Application::handler(const QString &command) {
 
         if (xOk && yOk && rOk) {
 
-            ObjectData circle;
+            ElementData circle;
             circle.et = ET_CIRCLE;
             circle.params.push_back(x);
             circle.params.push_back(y);
             circle.params.push_back(r);
-            ID id = scene.addObject(circle);
-            w.setSave(false);
-            commandRight = true;
+            ID id = screen.addElement(circle);
+            ModeManager::setSave(false);
+           vecCalls.push_back([=, this]() {
+                leftMenu->addElemLeftMenu("Circle", id.id, {x, y, r});
+                leftMenu->addElemLeftMenu("Point", id.id - 1, {x, y});
+            });
         }
 
     } else if (commandParts[0] == "section" && commandParts.size() >= 5) {
@@ -844,31 +642,33 @@ void Application::handler(const QString &command) {
         double z = commandParts[3].toDouble(&zOk);
         double r = commandParts[4].toDouble(&rOk);
         if (xOk && yOk && zOk && rOk) {
-            ObjectData section;
+            ElementData section;
             section.et = ET_SECTION;
             section.params.push_back(x);
             section.params.push_back(y);
             section.params.push_back(z);
             section.params.push_back(r);
-            ID id = scene.addObject(section);
-            w.setSave(false);
-            commandRight = true;
+            ID id = screen.addElement(section);
+            ModeManager::setSave(false);
+           vecCalls.push_back([=, this]() {
+                leftMenu->addElemLeftMenu("Point", id.id - 1, {x, y});
+                leftMenu->addElemLeftMenu("Point", id.id - 2, {z, r});
+                leftMenu->addElemLeftMenu("Section", id.id, {x, y, z, r});
+            });
         }
 
     } else if (commandParts[0] == "exit") {
-        commandRight = true;
-        w.close();
+        mainWind.close();
     } else if (commandParts[0] == "clear") {
-        commandRight = true;
-        w.setSave(true);
+        ModeManager::setSave(true);
         painter->clear();
-        w.Print_LeftMenu(0, "Clear", {});
-        scene.clear();
+        leftMenu->clearAllFigures();
+        leftMenu->clearAllRequirements();
+        screen.clear();
     } else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
-        commandRight = true;
         int req = commandParts[1].toInt();
-        ID obj1(commandParts[2].toInt());
-        ID obj2(commandParts[3].toInt());
+        ID obj1 = commandParts[2].toInt();
+        ID obj2 = commandParts[3].toInt();
         RequirementData reqData;
         Requirement type;
         double parameters = 0;
@@ -881,95 +681,134 @@ void Application::handler(const QString &command) {
                 case 1:
                     type = ET_POINTSECTIONDIST;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
                     reqData.params.push_back(parameters);
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id, parameters);
+                    });
                     break;
                 case 2:
                     type = ET_POINTONSECTION;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id);
+                    });
                     break;
                 case 3:
                     type = ET_POINTPOINTDIST;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
                     reqData.params.push_back(parameters);
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id, parameters);
+                    });
                     break;
                 case 4:
                     type = ET_POINTONPOINT;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id);
+                    });
                     break;
                 case 5:
                     type = ET_SECTIONCIRCLEDIST;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
                     reqData.params.push_back(parameters);
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id, parameters);
+                    });
                     break;
                 case 6:
                     type = ET_SECTIONONCIRCLE;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id);
+                    });
                     break;
                 case 7:
                     type = ET_SECTIONINCIRCLE;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id);
+                    });
                     break;
                 case 8:
                     type = ET_SECTIONSECTIONPARALLEL;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id);
+                    });
                     break;
                 case 9:
                     type = ET_SECTIONSECTIONPERPENDICULAR;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id);
+                    });
                     break;
                 case 10:
-                    type = ET_SECTIONSECTIONANGLE;
+                    type = ET_SECTIONSECTIONANGEL;
                     reqData.req = type;
-                    reqData.objects.push_back(obj1.get());
-                    reqData.objects.push_back(obj2.get());
+                    reqData.objects.push_back(obj1);
+                    reqData.objects.push_back(obj2);
                     reqData.params.push_back(parameters);
-                    scene.addRequirement(reqData);
-                    w.setSave(false);
+                    screen.addRequirement(reqData);
+                    ModeManager::setSave(false);
+                   vecCalls.push_back([=, this]() {
+                        leftMenu->addRequirementElem("PointSectionDist", req, obj1.id,
+                                                     obj2.id, parameters);
+                    });
                     break;
                 default:
-                    commandRight = false;
-                    w.showError("Not right number of req");
+                    mainWind.showError("Not right number of req");
                     break;
             }
         } catch (std::exception &e) {
-            commandRight = false;
-            w.showError(e.what());
+            mainWind.showError(e.what());
         }
     }
+
 }

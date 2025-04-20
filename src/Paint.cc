@@ -1,5 +1,5 @@
 #include "Paint.h"
-/*
+
 ID Paint::addRequirement(const RequirementData &rd) {
     ActionsInfo info;
     m_reqStorage.push_back(rd);
@@ -299,13 +299,13 @@ void Paint::updateRequirement(ID id) {
     solver.optimize();
     // -----------------------------------------------------------------------------------------------
 
-    std::cout << "Requirement in component: " << countOfReq << std::endl;
+   // std::cout << "Requirement in component: " << countOfReq << std::endl;
 
     // Check converging
     if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
-        for (const auto &req: allRequirements) {
+        /*for (const auto &req: allRequirements) {
             s_allFigures = s_allFigures || req->getRectangle();
-        }
+        }*/
         // Clear
         for (auto requirement: allRequirements) {
             delete requirement;
@@ -316,9 +316,10 @@ void Paint::updateRequirement(ID id) {
     }
 
     // Rectangle
+    /*
     for (const auto &req: allRequirements) {
         s_allFigures = s_allFigures || req->getRectangle();
-    }
+    }*/
 
     // Clear
     for (auto requirement: allRequirements) {
@@ -328,216 +329,7 @@ void Paint::updateRequirement(ID id) {
     VarsStorage::clearVars();
 }
 
-RequirementData Paint::getRequirementInfo(ID id) {
-    if (m_reqIDs.find(id) == m_reqIDs.end()) {
-        throw std::invalid_argument("No such requirement!");
-    }
-    return *m_reqIDs[id];
-}
-
-ID Paint::findElement(const ObjectData &ed) {
-    if (ed.et == ET_POINT) {
-        for (auto &pointID: m_pointIDs) {
-            if ((*pointID.second).x == ed.params[0] and (*pointID.second).y == ed.params[1]) {
-                return pointID.first;
-            }
-        }
-    }
-    if (ed.et == ET_SECTION) {
-        for (auto &sectionID: m_sectionIDs) {
-            if ((*sectionID.second).beg->x == ed.params[0] and (*sectionID.second).beg->y == ed.params[1] and (*sectionID.second).end->x == ed.params[2] and (*sectionID.second).end->y == ed.params[3]) {
-                return sectionID.first;
-            }
-        }
-    }
-    if (ed.et == ET_CIRCLE) {
-        for (auto &circleID: m_circleIDs) {
-            if ((*circleID.second).center->x == ed.params[0] and (*circleID.second).center->y == ed.params[1] and (*circleID.second).R == ed.params[2]) {
-                return circleID.first;
-            }
-        }
-    }
-    return ID{-1};
-}
-
-void Paint::deleteRequirement(ID req) {
-    if (!m_reqIDs.contains(req)) {
-        throw std::invalid_argument("No such requirement!");
-    }
-    m_reqStorage.erase(m_reqIDs[req]);
-    m_reqIDs.erase(req);
-}
-
-void Paint::saveToFile(const char *filename) {
-    FileOurP saver;
-    for (auto i = m_pointIDs.begin(); i != m_pointIDs.end(); ++i) {
-        Point *p = &(*i->second);
-        std::pair<ID, IGeometricObject *> m{i->first, p};
-        saver.addObject(m);
-    }
-    for (auto i = m_sectionIDs.begin(); i != m_sectionIDs.end(); ++i) {
-        Section *s = &(*i->second);
-        std::pair<ID, IGeometricObject *> m{i->first, s};
-        saver.addObject(m);
-    }
-    for (auto i = m_circleIDs.begin(); i != m_circleIDs.end(); ++i) {
-        Circle *c = &(*i->second);
-        std::pair<ID, IGeometricObject *> m{i->first, c};
-        saver.addObject(m);
-    }
-    for (auto i = m_reqIDs.begin(); i != m_reqIDs.end(); ++i) {
-        std::pair<ID, RequirementData> m = {i->first, *i->second};
-        saver.addRequirement(m);
-    }
-    saver.saveToOurP(filename);
-}
-
-void Paint::loadFromFile(const char *file) {
-    FileOurP loader;
-    loader.loadFromOurP(file);
-    clear();
-    for (const auto &i: loader.getObjects()) {
-        if (i.to_pair().second->type() == ET_POINT) {
-            Point *p = dynamic_cast<Point *>(i.to_pair().second);
-            m_pointStorage.push_back(*p);
-            m_pointIDs[i.to_pair().first] = std::prev(m_pointStorage.end());
-            m_graph.addVertex(i.to_pair().first);
-            s_allFigures = s_allFigures || p->rect();
-            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
-        } else if (i.to_pair().second->type() == ET_CIRCLE) {
-            Circle *c = dynamic_cast<Circle *>(i.to_pair().second);
-            c->center = &(*m_pointIDs.at(i.to_pair().first.id - 1));
-            m_circleStorage.push_back(*c);
-            m_circleIDs[i.to_pair().first] = std::prev(m_circleStorage.end());
-            RequirementData rd;
-            rd.objects.push_back(i.to_pair().first.id - 1);
-            rd.objects.push_back(i.to_pair().first);
-            rd.req = ET_POINTINOBJECT;
-            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
-            s_allFigures = s_allFigures || c->rect();
-            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
-        } else if (i.to_pair().second->type() == ET_SECTION) {
-            Section *s = dynamic_cast<Section *>(i.to_pair().second);
-            s->beg = &(*m_pointIDs.at(i.to_pair().first.id - 2));
-            s->end = &(*m_pointIDs.at(i.to_pair().first.id - 1));
-            m_sectionStorage.push_back(*s);
-            m_sectionIDs[i.to_pair().first] = std::prev(m_sectionStorage.end());
-            m_graph.addVertex(i.to_pair().first);
-            RequirementData rd;
-            rd.objects.push_back(i.to_pair().first.id - 2);
-            rd.objects.push_back(i.to_pair().first.id - 1);
-            rd.objects.push_back(i.to_pair().first);
-            rd.req = ET_POINTINOBJECT;
-            m_graph.addEdge(i.to_pair().first.id - 2, i.to_pair().first, rd);
-            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
-            s_allFigures = s_allFigures || s->rect();
-            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
-        }
-    }
-    for (const auto &i: loader.getRequirements()) {
-        m_reqStorage.push_back(i.to_pair().second);
-        auto it = std::prev(m_reqStorage.end());
-        m_reqIDs[i.to_pair().first] = it;
-        m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
-        s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
-    }
-}
-
-void Paint::loadFromString(const std::string &str) {
-    FileOurP loader;
-    loader.loadString(str);
-    clear();
-    s_maxID = ID(0);
-    for (const auto &i: loader.getObjects()) {
-        if (i.to_pair().second->type() == ET_POINT) {
-            Point *p = dynamic_cast<Point *>(i.to_pair().second);
-            m_pointStorage.push_back(*p);
-            m_pointIDs[i.to_pair().first] = std::prev(m_pointStorage.end());
-            m_graph.addVertex(i.to_pair().first);
-            s_allFigures = s_allFigures || p->rect();
-            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
-        } else if (i.to_pair().second->type() == ET_CIRCLE) {
-            Circle *c = dynamic_cast<Circle *>(i.to_pair().second);
-            c->center = &(*m_pointIDs.at(i.to_pair().first.id - 1));
-            m_circleStorage.push_back(*c);
-            m_circleIDs[i.to_pair().first] = std::prev(m_circleStorage.end());
-            RequirementData rd;
-            rd.objects.push_back(i.to_pair().first.id - 1);
-            rd.objects.push_back(i.to_pair().first);
-            rd.req = ET_POINTINOBJECT;
-            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
-            s_allFigures = s_allFigures || c->rect();
-            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
-        } else if (i.to_pair().second->type() == ET_SECTION) {
-            Section *s = dynamic_cast<Section *>(i.to_pair().second);
-            s->beg = &(*m_pointIDs.at(i.to_pair().first.id - 2));
-            s->end = &(*m_pointIDs.at(i.to_pair().first.id - 1));
-            m_sectionStorage.push_back(*s);
-            m_sectionIDs[i.to_pair().first] = std::prev(m_sectionStorage.end());
-            m_graph.addVertex(i.to_pair().first);
-            RequirementData rd;
-            rd.objects.push_back(i.to_pair().first.id - 2);
-            rd.objects.push_back(i.to_pair().first.id - 1);
-            rd.objects.push_back(i.to_pair().first);
-            rd.req = ET_POINTINOBJECT;
-            m_graph.addEdge(i.to_pair().first.id - 2, i.to_pair().first, rd);
-            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
-            s_allFigures = s_allFigures || s->rect();
-            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
-        }
-    }
-    for (const auto &i: loader.getRequirements()) {
-        m_reqStorage.push_back(i.to_pair().second);
-        auto it = std::prev(m_reqStorage.end());
-        m_reqIDs[i.to_pair().first] = it;
-        m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
-        s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
-    }
-}
-
-void Paint::parallelMove(ID id, double dx, double dy) {
-    if (dx == 0 && dy == 0) {
-        return;
-    }
-    if (m_pointIDs.contains(id)) {
-        Point *p = &(*m_pointIDs.at(id));
-        p->x += dx;
-        p->y += dy;
-        updateRequirement(id);
-
-    } else if (m_sectionIDs.contains(id)) {
-        Section *s = &(*m_sectionIDs.at(id));
-        s->beg->x += dx;
-        s->beg->y += dy;
-        s->end->x += dx;
-        s->end->y += dy;
-        updateRequirement(id);
-
-    } else if (m_circleIDs.contains(id)) {
-        Circle *c = &(*m_circleIDs.at(id));
-        c->center->x += dx;
-        c->center->y += dy;
-        updateRequirement(id);
-    }else{
-        throw std::invalid_argument("No such element!");
-    }
-}
-
-std::vector<std::pair<ID, RequirementData>> Paint::getAllRequirementsInfo() {
-    std::vector<std::pair<ID, RequirementData>> data;
-    for (auto req: m_reqIDs) {
-        data.emplace_back(req.first, *req.second);
-    }
-    return data;
-}
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-ID Paint::addElement(const ObjectData &ed) {
+ID Paint::addElement(const ElementData &ed) {
     ActionsInfo info;
     if (ed.et == ET_POINT) {
         Point tmp;
@@ -638,87 +430,158 @@ ID Paint::addElement(const ObjectData &ed) {
     return ID{-1};
 }
 
-void Paint::moveElement(const ObjectData &currentPos, const ObjectData &newPos) {
-    ID find = findElement(currentPos);
-    if (currentPos.et == ET_POINT) {
-        Point *p = &(*m_pointIDs.at(find));
-        p->x = newPos.params[0];
-        p->y = newPos.params[1];
-        updateRequirement(find);
-    } else if (currentPos.et == ET_SECTION) {
-        Section *s = &(*m_sectionIDs.at(find));
-        s->beg->x = newPos.params[0];
-        s->beg->y = newPos.params[1];
-        s->end->x = newPos.params[2];
-        s->end->y = newPos.params[3];
-        updateRequirement(find);
-    } else if (currentPos.et == ET_CIRCLE) {
-        Circle *c = &(*m_circleIDs.at(find));
-        c->center->x = newPos.params[0];
-        c->center->y = newPos.params[1];
-        c->R = newPos.params[2];
-        updateRequirement(find);
+ElementData Paint::getElementInfo(ID id) {
+    ElementData result;
+
+    try {
+        auto p = m_pointIDs.at(id);
+        result.et = ET_POINT;
+        result.params.push_back((*p).x);
+        result.params.push_back((*p).y);
+    }
+    catch (...) {
+        try {
+            auto sec = m_sectionIDs.at(id);
+            result.et = ET_SECTION;
+            result.params.push_back((*sec).beg->x);
+            result.params.push_back((*sec).beg->y);
+            result.params.push_back((*sec).end->x);
+            result.params.push_back((*sec).end->y);
+        }
+        catch (...) {
+            auto circ = m_circleIDs.at(id);
+            result.et = ET_CIRCLE;
+            result.params.push_back((*circ).center->x);
+            result.params.push_back((*circ).center->y);
+            result.params.push_back((*circ).R);
+        }
     }
 
+    return result;
 }
 
-void Paint::setPainter(Painter *p) {
-    c_bmpPainter = p;
+RequirementData Paint::getRequirementInfo(ID id) {
+    if (m_reqIDs.find(id) == m_reqIDs.end()) {
+        throw std::invalid_argument("No such requirement!");
+    }
+    return *m_reqIDs[id];
 }
 
-void Paint::clear() {
-    m_pointIDs.clear();
-    m_sectionIDs.clear();
-    m_circleIDs.clear();
-    m_reqIDs.clear();
-    for (auto i = m_reqStorage.begin(); i != m_reqStorage.end(); ++i) {
-        m_reqStorage.erase(i);
+void Paint::paint() {
+    c_bmpPainter->drawPointt(m_pointStorage);
+    c_bmpPainter->drawCirclee(m_circleStorage);
+    c_bmpPainter->drawSectionn(m_sectionStorage);
+    c_bmpPainter->changeSize(s_allFigures);
+   /* for (auto &Point: m_pointStorage) {
+        c_bmpPainter->drawPoint(Point, false);
     }
-    for (auto i = m_pointStorage.begin(); i != m_pointStorage.end(); ++i) {
-        m_pointStorage.erase(i);
+    for (auto &Circle: m_circleStorage) {
+        c_bmpPainter->drawCircle(Circle, false);
     }
-    for (auto i = m_sectionStorage.begin(); i != m_sectionStorage.end(); ++i) {
-        m_sectionStorage.erase(i);
-    }
-    for (auto i = m_circleStorage.begin(); i != m_circleStorage.end(); ++i) {
-        m_circleStorage.erase(i);
-    }
-    s_allFigures = BoundingBox(10, 10, 10, 10);
-    s_maxID = ID(0);
-
+    for (auto &Section: m_sectionStorage) {
+        c_bmpPainter->drawSection(Section, false);
+    }*/
 }
 
-std::vector<std::pair<ID, ObjectData>> Paint::getAllElementsInfo() {
-    std::vector<std::pair<ID, ObjectData>> data;
-    for (auto &m_pointID: m_pointIDs) {
-        Point *p = &(*m_pointID.second);
-        ObjectData info;
-        info.et = ET_POINT;
-        info.params.push_back(p->x);
-        info.params.push_back(p->y);
-        data.emplace_back(m_pointID.first, info);
+ID Paint::findElement(const ElementData &ed) {
+    if (ed.et == ET_POINT) {
+        for (auto &pointID: m_pointIDs) {
+            if ((*pointID.second).x == ed.params[0] and (*pointID.second).y == ed.params[1]) {
+                return pointID.first;
+            }
+        }
     }
-    for (auto &m_sectionID: m_sectionIDs) {
-        Section *s = &(*m_sectionID.second);
-        ObjectData info;
-        info.et = ET_SECTION;
-        info.params.push_back(s->beg->x);
-        info.params.push_back(s->beg->y);
-        info.params.push_back(s->end->x);
-        info.params.push_back(s->end->y);
-        data.emplace_back(m_sectionID.first, info);
+    if (ed.et == ET_SECTION) {
+        for (auto &sectionID: m_sectionIDs) {
+            if ((*sectionID.second).beg->x == ed.params[0] and (*sectionID.second).beg->y == ed.params[1] and (*sectionID.second).end->x == ed.params[2] and (*sectionID.second).end->y == ed.params[3]) {
+                return sectionID.first;
+            }
+        }
     }
-    for (auto &m_circleID: m_circleIDs) {
-        Circle *c = &(*m_circleID.second);
-        ObjectData info;
-        info.et = ET_CIRCLE;
-        info.params.push_back(c->center->x);
-        info.params.push_back(c->center->y);
-        info.params.push_back(c->R);
-        data.emplace_back(m_circleID.first, info);
+    if (ed.et == ET_CIRCLE) {
+        for (auto &circleID: m_circleIDs) {
+            if ((*circleID.second).center->x == ed.params[0] and (*circleID.second).center->y == ed.params[1] and (*circleID.second).R == ed.params[2]) {
+                return circleID.first;
+            }
+        }
     }
-    return data;
+    return ID{-1};
 }
+
+void Paint::exportToBMP(const char *file) {
+    paint();
+    try {
+        BMPpainter b;
+        b.changeSize(s_allFigures);
+        for (auto &Point: m_pointStorage) {
+            b.drawPoint(Point, false);
+        }
+        for (auto &Circle: m_circleStorage) {
+            b.drawCircle(Circle, false);
+        }
+        for (auto &Section: m_sectionStorage) {
+            b.drawSection(Section, false);
+        }
+        b.saveBMP(file);
+    }
+    catch (...) {
+        throw std::invalid_argument("Can not opened file!");
+    }
+}
+
+/*
+void Paint::makeMySectionOrt(const ElementData& ed, ElementData& changing){
+    if (ed.et != ET_SECTION or changing.et != ET_SECTION) {
+        throw "Some of the elements is not Section!";
+    }
+    //изменяем changing так, чтобы он был ортогонален с ed(cкорее всего, поворотом одной из точек)
+}
+void Paint::makeMySectionEqual(const ElementData& ed, ElementData& changing) {
+    if (ed.et != ET_SECTION or changing.et != ET_SECTION) {
+        throw "Some of the elements is not Section!";
+    }
+    //изменяем changing так, чтобы его длина была равна длине ed (cкорее всего, поворотом одной из точек)
+    //например поменяем Y второй точки
+    double len2 = pow(ed.point1.x - ed.point2.x, 2) + pow(ed.point1.x - ed.point2.x, 2)
+    changing.point1.y = sqrt(len2-pow(changing.point1.x -changing.point2.x, 2))+ changing.point1.y
+}
+void Paint::makeMySectionParallel(const ElementData& ed, ElementData& changing) {
+    if (ed.et != ET_SECTION or changing.et != ET_SECTION) {
+        throw "Some of the elements is not Section!";
+    }
+    //изменяем changing так, чтобы он стал параллелен ed
+}
+void Paint::makeMySectionVertical(ElementData& changing) {
+    if (changing.et != ET_SECTION) {
+        throw "The element is not Section!";
+    }
+    //отрезок становится строго вертикальным
+    changing.point2.x=changing.point1.x; - чтобы были равны X координаты точек
+}
+void Paint::makeMySectionHorizontal(ElementData& changing) {
+    if (changing.et != ET_SECTION) {
+        throw "The element is not Section!";
+    }
+    //отрезок становится строго горизонтальным2
+    changing.point2.y=changing.point1.y; - чтобы были равны Y координаты точек
+}
+void Paint::makeMyCircleEqual(const ElementData& ed, ElementData& changing) {
+    if (ed.et != ET_CIRCLE or changing.et != ET_CIRCLE) {
+        throw "Some of the elements is not Circle!";
+    }
+    //окружности становятся одинакового размера
+    changing.radius = ed.radius;
+}
+*/
+
+void Paint::deleteRequirement(ID req) {
+    if (!m_reqIDs.contains(req)) {
+        throw std::invalid_argument("No such requirement!");
+    }
+    m_reqStorage.erase(m_reqIDs[req]);
+    m_reqIDs.erase(req);
+}
+
 
 void Paint::undo() {
     ActionsInfo info = c_undoRedo.undo();
@@ -850,67 +713,326 @@ void Paint::redo() {
     }
 }
 
-void Paint::exportToBMP(const char *file) {
-    paint();
-    try {
-        BMPpainter b;
-        b.changeSize(s_allFigures);
-        for (auto &Point: m_pointStorage) {
-            b.drawPoint(Point, false);
-        }
-        for (auto &Circle: m_circleStorage) {
-            b.drawCircle(Circle, false);
-        }
-        for (auto &Section: m_sectionStorage) {
-            b.drawSection(Section, false);
-        }
-        b.saveBMP(file);
+void Paint::saveToFile(const char *filename) {
+    FileOurP saver;
+    for (auto i = m_pointIDs.begin(); i != m_pointIDs.end(); ++i) {
+        Point *p = &(*i->second);
+        std::pair<ID, IGeometricObject *> m{i->first, p};
+        saver.addObject(m);
     }
-    catch (...) {
-        throw std::invalid_argument("Can not opened file!");
+    for (auto i = m_sectionIDs.begin(); i != m_sectionIDs.end(); ++i) {
+        Section *s = &(*i->second);
+        std::pair<ID, IGeometricObject *> m{i->first, s};
+        saver.addObject(m);
+    }
+    for (auto i = m_circleIDs.begin(); i != m_circleIDs.end(); ++i) {
+        Circle *c = &(*i->second);
+        std::pair<ID, IGeometricObject *> m{i->first, c};
+        saver.addObject(m);
+    }
+    for (auto i = m_reqIDs.begin(); i != m_reqIDs.end(); ++i) {
+        std::pair<ID, RequirementData> m = {i->first, *i->second};
+        saver.addRequirement(m);
+    }
+    saver.saveToOurP(filename);
+}
+
+void Paint::loadFromFile(const char *file) {
+    FileOurP loader;
+    loader.loadFromOurP(file);
+    clear();
+    for (const auto &i: loader.getObjects()) {
+        if (i.to_pair().second->type() == ET_POINT) {
+            Point *p = dynamic_cast<Point *>(i.to_pair().second);
+            m_pointStorage.push_back(*p);
+            m_pointIDs[i.to_pair().first] = std::prev(m_pointStorage.end());
+            m_graph.addVertex(i.to_pair().first);
+            s_allFigures = s_allFigures || p->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
+        } else if (i.to_pair().second->type() == ET_CIRCLE) {
+            Circle *c = dynamic_cast<Circle *>(i.to_pair().second);
+            c->center = &(*m_pointIDs.at(i.to_pair().first.id - 1));
+            m_circleStorage.push_back(*c);
+            m_circleIDs[i.to_pair().first] = std::prev(m_circleStorage.end());
+            RequirementData rd;
+            rd.objects.push_back(i.to_pair().first.id - 1);
+            rd.objects.push_back(i.to_pair().first);
+            rd.req = ET_POINTINOBJECT;
+            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
+            s_allFigures = s_allFigures || c->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
+        } else if (i.to_pair().second->type() == ET_SECTION) {
+            Section *s = dynamic_cast<Section *>(i.to_pair().second);
+            s->beg = &(*m_pointIDs.at(i.to_pair().first.id - 2));
+            s->end = &(*m_pointIDs.at(i.to_pair().first.id - 1));
+            m_sectionStorage.push_back(*s);
+            m_sectionIDs[i.to_pair().first] = std::prev(m_sectionStorage.end());
+            m_graph.addVertex(i.to_pair().first);
+            RequirementData rd;
+            rd.objects.push_back(i.to_pair().first.id - 2);
+            rd.objects.push_back(i.to_pair().first.id - 1);
+            rd.objects.push_back(i.to_pair().first);
+            rd.req = ET_POINTINOBJECT;
+            m_graph.addEdge(i.to_pair().first.id - 2, i.to_pair().first, rd);
+            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
+            s_allFigures = s_allFigures || s->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
+        }
+    }
+    for (const auto &i: loader.getRequirements()) {
+        m_reqStorage.push_back(i.to_pair().second);
+        auto it = std::prev(m_reqStorage.end());
+        m_reqIDs[i.to_pair().first] = it;
+        m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
+        s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
     }
 }
 
-ObjectData Paint::getElementInfo(ID id) {
-    ObjectData result;
-
-    try {
-        auto p = m_pointIDs.at(id);
-        result.et = ET_POINT;
-        result.params.push_back((*p).x);
-        result.params.push_back((*p).y);
-    }
-    catch (...) {
-        try {
-            auto sec = m_sectionIDs.at(id);
-            result.et = ET_SECTION;
-            result.params.push_back((*sec).beg->x);
-            result.params.push_back((*sec).beg->y);
-            result.params.push_back((*sec).end->x);
-            result.params.push_back((*sec).end->y);
-        }
-        catch (...) {
-            auto circ = m_circleIDs.at(id);
-            result.et = ET_CIRCLE;
-            result.params.push_back((*circ).center->x);
-            result.params.push_back((*circ).center->y);
-            result.params.push_back((*circ).R);
-        }
-    }
-
-    return result;
-}
-
-void Paint::paint() {
-    c_bmpPainter->changeSize(s_allFigures);
-    for (auto &Point: m_pointStorage) {
-        c_bmpPainter->drawPoint(Point, false);
-    }
-    for (auto &Circle: m_circleStorage) {
-        c_bmpPainter->drawCircle(Circle, false);
-    }
-    for (auto &Section: m_sectionStorage) {
-        c_bmpPainter->drawSection(Section, false);
+void Paint::deleteElement(ID elem) {
+    if (m_pointIDs.contains(elem)) {
+        m_pointStorage.erase(m_pointIDs[elem]);
+        m_pointIDs.erase(elem);
+    } else if (m_sectionIDs.contains(elem)) {
+        m_pointStorage.erase(m_pointIDs[elem.id-1]);
+        m_pointIDs.erase(elem.id-1);
+        m_pointStorage.erase(m_pointIDs[elem.id-2]);
+        m_pointIDs.erase(elem.id-2);
+        m_sectionStorage.erase(m_sectionIDs[elem]);
+        m_sectionIDs.erase(elem);
+    } else if (m_circleIDs.contains(elem)) {
+        m_pointStorage.erase(m_pointIDs[elem.id-1]);
+        m_pointIDs.erase(elem.id-1);
+        m_circleStorage.erase(m_circleIDs[elem]);
+        m_circleIDs.erase(elem);
+    }else{
+        throw std::invalid_argument("No such element!");
     }
 }
-*/
+
+void Paint::clear() {
+    m_pointIDs.clear();
+    m_sectionIDs.clear();
+    m_circleIDs.clear();
+    m_reqIDs.clear();
+    for (auto i = m_reqStorage.begin(); i != m_reqStorage.end(); ++i) {
+        m_reqStorage.erase(i);
+    }
+    for (auto i = m_pointStorage.begin(); i != m_pointStorage.end(); ++i) {
+        m_pointStorage.erase(i);
+    }
+    for (auto i = m_sectionStorage.begin(); i != m_sectionStorage.end(); ++i) {
+        m_sectionStorage.erase(i);
+    }
+    for (auto i = m_circleStorage.begin(); i != m_circleStorage.end(); ++i) {
+        m_circleStorage.erase(i);
+    }
+    s_allFigures = rectangle(10, 10, 10, 10);
+    s_maxID = ID(0);
+
+}
+
+std::vector<std::pair<ID, ElementData>> Paint::getAllElementsInfo() {
+    std::vector<std::pair<ID, ElementData>> data;
+    for (auto &m_pointID: m_pointIDs) {
+        Point *p = &(*m_pointID.second);
+        ElementData info;
+        info.et = ET_POINT;
+        info.params.push_back(p->x);
+        info.params.push_back(p->y);
+        data.emplace_back(m_pointID.first, info);
+    }
+    for (auto &m_sectionID: m_sectionIDs) {
+        Section *s = &(*m_sectionID.second);
+        ElementData info;
+        info.et = ET_SECTION;
+        info.params.push_back(s->beg->x);
+        info.params.push_back(s->beg->y);
+        info.params.push_back(s->end->x);
+        info.params.push_back(s->end->y);
+        data.emplace_back(m_sectionID.first, info);
+    }
+    for (auto &m_circleID: m_circleIDs) {
+        Circle *c = &(*m_circleID.second);
+        ElementData info;
+        info.et = ET_CIRCLE;
+        info.params.push_back(c->center->x);
+        info.params.push_back(c->center->y);
+        info.params.push_back(c->R);
+        data.emplace_back(m_circleID.first, info);
+    }
+    return data;
+}
+
+void Paint::setPainter(Painter *p) {
+    c_bmpPainter = p;
+}
+
+void Paint::loadFromString(const std::string &str) {
+    FileOurP loader;
+    loader.loadString(str);
+    clear();
+    s_maxID = ID(0);
+    for (const auto &i: loader.getObjects()) {
+        if (i.to_pair().second->type() == ET_POINT) {
+            Point *p = dynamic_cast<Point *>(i.to_pair().second);
+            m_pointStorage.push_back(*p);
+            m_pointIDs[i.to_pair().first] = std::prev(m_pointStorage.end());
+            m_graph.addVertex(i.to_pair().first);
+            s_allFigures = s_allFigures || p->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
+        } else if (i.to_pair().second->type() == ET_CIRCLE) {
+            Circle *c = dynamic_cast<Circle *>(i.to_pair().second);
+            c->center = &(*m_pointIDs.at(i.to_pair().first.id - 1));
+            m_circleStorage.push_back(*c);
+            m_circleIDs[i.to_pair().first] = std::prev(m_circleStorage.end());
+            RequirementData rd;
+            rd.objects.push_back(i.to_pair().first.id - 1);
+            rd.objects.push_back(i.to_pair().first);
+            rd.req = ET_POINTINOBJECT;
+            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
+            s_allFigures = s_allFigures || c->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
+        } else if (i.to_pair().second->type() == ET_SECTION) {
+            Section *s = dynamic_cast<Section *>(i.to_pair().second);
+            s->beg = &(*m_pointIDs.at(i.to_pair().first.id - 2));
+            s->end = &(*m_pointIDs.at(i.to_pair().first.id - 1));
+            m_sectionStorage.push_back(*s);
+            m_sectionIDs[i.to_pair().first] = std::prev(m_sectionStorage.end());
+            m_graph.addVertex(i.to_pair().first);
+            RequirementData rd;
+            rd.objects.push_back(i.to_pair().first.id - 2);
+            rd.objects.push_back(i.to_pair().first.id - 1);
+            rd.objects.push_back(i.to_pair().first);
+            rd.req = ET_POINTINOBJECT;
+            m_graph.addEdge(i.to_pair().first.id - 2, i.to_pair().first, rd);
+            m_graph.addEdge(i.to_pair().first.id - 1, i.to_pair().first, rd);
+            s_allFigures = s_allFigures || s->rect();
+            s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
+        }
+    }
+    for (const auto &i: loader.getRequirements()) {
+        m_reqStorage.push_back(i.to_pair().second);
+        auto it = std::prev(m_reqStorage.end());
+        m_reqIDs[i.to_pair().first] = it;
+        m_graph.addEdge(i.to_pair().second.objects[0], i.to_pair().second.objects[1], i.to_pair().second);
+        s_maxID = std::max(s_maxID.id, i.to_pair().first.id);
+    }
+}
+
+std::string Paint::to_string() const {
+    FileOurP saver;
+    for (const auto &m_pointID: m_pointIDs) {
+        Point *p = &(*m_pointID.second);
+        std::pair<ID, IGeometricObject *> m{m_pointID.first, p};
+        saver.addObject(m);
+    }
+    for (const auto &m_sectionID: m_sectionIDs) {
+        Section *s = &(*m_sectionID.second);
+        std::pair<ID, IGeometricObject *> m{m_sectionID.first, s};
+        saver.addObject(m);
+    }
+    for (const auto &m_circleID: m_circleIDs) {
+        Circle *c = &(*m_circleID.second);
+        std::pair<ID, IGeometricObject *> m{m_circleID.first, c};
+        saver.addObject(m);
+    }
+    for (auto &m_reqID: m_reqIDs) {
+        std::pair<ID, RequirementData> m{m_reqID.first, *m_reqID.second};
+        saver.addRequirement(m);
+    }
+    return saver.to_string();
+}
+
+void Paint::moveElement(const ElementData &currentPos, const ElementData &newPos) {
+    ID find = findElement(currentPos);
+    if (currentPos.et == ET_POINT) {
+        Point *p = &(*m_pointIDs.at(find));
+        p->x = newPos.params[0];
+        p->y = newPos.params[1];
+        updateRequirement(find);
+    } else if (currentPos.et == ET_SECTION) {
+        Section *s = &(*m_sectionIDs.at(find));
+        s->beg->x = newPos.params[0];
+        s->beg->y = newPos.params[1];
+        s->end->x = newPos.params[2];
+        s->end->y = newPos.params[3];
+        updateRequirement(find);
+    } else if (currentPos.et == ET_CIRCLE) {
+        Circle *c = &(*m_circleIDs.at(find));
+        c->center->x = newPos.params[0];
+        c->center->y = newPos.params[1];
+        c->R = newPos.params[2];
+        updateRequirement(find);
+    }
+
+}
+
+void Paint::parallelMove(ID id, double Cx, double Cy, double dx, double dy) {
+    if (dx == 0 && dy == 0) {
+        return;
+    }
+    if (m_pointIDs.contains(id)) {
+        Point *p = &(*m_pointIDs.at(id));
+        p->x = Cx;
+        p->y = Cy;
+        updateRequirement(id);
+
+    } else if (m_sectionIDs.contains(id)) {
+        Section *s = &(*m_sectionIDs.at(id));
+        s->beg->x += dx;
+        s->beg->y += dy;
+        s->end->x += dx;
+        s->end->y += dy;
+        updateRequirement(id);
+
+    } else if (m_circleIDs.contains(id)) {
+        Circle *c = &(*m_circleIDs.at(id));
+        c->center->x += dx;
+        c->center->y += dy;
+        updateRequirement(id);
+    }else{
+        throw std::invalid_argument("No such element!");
+    }
+}
+
+std::vector<std::pair<ID, RequirementData>> Paint::getAllRequirementsInfo() {
+    std::vector<std::pair<ID, RequirementData>> data;
+    for (auto req: m_reqIDs) {
+        data.emplace_back(req.first, *req.second);
+    }
+    return data;
+}
+
+void Paint::LeftMenuMove(ID id,const std::vector<double> &parametrs) {
+    if (parametrs.empty()) {
+        return;
+    }
+    if (m_pointIDs.contains(id)) {
+        Point *p = &(*m_pointIDs.at(id));
+        if(parametrs.size()==2) {
+            p->x = parametrs[0];
+            p->y = parametrs[1];
+        }
+        updateRequirement(id);
+    } else if (m_sectionIDs.contains(id)) {
+        Section *s = &(*m_sectionIDs.at(id));
+        if(parametrs.size()==4) {
+            s->beg->x = parametrs[0];
+            s->beg->y = parametrs[1];
+            s->end->x = parametrs[2];
+            s->end->y = parametrs[3];
+        }
+        updateRequirement(id);
+
+    } else if (m_circleIDs.contains(id)) {
+        Circle *c = &(*m_circleIDs.at(id));
+        if(parametrs.size()==3) {
+            c->center->x =parametrs[0];
+            c->center->y =parametrs[1];
+            c->R=parametrs[2];
+        }
+        updateRequirement(id);
+    }else{
+        throw std::invalid_argument("No such element!");
+    }
+}

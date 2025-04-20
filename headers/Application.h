@@ -1,46 +1,44 @@
-#ifndef OURPAINT_HEADERS_APPLICATION_H_
-#define OURPAINT_HEADERS_APPLICATION_H_
+#ifndef APPLICATION_H
+#define APPLICATION_H
 
 #include <QTranslator>
 #include <QPixmap>
 #include <memory>
 #include <QApplication>
-#include "mainwindow.h"
+#include <QtConcurrent/QtConcurrent>
+
+#include "Mainwindow.h"
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
-#include "DrawMode.h"
-#include "Scene.h"
-
-#include "UndoRedo.h"
-#include "Transactions.h"
-#include "Command.h"
+#include "TreeModelLazy.h"
 
 class Application {
+private:
+    QApplication app;
+    MainWindow mainWind;
+    Paint screen;
+    std::unique_ptr<QTPainter> painter;
+    std::unique_ptr<LeftMenuBar> leftMenu;
+
+    std::vector<std::function<void()>> vecCalls;
+
+    QString username;
+    Server server;
+    Client client;
+
+    void initialize();
+    void setupQTPainterConnections();
+    void setupServerConnections();
+    void setupRequirementsConnections();
+    void setupLeftMenuConnections();
+    void setupAddingCommandsConnections();
+    void updateState();
+    void handler(const QString &command);
+
 public:
     Application(int &argc, char **argv);
     int exec();
-
-private:
-    QApplication app;
-    MainWindow w;
-    std::unique_ptr<QTPainter> painter;
-    Scene scene;
-
-    UndoRedo managerUR;
-
-    QString username;
-
-    Server server;
-    Client client;
-    bool isConnected;
-    bool isServer;
-
-    void init();
-    void setupConnections();
-
-    void updateState();
-    void handler(const QString &command);
 };
 
-#endif // ! OURPAINT_HEADERS_APPLICATION_H_
+#endif // APPLICATION_H
