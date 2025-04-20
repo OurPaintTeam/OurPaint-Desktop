@@ -85,6 +85,8 @@ public:
     QHBoxLayout *topBarLayout;
     QPushButton *enterConsole;
     QHBoxLayout *layoutConsole;
+    QTreeView* leftMenuView;
+
 
     // Menu
     QMenu *menuProject;

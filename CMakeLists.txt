@@ -93,6 +93,8 @@ add_executable(ourpaint
         GUI/GUI_cc/Widgets/LeftMenuBar.cc
         GUI/GUI_cc/Widgets/CastomeConsole.cc
         GUI/GUI_cc/Widgets/EmojiWidget.cc
+        GUI/GUI_cc/Widgets/TreeNode.cc
+        GUI/GUI_cc/Widgets/TreeModelLazy.cc
 
         GUI/GUI_cc/client_server/Server.cc
         GUI/GUI_cc/client_server/Client.cc
@@ -130,11 +132,15 @@ add_executable(ourpaint
         GUI/GUI_h/Widgets/LeftMenuBar.h
         GUI/GUI_h/Widgets/CastomeConsole.h
         GUI/GUI_h/Widgets/EmojiWidget.h
+        GUI/GUI_h/Widgets/TreeNode.h
+        GUI/GUI_h/Widgets/TreeModelLazy.h
 
         GUI/GUI_h/Drawing/Scaling.h
         GUI/GUI_h/Drawing/QTPainter.h
         GUI/GUI_h/Drawing/DrawMouse.h
         GUI/GUI_h/Drawing/DrawMode.h
+        GUI/GUI_h/Drawing/SelectedRectangle.h
+
 
         GUI/GUI_h/MainFile/Mainwindow.h
         GUI/GUI_h/MainFile/ui_mainwindow.h
@@ -142,7 +148,8 @@ add_executable(ourpaint
         GUI/GUI_h/Unnecessary/FrameOverlay.h
 
         GUI/GUI_h/Logger/GUI_Logger.h
-        GUI/GUI_h/Drawing/SelectedRectangle.h
+
+
 )
 
 

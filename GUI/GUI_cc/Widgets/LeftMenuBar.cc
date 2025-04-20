@@ -1,428 +1,228 @@
 #include "LeftMenuBar.h"
 
-LeftMenuBar::LeftMenuBar(QTreeWidget *leftMenu) : menu(leftMenu) {
-    connect(menu, &QTreeWidget::itemChanged, this, &LeftMenuBar::LeftMenuChanged);
-    connect(menu, &QTreeWidget::itemDoubleClicked, this, &LeftMenuBar::onItemDoubleClicked);
+LeftMenuBar::LeftMenuBar(QObject  *parent) {
+    // Создаём модель
+    treeModel = new TreeModelLazy(parent);
+    rootNode = treeModel->getRootNode();
 
-    itemFigures = menu->topLevelItem(1);
-    itemReq = menu->topLevelItem(2);
+    // Создаём узлы
+    nothing = new TreeNode("", rootNode); // для отступа сверху
+    figuresNode = new TreeNode("Figures", rootNode);
+    requirementsNode = new TreeNode("Requirements", rootNode);
+
+    rootNode->addChild(nothing);
+    rootNode->addChild(figuresNode);
+    rootNode->addChild(requirementsNode);
+
+    // Шрифт
+    QFont fontCategory;
+    fontCategory.setPointSize(12);
+    figuresNode->setFont(fontCategory);
+    requirementsNode->setFont(fontCategory);
+}
+
+TreeModelLazy* LeftMenuBar::getTreeModel(){
+    return treeModel;
+}
+
+// Добавление фигуры
+void LeftMenuBar::addElemLeftMenu(const QString &name, unsigned long long ID, const std::vector<double> &params) {
+    if (!figuresNode) { return; }
+
+    // Создаем основной узел элемента
+    TreeNode* elemNode = new TreeNode(name, figuresNode);
+    figuresNode->addChild(elemNode);
+
+    // Добавляем ID как дочерний узел
+    TreeNode* idNode = new TreeNode(QString("ID = %1").arg(ID), elemNode);
+    elemNode->addChild(idNode);
+
+
+    if (name == "Point") {
+        QStringList paramNames = { "x", "y" };
+        for (int i = 0; i < paramNames.size(); ++i) {
+            TreeNode* paramNode = new TreeNode(QString("%1 = %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            elemNode->addChild(paramNode);
+        }
+    } else if (name == "Section") {
+        QStringList paramNames = { "x0", "y0", "x1", "y1" };
+        for (int i = 0; i < paramNames.size(); ++i) {
+            TreeNode* paramNode = new TreeNode(QString("%1 = %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            elemNode->addChild(paramNode);
+        }
+    }else if (name == "Circle") {
+        QStringList paramNames = { "x", "y", "R" };
+        for (int i = 0; i < paramNames.size(); ++i) {
+            TreeNode* paramNode = new TreeNode(QString("%1 = %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            elemNode->addChild(paramNode);
+        }
+    }
 
 }
 
-void LeftMenuBar::onItemExpanded(QTreeWidgetItem *item) {
-    if (item == itemFigures) {
-        qDebug() << "Figure item expanded!";
-        // Включаем иконки для всех параметров, если панель видна
-        loadIconsGradually(item);
-    }
+// Добавление требований
+void LeftMenuBar::addRequirementElem(const QString &name, const unsigned long long ReqID,const unsigned long long ElemID1,const unsigned long long ElemID2, const double param) {
+    if (!requirementsNode) { return; }
+
+    // Создаем основной узел элемента
+    TreeNode *elemNode = new TreeNode(name, requirementsNode);
+    requirementsNode->addChild(elemNode);
+
+    // Добавляем ID как дочерний узел
+    TreeNode *ReqIDNode = new TreeNode(QString("ID = %1").arg(ReqID), elemNode);
+    elemNode->addChild(ReqIDNode);
+
+    // Добавляем ID как дочерний узел
+    TreeNode *ElemID1Node = new TreeNode(QString("ID1 = %1").arg(ElemID1), elemNode);
+    elemNode->addChild(ElemID1Node);
+
+    // Добавляем ID как дочерний узел
+    TreeNode *ElemID2Node = new TreeNode(QString("ID2 = %1").arg(ElemID2), elemNode);
+    elemNode->addChild(ElemID2Node);
+
+    // Добавляем ID как дочерний узел
+    TreeNode *paramNode = new TreeNode(QString("Param = %1").arg(param), elemNode);
+    elemNode->addChild(paramNode);
 }
 
-// Слот, который вызывается при сворачивании элемента
-void LeftMenuBar::onItemCollapsed(QTreeWidgetItem *item) {
-    if (item == itemFigures) {
-        qDebug() << "Figure item collapsed!";
-        // Удаляем иконки для всех параметров
-        removeIcons(item);
-    }
+// Очистка всех элементов
+void LeftMenuBar::clearAllFigures() {
+    if (!figuresNode || !treeModel) { return; }
+
+    // Удаляем всех детей узла
+    figuresNode->deleteAll();
+
+    // Сообщаем вьюшке, что структура дерева изменилась
+    QModelIndex figuresIndex = treeModel->index(figuresNode->row(), 0, QModelIndex());
+    treeModel->dataChanged(figuresIndex, figuresIndex);
+    treeModel->layoutChanged();  // Обновляем структуру модели
 }
 
-void LeftMenuBar::printObject(unsigned long long id, const std::string &text, const std::vector<double> &object) {
-    if (text == "Clear") {
-        itemFigures->takeChildren();
-        return;
-    }
+// Очистка всех элементов
+void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
+    if (!requirementsNode || !treeModel) { return; }
 
-    QString figureName = QString::fromStdString(text);
-    int count = 1;
-    addElem = true;
+    // Удаляем всех детей узла
+    requirementsNode->deleteAll();
 
-    while (true) {
-        bool exists = false;
-        for (int i = 0; i < itemFigures->childCount(); ++i) {
-            if (itemFigures->child(i)->text(0) == figureName) {
-                exists = true;
-                break;
+    QModelIndex reqIndex = treeModel->index(requirementsNode->row(), 0, QModelIndex());
+    treeModel->dataChanged(reqIndex, reqIndex);
+    treeModel->layoutChanged();
+}
+
+// Очистка одного элемента по айди
+void LeftMenuBar::removeFigureById(unsigned long long id) {
+    if (!figuresNode) { return; }
+
+    for (int i = 0; i < figuresNode->childCount(); ++i) {
+        TreeNode* elemNode = figuresNode->child(i);
+
+        for (int j = 0; j < elemNode->childCount(); ++j) {
+            TreeNode* child = elemNode->child(j);
+            if (child->data(0).toString() == QString("id = %1").arg(id)) {
+                figuresNode->removeChild(elemNode);
+
+                // Обновление модели
+                treeModel->layoutChanged();
+                { return; }
             }
         }
-        if (!exists) break;
-        figureName = QString("%1%2").arg(QString::fromStdString(text)).arg(count++);
     }
-
-    QTreeWidgetItem *itemFigure = new QTreeWidgetItem(itemFigures);
-    itemFigure->setText(0, figureName);
-    itemFigure->setFlags(itemFigure->flags() | Qt::ItemIsEditable);
-
-    bool isPanelVisible = menu->isVisible();
-    if (isPanelVisible) {
-        itemFigure->setIcon(0, QIcon("../Static/icons/Icon.ico"));
-    }
-
-    itemFigures->addChild(itemFigure);
-
-    std::vector<QString> paramNames;
-
-    if (object.size() == 2) {
-        paramNames = {"ID", "X", "Y"};
-    } else if (object.size() == 3) {
-        paramNames = {"ID", "X", "Y", "R"};
-    } else if (object.size() == 4) {
-        paramNames = {"ID", "X1", "Y1", "X2", "Y2"};
-    }
-
-    // Для постепенной подгрузки иконок по 30 штук:
-    int loadedIcons = 0;
-
-    for (size_t i = 0; i < paramNames.size() && i < object.size() + 1; ++i) {
-        QTreeWidgetItem *paramItem = new QTreeWidgetItem(itemFigure);
-
-        if (paramNames[i] != "ID") {
-            paramItem->setFlags(paramItem->flags() | Qt::ItemIsEditable);
-        } else {
-            paramItem->setFlags(paramItem->flags() & ~Qt::ItemIsEditable);
-            paramItem->setFlags(paramItem->flags() | Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-        }
-
-        // Подгрузка иконок только если панель видна
-        if (isPanelVisible && loadedIcons < 30) {
-            paramItem->setIcon(0, QIcon("../Static/icons/Database.ico"));
-            loadedIcons++;
-        }
-
-        if (paramNames[i] == "ID") {
-            paramItem->setText(0, QString("%1: %2").arg(paramNames[i]).arg(id));
-        } else {
-            paramItem->setText(0, QString("%1: %2").arg(paramNames[i]).arg(
-                    QString::number(object[i - 1], 'f', 6)));
-        }
-
-        itemFigure->addChild(paramItem);
-    }
-
-    addElem = false;
-
-}
-void LeftMenuBar::loadIconsGradually(QTreeWidgetItem *parentItem) {
-    int iconCount = 0;
-
-    // Проходим по всем дочерним элементам и добавляем иконки
-    for (int i = 0; i < parentItem->childCount(); ++i) {
-        QTreeWidgetItem *item = parentItem->child(i);
-
-        // Устанавливаем иконки
-        item->setIcon(0, QIcon("../Static/icons/Database.ico"));
-        iconCount++;
-
-        // Печатаем, сколько памяти было "использовано" (на самом деле добавляем иконки)
-        qDebug() << "Added icon to item:" << item->text(0);
-        qDebug() << "Icons added so far:" << iconCount;
-
-        // Если хотите, чтобы иконки добавлялись постепенно, можете добавить таймер
-        if (iconCount >= 30) {
-            break; // Останавливаем, если загрузили 30 иконок
-        }
-    }
-
-    qDebug() << "Total icons added: " << iconCount;
 }
 
-void LeftMenuBar::removeIcons(QTreeWidgetItem *parentItem) {
-    int removedIcons = 0;
+// Очистка одного элемента по айди
+void LeftMenuBar::removeRequirementById(unsigned long long id) {
+    if (!requirementsNode) { return; }
 
-    for (int i = 0; i < parentItem->childCount(); ++i) {
-        QTreeWidgetItem *item = parentItem->child(i);
+    for (int i = 0; i < requirementsNode->childCount(); ++i) {
+        TreeNode* elemNode = requirementsNode->child(i);
 
-        // Убираем иконку
-        item->setIcon(0, QIcon());
-        removedIcons++;
+        for (int j = 0; j < elemNode->childCount(); ++j) {
+            TreeNode* child = elemNode->child(j);
+            if (child->data(0).toString() == QString("id = %1").arg(id)) {
+                requirementsNode->removeChild(elemNode);
 
-        // Печатаем, сколько иконок было удалено
-        qDebug() << "Removed icon from item:" << item->text(0);
+                // Обновление модели
+                treeModel->layoutChanged();
+                { return; }
+            }
+        }
     }
-
-    qDebug() << "Total icons removed: " << removedIcons;
 }
 
-bool LeftMenuBar::isFiguresExpanded() {
-    QModelIndex index = menu->indexFromItem(itemFigures);
-    return menu->isExpanded(index);
-}
+// Изменение параметров по айди
+void LeftMenuBar::updateParametersById(unsigned long long id, const std::vector<double>& newParams) {
+    auto updateInNode = [&](TreeNode* categoryNode) {
+        if (!categoryNode) { return; }
 
+        for (int i = 0; i < categoryNode->childCount(); ++i) {
+            TreeNode* elemNode = categoryNode->child(i);
 
-void LeftMenuBar::onItemDoubleClicked(QTreeWidgetItem *item, int column) {
-    QString text = item->text(column);
-    std::vector<double> parameters;
+            for (int j = 0; j < elemNode->childCount(); ++j) {
+                TreeNode* child = elemNode->child(j);
 
-    if (text.startsWith("ID:")) {
-        // Извлекаем ID
-        QString idStr = text.section(':', 1).trimmed();
-        bool ok = false;
-        unsigned long long id = idStr.toULongLong(&ok);
-        if (ok) {
+                if (child->data(0).toString() == QString("id = %1").arg(id)) {
+                    // Найден нужный элемент
+                    QString name = elemNode->data(0).toString();
 
-            QTreeWidgetItem *parent = item->parent(); // Получаем родителя — фигуру
-            if (parent) {
-                for (int i = 0; i < parent->childCount(); ++i) {
-                    QTreeWidgetItem *child = parent->child(i);
-                    QString paramText = child->text(0);
-
-                    // Пропускаем ID
-                    if (paramText.startsWith("ID:")) continue;
-
-                    QStringList paramParts = paramText.split(": ");
-                    if (paramParts.size() == 2) {
-                        bool paramOk = false;
-                        double paramValue = paramParts[1].toDouble(&paramOk);
-                        if (paramOk) {
-                            parameters.push_back(paramValue);
-                        }
+                    QStringList paramNames;
+                    if (name == "Point") {
+                        paramNames = { "x", "y" };
+                    } else if (name == "Section") {
+                        paramNames = { "x0", "y0", "x1", "y1" };
+                    } else if (name == "Circle") {
+                        paramNames = { "x", "y", "r" };
+                    } else {
+                        { return; }
                     }
+
+                    int paramStartIndex = 1; // после "id = ..." идут параметры
+                    for (int k = 0; k < paramNames.size() && (paramStartIndex + k) < elemNode->childCount(); ++k) {
+                        TreeNode* paramNode = elemNode->child(paramStartIndex + k);
+                        paramNode->setData(0, QString("%1 = %2").arg(paramNames[k]).arg(newParams[k]));
+                    }
+
+                    treeModel->layoutChanged(); // обновим отображение
+                    { return; }
                 }
             }
-
-            if(!parameters.empty() && id!=0)
-                emit DoubleClickLeftMenu(parameters,id);
         }
-    }
+    };
+
+    updateInNode(figuresNode);
+    updateInNode(requirementsNode);
 }
 
-
-
-
-// Добавление требований в левое меню
-void LeftMenuBar::printReq(unsigned long long NumberReq, const std::string &name, unsigned long long id1,
-                           unsigned long long id2, double parametr) {
-
-// name
-    // Requirements ID: NumberReq
-    // Element ID: id1
-    // Element ID: id2
-    // Parament: parament
-
-
-    if (name == "Clear") {
-        itemReq->takeChildren();  // Очищаем все дочерние элементы
+// Сохранение в бин файл
+void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning("Не удалось открыть файл для записи");
         return;
     }
 
-    // Создаем новый элемент с названием
-    QString itemType = QString::fromStdString(name);
-    QTreeWidgetItem *newItem = new QTreeWidgetItem(itemReq);
-    newItem->setText(0, itemType);
+    QDataStream out(&file);
+    out.setVersion(QDataStream::Qt_6_9);
 
-    // Устанавливаем иконку для нового элемента
-    static QIcon textIcon("../Static/icons/Icon.ico");
-    newItem->setIcon(0, textIcon);
 
-    // Создаем подэлементы для "Requirements ID", "Element ID" и "Parameter"
-    QTreeWidgetItem *reqItem = new QTreeWidgetItem(newItem);
-    reqItem->setText(0, QString("Requirements ID: %1").arg(NumberReq));  // Заполняем Requirements ID
-    reqItem->setIcon(0, textIcon);  // Устанавливаем иконку для Requirements ID элемента
-
-    QTreeWidgetItem *elemItem1 = new QTreeWidgetItem(newItem);
-    elemItem1->setText(0, QString("Element ID: %1").arg(id1));  // Заполняем первый Element ID
-    elemItem1->setIcon(0, textIcon);  // Устанавливаем иконку для первого Element ID элемента
-
-    QTreeWidgetItem *elemItem2 = new QTreeWidgetItem(newItem);
-    elemItem2->setText(0, QString("Element ID: %1").arg(id2));  // Заполняем второй Element ID
-    elemItem2->setIcon(0, textIcon);  // Устанавливаем иконку для второго Element ID элемента
-
-    QTreeWidgetItem *paramItem = new QTreeWidgetItem(newItem);
-    paramItem->setText(0, QString("Parameter: %1").arg(parametr));  // Заполняем параметр
-    static QIcon paramIcon("../Static/icons/Database.ico");  // Иконка для параметра
-    paramItem->setIcon(0, paramIcon);  // Устанавливаем иконку для параметра
-
-    // Добавляем все дочерние элементы в новый элемент
-    newItem->addChild(reqItem);
-    newItem->addChild(elemItem1);
-    newItem->addChild(elemItem2);
-    newItem->addChild(paramItem);
-
-    // Добавляем новый элемент в основной контейнер
-    itemReq->addChild(newItem);
-
-    // ui->leftMenu->expandAll(); // Разворачивание
+    file.close();
 }
 
-
-
-// Двойное нажатие на левое меню
-/*
-void LeftMenuBar::onItemDoubleClicked(QTreeWidgetItem *item, int column) {
-qDebug()<<"double";
-    QString itemText = item->text(0);
-    bool ok;
-    unsigned long long id = itemText.split(":").first().toULongLong(&ok); // Извлекаем ID
-    if (ok) {
-        QList<QTreeWidgetItem*> childItems = getAllChildItems(item);
-        processChildItems(childItems);
-    }
-}*/
-
-// Передача координат
-void LeftMenuBar::processChildItems(const QList<QTreeWidgetItem*> &childItems) {
-
-    for (const auto &child : childItems) {
-        qDebug() << "Child Item:" << child->text(0);
-    }
-}
-
-
-// Подсветка по ID
-void LeftMenuBar::FocusOnItemById(unsigned long long id) {
-    if(id==0) return;
-    QTreeWidgetItem *target = findItemById(itemFigures, id);
-    if (target) {
-        QModelIndex index = menu->indexFromItem(target);
-        menu->expand(index);                     // раскрываем
-        menu->scrollTo(index);                   // прокручиваем к нему
-        menu->setCurrentItem(target);            // выделяем его
-    }
-    emit showMenu();
-}
-
-
-QTreeWidgetItem* LeftMenuBar::findItemById(QTreeWidgetItem *parent, unsigned long long id) {
-    for (int i = 0; i < parent->childCount(); ++i) {
-        QTreeWidgetItem *figure = parent->child(i);
-        for (int j = 0; j < figure->childCount(); ++j) {
-            QString paramText = figure->child(j)->text(0);
-            if (paramText.startsWith("ID:")) {
-                QString idStr = paramText.section(':', 1).trimmed();
-                bool ok;
-                unsigned long long currentId = idStr.toULongLong(&ok);
-                if (ok && currentId == id) {
-                    return figure;
-                }
-            }
-        }
-    }
-    return nullptr;
-}
-
-// Элементы левого меню
-QList<QTreeWidgetItem*> LeftMenuBar::getAllChildItems(QTreeWidgetItem *item) {
-    QList<QTreeWidgetItem*> childItems;
-    for (int i = 0; i < item->childCount(); ++i) {
-        childItems.append(item->child(i)); // Добавляем дочерний элемент
-        // Рекурсивно добавляем дочерние элементы
-        QList<QTreeWidgetItem*> grandChildItems = getAllChildItems(item->child(i));
-        childItems.append(grandChildItems);
-    }
-    return childItems;
-}
-
-
-std::vector<std::vector<QString>> LeftMenuBar::getListFigures(){
-    std::vector<std::vector<QString>> figures;
-    QTreeWidgetItem *itemFigures = menu->topLevelItem(1);
-    for (int i = 0; i < itemFigures->childCount(); ++i) {
-        QTreeWidgetItem *figureItem = itemFigures->child(i);
-        QString figureName = figureItem->text(0);
-
-        std::vector<QString> figureData;
-        figureData.push_back(figureName);
-
-        unsigned long long id = 0;
-        QString idStr;
-
-        for (int j = 0; j < figureItem->childCount(); ++j) {
-            QTreeWidgetItem *paramItem = figureItem->child(j);
-            QString peremen = paramItem->text(0);
-            QStringList XYR = peremen.split(": ");
-
-            if (XYR.size() != 2) continue;
-
-            QString name = XYR[0];
-            QString value = XYR[1];
-
-            if (name == "ID") {
-                idStr = value;
-                id = value.toULongLong();
-                figureData.push_back(value);
-            }else{
-                break;
-            }
-        }
-
-        figures.push_back(figureData);
-    }
-    return figures;
-}
-
-std::vector<std::vector<QString>> LeftMenuBar::getListReq(){
-    std::vector<std::vector<QString>> requirements;
-
-    QTreeWidgetItem *itemReq = menu->topLevelItem(2);
-    for (int i = 0; i < itemReq->childCount(); ++i) {
-        QTreeWidgetItem *reqItem = itemReq->child(i);
-        QString reqText = reqItem->text(0);
-
-        std::vector<QString> reqData;
-        reqData.push_back(reqText);
-
-        unsigned long long id = 0;
-        QString idStr;
-
-        for (int j = 0; j < reqItem->childCount(); ++j) {
-            QTreeWidgetItem *paramItem = reqItem->child(j);
-            QString peremen = paramItem->text(0);
-            QStringList XYR = peremen.split(": ");
-
-            if (XYR.size() != 2) continue;
-
-            QString name = XYR[0];
-            QString value = XYR[1];
-
-            if (name == "ID") {
-                idStr = value;
-                id = value.toULongLong();
-                reqData.push_back(value);
-            }else{
-                break;
-            }
-
-        }
-
-        requirements.push_back(reqData);
-    }
-    return requirements;
-}
-
-// Изменение обьектов левого меню (слот)
-void LeftMenuBar::LeftMenuChanged(QTreeWidgetItem *item) {
-    //Игнорируем изменения, если в процессе добавления
-    if (!item || addElem) return;
-
-    QTreeWidgetItem *parentItem = item->parent();
-
-    // Если нет родителя — это верхний уровень (например, Figure), игнорируем
-    if (!parentItem) return;
-
-    // Проверяем, что родитель находится внутри блока Figures (itemFigures)
-    if (parentItem->parent() != itemFigures) return;
-
-    //  Всё ок — работаем с изменённым параметром
-    std::vector<double> parameters;
-    unsigned long long id = 0;
-
-    for (int i = 0; i < parentItem->childCount(); ++i) {
-        QTreeWidgetItem *paramItem = parentItem->child(i);
-        QString text = paramItem->text(0);
-
-        QStringList parts = text.split(": ");
-        if (parts.size() != 2) continue;
-
-        QString name = parts[0];
-        QString value = parts[1];
-
-        if (name == "ID") {
-            id = value.toULongLong();
-        } else {
-            bool ok = false;
-            double num = value.toDouble(&ok);
-            if (ok) parameters.push_back(num);
-        }
+// Считывание бин файла
+void LeftMenuBar::loadFromBinaryFile(const QString& filePath) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning("Не удалось открыть файл для чтения");
+        return;
     }
 
-    emit parameterChanged(id, parameters);
+    QDataStream in(&file);
+    in.setVersion(QDataStream::Qt_6_9);
+
+    // Очищаем текущие объекты
+    clearAllFigures();
+    clearAllRequirements();
+
+
+    file.close();
 }

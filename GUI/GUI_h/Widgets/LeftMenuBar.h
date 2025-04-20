@@ -8,59 +8,64 @@
 #include <string>
 #include <QTimer>
 #include <QWidget>
+#include <QFile>
+#include <QDataStream>
 
-class LeftMenuBar: public QObject {
-Q_OBJECT
+
+#include "TreeModelLazy.h"
+
+// Класс для управления деревом
+
+class LeftMenuBar {
+// Q_OBJECT
 private:
-    QTreeWidget *menu;
-    bool addElem = false;
-    QTreeWidgetItem *itemFigures;
-    QTreeWidgetItem *itemReq;
+    TreeModelLazy *treeModel = nullptr;
+    TreeNode *rootNode = nullptr;
+    TreeNode *figuresNode = nullptr;
+    TreeNode *requirementsNode = nullptr;
+    TreeNode *nothing = nullptr;
 
 
 public:
-    QTreeWidgetItem* getItemFigures() const {
-        return itemFigures;
-    }
+    explicit LeftMenuBar(QObject *parent);
 
-    explicit LeftMenuBar(QTreeWidget *leftMenu); // Передаём указатель на QTreeWidget
+    TreeModelLazy *getTreeModel();
 
-    void printObject(unsigned long long id, const std::string &text, const std::vector<double> &object);
+    // Добавление фигуры
+    void addElemLeftMenu(const QString &name, unsigned long long ID, const std::vector<double> &params);
 
-    void
-    printReq(unsigned long long int id, const std::string &text, unsigned long long int id1, unsigned long long int id2,
-             double parametr);
+    // Добавление требований
+    void addRequirementElem(const QString &name, const unsigned long long ReqID, const unsigned long long ElemID1,
+                            const unsigned long long ElemID2, const double param);
 
+    // Очистка всех элементов
+    void clearAllFigures();
 
-    void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+    // Очистка всех элементов
+    void clearAllRequirements();
 
-    void processChildItems(const QList<QTreeWidgetItem *> &childItems);
+    // Очистка одного элемента по айди
+    void removeFigureById(unsigned long long id);
 
-    QTreeWidgetItem *findItemById(QTreeWidgetItem *item, unsigned long long int id);
+    // Очистка одного элемента по айди
+    void removeRequirementById(unsigned long long id);
 
-    void FocusOnItemById(unsigned long long int id);
+    // Изменение параметров по айди
+    void updateParametersById(unsigned long long id, const std::vector<double> &newParams);
 
-    std::vector<std::vector<QString>> getListFigures();
+    // Сохранение в бин файл
+    void saveToBinaryFile(const QString &filePath);
 
-    std::vector<std::vector<QString>> getListReq();
+    // Считывание бин файла
+    void loadFromBinaryFile(const QString &filePath);
 
-    QList<QTreeWidgetItem *> getAllChildItems(QTreeWidgetItem *item);
-
-    bool isFiguresExpanded();
-
-    void removeIcons(QTreeWidgetItem *parentItem);
-
-    void loadIconsGradually(QTreeWidgetItem *parentItem);
-
-public slots:
-    // Изменение обьектов левого меню
-    void LeftMenuChanged(QTreeWidgetItem *item);
-    void onItemExpanded(QTreeWidgetItem *item);    // Слот для раскрытия
-    void onItemCollapsed(QTreeWidgetItem *item);   // Слот для сворачивания
 
 signals:
+
     void parameterChanged(unsigned long long id, const std::vector<double> &parameters);
-    void DoubleClickLeftMenu(std::vector<double>& parameters,unsigned long long id);
+
+    void DoubleClickLeftMenu(std::vector<double> &parameters, unsigned long long id);
+
     void showMenu();
 
 };
