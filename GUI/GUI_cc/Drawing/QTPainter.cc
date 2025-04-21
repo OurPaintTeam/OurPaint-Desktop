@@ -1,7 +1,7 @@
 #include "QTPainter.h"
 
 QTPainter::QTPainter(QWidget *parent) : QFrame(parent), circleStorage(nullptr),
-                                        sectionStorage(nullptr), pointStorage(nullptr) {
+                                        sectionStorage(nullptr), pointStorage(nullptr),arcStorage(nullptr) {
 
     if (parent) {
         // Получение сигналов
@@ -75,6 +75,13 @@ void QTPainter::drawingFigures(QPainter &painter) {
         DrawFigures::drawCircle(painter, *circleStorage, selectedIDCircle);
     }
 
+    // Обработка дуг
+    if (arcStorage != nullptr && !arcStorage->empty()) {
+        DrawFigures::drawArc(painter, *arcStorage, selectedIDArc);
+    }
+
+
+
 }
 
 
@@ -117,6 +124,7 @@ bool QTPainter::findClosesObject() {
                 selectedIDCircle.push_back(cir.first);
                 return true;
             }
+
         }
 
 

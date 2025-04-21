@@ -57,6 +57,7 @@ public:
     std::unordered_map<ID, const Point*> getPoints() const;
     std::unordered_map<ID, const Section*> getSections() const;
     std::unordered_map<ID, const Circle*> getCircles() const;
+    std::unordered_map<ID, const Arc *> getArcs() const;
 
     std::size_t edgeCount() const;
     std::size_t vertexCount() const;

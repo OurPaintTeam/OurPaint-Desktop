@@ -26,11 +26,11 @@ void Application::initialize() {
     app.setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
     QApplication::setStyle("Fusion");
 
-    painter.reset(mainWind.getQTPainter());
-    Scene scene_copy(painter.get());
-    leftMenu.reset(mainWind.getLeftMenuBar());
+    painter = mainWind.getQTPainter();
+    Scene scene_copy(painter);
+    leftMenu = mainWind.getLeftMenuBar();
     scene = scene_copy;
-    scene.setPainter(painter.get());
+    scene.setPainter(painter);
     mainWind.show();
     mainWind.resize();
 }
@@ -38,13 +38,12 @@ void Application::initialize() {
 void Application::setupQTPainterConnections(){
     if (painter) {
         // Двойное нажатие на обьект и открытие его в левом меню
-        QObject::connect(painter.get(), &QTPainter::DoubleClickOnObject, [this](ID id) {
-            unsigned long long obj = id.get();
-            //  leftMenu->FocusOnItemById(obj);
+        QObject::connect(painter, &QTPainter::DoubleClickOnObject, [](ID id) {
+
         });
 
         // Перемещение точки
-        QObject::connect(painter.get(), &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
+        QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
 
             double Cx = Scaling::logicCursorX();
             double Cy = Scaling::logicCursorY();
@@ -65,7 +64,7 @@ void Application::setupQTPainterConnections(){
             //   leftMenu->parameterChanged(id.get(),)
         });
         // Перемещение отрезка
-        QObject::connect(painter.get(), &QTPainter::MovingSection, [this](std::vector<ID> vec_id) {
+        QObject::connect(painter, &QTPainter::MovingSection, [this](std::vector<ID> vec_id) {
 
             double Cx = Scaling::logicCursorX();
             double Cy = Scaling::logicCursorY();
@@ -85,7 +84,7 @@ void Application::setupQTPainterConnections(){
             //   leftMenu->parameterChanged(id.get(),)
         });
         // Перемещение круга
-        QObject::connect(painter.get(), &QTPainter::MovingCircle, [this](std::vector<ID> vec_id) {
+        QObject::connect(painter, &QTPainter::MovingCircle, [this](std::vector<ID> vec_id) {
 
             double Cx = Scaling::logicCursorX();
             double Cy = Scaling::logicCursorY();
@@ -108,7 +107,7 @@ void Application::setupQTPainterConnections(){
 
 
         // Отрисовка точки
-        QObject::connect(painter.get(), &QTPainter::SigPoint, [this](double x, double y) {
+        QObject::connect(painter, &QTPainter::SigPoint, [this](double x, double y) {
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
                     ObjectData point;
@@ -138,7 +137,7 @@ void Application::setupQTPainterConnections(){
         });
 
         // Отрисовка круга
-        QObject::connect(painter.get(), &QTPainter::SigCircle, [this](double x, double y, double radius) {
+        QObject::connect(painter, &QTPainter::SigCircle, [this](double x, double y, double radius) {
             ObjectData circle;
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
@@ -171,7 +170,7 @@ void Application::setupQTPainterConnections(){
         });
 
         // Отрисовка линии
-        QObject::connect(painter.get(), &QTPainter::SigSection,
+        QObject::connect(painter, &QTPainter::SigSection,
                          [this](double startX, double startY, double endX, double endY) {
 
                              ObjectData section;
@@ -211,11 +210,11 @@ void Application::setupQTPainterConnections(){
                          });
 
         // Отрисовка сектора
-        QObject::connect(painter.get(), &QTPainter::SigSector,
+        QObject::connect(painter, &QTPainter::SigSector,
                          [this]() {});
 
         // Отрисовка арки
-        QObject::connect(painter.get(), &QTPainter::SigArc,
+        QObject::connect(painter, &QTPainter::SigArc,
                          [this]() {});
 
 
@@ -671,12 +670,13 @@ void Application::handler(const QString &command) {
                 ID id = scene.addObject(arc);
                 ModeManager::setSave(false);
                 vecCalls.push_back([=, this]() {
-                     leftMenu->addElemLeftMenu("Point", id.get() - 3, {x1, y1});
-                     leftMenu->addElemLeftMenu("Point", id.get() - 2, {x2, y2});
-                     leftMenu->addElemLeftMenu("Point", id.get() - 1, {cx, cy});
-                     leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy, r});
-                 });
+                    leftMenu->addElemLeftMenu("Point", id.get() - 3, {x1, y1});
+                    leftMenu->addElemLeftMenu("Point", id.get() - 2, {x2, y2});
+                    leftMenu->addElemLeftMenu("Point", id.get() - 1, {cx, cy});
+                    leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy, r});
+                });
             }
+        }
 
     } else if (commandParts[0] == "exit") {
         mainWind.close();

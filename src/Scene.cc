@@ -305,9 +305,11 @@ std::unordered_map<ID, const Section *> Scene::getSections() const {
 std::unordered_map<ID, const Circle *> Scene::getCircles() const {
     return {_circles.begin(), _circles.end()};
 }
-std::unordered_map<ID, const Circle *> Scene::getArcs() const {
+
+std::unordered_map<ID, const Arc *> Scene::getArcs() const {
     return {_arcs.begin(), _arcs.end()};
 }
+
 std::size_t Scene::edgeCount() const {
     return _graph.edgeCount();
 }

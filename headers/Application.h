@@ -24,8 +24,8 @@ private:
     QApplication app;
     MainWindow mainWind;
     Scene scene;
-    std::unique_ptr<QTPainter> painter;
-    std::unique_ptr<LeftMenuBar> leftMenu;
+    QTPainter *painter;
+    LeftMenuBar* leftMenu;
 
     std::vector<std::function<void()>> vecCalls;
 

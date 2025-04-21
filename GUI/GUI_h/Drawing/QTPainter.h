@@ -33,11 +33,13 @@ private:
     std::vector<ID> selectedIDPoint;
     std::vector<ID> selectedIDCircle;
     std::vector<ID> selectedIDSection;
+    std::vector<ID> selectedIDArc;
 
     // Указатели
      std::unordered_map<ID,  Point*>* pointStorage;
      std::unordered_map<ID,  Section*>* sectionStorage;
      std::unordered_map<ID,  Circle*>* circleStorage;
+     std::unordered_map<ID,  Arc*>* arcStorage;
     const BoundBox2D* Rectangle;
 
     // Элемент левого меню
@@ -52,7 +54,6 @@ private:
     SelectedRectangle SelectedRectangle;
 
 public:
-
     QTPainter(QWidget *parent);
 
     void draw(); // Обновляет экран отрисовки
@@ -158,12 +159,17 @@ protected:
         circleStorage = &circles;
     }
 
+    void initArc( std::unordered_map<ID,  Arc*>& arcs) override {
+        arcStorage = &arcs;
+    }
+
 signals:
 
     // Перемещение
-    void MovingPoint(const std::vector<ID>& selectedPoints);
-    void MovingSection(const std::vector<ID>& selectedPoints);
-    void MovingCircle(const std::vector<ID>& selectedPoints);
+    void MovingPoint(const std::vector<ID>& selectedIDPoints);
+    void MovingSection(const std::vector<ID>& selectedIDSections);
+    void MovingCircle(const std::vector<ID>& selectedIDCircles);
+    void MovingArc(const std::vector<ID>& selectedIDArcs);
 
     // При отрисовке мышкой
     void SigPoint(double x, double y);

@@ -47,10 +47,10 @@ Q_OBJECT
 private:
 
 
-    std::unique_ptr<QTPainter> painter;
-    std::unique_ptr<MouseWorkWindow> mouseWW;             //  для обработки событий мыши
-    std::unique_ptr<KeyWorkWindow> keyWW;                 //  для обработки событий клавиш
-    std::unique_ptr<LeftMenuBar> leftMenuBar; // Класс для управления левым меню
+    QTPainter *painter;
+    MouseWorkWindow* mouseWW;             //  для обработки событий мыши
+    KeyWorkWindow* keyWW;                 //  для обработки событий клавиш
+    LeftMenuBar* leftMenuBar; // Класс для управления левым меню
 
 
     CastomeWindowError *error;
@@ -108,11 +108,11 @@ public:
 
 
     QTPainter *getQTPainter(){
-        return painter.get();
+        return painter;
     }
 
     LeftMenuBar* getLeftMenuBar() const {
-        return leftMenuBar.get();
+        return leftMenuBar;
     }
 
     void updateStyle();

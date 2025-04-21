@@ -33,9 +33,7 @@ inline Element Circle::getType() const {
 }
 
 Arc::Arc() : beg(nullptr),end(nullptr), center(nullptr), r() {}
-
 Arc::Arc(Point *p1, Point *p2, Point *c, double r): beg(p1), end(p2), center(c), r(r) {}
-
 BoundBox2D Arc::getBox() const {
     return {center->x - r, center->x + r,center->y - r, center->y + r};
 }

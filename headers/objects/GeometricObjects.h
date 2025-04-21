@@ -56,6 +56,7 @@ struct Arc : public IGeometricObject {
     Point *end;
     Point *center;
     double r;
+
     Arc();
     Arc(Point* p1, Point* p2, Point* c, double r);
 

@@ -15,10 +15,9 @@ MainWindow::MainWindow(QWidget *parent)
     setMouseTracking(true);
     setAllMouseTracking(this); // Отслеживание мыши
     setAttribute(Qt::WA_OpaquePaintEvent);
-
-    painter = std::make_unique<QTPainter>(ui->workWindow); // Переопределяем метод рисования в виджете
-    mouseWW = std::make_unique<MouseWorkWindow>(ui->workWindow);    // Переопределяем метод мышки в виджете
-    keyWW = std::make_unique<KeyWorkWindow>(ui->workWindow);       // Переопределяем метод кнопок в виджете
+    painter = new QTPainter(ui->workWindow);// Переопределяем метод рисования в виджете
+    mouseWW = new MouseWorkWindow(ui->workWindow);    // Переопределяем метод мышки в виджете
+    keyWW = new KeyWorkWindow(ui->workWindow);       // Переопределяем метод кнопок в виджете
    // leftMenuBar = std::make_unique<LeftMenuBar>(ui->leftMenu); // Класс для управления левым меню
 
     // painter->show();
@@ -39,7 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::setupLeftMenu() {;
-    leftMenuBar = std::make_unique<LeftMenuBar>(this);
+    leftMenuBar = new LeftMenuBar(this);
     ui->leftMenuView->setModel(leftMenuBar->getTreeModel());
     ui->leftMenuView->setHeaderHidden(true);
 }
@@ -152,9 +151,9 @@ void MainWindow::initConnections() {
     //connect(ui->leftMenu, &QTreeWidget::itemCollapsed, leftMenuBar.get(), &LeftMenuBar::onItemCollapsed);
     //  connect(ui->leftMenuElements, &QPushButton::clicked , leftMenuBar.get(),&LeftMenuBar::onItemCollapsed);
 
-    connect(keyWW.get(), &KeyWorkWindow::UNDO,this, &MainWindow::undo);
-    connect(keyWW.get(), &KeyWorkWindow::REDO,this, &MainWindow::redo);
-    connect(keyWW.get(), &KeyWorkWindow::DELETE,this, &MainWindow::delet);
+    connect(keyWW, &KeyWorkWindow::UNDO,this, &MainWindow::undo);
+    connect(keyWW, &KeyWorkWindow::REDO,this, &MainWindow::redo);
+    connect(keyWW, &KeyWorkWindow::DELETE,this, &MainWindow::delet);
 
 }
 
