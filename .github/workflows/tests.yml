@@ -1,0 +1,64 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up CMake
+        uses: jwlawson/actions-setup-cmake@v1
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++
+          sudo apt-get install -y valgrind --fix-missing
+          git clone https://github.com/google/googletest.git
+          cd googletest
+          mkdir build
+          cd build
+          cmake ..
+          make
+          sudo cp lib/*.a /usr/lib
+          cd ../..
+      - name: Configure
+        run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build
+      # IDGTEST
+      - name: Run IDGTEST
+        run: ./build/IDGTEST
+      - name: Run IDGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/IDGTEST
+      # ObjectsGTEST
+      - name: Run ObjectsGTEST
+        run: ./build/ObjectsGTEST
+      - name: Run ObjectsGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/ObjectsGTEST
+      # VarsStorageGTEST
+      - name: Run VarsStorageGTEST
+        run: ./build/VarsStorageGTEST
+      - name: Run VarsStorageGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/VarsStorageGTEST
+      # RequirementsGTEST
+      - name: Run RequirementsGTEST
+        run: ./build/RequirementsGTEST
+      - name: Run RequirementsGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/RequirementsGTEST
+      # SceneGTEST
+      - name: Run SceneGTEST
+        run: ./build/SceneGTEST
+      - name: Run SceneGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/SceneGTEST
+      # UndoRedoGTEST
+      - name: Run UndoRedoGTEST
+        run: ./build/UndoRedoGTEST
+      - name: Run UndoRedoGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/UndoRedoGTEST
+      # UndoRedoTemplateGTEST
+      - name: Run UndoRedoTemplateGTEST
+        run: ./build/UndoRedoTemplateGTEST
+      - name: Run UndoRedoTemplateGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/UndoRedoTemplateGTEST
