@@ -72,10 +72,10 @@ void Application::setupQTPainterConnections(){
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
                     ObjectData point;
-                    ID id = scene.findElement(point);
                     point.et = ET_POINT;
                     point.params.push_back(x);
                     point.params.push_back(y);
+                    ID id = scene.addObject(point);
                     ModeManager::setSave(false);
                     scene.paint();
                     painter->draw();
@@ -91,10 +91,10 @@ void Application::setupQTPainterConnections(){
                 point.et = ET_POINT;
                 point.params.push_back(x);
                 point.params.push_back(y);
+                ID id = scene.addObject(point);
                 ModeManager::setSave(false);
                 scene.paint();
                 painter->draw();
-                ID id = scene.findElement(point);
                 leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
             }
         });
@@ -146,7 +146,7 @@ void Application::setupQTPainterConnections(){
                                      section.params.push_back(startY);
                                      section.params.push_back(endX);
                                      section.params.push_back(endY);
-                                     ID id = scene.addElemeant(section);
+                                     ID id = scene.addObject(section);
                                      ModeManager::setSave(false);
                                      leftMenu->addElemLeftMenu("Section",id.get(),{startX,startY,endX,endY});
                                      leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
@@ -280,7 +280,7 @@ void Application::setupServerConnections(){
         server.sendToClients(QString::fromStdString(scene.to_string()));
     });
     QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
-        scene.loadFromString(state.toStdString());
+        // TODO scene.loadFromString(state.toStdString());
         updateState();
     });
 
