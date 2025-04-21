@@ -54,7 +54,7 @@ void Application::setupQTPainterConnections(){
 
             try {
                 for(int i=0;i<vec_id.size();++i) {
-                scene.moveObject(vec_id[i], dx, dy);
+                scene.movePoint(vec_id[i], dx, dy);
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -71,10 +71,10 @@ void Application::setupQTPainterConnections(){
 
             double dx = Scaling::logic(Scaling::getCursorDeltaX());
             double dy = Scaling::logic(Scaling::getCursorDeltaY());
-
+qDebug()<<dx<<" "<<dy;
             try {
                 for(int i=0;i<vec_id.size();++i) {
-                    scene.moveObject(vec_id[i], dx, dy);
+                    scene.moveSection(vec_id[i], dx, dy);
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -95,7 +95,7 @@ void Application::setupQTPainterConnections(){
 
             try {
                 for(int i=0;i<vec_id.size();++i) {
-                scene.moveObject(ID(vec_id[i]), dx, dy);
+                scene.moveCircle(ID(vec_id[i]), dx, dy);
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -459,8 +459,8 @@ void Application::setupAddingCommandsConnections() {
     // Save
     QObject::connect(&mainWind, &MainWindow::projectSaved, [this](const QString &fileName, QString format) {
         if (format != (".ourp")) {
-            painter->saveToImage(fileName, format);
             scene.paint();
+            painter->saveToImage(fileName, format);
         }
         else {
             std::string File = fileName.toStdString();
@@ -472,16 +472,15 @@ void Application::setupAddingCommandsConnections() {
     //Load
     QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString &fileName) {
         painter->clear();
-        scene.paint();
         std::string File = fileName.toStdString();
         scene.loadFromFile(File.c_str());
         painter->draw();
+        scene.paint();
     });
 
     // Script
     QObject::connect(&mainWind, &MainWindow::EmitScript, [&](const QString &fileName) {
         std::string File = fileName.toStdString();
-        scene.paint();
         std::ifstream Script(File);
 
         // TODO logs
@@ -509,7 +508,7 @@ void Application::setupAddingCommandsConnections() {
 
 
         updateState();
-
+        scene.paint();
     });
 /*
     // REDO

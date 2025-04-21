@@ -45,7 +45,7 @@ void QTPainter::clear() {
 
 
 // Выделение обьекта в левом меню
-void QTPainter::selectedElemByID(std::vector<double> &parameters, unsigned long long int IDselected) {
+void QTPainter::selectedElemByID(std::vector<double> &parameters, long long int IDmove) {
 
 }
 
@@ -94,10 +94,34 @@ bool QTPainter::findClosesObject() {
 
     lastClickTime = currentTime;
 
-    bool objectFound = false;
+    for (const auto &pt : *pointStorage) {
+        const Point *point = pt.second;
+        if(ClosesPoint::checkFigure(point->x,point->y)){
+            selectedIDPoint.push_back(pt.first);
+            return true;
+        }
+    }
+
+        for (const auto &sec: *sectionStorage) {
+            const Section *section = sec.second;
+            if (ClosesPoint::checkFigure(section->beg->x, section->beg->y,
+                                         section->end->x, section->end->y)) {
+                selectedIDSection.push_back(sec.first);
+                return true;
+            }
+        }
+
+        for (const auto &cir: *circleStorage) {
+            const Circle *circle = cir.second;
+            if(ClosesPoint::checkFigure(circle->center->x,circle->center->y)){
+                selectedIDCircle.push_back(cir.first);
+                return true;
+            }
+        }
 
 
-    return true;
+
+    return false;
 
 }
 
@@ -287,27 +311,22 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     } else if (ModeManager::getActiveMode(WorkModes::Move)) {
 
         //  Кнопка мыши зажата
-        bool isDragging = ModeManager::getActiveMode(MouseMode::LeftClick) &&
-                          !ModeManager::getActiveMode(MouseMode::ReleasingLeft);
+        if(ModeManager::getActiveMode(MouseMode::LeftClick))
+            if(findClosesObject() || !ModeManager::getActiveMode(MouseMode::ReleasingRight)){
+                if(!selectedIDSection.empty()){
+                    emit MovingSection(selectedIDSection);
+                }
+                if(!selectedIDPoint.empty()){
+                    emit MovingPoint(selectedIDPoint);
+                }
+                if(!selectedIDCircle.empty()){
+                    emit MovingCircle(selectedIDCircle);
+                }
+            }else{
+                selectedClear();
+            }
 
-        /* if (isDragging) {
-             //  Уже что-то выбрано для перемещения
-            if (IDmove != 0) {
-                     emit MovingFigures(selectionIDPoints,selectionIDFif,);
-             } else {
-                 // Поиск
-                 if (findClosesObject()) {
-                     IDmove = id;
 
-                 }
-             }
-         } else {
-             IDmove = 0; // сброс при отпускании
-         }*/
-    } else {
-        // сброс
-        // id = 0;
-        //  IDmove = 0;
     }
 
 

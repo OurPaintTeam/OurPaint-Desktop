@@ -570,6 +570,10 @@ void Scene::updateRequirements(ID objectID) {
     std::vector<ID> connectedComponent = _graph.findConnectedComponent(objectID);
     //std::unordered_set<ID> connectedObjects(connectedComponent.begin(), connectedComponent.end());
 
+    if(connectedComponent.size()<=1){
+        return;
+    }
+
     // TODO Решать только компоненту
     // TODO Избавиться от копирования
     std::vector<Function*> copyFunctions;

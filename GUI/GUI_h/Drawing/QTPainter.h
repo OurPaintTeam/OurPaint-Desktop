@@ -94,12 +94,7 @@ public:
         return selectedIDCircle;
     }
 
-
     void selectedClear();  // Очистка данных выделенных обьектов
-
-    bool matchesLeftMenu(const std::vector<double> &menu, const std::vector<double> &coords); // Вспомогательная функция поиска
-
-    bool checkSelection(Element type, std::vector<ID> &selected, const std::vector<double> &coords); // Поиск выделенных обьектов
 
     void drawingFigures(QPainter &painter); // Отрисовка всех фигур, дополняется отрисовкой выделений
 
@@ -108,25 +103,35 @@ public:
     void saveToImage(const QString &fileName, QString &format); // Функция сохранения изображения в указанный формат
 
     // Функция выделения обьекта в левом меню
-    void selectedElemByID(std::vector<double> &parameters,unsigned long long int IDselected);
+    void selectedElemByID(std::vector<double> &parameters,long long int IDmenu);
 
+    // Отдаляет сцену
     void resizeRectangle();
-    // Обработка сигналов если была отрисовка мышкой
+
+    // Обработка сигналов для точки
     void onSigPoint(double x, double y) {
         emit SigPoint(x, y);
     }
 
+    // Обработка сигналов для окружности
     void onSigCircle(double x, double y, double r) {
         emit SigCircle(x, y, r);
     }
 
+    // Обработка сигналов для отрезка
     void onSigSection(double x, double y, double x1, double y1) {
         emit SigSection(x, y, x1, y1);
     }
 
 
-
 protected:
+
+    // Функция для изменения размеров окна
+    void resizeEvent(QResizeEvent *event) override;
+
+    // Стартовая точка для отрисовки всего холста
+    void paintEvent(QPaintEvent *event) override;
+
     // При выходе за границы мы масштабируем
     void getBoundBox(const BoundBox2D& allObjects) override {
         Rectangle=&allObjects;
@@ -152,18 +157,9 @@ protected:
         circleStorage = &circles;
     }
 
-
-
-    // Функция для изменения размеров окна
-    void resizeEvent(QResizeEvent *event)
-    override;
-
-
-    void paintEvent(QPaintEvent *event)
-    override; // Стартовая точка для отрисовки всего холста
-
 signals:
 
+    // Перемещение
     void MovingPoint(const std::vector<ID>& selectedPoints);
     void MovingSection(const std::vector<ID>& selectedPoints);
     void MovingCircle(const std::vector<ID>& selectedPoints);
@@ -175,10 +171,12 @@ signals:
     void SigSector();
     void SigArc();
 
+    // Для отображения в левом меню
     void DoubleClickOnObject(ID id);
 
 private slots:
 
+    // Для связи с масштабирвоанием главного окна
     void onWorkWindowResized();
 
 
