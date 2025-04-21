@@ -54,7 +54,6 @@ void Application::setupQTPainterConnections(){
 
             try {
                 for(int i=0;i<vec_id.size();++i) {
-                    qDebug()<<vec_id.size();
                     scene.setPoint(vec_id[i], Cx, Cy);
                // scene.movePoint(vec_id[i], dx, dy);
                 }
@@ -74,7 +73,6 @@ void Application::setupQTPainterConnections(){
             double dx = Scaling::logic(Scaling::getCursorDeltaX());
             double dy = Scaling::logic(Scaling::getCursorDeltaY());
             try {
-                qDebug()<<vec_id.size();
                 for(int i=0;i<vec_id.size();++i) {
 
                     scene.moveSection(vec_id[i], dx, dy);

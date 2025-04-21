@@ -113,7 +113,7 @@ bool QTPainter::findClosesObject() {
 
         for (const auto &cir: *circleStorage) {
             const Circle *circle = cir.second;
-            if(ClosesPoint::checkFigure(circle->center->x,circle->center->y)){
+            if(ClosesPoint::checkFigure(circle->center->x,circle->center->y,circle->r)){
                 selectedIDCircle.push_back(cir.first);
                 return true;
             }
@@ -310,24 +310,38 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
     } else if (ModeManager::getActiveMode(WorkModes::Move)) {
 
-        //  Кнопка мыши зажата
-        if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) { drawing = true; }
-        else if(ModeManager::getActiveMode(MouseMode::ReleasingRight) ||  (ModeManager::getActiveMode(MouseMode::LeftClick) && !findClosesObject())){
+        if(ModeManager::getActiveMode(MouseMode::RightClick)){
             drawing=false;
             selectedClear();
         }
 
-        if(drawing){
-            if(!selectedIDSection.empty()){
-                emit MovingSection(selectedIDSection);
+        //  Кнопка мыши зажата
+        if(!drawing) {
+            if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
+                drawing = true;
             }
-            if(!selectedIDPoint.empty()){
-                emit MovingPoint(selectedIDPoint);
+            else {
+                selectedClear();
             }
-            if(!selectedIDCircle.empty()){
-                emit MovingCircle(selectedIDCircle);
+        }else{
+            if(!ModeManager::getActiveMode(MouseMode::ReleasingLeft)) {
+                if (!selectedIDSection.empty()) {
+                    emit MovingSection(selectedIDSection);
+                }
+                if (!selectedIDPoint.empty()) {
+                    emit MovingPoint(selectedIDPoint);
+                }
+                if (!selectedIDCircle.empty()) {
+                    emit MovingCircle(selectedIDCircle);
+                }
+            }else{
+                drawing = false;
             }
         }
+
+
+
+
 
 
     }
