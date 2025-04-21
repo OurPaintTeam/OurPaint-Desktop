@@ -122,6 +122,45 @@ bool Scene::deleteObject(ID objectID) {
     return false;
 }
 
+bool Scene::deletePoint(ID pointID) {
+    auto it_point = _points.find(pointID);
+    if (it_point != _points.end()) {
+        if (it_point->second) {
+            delete it_point->second;
+        }
+        _points.erase(it_point);
+        _isRectangleDirty = true;
+        return true;
+    }
+    return false;
+}
+
+bool Scene::deleteSection(ID sectionID) {
+    auto it_section = _sections.find(sectionID);
+    if (it_section != _sections.end()) {
+        if (it_section->second) {
+            delete it_section->second;
+        }
+        _sections.erase(it_section);
+        _isRectangleDirty = true;
+        return true;
+    }
+    return false;
+}
+
+bool Scene::deleteCircle(ID circleID) {
+    auto it_circle = _circles.find(circleID);
+    if (it_circle != _circles.end()) {
+        if (it_circle->second) {
+            delete it_circle->second;
+        }
+        _circles.erase(it_circle);
+        _isRectangleDirty = true;
+        return true;
+    }
+    return false;
+}
+
 void Scene::clear() {
     for (auto &pair: _points) {
         delete pair.second;
@@ -524,7 +563,7 @@ void Scene::updateRequirements(ID objectID) {
     std::size_t count_of_req_in_component = 0;
 
     std::vector<ID> connectedComponent = _graph.findConnectedComponent(objectID);
-    std::unordered_set<ID> connectedObjects(connectedComponent.begin(), connectedComponent.end());
+    //std::unordered_set<ID> connectedObjects(connectedComponent.begin(), connectedComponent.end());
 
     // TODO Решать только компоненту
     // TODO Избавиться от копирования
@@ -598,7 +637,7 @@ std::string Scene::to_string() const {
     return saver.to_string();
 }
 
-void Scene::saveToFile(const char *filename) const {
+void Scene::saveToFile(const char* filename) const {
     FileOurP saver;
     for (const auto& [id, obj] : _points) {
         std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
@@ -631,6 +670,44 @@ void Scene::saveToFile(const char *filename) const {
         saver.addRequirement(m);
     }
     saver.saveToOurP(filename);
+}
+
+void Scene::loadFromFile(const char* filename) {
+    FileOurP loader;
+
+    loader.loadFromOurP(filename);
+    clear();
+    const std::vector<objectInFile>& vecObjData = loader.getObjects();
+    for (auto& objData : vecObjData) {
+        std::pair<unsigned int, IGeometricObject*> pair = objData.to_pair();
+        IGeometricObject* obj = pair.second;
+        ObjectData od;
+        od.et = obj->getType();
+        if (od.et == ET_POINT) {
+            Point* p = static_cast<Point*>(obj);
+            od.params.push_back(p->x);
+            od.params.push_back(p->y);
+        }
+        else if (od.et == ET_SECTION) {
+            Section* s = static_cast<Section*>(obj);
+            od.params.push_back(s->beg->x);
+            od.params.push_back(s->beg->y);
+            od.params.push_back(s->end->x);
+            od.params.push_back(s->end->y);
+        }
+        else if (od.et == ET_CIRCLE) {
+            Circle* c = static_cast<Circle*>(obj);
+            od.params.push_back(c->center->x);
+            od.params.push_back(c->center->y);
+            od.params.push_back(c->r);
+        }
+        addObject(od);
+    }
+    const std::vector<requirementInFile>& vecReqData = loader.getRequirements();
+    for (auto& reqData : vecReqData) {
+        std::pair<unsigned int, RequirementData> pair = reqData.to_pair();
+        addRequirement(pair.second);
+    }
 }
 
 

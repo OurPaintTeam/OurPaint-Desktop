@@ -53,7 +53,7 @@ void Application::setupQTPainterConnections(){
 
             try {
                 for(int i=0;i<vec_id.size();++i) {
-                scene.moveObject(vec_id[i], Cx, Cy, dx, dy);
+                scene.moveObject(vec_id[i], dx, dy);
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -73,7 +73,7 @@ void Application::setupQTPainterConnections(){
 
             try {
                 for(int i=0;i<vec_id.size();++i) {
-                    scene.moveObject(vec_id[i], Cx, Cy, dx, dy);
+                    scene.moveObject(vec_id[i], dx, dy);
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -473,7 +473,7 @@ void Application::setupAddingCommandsConnections() {
         painter->clear();
         scene.paint();
         std::string File = fileName.toStdString();
-        //scene.loadFromFile(File.c_str());
+        scene.loadFromFile(File.c_str());
         painter->draw();
     });
 
