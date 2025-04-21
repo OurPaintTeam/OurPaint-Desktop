@@ -56,7 +56,7 @@ void Application::setupQTPainterConnections(){
 
             try {
                 for(int i=0;i<vec_id.size();++i) {
-                scene.moveObject(vec_id[i], Cx, Cy, dx, dy);
+                scene.moveObject(ID(vec_id[i]), dx, dy);
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -109,7 +109,7 @@ void Application::setupQTPainterConnections(){
                     circle.params.push_back(y);
                     circle.params.push_back(radius);
                     ModeManager::setSave(false);
-                    ID id = scene.findElement(circle);
+                    ID id = scene.addObject(circle);
                     leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                     leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                     scene.paint();
@@ -126,7 +126,7 @@ void Application::setupQTPainterConnections(){
                 circle.params.push_back(y);
                 circle.params.push_back(radius);
                 ModeManager::setSave(false);
-                ID id = scene.findElement(circle);
+                ID id = scene.addObject(circle);
                 leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                 leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                 scene.paint();
