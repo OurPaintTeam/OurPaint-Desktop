@@ -10,7 +10,6 @@
 #include "Painter.h"
 
 struct IGeometricObject {
-public:
     virtual ~IGeometricObject() = default;
 
     virtual BoundBox2D getBox() const = 0;
@@ -47,6 +46,18 @@ struct Circle : public IGeometricObject {
 
     Circle();
     Circle(Point* p, double r);
+
+    BoundBox2D getBox() const override;
+    inline Element getType() const override;
+};
+
+struct Ark : public IGeometricObject {
+    Point *beg;
+    Point *end;
+    Point *center;
+    double r;
+    Ark();
+    Ark(Point* p1, Point* p2, Point* c, double r);
 
     BoundBox2D getBox() const override;
     inline Element getType() const override;

@@ -2,7 +2,7 @@
 #define OURPAINT_HEADERS_ENUMS_H_
 
 enum Element {
-    ET_POINT, ET_SECTION, ET_CIRCLE
+    ET_POINT, ET_SECTION, ET_CIRCLE, ET_ARC
 };
 
 enum Requirement {
