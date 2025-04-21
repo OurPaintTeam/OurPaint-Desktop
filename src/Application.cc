@@ -95,7 +95,7 @@ void Application::setupQTPainterConnections(){
 
             try {
                 for(int i=0;i<vec_id.size();++i) {
-                    scene.moveObject(vec_id[i], Cx, Cy, dx, dy);
+                scene.moveObject(ID(vec_id[i]), dx, dy);
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -127,10 +127,10 @@ void Application::setupQTPainterConnections(){
 
             } else {
                 ObjectData point;
-                ID id = scene.addObject(point);
                 point.et = ET_POINT;
                 point.params.push_back(x);
                 point.params.push_back(y);
+                ID id = scene.addObject(point);
                 ModeManager::setSave(false);
                 scene.paint();
                 painter->draw();
@@ -144,11 +144,11 @@ void Application::setupQTPainterConnections(){
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
                     circle.et = ET_CIRCLE;
-                    ID id = scene.addObject(circle);
                     circle.params.push_back(x);
                     circle.params.push_back(y);
                     circle.params.push_back(radius);
                     ModeManager::setSave(false);
+                    ID id = scene.addObject(circle);
                     leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                     leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                     scene.paint();
@@ -161,11 +161,11 @@ void Application::setupQTPainterConnections(){
                 }
             } else {
                 circle.et = ET_CIRCLE;
-                ID id = scene.addObject(circle);
                 circle.params.push_back(x);
                 circle.params.push_back(y);
                 circle.params.push_back(radius);
                 ModeManager::setSave(false);
+                ID id = scene.addObject(circle);
                 leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                 leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                 scene.paint();
@@ -319,7 +319,7 @@ void Application::setupServerConnections(){
         server.sendToClients(QString::fromStdString(scene.to_string()));
     });
     QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
-        scene.loadFromString(state.toStdString());
+        // TODO scene.loadFromString(state.toStdString());
         updateState();
     });
 

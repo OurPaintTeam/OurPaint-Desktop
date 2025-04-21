@@ -58,9 +58,7 @@ add_executable(ourpaint
         src/Application.cc
         src/BMPfile.cc
 
-
         headers/Requirements.h
-
 
         headers/painters/Painter.h
         headers/painters/BMPpainter.h
