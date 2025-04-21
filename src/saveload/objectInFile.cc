@@ -1,14 +1,14 @@
 #include "objectInFile.h"
 
 std::string objectInFile::to_string() const {
-    if (s_obj->getElementType() == ET_POINT) {
+    if (s_obj->getType() == ET_POINT) {
         Point *p = dynamic_cast<Point *>(s_obj);
         return "{\nID " + std::to_string(id) + "\npoint " + std::to_string(p->x) + " " + std::to_string(p->y) +
                "\n}";
-    } else if (s_obj->getElementType() == ET_SECTION) {
+    } else if (s_obj->getType() == ET_SECTION) {
         Section *s = dynamic_cast<Section *>(s_obj);
         return "{\nID " + std::to_string(id) + "\nsection" + "\n}";
-    } else if (s_obj->getElementType() == ET_CIRCLE) {
+    } else if (s_obj->getType() == ET_CIRCLE) {
         Circle *s = dynamic_cast<Circle *>(s_obj);
         return "{\nID " + std::to_string(id) + "\ncircle " + std::to_string(s->r) + "\n}";
     }

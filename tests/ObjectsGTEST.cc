@@ -8,7 +8,7 @@ TEST(PointTest, RectMethod) {
     Point p;
     p.x = 3;
     p.y = 4;
-    BoundingBox r = p.getBox();
+    BoundBox2D r = p.getBox();
     EXPECT_EQ(r.min_x, 3);
     EXPECT_EQ(r.max_x, 3);
     EXPECT_EQ(r.min_y, 4);
@@ -22,7 +22,7 @@ TEST(CircleTest, RectMethod) {
     Circle c;
     c.center = &center;
     c.r = 5;
-    BoundingBox r = c.getBox();
+    BoundBox2D r = c.getBox();
     EXPECT_EQ(r.min_x, -5);
     EXPECT_EQ(r.max_x, 5);
     EXPECT_EQ(r.min_y, -5);
@@ -39,7 +39,7 @@ TEST(SectionTest, RectMethod) {
     Section s;
     s.beg = &beg;
     s.end = &end;
-    BoundingBox r = s.getBox();
+    BoundBox2D r = s.getBox();
     EXPECT_EQ(r.min_x, 1);
     EXPECT_EQ(r.max_x, 3);
     EXPECT_EQ(r.min_y, 2);
@@ -47,9 +47,9 @@ TEST(SectionTest, RectMethod) {
 }
 
 TEST(RectangleTest, UnionOperator) {
-    BoundingBox r1{1, 3, 2, 4};
-    BoundingBox r2{2, 4, 1, 3};
-    BoundingBox r3 = r1 | r2;
+    BoundBox2D r1{1, 3, 2, 4};
+    BoundBox2D r2{2, 4, 1, 3};
+    BoundBox2D r3 = r1 | r2;
     EXPECT_EQ(r3.min_x, 1);
     EXPECT_EQ(r3.max_x, 4);
     EXPECT_EQ(r3.min_y, 1);

@@ -2,14 +2,15 @@
 #define OURPAINT_HEADERS_SCENE_H_
 
 #include "Painter.h"
-#include "objects/GeometricObjects.h"
-#include "objects/Objects.h"
-#include "objects/ID.h"
+#include "GeometricObjects.h"
+#include "Objects.h"
+#include "ID.h"
 #include "Requirements.h"
-#include "objects/BoundBox.h"
+#include "BoundBox.h"
 #include "InheritanceGraph.h"
 #include "LMForTest.h"
 #include "FileOurP.h"
+#include "objectInFile.h"
 
 #include <vector>
 #include <unordered_map>
@@ -40,6 +41,9 @@ public:
 
     ID addObject(const ObjectData& objData);
     bool deleteObject(ID objectID);
+    bool deletePoint(ID pointID);
+    bool deleteSection(ID sectionID);
+    bool deleteCircle(ID circleID);
 
     void clear();
 
@@ -74,6 +78,7 @@ public:
     std::string to_string() const;
 
     void saveToFile(const char* filename) const;
+    void loadFromFile(const char* filename);
 
     // TODO ---------------------------------------------------------------
 

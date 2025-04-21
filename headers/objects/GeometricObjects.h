@@ -14,7 +14,7 @@ public:
     virtual ~IGeometricObject() = default;
 
     virtual BoundBox2D getBox() const = 0;
-    virtual inline Element getElementType() const = 0;
+    virtual inline Element getType() const = 0;
 };
 
 struct Point : public IGeometricObject {
@@ -25,7 +25,7 @@ struct Point : public IGeometricObject {
     Point(double x, double y);
 
     BoundBox2D getBox() const override;
-    inline Element getElementType() const override;
+    inline Element getType() const override;
 };
 
 std::ifstream &operator>>(std::ifstream &in, Point &x);
@@ -38,7 +38,7 @@ struct Section : public IGeometricObject {
     Section(Point* p1, Point* p2);
 
     BoundBox2D getBox() const override;
-    inline Element getElementType() const override;
+    inline Element getType() const override;
 };
 
 struct Circle : public IGeometricObject {
@@ -49,7 +49,7 @@ struct Circle : public IGeometricObject {
     Circle(Point* p, double r);
 
     BoundBox2D getBox() const override;
-    inline Element getElementType() const override;
+    inline Element getType() const override;
 };
 
 #endif // ! OURPAINT_HEADERS_GEOMETRICOBJECTS_H_
