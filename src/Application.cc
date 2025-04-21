@@ -6,7 +6,7 @@ Application::Application(int &argc, char **argv)
         : app(argc, argv),
           mainWind(),
           painter(nullptr),
-          screen(nullptr),
+          scene(nullptr),
           username("User"),
           server(username),
           client(username) {
@@ -29,7 +29,7 @@ void Application::initialize() {
     QApplication::setStyle("Fusion");
 
     painter.reset(mainWind.getQTPainter());
-    Paint scene_copy(painter.get());
+    Scene scene_copy(painter.get());
     leftMenu.reset(mainWind.getLeftMenuBar());
     scene = scene_copy;
 
