@@ -58,9 +58,42 @@ public:
 
     void clear(); // Очистка экрана и приводит все параметры к базовым
 
-   std::pair<ID> getPairID{
+    std::optional<std::pair<ID, ID>> getPairID() {
+        std::vector<ID> IDs;
 
-    };
+        for (const ID& id : selectedIDPoint) {
+            IDs.push_back(id);
+            if (IDs.size() > 2) { return std::nullopt; }
+        }
+
+        for (const ID& id : selectedIDSection) {
+            IDs.push_back(id);
+            if (IDs.size() > 2) { return std::nullopt; }
+        }
+
+        for (const ID& id : selectedIDCircle) {
+            IDs.push_back(id);
+            if (IDs.size() > 2) { return std::nullopt; }
+        }
+
+        if (IDs.size() == 2) {
+            return std::make_pair(IDs[0], IDs[1]);
+        }
+
+        return std::nullopt;
+    }
+
+
+    std::vector<ID>& getVecIDPoints(){
+        return selectedIDPoint;
+    }
+    std::vector<ID>& getVecIDSections(){
+        return selectedIDSection;
+    }
+    std::vector<ID>& getVecIDCircles(){
+        return selectedIDCircle;
+    }
+
 
     void selectedClear();  // Очистка данных выделенных обьектов
 

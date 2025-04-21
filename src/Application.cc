@@ -221,10 +221,22 @@ void Application::setupQTPainterConnections(){
 
     // Удаление элемента
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
-        std::vector<long long int> vec_id = painter->getVecID();
-        for (int i = 0; i < vec_id.size(); ++i) {
-            scene.deleteObject(ID(vec_id[i]));
-            leftMenu->removeFigureById(vec_id[i]);
+
+        std::vector<ID> vecPoint = painter->getVecIDPoints();
+        std::vector<ID> vecSection = painter->getVecIDSections();
+        std::vector<ID> vecCircle = painter->getVecIDCircles();
+
+        for (int i = 0; i < vecPoint.size(); ++i) {
+            scene.deletePoint(vecPoint[i]);
+            leftMenu->removeFigureById(vecPoint[i].get());
+        }
+        for (int i = 0; i < vecSection.size(); ++i) {
+            scene.deleteSection(vecSection[i]);
+            leftMenu->removeFigureById(vecSection[i].get());
+        }
+        for (int i = 0; i < vecCircle.size(); ++i) {
+            scene.deleteCircle(vecCircle[i]);
+            leftMenu->removeFigureById(vecCircle[i].get());
         }
         painter->selectedClear();
         painter->draw();
@@ -347,9 +359,6 @@ void Application::setupServerConnections(){
 void Application::setupRequirementsConnections(){
     // Требования
     QObject::connect(&mainWind, &MainWindow::oneRequirements, [this]() {
-        std::vector<long long int> vec_id = painter->getVecID();
-        for (const auto &id: vec_id) {
-        }
     });
 
     QObject::connect(&mainWind, &MainWindow::twoRequirements, [this]() {
@@ -377,10 +386,10 @@ void Application::setupRequirementsConnections(){
     });
 
     QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
-        std::vector<ID> vec_id = painter->getVecID();
-        if (!vec_id.empty()) {
-            ID obj1(vec_id[0]);
-            ID obj2(vec_id[1]);
+        auto pairID = painter->getPairID();
+        if (pairID) {
+            ID obj1(pairID->first);
+            ID obj2(pairID->second);
             RequirementData reqData;
             Requirement type;
             type = ET_SECTIONSECTIONPARALLEL;
