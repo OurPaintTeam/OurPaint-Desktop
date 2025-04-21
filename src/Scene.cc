@@ -7,7 +7,11 @@ Scene::Scene(Painter *p) :
         _circles(),
         _isRectangleDirty(false),
         _allFiguresRectangle(),
-        _graph() {}
+        _graph() {
+    p->drawPoint(_points);
+    p->drawSection(_sections);
+    p->drawCircle(_circles);
+}
 
 Scene::~Scene() {
     for (auto &pair: _points) {
@@ -160,29 +164,7 @@ void Scene::updateBoundingBox() const {
 
 void Scene::paint() const {
     updateBoundingBox();
-
     _painter->changeSize(_allFiguresRectangle);
-
-    std::unordered_map<ID, const Point*> const_points;
-    const_points.reserve(_points.size());
-    for (const auto& [id, ptr] : _points) {
-        const_points.emplace(id, ptr);
-    }
-    _painter->drawPoint(const_points);
-
-    std::unordered_map<ID, const Section*> const_sections;
-    const_sections.reserve(_sections.size());
-    for (const auto& [id, ptr] : _sections) {
-        const_sections.emplace(id, ptr);
-    }
-    _painter->drawSection(const_sections);
-
-    std::unordered_map<ID, const Circle*> const_circles;
-    const_circles.reserve(_circles.size());
-    for (const auto& [id, ptr] : _circles) {
-        const_circles.emplace(id, ptr);
-    }
-    _painter->drawCircle(const_circles);
 }
 
 const IGeometricObject* Scene::getObject(ID id) const {
