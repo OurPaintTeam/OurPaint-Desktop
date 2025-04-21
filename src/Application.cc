@@ -649,7 +649,34 @@ void Application::handler(const QString &command) {
                 leftMenu->addElemLeftMenu("Point", id.get() - 2, {z, r});
                 leftMenu->addElemLeftMenu("Section", id.get(), {x, y, z, r});
             });
-        }
+        } else if (commandParts[0] == "arc" && commandParts.size() >= 8) {
+            bool x0Ok, y0Ok, x1Ok, y1Ok, cxOk, cyOk, rOk;
+            double x1 = commandParts[1].toDouble(&x0Ok);
+            double y1 = commandParts[2].toDouble(&y0Ok);
+            double x2 = commandParts[3].toDouble(&x1Ok);
+            double y2 = commandParts[4].toDouble(&y1Ok);
+            double cx = commandParts[5].toDouble(&cxOk);
+            double cy = commandParts[6].toDouble(&cyOk);
+            double r = commandParts[7].toDouble(&rOk);
+            if (x0Ok && y0Ok && x1Ok && y1Ok && cxOk && cyOk && rOk) {
+                ObjectData arc;
+                arc.et = ET_ARC;
+                arc.params.push_back(x1);
+                arc.params.push_back(y1);
+                arc.params.push_back(x2);
+                arc.params.push_back(y2);
+                arc.params.push_back(cx);
+                arc.params.push_back(cy);
+                arc.params.push_back(r);
+                ID id = scene.addObject(arc);
+                ModeManager::setSave(false);
+                vecCalls.push_back([=, this]() {
+                     leftMenu->addElemLeftMenu("Point", id.get() - 1, {x1, y1});
+                     leftMenu->addElemLeftMenu("Point", id.get() - 2, {x2, y2});
+                     leftMenu->addElemLeftMenu("Point", id.get() - 1, {cx, cy});
+                     leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy, r});
+                 });
+            }
 
     } else if (commandParts[0] == "exit") {
         mainWind.close();
