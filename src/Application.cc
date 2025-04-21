@@ -1,7 +1,5 @@
 #include "Application.h"
 
-
-
 Application::Application(int &argc, char **argv)
         : app(argc, argv),
           mainWind(),
@@ -38,7 +36,7 @@ void Application::initialize() {
 }
 
 void Application::setupQTPainterConnections(){
-   /* if (painter) {
+    if (painter) {
         // Двойное нажатие на обьект и открытие его в левом меню
         QObject::connect(painter.get(), &QTPainter::DoubleClickOnObject, [this](ID id) {
             unsigned long long obj = id.get();
@@ -54,10 +52,12 @@ void Application::setupQTPainterConnections(){
             double dx = Scaling::logic(Scaling::getCursorDeltaX());
             double dy = Scaling::logic(Scaling::getCursorDeltaY());
 
-            ID id = painter->getIdFigures();// <- id фигуры перемещения
+            std::vector<long long int> vec_id= painter->getVecID();// <- id фигуры перемещения
 
             try {
-                scene.parallelMove(id, Cx, Cy, dx, dy);
+                for(int i=0;i<vec_id.size();++i) {
+                scene.moveObject(vec_id[i], Cx, Cy, dx, dy);
+                }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
             }
@@ -66,51 +66,6 @@ void Application::setupQTPainterConnections(){
             //   leftMenu->parameterChanged(id.get(),)
         });
 
-        // Получение айди фигуры
-        QObject::connect(painter.get(),
-                         static_cast<void (QTPainter::*)(Element, double, double)>(&QTPainter::getIdFigure),
-                         [this](Element F, double x, double y) {
-                             ObjectData elem;
-                             elem.et = F;
-                             double X = x;
-                             double Y = y;
-                             elem.params = {X, Y};
-                             ID id = scene.findElement(elem);
-                             painter->setIdFigures(id.get());
-                         }
-        );
-
-        // Получение айди фигуры
-        QObject::connect(painter.get(),
-                         static_cast<void (QTPainter::*)(Element, double, double, double)>(&QTPainter::getIdFigure),
-                         [this](Element F, double x, double y, double r) {
-                             ObjectData elem;
-                             elem.et = F;
-                             double X = x;
-                             double Y = y;
-                             double R = r;
-                             elem.params = {X, Y, R};
-                             ID id = scene.findElement(elem);
-                             painter->setIdFigures(id.get());
-                         }
-        );
-
-        // Получение айди фигуры
-        QObject::connect(painter.get(),
-                         static_cast<void (QTPainter::*)(Element, double, double, double,
-                                                         double)>(&QTPainter::getIdFigure),
-                         [this](Element F, double x, double y, double x1, double y1) {
-                             ObjectData elem;
-                             elem.et = F;
-                             double X = x;
-                             double Y = y;
-                             double X1 = x1;
-                             double Y1 = y1;
-                             elem.params = {X, Y, X1, Y1};
-                             ID id = scene.findElement(elem);
-                             painter->setIdFigures(id.get());
-                         }
-        );
 
         // Отрисовка точки
         QObject::connect(painter.get(), &QTPainter::SigPoint, [this](double x, double y) {
@@ -191,7 +146,7 @@ void Application::setupQTPainterConnections(){
                                      section.params.push_back(startY);
                                      section.params.push_back(endX);
                                      section.params.push_back(endY);
-                                     ID id = scene.addElement(section);
+                                     ID id = scene.addElemeant(section);
                                      ModeManager::setSave(false);
                                      leftMenu->addElemLeftMenu("Section",id.get(),{startX,startY,endX,endY});
                                      leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
@@ -211,7 +166,7 @@ void Application::setupQTPainterConnections(){
                                  section.params.push_back(startY);
                                  section.params.push_back(endX);
                                  section.params.push_back(endY);
-                                 ID id = scene.addElement(section);
+                                 ID id = scene.addObject(section);
                                  ModeManager::setSave(false);
                                  scene.paint();
                                  painter->draw();
@@ -230,14 +185,14 @@ void Application::setupQTPainterConnections(){
                          [this]() {});
 
 
-    }*/
+    }
 
     // Удаление элемента
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
-        std::vector<ID> vec_id = painter->getVecID();
+        std::vector<long long int> vec_id = painter->getVecID();
         for (int i = 0; i < vec_id.size(); ++i) {
-            scene.deleteElement(vec_id[i]);
-            leftMenu->removeFigureById(vec_id[i].get());
+            scene.deleteObject(ID(vec_id[i]));
+            leftMenu->removeFigureById(vec_id[i]);
         }
         painter->selectedClear();
         scene.paint();
@@ -361,7 +316,7 @@ void Application::setupServerConnections(){
 void Application::setupRequirementsConnections(){
     // Требования
     QObject::connect(&mainWind, &MainWindow::oneRequirements, [this]() {
-        std::vector<ID> vec_id = painter->getVecID();
+        std::vector<long long int> vec_id = painter->getVecID();
         for (const auto &id: vec_id) {
         }
     });
@@ -391,10 +346,10 @@ void Application::setupRequirementsConnections(){
     });
 
     QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
-        std::vector<ID> vec_id = painter->getVecID();
+        std::vector<long long int> vec_id = painter->getVecID();
         if (!vec_id.empty()) {
-            ID obj1(vec_id[0].get());
-            ID obj2(vec_id[1].get());
+            ID obj1(vec_id[0]);
+            ID obj2(vec_id[1]);
             RequirementData reqData;
             Requirement type;
             type = ET_SECTIONSECTIONPARALLEL;
