@@ -9,7 +9,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Set up CMake
-        uses: jwlawson/actions-setup-cmake@v3.20
+        uses: jwlawson/actions-setup-cmake@v1
       - name: Install dependencies
         run: |
           sudo apt-get update
