@@ -671,7 +671,7 @@ void Application::handler(const QString &command) {
                 ID id = scene.addObject(arc);
                 ModeManager::setSave(false);
                 vecCalls.push_back([=, this]() {
-                     leftMenu->addElemLeftMenu("Point", id.get() - 1, {x1, y1});
+                     leftMenu->addElemLeftMenu("Point", id.get() - 3, {x1, y1});
                      leftMenu->addElemLeftMenu("Point", id.get() - 2, {x2, y2});
                      leftMenu->addElemLeftMenu("Point", id.get() - 1, {cx, cy});
                      leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy, r});
