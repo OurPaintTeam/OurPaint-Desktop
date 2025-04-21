@@ -208,7 +208,7 @@ void Scene::paint() const {
     _painter->getBoundBox(_allFiguresRectangle);
 }
 
-const IGeometricObject* Scene::getObject(ID id) const {
+const IGeometricObject *Scene::getObject(ID id) const {
     if (auto it = _points.find(id); it != _points.end()) {
         return it->second;
     }
@@ -221,8 +221,8 @@ const IGeometricObject* Scene::getObject(ID id) const {
     return nullptr;
 }
 
-std::unordered_map<ID, const IGeometricObject*> Scene::getAllObjects() const {
-    std::unordered_map<ID, const IGeometricObject*> result;
+std::unordered_map<ID, const IGeometricObject *> Scene::getAllObjects() const {
+    std::unordered_map<ID, const IGeometricObject *> result;
 
     for (const auto &[id, obj]: _points) {
         result[id] = obj;
@@ -236,15 +236,15 @@ std::unordered_map<ID, const IGeometricObject*> Scene::getAllObjects() const {
     return result;
 }
 
-std::unordered_map<ID, const Point*> Scene::getPoints() const {
+std::unordered_map<ID, const Point *> Scene::getPoints() const {
     return {_points.begin(), _points.end()};
 }
 
-std::unordered_map<ID, const Section*> Scene::getSections() const {
+std::unordered_map<ID, const Section *> Scene::getSections() const {
     return {_sections.begin(), _sections.end()};
 }
 
-std::unordered_map<ID, const Circle*> Scene::getCircles() const {
+std::unordered_map<ID, const Circle *> Scene::getCircles() const {
     return {_circles.begin(), _circles.end()};
 }
 
@@ -296,6 +296,7 @@ void Scene::movePoint(ID pointID, double dx, double dy) {
     // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
     updateRequirements(pointID);
 }
+
 void Scene::moveSection(ID sectionID, double dx, double dy) {
     if (_sections.contains(sectionID)) {
         Section *s = _sections[sectionID];
@@ -308,6 +309,7 @@ void Scene::moveSection(ID sectionID, double dx, double dy) {
     // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
     updateRequirements(sectionID);
 }
+
 void Scene::moveCircle(ID circleID, double dx, double dy) {
     if (_circles.contains(circleID)) {
         Circle *c = _circles[circleID];
@@ -323,27 +325,29 @@ void Scene::setPoint(ID pointID, double x, double y) {
     if (!_points.contains(pointID)) {
         throw std::out_of_range("There is no point to change position");
     }
-    Point* p = _points[pointID];
+    Point *p = _points[pointID];
     p->x = x;
     p->y = y;
     updateRequirements(pointID);
 }
+
 void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2) {
     if (!_sections.contains(sectionID)) {
         throw std::out_of_range("There is no section to change");
     }
-    Section* s = _sections[sectionID];
+    Section *s = _sections[sectionID];
     s->beg->x = x1;
     s->beg->y = y1;
     s->beg->x = x2;
     s->beg->x = y2;
     updateRequirements(sectionID);
 }
+
 void Scene::setCircle(ID circleID, double x, double y, double r) {
     if (!_circles.contains(circleID)) {
         throw std::out_of_range("There is no circle to change");
     }
-    Circle* c = _circles[circleID];
+    Circle *c = _circles[circleID];
     c->center->x = x;
     c->center->y = y;
     c->r = r;
@@ -351,7 +355,7 @@ void Scene::setCircle(ID circleID, double x, double y, double r) {
 }
 
 ID Scene::addRequirement(const RequirementData &reqData) {
-    IReq* requirement = nullptr;
+    IReq *requirement = nullptr;
     if (reqData.objects.size() < 2) {
         throw std::invalid_argument("Insufficient data for requirement");
     }
@@ -365,13 +369,12 @@ ID Scene::addRequirement(const RequirementData &reqData) {
                 throw std::invalid_argument("Insufficient data for requirement");
             }
             double dist = reqData.params[0];
-            Point* p = nullptr;
-            Section* s = nullptr;
+            Point *p = nullptr;
+            Section *s = nullptr;
             if (_points.contains(id1) && _sections.contains(id2)) {
                 p = _points[id1];
                 s = _sections[id2];
-            }
-            else if (_points.contains(id2) && _sections.contains(id1)) {
+            } else if (_points.contains(id2) && _sections.contains(id1)) {
                 p = _points[id2];
                 s = _sections[id1];
             } else {
@@ -381,15 +384,14 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 2
+            // 2
         case ET_POINTONSECTION: {
-            Point* p = nullptr;
-            Section* s = nullptr;
+            Point *p = nullptr;
+            Section *s = nullptr;
             if (_points.contains(id1) && _sections.contains(id2)) {
                 p = _points[id1];
                 s = _sections[id2];
-            }
-            else if (_points.contains(id2) && _sections.contains(id1)) {
+            } else if (_points.contains(id2) && _sections.contains(id1)) {
                 p = _points[id2];
                 s = _sections[id1];
             } else {
@@ -399,14 +401,14 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 3
+            // 3
         case ET_POINTPOINTDIST: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
             }
             double dist = reqData.params[0];
-            Point* p1 = nullptr;
-            Point* p2 = nullptr;
+            Point *p1 = nullptr;
+            Point *p2 = nullptr;
             if (_points.contains(id1) && _points.contains(id2)) {
                 p1 = _points[id1];
                 p2 = _points[id2];
@@ -417,10 +419,10 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 4
+            // 4
         case ET_POINTONPOINT: {
-            Point* p1 = nullptr;
-            Point* p2 = nullptr;
+            Point *p1 = nullptr;
+            Point *p2 = nullptr;
             if (_points.contains(id1) && _points.contains(id2)) {
                 p1 = _points[id1];
                 p2 = _points[id2];
@@ -431,19 +433,18 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 5
+            // 5
         case ET_SECTIONCIRCLEDIST: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
             }
             double dist = reqData.params[0];
-            Section* s = nullptr;
-            Circle* c = nullptr;
+            Section *s = nullptr;
+            Circle *c = nullptr;
             if (_sections.contains(id1) && _circles.contains(id2)) {
                 s = _sections[id1];
                 c = _circles[id2];
-            }
-            else if (_sections.contains(id2) && _circles.contains(id1)) {
+            } else if (_sections.contains(id2) && _circles.contains(id1)) {
                 s = _sections[id2];
                 c = _circles[id1];
             } else {
@@ -453,15 +454,14 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 6
+            // 6
         case ET_SECTIONONCIRCLE: {
-            Section* s = nullptr;
-            Circle* c = nullptr;
+            Section *s = nullptr;
+            Circle *c = nullptr;
             if (_sections.contains(id1) && _circles.contains(id2)) {
                 s = _sections[id1];
                 c = _circles[id2];
-            }
-            else if (_sections.contains(id2) && _circles.contains(id1)) {
+            } else if (_sections.contains(id2) && _circles.contains(id1)) {
                 s = _sections[id2];
                 c = _circles[id1];
             } else {
@@ -471,15 +471,14 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 7
+            // 7
         case ET_SECTIONINCIRCLE: {
-            Section* s = nullptr;
-            Circle* c = nullptr;
+            Section *s = nullptr;
+            Circle *c = nullptr;
             if (_sections.contains(id1) && _circles.contains(id2)) {
                 s = _sections[id1];
                 c = _circles[id2];
-            }
-            else if (_sections.contains(id2) && _circles.contains(id1)) {
+            } else if (_sections.contains(id2) && _circles.contains(id1)) {
                 s = _sections[id2];
                 c = _circles[id1];
             } else {
@@ -489,10 +488,10 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 8
+            // 8
         case ET_SECTIONSECTIONPARALLEL: {
-            Section* s1 = nullptr;
-            Section* s2 = nullptr;
+            Section *s1 = nullptr;
+            Section *s2 = nullptr;
             if (_sections.contains(id1) && _sections.contains(id2)) {
                 s1 = _sections[id1];
                 s2 = _sections[id2];
@@ -503,10 +502,10 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 9
+            // 9
         case ET_SECTIONSECTIONPERPENDICULAR: {
-            Section* s1 = nullptr;
-            Section* s2 = nullptr;
+            Section *s1 = nullptr;
+            Section *s2 = nullptr;
             if (_sections.contains(id1) && _sections.contains(id2)) {
                 s1 = _sections[id1];
                 s2 = _sections[id2];
@@ -517,14 +516,14 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 10
+            // 10
         case ET_SECTIONSECTIONANGLE: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
             }
             double angle = reqData.params[0];
-            Section* s1 = nullptr;
-            Section* s2 = nullptr;
+            Section *s1 = nullptr;
+            Section *s2 = nullptr;
             if (_sections.contains(id1) && _sections.contains(id2)) {
                 s1 = _sections[id1];
                 s2 = _sections[id2];
@@ -535,12 +534,12 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 11
+            // 11
         case ET_POINTONCIRCLE: {
             break;
         }
 
-        // 12
+            // 12
         case ET_POINTINOBJECT: {
             break;
         }
@@ -572,13 +571,13 @@ void Scene::updateRequirements(ID objectID) {
 
     // TODO Решать только компоненту
     // TODO Избавиться от копирования
-    std::vector<Function*> copyFunctions;
-    for (auto& func : _errorRequirementFunctions) {
+    std::vector<Function *> copyFunctions;
+    for (auto &func: _errorRequirementFunctions) {
         copyFunctions.push_back(func->clone());
     }
 
     // --------------------------- Main Optimizing and Computing Algorithm ---------------------------
-    LSMFORLMTask* task = new LSMFORLMTask(copyFunctions, VarsStorage::getVars());
+    LSMFORLMTask *task = new LSMFORLMTask(copyFunctions, VarsStorage::getVars());
     LevenbergMarquardtSolver solver(10000, 0.5, 2, 4, 1e-07, 1e-07);
     solver.setTask(task);
     solver.optimize();
@@ -587,7 +586,7 @@ void Scene::updateRequirements(ID objectID) {
     std::cout << "Number of requirements in a component: " << count_of_req_in_component << std::endl;
 
     // Check converging
-    if (!solver.isConverged() || solver.getCurrentError() > 1e-6){
+    if (!solver.isConverged() || solver.getCurrentError() > 1e-6) {
         delete task;
         VarsStorage::clearVars();
         throw std::runtime_error("Not converged");
@@ -602,35 +601,35 @@ void Scene::updateRequirements(ID objectID) {
 // TODO
 std::string Scene::to_string() const {
     FileOurP saver;
-    for (auto& pair: _points) {
-        std::pair<unsigned int, IGeometricObject*> res;
+    for (auto &pair: _points) {
+        std::pair<unsigned int, IGeometricObject *> res;
         res.first = pair.first.get();
         res.second = pair.second;
         saver.addObject(res);
     }
-    for (auto& pair: _sections) {
-        std::pair<unsigned int, IGeometricObject*> res;
+    for (auto &pair: _sections) {
+        std::pair<unsigned int, IGeometricObject *> res;
         res.first = pair.first.get();
         res.second = pair.second;
         saver.addObject(res);
     }
-    for (auto& pair: _circles) {
-        std::pair<unsigned int, IGeometricObject*> res;
+    for (auto &pair: _circles) {
+        std::pair<unsigned int, IGeometricObject *> res;
         res.first = pair.first.get();
         res.second = pair.second;
         saver.addObject(res);
     }
-    for (auto& pair: _requirements) {
+    for (auto &pair: _requirements) {
         std::pair<unsigned int, RequirementData> res;
         res.first = pair.first.get();
         RequirementData rd;
         rd.req = pair.second->getType();
-        std::vector<double*> vec = pair.second->getParams();
-        for (auto& it : vec) {
+        std::vector<double *> vec = pair.second->getParams();
+        for (auto &it: vec) {
             rd.params.push_back(*it);
         }
         std::vector<Edge<ID, ID>> edges = _graph.getAllEdges();
-        for (auto& edge : edges) {
+        for (auto &edge: edges) {
             if (edge.weight == pair.first) {
                 rd.objects.push_back(edge.from.get());
                 rd.objects.push_back(edge.to.get());
@@ -642,29 +641,29 @@ std::string Scene::to_string() const {
     return saver.to_string();
 }
 
-void Scene::saveToFile(const char* filename) const {
+void Scene::saveToFile(const char *filename) const {
     FileOurP saver;
-    for (const auto& [id, obj] : _points) {
-        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
+    for (const auto &[id, obj]: _points) {
+        std::pair<unsigned int, IGeometricObject *> m{id.get(), obj};
         saver.addObject(m);
     }
-    for (const auto& [id, obj] : _sections) {
-        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
+    for (const auto &[id, obj]: _sections) {
+        std::pair<unsigned int, IGeometricObject *> m{id.get(), obj};
         saver.addObject(m);
     }
-    for (const auto& [id, obj] : _circles) {
-        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
+    for (const auto &[id, obj]: _circles) {
+        std::pair<unsigned int, IGeometricObject *> m{id.get(), obj};
         saver.addObject(m);
     }
-    for (const auto& [id, req] : _requirements) {
+    for (const auto &[id, req]: _requirements) {
         RequirementData rd;
         rd.req = req->getType();
-        std::vector<double*> vec = req->getParams();
-        for (auto& it : vec) {
+        std::vector<double *> vec = req->getParams();
+        for (auto &it: vec) {
             rd.params.push_back(*it);
         }
         std::vector<Edge<ID, ID>> edges = _graph.getAllEdges();
-        for (auto& edge : edges) {
+        for (auto &edge: edges) {
             if (edge.weight == id) {
                 rd.objects.push_back(edge.from.get());
                 rd.objects.push_back(edge.to.get());
@@ -677,41 +676,228 @@ void Scene::saveToFile(const char* filename) const {
     saver.saveToOurP(filename);
 }
 
-void Scene::loadFromFile(const char* filename) {
+void Scene::loadFromFile(const char *filename) {
     FileOurP loader;
 
     loader.loadFromOurP(filename);
     clear();
-    const std::vector<objectInFile>& vecObjData = loader.getObjects();
-    for (auto& objData : vecObjData) {
-        std::pair<unsigned int, IGeometricObject*> pair = objData.to_pair();
-        IGeometricObject* obj = pair.second;
-        ObjectData od;
-        od.et = obj->getType();
-        if (od.et == ET_POINT) {
-            Point* p = static_cast<Point*>(obj);
-            od.params.push_back(p->x);
-            od.params.push_back(p->y);
+    const std::vector<objectInFile> &vecObjData = loader.getObjects();
+    for (auto &objData: vecObjData) {
+        std::pair<unsigned int, IGeometricObject *> pair = objData.to_pair();
+        IGeometricObject *obj = pair.second;
+        if (obj->getType() == ET_POINT) {
+            Point *p = static_cast<Point *>(obj);
+            Point *p2 = new Point();
+            p2->x = p->x;
+            p2->y = p->y;
+            _points[ID(pair.first)] = p2;
+        } else if (obj->getType() == ET_SECTION) {
+            Section *s = static_cast<Section *>(obj);
+            Point *p1 = new Point();
+            p1->x = s->beg->x;
+            p1->y = s->beg->y;
+            Point *p2 = new Point();
+            p2->x = s->end->x;
+            p2->y = s->end->y;
+            Section *s1 = new Section();
+            s1->beg = p1;
+            s1->end = p2;
+            _points[ID(pair.first - 1)] = p1;
+            _points[ID(pair.first - 2)] = p2;
+            _sections[ID(pair.first)] = s1;
+        } else if (obj->getType() == ET_CIRCLE) {
+            Circle *c = static_cast<Circle *>(obj);
+            Point *p1 = new Point();
+            p1->x = c->center->x;
+            p1->y = c->center->y;
+            _points[ID(pair.first - 1)] = p1;
+            _circles[ID(pair.first)] = c;
         }
-        else if (od.et == ET_SECTION) {
-            Section* s = static_cast<Section*>(obj);
-            od.params.push_back(s->beg->x);
-            od.params.push_back(s->beg->y);
-            od.params.push_back(s->end->x);
-            od.params.push_back(s->end->y);
-        }
-        else if (od.et == ET_CIRCLE) {
-            Circle* c = static_cast<Circle*>(obj);
-            od.params.push_back(c->center->x);
-            od.params.push_back(c->center->y);
-            od.params.push_back(c->r);
-        }
-        addObject(od);
+
     }
-    const std::vector<requirementInFile>& vecReqData = loader.getRequirements();
-    for (auto& reqData : vecReqData) {
+    const std::vector<requirementInFile> &vecReqData = loader.getRequirements();
+    for (auto &reqData: vecReqData) {
         std::pair<unsigned int, RequirementData> pair = reqData.to_pair();
-        addRequirement(pair.second);
+        RequirementData rd = pair.second;
+        ID id1(pair.second.objects[0]);
+        ID id2(pair.second.objects[0]);
+        IReq *requirement = nullptr;
+        switch (pair.second.req) {
+            // 1
+            case ET_POINTSECTIONDIST: {
+                if (rd.params.empty()) {
+                    throw std::invalid_argument("Insufficient data for requirement");
+                }
+                double dist = rd.params[0];
+                Point *p = nullptr;
+                Section *s = nullptr;
+                if (_points.contains(id1) && _sections.contains(id2)) {
+                    p = _points[id1];
+                    s = _sections[id2];
+                } else if (_points.contains(id2) && _sections.contains(id1)) {
+                    p = _points[id2];
+                    s = _sections[id1];
+                } else {
+                    throw std::invalid_argument("Objects must be a Point and a Section");
+                }
+                requirement = new ReqPointSecDist(p, s, dist);
+                break;
+            }
+
+                // 2
+            case ET_POINTONSECTION: {
+                Point *p = nullptr;
+                Section *s = nullptr;
+                if (_points.contains(id1) && _sections.contains(id2)) {
+                    p = _points[id1];
+                    s = _sections[id2];
+                } else if (_points.contains(id2) && _sections.contains(id1)) {
+                    p = _points[id2];
+                    s = _sections[id1];
+                } else {
+                    throw std::invalid_argument("Objects must be a Point and a Section");
+                }
+                requirement = new ReqPointOnSec(p, s);
+                break;
+            }
+
+                // 3
+            case ET_POINTPOINTDIST: {
+                if (rd.params.empty()) {
+                    throw std::invalid_argument("Insufficient data for requirement");
+                }
+                double dist = rd.params[0];
+                Point *p1 = nullptr;
+                Point *p2 = nullptr;
+                if (_points.contains(id1) && _points.contains(id2)) {
+                    p1 = _points[id1];
+                    p2 = _points[id2];
+                } else {
+                    throw std::invalid_argument("Objects must be two Point");
+                }
+                requirement = new ReqPointPointDist(p1, p2, dist);
+                break;
+            }
+
+                // 4
+            case ET_POINTONPOINT: {
+                Point *p1 = nullptr;
+                Point *p2 = nullptr;
+                if (_points.contains(id1) && _points.contains(id2)) {
+                    p1 = _points[id1];
+                    p2 = _points[id2];
+                } else {
+                    throw std::invalid_argument("Objects must be two Point");
+                }
+                requirement = new ReqPointOnPoint(p1, p2);
+                break;
+            }
+
+                // 5
+            case ET_SECTIONCIRCLEDIST: {
+                if (rd.params.empty()) {
+                    throw std::invalid_argument("Insufficient data for requirement");
+                }
+                double dist = rd.params[0];
+                Section *s = nullptr;
+                Circle *c = nullptr;
+                if (_sections.contains(id1) && _circles.contains(id2)) {
+                    s = _sections[id1];
+                    c = _circles[id2];
+                } else if (_sections.contains(id2) && _circles.contains(id1)) {
+                    s = _sections[id2];
+                    c = _circles[id1];
+                } else {
+                    throw std::invalid_argument("Objects must be a Section and a Circle");
+                }
+                requirement = new ReqSecCircleDist(s, c, dist);
+                break;
+            }
+
+                // 6
+            case ET_SECTIONONCIRCLE: {
+                Section *s = nullptr;
+                Circle *c = nullptr;
+                if (_sections.contains(id1) && _circles.contains(id2)) {
+                    s = _sections[id1];
+                    c = _circles[id2];
+                } else if (_sections.contains(id2) && _circles.contains(id1)) {
+                    s = _sections[id2];
+                    c = _circles[id1];
+                } else {
+                    throw std::invalid_argument("Objects must be a Section and a Circle");
+                }
+                requirement = new ReqSecOnCircle(s, c);
+                break;
+            }
+
+                // 7
+            case ET_SECTIONINCIRCLE: {
+                Section *s = nullptr;
+                Circle *c = nullptr;
+                if (_sections.contains(id1) && _circles.contains(id2)) {
+                    s = _sections[id1];
+                    c = _circles[id2];
+                } else if (_sections.contains(id2) && _circles.contains(id1)) {
+                    s = _sections[id2];
+                    c = _circles[id1];
+                } else {
+                    throw std::invalid_argument("Objects must be a Section and a Circle");
+                }
+                requirement = new ReqSecInCircle(s, c);
+                break;
+            }
+
+                // 8
+            case ET_SECTIONSECTIONPARALLEL: {
+                Section *s1 = nullptr;
+                Section *s2 = nullptr;
+                if (_sections.contains(id1) && _sections.contains(id2)) {
+                    s1 = _sections[id1];
+                    s2 = _sections[id2];
+                } else {
+                    throw std::invalid_argument("Objects must be two Section");
+                }
+                requirement = new ReqSecSecParallel(s1, s2);
+                break;
+            }
+
+                // 9
+            case ET_SECTIONSECTIONPERPENDICULAR: {
+                Section *s1 = nullptr;
+                Section *s2 = nullptr;
+                if (_sections.contains(id1) && _sections.contains(id2)) {
+                    s1 = _sections[id1];
+                    s2 = _sections[id2];
+                } else {
+                    throw std::invalid_argument("Objects must be two Section");
+                }
+                requirement = new ReqSecSecPerpendicular(s1, s2);
+                break;
+            }
+
+                // 10
+            case ET_SECTIONSECTIONANGLE: {
+                if (rd.params.empty()) {
+                    throw std::invalid_argument("Insufficient data for requirement");
+                }
+                double angle = rd.params[0];
+                Section *s1 = nullptr;
+                Section *s2 = nullptr;
+                if (_sections.contains(id1) && _sections.contains(id2)) {
+                    s1 = _sections[id1];
+                    s2 = _sections[id2];
+                } else {
+                    throw std::invalid_argument("Objects must be two Section");
+                }
+                requirement = new ReqSecSecAngel(s1, s2, angle);
+                break;
+            }
+            default: {
+                std::invalid_argument("Unknown requirement type");
+            }
+        }
+        _requirements[ID(pair.first)] = requirement;
     }
 }
 
