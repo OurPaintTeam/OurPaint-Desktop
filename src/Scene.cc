@@ -303,7 +303,7 @@ void Scene::moveSection(ID sectionID, double dx, double dy) {
         s->beg->x += dx;
         s->beg->y += dy;
         s->end->x += dx;
-        s->end->x += dy;
+        s->end->y += dy;
     }
     _isRectangleDirty = true;
     // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.

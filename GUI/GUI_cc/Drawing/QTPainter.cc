@@ -84,12 +84,12 @@ bool QTPainter::findClosesObject() {
     bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
 
     if (!leftClick && !doubleClick) {
-        return true;
+        return false;
     }
 
     auto currentTime = std::chrono::steady_clock::now();
     if (currentTime - lastClickTime < std::chrono::milliseconds(300)) {
-        return true;
+        return false;
     }
 
     lastClickTime = currentTime;
@@ -311,20 +311,23 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     } else if (ModeManager::getActiveMode(WorkModes::Move)) {
 
         //  Кнопка мыши зажата
-        if(ModeManager::getActiveMode(MouseMode::LeftClick))
-            if(findClosesObject() || !ModeManager::getActiveMode(MouseMode::ReleasingRight)){
-                if(!selectedIDSection.empty()){
-                    emit MovingSection(selectedIDSection);
-                }
-                if(!selectedIDPoint.empty()){
-                    emit MovingPoint(selectedIDPoint);
-                }
-                if(!selectedIDCircle.empty()){
-                    emit MovingCircle(selectedIDCircle);
-                }
-            }else{
-                selectedClear();
+        if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) { drawing = true; }
+        else if(ModeManager::getActiveMode(MouseMode::ReleasingRight) ||  (ModeManager::getActiveMode(MouseMode::LeftClick) && !findClosesObject())){
+            drawing=false;
+            selectedClear();
+        }
+
+        if(drawing){
+            if(!selectedIDSection.empty()){
+                emit MovingSection(selectedIDSection);
             }
+            if(!selectedIDPoint.empty()){
+                emit MovingPoint(selectedIDPoint);
+            }
+            if(!selectedIDCircle.empty()){
+                emit MovingCircle(selectedIDCircle);
+            }
+        }
 
 
     }
