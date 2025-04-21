@@ -30,7 +30,6 @@ void Application::initialize() {
     Scene scene_copy(painter.get());
     leftMenu.reset(mainWind.getLeftMenuBar());
     scene = scene_copy;
-
     mainWind.show();
     mainWind.resize();
 }
@@ -116,7 +115,6 @@ void Application::setupQTPainterConnections(){
                     point.params.push_back(x);
                     point.params.push_back(y);
                     ModeManager::setSave(false);
-                    scene.paint();
                     painter->draw();
                     leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
                     server.sendToClients(QString::fromStdString(scene.to_string()));
@@ -132,7 +130,6 @@ void Application::setupQTPainterConnections(){
                 point.params.push_back(y);
                 ID id = scene.addObject(point);
                 ModeManager::setSave(false);
-                scene.paint();
                 painter->draw();
                 leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
             }
@@ -151,7 +148,6 @@ void Application::setupQTPainterConnections(){
                     ID id = scene.addObject(circle);
                     leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                     leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
-                    scene.paint();
                     painter->draw();
                     server.sendToClients(QString::fromStdString(scene.to_string()));
                 } else {
@@ -168,7 +164,6 @@ void Application::setupQTPainterConnections(){
                 ID id = scene.addObject(circle);
                 leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                 leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
-                scene.paint();
                 painter->draw();
             }
         });
@@ -190,7 +185,6 @@ void Application::setupQTPainterConnections(){
                                      leftMenu->addElemLeftMenu("Section",id.get(),{startX,startY,endX,endY});
                                      leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
                                      leftMenu->addElemLeftMenu("Point",id.get()-2,{endX,endY});
-                                     scene.paint();
                                      painter->draw();
                                      server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
@@ -207,7 +201,6 @@ void Application::setupQTPainterConnections(){
                                  section.params.push_back(endY);
                                  ID id = scene.addObject(section);
                                  ModeManager::setSave(false);
-                                 scene.paint();
                                  painter->draw();
                                  leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
                                  leftMenu->addElemLeftMenu("Point",id.get()-2,{endX,endY});
@@ -234,7 +227,6 @@ void Application::setupQTPainterConnections(){
             leftMenu->removeFigureById(vec_id[i]);
         }
         painter->selectedClear();
-        scene.paint();
         painter->draw();
     });
 
@@ -461,7 +453,6 @@ void Application::setupAddingCommandsConnections() {
         else {
             std::string File = fileName.toStdString();
             scene.saveToFile(File.c_str());
-            scene.paint();
             painter->draw();
         }
     });
@@ -471,7 +462,6 @@ void Application::setupAddingCommandsConnections() {
         painter->clear();
         std::string File = fileName.toStdString();
         scene.loadFromFile(File.c_str());
-        scene.paint();
         painter->draw();
     });
 
@@ -573,7 +563,6 @@ void Application::setupAddingCommandsConnections() {
 }
 
 void Application::updateState() {
-    scene.paint();
     painter->draw();
 
     QFuture<void> future = QtConcurrent::run([this]() {

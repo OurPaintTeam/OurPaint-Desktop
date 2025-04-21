@@ -8,9 +8,9 @@ Scene::Scene(Painter *p) :
         _isRectangleDirty(false),
         _allFiguresRectangle(),
         _graph() {
-    p->drawPoint(_points);
-    p->drawSection(_sections);
-    p->drawCircle(_circles);
+    p->initPoint(_points);
+    p->initSection(_sections);
+    p->initCircle(_circles);
 }
 
 Scene::~Scene() {
@@ -164,7 +164,7 @@ void Scene::updateBoundingBox() const {
 
 void Scene::paint() const {
     updateBoundingBox();
-    _painter->changeSize(_allFiguresRectangle);
+    _painter->getBoundBox(_allFiguresRectangle);
 }
 
 const IGeometricObject* Scene::getObject(ID id) const {

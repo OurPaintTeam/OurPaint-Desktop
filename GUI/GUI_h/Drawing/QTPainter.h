@@ -95,7 +95,7 @@ public:
 
 protected:
     // При выходе за границы мы масштабируем
-    void changeSize(const BoundBox2D& allObjects) override {
+    void getBoundBox(const BoundBox2D& allObjects) override {
         Rectangle=&allObjects;
     }
 
@@ -107,15 +107,15 @@ protected:
         return Scaling::getActualMonitorHeight();
     }
 
-    void drawPoint( std::unordered_map<ID,  Point*>& points) override {
+    void initPoint( std::unordered_map<ID,  Point*>& points) override {
         pointStorage = &points;
     }
 
-    void drawSection( std::unordered_map<ID,  Section*>& sections) override {
+    void initSection( std::unordered_map<ID,  Section*>& sections) override {
         sectionStorage = &sections;
     }
 
-    void drawCircle( std::unordered_map<ID,  Circle*>& circles) override {
+    void initCircle( std::unordered_map<ID,  Circle*>& circles) override {
         circleStorage = &circles;
     }
 
