@@ -377,7 +377,7 @@ void Application::setupRequirementsConnections(){
     });
 
     QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
-        std::vector<long long int> vec_id = painter->getVecID();
+        std::vector<ID> vec_id = painter->getVecID();
         if (!vec_id.empty()) {
             ID obj1(vec_id[0]);
             ID obj2(vec_id[1]);
@@ -448,11 +448,14 @@ void Application::setupAddingCommandsConnections() {
 
     // Save
     QObject::connect(&mainWind, &MainWindow::projectSaved, [this](const QString &fileName, QString format) {
-        if (format != (".ourp"))
+        if (format != (".ourp")) {
             painter->saveToImage(fileName, format);
+            scene.paint();
+        }
         else {
             std::string File = fileName.toStdString();
-            scene.saveToFile(File.c_str());
+            // TODO
+           // scene.saveToFile(File.c_str());
             painter->draw();
         }
     });
@@ -460,15 +463,17 @@ void Application::setupAddingCommandsConnections() {
     //Load
     QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString &fileName) {
         painter->clear();
+        scene.paint();
         std::string File = fileName.toStdString();
-        scene.loadFromFile(File.c_str());
+        // TODO
+       // scene.loadFromFile(File.c_str());
         painter->draw();
     });
 
     // Script
     QObject::connect(&mainWind, &MainWindow::EmitScript, [&](const QString &fileName) {
         std::string File = fileName.toStdString();
-
+        scene.paint();
         std::ifstream Script(File);
 
         // TODO logs

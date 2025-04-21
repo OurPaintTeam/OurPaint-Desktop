@@ -58,9 +58,9 @@ public:
 
     void clear(); // Очистка экрана и приводит все параметры к базовым
 
-    void figureDelete(); // Удаление данных о фигурах
+   std::pair<ID> getPairID{
 
-    std::vector<long long int> getVecID(); // Получение вектора айди для требований
+    };
 
     void selectedClear();  // Очистка данных выделенных обьектов
 

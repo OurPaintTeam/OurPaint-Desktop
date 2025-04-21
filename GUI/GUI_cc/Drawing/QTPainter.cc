@@ -39,20 +39,8 @@ void QTPainter::clear() {
     selectedClear();
     LeftMenuElem.clear();
     Scaling::setZoomZero();
-    DrawAdditionalInf::setID(0);
-    DrawAdditionalInf::setLeftMenuID(0);
-
-    circleStorage = nullptr;
-    pointStorage = nullptr;
-    sectionStorage = nullptr;
 
     SelectedRectangle.clear();
-}
-
-
-// Удаление данных о фигурах
-void QTPainter::figureDelete() {
-
 }
 
 
@@ -84,7 +72,7 @@ void QTPainter::drawingFigures(QPainter &painter) {
 
     // Обработка кругов
     if (circleStorage != nullptr && !circleStorage->empty()) {
-        DrawFigures::drawCircle(painter, *circleStorage,selectedIDCircle);
+        DrawFigures::drawCircle(painter, *circleStorage, selectedIDCircle);
     }
 
 }
@@ -92,21 +80,22 @@ void QTPainter::drawingFigures(QPainter &painter) {
 
 // Функция проверки курсора мышки и обьекта
 bool QTPainter::findClosesObject() {
-      bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-      bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
+    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
+    bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
 
-      if (!leftClick && !doubleClick) {
-          return true;
-      }
+    if (!leftClick && !doubleClick) {
+        return true;
+    }
 
-      auto currentTime = std::chrono::steady_clock::now();
-      if (currentTime - lastClickTime < std::chrono::milliseconds(300)) {
-          return true;
-      }
+    auto currentTime = std::chrono::steady_clock::now();
+    if (currentTime - lastClickTime < std::chrono::milliseconds(300)) {
+        return true;
+    }
 
-      lastClickTime = currentTime;
+    lastClickTime = currentTime;
 
-      bool objectFound = false;
+    bool objectFound = false;
+
 
     return true;
 
