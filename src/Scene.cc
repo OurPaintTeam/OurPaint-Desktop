@@ -577,7 +577,7 @@ std::string Scene::to_string() const {
         saver.addObject(res);
     }
     for (auto& pair: _requirements) {
-        /*std::pair<unsigned int, RequirementData> res;
+        std::pair<unsigned int, RequirementData> res;
         res.first = pair.first.get();
         RequirementData rd;
         rd.req = pair.second->getType();
@@ -585,17 +585,52 @@ std::string Scene::to_string() const {
         for (auto& it : vec) {
             rd.params.push_back(*it);
         }
-        std::vector<Edge<ID, ID>> vec2 = _graph.getAllEdges();
-        for (auto& it : vec2) {
-            if (it.weight == pair.first) {
-                rd.objects.push_back(it.from);
-                rd.objects.push_back(it.to);
+        std::vector<Edge<ID, ID>> edges = _graph.getAllEdges();
+        for (auto& edge : edges) {
+            if (edge.weight == pair.first) {
+                rd.objects.push_back(edge.from.get());
+                rd.objects.push_back(edge.to.get());
                 break;
             }
         }
-        saver.addRequirement(res);*/
+        saver.addRequirement(res);
     }
     return saver.to_string();
+}
+
+void Scene::saveToFile(const char *filename) const {
+    FileOurP saver;
+    for (const auto& [id, obj] : _points) {
+        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
+        saver.addObject(m);
+    }
+    for (const auto& [id, obj] : _sections) {
+        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
+        saver.addObject(m);
+    }
+    for (const auto& [id, obj] : _circles) {
+        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
+        saver.addObject(m);
+    }
+    for (const auto& [id, req] : _requirements) {
+        RequirementData rd;
+        rd.req = req->getType();
+        std::vector<double*> vec = req->getParams();
+        for (auto& it : vec) {
+            rd.params.push_back(*it);
+        }
+        std::vector<Edge<ID, ID>> edges = _graph.getAllEdges();
+        for (auto& edge : edges) {
+            if (edge.weight == id) {
+                rd.objects.push_back(edge.from.get());
+                rd.objects.push_back(edge.to.get());
+                break;
+            }
+        }
+        std::pair<unsigned int, RequirementData> m{id.get(), rd};
+        saver.addRequirement(m);
+    }
+    saver.saveToOurP(filename);
 }
 
 

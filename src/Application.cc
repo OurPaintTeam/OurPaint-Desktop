@@ -461,7 +461,7 @@ void Application::setupAddingCommandsConnections() {
     QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString &fileName) {
         painter->clear();
         std::string File = fileName.toStdString();
-        scene.loadFromFile(File.c_str());
+        //scene.loadFromFile(File.c_str());
         painter->draw();
     });
 

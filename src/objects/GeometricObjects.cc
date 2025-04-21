@@ -1,4 +1,4 @@
-#include "objects/GeometricObjects.h"
+#include "GeometricObjects.h"
 
 Point::Point() : x(), y() {}
 Point::Point(double x, double y) : x(x), y(y) {}
