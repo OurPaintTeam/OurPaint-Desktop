@@ -20,14 +20,13 @@ public:
 
     unsigned long long getWeight();
     unsigned long long getHeight();
-    void changeSize(const BoundBox2D& allObjects);
+    void getBoundBox(const BoundBox2D& allObjects);
 
-    void drawPoint(Point pt, bool isWhite = false);
-    void drawSection(Section sec, bool isWhite = false);
-    void drawCircle(Circle c, bool isWhite = false);
-    void drawPointt(const std::list<Point>& p) {}
-    void drawSectionn(const std::list<Section>& c) {}
-    void drawCirclee(const std::list<Circle>& s) {}
+    void initPoint(std::unordered_map<ID, Point*>& points);
+    void initSection(std::unordered_map<ID, Section*>& sections);
+    void initCircle(std::unordered_map<ID, Circle*>& circles);
+
+
 
     void saveBMP(const char* filename="print.bmp");
 };

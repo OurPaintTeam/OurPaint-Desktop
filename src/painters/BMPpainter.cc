@@ -17,9 +17,9 @@ BMPpainter::BMPpainter(const BMPfile &file): c_file(file), v_height(file.getHeig
  * сделаем некоторые преобразования, чтобы центр СК всегда была в середине листа
  * x = v_height - y; y = v_weight + x
  */
-void BMPpainter::drawSection(Section s, bool isWhite) {
+void BMPpainter::initSection(std::unordered_map<ID, Section*>& sections) {
     //Алгоритм Брезенхема
-    int x0 = static_cast<int>(-s.beg->y + v_height / 2);
+  /*  int x0 = static_cast<int>(-s.beg->y + v_height / 2);
     int y0 = static_cast<int>(s.beg->x + v_weight / 2);
     int x1 = static_cast<int>(-s.end->y + v_height / 2);
     int y1 = static_cast<int>(s.end->x + v_weight / 2);
@@ -34,16 +34,16 @@ void BMPpainter::drawSection(Section s, bool isWhite) {
         if (x0 == x1 && y0 == y1) break;
         e2 = 2 * err;
         if (e2 <= deltaX) { err += deltaX; y0 += dirY; } /* e_xy+e_y < 0 */
-        if (e2 >= deltaY) { err += deltaY; x0 += dirX; } /* e_xy+e_x > 0 */
-    }
+     //   if (e2 >= deltaY) { err += deltaY; x0 += dirX; } /* e_xy+e_x > 0 */
+   // }
 }
 
-void BMPpainter::drawPoint(Point p, bool isWhite) {
-    c_file.setPixel(static_cast<int>(v_height/2 - p.y), static_cast<int>( v_weight / 2 + p.x ), isWhite);
+void BMPpainter::initPoint(std::unordered_map<ID, Point*>& points) {
+ //   c_file.setPixel(static_cast<int>(v_height/2 - p.y), static_cast<int>( v_weight / 2 + p.x ), isWhite);
 }
 
-void BMPpainter::drawCircle(Circle c, bool isWhite) {
-    int x = 0;
+void BMPpainter::initCircle(std::unordered_map<ID, Circle*>& circles) {
+   /* int x = 0;
     int y = static_cast<int>(c.r);
     int x0 = v_height/2 - c.center->y;
     int y0 = c.center->x + v_weight/2;
@@ -68,14 +68,14 @@ void BMPpainter::drawCircle(Circle c, bool isWhite) {
             continue;
         }
         delta += 2 * (++x - --y);
-    }
+    }*/
 }
 
 void BMPpainter::saveBMP(const char* filename) {
     c_file.saveBmp(filename);
 }
 
-void BMPpainter::changeSize(const BoundBox2D &allObjects) {
+void BMPpainter::getBoundBox(const BoundBox2D &allObjects) {
     int newWeight = allObjects.max_x - allObjects.min_x > 0 ? allObjects.max_x - allObjects.min_x: -allObjects.max_x + allObjects.min_x;
     int newHeight = allObjects.max_y - allObjects.min_y > 0 ? allObjects.max_y - allObjects.min_y: -allObjects.max_y + allObjects.min_y;
     c_file.resize(newWeight * 2, newHeight * 2);

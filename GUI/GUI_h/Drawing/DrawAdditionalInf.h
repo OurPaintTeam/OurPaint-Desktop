@@ -2,6 +2,7 @@
 #define OURPAINT_DRAWADDITIONALINF_H
 #include <QPainter>
 #include "Scaling.h"
+#include "ID.h"
 
 // Класс для отрисовки доп информации (обводки, цифр)
 
@@ -32,13 +33,13 @@ public:
     /************* ID ********************/
 
     // Отрисовка айди для точки
-    static void drawPointID(QPainter &painter,QPointF &point,ID pointID);
+    static void drawPointID(QPainter &painter,QPointF &point,const ID& pointID);
 
     // Отрисовка айди для линии
-    static void drawSectionID(QPainter &painter, QPointF &start, QPointF &end,ID sectionID) ;
+    static void drawSectionID(QPainter &painter, QPointF &start, QPointF &end,const ID& sectionID) ;
 
     // Отрисовка айди для круга
-    static void drawCircleID(QPainter& painter, QPointF &center, double r,ID circleID) ;
+    static void drawCircleID(QPainter& painter, QPointF &center, double r,const ID& circleID);
 
     // Отрисовка айди для круга
     static void drawCircleLeftID(QPainter& painter,QPointF &center,double r);
@@ -64,6 +65,7 @@ public:
 
     // Отрисовка длины линии
     static void drawCoordinateLine(QPainter &painter, QPointF& start,QPointF &end);
+
 };
 
 #endif //OURPAINT_DRAWADDITIONALINF_H

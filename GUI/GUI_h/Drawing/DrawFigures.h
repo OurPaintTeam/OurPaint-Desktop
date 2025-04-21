@@ -101,7 +101,7 @@ public:
                     painter.setPen(currentPen);
 
                     if (selected) {
-                        DrawAdditionalInf::drawCircleID(painter, logicCenter, scaledRadius,id.get());
+                        DrawAdditionalInf::drawCircleID(painter, logicCenter, scaledRadius,id);
                         DrawAdditionalInf::drawCircleGlow(painter, logicCenter, scaledRadius);
                     }
 
@@ -153,7 +153,7 @@ public:
                     DrawAdditionalInf::drawCoordinateLine(painter, start, end);
 
                     if (selected) {
-                        DrawAdditionalInf::drawSectionID(painter, start, end, id.get());
+                        DrawAdditionalInf::drawSectionID(painter, start, end, id);
                         DrawAdditionalInf::drawSectionGlow(painter, start, end);
                     }
 

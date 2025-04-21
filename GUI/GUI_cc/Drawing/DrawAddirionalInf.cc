@@ -1,5 +1,4 @@
 #include "DrawAdditionalInf.h"
-#include "ID.h"
 
 unsigned long long DrawAdditionalInf::id = 0;
 unsigned long long DrawAdditionalInf::LeftMenuID = 0;
@@ -199,7 +198,7 @@ void DrawAdditionalInf::drawCursor(QPainter &painter) {
 
 
 // Отрисовка айди для точки
-void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,ID pointID) {
+void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,const ID &pointID) {
     if (pointID != ID(0)) {
         QString idText = QString("ID: %1").arg(pointID.get());
 
@@ -217,7 +216,7 @@ void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,ID pointID
 
 
 // Отрисовка айди для линии
-void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF &end,ID sectionID) {
+void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF &end,const ID &sectionID) {
     if (sectionID != ID(0)) {
         // Преобразуем координаты
         qreal dx = start.x() - end.x();
@@ -262,7 +261,7 @@ void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF
 }
 
 // Отрисовка айди для круга
-void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double r,ID circleID) {
+void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double r,const ID &circleID) {
     if (circleID != ID(0)) {
         QString idText = QString("ID: %1").arg(circleID.get());
 
