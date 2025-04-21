@@ -454,8 +454,7 @@ void Application::setupAddingCommandsConnections() {
         }
         else {
             std::string File = fileName.toStdString();
-            // TODO
-           // scene.saveToFile(File.c_str());
+            scene.saveToFile(File.c_str());
             painter->draw();
         }
     });
@@ -465,8 +464,7 @@ void Application::setupAddingCommandsConnections() {
         painter->clear();
         scene.paint();
         std::string File = fileName.toStdString();
-        // TODO
-       // scene.loadFromFile(File.c_str());
+        //scene.loadFromFile(File.c_str());
         painter->draw();
     });
 

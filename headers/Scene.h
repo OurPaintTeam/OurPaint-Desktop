@@ -73,6 +73,8 @@ public:
 
     std::string to_string() const;
 
+    void saveToFile(const char* filename) const;
+
     // TODO ---------------------------------------------------------------
 
     //IReq getRequirementInfo(ID id) const;

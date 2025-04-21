@@ -6,6 +6,10 @@
 #include "ID.h"
 #include "BoundBox.h"
 
+class Point;
+class Section;
+class Circle;
+
 class Painter {
 
 public:

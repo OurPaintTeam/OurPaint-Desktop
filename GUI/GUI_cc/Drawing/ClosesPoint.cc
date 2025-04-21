@@ -139,7 +139,7 @@ void ClosesPoint::enteringInRect(const std::list<Point> &points, QRectF &rect) {
 void ClosesPoint::enteringInRect(const std::list<Circle> &circles, QRectF &rect) {
     for (const Circle &c : circles) {
         QPointF center(c.center->x, c.center->y);
-        double radius = c.R;
+        double radius = c.r;
 
         QRectF circleBounds(center.x() - radius, center.y() - radius,
                             2 * radius, 2 * radius);
