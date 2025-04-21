@@ -39,6 +39,12 @@ public:
     Scene(Painter* p);
     ~Scene();
 
+    void initFigures(){
+        _painter->initPoint(_points);
+        _painter->initSection(_sections);
+        _painter->initCircle(_circles);
+    }
+
     ID addObject(const ObjectData& objData);
     bool deleteObject(ID objectID);
     bool deletePoint(ID pointID);
