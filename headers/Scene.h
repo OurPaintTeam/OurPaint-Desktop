@@ -58,7 +58,15 @@ public:
     std::size_t vertexCount() const;
 
     void setPainter(Painter*) const;
+
     void moveObject(ID objectID, double dx, double dy);
+    void movePoint(ID pointID, double dx, double dy);
+    void moveSection(ID sectionID, double dx, double dy);
+    void moveCircle(ID circleID, double dx, double dy);
+
+    void setPoint(ID pointID, double x, double y);
+    void setSection(ID sectionID, double x1, double y1, double x2, double y2);
+    void setCircle(ID pointID, double x, double y, double r);
 
     ID addRequirement(const RequirementData& reqData);
     void updateRequirements(ID objectID);

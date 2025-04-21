@@ -160,11 +160,29 @@ void Scene::updateBoundingBox() const {
 
 void Scene::paint() const {
     updateBoundingBox();
+
     _painter->changeSize(_allFiguresRectangle);
 
-    _painter->drawPoint(_points);
-    _painter->drawSection(_sections);
-    _painter->drawCircle(_circles);
+    std::unordered_map<ID, const Point*> const_points;
+    const_points.reserve(_points.size());
+    for (const auto& [id, ptr] : _points) {
+        const_points.emplace(id, ptr);
+    }
+    _painter->drawPoint(const_points);
+
+    std::unordered_map<ID, const Section*> const_sections;
+    const_sections.reserve(_sections.size());
+    for (const auto& [id, ptr] : _sections) {
+        const_sections.emplace(id, ptr);
+    }
+    _painter->drawSection(const_sections);
+
+    std::unordered_map<ID, const Circle*> const_circles;
+    const_circles.reserve(_circles.size());
+    for (const auto& [id, ptr] : _circles) {
+        const_circles.emplace(id, ptr);
+    }
+    _painter->drawCircle(const_circles);
 }
 
 const IGeometricObject* Scene::getObject(ID id) const {
@@ -238,6 +256,72 @@ void Scene::moveObject(ID id, double dx, double dy) {
         throw std::runtime_error("Failed to move object");
     }
     _isRectangleDirty = true;
+    // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
+    updateRequirements(id);
+}
+
+void Scene::movePoint(ID pointID, double dx, double dy) {
+    if (_points.contains(pointID)) {
+        Point *p = _points[pointID];
+        p->x += dx;
+        p->y += dy;
+    }
+    _isRectangleDirty = true;
+    // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
+    updateRequirements(pointID);
+}
+void Scene::moveSection(ID sectionID, double dx, double dy) {
+    if (_sections.contains(sectionID)) {
+        Section *s = _sections[sectionID];
+        s->beg->x += dx;
+        s->beg->y += dy;
+        s->end->x += dx;
+        s->end->x += dy;
+    }
+    _isRectangleDirty = true;
+    // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
+    updateRequirements(sectionID);
+}
+void Scene::moveCircle(ID circleID, double dx, double dy) {
+    if (_circles.contains(circleID)) {
+        Circle *c = _circles[circleID];
+        c->center->x += dx;
+        c->center->y += dy;
+    }
+    _isRectangleDirty = true;
+    // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
+    updateRequirements(circleID);
+}
+
+void Scene::setPoint(ID pointID, double x, double y) {
+    if (!_points.contains(pointID)) {
+        throw std::out_of_range("There is no point to change position");
+    }
+    Point* p = _points[pointID];
+    p->x = x;
+    p->y = y;
+    updateRequirements(pointID);
+}
+void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2) {
+    if (!_sections.contains(sectionID)) {
+        throw std::out_of_range("There is no section to change");
+    }
+    Section* s = _sections[sectionID];
+    s->beg->x = x1;
+    s->beg->y = y1;
+    s->beg->x = x2;
+    s->beg->x = y2;
+    updateRequirements(sectionID);
+}
+void Scene::setCircle(ID circleID, double x, double y, double r) {
+    if (!_circles.contains(circleID)) {
+        throw std::out_of_range("There is no circle to change");
+    }
+    Circle* c = _circles[circleID];
+    c->center->x = x;
+    c->center->y = y;
+    c->r = r;
+    updateRequirements(circleID);
 }
 
 ID Scene::addRequirement(const RequirementData &reqData) {
@@ -531,6 +615,7 @@ std::string Scene::to_string() const {
     }
     return saver.to_string();
 }
+
 
 
 
