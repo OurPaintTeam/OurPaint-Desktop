@@ -32,14 +32,14 @@ inline Element Circle::getType() const {
     return ET_CIRCLE;
 }
 
-Ark::Ark() : beg(nullptr),end(nullptr), center(nullptr), r() {}
+Arc::Arc() : beg(nullptr),end(nullptr), center(nullptr), r() {}
 
-Ark::Ark(Point *p1, Point *p2, Point *c, double r): beg(p1), end(p2), center(c), r(r) {}
+Arc::Arc(Point *p1, Point *p2, Point *c, double r): beg(p1), end(p2), center(c), r(r) {}
 
-BoundBox2D Ark::getBox() const {
+BoundBox2D Arc::getBox() const {
     return {center->x - r, center->x + r,center->y - r, center->y + r};
 }
-inline Element Ark::getType() const {
+inline Element Arc::getType() const {
     return ET_ARC;
 }
 

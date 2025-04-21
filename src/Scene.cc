@@ -3,6 +3,7 @@
 Scene::Scene(Painter *p) :
         _painter(p),
         _points(),
+        _arcs(),
         _sections(),
         _circles(),
         _isRectangleDirty(false),
@@ -12,6 +13,7 @@ Scene::Scene(Painter *p) :
         p->initPoint(_points);
         p->initSection(_sections);
         p->initCircle(_circles);
+        p->initArc(_arcs);
     }
 }
 
@@ -25,12 +27,16 @@ Scene::~Scene() {
     for (auto &pair: _circles) {
         delete pair.second;
     }
+    for (auto &pair: _arcs) {
+        delete pair.second;
+    }
     for (auto &pair: _requirements) {
         delete pair.second;
     }
     _points.clear();
     _sections.clear();
     _circles.clear();
+    _arcs.clear();
     _requirements.clear();
 }
 
@@ -85,6 +91,29 @@ ID Scene::addObject(const ObjectData &objData) {
             _allFiguresRectangle = _allFiguresRectangle | c->getBox();
             return newID;
         }
+        case ET_ARC: {
+            if (objData.params.size() < 5) {
+                throw std::invalid_argument("Arc requires first point, second point, center and radius");
+            }
+            Point *p1 = new Point(objData.params[0], objData.params[1]);
+            Point *p2 = new Point(objData.params[2], objData.params[3]);
+            Point *p3 = new Point(objData.params[4], objData.params[5]);
+            ID pID1 = _idGeometricObjectsGenerator.generate();
+            _points[pID1] = p1;
+            _graph.addVertex(pID1);
+            ID pID2 = _idGeometricObjectsGenerator.generate();
+            _points[pID2] = p2;
+            _graph.addVertex(pID2);
+            ID pID3 = _idGeometricObjectsGenerator.generate();
+            _points[pID3] = p3;
+            _graph.addVertex(pID3);
+            Arc *a = new Arc(p1, p2, p3, objData.params[6]);
+            ID newID = _idGeometricObjectsGenerator.generate();
+            _arcs[newID] = a;
+            _graph.addVertex(newID);
+            _allFiguresRectangle = _allFiguresRectangle | a->getBox();
+            return newID;
+        }
         default:
             throw std::invalid_argument("Unknown object type");
     }
@@ -120,7 +149,15 @@ bool Scene::deleteObject(ID objectID) {
         _isRectangleDirty = true;
         return true;
     }
-
+    auto it_arc = _arcs.find(objectID);
+    if (it_arc != _arcs.end()) {
+        if (it_arc->second) {
+            delete it_arc->second;
+        }
+        _arcs.erase(it_arc);
+        _isRectangleDirty = true;
+        return true;
+    }
     return false;
 }
 
@@ -162,7 +199,18 @@ bool Scene::deleteCircle(ID circleID) {
     }
     return false;
 }
-
+bool Scene::deleteArc(ID arcID) {
+    auto it_arc = _arcs.find(arcID);
+    if (it_arc != _arcs.end()) {
+        if (it_arc->second) {
+            delete it_arc->second;
+        }
+        _arcs.erase(it_arc);
+        _isRectangleDirty = true;
+        return true;
+    }
+    return false;
+}
 void Scene::clear() {
     for (auto &pair: _points) {
         delete pair.second;
@@ -173,9 +221,13 @@ void Scene::clear() {
     for (auto &pair: _circles) {
         delete pair.second;
     }
+    for (auto &pair: _arcs) {
+        delete pair.second;
+    }
     _points.clear();
     _sections.clear();
     _circles.clear();
+    _arcs.clear();
 
     _allFiguresRectangle = BoundBox2D{};
     _isRectangleDirty = false;
@@ -218,6 +270,9 @@ const IGeometricObject *Scene::getObject(ID id) const {
     if (auto it = _circles.find(id); it != _circles.end()) {
         return it->second;
     }
+    if (auto it = _arcs.find(id); it != _arcs.end()) {
+        return it->second;
+    }
     return nullptr;
 }
 
@@ -231,6 +286,9 @@ std::unordered_map<ID, const IGeometricObject *> Scene::getAllObjects() const {
         result[id] = obj;
     }
     for (const auto &[id, obj]: _circles) {
+        result[id] = obj;
+    }
+    for (const auto &[id, obj]: _arcs) {
         result[id] = obj;
     }
     return result;
@@ -247,7 +305,9 @@ std::unordered_map<ID, const Section *> Scene::getSections() const {
 std::unordered_map<ID, const Circle *> Scene::getCircles() const {
     return {_circles.begin(), _circles.end()};
 }
-
+std::unordered_map<ID, const Circle *> Scene::getArcs() const {
+    return {_arcs.begin(), _arcs.end()};
+}
 std::size_t Scene::edgeCount() const {
     return _graph.edgeCount();
 }

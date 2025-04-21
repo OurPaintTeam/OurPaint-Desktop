@@ -20,7 +20,7 @@ private:
     std::unordered_map<ID, Point*> _points;
     std::unordered_map<ID, Section*> _sections;
     std::unordered_map<ID, Circle*> _circles;
-
+    std::unordered_map<ID, Arc*> _arcs;
     std::unordered_map<ID, IReq*> _requirements;
 
     std::vector<Function*> _errorRequirementFunctions;
@@ -39,18 +39,12 @@ public:
     Scene(Painter* p);
     ~Scene();
 
-    void initFigures(){
-        _painter->initPoint(_points);
-        _painter->initSection(_sections);
-        _painter->initCircle(_circles);
-    }
-
     ID addObject(const ObjectData& objData);
     bool deleteObject(ID objectID);
     bool deletePoint(ID pointID);
     bool deleteSection(ID sectionID);
     bool deleteCircle(ID circleID);
-
+    bool deleteArc(ID arcID);
     void clear();
 
     const BoundBox2D& getBoundingBox() const;

@@ -51,13 +51,13 @@ struct Circle : public IGeometricObject {
     inline Element getType() const override;
 };
 
-struct Ark : public IGeometricObject {
+struct Arc : public IGeometricObject {
     Point *beg;
     Point *end;
     Point *center;
     double r;
-    Ark();
-    Ark(Point* p1, Point* p2, Point* c, double r);
+    Arc();
+    Arc(Point* p1, Point* p2, Point* c, double r);
 
     BoundBox2D getBox() const override;
     inline Element getType() const override;

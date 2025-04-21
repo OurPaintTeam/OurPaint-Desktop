@@ -9,6 +9,7 @@
 class Point;
 class Section;
 class Circle;
+class Arc;
 
 class Painter {
 
@@ -20,6 +21,7 @@ public:
     virtual void initPoint(std::unordered_map<ID, Point*>& points) = 0;
     virtual void initSection(std::unordered_map<ID, Section*>& sections) = 0;
     virtual void initCircle(std::unordered_map<ID, Circle*>& circles) = 0;
+    virtual void initArc(std::unordered_map<ID, Arc*>& Arcs) = 0;
 
     virtual ~Painter() = default;
 };
