@@ -146,7 +146,7 @@ void Application::setupQTPainterConnections(){
                                      section.params.push_back(startY);
                                      section.params.push_back(endX);
                                      section.params.push_back(endY);
-                                     ID id = scene.addElemeant(section);
+                                     ID id = scene.addObject(section);
                                      ModeManager::setSave(false);
                                      leftMenu->addElemLeftMenu("Section",id.get(),{startX,startY,endX,endY});
                                      leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
