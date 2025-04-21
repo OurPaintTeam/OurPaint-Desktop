@@ -8,9 +8,11 @@ Scene::Scene(Painter *p) :
         _isRectangleDirty(false),
         _allFiguresRectangle(),
         _graph() {
-    p->initPoint(_points);
-    p->initSection(_sections);
-    p->initCircle(_circles);
+    if (p) {
+        p->initPoint(_points);
+        p->initSection(_sections);
+        p->initCircle(_circles);
+    }
 }
 
 Scene::~Scene() {
@@ -254,8 +256,11 @@ std::size_t Scene::vertexCount() const {
     return _graph.vertexCount();
 }
 
-void Scene::setPainter(Painter *p) const {
+void Scene::setPainter(Painter *p) {
     _painter = p;
+    _painter->initPoint(_points);
+    _painter->initSection(_sections);
+    _painter->initCircle(_circles);
 }
 
 void Scene::moveObject(ID id, double dx, double dy) {

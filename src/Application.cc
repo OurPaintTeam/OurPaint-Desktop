@@ -30,6 +30,7 @@ void Application::initialize() {
     Scene scene_copy(painter.get());
     leftMenu.reset(mainWind.getLeftMenuBar());
     scene = scene_copy;
+    scene.setPainter(painter.get());
     mainWind.show();
     mainWind.resize();
 }

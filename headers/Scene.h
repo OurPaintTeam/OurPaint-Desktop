@@ -61,7 +61,7 @@ public:
     std::size_t edgeCount() const;
     std::size_t vertexCount() const;
 
-    void setPainter(Painter*) const;
+    void setPainter(Painter*);
 
     void moveObject(ID objectID, double dx, double dy);
     void movePoint(ID pointID, double dx, double dy);
