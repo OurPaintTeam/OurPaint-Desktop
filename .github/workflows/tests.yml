@@ -27,16 +27,16 @@ jobs:
         run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build
-      # IDGTEST
-      - name: Run IDGTEST
-        run: ./build/IDGTEST
-      - name: Run IDGTEST - Valgrind
-        run: valgrind --leak-check=full --error-exitcode=1 ./build/IDGTEST
       # ObjectsGTEST
       - name: Run ObjectsGTEST
         run: ./build/ObjectsGTEST
       - name: Run ObjectsGTEST - Valgrind
         run: valgrind --leak-check=full --error-exitcode=1 ./build/ObjectsGTEST
+      # IDGTEST
+      - name: Run IDGTEST
+        run: ./build/IDGTEST
+      - name: Run IDGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/IDGTEST
       # VarsStorageGTEST
       - name: Run VarsStorageGTEST
         run: ./build/VarsStorageGTEST
