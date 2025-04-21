@@ -45,6 +45,7 @@ private:
 
     // Класс для отрисовки мышкой
     DrawMouse drawFigM;
+    bool drawing=false;
 
     std::chrono::steady_clock::time_point lastClickTime;
 
