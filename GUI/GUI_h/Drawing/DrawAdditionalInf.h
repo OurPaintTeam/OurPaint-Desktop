@@ -32,13 +32,13 @@ public:
     /************* ID ********************/
 
     // Отрисовка айди для точки
-    static void drawPointID(QPainter &painter,QPointF &point,long long int ID);
+    static void drawPointID(QPainter &painter,QPointF &point,ID pointID);
 
     // Отрисовка айди для линии
-    static void drawSectionID(QPainter &painter, QPointF &start, QPointF &end,long long int ID) ;
+    static void drawSectionID(QPainter &painter, QPointF &start, QPointF &end,ID sectionID) ;
 
     // Отрисовка айди для круга
-    static void drawCircleID(QPainter& painter, QPointF &center, double r,long long int ID) ;
+    static void drawCircleID(QPainter& painter, QPointF &center, double r,ID circleID) ;
 
     // Отрисовка айди для круга
     static void drawCircleLeftID(QPainter& painter,QPointF &center,double r);

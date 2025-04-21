@@ -43,8 +43,8 @@ void Application::setupQTPainterConnections(){
             //  leftMenu->FocusOnItemById(obj);
         });
 
-        // Перемещение обьекта
-        QObject::connect(painter.get(), &QTPainter::MovingFigures, [this]() {
+        // Перемещение точки
+        QObject::connect(painter.get(), &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
 
             double Cx = Scaling::logicCursorX();
             double Cy = Scaling::logicCursorY();
@@ -52,11 +52,50 @@ void Application::setupQTPainterConnections(){
             double dx = Scaling::logic(Scaling::getCursorDeltaX());
             double dy = Scaling::logic(Scaling::getCursorDeltaY());
 
-            std::vector<long long int> vec_id= painter->getVecID();// <- id фигуры перемещения
-
             try {
                 for(int i=0;i<vec_id.size();++i) {
                 scene.moveObject(vec_id[i], Cx, Cy, dx, dy);
+                }
+            } catch (const std::exception &a) {
+                mainWind.showError("Zheny kosyk ");
+            }
+            painter->draw();
+            // TODO сделать изменение обьекта по айди
+            //   leftMenu->parameterChanged(id.get(),)
+        });
+        // Перемещение отрезка
+        QObject::connect(painter.get(), &QTPainter::MovingSection, [this](std::vector<ID> vec_id) {
+
+            double Cx = Scaling::logicCursorX();
+            double Cy = Scaling::logicCursorY();
+
+            double dx = Scaling::logic(Scaling::getCursorDeltaX());
+            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+
+            try {
+                for(int i=0;i<vec_id.size();++i) {
+                    scene.moveObject(vec_id[i], Cx, Cy, dx, dy);
+                }
+            } catch (const std::exception &a) {
+                mainWind.showError("Zheny kosyk ");
+            }
+            painter->draw();
+            // TODO сделать изменение обьекта по айди
+            //   leftMenu->parameterChanged(id.get(),)
+        });
+        // Перемещение круга
+        QObject::connect(painter.get(), &QTPainter::MovingCircle, [this](std::vector<ID> vec_id) {
+
+            double Cx = Scaling::logicCursorX();
+            double Cy = Scaling::logicCursorY();
+
+            double dx = Scaling::logic(Scaling::getCursorDeltaX());
+            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+
+
+            try {
+                for(int i=0;i<vec_id.size();++i) {
+                    scene.moveObject(vec_id[i], Cx, Cy, dx, dy);
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -72,7 +111,7 @@ void Application::setupQTPainterConnections(){
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
                     ObjectData point;
-                    ID id = scene.findElement(point);
+                    ID id = scene.addObject(point);
                     point.et = ET_POINT;
                     point.params.push_back(x);
                     point.params.push_back(y);
@@ -88,13 +127,13 @@ void Application::setupQTPainterConnections(){
 
             } else {
                 ObjectData point;
+                ID id = scene.addObject(point);
                 point.et = ET_POINT;
                 point.params.push_back(x);
                 point.params.push_back(y);
                 ModeManager::setSave(false);
                 scene.paint();
                 painter->draw();
-                ID id = scene.findElement(point);
                 leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
             }
         });
@@ -105,11 +144,11 @@ void Application::setupQTPainterConnections(){
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
                     circle.et = ET_CIRCLE;
+                    ID id = scene.addObject(circle);
                     circle.params.push_back(x);
                     circle.params.push_back(y);
                     circle.params.push_back(radius);
                     ModeManager::setSave(false);
-                    ID id = scene.findElement(circle);
                     leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                     leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                     scene.paint();
@@ -122,11 +161,11 @@ void Application::setupQTPainterConnections(){
                 }
             } else {
                 circle.et = ET_CIRCLE;
+                ID id = scene.addObject(circle);
                 circle.params.push_back(x);
                 circle.params.push_back(y);
                 circle.params.push_back(radius);
                 ModeManager::setSave(false);
-                ID id = scene.findElement(circle);
                 leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                 leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                 scene.paint();

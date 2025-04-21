@@ -1,4 +1,5 @@
 #include "DrawAdditionalInf.h"
+#include "ID.h"
 
 unsigned long long DrawAdditionalInf::id = 0;
 unsigned long long DrawAdditionalInf::LeftMenuID = 0;
@@ -198,9 +199,9 @@ void DrawAdditionalInf::drawCursor(QPainter &painter) {
 
 
 // Отрисовка айди для точки
-void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,long long int ID) {
-    if (ID != 0) {
-        QString idText = QString("ID: %1").arg(ID);
+void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,ID pointID) {
+    if (pointID != ID(0)) {
+        QString idText = QString("ID: %1").arg(pointID.get());
 
         // Смещение вверх над точкой
         const short int offsetY = 10;
@@ -216,8 +217,8 @@ void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,long long 
 
 
 // Отрисовка айди для линии
-void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF &end,long long int ID) {
-    if (ID != 0) {
+void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF &end,ID sectionID) {
+    if (sectionID != ID(0)) {
         // Преобразуем координаты
         qreal dx = start.x() - end.x();
         qreal dy = start.y() - end.y();
@@ -225,7 +226,7 @@ void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF
         double midX = (start.x() + end.x()) / 2;
         double midY = (start.y() + end.y()) / 2;
 
-        QString idText = QString("ID: %1").arg(ID);
+        QString idText = QString("ID: %1").arg(sectionID.get());
         QFontMetrics metrics(painter.font());
         QRectF textRect = metrics.boundingRect(idText);
 
@@ -261,9 +262,9 @@ void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF
 }
 
 // Отрисовка айди для круга
-void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double r,long long int ID) {
-    if (ID != 0) {
-        QString idText = QString("ID: %1").arg(ID);
+void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double r,ID circleID) {
+    if (circleID != ID(0)) {
+        QString idText = QString("ID: %1").arg(circleID.get());
 
         // Смещение над кругом
         short int offsetY = 10;

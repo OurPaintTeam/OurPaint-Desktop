@@ -24,8 +24,8 @@ public:
     }
 
     // Функция для отрисовки точек
-    static void drawPoint(QPainter &painter, const std::unordered_map<ID, const Point *> &points,
-                          std::vector<long long int> &vec_id) {
+    static void drawPoint(QPainter &painter, const std::unordered_map<ID,  Point *> &points,
+                          std::vector<ID> &vec_id) {
         if (points.size() == 0) { return; }
         else {
 
@@ -36,20 +36,21 @@ public:
 
             if (!vec_id.empty()) {
 
-                    std::unordered_set<long long int> selectedIds(vec_id.begin(), vec_id.end());
+                    std::unordered_set<ID> selectedIds(vec_id.begin(), vec_id.end());
 
                     for (const auto &pt : points) {
                         const Point *point = pt.second;
+
                         QPointF logicPoint(Scaling::scaleCoordinate(point->x), Scaling::scaleCoordinate(-point->y));
 
-                        bool isSelected = selectedIds.contains(pt.first.get());
+                        bool isSelected = selectedIds.contains(pt.first);
                         short int pointRadius = isSelected ? 2 : 1;
 
 
                         painter.drawEllipse(logicPoint, pointRadius, pointRadius);
 
                         if (isSelected) {
-                            DrawAdditionalInf::drawPointID(painter, logicPoint, pt.first.get());
+                            DrawAdditionalInf::drawPointID(painter, logicPoint, pt.first);
                             DrawAdditionalInf::drawPointGlow(painter, logicPoint);
                         }
                     }
@@ -71,7 +72,7 @@ public:
 
 
     // Функция для отрисовки кругов
-    static void drawCircle(QPainter &painter, const std::unordered_map<ID, const Circle *> &circles,std::vector<long long int> &vec_id) {
+    static void drawCircle(QPainter &painter, const std::unordered_map<ID,  Circle *> &circles,std::vector<ID> &vec_id) {
         if (circles.size() == 0) { return; }
         else {
             QPen pen(Qt::black);
@@ -83,7 +84,7 @@ public:
             painter.setPen(pen);
 
             if(!vec_id.empty()) {
-                std::unordered_set<long long int> selectedIds(vec_id.begin(), vec_id.end());
+                std::unordered_set<ID> selectedIds(vec_id.begin(), vec_id.end());
 
                 for (const auto &pair: circles) {
                     const ID &id = pair.first;
@@ -93,7 +94,7 @@ public:
                     QPointF logicCenter(Scaling::scaleCoordinate(circle->center->x),
                                         Scaling::scaleCoordinate(-circle->center->y));
 
-                    bool selected = selectedIds.contains(id.get());
+                    bool selected = selectedIds.contains(id);
 
                     QPen currentPen = selected ? QPen(Qt::blue) : QPen(Qt::black);
                     currentPen.setWidth(selected ? 2 : 1);
@@ -122,7 +123,7 @@ public:
 
 
     // Функция для отрисовки линий
-    static void drawSection(QPainter &painter, const std::unordered_map<ID, const Section *> &sections,std::vector<long long int> &vec_id) {
+    static void drawSection(QPainter &painter, const std::unordered_map<ID,  Section *> &sections,std::vector<ID> &vec_id) {
         if (sections.size() == 0) { return; }
         else {
             painter.setRenderHint(QPainter::Antialiasing);  // Включаем сглаживание
@@ -132,7 +133,7 @@ public:
             painter.setPen(currentPen);
 
             if(!vec_id.empty()) {
-                std::unordered_set<long long int> selectedIds(vec_id.begin(), vec_id.end());
+                std::unordered_set<ID> selectedIds(vec_id.begin(), vec_id.end());
 
                 for (const auto &pair: sections) {
                     const ID &id = pair.first;
@@ -143,7 +144,7 @@ public:
                     QPointF end(Scaling::scaleCoordinate(section->end->x),
                                 Scaling::scaleCoordinate(-section->end->y));
 
-                    bool selected = selectedIds.contains(id.get());
+                    bool selected = selectedIds.contains(id);
 
                     currentPen.setWidth(selected ? 2 : 1);
                     painter.setPen(currentPen);

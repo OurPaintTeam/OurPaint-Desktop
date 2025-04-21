@@ -29,7 +29,7 @@ private:
     mutable bool _isRectangleDirty;
     mutable BoundBox2D _allFiguresRectangle;
 
-    IDGenerator _idGeЫometricObjectsGenerator;
+    IDGenerator _idGeometricObjectsGenerator;
     IDGenerator _idRequirementsGenerator;
 
     UndirectedWeightedGraph<ID, ID> _graph;

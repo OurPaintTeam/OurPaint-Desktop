@@ -30,14 +30,14 @@ Q_OBJECT
 
 private:
     //  Выделенные обьекты
-    std::vector<long long int> selectedIdPoint;
-    std::vector<long long int> selectedIdCircle;
-    std::vector<long long int> selectedIdSection;
+    std::vector<ID> selectedIDPoint;
+    std::vector<ID> selectedIDCircle;
+    std::vector<ID> selectedIDSection;
 
     // Указатели
-    const std::unordered_map<ID, const Point*>* pointStorage;
-    const std::unordered_map<ID, const Section*>* sectionStorage;
-    const std::unordered_map<ID, const Circle*>* circleStorage;
+     std::unordered_map<ID,  Point*>* pointStorage;
+     std::unordered_map<ID,  Section*>* sectionStorage;
+     std::unordered_map<ID,  Circle*>* circleStorage;
     const BoundBox2D* Rectangle;
 
     // Элемент левого меню
@@ -107,15 +107,15 @@ protected:
         return Scaling::getActualMonitorHeight();
     }
 
-    void drawPoint(const std::unordered_map<ID, const Point*>& points) override {
+    void drawPoint( std::unordered_map<ID,  Point*>& points) override {
         pointStorage = &points;
     }
 
-    void drawSection(const std::unordered_map<ID, const Section*>& sections) override {
+    void drawSection( std::unordered_map<ID,  Section*>& sections) override {
         sectionStorage = &sections;
     }
 
-    void drawCircle(const std::unordered_map<ID, const Circle*>& circles) override {
+    void drawCircle( std::unordered_map<ID,  Circle*>& circles) override {
         circleStorage = &circles;
     }
 
@@ -130,8 +130,10 @@ protected:
     override; // Стартовая точка для отрисовки всего холста
 
 signals:
-// Это невалидные сигналы. Сигналы не должны иметь реализацию
-    void MovingFigures(); // При перемещении
+
+    void MovingPoint(const std::vector<ID>& selectedPoints);
+    void MovingSection(const std::vector<ID>& selectedPoints);
+    void MovingCircle(const std::vector<ID>& selectedPoints);
 
     // При отрисовке мышкой
     void SigPoint(double x, double y);

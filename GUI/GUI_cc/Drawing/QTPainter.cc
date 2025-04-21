@@ -61,22 +61,11 @@ void QTPainter::selectedElemByID(std::vector<double> &parameters, unsigned long 
 
 }
 
-
-// Получение вектора айди для требований
-std::vector<long long int> QTPainter::getVecID() {
-    std::vector<long long int> vec_id; // Обьеденияем все в один вектор
-    vec_id.insert(vec_id.end(), selectedIdPoint.begin(), selectedIdPoint.end());
-    vec_id.insert(vec_id.end(), selectedIdCircle.begin(), selectedIdCircle.end());
-    vec_id.insert(vec_id.end(), selectedIdSection.begin(), selectedIdSection.end());
-    return vec_id;
-}
-
-
 // Очистка данных выделенных обьектов
 void QTPainter::selectedClear() {
-    selectedIdPoint.clear();
-    selectedIdSection.clear();
-    selectedIdCircle.clear();
+    selectedIDPoint.clear();
+    selectedIDSection.clear();
+    selectedIDCircle.clear();
 }
 
 
@@ -85,17 +74,17 @@ void QTPainter::drawingFigures(QPainter &painter) {
 
     // Обработка точек
     if (pointStorage != nullptr && !pointStorage->empty()) {
-        DrawFigures::drawPoint(painter, *pointStorage, selectedIdPoint);
+        DrawFigures::drawPoint(painter, *pointStorage, selectedIDPoint);
     }
 
     // Обработка отрезков
     if (sectionStorage != nullptr && !sectionStorage->empty()) {
-        DrawFigures::drawSection(painter, *sectionStorage, selectedIdSection);
+        DrawFigures::drawSection(painter, *sectionStorage, selectedIDSection);
     }
 
     // Обработка кругов
     if (circleStorage != nullptr && !circleStorage->empty()) {
-            DrawFigures::drawCircle(painter, *circleStorage,selectedIdCircle);
+        DrawFigures::drawCircle(painter, *circleStorage,selectedIDCircle);
     }
 
 }
@@ -315,7 +304,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         /* if (isDragging) {
              //  Уже что-то выбрано для перемещения
             if (IDmove != 0) {
-                     emit MovingFigures();
+                     emit MovingFigures(selectionIDPoints,selectionIDFif,);
              } else {
                  // Поиск
                  if (findClosesObject()) {
