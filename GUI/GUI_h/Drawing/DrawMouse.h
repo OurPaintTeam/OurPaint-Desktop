@@ -54,6 +54,7 @@ signals:
     void SigPoint(double x, double y);
     void SigCircle(double x, double y, double r);
     void SigSection(double x, double y, double x1, double y1);
+    void SigArc(double x, double y, double x1, double y1);
 };
 
 #endif // OURPAINT_DRAWMOUSE_H

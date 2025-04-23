@@ -352,7 +352,7 @@ public:
     }
 
     // Функция для рисования дуги
-    static void drawArc(QPainter &painter, QPointF start, QPointF end, double radius, double startAngleDeg, double spanAngleDeg) {
+    static void drawArc(QPainter &painter, QPointF start, QPointF end) {
         QPen pen(Qt::black);
         pen.setWidth(1);
         pen.setCapStyle(Qt::RoundCap);
@@ -361,27 +361,21 @@ public:
         // Вычисление центра дуги по старту, углу и радиусу
         // Это зависит от задачи, но допустим ты передаёшь центр отдельно — добавим его аргументом
 
-        // Масштабирование координат
-        QPointF scaledStart = QPointF(Scaling::scaleCoordinate(start.x()), Scaling::scaleCoordinate(-start.y()));
-        QPointF scaledEnd   = QPointF(Scaling::scaleCoordinate(end.x()),   Scaling::scaleCoordinate(-end.y()));
-        double scaledRadius = Scaling::scaleCoordinate(radius);
+        QPointF center((start.x()-end.x())/2, (start.y()-end.y())/2);
 
-        // Найдём центр окружности через геометрию
-        QPointF center = calculateArcCenter(start, end, radius); // <- тебе нужно реализовать эту функцию или передавать center
+        double radius = std::hypot(start.x() - center.x(), start.y() - center.y());
 
-        QPointF scaledCenter = QPointF(Scaling::scaleCoordinate(center.x()), Scaling::scaleCoordinate(-center.y()));
+        double startAngleDeg = normalizeAngle(angleBetween(center, start));
+        double endAngleDeg = normalizeAngle(angleBetween(center, end));
+        double spanAngleDeg = endAngleDeg - startAngleDeg;
 
-        QRectF arcRect(
-                scaledCenter.x() - scaledRadius,
-                scaledCenter.y() - scaledRadius,
-                2 * scaledRadius,
-                2 * scaledRadius
-        );
+        if (spanAngleDeg <= 0) spanAngleDeg += 360;
 
-        int startAngle16 = static_cast<int>(-startAngleDeg * 16);
-        int spanAngle16  = static_cast<int>(-spanAngleDeg * 16);
+        QRectF rect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+        int qtStart = static_cast<int>(startAngleDeg * 16);
+        int qtSpan = static_cast<int>(spanAngleDeg * 16);
 
-        painter.drawArc(arcRect, startAngle16, spanAngle16);
+        painter.drawArc(rect, qtStart, qtSpan);
     }
 
     // Вычисляет центр дуги по двум точкам и радиусу

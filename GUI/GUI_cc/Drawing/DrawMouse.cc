@@ -132,6 +132,11 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
                     double radius = std::hypot(x0 - centerX, y0 - centerY);
                     emit SigCircle(centerX, centerY, radius);
                 }
+                else if(modeArc){
+                    double x1 = cursorX;
+                    double y1 = cursorY;
+                    emit SigArc(x0, y0, x1, y1);
+                }
                 resetCoordinates();
                 drawingInProgress = false;
             }
@@ -161,6 +166,10 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
         } else if (modeSection) {
             drawSections(painter, startCoordinates);
+        } else if(modeArc){
+            double centerX = (startCoordinates.x() + cursorX) / 2;
+            double centerY = (startCoordinates.y() + cursorY) / 2;
+            DrawFigures::drawArc(painter,QPointF(centerX, centerY), QPointF(cursorX, cursorY));
         }
     }
 }

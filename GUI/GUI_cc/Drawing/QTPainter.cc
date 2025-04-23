@@ -14,6 +14,7 @@ QTPainter::QTPainter(QWidget *parent) : QFrame(parent), circleStorage(nullptr),
         connect(&drawFigM, &DrawMouse::SigPoint, this, &QTPainter::onSigPoint);
         connect(&drawFigM, &DrawMouse::SigSection, this, &QTPainter::onSigSection);
         connect(&drawFigM, &DrawMouse::SigCircle, this, &QTPainter::onSigCircle);
+        connect(&drawFigM, &DrawMouse::SigArc, this, &QTPainter::onSigArc);
     }
 
     // Установим стили
