@@ -1,4 +1,3 @@
-
 #include "SaveSettingsApplications.h"
 
 void SaveSettingsApplications::clear() {

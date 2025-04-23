@@ -3,10 +3,10 @@
 
 #include <fstream>
 
-#include "objects/Enums.h"
-#include "objects/ID.h"
-#include "objects/Objects.h"
-#include "objects/BoundBox.h"
+#include "Enums.h"
+#include "ID.h"
+#include "Objects.h"
+#include "BoundBox.h"
 #include "Painter.h"
 
 struct IGeometricObject {

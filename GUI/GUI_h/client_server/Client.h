@@ -5,7 +5,8 @@
 #include <QObject>
 #include <QTcpSocket>
 
-#include "Paint.h"
+//#include "Paint.h"
+
 class Client : public QObject {
 Q_OBJECT
 

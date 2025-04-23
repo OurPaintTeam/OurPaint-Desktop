@@ -38,6 +38,8 @@ Scene::~Scene() {
     _circles.clear();
     _arcs.clear();
     _requirements.clear();
+
+    VarsStorage::clearVars();
 }
 
 ID Scene::addObject(const ObjectData &objData) {
@@ -351,6 +353,7 @@ void Scene::moveObject(ID id, double dx, double dy) {
     _isRectangleDirty = true;
     // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
     updateRequirements(id);
+    std::cout << "Move object" << '\n';
 }
 
 void Scene::movePoint(ID pointID, double dx, double dy) {
@@ -454,7 +457,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 2
+        // 2
         case ET_POINTONSECTION: {
             Point *p = nullptr;
             Section *s = nullptr;
@@ -471,7 +474,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 3
+        // 3
         case ET_POINTPOINTDIST: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
@@ -489,46 +492,37 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 4
+        // 4
         case ET_POINTONPOINT: {
-            Point *p1 = nullptr;
-            Point *p2 = nullptr;
-            if (_points.contains(id1) && _points.contains(id2)) {
-                p1 = _points[id1];
-                p2 = _points[id2];
 
-                // Same points ptr
-                if (p1 == p2) {
-                    break;
-                }
-
-
-
-                std::vector<ID> connectedComponent = _graph.findConnectedComponent(id1);
-                std::size_t count_of_req_in_component = connectedComponent.size();
-
-                // do replace that P1 and P2 is one Point
-                for (const ID &i : connectedComponent) {
-                    if (_sections.find(i) != _sections.end()) {
-                        Section* sec = _sections[i];
-                        if (sec->beg == p1) {
-                            sec->beg = p2;
-                            break;
-                        }
-                        if (sec->end == p1) {
-                            sec->end = p2;
-                            break;
-                        }
-                    }
-                }
-            } else {
+            if (!_points.contains(id1) || !_points.contains(id2)) {
                 throw std::invalid_argument("Objects must be two Point");
+            }
+
+            // Same points ptr
+            if (_points[id1] == _points[id2]) {
+                break;
+            }
+
+            Point* p1 = _points[id1];
+            Point* p2 = _points[id2];
+
+            delete _points[id1];
+            _points[id1] = _points[id2];
+
+            for (auto &[id, sec]: _sections) {
+                if (sec->beg == p1) {
+                    sec->beg = p2;
+                }
+                if (sec->end == p1) {
+                    sec->end = p2;
+                }
             }
             requirement = new ReqPointOnPoint(p1, p2);
             break;
         }
 
-            // 5
+        // 5
         case ET_SECTIONCIRCLEDIST: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
@@ -549,7 +543,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 6
+        // 6
         case ET_SECTIONONCIRCLE: {
             Section *s = nullptr;
             Circle *c = nullptr;
@@ -566,7 +560,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 7
+        // 7
         case ET_SECTIONINCIRCLE: {
             Section *s = nullptr;
             Circle *c = nullptr;
@@ -583,7 +577,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 8
+        // 8
         case ET_SECTIONSECTIONPARALLEL: {
             Section *s1 = nullptr;
             Section *s2 = nullptr;
@@ -597,7 +591,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 9
+        // 9
         case ET_SECTIONSECTIONPERPENDICULAR: {
             Section *s1 = nullptr;
             Section *s2 = nullptr;
@@ -611,7 +605,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 10
+        // 10
         case ET_SECTIONSECTIONANGLE: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
@@ -629,12 +623,12 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-            // 11
+        // 11
         case ET_POINTONCIRCLE: {
             break;
         }
 
-            // 12
+        // 12
         case ET_POINTINOBJECT: {
             break;
         }
@@ -651,7 +645,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
     ID newID = _idRequirementsGenerator.generate();
     _requirements[newID] = requirement;
     _graph.addEdge(id1, id2, newID);
-    //_errorRequirementFunctions.push_back(requirement->getFunction());
+    _errorRequirementFunctions.push_back(requirement->getFunction());
 
     updateRequirements(id1);
 
@@ -662,27 +656,17 @@ void Scene::updateRequirements(ID objectID) {
     std::size_t count_of_req_in_component = 0;
 
     std::vector<ID> connectedComponent = _graph.findConnectedComponent(objectID);
-    //std::unordered_set<ID> connectedObjects(connectedComponent.begin(), connectedComponent.end());
 
     count_of_req_in_component = connectedComponent.size();
-    std::cout << "Number of points in a component: " << count_of_req_in_component << std::endl;
+    //std::cout << "Number of points in a component: " << count_of_req_in_component << std::endl;
     if(count_of_req_in_component <= 1) {
         return;
     }
 
-    std::vector<Function*> allFunctions;
-    if (_requirements.empty()) {
-        return;
-    }
-    for (auto [id, requirement]: _requirements) {
-        allFunctions.push_back(requirement->getFunction());
-    }
-
     // TODO Решать только компоненту
-    // TODO Избавиться от копирования
 
     // --------------------------- Main Optimizing and Computing Algorithm ---------------------------
-    LSMFORLMTask *task = new LSMFORLMTask(allFunctions, VarsStorage::getVars());
+    LSMFORLMTask *task = new LSMFORLMTask(_errorRequirementFunctions, VarsStorage::getVars());
     LevenbergMarquardtSolver solver(10000, 0.5, 2, 4, 1e-07, 1e-07);
     solver.setTask(task);
     solver.optimize();
@@ -691,14 +675,12 @@ void Scene::updateRequirements(ID objectID) {
     // Check converging
     if (!solver.isConverged() || solver.getCurrentError() > 1e-6) {
         delete task;
-        VarsStorage::clearVars();
         throw std::runtime_error("Not converged");
     }
 
     //updateBoundingBox(); // TODO Недешевая операция
 
-    //delete task;
-    VarsStorage::clearVars();
+    delete task;
 }
 
 // TODO
@@ -836,7 +818,7 @@ void Scene::loadFromFile(const char *filename) {
             // 1
             case ET_POINTSECTIONDIST: {
                 if (rd.params.empty()) {
-                    //throw std::invalid_argument("Insufficient data for requirement");
+                    throw std::invalid_argument("Insufficient data for requirement");
                 }
                 double dist = rd.params[0];
                 Point *p = nullptr;
@@ -848,7 +830,7 @@ void Scene::loadFromFile(const char *filename) {
                     p = _points[id2];
                     s = _sections[id1];
                 } else {
-                    //throw std::invalid_argument("Objects must be a Point and a Section");
+                    throw std::invalid_argument("Objects must be a Point and a Section");
                 }
                 requirement = new ReqPointSecDist(p, s, dist);
                 break;
@@ -865,7 +847,7 @@ void Scene::loadFromFile(const char *filename) {
                     p = _points[id2];
                     s = _sections[id1];
                 } else {
-                    //throw std::invalid_argument("Objects must be a Point and a Section");
+                    throw std::invalid_argument("Objects must be a Point and a Section");
                 }
                 requirement = new ReqPointOnSec(p, s);
                 break;
@@ -874,7 +856,7 @@ void Scene::loadFromFile(const char *filename) {
                 // 3
             case ET_POINTPOINTDIST: {
                 if (rd.params.empty()) {
-                    //throw std::invalid_argument("Insufficient data for requirement");
+                    throw std::invalid_argument("Insufficient data for requirement");
                 }
                 double dist = rd.params[0];
                 Point *p1 = nullptr;
@@ -883,7 +865,7 @@ void Scene::loadFromFile(const char *filename) {
                     p1 = _points[id1];
                     p2 = _points[id2];
                 } else {
-                    //throw std::invalid_argument("Objects must be two Point");
+                    throw std::invalid_argument("Objects must be two Point");
                 }
                 requirement = new ReqPointPointDist(p1, p2, dist);
                 break;
@@ -897,7 +879,7 @@ void Scene::loadFromFile(const char *filename) {
                     p1 = _points[id1];
                     p2 = _points[id2];
                 } else {
-                    //throw std::invalid_argument("Objects must be two Point");
+                    throw std::invalid_argument("Objects must be two Point");
                 }
                 requirement = new ReqPointOnPoint(p1, p2);
                 break;
@@ -906,7 +888,7 @@ void Scene::loadFromFile(const char *filename) {
                 // 5
             case ET_SECTIONCIRCLEDIST: {
                 if (rd.params.empty()) {
-                    //throw std::invalid_argument("Insufficient data for requirement");
+                    throw std::invalid_argument("Insufficient data for requirement");
                 }
                 double dist = rd.params[0];
                 Section *s = nullptr;
@@ -918,7 +900,7 @@ void Scene::loadFromFile(const char *filename) {
                     s = _sections[id2];
                     c = _circles[id1];
                 } else {
-                    //throw std::invalid_argument("Objects must be a Section and a Circle");
+                    throw std::invalid_argument("Objects must be a Section and a Circle");
                 }
                 requirement = new ReqSecCircleDist(s, c, dist);
                 break;
@@ -935,7 +917,7 @@ void Scene::loadFromFile(const char *filename) {
                     s = _sections[id2];
                     c = _circles[id1];
                 } else {
-                    //throw std::invalid_argument("Objects must be a Section and a Circle");
+                    throw std::invalid_argument("Objects must be a Section and a Circle");
                 }
                 requirement = new ReqSecOnCircle(s, c);
                 break;
@@ -952,7 +934,7 @@ void Scene::loadFromFile(const char *filename) {
                     s = _sections[id2];
                     c = _circles[id1];
                 } else {
-                    //throw std::invalid_argument("Objects must be a Section and a Circle");
+                    throw std::invalid_argument("Objects must be a Section and a Circle");
                 }
                 requirement = new ReqSecInCircle(s, c);
                 break;
@@ -966,7 +948,7 @@ void Scene::loadFromFile(const char *filename) {
                     s1 = _sections[id1];
                     s2 = _sections[id2];
                 } else {
-                    //throw std::invalid_argument("Objects must be two Section");
+                    throw std::invalid_argument("Objects must be two Section");
                 }
                 requirement = new ReqSecSecParallel(s1, s2);
                 break;
@@ -980,7 +962,7 @@ void Scene::loadFromFile(const char *filename) {
                     s1 = _sections[id1];
                     s2 = _sections[id2];
                 } else {
-                    //throw std::invalid_argument("Objects must be two Section");
+                    throw std::invalid_argument("Objects must be two Section");
                 }
                 requirement = new ReqSecSecPerpendicular(s1, s2);
                 break;
@@ -989,7 +971,7 @@ void Scene::loadFromFile(const char *filename) {
                 // 10
             case ET_SECTIONSECTIONANGLE: {
                 if (rd.params.empty()) {
-                    //throw std::invalid_argument("Insufficient data for requirement");
+                    throw std::invalid_argument("Insufficient data for requirement");
                 }
                 double angle = rd.params[0];
                 Section *s1 = nullptr;
@@ -998,17 +980,18 @@ void Scene::loadFromFile(const char *filename) {
                     s1 = _sections[id1];
                     s2 = _sections[id2];
                 } else {
-                    //throw std::invalid_argument("Objects must be two Section");
+                    throw std::invalid_argument("Objects must be two Section");
                 }
                 requirement = new ReqSecSecAngel(s1, s2, angle);
                 break;
             }
             default: {
-                //std::invalid_argument("Unknown requirement type");
+                std::invalid_argument("Unknown requirement type");
             }
         }
         _requirements[ID(pair.first)] = requirement;
         _graph.addEdge(id1, id2, ID(pair.first));
+        _errorRequirementFunctions.push_back(requirement->getFunction());
     }
 }
 

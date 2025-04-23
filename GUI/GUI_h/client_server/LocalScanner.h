@@ -23,4 +23,6 @@ private:
     QList<QPair<QHostAddress, int>> getLocalNetworks();
 };
 
+
+
 #endif // ! OURPAINT_HEADERS_CLIENTSERVER_PORTSCANNER_H_
