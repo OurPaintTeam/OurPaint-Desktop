@@ -125,6 +125,11 @@ public:
         emit SigSection(x, y, x1, y1);
     }
 
+    // Обработка сигналов для отрезка
+    void onSigArc(double x, double y, double x1, double y1) {
+        emit SigArc(x, y, x1, y1);
+    }
+
 
 protected:
 
@@ -175,8 +180,9 @@ signals:
     void SigPoint(double x, double y);
     void SigCircle(double x, double y, double r);
     void SigSection(double x, double y, double x1, double y1);
+    void SigArc(double x, double y, double x1, double y1);
+
     void SigSector();
-    void SigArc();
 
     // Для отображения в левом меню
     void DoubleClickOnObject(ID id);

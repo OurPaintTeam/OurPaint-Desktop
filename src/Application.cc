@@ -215,7 +215,7 @@ void Application::setupQTPainterConnections(){
 
         // Отрисовка арки
         QObject::connect(painter, &QTPainter::SigArc,
-                         [this]() {});
+                         [this](double x, double y, double x1, double y1) {});
 
 
     }
@@ -392,7 +392,9 @@ void Application::setupRequirementsConnections(){
             ID obj1(pairID->first);
             ID obj2(pairID->second);
             RequirementData reqData;
-            reqData.req = ET_SECTIONSECTIONPARALLEL;
+            Requirement type;
+            type = ET_SECTIONSECTIONPARALLEL;
+            reqData.req = type;
             reqData.objects.push_back(obj1.get());
             reqData.objects.push_back(obj2.get());
             scene.addRequirement(reqData);
@@ -407,7 +409,6 @@ void Application::setupRequirementsConnections(){
     QObject::connect(&mainWind, &MainWindow::nineRequirements, [this]() {
 
     });
-
     QObject::connect(&mainWind, &MainWindow::tenRequirements, [this]() {
 
     });
