@@ -27,11 +27,11 @@ TEST_F(SceneFixture, add_object) {
     obj1.params = {0, 0};
 
     ID id = scene.addObject(obj1);
-    ObjectData obj2 = scene.getObjectInfo(id);
+    ObjectData obj2 = scene.getObject(id);
     EXPECT_EQ(obj1, obj2);
 
     scene.deleteObject(id);
-    EXPECT_ANY_THROW(scene.getObjectInfo(id));
+    EXPECT_ANY_THROW(scene.getObject(id));
 }
 
 TEST_F(SceneFixture, boundingBox_and_moveObject) {

@@ -116,7 +116,7 @@ ReqPointPointDist::ReqPointPointDist(Point* p1, Point* p2, double dist) {
     c_f = new PointPointDistanceError({x1, y1, x2, y2}, v_dist);
 }
 ErrorFunctions* ReqPointPointDist::getFunction() const {
-    return c_f;
+    return static_cast<ErrorFunctions*>(c_f->clone());
 }
 std::vector<PARAMID> ReqPointPointDist::getParams() const {
     std::vector<PARAMID> res;

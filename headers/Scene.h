@@ -21,9 +21,10 @@ private:
     std::unordered_map<ID, Section*> _sections;
     std::unordered_map<ID, Circle*> _circles;
     std::unordered_map<ID, Arc*> _arcs;
+
     std::unordered_map<ID, IReq*> _requirements;
 
-    std::vector<Function*> _errorRequirementFunctions;
+    //std::vector<Function*> _errorRequirementFunctions;
 
     mutable Painter* _painter;
 
