@@ -120,15 +120,15 @@ public:
     QPushButton *figurePoint;
     QPushButton *figureSection;
     QPushButton *figureCircle;
-    QPushButton *figureSector;
+ //   QPushButton *figureSector;
     QPushButton *figureArc;
 
     // Tools panel
     QWidget *toolPanel;
     QPushButton *figureMoving;
     QPushButton *toolMoving;
-    QPushButton *toolRotation;
-    QPushButton *toolResize;
+   // QPushButton *toolRotation;
+    //QPushButton *toolResize;
     QPushButton *toolSelected;
 
     // Panel for requirements
@@ -465,13 +465,13 @@ public:
                 "   text-align: left;"
                 "   border: none;"
                 "}"
-                "QToolButton:hover {"
+             /*   "QToolButton:hover {"
                 "   background-color: rgba(255, 255, 255, 0.2);"
                 "   border-radius: 4px;"
                 "}"
                 "QToolButton:pressed {"
                 "   background-color: rgba(255, 255, 255, 0.1);"
-                "}"
+                "}"*/
         );
         actionSVG->setStyleSheet(
                 "QToolButton {"
@@ -482,13 +482,13 @@ public:
                 "   text-align: left;"
                 "   border: none;"
                 "}"
-                "QToolButton:hover {"
+          /*      "QToolButton:hover {"
                 "   background-color: rgba(255, 255, 255, 0.2);"
                 "   border-radius: 4px;"
                 "}"
                 "QToolButton:pressed {"
                 "   background-color: rgba(255, 255, 255, 0.1);"
-                "}"
+                "}"*/
         );
         actionPDF->setStyleSheet(
                 "QToolButton {"
@@ -499,13 +499,13 @@ public:
                 "   text-align: left;"
                 "   border: none;"
                 "}"
-                "QToolButton:hover {"
+          /*      "QToolButton:hover {"
                 "   background-color: rgba(255, 255, 255, 0.2);"
                 "   border-radius: 4px;"
                 "}"
                 "QToolButton:pressed {"
                 "   background-color: rgba(255, 255, 255, 0.1);"
-                "}"
+                "}"*/
         );
         actionTIFF->setStyleSheet(
                 "QToolButton {"
@@ -516,13 +516,13 @@ public:
                 "   text-align: left;"
                 "   border: none;"
                 "}"
-                "QToolButton:hover {"
+          /*      "QToolButton:hover {"
                 "   background-color: rgba(255, 255, 255, 0.2);"
                 "   border-radius: 4px;"
                 "}"
                 "QToolButton:pressed {"
                 "   background-color: rgba(255, 255, 255, 0.1);"
-                "}"
+                "}"*/
         );
         actionBMP->setStyleSheet(
                 "QToolButton {"
@@ -533,13 +533,13 @@ public:
                 "   text-align: left;"
                 "   border: none;"
                 "}"
-                "QToolButton:hover {"
+          /*      "QToolButton:hover {"
                 "   background-color: rgba(255, 255, 255, 0.2);"
                 "   border-radius: 4px;"
                 "}"
                 "QToolButton:pressed {"
                 "   background-color: rgba(255, 255, 255, 0.1);"
-                "}"
+                "}"*/
         );
         actionJPG->setStyleSheet(
                 "QToolButton {"
@@ -550,13 +550,13 @@ public:
                 "   text-align: left;"
                 "   border: none;"
                 "}"
-                "QToolButton:hover {"
+           /*     "QToolButton:hover {"
                 "   background-color: rgba(255, 255, 255, 0.2);"
                 "   border-radius: 4px;"
                 "}"
                 "QToolButton:pressed {"
                 "   background-color: rgba(255, 255, 255, 0.1);"
-                "}"
+                "}"*/
         );
         actionJPEG->setStyleSheet(
                 "QToolButton {"
@@ -567,13 +567,13 @@ public:
                 "   text-align: left;"
                 "   border: none;"
                 "}"
-                "QToolButton:hover {"
+          /*      "QToolButton:hover {"
                 "   background-color: rgba(255, 255, 255, 0.2);"
                 "   border-radius: 4px;"
                 "}"
                 "QToolButton:pressed {"
                 "   background-color: rgba(255, 255, 255, 0.1);"
-                "}"
+                "}"*/
         );
         actionPNG->setStyleSheet(
                 "QToolButton {"
@@ -584,13 +584,13 @@ public:
                 "   text-align: left;"
                 "   border: none;"
                 "}"
-                "QToolButton:hover {"
-                "   background-color: rgba(255, 255, 255, 0.2);"
-                "   border-radius: 4px;"
-                "}"
-                "QToolButton:pressed {"
-                "   background-color: rgba(255, 255, 255, 0.1);"
-                "}"
+            //    "QToolButton:hover {"
+             //   "   background-color: rgba(255, 255, 255, 0.2);"
+               // "   border-radius: 4px;"
+               // "}"
+               // "QToolButton:pressed {"
+               // "   background-color: rgba(255, 255, 255, 0.1);"
+               // "}"
         );
 
 
@@ -1337,7 +1337,7 @@ public:
         figurePoint = new QPushButton("", figuresPanel);
         figureSection = new QPushButton("", figuresPanel);
         figureCircle = new QPushButton("", figuresPanel);
-        figureSector = new QPushButton("", figuresPanel);
+      //  figureSector = new QPushButton("", figuresPanel);
         figureArc = new QPushButton("", figuresPanel);
 
         figurePoint->setToolTip("Point");
@@ -1349,8 +1349,8 @@ public:
         figureCircle->setToolTip("Circle");
         figureCircle->setObjectName("Circle");
 
-        figureSector->setToolTip("Sector");
-        figureSector->setObjectName("Sector");
+       // figureSector->setToolTip("Sector");
+        //figureSector->setObjectName("Sector");
 
         figureArc->setToolTip("Arc");
         figureArc->setObjectName("Arc");
@@ -1358,20 +1358,20 @@ public:
         QIcon IcoCircle("../Static/icons/LeftBar/Primitives/Circle.png");
         QIcon IcoPoint("../Static/icons/LeftBar/Primitives/Point.png");
         QIcon IcoLine("../Static/icons/LeftBar/Primitives/Line.png");
-        QIcon IcoSector("../Static/icons/LeftBar/Primitives/Line.png");
+     //   QIcon IcoSector("../Static/icons/LeftBar/Primitives/Line.png");
         QIcon IcoArc("../Static/icons/LeftBar/Primitives/Line.png");
         //  TODO  Добавить иконки
 
         figurePoint->setIcon(IcoPoint);
         figureSection->setIcon(IcoLine);
         figureCircle->setIcon(IcoCircle);
-        figureSector->setIcon(IcoSector);
-        figureSector->setIcon(IcoArc);
+     //   figureSector->setIcon(IcoSector);
+        figureArc->setIcon(IcoArc);
 
         figurePoint->setFixedSize(40, 40);
         figureSection->setFixedSize(40, 40);
         figureCircle->setFixedSize(40, 40);
-        figureSector->setFixedSize(40, 40);
+      //  figureSector->setFixedSize(40, 40);
         figureArc->setFixedSize(40, 40);
 
         QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
@@ -1380,13 +1380,13 @@ public:
         figurePoint->setStyleSheet(buttonStyle);
         figureSection->setStyleSheet(buttonStyle);
         figureCircle->setStyleSheet(buttonStyle);
-        figureSector->setStyleSheet(buttonStyle);
+       // figureSector->setStyleSheet(buttonStyle);
         figureArc->setStyleSheet(buttonStyle);
 
         figuresLayout->addWidget(figurePoint);
         figuresLayout->addWidget(figureSection);
         figuresLayout->addWidget(figureCircle);
-        figuresLayout->addWidget(figureSector);
+       // figuresLayout->addWidget(figureSector);
         figuresLayout->addWidget(figureArc);
 
         figuresPanelAnimation = new QPropertyAnimation(figuresPanel, "maximumWidth");
@@ -1434,7 +1434,7 @@ public:
         toolsLayout->addWidget(toolMoving);
 
         // ROTATION
-        toolRotation = new QPushButton("", toolPanel);
+       /* toolRotation = new QPushButton("", toolPanel);
         toolRotation->setToolTip("Rotation");
         toolRotation->setObjectName("Rotation");
         QIcon IcoR("../Static/icons/icoRotation.ico");
@@ -1451,7 +1451,7 @@ public:
         toolResize->setIcon(IcoRes);
         toolResize->setFixedSize(40, 40);
         toolResize->setStyleSheet(buttonStyle);
-        toolsLayout->addWidget(toolResize);
+        toolsLayout->addWidget(toolResize);*/
 
         // TODO add ico!!!
         // SELECTED
@@ -1540,7 +1540,12 @@ public:
         reqPanel->setMaximumWidth(0);
     }
 
+
     void setupConnections() {
+        QObject::connect(actionSave_project_to, &QPushButton::clicked, [this]() {
+            QPoint pos = actionSave_project_to->mapToGlobal(QPoint(actionSave_project_to->width(),0));
+            formatMenu->popup(pos);
+        });
 
         QObject::connect(settings, &QPushButton::clicked, [&]() {
             if (settingsPanel->isVisible()) {
@@ -1676,14 +1681,14 @@ public:
             }
         });
 
-        QObject::connect(figureSector, &QPushButton::clicked, [&]() {
+     /*   QObject::connect(figureSector, &QPushButton::clicked, [&]() {
             if (figuresPanel->isVisible()) {
                 figuresPanelAnimation->stop();
                 figuresPanelAnimation->setStartValue(figuresPanel->maximumWidth());
                 figuresPanelAnimation->setEndValue(0);
                 figuresPanelAnimation->start();
             }
-        });
+        });*/
 
         QObject::connect(figureArc, &QPushButton::clicked, [&]() {
             if (figuresPanel->isVisible()) {
@@ -1753,7 +1758,7 @@ public:
             }
         });
 
-        QObject::connect(toolRotation, &QPushButton::clicked, [&]() {
+/*        QObject::connect(toolRotation, &QPushButton::clicked, [&]() {
             if (toolPanel->isVisible()) {
                 toolsPanelAnimation->stop();
                 toolsPanelAnimation->setStartValue(toolPanel->maximumWidth());
@@ -1769,7 +1774,7 @@ public:
                 toolsPanelAnimation->setEndValue(0);
                 toolsPanelAnimation->start();
             }
-        });
+        });*/
 
         QObject::connect(toolSelected, &QPushButton::clicked, [&]() {
             if (toolPanel->isVisible()) {

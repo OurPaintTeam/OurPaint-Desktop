@@ -223,7 +223,7 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
     }
 
     QDataStream out(&file);
-    out.setVersion(QDataStream::Qt_6_8);
+    out.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 
     /********************* Сохраняем фигуры ******************************/
     const int figureCount = figuresNode ? figuresNode->childCount() : 0;
@@ -290,7 +290,7 @@ void LeftMenuBar::loadFromBinaryFile(const QString& filePath) {
     }
 
     QDataStream in(&file);
-    in.setVersion(QDataStream::Qt_6_8);
+    in.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 
     clearAllFigures();
     clearAllRequirements();

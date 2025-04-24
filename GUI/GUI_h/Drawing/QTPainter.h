@@ -40,133 +40,57 @@ private:
      std::unordered_map<ID,  Section*>* sectionStorage;
      std::unordered_map<ID,  Circle*>* circleStorage;
      std::unordered_map<ID,  Arc*>* arcStorage;
-    const BoundBox2D* Rectangle;
-
-    // Элемент левого меню
-    std::vector<double> LeftMenuElem;
+     const BoundBox2D* Rectangle;
 
     // Класс для отрисовки мышкой
     DrawMouse drawFigM;
     bool drawing=false;
 
-    std::chrono::steady_clock::time_point lastClickTime;
-
     SelectedRectangle SelectedRectangle;
+
+    std::chrono::steady_clock::time_point lastClickTime;
 
 public:
     QTPainter(QWidget *parent);
 
-    void draw(); // Обновляет экран отрисовки
+    std::vector<ID>& getVecIDPoints();
+    std::vector<ID>& getVecIDSections();
+    std::vector<ID>& getVecIDCircles();
+    std::optional<std::pair<ID, ID>> getPairID();
 
-    void clear(); // Очистка экрана и приводит все параметры к базовым
+    void draw();
+    void clear();
 
-    std::optional<std::pair<ID, ID>> getPairID() {
-        std::vector<ID> IDs;
-
-        for (const ID& id : selectedIDPoint) {
-            IDs.push_back(id);
-            if (IDs.size() > 2) { return std::nullopt; }
-        }
-
-        for (const ID& id : selectedIDSection) {
-            IDs.push_back(id);
-            if (IDs.size() > 2) { return std::nullopt; }
-        }
-
-        for (const ID& id : selectedIDCircle) {
-            IDs.push_back(id);
-            if (IDs.size() > 2) { return std::nullopt; }
-        }
-
-        if (IDs.size() == 2) {
-            return std::make_pair(IDs[0], IDs[1]);
-        }
-
-        return std::nullopt;
-    }
-
-
-    std::vector<ID>& getVecIDPoints(){
-        return selectedIDPoint;
-    }
-    std::vector<ID>& getVecIDSections(){
-        return selectedIDSection;
-    }
-    std::vector<ID>& getVecIDCircles(){
-        return selectedIDCircle;
-    }
-
-    void selectedClear();  // Очистка данных выделенных обьектов
-
-    void drawingFigures(QPainter &painter); // Отрисовка всех фигур, дополняется отрисовкой выделений
-
-    bool findClosesObject(); // Функция проверки курсора мышки и обьекта
-
-    void saveToImage(const QString &fileName, QString &format); // Функция сохранения изображения в указанный формат
-
-    // Функция выделения обьекта в левом меню
-    void selectedElemByID(std::vector<double> &parameters,long long int IDmenu);
-
-    // Отдаляет сцену
+    void selectedClear();
     void resizeRectangle();
+    bool findClosesObject();
+    void drawingFigures(QPainter &painter);
+    void saveToImage(const QString &fileName, QString &format);
 
-    // Обработка сигналов для точки
-    void onSigPoint(double x, double y) {
-        emit SigPoint(x, y);
-    }
+    void selectedElemByID();
 
-    // Обработка сигналов для окружности
-    void onSigCircle(double x, double y, double r) {
-        emit SigCircle(x, y, r);
-    }
 
-    // Обработка сигналов для отрезка
-    void onSigSection(double x, double y, double x1, double y1) {
-        emit SigSection(x, y, x1, y1);
-    }
-
-    // Обработка сигналов для отрезка
-    void onSigArc(double x, double y, double x1, double y1) {
-        emit SigArc(x, y, x1, y1);
-    }
+    /*******   Сигналы   ******/
+    void onSigPoint(double x, double y);
+    void onSigCircle(double x, double y, double r);
+    void onSigSection(double x, double y, double x1, double y1);
+    void onSigArc(double x, double y, double x1, double y1);
 
 
 protected:
 
-    // Функция для изменения размеров окна
     void resizeEvent(QResizeEvent *event) override;
-
-    // Стартовая точка для отрисовки всего холста
     void paintEvent(QPaintEvent *event) override;
 
-    // При выходе за границы мы масштабируем
-    void getBoundBox(const BoundBox2D& allObjects) override {
-        Rectangle=&allObjects;
-    }
+    unsigned long long getWeight() override ;
+    unsigned long long getHeight() override;
+    void getBoundBox(const BoundBox2D& allObjects) override;
 
-    unsigned long long getWeight() override {
-        return Scaling::getActualMonitorWidth();
-    }
+    void initArc( std::unordered_map<ID,  Arc*>& arcs) override;
+    void initPoint( std::unordered_map<ID,  Point*>& points) override;
+    void initCircle( std::unordered_map<ID,  Circle*>& circles) override;
+    void initSection( std::unordered_map<ID,  Section*>& sections) override;
 
-    unsigned long long getHeight() override {
-        return Scaling::getActualMonitorHeight();
-    }
-
-    void initPoint( std::unordered_map<ID,  Point*>& points) override {
-        pointStorage = &points;
-    }
-
-    void initSection( std::unordered_map<ID,  Section*>& sections) override {
-        sectionStorage = &sections;
-    }
-
-    void initCircle( std::unordered_map<ID,  Circle*>& circles) override {
-        circleStorage = &circles;
-    }
-
-    void initArc( std::unordered_map<ID,  Arc*>& arcs) override {
-        arcStorage = &arcs;
-    }
 
 signals:
 
@@ -182,14 +106,10 @@ signals:
     void SigSection(double x, double y, double x1, double y1);
     void SigArc(double x, double y, double x1, double y1);
 
-    void SigSector();
 
-    // Для отображения в левом меню
     void DoubleClickOnObject(ID id);
 
 private slots:
-
-    // Для связи с масштабирвоанием главного окна
     void onWorkWindowResized();
 
 

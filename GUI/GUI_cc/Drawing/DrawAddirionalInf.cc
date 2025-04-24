@@ -192,11 +192,6 @@ void DrawAdditionalInf::drawCursor(QPainter &painter) {
 }
 
 
-
-/************** ID *******************/
-
-
-
 // Отрисовка айди для точки
 void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,const ID &pointID) {
     if (pointID != ID(0)) {
@@ -368,11 +363,6 @@ void DrawAdditionalInf::drawPointLeftID(QPainter &painter, QPointF &point) {
     }
 }
 
-
-
-/************ Свечение *********************/
-
-
 // Отрисовка свечения для точки
 void DrawAdditionalInf::drawPointGlow(QPainter &painter, QPointF &point) {
     // Рисуем свечение для выбранной точки
@@ -459,11 +449,6 @@ void DrawAdditionalInf::drawCircleGlow(QPainter &painter, QPointF &center, doubl
     // Рисуем круг с градиентной обводкой для свечения
     painter.drawEllipse(center, Radius, Radius);
 }
-
-
-
-
-/*************** длина *******************/
 
 // Отрисовка длины линии
 void DrawAdditionalInf::drawCoordinateLine(QPainter &painter, QPointF &start, QPointF &end) {

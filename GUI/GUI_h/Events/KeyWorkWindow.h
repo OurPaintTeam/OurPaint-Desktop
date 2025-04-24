@@ -28,6 +28,16 @@ protected:
     void UNDO();
     void DELETE();
 
+    void firstReq();
+    void secondReq();
+    void thirdReq();
+    void fourthReq();
+    void fifthReq();
+    void sixthReq();
+    void seventhReq();
+    void eighthReq();
+    void ninthReq();
+    void tenthReq();
 
 };
 

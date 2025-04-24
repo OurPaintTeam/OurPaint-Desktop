@@ -22,6 +22,8 @@ private:
     QPointF closestStartPoint; // Ближайшая точка
     QPointF closestPointNext;  // Следующая ближайшая точка
     QPointF startCoordinates; // Точка нажатия курсора
+    QPointF endArc;
+    int arc=0;
     bool drawingInProgress; // Для отслеживания состояния
     short int tabPressCount; // Для подсказок
 
@@ -44,7 +46,8 @@ public:
     static double snapAngle(double angle) ;
 
     // Отрисовка фигур мышью
-    void DrawFiguresMouse(QPainter &painter);
+     void DrawFiguresMouse(QPainter &painter);
+     void DrawArc(QPainter &painter);
     static void drawSections(QPainter &painter, const QPointF &startCoordinates);
 
     // Отрисовка подсказок

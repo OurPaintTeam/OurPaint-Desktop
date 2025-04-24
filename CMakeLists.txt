@@ -35,6 +35,7 @@ include_directories(GUI/GUI_h/Drawing)
 include_directories(GUI/GUI_h/MainFile)
 include_directories(GUI/GUI_h/Widgets)
 include_directories(GUI/GUI_h/Logger)
+include_directories(GUI/GUI_h/Settings)
 
 add_executable(ourpaint
         main.cc
@@ -52,8 +53,6 @@ add_executable(ourpaint
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
         src/saveload/requirementInFile.cc
-        src/saveload/SaveSettingsApplications.cc
-        src/saveload/LoadSettingsApplications.cc
 
         src/Application.cc
         src/BMPfile.cc
@@ -65,9 +64,7 @@ add_executable(ourpaint
 
         headers/saveload/FileOurP.h
         headers/saveload/requirementInFile.h
-        headers/saveload/LoadSettingsApplications.h
         headers/saveload/objectInFile.h
-        headers/saveload/SaveSettingsApplications.h
 
         headers/Application.h
         headers/BMPfile.h
@@ -130,7 +127,7 @@ add_executable(ourpaint
         GUI/GUI_h/Windows/CastomeWindowSuccessful.h
         GUI/GUI_h/Windows/Help.h
         GUI/GUI_h/Windows/CastomeIpListWindow.h
-        GUI/GUI_h/Windows/WindowServer.h
+        GUI/GUI_h/Windows/InputWindow.h
         GUI/GUI_h/Windows/SaveDialog.h
         GUI/GUI_h/Windows/ui_help.h
 
@@ -161,6 +158,9 @@ add_executable(ourpaint
 
         GUI/GUI_h/Logger/GUI_Logger.h
 
+        GUI/GUI_h/Settings/Settings.h
+        GUI/GUI_cc/Settings/Settings.cc
+        GUI/GUI_cc/Drawing/SelectedRectangle.cc
 
 )
 

@@ -1,11 +1,8 @@
-#include <QRectF>
-#include <QLineF>
-#include <QPolygonF>
 #include "ClosesPoint.h"
 
 // Функция поиска ближайшей точки
-QPointF ClosesPoint::findClosestPoint(const std::list<Point> &points) {
-    if (points.size()>0) {
+QPointF ClosesPoint::findClosestPoint(std::unordered_map<ID, Point *> &points) {
+    if (points.size() > 0) {
         QPointF closest;
         double minDistance = std::numeric_limits<float>::max();
 
@@ -16,23 +13,24 @@ QPointF ClosesPoint::findClosestPoint(const std::list<Point> &points) {
 
         // Проходимся по всем точкам вычисляя дистанцию
         for (const auto &pt: points) {
-            double distance = std::sqrt(std::pow(pt.x - cursorX, 2) + std::pow(pt.y - cursorY, 2));
+            const Point *point = pt.second;
+            double distance = std::sqrt(std::pow(point->x - cursorX, 2) + std::pow(point->y - cursorY, 2));
             if (distance < minDistance) {
                 minDistance = distance;
-                closest = QPointF(pt.x, pt.y);
+                closest = QPointF(point->x, point->y);
             }
         }
 
         return closest;
     }
 
-    return {0, 0};
+    return QPointF{};
 }
 
 
 // Функция проверки координат курсора и точки для перемещения
 bool ClosesPoint::checkFigure(double x, double y) {
-    double RANGE = 3.0/Scaling::getZoom(); // Задаем погрешность
+    double RANGE = 3.0 / Scaling::getZoom(); // Задаем погрешность
 
     double logicalX = Scaling::logicCursorX();
     double logicalY = Scaling::logicCursorY();
@@ -44,7 +42,7 @@ bool ClosesPoint::checkFigure(double x, double y) {
 
 
 // Функция проверки координат курсора и круга для перемещения
- bool ClosesPoint::checkFigure(double x0, double y0, double r) {
+bool ClosesPoint::checkFigure(double x0, double y0, double r) {
     double cursorX = Scaling::logicCursorX();
     double cursorY = Scaling::logicCursorY();
 
@@ -52,7 +50,7 @@ bool ClosesPoint::checkFigure(double x, double y) {
     double dy = (cursorY - y0);
     double distance = std::sqrt(dx * dx + dy * dy);
 
-    double RANGE = 3.0/Scaling::getZoom();; // Погрешность
+    double RANGE = 3.0 / Scaling::getZoom();; // Погрешность
 
     if (std::abs(distance - r) <= RANGE) {
         return true;
@@ -83,7 +81,7 @@ bool ClosesPoint::checkFigure(double x0, double y0, double x1, double y1) {
         y1 -= unitY * 1;
     }
 
-    double RANGE = 5.0/Scaling::getZoom(); // Погрешность
+    double RANGE = 5.0 / Scaling::getZoom(); // Погрешность
 
     double mouseX = Scaling::logicCursorX();
     double mouseY = Scaling::logicCursorY();
@@ -126,39 +124,50 @@ double ClosesPoint::distancePointToSection(double px, double py, double x0, doub
     return std::sqrt(dx * dx + dy * dy);
 }
 
-void ClosesPoint::enteringInRect(const std::list<Point> &points, QRectF &rect) {
+std::vector<ID>
+ClosesPoint::enteringInRect(std::unordered_map<ID, Point *> &points, QRectF &rect, std::vector<ID> &vec_id) {
 
-    for (const Point &p : points) {
-        QPointF pt(p.x, p.y);
-        if (rect.contains(pt)) {
+    vec_id.clear();
 
+    for (const auto &pt: points) {
+        const Point *point = pt.second;
+        QPointF p(point->x, point->y);
+        if (rect.contains(p)) {
+            vec_id.push_back(pt.first);
         }
     }
+    return vec_id;
 }
 
-void ClosesPoint::enteringInRect(const std::list<Circle> &circles, QRectF &rect) {
-    for (const Circle &c : circles) {
-        QPointF center(c.center->x, c.center->y);
-        double radius = c.r;
+std::vector<ID>
+ClosesPoint::enteringInRect(std::unordered_map<ID, Circle *> &circles, QRectF &rect, std::vector<ID> &vec_id) {
+    vec_id.clear();
+    for (const auto &pair: circles) {
+        const Circle *circle = pair.second;
+        QPointF center(circle->center->x, circle->center->y);
+        double radius = circle->r;
 
         QRectF circleBounds(center.x() - radius, center.y() - radius,
                             2 * radius, 2 * radius);
 
         if (rect.contains(circleBounds)) {
-
+            vec_id.push_back(pair.first);
         }
     }
+    return vec_id;
 }
 
-void ClosesPoint::enteringInRect(const std::list<Section> &sections, QRectF &rect) {
-    for (const Section &s : sections) {
-        QPointF p1(s.beg->x, s.beg->y);
-        QPointF p2(s.end->x, s.end->y);
+std::vector<ID>
+ClosesPoint::enteringInRect(std::unordered_map<ID, Section *> &sections, QRectF &rect, std::vector<ID> &vec_id) {
+    vec_id.clear();
+    for (const auto &sec: sections) {
+        const Section *section = sec.second;
+        QPointF p1(section->beg->x, section->beg->y);
+        QPointF p2(section->end->x, section->end->y);
 
         if (rect.contains(p1) || rect.contains(p2)) {
-
-        }
-        else {
+            vec_id.push_back(sec.first);
+        } else {
             QLineF line(p1, p2);
             QPolygonF polygon;
             polygon << rect.topLeft() << rect.topRight()
@@ -168,11 +177,12 @@ void ClosesPoint::enteringInRect(const std::list<Section> &sections, QRectF &rec
                 QLineF edge(polygon[i], polygon[(i + 1) % polygon.size()]);
                 QPointF intersection;
                 if (line.intersects(edge, &intersection) == QLineF::BoundedIntersection) {
-
+                    vec_id.push_back(sec.first);
                     break;
                 }
             }
         }
     }
+    return vec_id;
 }
 

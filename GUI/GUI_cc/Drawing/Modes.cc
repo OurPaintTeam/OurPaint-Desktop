@@ -1,4 +1,3 @@
-#include <bitset>
 #include "Modes.h"
 
 // Инициализация статических переменных
@@ -35,7 +34,7 @@ std::bitset<static_cast<size_t>(KeyMode::ReleasingShift) + 1> ModeManager::keyMo
 bool ModeManager::cellEnabled = true;
 bool ModeManager::axisEnabled = true;
 bool ModeManager::cursorInArea = true;
-bool ModeManager::saveFileMode = false;
+bool ModeManager::saveFileMode = true;
 bool ModeManager::isConnected = false;
 bool ModeManager::isServer = false;
 

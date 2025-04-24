@@ -71,6 +71,49 @@ void DrawMouse::drawPreviewSection(QPainter &painter, const QPointF &start, cons
 }
 
 // Отрисовка мышью
+
+void DrawMouse::DrawArc(QPainter &painter) {
+    // Округление мыши до 1 знака после запятой
+    double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
+    double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+    QPointF Cursor(cursorX, cursorY);
+
+    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
+    bool rightClick = ModeManager::getActiveMode(MouseMode::RightClick);
+
+    bool modeArc = ModeManager::getActiveMode(WorkModes::Arc);
+
+    if (leftClick) {
+        ++arc;
+    }
+    if(rightClick){
+        drawingInProgress=false;
+        arc=0;
+    }
+
+    if (arc==1 && !drawingInProgress) {
+        startCoordinates = Cursor;
+        drawingInProgress=true;
+    } else {
+        if(modeArc && arc == 1 && drawingInProgress){
+            double x = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
+            double y = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+            endArc =  QPointF(x, y);
+            DrawFigures::drawHalfCircle(painter,startCoordinates, endArc);
+        }
+
+        if (modeArc && arc==2 && drawingInProgress) {
+            DrawFigures::drawArc(painter, startCoordinates, endArc, Cursor);
+        }
+
+        if (modeArc && arc==3 && drawingInProgress) {
+//emit SigArc();
+            drawingInProgress=false;
+            arc=0;
+        }
+    }
+}
+
 void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
     painter.setPen(Qt::black);
@@ -87,7 +130,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
     bool modeSection = ModeManager::getActiveMode(WorkModes::Section);
     bool modeCircle = ModeManager::getActiveMode(WorkModes::Circle);
     bool modeSector = ModeManager::getActiveMode(WorkModes::Sector);
-    bool modeArc = ModeManager::getActiveMode(WorkModes::Arc);
+
 
     bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 
@@ -97,7 +140,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
     }
 
     if (leftClick) {
-        if (modePoint) {
+      if (modePoint) {
             // Если одно нажатие и точка => точка
             emit SigPoint(cursorX,cursorY);
         } else {
@@ -132,13 +175,10 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
                     double radius = std::hypot(x0 - centerX, y0 - centerY);
                     emit SigCircle(centerX, centerY, radius);
                 }
-                else if(modeArc){
-                    double x1 = cursorX;
-                    double y1 = cursorY;
-                    emit SigArc(x0, y0, x1, y1);
-                }
                 resetCoordinates();
                 drawingInProgress = false;
+
+
             }
         }
         ModeManager::setActiveMode(MouseMode::ReleasingLeft);
@@ -166,10 +206,6 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
         } else if (modeSection) {
             drawSections(painter, startCoordinates);
-        } else if(modeArc){
-            double centerX = (startCoordinates.x() + cursorX) / 2;
-            double centerY = (startCoordinates.y() + cursorY) / 2;
-            DrawFigures::drawArc(painter,QPointF(centerX, centerY), QPointF(cursorX, cursorY));
         }
     }
 }

@@ -1,10 +1,9 @@
 #include "QTPainter.h"
 
 QTPainter::QTPainter(QWidget *parent) : QFrame(parent), circleStorage(nullptr),
-                                        sectionStorage(nullptr), pointStorage(nullptr),arcStorage(nullptr) {
+                                        sectionStorage(nullptr), pointStorage(nullptr), arcStorage(nullptr) {
 
     if (parent) {
-        // Получение сигналов
         resize(parentWidget()->size()); // Берем размер от отца
 
         // Ловим сигнал изменения размера окна
@@ -27,38 +26,107 @@ QTPainter::QTPainter(QWidget *parent) : QFrame(parent), circleStorage(nullptr),
     Scaling::setStartMonitorSize((short int) width(), (short int) height());
 }
 
+std::vector<ID> &QTPainter::getVecIDPoints() {
+    return selectedIDPoint;
+}
 
-// Обновляет экран отрисовки
+std::vector<ID> &QTPainter::getVecIDSections() {
+    return selectedIDSection;
+}
+
+std::vector<ID> &QTPainter::getVecIDCircles() {
+    return selectedIDCircle;
+}
+
+std::optional<std::pair<ID, ID>> QTPainter::getPairID() {
+    std::vector<ID> IDs;
+
+    for (const ID &id: selectedIDPoint) {
+        IDs.push_back(id);
+        if (IDs.size() > 2) { return std::nullopt; }
+    }
+
+    for (const ID &id: selectedIDSection) {
+        IDs.push_back(id);
+        if (IDs.size() > 2) { return std::nullopt; }
+    }
+
+    for (const ID &id: selectedIDCircle) {
+        IDs.push_back(id);
+        if (IDs.size() > 2) { return std::nullopt; }
+    }
+
+    if (IDs.size() == 2) {
+        return std::make_pair(IDs[0], IDs[1]);
+    }
+
+    return std::nullopt;
+}
+
 void QTPainter::draw() {
     update();
 }
 
-
-// Очистка экрана и приводит все параметры к базовым
 void QTPainter::clear() {
 
     selectedClear();
-    LeftMenuElem.clear();
     Scaling::setZoomZero();
 
     SelectedRectangle.clear();
 }
 
-
-// Выделение обьекта в левом меню
-void QTPainter::selectedElemByID(std::vector<double> &parameters, long long int IDmove) {
-
-}
-
-// Очистка данных выделенных обьектов
 void QTPainter::selectedClear() {
     selectedIDPoint.clear();
     selectedIDSection.clear();
     selectedIDCircle.clear();
 }
 
+void QTPainter::resizeRectangle() {}
 
-// Отрисовка фигур
+bool QTPainter::findClosesObject() {
+    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
+    bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
+
+    if (!leftClick && !doubleClick) {
+        return false;
+    }
+
+    auto currentTime = std::chrono::steady_clock::now();
+    if (currentTime - lastClickTime < std::chrono::milliseconds(300)) {
+        return false;
+    }
+
+    lastClickTime = currentTime;
+
+    for (const auto &pt: *pointStorage) {
+        const Point *point = pt.second;
+        if (ClosesPoint::checkFigure(point->x, point->y)) {
+            selectedIDPoint.push_back(pt.first);
+            return true;
+        }
+    }
+
+    for (const auto &sec: *sectionStorage) {
+        const Section *section = sec.second;
+        if (ClosesPoint::checkFigure(section->beg->x, section->beg->y,
+                                     section->end->x, section->end->y)) {
+            selectedIDSection.push_back(sec.first);
+            return true;
+        }
+    }
+
+    for (const auto &cir: *circleStorage) {
+        const Circle *circle = cir.second;
+        if (ClosesPoint::checkFigure(circle->center->x, circle->center->y, circle->r)) {
+            selectedIDCircle.push_back(cir.first);
+            return true;
+        }
+
+    }
+
+    return false;
+}
+
 void QTPainter::drawingFigures(QPainter &painter) {
 
     // Обработка точек
@@ -82,59 +150,8 @@ void QTPainter::drawingFigures(QPainter &painter) {
     }
 
 
-
 }
 
-
-// Функция проверки курсора мышки и обьекта
-bool QTPainter::findClosesObject() {
-    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-    bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
-
-    if (!leftClick && !doubleClick) {
-        return false;
-    }
-
-    auto currentTime = std::chrono::steady_clock::now();
-    if (currentTime - lastClickTime < std::chrono::milliseconds(300)) {
-        return false;
-    }
-
-    lastClickTime = currentTime;
-
-    for (const auto &pt : *pointStorage) {
-        const Point *point = pt.second;
-        if(ClosesPoint::checkFigure(point->x,point->y)){
-            selectedIDPoint.push_back(pt.first);
-            return true;
-        }
-    }
-
-        for (const auto &sec: *sectionStorage) {
-            const Section *section = sec.second;
-            if (ClosesPoint::checkFigure(section->beg->x, section->beg->y,
-                                         section->end->x, section->end->y)) {
-                selectedIDSection.push_back(sec.first);
-                return true;
-            }
-        }
-
-        for (const auto &cir: *circleStorage) {
-            const Circle *circle = cir.second;
-            if(ClosesPoint::checkFigure(circle->center->x,circle->center->y,circle->r)){
-                selectedIDCircle.push_back(cir.first);
-                return true;
-            }
-
-        }
-
-
-
-    return false;
-
-}
-
-// Сохранение в файл
 void QTPainter::saveToImage(const QString &fileName, QString &format) {
 
     resizeRectangle();
@@ -216,19 +233,32 @@ void QTPainter::saveToImage(const QString &fileName, QString &format) {
     }
 }
 
+void QTPainter::selectedElemByID() {}
 
-// Функция для изменения размеров окна
+void QTPainter::onSigPoint(double x, double y) {
+    emit SigPoint(x, y);
+}
+
+void QTPainter::onSigCircle(double x, double y, double r) {
+    emit SigCircle(x, y, r);
+}
+
+void QTPainter::onSigSection(double x, double y, double x1, double y1) {
+    emit SigSection(x, y, x1, y1);
+}
+
+void QTPainter::onSigArc(double x, double y, double x1, double y1) {
+    emit SigArc(x, y, x1, y1);
+}
+
 void QTPainter::resizeEvent(QResizeEvent *event) {
     QFrame::resizeEvent(event);
     Scaling::setActualMonitorSize(width(), height());
     update();
 }
 
-
-// Стартовая точка для отрисовки всего холста
 void QTPainter::paintEvent(QPaintEvent *event) {
 
-    // Инициализация QPainter для текущего виджета
     QPainter painter(this);
 
     // Если не активен то не рисуем
@@ -236,9 +266,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         return;
     }
 
-    //  Включение сглаживания для графических примитивов
     painter.setRenderHint(QPainter::Antialiasing, true);
-
 
     // Переносим на центр экрана
     painter.translate((int) (width() / 2 + Scaling::getDeltaX()), (int) (height() / 2 + Scaling::getDeltaY()));
@@ -252,21 +280,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     }
 
 
-    // Выделение обьекта левого меню
-    if (!LeftMenuElem.empty() &&
-        ModeManager::getActiveMode(MouseMode::LeftClick) || ModeManager::getActiveMode(MouseMode::RightClick)) {
-        LeftMenuElem.clear();
-    } else if (LeftMenuElem.size() > 4) {
-        LeftMenuElem.clear();
-        DrawAdditionalInf::setLeftMenuID(0);
-    }
-
-
-
     /*************** Отрисовка фигур мышкой ********************/
-
-    // Чтобы не рисовать много точек перемещая мышь и удерживая кнопку
-    // Рисуем одну точку одним нажатием
 
     if (ModeManager::getCursor()) {
         if (!(ModeManager::getActiveMode(MouseMode::MouseMove)) &&
@@ -276,13 +290,15 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
         } else if (ModeManager::getActiveMode(WorkModes::Circle)) {
             drawFigM.DrawFiguresMouse(painter);
+        } else if (ModeManager::getActiveMode(WorkModes::Arc)) {
+            drawFigM.DrawArc(painter);
         } else if (ModeManager::getActiveMode(WorkModes::Section)) {
 
             drawFigM.DrawFiguresMouse(painter);
 
             if (pointStorage != nullptr && pointStorage->size() > 0) {
-                // QPointF closes = ClosesPoint::findClosestPoint(*pointStorage); // Ищем ближайшие точки
-                // drawFigM.drawHints(painter, closes);
+                QPointF closes = ClosesPoint::findClosestPoint(*pointStorage); // Ищем ближайшие точки
+                drawFigM.drawHints(painter, closes);
             }
         }
 
@@ -300,40 +316,33 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                 sectionStorage != nullptr && sectionStorage->size() > 0 ||
                 pointStorage != nullptr && pointStorage->size() > 0)
                 findClosesObject();
-            //   IDmove=0;
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
-            // id = 0;
-            //   IDmove=0;
             if (circleStorage != nullptr && circleStorage->size() > 0 ||
                 sectionStorage != nullptr && sectionStorage->size() > 0 ||
                 pointStorage != nullptr && pointStorage->size() > 0)
                 findClosesObject();
-
-            //  if (id != 0) {
-            //       emit DoubleClickOnObject(id);
-            //   }
-
         }
     } else if (ModeManager::getActiveMode(WorkModes::Selected)) {
         QRectF rect = SelectedRectangle.selected(painter);
-
+        ClosesPoint::enteringInRect(*pointStorage, rect, selectedIDPoint);
+        ClosesPoint::enteringInRect(*sectionStorage, rect, selectedIDSection);
+        ClosesPoint::enteringInRect(*circleStorage, rect, selectedIDCircle);
     } else if (ModeManager::getActiveMode(WorkModes::Move)) {
 
-        if(ModeManager::getActiveMode(MouseMode::RightClick)){
-            drawing=false;
+        if (ModeManager::getActiveMode(MouseMode::RightClick)) {
+            drawing = false;
             selectedClear();
         }
 
         //  Кнопка мыши зажата
-        if(!drawing) {
+        if (!drawing) {
             if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
                 drawing = true;
-            }
-            else {
+            } else {
                 selectedClear();
             }
-        }else{
-            if(!ModeManager::getActiveMode(MouseMode::ReleasingLeft)) {
+        } else {
+            if (!ModeManager::getActiveMode(MouseMode::ReleasingLeft)) {
                 if (!selectedIDSection.empty()) {
                     emit MovingSection(selectedIDSection);
                 }
@@ -343,42 +352,57 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                 if (!selectedIDCircle.empty()) {
                     emit MovingCircle(selectedIDCircle);
                 }
-            }else{
+            } else {
                 drawing = false;
             }
         }
-
-
-
-
-
-
     }
-
-
 
 
     // Вызов функции рисования
     drawingFigures(painter);
 
-
-
-    // figureDelete();
-
     QFrame::paintEvent(event);
 }
 
+unsigned long long QTPainter::getWeight() {
+    return Scaling::getActualMonitorWidth();
+}
 
-// Изменение размера окна
+unsigned long long QTPainter::getHeight() {
+    return Scaling::getActualMonitorHeight();
+}
+
+void QTPainter::getBoundBox(const BoundBox2D &allObjects) {
+    Rectangle = &allObjects;
+}
+
+void QTPainter::initPoint(std::unordered_map<ID, Point *> &points) {
+    pointStorage = &points;
+}
+
+void QTPainter::initSection(std::unordered_map<ID, Section *> &sections) {
+    sectionStorage = &sections;
+}
+
+void QTPainter::initCircle(std::unordered_map<ID, Circle *> &circles) {
+    circleStorage = &circles;
+}
+
+void QTPainter::initArc(std::unordered_map<ID, Arc *> &arcs) {
+    arcStorage = &arcs;
+}
+
 void QTPainter::onWorkWindowResized() {
     // При изменении размера окна родителя меняем размер
     Scaling::setActualMonitorSize(parentWidget()->width(), parentWidget()->height());
     resize(parentWidget()->size());
 }
 
-void QTPainter::resizeRectangle() {
 
-}
+
+
+
 
 
 

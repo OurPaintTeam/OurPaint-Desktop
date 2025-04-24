@@ -5,6 +5,9 @@
 #include <limits>
 #include <cmath>
 #include <QPointF>
+#include <QRectF>
+#include <QLineF>
+#include <QPolygonF>
 
 #include "Paint.h"
 #include "Scaling.h"
@@ -13,13 +16,12 @@
 class ClosesPoint {
 
 public:
-
     // Функция поиска ближайшей точки
-    static QPointF findClosestPoint(const std::list<Point> &points);
+    static QPointF findClosestPoint(std::unordered_map<ID,  Point*>& points);
 
-    static void enteringInRect(const std::list<Point> &points,QRectF &rect);
-    static void enteringInRect(const std::list<Circle> &circle,QRectF &rect);
-    static void enteringInRect(const std::list<Section> &section,QRectF &rect);
+    static std::vector<ID>  enteringInRect(std::unordered_map<ID,  Point*>& points,QRectF &rect,std::vector<ID>&);
+    static std::vector<ID>  enteringInRect(std::unordered_map<ID, Section*>& sections,QRectF &rect,std::vector<ID>&);
+    static std::vector<ID>  enteringInRect(std::unordered_map<ID,  Circle*>& circles,QRectF &rect,std::vector<ID>&);
 
     // Функция проверки координат курсора и точки для перемещения
     static bool checkFigure(double x, double y);
@@ -32,7 +34,6 @@ public:
 
     // Вспомогательная функция для проверки курсора и линии
     static double distancePointToSection(double px, double py, double x0, double y0, double x1, double y1);
-
 
 };
 

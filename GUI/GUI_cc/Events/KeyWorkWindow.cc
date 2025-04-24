@@ -70,6 +70,35 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
     }else if (event->key() == Qt::Key_Right) {
         Scaling::setDelta(10,0);
         m_parent->update();
+    }else if(event->key() == Qt::Key_1){
+        emit firstReq();
+    }
+    else if(event->key() == Qt::Key_2){
+        emit secondReq();
+    }
+    else if(event->key() == Qt::Key_3){
+        emit thirdReq();
+    }
+    else if(event->key() == Qt::Key_4){
+        emit fourthReq();
+    }
+    else if(event->key() == Qt::Key_5){
+        emit fifthReq();
+    }
+    else if(event->key() == Qt::Key_6){
+        emit sixthReq();
+    }
+    else if(event->key() == Qt::Key_7){
+        emit seventhReq();
+    }
+    else if(event->key() == Qt::Key_8){
+        emit eighthReq();
+    }
+    else if(event->key() == Qt::Key_9){
+        emit ninthReq();
+    }
+    else if(event->key() == Qt::Key_0){
+        emit tenthReq();
     }
 
     if (event->key() == Qt::Key_Delete ||event->key() == Qt::Key_Backspace ) {

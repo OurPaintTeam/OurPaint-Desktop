@@ -26,14 +26,14 @@
 #include "CastomeIpListWindow.h"
 #include "LocalScanner.h"
 #include "SaveDialog.h"
-#include "WindowServer.h"
+#include "InputWindow.h"
 #include "ui_mainwindow.h"
 #include "QTPainter.h"
 #include "Modes.h"
 #include "MouseEventWorkWindow.h"
 #include "KeyWorkWindow.h"
 #include "LeftMenuBar.h"
-
+#include "Settings.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -45,22 +45,24 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 private:
-
+    Ui::MainWindow *ui;
 
     QTPainter *painter;
-    MouseWorkWindow* mouseWW;             //  для обработки событий мыши
-    KeyWorkWindow* keyWW;                 //  для обработки событий клавиш
-    LeftMenuBar* leftMenuBar; // Класс для управления левым меню
-
+    MouseWorkWindow* mouseWW;             //  Для обработки событий мыши
+    KeyWorkWindow* keyWW;                 //  Для обработки событий клавиш
+    LeftMenuBar* leftMenuBar;             // Класс для управления левым меню
+    Settings *settings;                   // Сохранение настроек
+    Help *helpWindow;                     // Окно справки
 
     CastomeWindowError *error;
     CastomeWindowWarning *warning;
     CastomeWindowSuccessful *success;
-    Ui::MainWindow *ui;
-    std::vector<QString> commands; // Буфер команд для консоли
-    int Index; // Индекс для навигации по командам
 
-    Help *helpWindow; // Окно справки
+    QString directory = QDir::homePath() + "/OurPaint-Desktop/project";
+    QString settingsDirectory=QDir::homePath() + "/OurPaint-Desktop/settings/settings.set";
+
+    std::vector<QString> commands; // Буфер команд для консоли
+    int Index;                      // Индекс для навигации по командам
 
     enum ResizeRegion {
         None,
@@ -68,251 +70,119 @@ private:
         TopLeft, TopRight, BottomLeft, BottomRight
     };
 
+    const int edgeMargin = 8;
     bool resizing = false;
     bool moving = false;
     QPoint dragStartPos;
     QRect originalGeometry;
     ResizeRegion currentRegion = None;
-    const int edgeMargin = 8;
-
-
 public:
+
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    QTPainter *getQTPainter() const;
+    LeftMenuBar* getLeftMenuBar() const;
+
+    void initConnections();
     void setupLeftMenu();
 
-    void initConnections(); // Инициализация сигналов
+    void updateStyle();
+    void updateExitServerStyle(bool);
+    void updateShapeCursor(const QPoint &pos);
 
-    // Добавление сообщений
     void setMessage(const std::string &name, const std::string &message);
-
-    void showHelp(); // Обработка кнопки помощи
 
     void setAllMouseTracking(QWidget *widget); // Отслеживание мыши
 
-    /***********************/
-    // левое меню
-
-
-    ///////////////////////////////////////////////////////////////
-
-    void loadSettings(std::vector<bool> settings, const QString &name);
-
+    /***     Кастомные окна       ***/
+    void showHelp();
     void showError(const QString &text);
-
     void showSuccess(const QString &text);
-
     void showWarning(const QString &text);
 
-
-
-    QTPainter *getQTPainter(){
-        return painter;
-    }
-
-    LeftMenuBar* getLeftMenuBar() const {
-        return leftMenuBar;
-    }
-
-    void updateStyle();
-    void updateShapeCursor(const QPoint &pos);
+    /***     Сохранение и импорт настроек       ***/
+    void saveSettings();
+    void loadSettings();
 
 protected:
 
-    // экран
-
-    // Закрытие
     void closeEvent(QCloseEvent *event) override;
-
-    // Изменение размеров
     void resizeEvent(QResizeEvent *event) override;
-
-    // Обработка отрисовки окна
     void paintEvent(QPaintEvent *event) override;
-    /////////////////////////////////////////////////
 
-    // Мышь
-
-    // Нажатие мыши
     void mousePressEvent(QMouseEvent *event) override;
-
-    // Перемещение мыши
     void mouseMoveEvent(QMouseEvent *event) override;
-
-    // Отпускание мыши
     void mouseReleaseEvent(QMouseEvent *event) override;
-
-    // Двойное нажатие клавиши
     void mouseDoubleClickEvent(QMouseEvent *event) override;
-
-    // Кручение колёсиком или тачпадом
     void wheelEvent(QWheelEvent *event) override;
-
-    // Жесты в тачпаде в области workWindow
     bool event(QEvent *event) override;
-//////////////////////////////////////////////////////////////
 
-// клава
     bool eventFilter(QObject *obj, QEvent *event) override;
-
-    // Обработчики событий клавиатуры и мыши
     void keyPressEvent(QKeyEvent *event) override;
 
 
-
 public slots:
-    void redo() {
-        emit REDO();
-    };
-    void undo(){
-        emit UNDO();
-    };
-    void delet(){
-        emit DELETE();
-    };
 
-    // Кнопки
+    void redo();
+    void undo();
+    void deleteButton();
+
     void loadProjectFile();
     void saveProjectToFile(const QString& format);
-
-
     void buttonScript();
+
     void openServer();
     void joinServer();
     void joinLocalServer();
+    void exitSession();
 
+    void Message();
 
-    void Message() {
-        QString input = ui->messageConsole->text();
-        if (!input.isEmpty()) {
-            ui->messageConsole->clear();
-            emit EnterMessage(input);
-        }
-    }
+    void Point();
+    void Section();
+    void Circle();
+    void Arc();
 
-    void exitSession() {
-        emit SigExitSession();
-    }
+    void FigMoving();
+    void ToolMoving();
+    void ToolSelected();
 
+    void onWorkWindowResized();
 
-    void Point() {
-        ModeManager::setActiveMode(WorkModes::Point);
-    };
-    void Section() {
-        ModeManager::setActiveMode(WorkModes::Section);
-    };
-    void Circle() {
-        ModeManager::setActiveMode(WorkModes::Circle);
-    };
-    void Sector() {
-        ModeManager::setActiveMode(WorkModes::Sector);
-    };
-    void Arc() {
-        ModeManager::setActiveMode(WorkModes::Arc);
-    };
+    void firstReq();
+    void secondReq();
+    void thirdReq();
+    void fourthReq();
+    void fifthReq();
+    void sixthReq();
+    void seventhReq();
+    void eighthReq();
+    void ninthReq();
+    void tenthReq();
 
-    void FigMoving() {
-        ModeManager::setActiveMode(WorkModes::Editor);
-    };
-    void ToolMoving() {
-        ModeManager::setActiveMode(WorkModes::Move);
-    };
-
-    void ToolRotation() {
-        ModeManager::setActiveMode(WorkModes::Rotate);
-    };
-    void ToolResize() {
-        ModeManager::setActiveMode(WorkModes::Resize);
-    };
-    void ToolSelected() {
-        ModeManager::setActiveMode(WorkModes::Selected);
-    };
-
-    void onWorkWindowResized(){
-        emit resize();
-    };
-
-    ////////////////////////////////////////////////////
-    // Требования
-
-    void firstReq() {
-        emit oneRequirements();
-    }
-
-    void secondReq() {
-        emit twoRequirements();
-    }
-
-    void thirdReq() {
-        emit threeRequirements();
-    }
-
-    void fourthReq() {
-        emit fourRequirements();
-    }
-
-    void fifthReq() {
-        emit fiveRequirements();
-    }
-
-    void sixthReq() {
-        emit sixRequirements();
-    }
-
-    void seventhReq() {
-        emit sevenRequirements();
-    }
-
-    void eighthReq() {
-        emit eightRequirements();
-    }
-
-    void ninthReq() {
-        emit nineRequirements();
-    }
-
-    void tenthReq() {
-        emit tenRequirements();
-    }
-
-
-    void onExportJPG(){saveProjectToFile(QString(".jpg"));};
-    void onExportJPEG(){saveProjectToFile(".jpeg");};
-    void onExportPNG(){  saveProjectToFile(".png");};
-    void onExportBMP(){  saveProjectToFile(".bmp");};
-    void onExportTIFF(){  saveProjectToFile(".tiff");};
-    void onExportPDF(){  saveProjectToFile(".pdf");};
-    void onExportOURP(){  saveProjectToFile(".ourp");};
-    void onExportSVG(){  saveProjectToFile(".svg");};
+    void onExportJPG();
+    void onExportJPEG();
+    void onExportPNG();
+    void onExportBMP();
+    void onExportTIFF();
+    void onExportPDF();
+    void onExportOURP();
+    void onExportSVG();
 
 signals:
-    void EnterPressed(const QString &command); // Сигнал при нажатии Enter
-    void projectSaved(const QString &fileName,QString format); // Сигнал о сохранении проекта
-    void LoadFile(const QString &fileName); // Сигнал для загрузки файла
-    void EmitScript(const QString &fileName);
 
+    void EnterPressed(const QString &command);
 
-    void REDO(); // Сигнал для повторения действия
-    void UNDO(); // Сигнал для отмены действия
-    void DELETE();
-
-    void resize();
-
-
-    // Кнопки сервера
+    void EnterMessage(const QString &text);
+    void NameUsers(const QString &text);
     void SigOpenServer(const QString &text);
     void SigJoinServer(const QString &text);
     void SigExitSession();
 
-    // Чат
-    void EnterMessage(const QString &text);
-
-
-    void toolResize();
-
-    void NameUsers(const QString &text);
-    void changeSettings();
+    void projectSaved(const QString &fileName,QString format);
+    void LoadFile(const QString &fileName);
+    void EmitScript(const QString &fileName);
 
     void oneRequirements();
     void twoRequirements();
@@ -325,6 +195,11 @@ signals:
     void nineRequirements();
     void tenRequirements();
 
+    void REDO();
+    void UNDO();
+    void DELETE();
+
+    void resize();
 
 };
 

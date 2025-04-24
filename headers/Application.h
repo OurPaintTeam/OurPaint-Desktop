@@ -8,14 +8,12 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QIcon>
 
-#include "LoadSettingsApplications.h"
-#include "SaveSettingsApplications.h"
 #include "Mainwindow.h"
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
 #include "TreeModelLazy.h"
-
+#include "GUI_Logger.h"
 #include "Scene.h"
 #include "Painter.h"
 
@@ -34,6 +32,7 @@ private:
     Client client;
 
     void initialize();
+    void initLogger();
     void setupQTPainterConnections();
     void setupServerConnections();
     void setupRequirementsConnections();
@@ -41,6 +40,8 @@ private:
     void setupAddingCommandsConnections();
     void updateState();
     void handler(const QString &command);
+    void addRequirement(QString name,int id,ID id1,ID id2,double parameters);
+    void addRequirement(QString name,int id,ID id1,ID id2);
 
 public:
     Application(int &argc, char **argv);
