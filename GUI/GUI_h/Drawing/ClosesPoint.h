@@ -9,8 +9,10 @@
 #include <QLineF>
 #include <QPolygonF>
 
-#include "Paint.h"
+#include "GeometricObjects.h"
+//#include "Paint.h"
 #include "Scaling.h"
+#include <list>
 
 // Класс для поиска ближайших точек к курсору
 class ClosesPoint {

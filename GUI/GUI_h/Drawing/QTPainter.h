@@ -13,7 +13,7 @@
 #include <QSvgGenerator>
 #include <unordered_map>
 
-#include "Painter.h"
+//#include "Painter.h"
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
 #include "DrawFigures.h"

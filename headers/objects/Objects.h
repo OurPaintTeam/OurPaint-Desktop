@@ -1,7 +1,7 @@
 #ifndef OURPAINT_HEADERS_OBJECTS_H_
 #define OURPAINT_HEADERS_OBJECTS_H_
 
-#include "objects/Enums.h"
+#include "Enums.h"
 #include <vector>
 #include <limits>
 
