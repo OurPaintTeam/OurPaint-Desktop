@@ -82,6 +82,7 @@ add_executable(ourpaint
         headers/Scene.h
         headers/UndoRedo/UndoRedoTemplate.h
         headers/objects/BoundBox.h
+
         ###########  GUI  ############
 
         GUI/GUI_cc/MainFile/Mainwindow.cc
@@ -94,6 +95,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Drawing/Modes.cc
         GUI/GUI_cc/Drawing/DrawMouse.cc
         GUI/GUI_cc/Drawing/QTPainter.cc
+        GUI/GUI_cc/Drawing/SelectedRectangle.cc
 
         GUI/GUI_cc/Events/SmileRightClickFilter.cc
         GUI/GUI_cc/Events/KeyWorkWindow.cc
@@ -116,6 +118,7 @@ add_executable(ourpaint
 
         GUI/GUI_cc/Logger/GUI_Logger.cc
 
+        GUI/GUI_cc/Settings/Settings.cc
 
         GUI/GUI_h/client_server/Client.h
         GUI/GUI_h/client_server/LocalScanner.h
@@ -159,8 +162,8 @@ add_executable(ourpaint
         GUI/GUI_h/Logger/GUI_Logger.h
 
         GUI/GUI_h/Settings/Settings.h
-        GUI/GUI_cc/Settings/Settings.cc
-        GUI/GUI_cc/Drawing/SelectedRectangle.cc
+
+
 
 )
 

@@ -202,9 +202,6 @@ void Application::setupQTPainterConnections(){
                              }
                          });
 
-        // Отрисовка сектора
-        //  QObject::connect(painter, &QTPainter::SigSector,
-       //                   [this]() {});
 
         // Отрисовка арки
         QObject::connect(painter, &QTPainter::SigArc,
@@ -446,7 +443,6 @@ void Application::setupRequirementsConnections(){
         auto pairID = painter->getPairID();
         if (pairID) {
             addRequirement("ET_SECTIONSECTIONPARALLEL",8,pairID->first,pairID->second);
-
         }
 
     });
@@ -793,7 +789,23 @@ void Application::handler(const QString &command) {
 void Application::addRequirement(QString name,int id,ID id1,ID id2,double parameters){
     RequirementData reqData;
     Requirement type;
-    type = ET_POINTSECTIONDIST;
+
+    if (name == "ET_POINTSECTIONDIST") type = ET_POINTSECTIONDIST;
+    else if (name == "ET_POINTONSECTION") type = ET_POINTONSECTION;
+    else if (name == "ET_POINTPOINTDIST") type = ET_POINTPOINTDIST;
+    else if (name == "ET_POINTONPOINT") type = ET_POINTONPOINT;
+    else if (name == "ET_SECTIONCIRCLEDIST") type = ET_SECTIONCIRCLEDIST;
+    else if (name == "ET_SECTIONONCIRCLE") type = ET_SECTIONONCIRCLE;
+    else if (name == "ET_SECTIONINCIRCLE") type = ET_SECTIONINCIRCLE;
+    else if (name == "ET_SECTIONSECTIONPARALLEL") type = ET_SECTIONSECTIONPARALLEL;
+    else if (name == "ET_SECTIONSECTIONPERPENDICULAR") type = ET_SECTIONSECTIONPERPENDICULAR;
+    else if (name == "ET_SECTIONSECTIONANGLE") type = ET_SECTIONSECTIONANGLE;
+    else if (name == "ET_POINTONCIRCLE") type = ET_POINTONCIRCLE;
+    else if (name == "ET_POINTINOBJECT") type = ET_POINTINOBJECT;
+    else {
+        qWarning() << "Unknown requirement name: " << name;
+    }
+
     reqData.req = type;
     reqData.objects.push_back(id1.get());
     reqData.objects.push_back(id2.get());
@@ -809,7 +821,23 @@ void Application::addRequirement(QString name,int id,ID id1,ID id2,double parame
 void Application::addRequirement(QString name,int id,ID id1,ID id2){
     RequirementData reqData;
     Requirement type;
-    type = ET_POINTSECTIONDIST;
+
+    if (name == "ET_POINTSECTIONDIST") type = ET_POINTSECTIONDIST;
+    else if (name == "ET_POINTONSECTION") type = ET_POINTONSECTION;
+    else if (name == "ET_POINTPOINTDIST") type = ET_POINTPOINTDIST;
+    else if (name == "ET_POINTONPOINT") type = ET_POINTONPOINT;
+    else if (name == "ET_SECTIONCIRCLEDIST") type = ET_SECTIONCIRCLEDIST;
+    else if (name == "ET_SECTIONONCIRCLE") type = ET_SECTIONONCIRCLE;
+    else if (name == "ET_SECTIONINCIRCLE") type = ET_SECTIONINCIRCLE;
+    else if (name == "ET_SECTIONSECTIONPARALLEL") type = ET_SECTIONSECTIONPARALLEL;
+    else if (name == "ET_SECTIONSECTIONPERPENDICULAR") type = ET_SECTIONSECTIONPERPENDICULAR;
+    else if (name == "ET_SECTIONSECTIONANGLE") type = ET_SECTIONSECTIONANGLE;
+    else if (name == "ET_POINTONCIRCLE") type = ET_POINTONCIRCLE;
+    else if (name == "ET_POINTINOBJECT") type = ET_POINTINOBJECT;
+    else {
+        qWarning() << "Unknown requirement name: " << name;
+    }
+
     reqData.req = type;
     reqData.objects.push_back(id1.get());
     reqData.objects.push_back(id2.get());
