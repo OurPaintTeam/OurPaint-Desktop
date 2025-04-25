@@ -120,6 +120,7 @@ void Application::setupQTPainterConnections(){
                     ModeManager::setSave(false);
                     painter->draw();
                     leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
+                    leftMenu->updateLeftMenu();
                     server.sendToClients(QString::fromStdString(scene.to_string()));
                 } else {
                     client.sendCommandToServer("point " + QString::number(y) + " " +
@@ -135,6 +136,7 @@ void Application::setupQTPainterConnections(){
                 ModeManager::setSave(false);
                 painter->draw();
                 leftMenu->addElemLeftMenu("Point",id.get(),{x,y});
+                leftMenu->updateLeftMenu();
             }
         });
 
@@ -152,6 +154,7 @@ void Application::setupQTPainterConnections(){
                     leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                     leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                     painter->draw();
+                    leftMenu->updateLeftMenu();
                     server.sendToClients(QString::fromStdString(scene.to_string()));
                 } else {
                     client.sendCommandToServer("circle " + QString::number(x) + " " +
@@ -168,13 +171,13 @@ void Application::setupQTPainterConnections(){
                 leftMenu->addElemLeftMenu("Circle",id.get(),{x,y,radius});
                 leftMenu->addElemLeftMenu("Point",id.get()-1,{x,y});
                 painter->draw();
+                leftMenu->updateLeftMenu();
             }
         });
 
         // Отрисовка линии
         QObject::connect(painter, &QTPainter::SigSection,
                          [this](double startX, double startY, double endX, double endY) {
-
                              ObjectData section;
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
@@ -189,6 +192,7 @@ void Application::setupQTPainterConnections(){
                                      leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
                                      leftMenu->addElemLeftMenu("Point",id.get()-2,{endX,endY});
                                      painter->draw();
+                                     leftMenu->updateLeftMenu();
                                      server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("section " + QString::number(startX) + " " +
@@ -208,13 +212,61 @@ void Application::setupQTPainterConnections(){
                                  leftMenu->addElemLeftMenu("Point",id.get()-1,{startX,startY});
                                  leftMenu->addElemLeftMenu("Point",id.get()-2,{endX,endY});
                                  leftMenu->addElemLeftMenu("Section",id.get(),{startX,startY,endX,endY});
+                                 leftMenu->updateLeftMenu();
                              }
                          });
 
 
         // Отрисовка арки
         QObject::connect(painter, &QTPainter::SigArc,
-                         [this](double x, double y, double x1, double y1) {});
+                         [this](double x0, double y0, double x1, double y1,double xc,double yc) {
+                             ObjectData arc;
+                             if (ModeManager::getConnection()) {
+                                 if (ModeManager::getFlagServer()) {
+                                     arc.et = ET_ARC;
+                                     arc.params.push_back(x0);
+                                     arc.params.push_back(y0);
+                                     arc.params.push_back(x1);
+                                     arc.params.push_back(y1);
+                                     arc.params.push_back(xc);
+                                     arc.params.push_back(yc);
+                                     arc.params.push_back(1);
+                                     ID id = scene.addObject(arc);
+                                     ModeManager::setSave(false);
+                                     leftMenu->addElemLeftMenu("Arc",id.get(),{x0,y0,x1,y1,xc,yc});
+                                     leftMenu->addElemLeftMenu("Point",id.get()-1,{x0,y0});
+                                     leftMenu->addElemLeftMenu("Point",id.get()-2,{x1,y1});
+                                     leftMenu->addElemLeftMenu("Point",id.get()-2,{xc,yc});
+                                     leftMenu->updateLeftMenu();
+                                     painter->draw();
+                                     server.sendToClients(QString::fromStdString(scene.to_string()));
+                                 } else {
+                                     client.sendCommandToServer("arc " + QString::number(x0) + " " +
+                                                                QString::number(y0) + " " +
+                                                                QString::number(x1) + " " +
+                                                                QString::number(y1)+ " " +
+                                     QString::number(xc) + " " +
+                                     QString::number(yc));
+                                 }
+                             } else {
+                                 arc.et = ET_ARC;
+                                 arc.params.push_back(x0);
+                                 arc.params.push_back(y0);
+                                 arc.params.push_back(x1);
+                                 arc.params.push_back(y1);
+                                 arc.params.push_back(xc);
+                                 arc.params.push_back(yc);
+                                 arc.params.push_back(1);
+                                 ID id = scene.addObject(arc);
+                                 ModeManager::setSave(false);
+                                 painter->draw();
+                                 leftMenu->addElemLeftMenu("Arc",id.get(),{x0,y0,x1,y1,xc,yc});
+                                 leftMenu->addElemLeftMenu("Point",id.get()-1,{x0,y0});
+                                 leftMenu->addElemLeftMenu("Point",id.get()-2,{x1,y1});
+                                 leftMenu->addElemLeftMenu("Point",id.get()-2,{xc,yc});
+                                 leftMenu->updateLeftMenu();
+                             }
+                         });
 
 
     }
@@ -753,7 +805,7 @@ void Application::handler(const QString &command) {
                     leftMenu->addElemLeftMenu("Point", id.get() - 3, {x1, y1});
                     leftMenu->addElemLeftMenu("Point", id.get() - 2, {x2, y2});
                     leftMenu->addElemLeftMenu("Point", id.get() - 1, {cx, cy});
-                    leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy, r});
+                    leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy});
                 });
             }
 

@@ -10,6 +10,8 @@
 #include <QWidget>
 #include <QFile>
 #include <QDataStream>
+#include <iostream>
+#include <QLabel>
 
 
 #include "TreeModelLazy.h"

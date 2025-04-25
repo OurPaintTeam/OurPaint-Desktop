@@ -8,7 +8,7 @@
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
 #include "GeometricObjects.h"
-
+#include <qDebug>
 //     Класс для отрисовки фигур
 //     Преобразование координат с учётом масштабирования и инвертированной оси Y,
 //     а также использует дополнительные функции для выделения объектов
@@ -172,29 +172,8 @@ public:
 
     }
 
-
-    // Функция для рисования сектора
-    static void drawSector(QPainter &painter, bool selected) {
-        // Настройка пера
-        QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
-        currentPen.setWidth(selected ? 2 : 1);
-        currentPen.setCapStyle(Qt::RoundCap);
-        painter.setPen(currentPen);
-
-
-        // Сброс цвета
-        MyColor = QPen(Qt::black);
-    }
-
-    // Вспомогательная функция для угла в градусах
     static double angleBetween(const QPointF &center, const QPointF &point) {
-        return std::atan2(point.y() - center.y(), point.x() - center.x()) * 180.0 / M_PI;
-    }
-
-    static double normalizeAngle(double angle) {
-        while (angle < 0) angle += 360;
-        while (angle >= 360) angle -= 360;
-        return angle;
+        return QLineF(center, point).angle();
     }
 
     // Функция для рисования дуги
@@ -219,19 +198,20 @@ public:
                     currentPen.setWidth(selected ? 2 : 1);
                     painter.setPen(currentPen);
 
-                    QPointF center(arc->center->x, arc->center->y);
-                    QPointF start(arc->beg->x, arc->beg->y);
-                    QPointF end(arc->end->x, arc->end->y);
+                    QPointF center(Scaling::scaleCoordinate(arc->center->x), Scaling::scaleCoordinate(-arc->center->y));
+                    QPointF start(Scaling::scaleCoordinate(arc->beg->x), Scaling::scaleCoordinate(-arc->beg->y));
+                    QPointF end(Scaling::scaleCoordinate(arc->end->x), Scaling::scaleCoordinate(-arc->end->y));
 
                     double radius = std::hypot(start.x() - center.x(), start.y() - center.y());
 
-                    double startAngleDeg = normalizeAngle(angleBetween(center, start));
-                    double endAngleDeg = normalizeAngle(angleBetween(center, end));
+                    double startAngleDeg = angleBetween(center, start);
+                    double endAngleDeg = angleBetween(center, end);
                     double spanAngleDeg = endAngleDeg - startAngleDeg;
 
                     if (spanAngleDeg <= 0) spanAngleDeg += 360;
 
                     QRectF rect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+
                     int qtStart = static_cast<int>(startAngleDeg * 16);
                     int qtSpan = static_cast<int>(spanAngleDeg * 16);
 
@@ -249,13 +229,14 @@ public:
 
                     double radius = std::hypot(start.x() - center.x(), start.y() - center.y());
 
-                    double startAngleDeg = normalizeAngle(angleBetween(center, start));
-                    double endAngleDeg = normalizeAngle(angleBetween(center, end));
+                    double startAngleDeg = angleBetween(center, start);
+                    double endAngleDeg = angleBetween(center, end);
                     double spanAngleDeg = endAngleDeg - startAngleDeg;
 
                     if (spanAngleDeg <= 0) spanAngleDeg += 360;
 
                     QRectF rect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+
                     int qtStart = static_cast<int>(startAngleDeg * 16);
                     int qtSpan = static_cast<int>(spanAngleDeg * 16);
 
@@ -322,101 +303,32 @@ public:
         MyColor = QPen(Qt::black);  // Сброс цвета
     }
 
-    // Функция для рисования сектора
-    static void drawSector(QPainter &painter, QPointF center, double radius, double startAngleDeg, double spanAngleDeg) {
-        // Настройка пера
-        QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
-        currentPen.setWidth(1);
-        currentPen.setCapStyle(Qt::RoundCap);
-        painter.setPen(currentPen);
-
-        // Масштабирование центра
-        QPointF scaledCenter(Scaling::scaleCoordinate(center.x()), Scaling::scaleCoordinate(-center.y()));
-        double scaledRadius = Scaling::scaleCoordinate(radius);
-
-        // Прямоугольник, в который вписана дуга
-        QRectF arcRect(scaledCenter.x() - scaledRadius, scaledCenter.y() - scaledRadius,
-                       2 * scaledRadius, 2 * scaledRadius);
-
-
-        double startAngle16 = Scaling::scaleCoordinate(-startAngleDeg); // Минус, т.к. Y идёт вниз
-        double spanAngle16 = Scaling::scaleCoordinate(-spanAngleDeg);
-
-        painter.drawPie(arcRect, startAngle16, spanAngle16);
-
-        // Сброс цвета
-        MyColor = QPen(Qt::black);
-    }
-
-    static void drawHalfCircle(QPainter &painter, QPointF start, QPointF cursor) {
+    static void drawArc(QPainter &painter, QPointF &s, QPointF &e,QPointF& c) {
         QPen pen(Qt::black);
         pen.setWidth(1);
         pen.setCapStyle(Qt::RoundCap);
         painter.setPen(pen);
 
-        // Масштабирование с переворотом Y
-        QPointF p0 = QPointF(Scaling::scaleCoordinate(start.x()), Scaling::scaleCoordinate(-start.y()));
-        QPointF p1 = QPointF(Scaling::scaleCoordinate(cursor.x()), Scaling::scaleCoordinate(-cursor.y()));
+        QPointF center(Scaling::scaleCoordinate(c.x()), Scaling::scaleCoordinate(-c.y()));
+        QPointF start(Scaling::scaleCoordinate(s.x()), Scaling::scaleCoordinate(-s.y()));
+        QPointF end(Scaling::scaleCoordinate(e.x()), Scaling::scaleCoordinate(-e.y()));
 
-        // Центр и радиус
-        QPointF center = (p0 + p1) / 2.0;
-        double radius = std::hypot(p1.x() - p0.x(), p1.y() - p0.y()) / 2.0;
+        double radius = std::hypot(start.x() - center.x(), start.y() - center.y());
+
+        double startAngleDeg = angleBetween(center, start);
+        double endAngleDeg = angleBetween(center, end);
+        double spanAngleDeg = endAngleDeg - startAngleDeg;
+
+        if (spanAngleDeg <= 0) spanAngleDeg += 360;
+
         QRectF rect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
 
-        // Угол к стартовой точке
-        double angleStart = std::atan2(-p0.y() + center.y(), p0.x() - center.x()) * 180.0 / M_PI;
+        int qtStart = static_cast<int>(startAngleDeg * 16);
+        int qtSpan = static_cast<int>(spanAngleDeg * 16);
 
-        // Векторы от центра к p0 и p1
-        QPointF v0 = p0 - center;
-        QPointF v1 = p1 - center;
-
-        // Векторное произведение — инвертируем знак, так как Y уже инвертирован
-        double cross = -(v0.x() * v1.y() - v0.y() * v1.x());
-
-        // Определяем сторону дуги по знаку
-        double span = (cross > 0) ? 180.0 : -180.0;
-
-        int qtStartAngle = static_cast<int>(angleStart * 16);
-        int qtSpanAngle = static_cast<int>(span * 16);
-
-        painter.drawArc(rect, qtStartAngle, qtSpanAngle);
+        painter.drawArc(rect, qtStart, qtSpan);
     }
 
-
-
-    static void drawArc(QPainter &painter, QPointF start, QPointF end, QPointF cursor) {
-        QPen pen(Qt::black);
-        pen.setWidth(1);
-        pen.setCapStyle(Qt::RoundCap);
-        painter.setPen(pen);
-
-        // Масштабирование с переворотом Y
-        QPointF p0 = QPointF(Scaling::scaleCoordinate(start.x()), Scaling::scaleCoordinate(-start.y()));
-        QPointF p1 = QPointF(Scaling::scaleCoordinate(cursor.x()), Scaling::scaleCoordinate(-cursor.y()));
-
-        // Центр и радиус
-        QPointF center = (p0 + p1) / 2.0;
-        double radius = std::hypot(p1.x() - p0.x(), p1.y() - p0.y()) / 2.0;
-        QRectF rect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
-
-        // Угол к стартовой точке
-        double angleStart = std::atan2(-p0.y() + center.y(), p0.x() - center.x()) * 180.0 / M_PI;
-
-        // Векторы от центра к p0 и p1
-        QPointF v0 = p0 - center;
-        QPointF v1 = p1 - center;
-
-        // Векторное произведение — инвертируем знак, так как Y уже инвертирован
-        double cross = -(v0.x() * v1.y() - v0.y() * v1.x());
-
-        // Определяем сторону дуги по знаку
-        double span = (cross > 0) ? 180.0 : -180.0;
-
-        int qtStartAngle = static_cast<int>(angleStart * 16);
-        int qtSpanAngle = static_cast<int>(span * 16);
-
-        painter.drawArc(rect, qtStartAngle, qtSpanAngle);
-    }
 
     // Функция для рисования прямоугольника
     static void drawRectangle(QPainter &painter, QPointF &X, QPointF &Y) {

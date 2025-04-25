@@ -1,4 +1,3 @@
-#include <iostream>
 #include "LeftMenuBar.h"
 
 LeftMenuBar::LeftMenuBar(QObject  *parent) {
@@ -61,14 +60,14 @@ void LeftMenuBar::addElemLeftMenu(const QString &name, unsigned long long ID, co
             elemNode->addChild(paramNode);
         }
     }else if (name == "Circle") {
-        QStringList paramNames = { "x", "y", "r" };
+        QStringList paramNames = { "x₀", "y₀", "r" };
         for (int i = 0; i < paramNames.size(); ++i) {
             TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
             paramNode->setIcon(paraam);
             elemNode->addChild(paramNode);
         }
     }else if (name == "Arc") {
-        QStringList paramNames = { "x₀", "y₀", "x₁", "y₁","r" };
+        QStringList paramNames = { "x₀", "y₀", "x₁", "y₁","x","y" };
         for (int i = 0; i < paramNames.size(); ++i) {
             TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
             paramNode->setIcon(paraam);
@@ -227,9 +226,12 @@ void LeftMenuBar::updateParametersById(unsigned long long id, const std::vector<
                     } else if (name == "Section") {
                         paramNames = { "x₀", "y₀", "x₁", "y₁"  };
                     } else if (name == "Circle") {
-                        paramNames = { "x", "y", "r" };
+                        paramNames = { "x₀", "y₀", "r" };
                     } else if (name == "Arc") {
-                         paramNames = { "x₀", "y₀", "x₁", "y₁","r" };
+                        QLabel *label = new QLabel();
+                        label->setTextFormat(Qt::RichText);
+                        label->setText("x<sub>c</sub>");
+                         paramNames = { "x₀", "y₀", "x₁", "y₁","x","y" };
                     }else {
                         { return; }
                     }

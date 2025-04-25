@@ -75,7 +75,7 @@ public:
     void onSigPoint(double x, double y);
     void onSigCircle(double x, double y, double r);
     void onSigSection(double x, double y, double x1, double y1);
-    void onSigArc(double x, double y, double x1, double y1);
+    void onSigArc(double x, double y, double x1, double y1, double xc, double yc);
 
 
 protected:
@@ -105,7 +105,7 @@ signals:
     void SigPoint(double x, double y);
     void SigCircle(double x, double y, double r);
     void SigSection(double x, double y, double x1, double y1);
-    void SigArc(double x, double y, double x1, double y1);
+    void SigArc(double x, double y, double x1, double y1, double xc, double yc);
 
 
     void DoubleClickOnObject(ID id);

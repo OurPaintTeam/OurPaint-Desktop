@@ -298,8 +298,8 @@ void QTPainter::onSigSection(double x, double y, double x1, double y1) {
     emit SigSection(x, y, x1, y1);
 }
 
-void QTPainter::onSigArc(double x, double y, double x1, double y1) {
-    emit SigArc(x, y, x1, y1);
+void QTPainter::onSigArc(double x, double y, double x1, double y1, double xc, double yc) {
+    emit SigArc(x, y, x1, y1,xc,yc);
 }
 
 void QTPainter::resizeEvent(QResizeEvent *event) {
@@ -339,10 +339,10 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
             drawFigM.DrawFiguresMouse(painter);
 
-        } else if (ModeManager::getActiveMode(WorkModes::Circle)) {
+        } else if (ModeManager::getActiveMode(WorkModes::Circle) ||
+                (ModeManager::getActiveMode(WorkModes::Arc))) {
             drawFigM.DrawFiguresMouse(painter);
-        } else if (ModeManager::getActiveMode(WorkModes::Arc)) {
-            drawFigM.DrawArc(painter);
+
         } else if (ModeManager::getActiveMode(WorkModes::Section)) {
 
             drawFigM.DrawFiguresMouse(painter);
