@@ -542,11 +542,6 @@ void Application::setupAddingCommandsConnections() {
         scene.loadFromFile(File.c_str());
         painter->draw();
         scene.paint();
-        vecCalls.push_back([=, this]() {
-            leftMenu->clearAllFigures();
-            leftMenu->clearAllRequirements();
-        });
-        updateState();
     });
 
     // Script
