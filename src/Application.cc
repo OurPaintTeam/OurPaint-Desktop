@@ -543,6 +543,7 @@ void Application::setupAddingCommandsConnections() {
             scene.saveToFile(File.c_str());
             painter->draw();
         }
+        mainWind.showSuccess("The project is saved!");
     });
 
     //Load
@@ -552,6 +553,7 @@ void Application::setupAddingCommandsConnections() {
         scene.loadFromFile(File.c_str());
         painter->draw();
         scene.paint();
+        mainWind.showSuccess("The project is loaded!");
     });
 
     // Script
