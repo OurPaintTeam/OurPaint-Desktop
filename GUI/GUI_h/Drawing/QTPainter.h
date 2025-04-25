@@ -12,6 +12,7 @@
 #include <list>
 #include <QSvgGenerator>
 #include <unordered_map>
+#include <algorithm>
 
 //#include "Painter.h"
 #include "Scaling.h"

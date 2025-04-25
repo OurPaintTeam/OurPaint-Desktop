@@ -98,31 +98,77 @@ bool QTPainter::findClosesObject() {
 
     lastClickTime = currentTime;
 
-    for (const auto &pt: *pointStorage) {
+    for (const auto &pt : *pointStorage) {
         const Point *point = pt.second;
         if (ClosesPoint::checkFigure(point->x, point->y)) {
-            selectedIDPoint.push_back(pt.first);
+            bool found = false;
+            std::vector<ID> updated;
+
+            for (const auto &id : selectedIDPoint) {
+                if (id == pt.first) {
+                    found = true; // не добавляем
+                } else {
+                    updated.push_back(id);
+                }
+            }
+
+            if (!found) {
+                updated.push_back(pt.first); // добавляем
+            }
+
+            selectedIDPoint = std::move(updated); // заменяем старый вектор
             return true;
         }
     }
 
-    for (const auto &sec: *sectionStorage) {
+    for (const auto &sec : *sectionStorage) {
         const Section *section = sec.second;
         if (ClosesPoint::checkFigure(section->beg->x, section->beg->y,
                                      section->end->x, section->end->y)) {
-            selectedIDSection.push_back(sec.first);
+            bool found = false;
+            std::vector<ID> updated;
+
+            for (const auto &id : selectedIDSection) {
+                if (id == sec.first) {
+                    found = true; // не добавляем
+                } else {
+                    updated.push_back(id);
+                }
+            }
+
+            if (!found) {
+                updated.push_back(sec.first); // добавляем
+            }
+
+            selectedIDSection = std::move(updated); // заменяем старый вектор
             return true;
         }
     }
 
-    for (const auto &cir: *circleStorage) {
+    for (const auto &cir : *circleStorage) {
         const Circle *circle = cir.second;
         if (ClosesPoint::checkFigure(circle->center->x, circle->center->y, circle->r)) {
-            selectedIDCircle.push_back(cir.first);
+            bool found = false;
+            std::vector<ID> updated;
+
+            for (const auto &id : selectedIDCircle) {
+                if (id == cir.first) {
+                    found = true; // не добавляем
+                } else {
+                    updated.push_back(id);
+                }
+            }
+
+            if (!found) {
+                updated.push_back(cir.first); // добавляем
+            }
+
+            selectedIDCircle = std::move(updated); // заменяем старый вектор
             return true;
         }
-
     }
+
+
 
     return false;
 }
@@ -315,12 +361,16 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             if (circleStorage != nullptr && circleStorage->size() > 0 ||
                 sectionStorage != nullptr && sectionStorage->size() > 0 ||
                 pointStorage != nullptr && pointStorage->size() > 0)
-                findClosesObject();
+
+                if(!findClosesObject()){
+                    selectedClear();
+                }
+
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
             if (circleStorage != nullptr && circleStorage->size() > 0 ||
                 sectionStorage != nullptr && sectionStorage->size() > 0 ||
-                pointStorage != nullptr && pointStorage->size() > 0)
-                findClosesObject();
+                pointStorage != nullptr && pointStorage->size() > 0){}
+                //findClosesObject();
         }
     } else if (ModeManager::getActiveMode(WorkModes::Selected)) {
         QRectF rect = SelectedRectangle.selected(painter);
