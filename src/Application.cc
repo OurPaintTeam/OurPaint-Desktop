@@ -388,6 +388,7 @@ void Application::setupRequirementsConnections(){
                 double parameters = window.getText().toDouble(&ok);
                 if (!ok) return;
                 addRequirement("ET_POINTSECTIONDIST",1,pairID->first,pairID->second,parameters);
+                updateState();
             }
         }
     });
@@ -398,6 +399,7 @@ void Application::setupRequirementsConnections(){
         if (pairID) {
             RequirementData reqData;
             addRequirement("ET_POINTONSECTION", 2, pairID->first, pairID->second);
+            updateState();
         }
     });
 
@@ -411,6 +413,7 @@ void Application::setupRequirementsConnections(){
                 double parameters = window.getText().toDouble(&ok);
                 if (!ok) return;
                 addRequirement("ET_POINTPOINTDIST",3,pairID->first,pairID->second,parameters);
+                updateState();
             }
         }
     });
@@ -419,6 +422,7 @@ void Application::setupRequirementsConnections(){
         auto pairID = painter->getPairID();
         if (pairID) {
             addRequirement("ET_POINTONPOINT",4,pairID->first,pairID->second);
+            updateState();
         }
     });
 
@@ -432,6 +436,7 @@ void Application::setupRequirementsConnections(){
                 double parameters = window.getText().toDouble(&ok);
                 if (!ok) return;
                 addRequirement("ET_SECTIONCIRCLEDIST",5,pairID->first,pairID->second,parameters);
+                updateState();
             }
         }
     });
@@ -445,6 +450,7 @@ void Application::setupRequirementsConnections(){
                 double parameters = window.getText().toDouble(&ok);
                 if (!ok) return;
                 addRequirement("ET_SECTIONONCIRCLE", 6,pairID->first,pairID->second, parameters);
+                updateState();
             }
         }
     });
@@ -453,6 +459,7 @@ void Application::setupRequirementsConnections(){
         auto pairID = painter->getPairID();
         if (pairID) {
             addRequirement("ET_SECTIONINCIRCLE",7,pairID->first,pairID->second);
+            updateState();
         }
     });
 
@@ -460,6 +467,7 @@ void Application::setupRequirementsConnections(){
         auto pairID = painter->getPairID();
         if (pairID) {
             addRequirement("ET_SECTIONSECTIONPARALLEL",8,pairID->first,pairID->second);
+            updateState();
         }
 
     });
@@ -468,6 +476,7 @@ void Application::setupRequirementsConnections(){
         auto pairID = painter->getPairID();
         if (pairID) {
             addRequirement("ET_SECTIONSECTIONPERPENDICULAR",9,pairID->first,pairID->second);
+            updateState();
         }
     });
 
@@ -480,6 +489,7 @@ void Application::setupRequirementsConnections(){
                 double parameters = window.getText().toDouble(&ok);
                 if (!ok) return;
                 addRequirement("ET_SECTIONSECTIONANGLE",10,pairID->first,pairID->second,parameters);
+                updateState();
             }
         }
     });
@@ -769,33 +779,43 @@ void Application::handler(const QString &command) {
             switch (req) {
                 case 1:
                     addRequirement("ET_POINTSECTIONDIST",req,obj1,obj2,parameters);
+                    updateState();
                     break;
                 case 2:
                     addRequirement("ET_POINTONSECTION",req,obj1,obj2);
+                    updateState();
                     break;
                 case 3:
                     addRequirement("ET_POINTPOINTDIST",req,obj1,obj2,parameters);
+                    updateState();
                     break;
                 case 4:
                     addRequirement("ET_POINTONPOINT",req,obj1,obj2);
+                    updateState();
                     break;
                 case 5:
                     addRequirement("ET_SECTIONCIRCLEDIST",req,obj1,obj2,parameters);
+                    updateState();
                     break;
                 case 6:
                     addRequirement("ET_SECTIONONCIRCLE",req,obj1,obj2,parameters);
+                    updateState();
                     break;
                 case 7:
                     addRequirement("ET_SECTIONINCIRCLE",req,obj1,obj2);
+                    updateState();
                     break;
                 case 8:
                     addRequirement("ET_SECTIONSECTIONPARALLEL",req,obj1,obj2);
+                    updateState();
                     break;
                 case 9:
                     addRequirement("ET_SECTIONSECTIONPERPENDICULAR",req,obj1,obj2);
+                    updateState();
                     break;
                 case 10:
                     addRequirement("ET_SECTIONSECTIONANGLE",req,obj1,obj2,parameters);
+                    updateState();
                     break;
                 default:
                     mainWind.showError("Not right number of req");
