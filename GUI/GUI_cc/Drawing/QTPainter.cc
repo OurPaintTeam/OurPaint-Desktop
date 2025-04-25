@@ -86,6 +86,7 @@ void QTPainter::resizeRectangle() {}
 bool QTPainter::findClosesObject() {
     bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
     bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
+    bool shiftPress=ModeManager::getActiveMode(KeyMode::Shift);
 
     if (!leftClick && !doubleClick) {
         return false;
@@ -97,6 +98,10 @@ bool QTPainter::findClosesObject() {
     }
 
     lastClickTime = currentTime;
+
+    if(!shiftPress){
+        selectedClear();
+    }
 
     for (const auto &pt : *pointStorage) {
         const Point *point = pt.second;
