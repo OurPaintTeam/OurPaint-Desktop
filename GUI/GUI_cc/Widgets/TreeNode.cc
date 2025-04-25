@@ -28,6 +28,12 @@ QVariant TreeNode::data(int column) const {
     return QVariant();  // пустое значение для других колонок
 }
 
+void TreeNode::setIcon(const QIcon& newIcon)
+{ icon = newIcon; }
+
+QIcon TreeNode::getIcon() const
+{ return icon; }
+
 // Назначить данные обьекта
 void TreeNode::setData(int column, const QVariant& value) {
     if (column == 0)

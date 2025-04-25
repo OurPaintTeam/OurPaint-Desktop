@@ -1,3 +1,4 @@
+#include <iostream>
 #include "LeftMenuBar.h"
 
 LeftMenuBar::LeftMenuBar(QObject  *parent) {
@@ -19,6 +20,9 @@ LeftMenuBar::LeftMenuBar(QObject  *parent) {
     fontCategory.setPointSize(12);
     figuresNode->setFont(fontCategory);
     requirementsNode->setFont(fontCategory);
+
+    elem = QIcon("../Static/icons/Database.ico");
+    paraam = QIcon("../Static/icons/Icon.ico");
 }
 
 TreeModelLazy* LeftMenuBar::getTreeModel(){
@@ -29,31 +33,45 @@ TreeModelLazy* LeftMenuBar::getTreeModel(){
 void LeftMenuBar::addElemLeftMenu(const QString &name, unsigned long long ID, const std::vector<double> &params) {
     if (!figuresNode) { return; }
 
+    font.setPointSize(9);
+
     // Создаем основной узел элемента
     TreeNode* elemNode = new TreeNode(name, figuresNode);
+    elemNode->setIcon(elem);
     figuresNode->addChild(elemNode);
 
     // Добавляем ID как дочерний узел
-    TreeNode* idNode = new TreeNode(QString("ID = %1").arg(ID), elemNode);
+    TreeNode* idNode = new TreeNode(QString("ID: %1").arg(ID), elemNode);
+    idNode->setIcon(paraam);
     elemNode->addChild(idNode);
 
 
     if (name == "Point") {
         QStringList paramNames = { "x", "y" };
         for (int i = 0; i < paramNames.size(); ++i) {
-            TreeNode* paramNode = new TreeNode(QString("%1 = %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            paramNode->setIcon(paraam);
             elemNode->addChild(paramNode);
         }
     } else if (name == "Section") {
-        QStringList paramNames = { "x0", "y0", "x1", "y1" };
+        QStringList paramNames = { "x₀", "y₀", "x₁", "y₁" };
         for (int i = 0; i < paramNames.size(); ++i) {
-            TreeNode* paramNode = new TreeNode(QString("%1 = %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            paramNode->setIcon(paraam);
             elemNode->addChild(paramNode);
         }
     }else if (name == "Circle") {
-        QStringList paramNames = { "x", "y", "R" };
+        QStringList paramNames = { "x", "y", "r" };
         for (int i = 0; i < paramNames.size(); ++i) {
-            TreeNode* paramNode = new TreeNode(QString("%1 = %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            paramNode->setIcon(paraam);
+            elemNode->addChild(paramNode);
+        }
+    }else if (name == "Arc") {
+        QStringList paramNames = { "x₀", "y₀", "x₁", "y₁","r" };
+        for (int i = 0; i < paramNames.size(); ++i) {
+            TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
+            paramNode->setIcon(paraam);
             elemNode->addChild(paramNode);
         }
     }
@@ -64,24 +82,31 @@ void LeftMenuBar::addElemLeftMenu(const QString &name, unsigned long long ID, co
 void LeftMenuBar::addRequirementElem(const QString &name, const int ReqID,const unsigned long long ElemID1,const unsigned long long ElemID2, const double param) {
     if (!requirementsNode) { return; }
 
+    font.setPointSize(9);
+
     // Создаем основной узел элемента
     TreeNode *elemNode = new TreeNode(name, requirementsNode);
+    elemNode->setIcon(elem);
     requirementsNode->addChild(elemNode);
 
     // Добавляем ID как дочерний узел
-    TreeNode *ReqIDNode = new TreeNode(QString("ID = %1").arg(ReqID), elemNode);
+    TreeNode *ReqIDNode = new TreeNode(QString("ID: %1").arg(ReqID), elemNode);
+    ReqIDNode->setIcon(paraam);
     elemNode->addChild(ReqIDNode);
 
     // Добавляем ID как дочерний узел
-    TreeNode *ElemID1Node = new TreeNode(QString("ID1 = %1").arg(ElemID1), elemNode);
+    TreeNode *ElemID1Node = new TreeNode(QString("ID₁: %1").arg(ElemID1), elemNode);
+    ElemID1Node->setIcon(paraam);
     elemNode->addChild(ElemID1Node);
 
     // Добавляем ID как дочерний узел
-    TreeNode *ElemID2Node = new TreeNode(QString("ID2 = %1").arg(ElemID2), elemNode);
+    TreeNode *ElemID2Node = new TreeNode(QString("ID₂: %1").arg(ElemID2), elemNode);
+    ElemID2Node->setIcon(paraam);
     elemNode->addChild(ElemID2Node);
 
     // Добавляем ID как дочерний узел
-    TreeNode *paramNode = new TreeNode(QString("Param = %1").arg(param), elemNode);
+    TreeNode *paramNode = new TreeNode(QString("Param: %1").arg(param), elemNode);
+    paramNode->setIcon(paraam);
     elemNode->addChild(paramNode);
 }
 
@@ -90,20 +115,26 @@ void LeftMenuBar::addRequirementElem(const QString &name, const int ReqID,const 
 void LeftMenuBar::addRequirementElem(const QString &name, const int ReqID,const unsigned long long ElemID1,const unsigned long long ElemID2) {
     if (!requirementsNode) { return; }
 
+    font.setPointSize(9);
+
     // Создаем основной узел элемента
     TreeNode *elemNode = new TreeNode(name, requirementsNode);
+    elemNode->setIcon(elem);
     requirementsNode->addChild(elemNode);
 
     // Добавляем ID как дочерний узел
-    TreeNode *ReqIDNode = new TreeNode(QString("ID = %1").arg(ReqID), elemNode);
+    TreeNode *ReqIDNode = new TreeNode(QString("ID: %1").arg(ReqID), elemNode);
+    ReqIDNode->setIcon(paraam);
     elemNode->addChild(ReqIDNode);
 
     // Добавляем ID как дочерний узел
-    TreeNode *ElemID1Node = new TreeNode(QString("ID1 = %1").arg(ElemID1), elemNode);
+    TreeNode *ElemID1Node = new TreeNode(QString("ID₁: %1").arg(ElemID1), elemNode);
+    ElemID1Node->setIcon(paraam);
     elemNode->addChild(ElemID1Node);
 
     // Добавляем ID как дочерний узел
-    TreeNode *ElemID2Node = new TreeNode(QString("ID2 = %1").arg(ElemID2), elemNode);
+    TreeNode *ElemID2Node = new TreeNode(QString("ID₂: %1").arg(ElemID2), elemNode);
+    ElemID2Node->setIcon(paraam);
     elemNode->addChild(ElemID2Node);
 }
 
@@ -117,6 +148,10 @@ void LeftMenuBar::clearAllFigures() {
     QModelIndex figuresIndex = treeModel->index(figuresNode->row(), 0, QModelIndex());
     treeModel->dataChanged(figuresIndex, figuresIndex);
     treeModel->layoutChanged();  // Обновляем структуру модели
+}
+
+void  LeftMenuBar::updateLeftMenu(){
+    treeModel->layoutChanged();
 }
 
 // Очистка всех элементов
@@ -140,7 +175,7 @@ void LeftMenuBar::removeFigureById(unsigned long long id) {
 
         for (int j = 0; j < elemNode->childCount(); ++j) {
             TreeNode* child = elemNode->child(j);
-            if (child->data(0).toString() == QString("id = %1").arg(id)) {
+            if (child->data(0).toString() == QString("ID: %1").arg(id)) {
                 figuresNode->removeChild(elemNode);
 
                 // Обновление модели
@@ -160,7 +195,7 @@ void LeftMenuBar::removeRequirementById(unsigned long long id) {
 
         for (int j = 0; j < elemNode->childCount(); ++j) {
             TreeNode* child = elemNode->child(j);
-            if (child->data(0).toString() == QString("id = %1").arg(id)) {
+            if (child->data(0).toString() == QString("ID: %1").arg(id)) {
                 requirementsNode->removeChild(elemNode);
 
                 // Обновление модели
@@ -182,7 +217,7 @@ void LeftMenuBar::updateParametersById(unsigned long long id, const std::vector<
             for (int j = 0; j < elemNode->childCount(); ++j) {
                 TreeNode* child = elemNode->child(j);
 
-                if (child->data(0).toString() == QString("id = %1").arg(id)) {
+                if (child->data(0).toString() == QString("ID: %1").arg(id)) {
                     // Найден нужный элемент
                     QString name = elemNode->data(0).toString();
 
@@ -190,17 +225,19 @@ void LeftMenuBar::updateParametersById(unsigned long long id, const std::vector<
                     if (name == "Point") {
                         paramNames = { "x", "y" };
                     } else if (name == "Section") {
-                        paramNames = { "x0", "y0", "x1", "y1" };
+                        paramNames = { "x₀", "y₀", "x₁", "y₁"  };
                     } else if (name == "Circle") {
                         paramNames = { "x", "y", "r" };
-                    } else {
+                    } else if (name == "Arc") {
+                         paramNames = { "x₀", "y₀", "x₁", "y₁","r" };
+                    }else {
                         { return; }
                     }
 
                     int paramStartIndex = 1;
                     for (int k = 0; k < paramNames.size() && (paramStartIndex + k) < elemNode->childCount(); ++k) {
                         TreeNode* paramNode = elemNode->child(paramStartIndex + k);
-                        paramNode->setData(0, QString("%1 = %2").arg(paramNames[k]).arg(newParams[k]));
+                        paramNode->setData(0, QString("%1: %2").arg(paramNames[k]).arg(newParams[k]));
                     }
 
                     treeModel->layoutChanged(); // обновим отображение
@@ -237,8 +274,8 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
 
         for (int j = 0; j < node->childCount(); ++j) {
             QString text = node->child(j)->data(0).toString();
-            if (text.startsWith("ID = ")) { id = text.section(" = ", 1).toULongLong(); }
-            else { params.push_back(text.section(" = ", 1).toDouble()); }
+            if (text.startsWith("ID: ")) { id = text.section(": ", 1).toULongLong(); }
+            else { params.push_back(text.section(": ", 1).toDouble()); }
         }
 
         out << name;
@@ -263,11 +300,11 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
 
         for (int j = 0; j < node->childCount(); ++j) {
             QString text = node->child(j)->data(0).toString();
-            if (text.startsWith("ID = ")) { ReqID = text.section(" = ", 1).toInt(); }
-            else if (text.startsWith("ID1 = ")) { ElemID1 = text.section(" = ", 1).toULongLong(); }
-            else if (text.startsWith("ID2 = ")) { ElemID2 = text.section(" = ", 1).toULongLong(); }
-            else if (text.startsWith("Param = ")) {
-                param = text.section(" = ", 1).toDouble();
+            if (text.startsWith("ID: ")) { ReqID = text.section(": ", 1).toInt(); }
+            else if (text.startsWith("ID₁: ")) { ElemID1 = text.section(": ", 1).toULongLong(); }
+            else if (text.startsWith("ID₂: ")) { ElemID2 = text.section(": ", 1).toULongLong(); }
+            else if (text.startsWith("Param: ")) {
+                param = text.section(": ", 1).toDouble();
                 hasParam = true;
             }
         }

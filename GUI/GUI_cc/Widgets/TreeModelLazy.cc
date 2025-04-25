@@ -24,6 +24,11 @@ QVariant TreeModelLazy::data(const QModelIndex& index, int role) const {
         return item->getFont();
     }
 
+    if (role == Qt::DecorationRole) {
+        TreeNode* node = static_cast<TreeNode*>(index.internalPointer());
+        return node->getIcon();
+    }
+
     return QVariant();
 }
 

@@ -24,7 +24,10 @@ private:
     TreeNode *figuresNode = nullptr;
     TreeNode *requirementsNode = nullptr;
     TreeNode *nothing = nullptr;
+    QIcon elem;
+    QIcon paraam;
 
+    QFont font;
 
 public:
     explicit LeftMenuBar(QObject *parent);
@@ -47,6 +50,8 @@ public:
 
     // Очистка всех элементов
     void clearAllRequirements();
+
+    void  updateLeftMenu();
 
     // Очистка одного элемента по айди
     void removeFigureById(unsigned long long id);

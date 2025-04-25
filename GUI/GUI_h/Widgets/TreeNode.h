@@ -4,6 +4,7 @@
 #include <QVariant>  // Для хранения данных любого типа
 #include <QVector>   // Контейнер для хранения дочерних узлов
 #include <QFont>
+#include <QIcon>
 
 // Класс TreeNode представляет собой узел дерева, используемого в TreeModel
 // Каждый узел хранит данные, список дочерних элементов, ссылку на родителя и шрифт
@@ -14,6 +15,7 @@ private:
     QVariant dataChild;              // Данные, ассоциированные с этим узлом
     TreeNode* parent;           // Указатель на родительский узел
     QFont childFont;
+    QIcon icon;
 public:
     explicit TreeNode(const QVariant& data, TreeNode* parent = nullptr);
 
@@ -30,6 +32,10 @@ public:
 
     // Возвращает данные узла для заданного столбца
     QVariant data(int column) const;
+
+    void setIcon(const QIcon& newIcon);
+
+    QIcon getIcon() const ;
 
     // Назначить данные
     void setData(int column, const QVariant& value);

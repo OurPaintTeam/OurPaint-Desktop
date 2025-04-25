@@ -59,6 +59,9 @@ void Application::setupQTPainterConnections(){
             try {
                 for(int i=0;i<vec_id.size();++i) {
                     scene.setPoint(vec_id[i], Cx, Cy);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->updateParametersById(vec_id[i].get(),{Cx,Cy});
+                    });
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -75,6 +78,9 @@ void Application::setupQTPainterConnections(){
             try {
                 for(int i=0;i<vec_id.size();++i) {
                     scene.moveSection(vec_id[i], dx, dy);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->updateParametersById(vec_id[i].get(),{});
+                    });
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -92,6 +98,9 @@ void Application::setupQTPainterConnections(){
             try {
                 for(int i=0;i<vec_id.size();++i) {
                 scene.moveCircle(ID(vec_id[i]), dx, dy);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->updateParametersById(vec_id[i].get(),{});
+                    });
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
@@ -219,18 +228,26 @@ void Application::setupQTPainterConnections(){
 
         for (int i = 0; i < vecPoint.size(); ++i) {
             scene.deletePoint(vecPoint[i]);
-            leftMenu->removeFigureById(vecPoint[i].get());
+            vecCalls.push_back([=, this]() {
+                leftMenu->removeFigureById(vecPoint[i].get());
+            });
+
         }
         for (int i = 0; i < vecSection.size(); ++i) {
             scene.deleteSection(vecSection[i]);
-            leftMenu->removeFigureById(vecSection[i].get());
+            vecCalls.push_back([=, this]() {
+                leftMenu->removeFigureById(vecSection[i].get());
+            });
         }
         for (int i = 0; i < vecCircle.size(); ++i) {
             scene.deleteCircle(vecCircle[i]);
-            leftMenu->removeFigureById(vecCircle[i].get());
+            vecCalls.push_back([=, this]() {
+                leftMenu->removeFigureById(vecCircle[i].get());
+            });
         }
         painter->selectedClear();
         painter->draw();
+        updateState();
     });
 
     // Изменение размера
@@ -630,6 +647,8 @@ void Application::updateState() {
         for (const auto& call : this->vecCalls) {
             call();
         }
+        vecCalls.clear();
+        leftMenu->updateLeftMenu();
     });
 
 }
