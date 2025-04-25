@@ -542,6 +542,11 @@ void Application::setupAddingCommandsConnections() {
         scene.loadFromFile(File.c_str());
         painter->draw();
         scene.paint();
+        vecCalls.push_back([=, this]() {
+            leftMenu->clearAllFigures();
+            leftMenu->clearAllRequirements();
+        });
+        updateState();
     });
 
     // Script
@@ -750,9 +755,12 @@ void Application::handler(const QString &command) {
     } else if (commandParts[0] == "clear") {
         ModeManager::setSave(true);
         painter->clear();
-        leftMenu->clearAllFigures();
-        leftMenu->clearAllRequirements();
         scene.clear();
+        vecCalls.push_back([=, this]() {
+            leftMenu->clearAllFigures();
+            leftMenu->clearAllRequirements();
+        });
+        updateState();
     } else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
         int req = commandParts[1].toInt();
         ID obj1(commandParts[2].toInt());
