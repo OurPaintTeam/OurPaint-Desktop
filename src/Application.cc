@@ -503,6 +503,19 @@ void Application::setupRequirementsConnections(){
                 addRequirement(ET_POINTPOINTDIST,pairID->first,pairID->second,parameters);
                 updateState();
             }
+        }else{
+            std::vector<ID> vec_id=painter->getVecIDSections();
+            if(vec_id.size()==1){
+                InputWindow window("Enter parameters: ");
+                if (window.exec() == QDialog::Accepted) {
+                    RequirementData reqData;
+                    bool ok = false;
+                    double parameters = window.getText().toDouble(&ok);
+                    if (!ok) return;
+                    addRequirement(ET_POINTPOINTDIST,ID(vec_id[0].get()-1),ID(vec_id[0].get()-2),parameters);
+                    updateState();
+                }
+            }
         }
     });
 
