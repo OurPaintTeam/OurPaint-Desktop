@@ -146,7 +146,6 @@ void LeftMenuBar::clearAllFigures() {
 
     QModelIndex figuresIndex = treeModel->index(figuresNode->row(), 0, QModelIndex());
     treeModel->dataChanged(figuresIndex, figuresIndex);
-    treeModel->layoutChanged();  // Обновляем структуру модели
 }
 
 void  LeftMenuBar::updateLeftMenu(){
@@ -162,7 +161,6 @@ void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
 
     QModelIndex reqIndex = treeModel->index(requirementsNode->row(), 0, QModelIndex());
     treeModel->dataChanged(reqIndex, reqIndex);
-    treeModel->layoutChanged();
 }
 
 // Очистка одного элемента по айди
