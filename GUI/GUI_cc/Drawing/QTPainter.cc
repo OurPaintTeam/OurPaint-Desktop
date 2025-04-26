@@ -79,6 +79,7 @@ void QTPainter::selectedClear() {
     selectedIDPoint.clear();
     selectedIDSection.clear();
     selectedIDCircle.clear();
+    selectedIDArc.clear();
 }
 
 void QTPainter::resizeRectangle() {}
@@ -173,7 +174,28 @@ bool QTPainter::findClosesObject() {
         }
     }
 
+    for (const auto &arcs : *arcStorage) {
+        const Arc *arc = arcs.second;
+        if (ClosesPoint::checkFigure(arc->beg->x,arc->beg->y,arc->end->x,arc->end->y,arc->center->x,arc->center->y)) {
+            bool found = false;
+            std::vector<ID> updated;
 
+            for (const auto &id : selectedIDArc) {
+                if (id == arcs.first) {
+                    found = true; // не добавляем
+                } else {
+                    updated.push_back(id);
+                }
+            }
+
+            if (!found) {
+                updated.push_back(arcs.first); // добавляем
+            }
+
+            selectedIDArc = std::move(updated); // заменяем старый вектор
+            return true;
+        }
+    }
 
     return false;
 }
@@ -406,6 +428,9 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                 }
                 if (!selectedIDCircle.empty()) {
                     emit MovingCircle(selectedIDCircle);
+                }
+                if (!selectedIDArc.empty()) {
+                    emit MovingArc(selectedIDArc);
                 }
             } else {
                 drawing = false;
