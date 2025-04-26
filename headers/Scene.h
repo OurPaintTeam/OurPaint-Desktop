@@ -69,6 +69,7 @@ public:
     void movePoint(ID pointID, double dx, double dy);
     void moveSection(ID sectionID, double dx, double dy);
     void moveCircle(ID circleID, double dx, double dy);
+    void moveArc(ID circleID, double dx, double dy);
 
     void setPoint(ID pointID, double x, double y);
     void setSection(ID sectionID, double x1, double y1, double x2, double y2);

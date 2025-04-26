@@ -394,6 +394,21 @@ void Scene::moveCircle(ID circleID, double dx, double dy) {
     updateRequirements(circleID);
 }
 
+void Scene::moveArc(ID arcID, double dx, double dy) {
+    if (_arcs.contains(arcID)) {
+        Arc *a = _arcs[arcID];
+        a->beg->x += dx;
+        a->beg->y += dy;
+        a->end->x += dx;
+        a->end->y += dy;
+        a->center->x += dx;
+        a->center->y += dy;
+    }
+    _isRectangleDirty = true;
+    // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
+    updateRequirements(arcID);
+}
+
 void Scene::setPoint(ID pointID, double x, double y) {
     if (!_points.contains(pointID)) {
         throw std::out_of_range("There is no point to change position");
