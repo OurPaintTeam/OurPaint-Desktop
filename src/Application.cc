@@ -73,12 +73,13 @@ void Application::setupQTPainterConnections(){
                 for(int i=0;i<vec_id.size();++i) {
                     scene.setPoint(vec_id[i], Cx, Cy);
                     vecCalls.push_back([=, this]() {
-                        leftMenu->updateParametersById(vec_id[i].get(),{Cx,Cy});
+                       // leftMenu->updateParametersById(vec_id[i].get(),{Cx,Cy});
                     });
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
             }
+            // updateState();
             painter->draw();
         });
 
@@ -92,12 +93,13 @@ void Application::setupQTPainterConnections(){
                 for(int i=0;i<vec_id.size();++i) {
                     scene.moveSection(vec_id[i], dx, dy);
                     vecCalls.push_back([=, this]() {
-                        leftMenu->updateParametersById(vec_id[i].get(),{});
+                      //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
             }
+            // updateState();
             painter->draw();
 
         });
@@ -112,12 +114,13 @@ void Application::setupQTPainterConnections(){
                 for(int i=0;i<vec_id.size();++i) {
                 scene.moveCircle(ID(vec_id[i]), dx, dy);
                     vecCalls.push_back([=, this]() {
-                        leftMenu->updateParametersById(vec_id[i].get(),{});
+                      //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
             }
+            // updateState();
             painter->draw();
         });
 
@@ -131,12 +134,13 @@ void Application::setupQTPainterConnections(){
                 for(int i=0;i<vec_id.size();++i) {
                     scene.moveArc(ID(vec_id[i]), dx, dy);
                     vecCalls.push_back([=, this]() {
-                        leftMenu->updateParametersById(vec_id[i].get(),{});
+                     //   leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
                 }
             } catch (const std::exception &a) {
                 mainWind.showError("Zheny kosyk ");
             }
+           // updateState();
             painter->draw();
         });
 
@@ -739,14 +743,16 @@ void Application::updateState() {
 
     painter->draw();
 
-    QFuture<void> future = QtConcurrent::run([this]() {
-        for (const auto& call : this->vecCalls) {
+    auto calls = vecCalls;
+    vecCalls.clear();
+
+    QFuture<void> future = QtConcurrent::run([calls = std::move(calls)]() mutable {
+        for (auto& call : calls) {
             call();
         }
-        vecCalls.clear();
-        leftMenu->updateLeftMenu();
     });
 
+    leftMenu->updateLeftMenu();
 }
 
 void Application::handler(const QString &command) {
@@ -865,43 +871,33 @@ void Application::handler(const QString &command) {
             switch (req) {
                 case 1:
                     addRequirement(ET_POINTSECTIONDIST,req,obj1,obj2,parameters);
-                    updateState();
                     break;
                 case 2:
                     addRequirement(ET_POINTONSECTION,req,obj1,obj2);
-                    updateState();
                     break;
                 case 3:
                     addRequirement(ET_POINTPOINTDIST,req,obj1,obj2,parameters);
-                    updateState();
                     break;
                 case 4:
                     addRequirement(ET_POINTONPOINT,req,obj1,obj2);
-                    updateState();
                     break;
                 case 5:
                     addRequirement(ET_SECTIONCIRCLEDIST,req,obj1,obj2,parameters);
-                    updateState();
                     break;
                 case 6:
                     addRequirement(ET_SECTIONONCIRCLE,req,obj1,obj2,parameters);
-                    updateState();
                     break;
                 case 7:
                     addRequirement(ET_SECTIONINCIRCLE,req,obj1,obj2);
-                    updateState();
                     break;
                 case 8:
                     addRequirement(ET_SECTIONSECTIONPARALLEL,req,obj1,obj2);
-                    updateState();
                     break;
                 case 9:
                     addRequirement(ET_SECTIONSECTIONPERPENDICULAR,req,obj1,obj2);
-                    updateState();
                     break;
                 case 10:
                     addRequirement(ET_SECTIONSECTIONANGLE,req,obj1,obj2,parameters);
-                    updateState();
                     break;
                 default:
                     mainWind.showError("Not right number of req");
@@ -925,6 +921,7 @@ void Application::addRequirement(Requirement RQ,int id,ID id1,ID id2,double para
     reqData.params.push_back(parameters);
     scene.addRequirement(reqData);
     ModeManager::setSave(false);
+
     vecCalls.push_back([=, this]() {
         leftMenu->addRequirementElem(name, id, id1.get(),
                                      id2.get(), parameters);
