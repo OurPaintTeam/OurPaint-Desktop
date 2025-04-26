@@ -275,6 +275,42 @@ void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double 
     }
 }
 
+
+// Отрисовка айди для арки
+void DrawAdditionalInf::drawArcID(QPainter &painter,
+                                  const ID &arcID,
+                                  const QPointF &center,
+                                  double startAngleDeg,
+                                  double endAngleDeg,
+                                  double radius)
+{
+    if (arcID == ID(0)) return;
+
+    QString idText = QString("ID: %1").arg(arcID.get());
+
+    double span = endAngleDeg - startAngleDeg;
+    if (span <= 0) span += 360;
+
+    double midAngleDeg = startAngleDeg + span / 2.0;
+    double midAngleRad = qDegreesToRadians(midAngleDeg);
+
+    double labelRadius = radius + 10.0;
+
+    QPointF labelPos(center.x() + labelRadius * std::cos(midAngleRad),
+                     center.y() - labelRadius * std::sin(midAngleRad));
+
+    painter.save();
+
+    painter.translate(labelPos);
+    painter.rotate(midAngleDeg + 90);
+
+    painter.setPen(QPen(Qt::black, 1));
+    painter.drawText(QPointF(-painter.fontMetrics().horizontalAdvance(idText) / 2.0, 0), idText);
+
+    painter.restore();
+}
+
+
 // Отрисовка айди для круга
 void DrawAdditionalInf::drawCircleLeftID(QPainter &painter, QPointF &center, double r) {
     if (LeftMenuID != 0) {
@@ -296,6 +332,7 @@ void DrawAdditionalInf::drawCircleLeftID(QPainter &painter, QPointF &center, dou
 
     }
 }
+
 
 // Отрисовка айди для линии
 void DrawAdditionalInf::drawSectionLeftID(QPainter &painter, QPointF &start, QPointF &end) {
@@ -449,6 +486,27 @@ void DrawAdditionalInf::drawCircleGlow(QPainter &painter, QPointF &center, doubl
     // Рисуем круг с градиентной обводкой для свечения
     painter.drawEllipse(center, Radius, Radius);
 }
+
+
+// Отрисовка свечения для арки
+void DrawAdditionalInf::drawArcGlow(QPainter& painter, QRectF &rect, int qtStart, int qtSpan) {
+    // Толстое полупрозрачное свечение
+    QPen glowPen(QColor(0, 255, 255, 100));
+    glowPen.setWidthF(12.0);
+    glowPen.setCapStyle(Qt::RoundCap);
+    glowPen.setJoinStyle(Qt::RoundJoin);
+    painter.setPen(glowPen);
+    painter.setBrush(Qt::NoBrush);
+    painter.drawArc(rect, qtStart, qtSpan);
+
+    // Тонкая яркая обводка
+    QPen corePen(QColor(0, 255, 255, 200));
+    corePen.setWidthF(2.0);
+    painter.setPen(corePen);
+    painter.drawArc(rect, qtStart, qtSpan);
+}
+
+
 
 // Отрисовка длины линии
 void DrawAdditionalInf::drawCoordinateLine(QPainter &painter, QPointF &start, QPointF &end) {

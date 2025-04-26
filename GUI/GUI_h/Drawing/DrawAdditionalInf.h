@@ -41,6 +41,9 @@ public:
     // Отрисовка айди для круга
     static void drawCircleID(QPainter& painter, QPointF &center, double r,const ID& circleID);
 
+    // Отрисовка айди для арки
+    static void drawArcID(QPainter &painter,const ID &arcID,const QPointF &center,double startAngleDeg,double endAngleDeg,double radius);
+
     // Отрисовка айди для круга
     static void drawCircleLeftID(QPainter& painter,QPointF &center,double r);
 
@@ -60,6 +63,9 @@ public:
 
     // Отрисовка свечения для круга
     static void drawCircleGlow(QPainter& painter, QPointF &center,double Radius);
+
+    // Отрисовка свечения для арки
+    static void drawArcGlow(QPainter& painter, QRectF &rect, int qtStart, int qtSpan);
 
     /****************** длина *********************/
 
