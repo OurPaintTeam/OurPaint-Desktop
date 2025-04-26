@@ -34,6 +34,9 @@ public:
     // Функция проверки координат курсора и прямой для перемещения
     static bool checkFigure(double x0, double y0, double x1, double y1);
 
+    // Функция проверки координат курсора и арки
+    static bool checkFigure(double x0, double y0, double x1, double y1,double xc, double yc);
+
     // Вспомогательная функция для проверки курсора и линии
     static double distancePointToSection(double px, double py, double x0, double y0, double x1, double y1);
 

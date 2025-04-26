@@ -1,4 +1,5 @@
 #include "ClosesPoint.h"
+#include <qDebug>
 
 // Функция поиска ближайшей точки
 QPointF ClosesPoint::findClosestPoint(std::unordered_map<ID, Point *> &points) {
@@ -41,7 +42,7 @@ bool ClosesPoint::checkFigure(double x, double y) {
 }
 
 
-// Функция проверки координат курсора и круга для перемещения
+// Функция проверки координат курсора и точки для перемещения
 bool ClosesPoint::checkFigure(double x0, double y0, double r) {
     double cursorX = Scaling::logicCursorX();
     double cursorY = Scaling::logicCursorY();
@@ -50,13 +51,37 @@ bool ClosesPoint::checkFigure(double x0, double y0, double r) {
     double dy = (cursorY - y0);
     double distance = std::sqrt(dx * dx + dy * dy);
 
-    double RANGE = 3.0 / Scaling::getZoom();; // Погрешность
+    double RANGE = 3.0 / Scaling::getZoom(); // Погрешность
 
     if (std::abs(distance - r) <= RANGE) {
         return true;
     }
 
     return false;
+}
+
+
+// Функция проверки координат курсора и арки для перемещения
+bool ClosesPoint::checkFigure(double x0, double y0, double x1, double y1, double xc, double yc) {
+    double cursorX = Scaling::logicCursorX();
+    double cursorY = Scaling::logicCursorY();
+
+    double r = std::hypot(x0 - xc, y0 - yc);
+    double distToCenter = std::hypot(cursorX - xc, cursorY - yc);
+
+    double RANGE = 3.0 / Scaling::getZoom();
+
+    if (std::abs(distToCenter - r) > RANGE)
+        return false;
+
+    double angleStart = QLineF(QPointF(xc, yc), QPointF(x0, y0)).angle();     // [0, 360)
+    double angleEnd = QLineF(QPointF(xc, yc), QPointF(x1, y1)).angle();     // [0, 360)
+    double angleCursor = QLineF(QPointF(xc, yc), QPointF(cursorX, cursorY)).angle();
+
+    if (angleStart > angleEnd) {
+        return angleCursor <= angleStart && angleCursor >= angleEnd;
+    }
+    return angleCursor >= angleStart && angleCursor <= angleEnd;
 }
 
 
