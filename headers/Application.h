@@ -26,6 +26,7 @@ private:
     LeftMenuBar* leftMenu;
 
     std::vector<std::function<void()>> vecCalls;
+    std::vector<QString> vec_requirements;
 
     QString username;
     Server server;
@@ -40,8 +41,8 @@ private:
     void setupAddingCommandsConnections();
     void updateState();
     void handler(const QString &command);
-    void addRequirement(QString name,int id,ID id1,ID id2,double parameters);
-    void addRequirement(QString name,int id,ID id1,ID id2);
+    void addRequirement(Requirement RQ,int id,ID id1,ID id2,double parameters);
+    void addRequirement(Requirement RQ,int id,ID id1,ID id2);
 
 public:
     Application(int &argc, char **argv);
