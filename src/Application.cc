@@ -776,7 +776,8 @@ void Application::handler(const QString &command) {
             });
         }
 
-    } else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
+    }
+    else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
         bool xOk, yOk, rOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
@@ -797,7 +798,8 @@ void Application::handler(const QString &command) {
             });
         }
 
-    } else if (commandParts[0] == "section" && commandParts.size() >= 5) {
+    }
+    else if (commandParts[0] == "section" && commandParts.size() >= 5) {
         bool xOk, yOk, zOk, rOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
@@ -818,7 +820,8 @@ void Application::handler(const QString &command) {
                 leftMenu->addElemLeftMenu("Section", id.get(), {x, y, z, r});
             });
         }
-        } else if (commandParts[0] == "arc" && commandParts.size() >= 8) {
+    }
+    else if (commandParts[0] == "arc" && commandParts.size() >= 8) {
             bool x0Ok, y0Ok, x1Ok, y1Ok, cxOk, cyOk, rOk;
             double x1 = commandParts[1].toDouble(&x0Ok);
             double y1 = commandParts[2].toDouble(&y0Ok);
@@ -847,9 +850,11 @@ void Application::handler(const QString &command) {
                 });
             }
 
-    } else if (commandParts[0] == "exit") {
+    }
+    else if (commandParts[0] == "exit") {
         mainWind.close();
-    } else if (commandParts[0] == "clear") {
+    }
+    else if (commandParts[0] == "clear") {
         ModeManager::setSave(true);
         painter->clear();
         scene.clear();
@@ -858,7 +863,8 @@ void Application::handler(const QString &command) {
             leftMenu->clearAllRequirements();
         });
         updateState();
-    } else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
+    }
+    else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
         int req = commandParts[1].toInt();
         ID obj1(commandParts[2].toInt());
         ID obj2(commandParts[3].toInt());

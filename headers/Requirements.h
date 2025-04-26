@@ -18,28 +18,12 @@ public:
     static Variable* addVar(PARAMID id);
     static Variable* getVar(PARAMID id);
     static void clearVars();
-};
-
-struct RequirementData {
-    Requirement req;
-    std::vector<unsigned int> objects;
-    std::vector<double> params;
-
-    bool operator==(const RequirementData& other) const {
-    return req == other.req
-        && objects == other.objects
-        && params == other.params;
-    }
-
-    bool operator!=(const RequirementData& other) const {
-    return !(*this == other);
-    }
+    static bool deleteVar(PARAMID id);
 };
 
 // Abstract class
 struct IReq {
 protected:
-    ErrorFunctions* c_f;
     std::vector<ID> objects;
     Requirement req;
 public:
@@ -49,6 +33,7 @@ public:
     virtual std::vector<PARAMID> getParams() const = 0;
     virtual BoundBox2D getRectangle() const = 0;
     virtual Requirement getType() const = 0;
+    virtual std::vector<IGeometricObject*> getObjects() const = 0;
 };
 
 
@@ -64,6 +49,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {};
+    };
 };
 
 // 2
@@ -76,6 +64,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {};
+    };
 };
 
 // 3
@@ -89,6 +80,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {m_p1, m_p2};
+    };
 };
 
 // 4
@@ -101,6 +95,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {};
+    };
 };
 
 // 5
@@ -114,6 +111,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {};
+    };
 };
 
 // 6
@@ -126,6 +126,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {};
+    };
 };
 
 // 7
@@ -138,6 +141,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {};
+    };
 };
 
 // 8
@@ -150,6 +156,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {};
+    };
 };
 
 // 9
@@ -162,6 +171,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {m_s1, m_s2};
+    };
 };
 
 // 10
@@ -175,6 +187,9 @@ public:
     std::vector<PARAMID> getParams() const override;
     BoundBox2D getRectangle() const override;
     Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() const override {
+        return {};
+    };
 };
 
 

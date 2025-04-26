@@ -23,7 +23,6 @@ private:
     std::unordered_map<ID, Arc*> _arcs;
 
     std::unordered_map<ID, IReq*> _requirements;
-
     std::vector<Function*> _errorRequirementFunctions;
 
     mutable Painter* _painter;
