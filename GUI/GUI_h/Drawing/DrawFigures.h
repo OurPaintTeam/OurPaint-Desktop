@@ -216,6 +216,12 @@ public:
                     int qtSpan = static_cast<int>(spanAngleDeg * 16);
 
                     painter.drawArc(rect, qtStart, qtSpan);
+
+                    if(selected){
+                        DrawAdditionalInf::drawArcGlow(painter,rect,qtStart,qtSpan);
+                        DrawAdditionalInf::drawArcID(painter, id, center, startAngleDeg, endAngleDeg, radius);
+                    }
+
                 }
             } else {
                 // Учитываем масштабирование
