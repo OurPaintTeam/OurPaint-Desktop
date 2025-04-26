@@ -108,6 +108,25 @@ void Application::setupQTPainterConnections(){
             painter->draw();
         });
 
+        // Перемещение арки
+        QObject::connect(painter, &QTPainter::MovingArc, [this](std::vector<ID> vec_id) {
+
+            double dx = Scaling::logic(Scaling::getCursorDeltaX());
+            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+
+            try {
+                for(int i=0;i<vec_id.size();++i) {
+                    scene.moveArc(ID(vec_id[i]), dx, dy);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->updateParametersById(vec_id[i].get(),{});
+                    });
+                }
+            } catch (const std::exception &a) {
+                mainWind.showError("Zheny kosyk ");
+            }
+            painter->draw();
+        });
+
         // Отрисовка точки
         QObject::connect(painter, &QTPainter::SigPoint, [this](double x, double y) {
             if (ModeManager::getConnection()) {
