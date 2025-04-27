@@ -2,6 +2,3 @@
 	path = Math
 	url = https://github.com/OurPaintTeam/Math-MinimizerOptimizer-Module.git
 	branch = main
-[submodule "UndoRedo"]
-	path = UndoRedo
-	url = https://github.com/Ardrass2/UndoRedo
