@@ -3,39 +3,41 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(ourpaint)
 
-# Для использования этого приложения необходимо установить QT6. Если у вас есть вопросы, обращайтесь к @ardrasss
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Svg)
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
-include(FetchContent)
+# Для использования этого приложения необходимо установить QT6. Если у вас есть вопросы, обращайтесь к @ardrasss
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Svg)
 
-# Загрузка и подключение Eigen
+include(FetchContent)
 FetchContent_Declare(
         Eigen
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
         GIT_TAG 3.4.0  # Замените на нужную версию Eigen
 )
-
 FetchContent_MakeAvailable(Eigen)
 
-include_directories(headers)
-include_directories(headers/painters)
-include_directories(headers/saveload)
-include_directories(headers/UndoRedo)
-include_directories(headers/objects)
-
-include_directories(GUI/GUI_h)
-include_directories(GUI/GUI_h/Unnecessary)
-include_directories(GUI/GUI_h/client_server)
-include_directories(GUI/GUI_h/Windows)
-include_directories(GUI/GUI_h/Events)
-include_directories(GUI/GUI_h/Drawing)
-include_directories(GUI/GUI_h/MainFile)
-include_directories(GUI/GUI_h/Widgets)
-include_directories(GUI/GUI_h/Logger)
-include_directories(GUI/GUI_h/Settings)
+include_directories(ourpaint
+        headers
+        headers/painters
+        headers/saveload
+        headers/UndoRedo
+        headers/objects
+        GUI/GUI_h
+        GUI/GUI_h/Unnecessary
+        GUI/GUI_h/client_server
+        GUI/GUI_h/Windows
+        GUI/GUI_h/Events
+        GUI/GUI_h/Drawing
+        GUI/GUI_h/MainFile
+        GUI/GUI_h/Widgets
+        GUI/GUI_h/Logger
+        GUI/GUI_h/Settings
+        Math/headers
+        Math/headers/decomposition
+        Math/headers/Optimizers
+        Math/headers/graph
+)
 
 add_executable(ourpaint
         main.cc
@@ -162,19 +164,11 @@ add_executable(ourpaint
         GUI/GUI_h/Logger/GUI_Logger.h
 
         GUI/GUI_h/Settings/Settings.h
-
-
-
 )
 
-
-include_directories(math/headers)
-include_directories(math/headers/decomposition)
-include_directories(math/headers/Optimizers)
-include_directories(math/headers/graph)
+set_target_properties(ourpaint PROPERTIES UNITY_BUILD ON)
 
 add_subdirectory(tests)
-
 add_subdirectory(Math)
 
 target_link_libraries(ourpaint
@@ -184,6 +178,5 @@ target_link_libraries(ourpaint
         Qt6::Network
         Eigen3::Eigen
         Qt6::Svg
+        Math
 )
-
-target_link_libraries(ourpaint Math)
