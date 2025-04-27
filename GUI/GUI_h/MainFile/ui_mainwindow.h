@@ -1359,7 +1359,7 @@ public:
         QIcon IcoPoint("../Static/icons/LeftBar/Primitives/Point.png");
         QIcon IcoLine("../Static/icons/LeftBar/Primitives/Line.png");
      //   QIcon IcoSector("../Static/icons/LeftBar/Primitives/Line.png");
-        QIcon IcoArc("../Static/icons/LeftBar/Primitives/Line.png");
+        QIcon IcoArc("../Static/icons/LeftBar/Primitives/Arc.png");
         //  TODO  Добавить иконки
 
         figurePoint->setIcon(IcoPoint);
