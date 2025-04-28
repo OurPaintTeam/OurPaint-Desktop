@@ -933,7 +933,7 @@ void Application::handler(const QString &command) {
 void Application::addRequirement(Requirement RQ,ID id1,ID id2,double parameters){
     RequirementData reqData;
     Requirement type=RQ;
-    QString name=vec_requirements[RQ-1];
+    QString name=vec_requirements[RQ];
 
     reqData.req = type;
     reqData.objects.push_back(id1.get());
@@ -951,7 +951,7 @@ void Application::addRequirement(Requirement RQ,ID id1,ID id2,double parameters)
 void Application::addRequirement(Requirement RQ,ID id1,ID id2){
     RequirementData reqData;
     Requirement type=RQ;
-    QString name=vec_requirements[RQ-1];
+    QString name=vec_requirements[RQ];
 
     reqData.req = type;
     reqData.objects.push_back(id1.get());
