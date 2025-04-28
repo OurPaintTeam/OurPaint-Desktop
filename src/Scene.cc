@@ -62,19 +62,22 @@ ID Scene::addObject(const ObjectData &objData) {
                 throw std::invalid_argument("Section requires 4 coordinates");
             }
             Point* p1 = new Point(objData.params[0], objData.params[1]);
-            ID p1ID = _idGeometricObjectsGenerator.generate();
-            _points[p1ID] = p1;
-            _graph.addVertex(p1ID);
+            ID pID1 = _idGeometricObjectsGenerator.generate();
+            _points[pID1] = p1;
+            _graph.addVertex(pID1);
 
             Point* p2 = new Point(objData.params[2], objData.params[3]);
-            ID p2ID = _idGeometricObjectsGenerator.generate();
-            _points[p2ID] = p2;
-            _graph.addVertex(p2ID);
+            ID pID2 = _idGeometricObjectsGenerator.generate();
+            _points[pID2] = p2;
+            _graph.addVertex(pID2);
 
             ID newID = _idGeometricObjectsGenerator.generate();
             Section* s = new Section(p1, p2);
             _sections[newID] = s;
             _graph.addVertex(newID);
+
+            _graph.addEdge(pID1, newID, ID(-2));
+            _graph.addEdge(pID2, newID, ID(-2));
 
             _allFiguresRectangle = _allFiguresRectangle | s->getBox();
             return newID;
@@ -86,11 +89,13 @@ ID Scene::addObject(const ObjectData &objData) {
             Point* p = new Point(objData.params[0], objData.params[1]);
             ID pID = _idGeometricObjectsGenerator.generate();
             _points[pID] = p;
-            _graph.addVertex(pID);;
+            _graph.addVertex(pID);
             Circle* c = new Circle(p, objData.params[2]);
             ID newID = _idGeometricObjectsGenerator.generate();
             _circles[newID] = c;
             _graph.addVertex(newID);
+
+            _graph.addEdge(pID, newID, ID(-2));
 
             _allFiguresRectangle = _allFiguresRectangle | c->getBox();
             return newID;
@@ -102,19 +107,28 @@ ID Scene::addObject(const ObjectData &objData) {
             Point* p1 = new Point(objData.params[0], objData.params[1]);
             Point* p2 = new Point(objData.params[2], objData.params[3]);
             Point* p3 = new Point(objData.params[4], objData.params[5]);
+
             ID pID1 = _idGeometricObjectsGenerator.generate();
             _points[pID1] = p1;
             _graph.addVertex(pID1);
+
             ID pID2 = _idGeometricObjectsGenerator.generate();
             _points[pID2] = p2;
             _graph.addVertex(pID2);
+
             ID pID3 = _idGeometricObjectsGenerator.generate();
             _points[pID3] = p3;
             _graph.addVertex(pID3);
+
             Arc* a = new Arc(p1, p2, p3, objData.params[6]);
             ID newID = _idGeometricObjectsGenerator.generate();
             _arcs[newID] = a;
             _graph.addVertex(newID);
+
+            _graph.addEdge(pID1, newID, ID(-2));
+            _graph.addEdge(pID2, newID, ID(-2));
+            _graph.addEdge(pID2, newID, ID(-2));
+
             _allFiguresRectangle = _allFiguresRectangle | a->getBox();
             return newID;
         }
@@ -527,7 +541,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             Point* p2 = _points[id2];
 
             delete _points[id1];
-            _points.erase(id1);
+            _points[id1] = p2;
 
             // Update requirements
             for (auto &[id, req]: _requirements) {
@@ -596,7 +610,9 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             }
             _errorRequirementFunctions.clear();
             for (auto &[id, req]: _requirements) {
-                _errorRequirementFunctions.push_back(req->getFunction());
+                if (reqData.req != ET_POINTONPOINT) {
+                    _errorRequirementFunctions.push_back(req->getFunction());
+                }
             }
 
             // Update VarsStorage
@@ -717,11 +733,6 @@ ID Scene::addRequirement(const RequirementData &reqData) {
         }
 
         // 11
-        case ET_POINTONCIRCLE: {
-            break;
-        }
-
-        // 12
         case ET_POINTINOBJECT: {
             break;
         }
@@ -732,33 +743,31 @@ ID Scene::addRequirement(const RequirementData &reqData) {
     }
 
     if (!requirement) {
-        if (reqData.req == ET_POINTONPOINT) {
-            updateRequirements(id1);
-            return ID(0);
-        }
         throw std::invalid_argument("Invalid requirement data");
     }
 
     ID newID = _idRequirementsGenerator.generate();
-    _requirements[newID] = requirement;
-    _errorRequirementFunctions.push_back(requirement->getFunction());
     _graph.addEdge(id1, id2, newID);
+    _requirements[newID] = requirement;
+
+    if (reqData.req != ET_POINTONPOINT) {
+        _errorRequirementFunctions.push_back(requirement->getFunction());
+    }
 
     updateRequirements(id1);
-
     return newID;
 }
 
 void Scene::updateRequirements(ID objectID) {
-    std::size_t count_of_req_in_component = 0;
+    std::size_t number_of_obj_in_component = 0;
 
     std::vector<ID> connectedComponent = _graph.findConnectedComponent(objectID);
 
-    count_of_req_in_component = connectedComponent.size();
-    std::cout << "Number of points in a component: " << count_of_req_in_component << std::endl;
-    if (count_of_req_in_component <= 1) {
+    number_of_obj_in_component = connectedComponent.size();
+    if (_errorRequirementFunctions.size() == 0) {
         return;
     }
+    std::cout << "Objects in component:  " << number_of_obj_in_component << std::endl;
 
     // TODO Решать только компоненту
 
