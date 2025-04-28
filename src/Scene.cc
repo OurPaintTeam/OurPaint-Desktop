@@ -18,19 +18,19 @@ Scene::Scene(Painter* p) :
 }
 
 Scene::~Scene() {
-    for (auto &pair: _points) {
+    for (auto& pair: _points) {
         delete pair.second;
     }
-    for (auto &pair: _sections) {
+    for (auto& pair: _sections) {
         delete pair.second;
     }
-    for (auto &pair: _circles) {
+    for (auto& pair: _circles) {
         delete pair.second;
     }
-    for (auto &pair: _arcs) {
+    for (auto& pair: _arcs) {
         delete pair.second;
     }
-    for (auto &pair: _requirements) {
+    for (auto& pair: _requirements) {
         delete pair.second;
     }
     _points.clear();
@@ -44,7 +44,7 @@ Scene::~Scene() {
     VarsStorage::clearVars();
 }
 
-ID Scene::addObject(const ObjectData &objData) {
+ID Scene::addObject(const ObjectData& objData) {
     switch (objData.et) {
         case ET_POINT: {
             if (objData.params.size() < 2) {
@@ -234,16 +234,16 @@ bool Scene::deleteArc(ID arcID) {
 }
 
 void Scene::clear() {
-    for (auto &pair: _points) {
+    for (auto& pair: _points) {
         delete pair.second;
     }
-    for (auto &pair: _sections) {
+    for (auto& pair: _sections) {
         delete pair.second;
     }
-    for (auto &pair: _circles) {
+    for (auto& pair: _circles) {
         delete pair.second;
     }
-    for (auto &pair: _arcs) {
+    for (auto& pair: _arcs) {
         delete pair.second;
     }
     _points.clear();
@@ -258,7 +258,7 @@ void Scene::clear() {
     _idGeometricObjectsGenerator.reset();
 }
 
-const BoundBox2D &Scene::getBoundingBox() const {
+const BoundBox2D& Scene::getBoundingBox() const {
     if (_isRectangleDirty) {
         updateBoundingBox();
     }
@@ -303,16 +303,16 @@ const IGeometricObject* Scene::getObject(ID id) const {
 std::unordered_map<ID, const IGeometricObject*> Scene::getAllObjects() const {
     std::unordered_map<ID, const IGeometricObject*> result;
 
-    for (const auto &[id, obj]: _points) {
+    for (const auto& [id, obj]: _points) {
         result[id] = obj;
     }
-    for (const auto &[id, obj]: _sections) {
+    for (const auto& [id, obj]: _sections) {
         result[id] = obj;
     }
-    for (const auto &[id, obj]: _circles) {
+    for (const auto& [id, obj]: _circles) {
         result[id] = obj;
     }
-    for (const auto &[id, obj]: _arcs) {
+    for (const auto& [id, obj]: _arcs) {
         result[id] = obj;
     }
     return result;
@@ -460,7 +460,7 @@ void Scene::setCircle(ID circleID, double x, double y, double r) {
     updateRequirements(circleID);
 }
 
-ID Scene::addRequirement(const RequirementData &reqData) {
+ID Scene::addRequirement(const RequirementData& reqData) {
     IReq* requirement = nullptr;
     if (reqData.objects.size() < 2) {
         throw std::invalid_argument("Insufficient data for requirement");
@@ -490,7 +490,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 2
+            // 2
         case ET_POINTONSECTION: {
             Point* p = nullptr;
             Section* s = nullptr;
@@ -507,7 +507,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 3
+            // 3
         case ET_POINTPOINTDIST: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
@@ -544,7 +544,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             _points[id1] = p2;
 
             // Update requirements
-            for (auto &[id, req]: _requirements) {
+            for (auto& [id, req]: _requirements) {
                 if (req->getType() == ET_POINTPOINTDIST) {
                     std::vector<IGeometricObject*> vec = req->getObjects();
                     if (vec.size() == 0) {
@@ -565,8 +565,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
                     IReq* newReq = new ReqPointPointDist(pt1, pt2, v);
                     delete _requirements[id];
                     _requirements[id] = newReq;
-                }
-                else if (req->getType() == ET_SECTIONSECTIONPERPENDICULAR) {
+                } else if (req->getType() == ET_SECTIONSECTIONPERPENDICULAR) {
                     std::vector<IGeometricObject*> vec = req->getObjects();
                     if (vec.size() == 0) {
                         break;
@@ -583,8 +582,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
                     IReq* newReq = new ReqSecSecPerpendicular(s1, s2);
                     delete _requirements[id];
                     _requirements[id] = newReq;
-                }
-                else if (req->getType() == ET_SECTIONSECTIONPARALLEL) {
+                } else if (req->getType() == ET_SECTIONSECTIONPARALLEL) {
                     std::vector<IGeometricObject*> vec = req->getObjects();
                     if (vec.size() == 0) {
                         break;
@@ -605,12 +603,12 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             }
 
             // Update req functions
-            for (auto &func: _errorRequirementFunctions) {
+            for (auto& func: _errorRequirementFunctions) {
                 delete func;
             }
             _errorRequirementFunctions.clear();
-            for (auto &[id, req]: _requirements) {
-                if (reqData.req != ET_POINTONPOINT) {
+            for (auto& [id, req]: _requirements) {
+                if (req->getType() != ET_POINTONPOINT) {
                     _errorRequirementFunctions.push_back(req->getFunction());
                 }
             }
@@ -619,7 +617,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             VarsStorage::deleteVar(&p1->x);
             VarsStorage::deleteVar(&p1->y);
 
-            for (auto &[id, sec]: _sections) {
+            for (auto& [id, sec]: _sections) {
                 if (sec->beg == p1) {
                     sec->beg = p2;
                 }
@@ -631,7 +629,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 5
+            // 5
         case ET_SECTIONCIRCLEDIST: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
@@ -652,7 +650,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 6
+            // 6
         case ET_SECTIONONCIRCLE: {
             Section* s = nullptr;
             Circle* c = nullptr;
@@ -669,7 +667,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 7
+            // 7
         case ET_SECTIONINCIRCLE: {
             Section* s = nullptr;
             Circle* c = nullptr;
@@ -686,7 +684,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 8
+            // 8
         case ET_SECTIONSECTIONPARALLEL: {
             Section* s1 = nullptr;
             Section* s2 = nullptr;
@@ -700,7 +698,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 9
+            // 9
         case ET_SECTIONSECTIONPERPENDICULAR: {
             Section* s1 = nullptr;
             Section* s2 = nullptr;
@@ -714,7 +712,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 10
+            // 10
         case ET_SECTIONSECTIONANGLE: {
             if (reqData.params.empty()) {
                 throw std::invalid_argument("Insufficient data for requirement");
@@ -732,7 +730,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
             break;
         }
 
-        // 11
+            // 11
         case ET_POINTINOBJECT: {
             break;
         }
@@ -742,7 +740,7 @@ ID Scene::addRequirement(const RequirementData &reqData) {
         }
     }
 
-    if (!requirement) {
+    if (!requirement && reqData.req != ET_POINTONPOINT) {
         throw std::invalid_argument("Invalid requirement data");
     }
 
@@ -788,35 +786,35 @@ void Scene::updateRequirements(ID objectID) {
 // TODO
 std::string Scene::to_string() const {
     FileOurP saver;
-    for (auto &pair: _points) {
+    for (auto& pair: _points) {
         std::pair<unsigned int, IGeometricObject*> res;
         res.first = pair.first.get();
         res.second = pair.second;
         saver.addObject(res);
     }
-    for (auto &pair: _sections) {
+    for (auto& pair: _sections) {
         std::pair<unsigned int, IGeometricObject*> res;
         res.first = pair.first.get();
         res.second = pair.second;
         saver.addObject(res);
     }
-    for (auto &pair: _circles) {
+    for (auto& pair: _circles) {
         std::pair<unsigned int, IGeometricObject*> res;
         res.first = pair.first.get();
         res.second = pair.second;
         saver.addObject(res);
     }
-    for (auto &pair: _requirements) {
+    for (auto& pair: _requirements) {
         std::pair<unsigned int, RequirementData> res;
         res.first = pair.first.get();
         RequirementData rd;
         rd.req = pair.second->getType();
         std::vector<double*> vec = pair.second->getParams();
-        for (auto &it: vec) {
+        for (auto& it: vec) {
             rd.params.push_back(*it);
         }
         std::vector<Edge<ID, ID>> edges = _graph.getAllEdges();
-        for (auto &edge: edges) {
+        for (auto& edge: edges) {
             if (edge.weight == pair.first) {
                 rd.objects.push_back(edge.from.get());
                 rd.objects.push_back(edge.to.get());
@@ -830,27 +828,27 @@ std::string Scene::to_string() const {
 
 void Scene::saveToFile(const char* filename) const {
     FileOurP saver;
-    for (const auto &[id, obj]: _points) {
+    for (const auto& [id, obj]: _points) {
         std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
         saver.addObject(m);
     }
-    for (const auto &[id, obj]: _sections) {
+    for (const auto& [id, obj]: _sections) {
         std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
         saver.addObject(m);
     }
-    for (const auto &[id, obj]: _circles) {
+    for (const auto& [id, obj]: _circles) {
         std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
         saver.addObject(m);
     }
-    for (const auto &[id, req]: _requirements) {
+    for (const auto& [id, req]: _requirements) {
         RequirementData rd;
         rd.req = req->getType();
         std::vector<double*> vec = req->getParams();
-        for (auto &it: vec) {
+        for (auto& it: vec) {
             rd.params.push_back(*it);
         }
         std::vector<Edge<ID, ID>> edges = _graph.getAllEdges();
-        for (auto &edge: edges) {
+        for (auto& edge: edges) {
             if (edge.weight == id) {
                 rd.objects.push_back(edge.from.get());
                 rd.objects.push_back(edge.to.get());
@@ -868,8 +866,8 @@ void Scene::loadFromFile(const char* filename) {
 
     loader.loadFromOurP(filename);
     clear();
-    const std::vector<objectInFile> &vecObjData = loader.getObjects();
-    for (auto &objData: vecObjData) {
+    const std::vector<objectInFile>& vecObjData = loader.getObjects();
+    for (auto& objData: vecObjData) {
         std::pair<unsigned int, IGeometricObject*> pair = objData.to_pair();
         IGeometricObject* obj = pair.second;
         if (obj->getType() == ET_POINT) {
@@ -879,8 +877,7 @@ void Scene::loadFromFile(const char* filename) {
             p2->y = p->y;
             _points[ID(pair.first)] = p2;
             _graph.addVertex(ID(pair.first));
-        }
-        else if (obj->getType() == ET_SECTION) {
+        } else if (obj->getType() == ET_SECTION) {
             Section* s = static_cast<Section*>(obj);
             Point* p1 = new Point();
             p1->x = s->beg->x;
@@ -897,8 +894,7 @@ void Scene::loadFromFile(const char* filename) {
             _graph.addVertex(ID(pair.first - 2));
             _graph.addVertex(ID(pair.first - 1));
             _graph.addVertex(ID(pair.first));
-        }
-        else if (obj->getType() == ET_CIRCLE) {
+        } else if (obj->getType() == ET_CIRCLE) {
             Circle* c = static_cast<Circle*>(obj);
             Point* p1 = new Point();
             p1->x = c->center->x;
@@ -909,8 +905,8 @@ void Scene::loadFromFile(const char* filename) {
             _graph.addVertex(ID(pair.first));
         }
     }
-    const std::vector<requirementInFile> &vecReqData = loader.getRequirements();
-    for (auto &reqData: vecReqData) {
+    const std::vector<requirementInFile>& vecReqData = loader.getRequirements();
+    for (auto& reqData: vecReqData) {
         std::pair<unsigned int, RequirementData> pair = reqData.to_pair();
         RequirementData rd = pair.second;
         ID id1(pair.second.objects[0]);
@@ -991,7 +987,7 @@ void Scene::loadFromFile(const char* filename) {
                 _points.erase(id1);
 
                 // Update requirements
-                for (auto &[id, req]: _requirements) {
+                for (auto& [id, req]: _requirements) {
                     if (req->getType() == ET_POINTPOINTDIST) {
                         std::vector<IGeometricObject*> vec = req->getObjects();
                         if (vec.size() == 0) {
@@ -1016,11 +1012,11 @@ void Scene::loadFromFile(const char* filename) {
                 }
 
                 // Update req functions
-                for (auto &func: _errorRequirementFunctions) {
+                for (auto& func: _errorRequirementFunctions) {
                     delete func;
                 }
                 _errorRequirementFunctions.clear();
-                for (auto &[id, req]: _requirements) {
+                for (auto& [id, req]: _requirements) {
                     _errorRequirementFunctions.push_back(req->getFunction());
                 }
 
@@ -1028,7 +1024,7 @@ void Scene::loadFromFile(const char* filename) {
                 VarsStorage::deleteVar(&p1->x);
                 VarsStorage::deleteVar(&p1->y);
 
-                for (auto &[id, sec]: _sections) {
+                for (auto& [id, sec]: _sections) {
                     if (sec->beg == p1) {
                         sec->beg = p2;
                     }
