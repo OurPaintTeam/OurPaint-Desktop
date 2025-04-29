@@ -736,7 +736,7 @@ ID Scene::addRequirement(const RequirementData& reqData) {
         }
 
         default: {
-            std::invalid_argument("Unknown requirement type");
+            throw std::invalid_argument("Unknown requirement type");
         }
     }
 
@@ -746,9 +746,9 @@ ID Scene::addRequirement(const RequirementData& reqData) {
 
     ID newID = _idRequirementsGenerator.generate();
     _graph.addEdge(id1, id2, newID);
-    _requirements[newID] = requirement;
 
     if (reqData.req != ET_POINTONPOINT) {
+        _requirements[newID] = requirement;
         _errorRequirementFunctions.push_back(requirement->getFunction());
     }
 
