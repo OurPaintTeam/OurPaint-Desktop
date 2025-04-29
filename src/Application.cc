@@ -939,13 +939,16 @@ void Application::addRequirement(Requirement RQ,ID id1,ID id2,double parameters)
     reqData.objects.push_back(id1.get());
     reqData.objects.push_back(id2.get());
     reqData.params.push_back(parameters);
-    scene.addRequirement(reqData);
-    ModeManager::setSave(false);
-
-    vecCalls.push_back([=, this]() {
-        leftMenu->addRequirementElem(name, RQ, id1.get(),
-                                     id2.get(), parameters);
-    });
+    try {
+        scene.addRequirement(reqData);
+        ModeManager::setSave(false);
+        vecCalls.push_back([=, this]() {
+            leftMenu->addRequirementElem(name, RQ, id1.get(),
+                                         id2.get(), parameters);
+        });
+    } catch (std::exception &e) {
+        mainWind.showError(e.what());
+    }
 }
 
 void Application::addRequirement(Requirement RQ,ID id1,ID id2){
@@ -956,10 +959,14 @@ void Application::addRequirement(Requirement RQ,ID id1,ID id2){
     reqData.req = type;
     reqData.objects.push_back(id1.get());
     reqData.objects.push_back(id2.get());
-    scene.addRequirement(reqData);
-    ModeManager::setSave(false);
-    vecCalls.push_back([=, this]() {
-        leftMenu->addRequirementElem(name, RQ, id1.get(),
-                                     id2.get());
-    });
+    try {
+        scene.addRequirement(reqData);
+        ModeManager::setSave(false);
+        vecCalls.push_back([=, this]() {
+            leftMenu->addRequirementElem(name, RQ, id1.get(),
+                                         id2.get());
+        });
+    } catch (const std::exception &e) {
+        mainWind.showError(e.what());
+    }
 }
