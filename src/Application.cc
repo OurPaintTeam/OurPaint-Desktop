@@ -761,7 +761,7 @@ void Application::updateState() {
     vecCalls.clear();
 
     QFuture<void> future = QtConcurrent::run([calls = std::move(calls)]() mutable {
-        for (auto& call: calls) {
+        for (auto& call : calls) {
             call();
         }
     });
@@ -769,7 +769,7 @@ void Application::updateState() {
     leftMenu->updateLeftMenu();
 }
 
-void Application::handler(const QString& command) {
+void Application::handler(const QString &command) {
 
     QStringList commandParts = command.split(' ');
 
@@ -790,7 +790,8 @@ void Application::handler(const QString& command) {
             });
         }
 
-    } else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
+    }
+    else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
         bool xOk, yOk, rOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
@@ -805,13 +806,14 @@ void Application::handler(const QString& command) {
             circle.params.push_back(r);
             ID id = scene.addObject(circle);
             ModeManager::setSave(false);
-            vecCalls.push_back([=, this]() {
+           vecCalls.push_back([=, this]() {
                 leftMenu->addElemLeftMenu("Circle", id.get(), {x, y, r});
                 leftMenu->addElemLeftMenu("Point", id.get() - 1, {x, y});
             });
         }
 
-    } else if (commandParts[0] == "section" && commandParts.size() >= 5) {
+    }
+    else if (commandParts[0] == "section" && commandParts.size() >= 5) {
         bool xOk, yOk, zOk, rOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
@@ -832,38 +834,41 @@ void Application::handler(const QString& command) {
                 leftMenu->addElemLeftMenu("Section", id.get(), {x, y, z, r});
             });
         }
-    } else if (commandParts[0] == "arc" && commandParts.size() >= 8) {
-        bool x0Ok, y0Ok, x1Ok, y1Ok, cxOk, cyOk, rOk;
-        double x1 = commandParts[1].toDouble(&x0Ok);
-        double y1 = commandParts[2].toDouble(&y0Ok);
-        double x2 = commandParts[3].toDouble(&x1Ok);
-        double y2 = commandParts[4].toDouble(&y1Ok);
-        double cx = commandParts[5].toDouble(&cxOk);
-        double cy = commandParts[6].toDouble(&cyOk);
-        double r = commandParts[7].toDouble(&rOk);
-        if (x0Ok && y0Ok && x1Ok && y1Ok && cxOk && cyOk && rOk) {
-            ObjectData arc;
-            arc.et = ET_ARC;
-            arc.params.push_back(x1);
-            arc.params.push_back(y1);
-            arc.params.push_back(x2);
-            arc.params.push_back(y2);
-            arc.params.push_back(cx);
-            arc.params.push_back(cy);
-            arc.params.push_back(r);
-            ID id = scene.addObject(arc);
-            ModeManager::setSave(false);
-            vecCalls.push_back([=, this]() {
-                leftMenu->addElemLeftMenu("Point", id.get() - 3, {x1, y1});
-                leftMenu->addElemLeftMenu("Point", id.get() - 2, {x2, y2});
-                leftMenu->addElemLeftMenu("Point", id.get() - 1, {cx, cy});
-                leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy});
-            });
-        }
+    }
+    else if (commandParts[0] == "arc" && commandParts.size() >= 8) {
+            bool x0Ok, y0Ok, x1Ok, y1Ok, cxOk, cyOk, rOk;
+            double x1 = commandParts[1].toDouble(&x0Ok);
+            double y1 = commandParts[2].toDouble(&y0Ok);
+            double x2 = commandParts[3].toDouble(&x1Ok);
+            double y2 = commandParts[4].toDouble(&y1Ok);
+            double cx = commandParts[5].toDouble(&cxOk);
+            double cy = commandParts[6].toDouble(&cyOk);
+            double r = commandParts[7].toDouble(&rOk);
+            if (x0Ok && y0Ok && x1Ok && y1Ok && cxOk && cyOk && rOk) {
+                ObjectData arc;
+                arc.et = ET_ARC;
+                arc.params.push_back(x1);
+                arc.params.push_back(y1);
+                arc.params.push_back(x2);
+                arc.params.push_back(y2);
+                arc.params.push_back(cx);
+                arc.params.push_back(cy);
+                arc.params.push_back(r);
+                ID id = scene.addObject(arc);
+                ModeManager::setSave(false);
+                vecCalls.push_back([=, this]() {
+                    leftMenu->addElemLeftMenu("Point", id.get() - 3, {x1, y1});
+                    leftMenu->addElemLeftMenu("Point", id.get() - 2, {x2, y2});
+                    leftMenu->addElemLeftMenu("Point", id.get() - 1, {cx, cy});
+                    leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy});
+                });
+            }
 
-    } else if (commandParts[0] == "exit") {
+    }
+    else if (commandParts[0] == "exit") {
         mainWind.close();
-    } else if (commandParts[0] == "clear") {
+    }
+    else if (commandParts[0] == "clear") {
         ModeManager::setSave(true);
         painter->clear();
         scene.clear();
@@ -873,7 +878,8 @@ void Application::handler(const QString& command) {
             leftMenu->updateLeftMenu();
         });
         updateState();
-    } else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
+    }
+    else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
         int req = commandParts[1].toInt();
         ID obj1(commandParts[2].toInt());
         ID obj2(commandParts[3].toInt());
@@ -934,13 +940,16 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2, double paramete
     reqData.objects.push_back(id1.get());
     reqData.objects.push_back(id2.get());
     reqData.params.push_back(parameters);
-    ID id = scene.addRequirement(reqData);
-    ModeManager::setSave(false);
-
-    vecCalls.push_back([=, this]() {
-        leftMenu->addRequirementElem(name, id.get(), id1.get(),
-                                     id2.get(), parameters);
-    });
+    try {
+        scene.addRequirement(reqData);
+        ModeManager::setSave(false);
+        vecCalls.push_back([=, this]() {
+            leftMenu->addRequirementElem(name, RQ, id1.get(),
+                                         id2.get(), parameters);
+        });
+    } catch (std::exception &e) {
+        mainWind.showError(e.what());
+    }
 }
 
 void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
@@ -951,10 +960,14 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
     reqData.req = type;
     reqData.objects.push_back(id1.get());
     reqData.objects.push_back(id2.get());
-    ID id = scene.addRequirement(reqData);
-    ModeManager::setSave(false);
-    vecCalls.push_back([=, this]() {
-        leftMenu->addRequirementElem(name, id.get(), id1.get(),
-                                     id2.get());
-    });
+    try {
+        scene.addRequirement(reqData);
+        ModeManager::setSave(false);
+        vecCalls.push_back([=, this]() {
+            leftMenu->addRequirementElem(name, RQ, id1.get(),
+                                         id2.get());
+        });
+    } catch (const std::exception &e) {
+        mainWind.showError(e.what());
+    }
 }

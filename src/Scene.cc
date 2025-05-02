@@ -778,7 +778,7 @@ ID Scene::addRequirement(const RequirementData& reqData) {
         }
 
         default: {
-            std::invalid_argument("Unknown requirement type");
+            throw std::invalid_argument("Unknown requirement type");
         }
     }
 
