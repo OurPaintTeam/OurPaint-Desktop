@@ -11,9 +11,11 @@
 #include "LMForTest.h"
 #include "FileOurP.h"
 #include "objectInFile.h"
+#include "Component.h"
 
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 class Scene {
 private:
@@ -23,7 +25,10 @@ private:
     std::unordered_map<ID, Arc*> _arcs;
 
     std::unordered_map<ID, IReq*> _requirements;
-    std::vector<Function*> _errorRequirementFunctions;
+
+    std::vector<Component> _components;
+    std::unordered_map<ID, std::size_t> _idToComponent;
+    bool _isComponentsDirty;
 
     mutable Painter* _painter;
 
@@ -50,6 +55,9 @@ public:
     const BoundBox2D& getBoundingBox() const;
     void updateBoundingBox() const;
 
+    void rebuildComponents();
+    const Component& findComponentByID(ID id);
+
     void paint() const;
 
     const IGeometricObject* getObject(ID objectID) const;
@@ -73,6 +81,7 @@ public:
     void setPoint(ID pointID, double x, double y);
     void setSection(ID sectionID, double x1, double y1, double x2, double y2);
     void setCircle(ID pointID, double x, double y, double r);
+    // TODO setArc
 
     ID addRequirement(const RequirementData& reqData);
     void updateRequirements(ID objectID);

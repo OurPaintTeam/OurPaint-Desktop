@@ -1,14 +1,25 @@
 #include "Scene.h"
 
+class MatrixXD;
+
 Scene::Scene(Painter* p) :
         _painter(p),
         _points(),
-        _arcs(),
         _sections(),
         _circles(),
+        _arcs(),
+        _requirements(),
+        _components(),
+        _idToComponent(),
+        _isComponentsDirty(false),
         _isRectangleDirty(false),
         _allFiguresRectangle(),
         _graph() {
+    _points.reserve(std::size_t(128));
+    _sections.reserve(std::size_t(128));
+    _circles.reserve(std::size_t(128));
+    _arcs.reserve(std::size_t(128));
+    _requirements.reserve(std::size_t(64));
     if (p) {
         p->initPoint(_points);
         p->initSection(_sections);
@@ -18,9 +29,14 @@ Scene::Scene(Painter* p) :
 }
 
 Scene::~Scene() {
+    std::unordered_set<Point*> pointsWithoutDub;
     for (auto& pair: _points) {
-        delete pair.second;
+        pointsWithoutDub.insert(pair.second);
     }
+    for (auto& p : pointsWithoutDub) {
+        delete p;
+    }
+    pointsWithoutDub.clear();
     for (auto& pair: _sections) {
         delete pair.second;
     }
@@ -41,7 +57,8 @@ Scene::~Scene() {
 
     _graph = UndirectedWeightedGraph<ID, ID>{};
 
-    VarsStorage::clearVars();
+    _components.clear();
+    _idToComponent.clear();
 }
 
 ID Scene::addObject(const ObjectData& objData) {
@@ -53,8 +70,10 @@ ID Scene::addObject(const ObjectData& objData) {
             ID newID = _idGeometricObjectsGenerator.generate();
             Point* p = new Point(objData.params[0], objData.params[1]);
             _points[newID] = p;
-            _allFiguresRectangle = _allFiguresRectangle | p->getBox();
             _graph.addVertex(newID);
+
+            _allFiguresRectangle = _allFiguresRectangle | p->getBox();
+            _isComponentsDirty = true;
             return newID;
         }
         case ET_SECTION: {
@@ -80,6 +99,7 @@ ID Scene::addObject(const ObjectData& objData) {
             _graph.addEdge(pID2, newID, ID(-2));
 
             _allFiguresRectangle = _allFiguresRectangle | s->getBox();
+            _isComponentsDirty = true;
             return newID;
         }
         case ET_CIRCLE: {
@@ -98,6 +118,7 @@ ID Scene::addObject(const ObjectData& objData) {
             _graph.addEdge(pID, newID, ID(-2));
 
             _allFiguresRectangle = _allFiguresRectangle | c->getBox();
+            _isComponentsDirty = true;
             return newID;
         }
         case ET_ARC: {
@@ -130,6 +151,7 @@ ID Scene::addObject(const ObjectData& objData) {
             _graph.addEdge(pID2, newID, ID(-2));
 
             _allFiguresRectangle = _allFiguresRectangle | a->getBox();
+            _isComponentsDirty = true;
             return newID;
         }
         default:
@@ -234,8 +256,12 @@ bool Scene::deleteArc(ID arcID) {
 }
 
 void Scene::clear() {
+    std::unordered_set<Point*> pointsWithoutDub;
     for (auto& pair: _points) {
-        delete pair.second;
+        pointsWithoutDub.insert(pair.second);
+    }
+    for (auto& p : pointsWithoutDub) {
+        delete p;
     }
     for (auto& pair: _sections) {
         delete pair.second;
@@ -251,11 +277,16 @@ void Scene::clear() {
     _circles.clear();
     _arcs.clear();
 
+    _isComponentsDirty = false;
+    _components.clear();
+    _idToComponent.clear();
+
     _graph = UndirectedWeightedGraph<ID, ID>{};
 
     _allFiguresRectangle = BoundBox2D{};
     _isRectangleDirty = false;
     _idGeometricObjectsGenerator.reset();
+    _idRequirementsGenerator.reset();
 }
 
 const BoundBox2D& Scene::getBoundingBox() const {
@@ -387,6 +418,9 @@ void Scene::movePoint(ID pointID, double dx, double dy) {
 }
 
 void Scene::moveSection(ID sectionID, double dx, double dy) {
+    if (dx == 0 && dy == 0) {
+        return;
+    }
     if (!_sections.contains(sectionID)) {
         throw std::invalid_argument("There is no section to move");
     }
@@ -395,19 +429,21 @@ void Scene::moveSection(ID sectionID, double dx, double dy) {
     s->beg->y += dy;
     s->end->x += dx;
     s->end->y += dy;
-    _isRectangleDirty = true;
     // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
-    updateRequirements(ID(sectionID.get() - 1));
-    //std::cout << "Move section" << '\n';
+    updateRequirements(sectionID);
+    _isRectangleDirty = true;
 }
 
 void Scene::moveCircle(ID circleID, double dx, double dy) {
-    if (_circles.contains(circleID)) {
-        Circle* c = _circles[circleID];
-        c->center->x += dx;
-        c->center->y += dy;
+    if (dx == 0 && dy == 0) {
+        return;
     }
-    _isRectangleDirty = true;
+    if (!_circles.contains(circleID)) {
+        throw std::invalid_argument("There is no circle to move");
+    }
+    Circle* c = _circles[circleID];
+    c->center->x += dx;
+    c->center->y += dy;
     // TODO по выполнению функции updateRequirements может изменить систему так что функцию после завершения не выполнила свою работу, исправить.
     updateRequirements(circleID);
 }
@@ -432,9 +468,12 @@ void Scene::setPoint(ID pointID, double x, double y) {
         throw std::out_of_range("There is no point to change position");
     }
     Point* p = _points[pointID];
-    p->x = x;
-    p->y = y;
-    updateRequirements(pointID);
+    if (p->x != x || p->y != y) {
+        p->x = x;
+        p->y = y;
+        updateRequirements(pointID);
+        _isRectangleDirty = true;
+    }
 }
 
 void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2) {
@@ -442,11 +481,13 @@ void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2)
         throw std::out_of_range("There is no section to change");
     }
     Section* s = _sections[sectionID];
-    s->beg->x = x1;
-    s->beg->y = y1;
-    s->beg->x = x2;
-    s->beg->x = y2;
-    updateRequirements(sectionID);
+    if (s->beg->x != x1 || s->beg->y != y1 != s->beg->x != x2 || s->beg->x != y2) {
+        s->beg->x = x1;
+        s->beg->y = y1;
+        s->end->x = x2;
+        s->end->y = y2;
+        updateRequirements(sectionID);
+    }
 }
 
 void Scene::setCircle(ID circleID, double x, double y, double r) {
@@ -454,10 +495,12 @@ void Scene::setCircle(ID circleID, double x, double y, double r) {
         throw std::out_of_range("There is no circle to change");
     }
     Circle* c = _circles[circleID];
-    c->center->x = x;
-    c->center->y = y;
-    c->r = r;
-    updateRequirements(circleID);
+    if (c->center->x != x || c->center->y != y || c->r != r) {
+        c->center->x = x;
+        c->center->y = y;
+        c->r = r;
+        updateRequirements(circleID);
+    }
 }
 
 ID Scene::addRequirement(const RequirementData& reqData) {
@@ -540,8 +583,12 @@ ID Scene::addRequirement(const RequirementData& reqData) {
             Point* p1 = _points[id1];
             Point* p2 = _points[id2];
 
-            delete _points[id1];
-            _points[id1] = p2;
+            delete p1;
+            for (auto& [id, p] : _points) {
+                if (p == p1) {
+                    p = p2;
+                }
+            }
 
             // Update requirements
             for (auto& [id, req]: _requirements) {
@@ -565,7 +612,8 @@ ID Scene::addRequirement(const RequirementData& reqData) {
                     IReq* newReq = new ReqPointPointDist(pt1, pt2, v);
                     delete _requirements[id];
                     _requirements[id] = newReq;
-                } else if (req->getType() == ET_SECTIONSECTIONPERPENDICULAR) {
+                }
+                else if (req->getType() == ET_SECTIONSECTIONPERPENDICULAR) {
                     std::vector<IGeometricObject*> vec = req->getObjects();
                     if (vec.size() == 0) {
                         break;
@@ -582,7 +630,8 @@ ID Scene::addRequirement(const RequirementData& reqData) {
                     IReq* newReq = new ReqSecSecPerpendicular(s1, s2);
                     delete _requirements[id];
                     _requirements[id] = newReq;
-                } else if (req->getType() == ET_SECTIONSECTIONPARALLEL) {
+                }
+                else if (req->getType() == ET_SECTIONSECTIONPARALLEL) {
                     std::vector<IGeometricObject*> vec = req->getObjects();
                     if (vec.size() == 0) {
                         break;
@@ -602,22 +651,7 @@ ID Scene::addRequirement(const RequirementData& reqData) {
                 }
             }
 
-            // Update req functions
-            for (auto& func: _errorRequirementFunctions) {
-                delete func;
-            }
-            _errorRequirementFunctions.clear();
-            for (auto& [id, req]: _requirements) {
-                if (req->getType() != ET_POINTONPOINT) {
-                    _errorRequirementFunctions.push_back(req->getFunction());
-                }
-            }
-
-            // Update VarsStorage
-            VarsStorage::deleteVar(&p1->x);
-            VarsStorage::deleteVar(&p1->y);
-
-            for (auto& [id, sec]: _sections) {
+            for (auto& [id, sec] : _sections) {
                 if (sec->beg == p1) {
                     sec->beg = p2;
                 }
@@ -625,6 +659,14 @@ ID Scene::addRequirement(const RequirementData& reqData) {
                     sec->end = p2;
                 }
             }
+
+            for (auto& [id, circle] : _circles) {
+                if (circle->center == p1) {
+                    circle->center = p2;
+                }
+            }
+
+            requirement = new ReqPointOnPoint(p1, p2);
 
             break;
         }
@@ -740,7 +782,7 @@ ID Scene::addRequirement(const RequirementData& reqData) {
         }
     }
 
-    if (!requirement && reqData.req != ET_POINTONPOINT) {
+    if (!requirement) {
         throw std::invalid_argument("Invalid requirement data");
     }
 
@@ -748,28 +790,71 @@ ID Scene::addRequirement(const RequirementData& reqData) {
     _graph.addEdge(id1, id2, newID);
     _requirements[newID] = requirement;
 
-    if (reqData.req != ET_POINTONPOINT) {
-        _errorRequirementFunctions.push_back(requirement->getFunction());
-    }
-
+    _isComponentsDirty = true;
     updateRequirements(id1);
     return newID;
 }
 
-void Scene::updateRequirements(ID objectID) {
-    std::size_t number_of_obj_in_component = 0;
+const Component& Scene::findComponentByID(ID id) {
+    if (_isComponentsDirty) {
+        rebuildComponents();
+    }
+    auto it = _idToComponent.find(id);
+    if (it == _idToComponent.end()) {
+        throw std::runtime_error("ID not found in any component");
+    }
+    return _components[it->second];
+}
 
-    std::vector<ID> connectedComponent = _graph.findConnectedComponent(objectID);
+void Scene::rebuildComponents() {
+    _components.clear();
+    _idToComponent.clear();
+    std::vector<std::vector<ID>> allComponents = _graph.connectedComponents();
+    for (std::size_t i = 0; auto& vec : allComponents) {
+        for (auto& vertexID : vec) {
+            _idToComponent[vertexID] = i;
+        }
+        ++i;
+        Graph<ID, ID, UndirectedPolicy, WeightedPolicy> component = _graph.subGraph(vec);
+        std::vector<Edge<ID, ID>> componentEdges = component.getAllEdges();
+        std::vector<ID> componentVertices = component.getVertices();
+        Component c;
+        std::vector<Variable*> variables;
+        std::unordered_set<double*> seen;
+        for (auto& edge : componentEdges) {
+            if (edge.weight != ID(-2) && _requirements[edge.weight]->getType() != ET_POINTONPOINT) {
+                std::vector<Variable*> variablesWithDuplicates = _requirements[edge.weight]->getVariables();
+                variables.reserve(variablesWithDuplicates.size());
+                for (auto& var : variablesWithDuplicates) {
+                    if (seen.insert(var->value).second) {
+                        variables.push_back(var);
+                    }
+                }
+                c._errorRequirementFunctions.push_back(_requirements[edge.weight]->getFunction());
+            }
+        }
+        c._componentVars = variables;
+        if (!componentVertices.empty()) {
+            std::vector<ID> cC = _graph.findConnectedComponent(componentVertices[0]);
+            c._objectIDs = std::unordered_set(cC.begin(), cC.end());
+        }
+        _components.push_back(std::move(c));
+    }
+    _isComponentsDirty = false;
+}
 
-    number_of_obj_in_component = connectedComponent.size();
-    if (_errorRequirementFunctions.size() == 0) {
+void Scene::updateRequirements(ID id) {
+    const Component& component = findComponentByID(id);
+
+    std::size_t number_of_obj_in_component = component._objectIDs.size();
+    std::cout << "Objects in component:  " << number_of_obj_in_component << '\n';
+
+    if (component._errorRequirementFunctions.empty()) {
         return;
     }
-    std::cout << "Objects in component:  " << number_of_obj_in_component << std::endl;
 
-    // TODO Решать только компоненту
 
-    LSMFORLMTask* task = new LSMFORLMTask(_errorRequirementFunctions, VarsStorage::getVars());
+    LSMFORLMTask* task = new LSMFORLMTask(component._errorRequirementFunctions, component._componentVars);
     LevenbergMarquardtSolver solver(10000, 0.5, 2, 4, 1e-07, 1e-07);
     solver.setTask(task);
     solver.optimize();
@@ -1010,7 +1095,7 @@ void Scene::loadFromFile(const char* filename) {
                         _requirements[id] = newReq;
                     }
                 }
-
+/*
                 // Update req functions
                 for (auto& func: _errorRequirementFunctions) {
                     delete func;
@@ -1032,7 +1117,7 @@ void Scene::loadFromFile(const char* filename) {
                         sec->end = p2;
                     }
                 }
-
+*/
                 break;
             }
 
@@ -1142,7 +1227,7 @@ void Scene::loadFromFile(const char* filename) {
         }
         _requirements[ID(pair.first)] = requirement;
         _graph.addEdge(id1, id2, ID(pair.first));
-        _errorRequirementFunctions.push_back(requirement->getFunction());
+        //_errorRequirementFunctions.push_back(requirement->getFunction());
     }
 }
 

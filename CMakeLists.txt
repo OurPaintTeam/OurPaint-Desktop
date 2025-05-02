@@ -79,6 +79,7 @@ add_executable(ourpaint
         headers/objects/Enums.h
         headers/objects/Objects.h
         headers/objects/GeometricObjects.h
+        headers/objects/Component.h
         headers/Requirements.h
         headers/objects/ID.h
         headers/Scene.h

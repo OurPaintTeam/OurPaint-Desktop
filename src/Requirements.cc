@@ -1,57 +1,12 @@
 #include "Requirements.h"
-std::map<PARAMID, Variable*> VarsStorage::m_vars;
-std::vector<Variable *> VarsStorage::getVars() {
-    std::vector<Variable *> vars;
-    for (auto var : m_vars) {
-        vars.push_back(var.second);
-    }
-    return vars;
-}
-Variable* VarsStorage::addVar(PARAMID id){
-    if (m_vars.find(id) == m_vars.end()) {
-        m_vars[id] = new Variable(id);
-    }
-    return m_vars[id];
-}
-Variable* VarsStorage::getVar(PARAMID id) {
-    if (m_vars.find(id) == m_vars.end()) {
-        throw std::runtime_error("Variable not found");
-    }
-    return m_vars[id];
-}
 
-void VarsStorage::clearVars() {
-    for (auto var : m_vars) {
-        delete var.second;
-    }
-    m_vars.clear();
-}
-bool VarsStorage::deleteVar(PARAMID id) {
-    if (m_vars.find(id) == m_vars.end()) {
-        return false;
-    }
-    delete m_vars[id];
-    m_vars.erase(id);
-    return true;
-}
-/*
-RequirementData::RequirementData() {
-    objects = std::vector<ID>();
-    params = std::vector<double>();
-}*/
 
 // 1
-ErrorFunctions* ReqPointSecDist::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_p->x);
-    Variable* y1 = VarsStorage::addVar(&m_p->y);
-    Variable* x2 = VarsStorage::addVar(&m_s->beg->x);
-    Variable* y2 = VarsStorage::addVar(&m_s->beg->y);
-    Variable* x3 = VarsStorage::addVar(&m_s->end->x);
-    Variable* y3 = VarsStorage::addVar(&m_s->end->y);
-    return new PointSectionDistanceError({x1, y1, x2, y2, x3, y3}, d);
+ErrorFunctions* ReqPointSecDist::getFunction() {
+    return new PointSectionDistanceError(getVariables(), d);
 }
-std::vector<PARAMID> ReqPointSecDist::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqPointSecDist::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_p->x));
     res.push_back(&(m_p->y));
     res.push_back(&(m_s->beg->x));
@@ -65,15 +20,23 @@ ReqPointSecDist::ReqPointSecDist(Point* p, Section* s, double dist) {
     m_s = s;
     d = dist;
 }
-
-BoundBox2D ReqPointSecDist::getRectangle() const {
-    return m_s->getBox() | m_p->getBox();
-}
-
 Requirement ReqPointSecDist::getType() const {
     return ET_POINTSECTIONDIST;
-};
-
+}
+std::vector<IGeometricObject*> ReqPointSecDist::getObjects() {
+    return {m_p, m_s};
+}
+std::vector<Variable*> ReqPointSecDist::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_p->x),
+            new Variable(&m_p->y),
+            new Variable(&m_s->beg->x),
+            new Variable(&m_s->beg->y),
+            new Variable(&m_s->end->x),
+            new Variable(&m_s->end->y)
+    };
+    return variables;
+}
 
 
 // 2
@@ -81,17 +44,11 @@ ReqPointOnSec::ReqPointOnSec(Point* p, Section* s) {
     m_p = p;
     m_s = s;
 }
-ErrorFunctions* ReqPointOnSec::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_p->x);
-    Variable* y1 = VarsStorage::addVar(&m_p->y);
-    Variable* x2 = VarsStorage::addVar(&m_s->beg->x);
-    Variable* y2 = VarsStorage::addVar(&m_s->beg->y);
-    Variable* x3 = VarsStorage::addVar(&m_s->end->x);
-    Variable* y3 = VarsStorage::addVar(&m_s->end->y);
-    return new PointOnSectionError({x1, y1, x2, y2, x3, y3});
+ErrorFunctions* ReqPointOnSec::getFunction() {
+    return new PointOnSectionError(getVariables());
 }
-std::vector<PARAMID> ReqPointOnSec::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqPointOnSec::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_p->x));
     res.push_back(&(m_p->y));
     res.push_back(&(m_s->beg->x));
@@ -100,13 +57,22 @@ std::vector<PARAMID> ReqPointOnSec::getParams() const {
     res.push_back(&(m_s->end->y));
     return res;
 }
-
-BoundBox2D ReqPointOnSec::getRectangle() const {
-    return m_s->getBox() | m_p->getBox();
-}
-
 Requirement ReqPointOnSec::getType() const {
     return ET_POINTONSECTION;
+}
+std::vector<IGeometricObject*> ReqPointOnSec::getObjects() {
+    return {m_p, m_s};
+}
+std::vector<Variable*> ReqPointOnSec::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_p->x),
+            new Variable(&m_p->y),
+            new Variable(&m_s->beg->x),
+            new Variable(&m_s->beg->y),
+            new Variable(&m_s->end->x),
+            new Variable(&m_s->end->y)
+    };
+    return variables;
 }
 
 
@@ -116,15 +82,11 @@ ReqPointPointDist::ReqPointPointDist(Point* p1, Point* p2, double dist) {
     m_p2 = p2;
     v_dist = dist;
 }
-ErrorFunctions* ReqPointPointDist::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_p1->x);
-    Variable* y1 = VarsStorage::addVar(&m_p1->y);
-    Variable* x2 = VarsStorage::addVar(&m_p2->x);
-    Variable* y2 = VarsStorage::addVar(&m_p2->y);
-    return new PointPointDistanceError({x1, y1, x2, y2}, v_dist);
+ErrorFunctions* ReqPointPointDist::getFunction() {
+    return new PointPointDistanceError(getVariables(), v_dist);
 }
-std::vector<PARAMID> ReqPointPointDist::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqPointPointDist::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_p1->x));
     res.push_back(&(m_p1->y));
     res.push_back(&(m_p2->x));
@@ -133,13 +95,20 @@ std::vector<PARAMID> ReqPointPointDist::getParams() const {
     res.push_back(&dist_copy);
     return res;
 }
-
-BoundBox2D ReqPointPointDist::getRectangle() const {
-    return m_p1->getBox() | m_p2->getBox();
-}
-
 Requirement ReqPointPointDist::getType() const {
     return ET_POINTPOINTDIST;
+}
+std::vector<IGeometricObject*> ReqPointPointDist::getObjects() {
+    return {m_p1, m_p2};
+}
+std::vector<Variable*> ReqPointPointDist::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_p1->x),
+            new Variable(&m_p1->y),
+            new Variable(&m_p2->x),
+            new Variable(&m_p2->y)
+    };
+    return variables;
 }
 
 
@@ -148,29 +117,34 @@ ReqPointOnPoint::ReqPointOnPoint(Point* p1, Point* p2) {
     m_p1 = p1;
     m_p2 = p2;
 }
-ErrorFunctions* ReqPointOnPoint::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_p1->x);
-    Variable* y1 = VarsStorage::addVar(&m_p1->y);
-    Variable* x2 = VarsStorage::addVar(&m_p2->x);
-    Variable* y2 = VarsStorage::addVar(&m_p2->y);
-    return new PointOnPointError({x1, y1, x2, y2});
+ErrorFunctions* ReqPointOnPoint::getFunction() {
+    return new PointOnPointError(getVariables());
 }
-std::vector<PARAMID> ReqPointOnPoint::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqPointOnPoint::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_p1->x));
     res.push_back(&(m_p1->y));
     res.push_back(&(m_p2->x));
     res.push_back(&(m_p2->y));
     return res;
 }
-
-BoundBox2D ReqPointOnPoint::getRectangle() const {
-    return m_p2->getBox() | m_p1->getBox();
-}
-
 Requirement ReqPointOnPoint::getType() const {
     return ET_POINTONPOINT;
 }
+std::vector<IGeometricObject*> ReqPointOnPoint::getObjects() {
+    return {m_p1, m_p2};
+}
+std::vector<Variable*> ReqPointOnPoint::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_p1->x),
+            new Variable(&m_p1->y),
+            new Variable(&m_p2->x),
+            new Variable(&m_p2->y)
+    };
+    return variables;
+};
+
+
 
 
 // 5
@@ -180,18 +154,11 @@ ReqSecCircleDist::ReqSecCircleDist(Section* s, Circle* c, double dist) {
     v_dist = dist;
 
 }
-ErrorFunctions* ReqSecCircleDist::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_s->beg->x);
-    Variable* y1 = VarsStorage::addVar(&m_s->beg->y);
-    Variable* x2 = VarsStorage::addVar(&m_s->end->x);
-    Variable* y2 = VarsStorage::addVar(&m_s->end->y);
-    Variable* xc = VarsStorage::addVar(&m_c->center->x);
-    Variable* yc = VarsStorage::addVar(&m_c->center->y);
-    Variable* r = VarsStorage::addVar(&m_c->r);
-    return new SectionCircleDistanceError({x1, y1, x2, y2, xc, yc, r}, v_dist);
+ErrorFunctions* ReqSecCircleDist::getFunction() {
+    return new SectionCircleDistanceError(getVariables(), v_dist);
 }
-std::vector<PARAMID> ReqSecCircleDist::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqSecCircleDist::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_c->center->x));
     res.push_back(&(m_c->center->y));
     res.push_back(&(m_c->r));
@@ -201,13 +168,23 @@ std::vector<PARAMID> ReqSecCircleDist::getParams() const {
     res.push_back(&(m_s->end->y));
     return res;
 }
-
-BoundBox2D ReqSecCircleDist::getRectangle() const {
-    return m_s->getBox() | m_c->getBox();
-}
-
 Requirement ReqSecCircleDist::getType() const {
     return ET_SECTIONCIRCLEDIST;
+}
+std::vector<IGeometricObject*> ReqSecCircleDist::getObjects() {
+    return {m_s, m_c};
+}
+std::vector<Variable*> ReqSecCircleDist::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_s->beg->x),
+            new Variable(&m_s->beg->y),
+            new Variable(&m_s->end->x),
+            new Variable(&m_s->end->y),
+            new Variable(&m_c->center->x),
+            new Variable(&m_c->center->y),
+            new Variable(&m_c->r)
+    };
+    return variables;
 }
 
 
@@ -216,18 +193,11 @@ ReqSecOnCircle::ReqSecOnCircle(Section* s, Circle* c) {
     m_s = s;
     m_c = c;
 }
-ErrorFunctions* ReqSecOnCircle::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_s->beg->x);
-    Variable* y1 = VarsStorage::addVar(&m_s->beg->y);
-    Variable* x2 = VarsStorage::addVar(&m_s->end->x);
-    Variable* y2 = VarsStorage::addVar(&m_s->end->y);
-    Variable* xc = VarsStorage::addVar(&m_c->center->x);
-    Variable* yc = VarsStorage::addVar(&m_c->center->y);
-    Variable* r = VarsStorage::addVar(&m_c->r);
-    return new SectionOnCircleError({x1, y1, x2, y2, xc, yc,r });
+ErrorFunctions* ReqSecOnCircle::getFunction() {
+    return new SectionOnCircleError(getVariables());
 }
-std::vector<PARAMID> ReqSecOnCircle::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqSecOnCircle::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_c->center->x));
     res.push_back(&(m_c->center->y));
     res.push_back(&(m_c->r));
@@ -237,12 +207,23 @@ std::vector<PARAMID> ReqSecOnCircle::getParams() const {
     res.push_back(&(m_s->end->y));
     return res;
 }
-BoundBox2D ReqSecOnCircle::getRectangle() const {
-    return m_s->getBox() | m_c->getBox();
-}
-
 Requirement ReqSecOnCircle::getType() const {
     return ET_SECTIONONCIRCLE;
+}
+std::vector<IGeometricObject*> ReqSecOnCircle::getObjects() {
+    return {m_s, m_c};
+}
+std::vector<Variable*> ReqSecOnCircle::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_s->beg->x),
+            new Variable(&m_s->beg->y),
+            new Variable(&m_s->end->x),
+            new Variable(&m_s->end->y),
+            new Variable(&m_c->center->x),
+            new Variable(&m_c->center->y),
+            new Variable(&m_c->r)
+    };
+    return variables;
 }
 
 
@@ -252,12 +233,12 @@ ReqSecInCircle::ReqSecInCircle(Section* s, Circle* c) {
     m_c = c;
     throw std::runtime_error("Not implemented");
 }
-ErrorFunctions* ReqSecInCircle::getFunction() const {
+ErrorFunctions* ReqSecInCircle::getFunction() {
     // TODO
     return nullptr;
 }
-std::vector<PARAMID> ReqSecInCircle::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqSecInCircle::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_c->center->x));
     res.push_back(&(m_c->center->y));
     res.push_back(&(m_c->r));
@@ -267,14 +248,17 @@ std::vector<PARAMID> ReqSecInCircle::getParams() const {
     res.push_back(&(m_s->end->y));
     return res;
 }
-
-BoundBox2D ReqSecInCircle::getRectangle() const {
-    return m_s->getBox() | m_c->getBox();
-}
-
 Requirement ReqSecInCircle::getType() const {
     return ET_SECTIONINCIRCLE;
 }
+std::vector<IGeometricObject*> ReqSecInCircle::getObjects() {
+    return {m_s, m_c};
+}
+
+std::vector<Variable*> ReqSecInCircle::getVariables() {
+    return std::vector<Variable*>();
+};
+
 
 
 // 8
@@ -282,20 +266,11 @@ ReqSecSecParallel::ReqSecSecParallel(Section* s1, Section* s2) {
     m_s1 = s1;
     m_s2 = s2;
 }
-// ad-bc. Normal vectors (x2-x1, y2-y1) and (x4-x3, y4-y3)
-ErrorFunctions* ReqSecSecParallel::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_s1->beg->x);
-    Variable* y1 = VarsStorage::addVar(&m_s1->beg->y);
-    Variable* x2 = VarsStorage::addVar(&m_s1->end->x);
-    Variable* y2 = VarsStorage::addVar(&m_s1->end->y);
-    Variable* x3 = VarsStorage::addVar(&m_s2->beg->x);
-    Variable* y3 = VarsStorage::addVar(&m_s2->beg->y);
-    Variable* x4 = VarsStorage::addVar(&m_s2->end->x);
-    Variable* y4 = VarsStorage::addVar(&m_s2->end->y);
-    return new SectionSectionParallelError({x1, y1, x2, y2, x3, y3, x4, y4});
+ErrorFunctions* ReqSecSecParallel::getFunction() {
+    return new SectionSectionParallelError(getVariables());
 }
-std::vector<PARAMID> ReqSecSecParallel::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqSecSecParallel::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_s1->beg->x));
     res.push_back(&(m_s1->beg->y));
     res.push_back(&(m_s1->end->x));
@@ -306,15 +281,25 @@ std::vector<PARAMID> ReqSecSecParallel::getParams() const {
     res.push_back(&(m_s2->end->y));
     return res;
 }
-//  (x2-x1)*(y4-y3)-(y2-y1)*(x4-x3)
-
-BoundBox2D ReqSecSecParallel::getRectangle() const {
-    return m_s1->getBox() | m_s2->getBox();
-}
-
 Requirement ReqSecSecParallel::getType() const {
     return ET_SECTIONSECTIONPARALLEL;
 }
+std::vector<IGeometricObject*> ReqSecSecParallel::getObjects() {
+    return {m_s1, m_s2};
+}
+std::vector<Variable*> ReqSecSecParallel::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_s1->beg->x),
+            new Variable(&m_s1->beg->y),
+            new Variable(&m_s1->end->x),
+            new Variable(&m_s1->end->y),
+            new Variable(&m_s2->beg->x),
+            new Variable(&m_s2->beg->y),
+            new Variable(&m_s2->end->x),
+            new Variable(&m_s2->end->y)
+    };
+    return variables;
+};
 
 
 // 9
@@ -322,19 +307,11 @@ ReqSecSecPerpendicular::ReqSecSecPerpendicular(Section* s1, Section* s2) {
     m_s1 = s1;
     m_s2 = s2;
 }
-ErrorFunctions* ReqSecSecPerpendicular::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_s1->beg->x);
-    Variable* y1 = VarsStorage::addVar(&m_s1->beg->y);
-    Variable* x2 = VarsStorage::addVar(&m_s1->end->x);
-    Variable* y2 = VarsStorage::addVar(&m_s1->end->y);
-    Variable* x3 = VarsStorage::addVar(&m_s2->beg->x);
-    Variable* y3 = VarsStorage::addVar(&m_s2->beg->y);
-    Variable* x4 = VarsStorage::addVar(&m_s2->end->x);
-    Variable* y4 = VarsStorage::addVar(&m_s2->end->y);
-    return new SectionSectionPerpendicularError({x1, y1, x2, y2, x3, y3, x4, y4});
+ErrorFunctions* ReqSecSecPerpendicular::getFunction() {
+    return new SectionSectionPerpendicularError(getVariables());
 }
-std::vector<PARAMID> ReqSecSecPerpendicular::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqSecSecPerpendicular::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_s1->beg->x));
     res.push_back(&(m_s1->beg->y));
     res.push_back(&(m_s1->end->x));
@@ -345,13 +322,24 @@ std::vector<PARAMID> ReqSecSecPerpendicular::getParams() const {
     res.push_back(&(m_s2->end->y));
     return res;
 }
-
-BoundBox2D ReqSecSecPerpendicular::getRectangle() const {
-    return m_s1->getBox() | m_s2->getBox();
-}
-
 Requirement ReqSecSecPerpendicular::getType() const {
     return ET_SECTIONSECTIONPERPENDICULAR;
+}
+std::vector<IGeometricObject*> ReqSecSecPerpendicular::getObjects() {
+    return {m_s1, m_s2};
+}
+std::vector<Variable*> ReqSecSecPerpendicular::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_s1->beg->x),
+            new Variable(&m_s1->beg->y),
+            new Variable(&m_s1->end->x),
+            new Variable(&m_s1->end->y),
+            new Variable(&m_s2->beg->x),
+            new Variable(&m_s2->beg->y),
+            new Variable(&m_s2->end->x),
+            new Variable(&m_s2->end->y)
+    };
+    return variables;
 }
 
 
@@ -361,19 +349,11 @@ ReqSecSecAngel::ReqSecSecAngel(Section* s1, Section* s2, double angle) {
     m_s2 = s2;
     desired_angle = angle;
 }
-ErrorFunctions* ReqSecSecAngel::getFunction() const {
-    Variable* x1 = VarsStorage::addVar(&m_s1->beg->x);
-    Variable* y1 = VarsStorage::addVar(&m_s1->beg->y);
-    Variable* x2 = VarsStorage::addVar(&m_s1->end->x);
-    Variable* y2 = VarsStorage::addVar(&m_s1->end->y);
-    Variable* x3 = VarsStorage::addVar(&m_s2->beg->x);
-    Variable* y3 = VarsStorage::addVar(&m_s2->beg->y);
-    Variable* x4 = VarsStorage::addVar(&m_s2->end->x);
-    Variable* y4 = VarsStorage::addVar(&m_s2->end->y);
-    return new SectionSectionAngleError({x1, y1, x2, y2, x3, y3, x4, y4}, desired_angle);
+ErrorFunctions* ReqSecSecAngel::getFunction() {
+    return new SectionSectionAngleError(getVariables(), desired_angle);
 }
-std::vector<PARAMID> ReqSecSecAngel::getParams() const {
-    std::vector<PARAMID> res;
+std::vector<PARAM_ID> ReqSecSecAngel::getParams() const {
+    std::vector<PARAM_ID> res;
     res.push_back(&(m_s1->beg->x));
     res.push_back(&(m_s1->beg->y));
     res.push_back(&(m_s1->end->x));
@@ -384,12 +364,23 @@ std::vector<PARAMID> ReqSecSecAngel::getParams() const {
     res.push_back(&(m_s2->end->y));
     return res;
 }
-
-BoundBox2D ReqSecSecAngel::getRectangle() const {
-    return m_s1->getBox() | m_s2->getBox();
-}
-
 Requirement ReqSecSecAngel::getType() const {
     return ET_SECTIONSECTIONANGLE;
+}
+std::vector<IGeometricObject*> ReqSecSecAngel::getObjects() {
+    return {m_s1, m_s2};
+}
+std::vector<Variable*> ReqSecSecAngel::getVariables() {
+    std::vector<Variable*> variables = {
+            new Variable(&m_s1->beg->x),
+            new Variable(&m_s1->beg->y),
+            new Variable(&m_s1->end->x),
+            new Variable(&m_s1->end->y),
+            new Variable(&m_s2->beg->x),
+            new Variable(&m_s2->beg->y),
+            new Variable(&m_s2->end->x),
+            new Variable(&m_s2->end->y)
+    };
+    return variables;
 }
 
