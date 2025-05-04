@@ -181,7 +181,6 @@ add_executable(ourpaint
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD ON)
 
 add_subdirectory(tests)
-add_subdirectory(Math)
 
 target_link_libraries(ourpaint
         Qt6::Core

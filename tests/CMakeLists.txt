@@ -19,8 +19,9 @@ endif()
 
 enable_testing()
 
-#Test for objects
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Math ${CMAKE_BINARY_DIR}/Math)
+
+#Test for objects
 add_executable(ObjectsGTEST  ObjectsGTEST.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
@@ -28,7 +29,7 @@ add_executable(ObjectsGTEST  ObjectsGTEST.cc
         ../Math/src/ErrorFunctions.cc
 )
 target_include_directories(ObjectsGTEST PRIVATE ../headers/objects ../Math/headers)
-target_link_libraries(ObjectsGTEST GTest::gtest_main Math)
+target_link_libraries(ObjectsGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 
 
@@ -39,9 +40,26 @@ add_executable(SceneGTEST SceneGTEST.cc
         ../src/objects/BoundBox.cc
         ../src/painters/BMPpainter.cc
         ../src/BMPfile.cc
+        ../src/Requirements.cc
+        ../src/saveload/FileOurP.cc
+        ../src/saveload/objectInFile.cc
+        ../src/saveload/requirementInFile.cc
+
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+        ../Math/src/LevenbergMarquardtSolver.cc
 )
-target_include_directories(SceneGTEST PRIVATE ../headers ../headers/objects ../headers/painters)
-target_link_libraries(SceneGTEST GTest::gtest_main)
+target_include_directories(SceneGTEST PRIVATE
+        ../headers
+        ../headers/objects
+        ../headers/painters
+        ../headers/saveload
+
+        ../Math/headers
+        ../Math/headers/graph
+        ../Math/headers/optimizers
+)
+target_link_libraries(SceneGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 
 

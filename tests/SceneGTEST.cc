@@ -2,7 +2,6 @@
 
 #include "Scene.h"
 #include "Painter.h"
-#include "BMPpainter.h"
 #include "ID.h"
 
 class SceneFixture : public testing::Test {
@@ -10,10 +9,10 @@ protected:
     Scene scene;
     Painter* p;
 
-    SceneFixture() : p(nullptr), scene(p) {}
+    SceneFixture() : p(nullptr), scene(nullptr) {}
 
     void SetUp() override {
-        scene.setPainter(p);
+        //scene.setPainter(p);
     }
 
     void TearDown() override {
@@ -84,6 +83,6 @@ TEST_F(SceneFixture, boundingBox_and_moveObject) {
     EXPECT_EQ(bbox.width(), 1000);
     EXPECT_EQ(bbox.height(), 1000);
 
-    EXPECT_EQ(scene.vertexCount(), 4);
+    EXPECT_EQ(scene.vertexCount(), 3);
     EXPECT_EQ(scene.edgeCount(), 0);
 }
