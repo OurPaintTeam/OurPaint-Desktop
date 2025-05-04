@@ -1,4 +1,4 @@
-#include "UndoRedo/UndoRedoTemplate.h"
+#include "UndoRedoTemplate.h"
 #include <gtest/gtest.h>
 
 TEST(UndoRedoTest, AddAndUndo) {

@@ -1,5 +1,5 @@
-#include "UndoRedo/Command.h"
-#include "UndoRedo/Transaction.h"
+#include "Command.h"
+#include "Transaction.h"
 #include "UndoRedo.h"
 #include <gtest/gtest.h>
 
