@@ -641,7 +641,7 @@ void Scene::setCircle(ID circleID, double x, double y, double r) {
     }
 }
 
-ID Scene::addRequirement(const RequirementData& reqData) {
+ID Scene::addRequirement(const RequirementData& reqData, const bool updateRequirementFlag) {
     IReq* requirement = nullptr;
     if (reqData.objects.size() < 2) {
         throw std::invalid_argument("Insufficient data for requirement");
@@ -924,7 +924,9 @@ ID Scene::addRequirement(const RequirementData& reqData) {
     _requirements[newID] = requirement;
 
     _isComponentsDirty = true;
-    updateRequirements(id1);
+    if (updateRequirementFlag) {
+        updateRequirements(id1);
+    }
     return newID;
 }
 
@@ -1136,7 +1138,7 @@ void Scene::loadFromFile(const char* filename) {
     const std::vector<requirementInFile> vecReqInFile = loader.getRequirements();
     for (auto& reqInFile : vecReqInFile) {
         RequirementData rd = reqInFile.to_pair().second;
-        addRequirement(rd);
+        addRequirement(rd, false);
     }
 }
 

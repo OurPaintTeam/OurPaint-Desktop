@@ -89,7 +89,7 @@ public:
     void setCircle(ID pointID, double x, double y, double r);
     // TODO setArc
 
-    ID addRequirement(const RequirementData& reqData);
+    ID addRequirement(const RequirementData& reqData, const bool updateRequirementFlag = true);
     void updateRequirements(ID objectID);
     // TODO deleteRequirement
     // TODO getRequirement
