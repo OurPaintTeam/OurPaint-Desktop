@@ -8,6 +8,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
       - name: Set up CMake
         uses: jwlawson/actions-setup-cmake@v1
       - name: Install dependencies
