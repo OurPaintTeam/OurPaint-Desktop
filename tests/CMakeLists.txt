@@ -20,7 +20,7 @@ endif()
 enable_testing()
 
 #Test for objects
-add_subdirectory(${CMAKE_SOURCE_DIR}/../Math ${CMAKE_BINARY_DIR}/Math)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Math ${CMAKE_BINARY_DIR}/Math)
 add_executable(ObjectsGTEST  ObjectsGTEST.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
