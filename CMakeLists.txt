@@ -23,6 +23,7 @@ include_directories(ourpaint
         headers/saveload
         headers/UndoRedo
         headers/objects
+        headers/commands
         GUI/GUI_h
         GUI/GUI_h/Unnecessary
         GUI/GUI_h/client_server
@@ -48,7 +49,7 @@ add_executable(ourpaint
 
         src/painters/BMPpainter.cc
 
-        src/UndoRedo/Transactions.cc
+        src/UndoRedo/Transaction.cc
         src/UndoRedo/UndoRedoTemplate.cc
         src/UndoRedo/UndoRedo.cc
 
@@ -72,7 +73,7 @@ add_executable(ourpaint
         headers/BMPfile.h
 
         headers/UndoRedo/Command.h
-        headers/UndoRedo/Transactions.h
+        headers/UndoRedo/Transaction.h
         headers/UndoRedo/UndoRedoTemplate.h
         headers/UndoRedo/UndoRedo.h
 
@@ -85,6 +86,16 @@ add_executable(ourpaint
         headers/Scene.h
         headers/UndoRedo/UndoRedoTemplate.h
         headers/objects/BoundBox.h
+
+        ########### UNDO/REDO ###########
+
+        headers/commands/CommandAddObject.h
+        headers/commands/CommandAddPoint.h
+        headers/commands/CommandAddSection.h
+        headers/commands/CommandAddCircle.h
+        headers/commands/CommandAddArc.h
+
+        src/commands/CommandAddObject.cc
 
         ###########  GUI  ############
 

@@ -67,7 +67,7 @@ add_executable(SceneGTEST SceneGTEST.cc
 target_link_libraries(SceneGTEST GTest::gtest_main)
 
 #Test for UndoRedo
-add_executable(UndoRedoGTEST UndoRedoTests.cc ../src/UndoRedo/Transactions.cc ../src/UndoRedo/UndoRedo.cc)
+add_executable(UndoRedoGTEST UndoRedoTests.cc ../src/UndoRedo/Transaction.cc ../src/UndoRedo/UndoRedo.cc)
 target_link_libraries(UndoRedoGTEST GTest::gtest_main)
 
 #Test for UndoRedoTemplate

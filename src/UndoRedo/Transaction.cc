@@ -1,26 +1,27 @@
-#include "Transactions.h"
+#include "Transaction.h"
 
-Transaction::Transaction(std::string &&name) : name(std::move(name)), commands() {}
+Transaction::Transaction(std::string&& name) : name(std::move(name)), commands() {}
 
 Transaction::~Transaction() {
-    for (Command *cmd: commands) {
+    for (Command* cmd: commands) {
         delete cmd;
     }
 }
 
-Transaction::Transaction(Transaction &&other)
+Transaction::Transaction(Transaction&& other)
         : commands(std::move(other.commands)),
           name(std::move(other.name)),
           committed(other.committed) {
     other.committed = false;
 }
 
-Transaction &Transaction::operator=(Transaction &&other) {
+Transaction& Transaction::operator=(Transaction&& other) {
     if (this != &other) {
-        for (Command *cmd: commands) {
+        for (Command* cmd: commands) {
             delete cmd;
         }
         commands = std::move(other.commands);
+        other.commands.clear();
         name = std::move(other.name);
         committed = other.committed;
         other.committed = false;
@@ -28,7 +29,7 @@ Transaction &Transaction::operator=(Transaction &&other) {
     return *this;
 }
 
-void Transaction::addCommand(Command *cmd) {
+void Transaction::addCommand(Command* cmd) {
     if (!cmd) {
         throw std::invalid_argument("Command cannot be null");
     }
@@ -43,7 +44,7 @@ void Transaction::commit() {
         throw std::logic_error("Transaction already committed");
     }
     try {
-        for (auto &cmd: commands) {
+        for (auto& cmd: commands) {
             cmd->execute();
         }
         committed = true;
@@ -67,7 +68,7 @@ bool Transaction::redo() {
     if (!committed) {
         return false;
     }
-    for (Command *cmd: commands) {
+    for (Command* cmd: commands) {
         cmd->redo();
     }
     return true;

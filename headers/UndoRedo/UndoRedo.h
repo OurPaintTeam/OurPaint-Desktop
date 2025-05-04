@@ -1,13 +1,13 @@
 #ifndef OURPAINT_HEADERS_UNDOREDO_HISTORYMANAGER_H_
 #define OURPAINT_HEADERS_UNDOREDO_HISTORYMANAGER_H_
 
-#include "Transactions.h"
+#include "Transaction.h"
 #include <stack>
 
 class UndoRedo {
 private:
     unsigned int maxSteps;
-    std::stack<Transaction> transactions_undo;
+    std::deque<Transaction> transactions_undo;
     std::stack<Transaction> transactions_redo;
 
 public:

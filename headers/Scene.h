@@ -16,7 +16,6 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-
 class Scene {
 private:
     std::unordered_map<ID, Point*> _points;
@@ -38,13 +37,20 @@ private:
     IDGenerator _idGeometricObjectsGenerator;
     IDGenerator _idRequirementsGenerator;
 
+    std::unordered_set<ID> _idDeletedGeometricObject;
+
     UndirectedWeightedGraph<ID, ID> _graph;
+
+public:
+    static const ID _errorID;
+    static const ID _autoID;
+    static const ID _connectionEdgeID;
 
 public:
     Scene(Painter* p);
     ~Scene();
 
-    ID addObject(const ObjectData& objData);
+    ID addObject(const ObjectData&, ID id = Scene::_autoID);
     bool deleteObject(ID objectID);
     bool deletePoint(ID pointID);
     bool deleteSection(ID sectionID);
@@ -60,12 +66,12 @@ public:
 
     void paint() const;
 
-    const IGeometricObject* getObject(ID objectID) const;
-    std::unordered_map<ID, const IGeometricObject*> getAllObjects() const;
-    std::unordered_map<ID, const Point*> getPoints() const;
-    std::unordered_map<ID, const Section*> getSections() const;
-    std::unordered_map<ID, const Circle*> getCircles() const;
-    std::unordered_map<ID, const Arc *> getArcs() const;
+    ObjectData getObjectData(ID objectID) const;
+
+    // TODO getAllObjects
+    // TODO getPoints
+    // TODO getSections
+    // TODO getCircles
 
     std::size_t edgeCount() const;
     std::size_t vertexCount() const;
@@ -85,17 +91,14 @@ public:
 
     ID addRequirement(const RequirementData& reqData);
     void updateRequirements(ID objectID);
+    // TODO deleteRequirement
+    // TODO getRequirement
+    // TODO getAllRequirements
 
     std::string to_string() const;
 
     void saveToFile(const char* filename) const;
     void loadFromFile(const char* filename);
-
-    // TODO ---------------------------------------------------------------
-
-    //IReq getRequirementInfo(ID id) const;
-    //std::vector<std::pair<ID, IReq>> getAllRequirementsInfo() const;
-    //void deleteRequirement(ID reqID);
 };
 
 #endif // ! OURPAINT_HEADERS_SCENE_H_

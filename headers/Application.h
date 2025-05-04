@@ -17,6 +17,15 @@
 #include "Scene.h"
 #include "Painter.h"
 
+#include "UndoRedo.h"
+#include "Transaction.h"
+#include "Command.h"
+#include "CommandAddObject.h"
+#include "CommandAddPoint.h"
+#include "CommandAddSection.h"
+#include "CommandAddCircle.h"
+#include "CommandAddArc.h"
+
 class Application {
 private:
     QApplication app;
@@ -31,6 +40,8 @@ private:
     QString username;
     Server server;
     Client client;
+
+    UndoRedo undoRedo;
 
     void initialize();
     void initLogger();
