@@ -26,7 +26,7 @@ add_executable(ObjectsGTEST  ObjectsGTEST.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
 )
-target_include_directories(ObjectsGTEST PRIVATE ../headers/objects)
+target_include_directories(ObjectsGTEST PRIVATE ../headers/objects ../Math/headers)
 target_link_libraries(ObjectsGTEST GTest::gtest_main)
 
 
