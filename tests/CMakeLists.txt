@@ -55,6 +55,7 @@ target_include_directories(SceneGTEST PRIVATE
         ../headers/painters
         ../headers/saveload
 
+        ../Math/headers/decomposition
         ../Math/headers
         ../Math/headers/graph
         ../Math/headers/optimizers
