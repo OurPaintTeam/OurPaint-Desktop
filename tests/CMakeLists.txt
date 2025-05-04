@@ -72,6 +72,6 @@ target_link_libraries(UndoRedoGTEST GTest::gtest_main)
 
 
 #Test for UndoRedoTemplate
-add_executable(UndoRedoTemplateGTEST UndoRedoGTEST.cc ../src/UndoRedo)
+add_executable(UndoRedoTemplateGTEST UndoRedoGTEST.cc ../src/UndoRedo/UndoRedoTemplate.cc)
 target_include_directories(UndoRedoTemplateGTEST PRIVATE ../headers/UndoRedo)
 target_link_libraries(UndoRedoTemplateGTEST GTest::gtest_main)
