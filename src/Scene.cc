@@ -81,27 +81,17 @@ ID Scene::addObject(const ObjectData& objData, ID wantedID) {
                 newID = wantedID;
             }
 
-            Point* p = new Point(objData.params[0], objData.params[1]);
-            _points[newID] = p;
-            _graph.addVertex(newID);
+            addPoint(objData, newID);
 
-            _allFiguresRectangle = _allFiguresRectangle | p->getBox();
-            _isComponentsDirty = true;
             return newID;
         }
         case ET_SECTION: {
             if (objData.params.size() < 4) {
                 throw std::invalid_argument("Section requires 4 coordinates");
             }
-            Point* p1 = new Point(objData.params[0], objData.params[1]);
-            ID pID1 = _idGeometricObjectsGenerator.generate();
-            _points[pID1] = p1;
-            _graph.addVertex(pID1);
 
-            Point* p2 = new Point(objData.params[2], objData.params[3]);
+            ID pID1 = _idGeometricObjectsGenerator.generate();
             ID pID2 = _idGeometricObjectsGenerator.generate();
-            _points[pID2] = p2;
-            _graph.addVertex(pID2);
 
             ID newID;
             if (wantedID == Scene::_autoID) {
@@ -110,25 +100,16 @@ ID Scene::addObject(const ObjectData& objData, ID wantedID) {
                 newID = wantedID;
             }
 
-            Section* s = new Section(p1, p2);
-            _sections[newID] = s;
-            _graph.addVertex(newID);
+            addSection(objData, pID1, pID2, newID);
 
-            _graph.addEdge(pID1, newID, _connectionEdgeID);
-            _graph.addEdge(pID2, newID, _connectionEdgeID);
-
-            _allFiguresRectangle = _allFiguresRectangle | s->getBox();
-            _isComponentsDirty = true;
             return newID;
         }
         case ET_CIRCLE: {
             if (objData.params.size() < 3) {
                 throw std::invalid_argument("Circle requires center and radius");
             }
-            Point* p = new Point(objData.params[0], objData.params[1]);
+
             ID pID = _idGeometricObjectsGenerator.generate();
-            _points[pID] = p;
-            _graph.addVertex(pID);
 
             ID newID;
             if (wantedID == Scene::_autoID) {
@@ -137,35 +118,18 @@ ID Scene::addObject(const ObjectData& objData, ID wantedID) {
                 newID = wantedID;
             }
 
-            Circle* c = new Circle(p, objData.params[2]);
-            _circles[newID] = c;
-            _graph.addVertex(newID);
+            addCircle(objData, pID, newID);
 
-            _graph.addEdge(pID, newID, _connectionEdgeID);
-
-            _allFiguresRectangle = _allFiguresRectangle | c->getBox();
-            _isComponentsDirty = true;
             return newID;
         }
         case ET_ARC: {
             if (objData.params.size() < 5) {
                 throw std::invalid_argument("Arc requires first point, second point, center and radius");
             }
-            Point* p1 = new Point(objData.params[0], objData.params[1]);
-            Point* p2 = new Point(objData.params[2], objData.params[3]);
-            Point* p3 = new Point(objData.params[4], objData.params[5]);
-
-            ID pID1 = _idGeometricObjectsGenerator.generate();
-            _points[pID1] = p1;
-            _graph.addVertex(pID1);
-
-            ID pID2 = _idGeometricObjectsGenerator.generate();
-            _points[pID2] = p2;
-            _graph.addVertex(pID2);
 
             ID pID3 = _idGeometricObjectsGenerator.generate();
-            _points[pID3] = p3;
-            _graph.addVertex(pID3);
+            ID pID1 = _idGeometricObjectsGenerator.generate();
+            ID pID2 = _idGeometricObjectsGenerator.generate();
 
             ID newID;
             if (wantedID == Scene::_autoID) {
@@ -174,20 +138,83 @@ ID Scene::addObject(const ObjectData& objData, ID wantedID) {
                 newID = wantedID;
             }
 
-            Arc* a = new Arc(p1, p2, p3, objData.params[6]);
-            _arcs[newID] = a;
-            _graph.addVertex(newID);
+            addArc(objData, pID1, pID2, pID3, newID);
 
-            _graph.addEdge(pID1, newID, _connectionEdgeID);
-            _graph.addEdge(pID2, newID, _connectionEdgeID);
-            _graph.addEdge(pID3, newID, _connectionEdgeID);
-            _allFiguresRectangle = _allFiguresRectangle | a->getBox();
-            _isComponentsDirty = true;
             return newID;
         }
         default:
             throw std::invalid_argument("Unknown object type");
     }
+}
+
+void Scene::addPoint(ObjectData data, ID id) {
+    Point* p = new Point(data.params[0], data.params[1]);
+    _points[id] = p;
+    _graph.addVertex(id);
+    _allFiguresRectangle = _allFiguresRectangle | p->getBox();
+    _isComponentsDirty = true;
+}
+
+void Scene::addSection(ObjectData data, ID pID1, ID pID2, ID sectionID) {
+    Point* p1 = new Point(data.params[0], data.params[1]);
+    _points[pID1] = p1;
+    _graph.addVertex(pID1);
+
+
+    Point* p2 = new Point(data.params[2], data.params[3]);
+    _points[pID2] = p2;
+    _graph.addVertex(pID2);
+
+
+    Section* s = new Section(p1, p2);
+    _sections[sectionID] = s;
+    _graph.addVertex(sectionID);
+
+    _graph.addEdge(pID1, sectionID, _connectionEdgeID);
+    _graph.addEdge(pID2, sectionID, _connectionEdgeID);
+
+    _allFiguresRectangle = _allFiguresRectangle | s->getBox();
+    _isComponentsDirty = true;
+}
+
+void Scene::addCircle(ObjectData data, ID pointID, ID circleID) {
+    Point* p = new Point(data.params[0], data.params[1]);
+    _points[pointID] = p;
+    _graph.addVertex(pointID);
+
+    Circle* c = new Circle(p, data.params[2]);
+    _circles[circleID] = c;
+    _graph.addVertex(circleID);
+
+    _graph.addEdge(pointID, circleID, _connectionEdgeID);
+
+    _allFiguresRectangle = _allFiguresRectangle | c->getBox();
+    _isComponentsDirty = true;
+}
+
+void Scene::addArc(ObjectData data, ID pointID1, ID pointID2, ID pointID3, ID arcID) {
+    Point* p1 = new Point(data.params[0], data.params[1]);
+    Point* p2 = new Point(data.params[2], data.params[3]);
+    Point* p3 = new Point(data.params[4], data.params[5]);
+
+    _points[pointID1] = p1;
+    _graph.addVertex(pointID1);
+
+    _points[pointID2] = p2;
+    _graph.addVertex(pointID2);
+
+    _points[pointID3] = p3;
+    _graph.addVertex(pointID3);
+
+    Arc* a = new Arc(p1, p2, p3, data.params[6]);
+    _arcs[arcID] = a;
+    _graph.addVertex(arcID);
+
+    _graph.addEdge(pointID1, arcID, _connectionEdgeID);
+    _graph.addEdge(pointID2, arcID, _connectionEdgeID);
+    _graph.addEdge(pointID3, arcID, _connectionEdgeID);
+    _allFiguresRectangle = _allFiguresRectangle | a->getBox();
+    _isComponentsDirty = true;
 }
 
 bool Scene::deleteObject(ID objectID) {
@@ -642,10 +669,23 @@ void Scene::setCircle(ID circleID, double x, double y, double r) {
 }
 
 ID Scene::addRequirement(const RequirementData& reqData, const bool updateRequirementFlag) {
-    IReq* requirement = nullptr;
     if (reqData.objects.size() < 2) {
         throw std::invalid_argument("Insufficient data for requirement");
     }
+
+    ID newID = _idRequirementsGenerator.generate();
+
+    addReq(reqData, newID);
+
+    if (updateRequirementFlag) {
+        updateRequirements(ID(reqData.objects[0]));
+    }
+    return newID;
+}
+
+void Scene::addReq(const RequirementData& reqData, ID reqID) {
+    IReq* requirement = nullptr;
+
     ID id1(reqData.objects[0]);
     ID id2(reqData.objects[1]);
 
@@ -919,15 +959,10 @@ ID Scene::addRequirement(const RequirementData& reqData, const bool updateRequir
         throw std::invalid_argument("Invalid requirement data");
     }
 
-    ID newID = _idRequirementsGenerator.generate();
-    _graph.addEdge(id1, id2, newID);
-    _requirements[newID] = requirement;
+    _graph.addEdge(id1, id2, reqID);
+    _requirements[reqID] = requirement;
 
     _isComponentsDirty = true;
-    if (updateRequirementFlag) {
-        updateRequirements(id1);
-    }
-    return newID;
 }
 
 const Component& Scene::findComponentByID(ID id) {
@@ -987,7 +1022,6 @@ void Scene::updateRequirements(ID id) {
     if (component._errorRequirementFunctions.empty()) {
         return;
     }
-
 
     LSMFORLMTask* task = new LSMFORLMTask(component._errorRequirementFunctions, component._componentVars);
     LevenbergMarquardtSolver solver(10000, 0.5, 2, 4, 1e-07, 1e-07);
@@ -1082,63 +1116,90 @@ void Scene::loadFromFile(const char* filename) {
 
     loader.loadFromOurP(filename);
     clear();
+    ID maxID = ID(0);
     const std::vector<objectInFile>& vecObjectInFile = loader.getObjects();
-    std::queue<ObjectData> pointObjectData;
+    std::queue<std::pair<unsigned int, IGeometricObject*>> pointObjectData;
     for (auto& objInFile: vecObjectInFile) {
-        IGeometricObject* obj = objInFile.to_pair().second;
+        std::pair<unsigned int, IGeometricObject*> obj = objInFile.to_pair();
+        ID id = ID(objInFile.to_pair().first);
+        if (id > maxID) {
+            maxID = id;
+        }
         ObjectData objData;
-        if (obj->getType() == ET_POINT) {
-            Point* p = static_cast<Point*>(obj);
-            objData.et = ET_POINT;
-            objData.params.push_back(p->x);
-            objData.params.push_back(p->y);
+        if (obj.second->getType() == ET_POINT) {
             if (pointObjectData.size() > 2) {
-                addObject(pointObjectData.front());
+                Point* p = static_cast<Point*>(pointObjectData.front().second);
+                objData.et = ET_POINT;
+                objData.params.push_back(p->x);
+                objData.params.push_back(p->y);
+                addPoint(objData, ID(pointObjectData.front().first));
                 pointObjectData.pop();
             }
             else {
-                pointObjectData.push(objData);
+                pointObjectData.push(obj);
             }
         }
-        else if (obj->getType() == ET_SECTION) {
-            Section* s = static_cast<Section*>(obj);
+        else if (obj.second->getType() == ET_SECTION) {
+            Section* s = static_cast<Section*>(obj.second);
             objData.et = ET_SECTION;
             objData.params.push_back(s->beg->x);
             objData.params.push_back(s->beg->y);
             objData.params.push_back(s->end->x);
             objData.params.push_back(s->end->y);
+            ID id1 = ID(pointObjectData.front().first);
             pointObjectData.pop();
+            ID id2 = ID(pointObjectData.front().first);
             pointObjectData.pop();
-            addObject(objData);
+            addSection(objData, id1, id2, ID(obj.first));
         }
-        else if (obj->getType() == ET_CIRCLE) {
-            Circle* c = static_cast<Circle*>(obj);
+        else if (obj.second->getType() == ET_CIRCLE) {
+            Circle* c = static_cast<Circle*>(obj.second);
             objData.et = ET_CIRCLE;
             objData.params.push_back(c->center->x);
             objData.params.push_back(c->center->y);
             objData.params.push_back(c->r);
+            ID id1 = ID(pointObjectData.front().first);
             pointObjectData.pop();
-            addObject(objData);
+            addCircle(objData, id1, ID(pointObjectData.front().first));
         }
-        else if (obj->getType() == ET_ARC) {
-            Arc* a = static_cast<Arc*>(obj);
-            objData.et = ET_ARC;
-            objData.params.push_back(a->beg->x);
-            objData.params.push_back(a->beg->y);
-            objData.params.push_back(a->end->x);
-            objData.params.push_back(a->end->y);
-            objData.params.push_back(a->center->x);
-            objData.params.push_back(a->center->y);
-            objData.params.push_back(a->r);
-            addObject(objData);
+        else if (obj.second->getType() == ET_ARC) {
+            // TODO
         }
     }
 
 
+    _idGeometricObjectsGenerator.reset(maxID.get());
+
+    maxID = ID(0);
     const std::vector<requirementInFile> vecReqInFile = loader.getRequirements();
     for (auto& reqInFile : vecReqInFile) {
-        RequirementData rd = reqInFile.to_pair().second;
-        addRequirement(rd, false);
+        std::pair<unsigned int, RequirementData> pair = reqInFile.to_pair();
+        if (ID(pair.first) > maxID) {
+            maxID = ID(pair.first);
+        }
+        addReq(pair.second, ID(pair.first));
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

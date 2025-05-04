@@ -52,8 +52,8 @@ public:
         return ID(++last_id);
     }
 
-    void reset() {
-        last_id = 0;
+    void reset(long long int _id = 0) {
+        last_id = _id;
     }
 };
 

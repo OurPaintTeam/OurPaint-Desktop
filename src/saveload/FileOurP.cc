@@ -24,11 +24,9 @@ void FileOurP::parseFile(std::istream &file) {
             data >> type;
             if (type == "addreq") {
                 data >> type;
-                long long int i1, i2;
-                data >> i1;
-                data >> i2;
-                unsigned int id1(i1);
-                unsigned int id2(i2);
+                long long int id1, id2;
+                data >> id1;
+                data >> id2;
                 double param;
                 data >> param;
                 RequirementData req;

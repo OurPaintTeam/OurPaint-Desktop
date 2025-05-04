@@ -663,7 +663,6 @@ void Application::setupLeftMenuConnections() {
 }
 
 void Application::setupAddingCommandsConnections() {
-
     // Console
     QObject::connect(&mainWind, &MainWindow::EnterPressed, [&](const QString& command) {
         QStringList commandParts = command.split(' ');
@@ -696,12 +695,16 @@ void Application::setupAddingCommandsConnections() {
 
     //Load
     QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString& fileName) {
-        painter->clear();
-        std::string File = fileName.toStdString();
-        scene.loadFromFile(File.c_str());
-        painter->draw();
-        scene.paint();
-        mainWind.showSuccess("The project is loaded!");
+        try {
+            painter->clear();
+            std::string File = fileName.toStdString();
+            scene.loadFromFile(File.c_str());
+            painter->draw();
+            scene.paint();
+            mainWind.showSuccess("The project is loaded!");
+        } catch (std::exception& e) {
+            mainWind.showError(e.what());
+        }
     });
 
     // Script

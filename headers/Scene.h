@@ -99,6 +99,14 @@ public:
 
     void saveToFile(const char* filename) const;
     void loadFromFile(const char* filename);
+
+private:
+    void addPoint(ObjectData data, ID id);
+    void addSection(ObjectData data, ID pointID1, ID pointID2, ID sectionID);
+    void addCircle(ObjectData data, ID pointID, ID circleID);
+    void addArc(ObjectData data, ID pointID1, ID pointID2, ID pointID3, ID arcID);
+
+    void addReq(const RequirementData& reqData, ID reqID);
 };
 
 #endif // ! OURPAINT_HEADERS_SCENE_H_
