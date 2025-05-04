@@ -7,7 +7,6 @@
 #include "ID.h"
 #include "Objects.h"
 #include "BoundBox.h"
-#include "Painter.h"
 
 struct IGeometricObject {
     virtual ~IGeometricObject() = default;
