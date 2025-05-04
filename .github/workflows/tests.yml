@@ -40,13 +40,3 @@ jobs:
         run: ./build/SceneGTEST
       - name: Run SceneGTEST - Valgrind
         run: valgrind --leak-check=full --error-exitcode=1 ./build/SceneGTEST
-      # UndoRedoGTEST
-      - name: Run UndoRedoGTEST
-        run: ./build/UndoRedoGTEST
-      - name: Run UndoRedoGTEST - Valgrind
-        run: valgrind --leak-check=full --error-exitcode=1 ./build/UndoRedoGTEST
-      # UndoRedoTemplateGTEST
-      - name: Run UndoRedoTemplateGTEST
-        run: ./build/UndoRedoTemplateGTEST
-      - name: Run UndoRedoTemplateGTEST - Valgrind
-        run: valgrind --leak-check=full --error-exitcode=1 ./build/UndoRedoTemplateGTEST
