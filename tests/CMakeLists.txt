@@ -25,6 +25,8 @@ enable_testing()
 add_executable(ObjectsGTEST  ObjectsGTEST.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
+        ../Math/src/Function.cc
+        ../Math/src/ErrorFunctions.cc
 )
 target_include_directories(ObjectsGTEST PRIVATE ../headers/objects ../Math/headers)
 target_link_libraries(ObjectsGTEST GTest::gtest_main)
