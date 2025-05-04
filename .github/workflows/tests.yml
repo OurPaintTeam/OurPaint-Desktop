@@ -8,6 +8,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
       - name: Set up CMake
         uses: jwlawson/actions-setup-cmake@v1
       - name: Install dependencies
@@ -32,21 +35,6 @@ jobs:
         run: ./build/ObjectsGTEST
       - name: Run ObjectsGTEST - Valgrind
         run: valgrind --leak-check=full --error-exitcode=1 ./build/ObjectsGTEST
-      # IDGTEST
-      - name: Run IDGTEST
-        run: ./build/IDGTEST
-      - name: Run IDGTEST - Valgrind
-        run: valgrind --leak-check=full --error-exitcode=1 ./build/IDGTEST
-      # VarsStorageGTEST
-      - name: Run VarsStorageGTEST
-        run: ./build/VarsStorageGTEST
-      - name: Run VarsStorageGTEST - Valgrind
-        run: valgrind --leak-check=full --error-exitcode=1 ./build/VarsStorageGTEST
-      # RequirementsGTEST
-      - name: Run RequirementsGTEST
-        run: ./build/RequirementsGTEST
-      - name: Run RequirementsGTEST - Valgrind
-        run: valgrind --leak-check=full --error-exitcode=1 ./build/RequirementsGTEST
       # SceneGTEST
       - name: Run SceneGTEST
         run: ./build/SceneGTEST

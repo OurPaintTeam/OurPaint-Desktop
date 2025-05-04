@@ -19,9 +19,8 @@ endif()
 
 enable_testing()
 
-
-
 #Test for objects
+add_subdirectory(${CMAKE_SOURCE_DIR}/../Math ${CMAKE_BINARY_DIR}/Math)
 add_executable(ObjectsGTEST  ObjectsGTEST.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
@@ -29,7 +28,7 @@ add_executable(ObjectsGTEST  ObjectsGTEST.cc
         ../Math/src/ErrorFunctions.cc
 )
 target_include_directories(ObjectsGTEST PRIVATE ../headers/objects ../Math/headers)
-target_link_libraries(ObjectsGTEST GTest::gtest_main)
+target_link_libraries(ObjectsGTEST GTest::gtest_main Math)
 
 
 
