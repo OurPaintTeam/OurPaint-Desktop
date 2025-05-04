@@ -30,21 +30,33 @@ public:
 };
 
 class ChangeData1Command : public Command {
+private:
     TestStructure *target;
     int oldValue;
     int newValue;
-public:
-    ChangeData1Command(TestStructure *obj, int value) : target(obj), oldValue(obj->getData1()), newValue(value) {}
+protected:
 
-    void execute() override { target->changeData1(newValue); }
+    bool Execute() override {
+        target->changeData1(newValue);
+        return true;
+    }
 
-    void undo() override { target->changeData1(oldValue); }
+    bool Undo() override {
+        target->changeData1(oldValue);
+        return true;
+    }
 
-    void redo() override { target->changeData1(newValue); }
+    bool Redo() override {
+        target->changeData1(newValue);
+        return true;
+    }
 
     std::string description() const override {
         return "it changes TestStructure data1";
     }
+
+public:
+    ChangeData1Command(TestStructure *obj, int value) : target(obj), oldValue(obj->getData1()), newValue(value) {}
 };
 
 class ChangeData2Command : public Command {
@@ -54,11 +66,20 @@ class ChangeData2Command : public Command {
 public:
     ChangeData2Command(TestStructure *obj, int value) : target(obj), oldValue(obj->getData2()), newValue(value) {}
 
-    void execute() override { target->changeData2(newValue); }
+    bool Execute() override {
+        target->changeData2(newValue);
+        return true;
+    }
 
-    void undo() override { target->changeData2(oldValue); }
+    bool Undo() override {
+        target->changeData2(oldValue);
+        return true;
+    }
 
-    void redo() override { target->changeData2(newValue); }
+    bool Redo() override {
+        target->changeData2(newValue);
+        return true;
+    }
 
     std::string description() const override {
         return "it changes TestStructure data2";
@@ -72,11 +93,20 @@ class ChangeData3Command : public Command {
 public:
     ChangeData3Command(TestStructure *obj, int value) : target(obj), oldValue(obj->getData3()), newValue(value) {}
 
-    void execute() override { target->changeData3(newValue); }
+    bool Execute() override {
+        target->changeData3(newValue);
+        return true;
+    }
 
-    void undo() override { target->changeData3(oldValue); }
+    bool Undo() override {
+        target->changeData3(oldValue);
+        return true;
+    }
 
-    void redo() override { target->changeData3(newValue); }
+    bool Redo() override {
+        target->changeData3(newValue);
+        return true;
+    }
 
     std::string description() const override {
         return "it changes TestStructure data3";
