@@ -67,12 +67,11 @@ void Application::setupQTPainterConnections() {
         // Перемещение точки
         QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
 
-            double Cx = Scaling::logicCursorX();
-            double Cy = Scaling::logicCursorY();
+            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
 
             try {
                 for (int i = 0; i < vec_id.size(); ++i) {
-                    scene.setPoint(vec_id[i], Cx, Cy);
+                    scene.setPoint(vec_id[i], cursorNow.x(), cursorNow.y());
                     vecCalls.push_back([=, this]() {
                         // leftMenu->updateParametersById(vec_id[i].get(),{Cx,Cy});
                     });
@@ -87,11 +86,16 @@ void Application::setupQTPainterConnections() {
         // Перемещение отрезка
         QObject::connect(painter, &QTPainter::MovingSection, [this](std::vector<ID> vec_id,QPointF p1,QPointF p2) {
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
+            QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
             try {
+                if(vec_id.size()==1){
+                    scene.setSection(vec_id[0], cursorNow.x() + p1.x(),  cursorNow.y() + p1.y(),
+                                     cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
+                    return;
+                }
                 for (int i = 0; i < vec_id.size(); ++i) {
-                    scene.setSection(vec_id[i], cursorNow.x() + p1.x(),  cursorNow.y() + p1.y(),
-                                                             cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
+                    scene.moveSection(vec_id[i], delta.x(),delta.y());
                     vecCalls.push_back([=, this]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
@@ -105,14 +109,22 @@ void Application::setupQTPainterConnections() {
         });
 
         // Перемещение круга
-        QObject::connect(painter, &QTPainter::MovingCircle, [this](std::vector<ID> vec_id) {
+        QObject::connect(painter, &QTPainter::MovingCircle, [this](std::vector<ID> vec_id,QPointF offset) {
 
-            double dx = Scaling::logic(Scaling::getCursorDeltaX());
-            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
+            QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
             try {
+                if(vec_id.size()==1){
+                    ObjectData obj=scene.getObjectData(vec_id[0]);
+                    QPointF newCenter = cursorNow + offset;
+
+                    double radius = obj.params[2];
+                    scene.setCircle(vec_id[0], newCenter.x(), newCenter.y(), radius);
+                    return;
+                }
                 for (int i = 0; i < vec_id.size(); ++i) {
-                    scene.moveCircle(ID(vec_id[i]), dx, dy);
+                    scene.moveCircle(vec_id[i], delta.x(),delta.y());
                     vecCalls.push_back([=, this]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });

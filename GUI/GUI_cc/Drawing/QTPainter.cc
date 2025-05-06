@@ -415,11 +415,17 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         if (!drawing) {
             if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
                 drawing = true;
-              if(sectionStorage->contains(selectedIDSection[0])){
+                QPointF cursorPressPos = QPointF(Scaling::logicCursorX(), Scaling::logicCursorY());
+
+              if(!selectedIDSection.empty() && sectionStorage->contains(selectedIDSection[0])){
                   Section* s = (*sectionStorage)[selectedIDSection[0]];
-                  QPointF cursorPressPos = QPointF(Scaling::logicCursorX(), Scaling::logicCursorY());
                   LineVecBeg = QPointF(s->beg->x,s->beg->y)  - cursorPressPos;
                   LineVecEnd = QPointF(s->end->x,s->end->y)  - cursorPressPos;
+              }
+              if(!selectedIDCircle.empty() && circleStorage->contains(selectedIDCircle[0])){
+                  Circle* c = (*circleStorage)[selectedIDCircle[0]];
+                  QPointF center(c->center->x, c->center->y);
+                  VecCircle = center - cursorPressPos;
               }
             } else {
                 selectedClear();
@@ -433,7 +439,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                     emit MovingPoint(selectedIDPoint);
                 }
                 if (!selectedIDCircle.empty()) {
-                    emit MovingCircle(selectedIDCircle);
+                    emit MovingCircle(selectedIDCircle,VecCircle);
                 }
                 if (!selectedIDArc.empty()) {
                     emit MovingArc(selectedIDArc);

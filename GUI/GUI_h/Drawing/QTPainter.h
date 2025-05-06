@@ -45,6 +45,7 @@ private:
 
      QPointF LineVecBeg;
      QPointF LineVecEnd;
+     QPointF VecCircle;
 
     // Класс для отрисовки мышкой
     DrawMouse drawFigM;
@@ -101,7 +102,7 @@ signals:
     // Перемещение
     void MovingPoint(const std::vector<ID>& selectedIDPoints);
     void MovingSection(const std::vector<ID>& selectedIDSections,QPointF&,QPointF&);
-    void MovingCircle(const std::vector<ID>& selectedIDCircles);
+    void MovingCircle(const std::vector<ID>& selectedIDCircles,QPointF&);
     void MovingArc(const std::vector<ID>& selectedIDArcs);
 
     // При отрисовке мышкой
