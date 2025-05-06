@@ -85,14 +85,13 @@ void Application::setupQTPainterConnections() {
         });
 
         // Перемещение отрезка
-        QObject::connect(painter, &QTPainter::MovingSection, [this](std::vector<ID> vec_id) {
-
-            double dx = Scaling::logic(Scaling::getCursorDeltaX());
-            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+        QObject::connect(painter, &QTPainter::MovingSection, [this](std::vector<ID> vec_id,QPointF p1,QPointF p2) {
+            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
 
             try {
                 for (int i = 0; i < vec_id.size(); ++i) {
-                    scene.moveSection(vec_id[i], dx, dy);
+                    scene.setSection(vec_id[i], cursorNow.x() + p1.x(),  cursorNow.y() + p1.y(),
+                                                             cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
                     vecCalls.push_back([=, this]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });

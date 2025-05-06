@@ -43,6 +43,9 @@ private:
      std::unordered_map<ID,  Arc*>* arcStorage;
      const BoundBox2D* Rectangle;
 
+     QPointF LineVecBeg;
+     QPointF LineVecEnd;
+
     // Класс для отрисовки мышкой
     DrawMouse drawFigM;
     bool drawing=false;
@@ -97,7 +100,7 @@ signals:
 
     // Перемещение
     void MovingPoint(const std::vector<ID>& selectedIDPoints);
-    void MovingSection(const std::vector<ID>& selectedIDSections);
+    void MovingSection(const std::vector<ID>& selectedIDSections,QPointF&,QPointF&);
     void MovingCircle(const std::vector<ID>& selectedIDCircles);
     void MovingArc(const std::vector<ID>& selectedIDArcs);
 

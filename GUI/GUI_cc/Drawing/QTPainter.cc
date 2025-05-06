@@ -415,13 +415,19 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         if (!drawing) {
             if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
                 drawing = true;
+              if(sectionStorage->contains(selectedIDSection[0])){
+                  Section* s = (*sectionStorage)[selectedIDSection[0]];
+                  QPointF cursorPressPos = QPointF(Scaling::logicCursorX(), Scaling::logicCursorY());
+                  LineVecBeg = QPointF(s->beg->x,s->beg->y)  - cursorPressPos;
+                  LineVecEnd = QPointF(s->end->x,s->end->y)  - cursorPressPos;
+              }
             } else {
                 selectedClear();
             }
         } else {
             if (!ModeManager::getActiveMode(MouseMode::ReleasingLeft)) {
                 if (!selectedIDSection.empty()) {
-                    emit MovingSection(selectedIDSection);
+                    emit MovingSection(selectedIDSection, LineVecBeg, LineVecEnd);
                 }
                 if (!selectedIDPoint.empty()) {
                     emit MovingPoint(selectedIDPoint);
