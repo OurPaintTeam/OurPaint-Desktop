@@ -1,5 +1,5 @@
-#ifndef OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_OBJECT_
-#define OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_OBJECT_
+#ifndef OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_OBJECT_
+#define OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_OBJECT_
 
 #include "Command.h"
 #include "Scene.h"
@@ -23,7 +23,7 @@ protected:
 public:
     CommandAddObject(Scene& scene, ObjectData data) : _scene(scene), _data(data) {}
 
-    std::string description() const { return "Add object to scene"; };
+    std::string description() const override { return "Add object to scene"; };
 };
 
-#endif // ! OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_OBJECT_
+#endif // ! OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_OBJECT_

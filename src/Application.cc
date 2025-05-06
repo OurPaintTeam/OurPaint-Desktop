@@ -36,10 +36,8 @@ void Application::initialize() {
     app.setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
 
     painter = mainWind.getQTPainter();
-    Scene scene_copy(painter);
-    leftMenu = mainWind.getLeftMenuBar();
-    scene = scene_copy;
     scene.setPainter(painter);
+    leftMenu = mainWind.getLeftMenuBar();
     mainWind.show();
     mainWind.resize();
 
@@ -367,30 +365,39 @@ void Application::setupQTPainterConnections() {
 
     // Удаление элемента
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
-
         std::vector<ID> vecPoint = painter->getVecIDPoints();
         std::vector<ID> vecSection = painter->getVecIDSections();
         std::vector<ID> vecCircle = painter->getVecIDCircles();
 
+        Transaction txn("Delete objects");
+
         for (int i = 0; i < vecPoint.size(); ++i) {
-            scene.deletePoint(vecPoint[i]);
+            CommandDeletePoint* cmd = new CommandDeletePoint(scene, vecPoint[i]);
+            txn.addCommand(cmd);
+
             vecCalls.push_back([=, this]() {
                 leftMenu->removeFigureById(vecPoint[i].get());
             });
-
         }
         for (int i = 0; i < vecSection.size(); ++i) {
-            scene.deleteSection(vecSection[i]);
+            CommandDeleteSection* cmd = new CommandDeleteSection(scene, vecSection[i]);
+            txn.addCommand(cmd);
+
             vecCalls.push_back([=, this]() {
                 leftMenu->removeFigureById(vecSection[i].get());
             });
         }
         for (int i = 0; i < vecCircle.size(); ++i) {
-            scene.deleteCircle(vecCircle[i]);
+            CommandDeleteCircle* cmd = new CommandDeleteCircle(scene, vecCircle[i]);
+            txn.addCommand(cmd);
+
             vecCalls.push_back([=, this]() {
                 leftMenu->removeFigureById(vecCircle[i].get());
             });
         }
+
+        undoRedo.push(std::move(txn));
+
         painter->selectedClear();
         painter->draw();
         updateState();
@@ -604,10 +611,7 @@ void Application::setupRequirementsConnections() {
             if (pairID) {
                 InputWindow window("Enter parameters: ");
                 if (window.exec() == QDialog::Accepted) {
-                    bool ok = false;
-                    double parameters = window.getText().toDouble(&ok);
-                    if (!ok) return;
-                    addRequirement(ET_SECTIONONCIRCLE, pairID->first, pairID->second, parameters);
+                    addRequirement(ET_SECTIONONCIRCLE, pairID->first, pairID->second);
                     updateState();
                 }
             }
@@ -750,7 +754,7 @@ void Application::setupAddingCommandsConnections() {
         scene.paint();
     });
 
-    //UNDO
+    // UNDO
     QObject::connect(&mainWind, &MainWindow::UNDO, [this]() {
         bool b = undoRedo.undo();
         if (!b) {
