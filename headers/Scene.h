@@ -12,7 +12,7 @@
 #include "FileOurP.h"
 #include "objectInFile.h"
 #include "Component.h"
-
+#include "LMWithSparse.h"
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>

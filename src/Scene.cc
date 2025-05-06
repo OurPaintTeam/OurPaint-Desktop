@@ -1024,7 +1024,7 @@ void Scene::updateRequirements(ID id) {
     }
 
     LSMFORLMTask* task = new LSMFORLMTask(component._errorRequirementFunctions, component._componentVars);
-    LevenbergMarquardtSolver solver(10000, 0.5, 2, 4, 1e-07, 1e-07);
+    LMSparse solver(10000, 1e-3,  1e-06, 1e-06);
     solver.setTask(task);
     solver.optimize();
 
