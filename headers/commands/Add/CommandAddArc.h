@@ -1,5 +1,5 @@
-#ifndef OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_ARC_
-#define OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_ARC_
+#ifndef OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_ARC_
+#define OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_ARC_
 
 #include "CommandAddObject.h"
 
@@ -24,4 +24,4 @@ public:
     std::string description() const override { return "Add arc to scene"; }
 };
 
-#endif // ! OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_ARC_
+#endif // ! OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_ARC_

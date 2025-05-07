@@ -36,10 +36,8 @@ void Application::initialize() {
     app.setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
 
     painter = mainWind.getQTPainter();
-    Scene scene_copy(painter);
-    leftMenu = mainWind.getLeftMenuBar();
-    scene = scene_copy;
     scene.setPainter(painter);
+    leftMenu = mainWind.getLeftMenuBar();
     mainWind.show();
     mainWind.resize();
 
@@ -67,12 +65,11 @@ void Application::setupQTPainterConnections() {
         // Перемещение точки
         QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
 
-            double Cx = Scaling::logicCursorX();
-            double Cy = Scaling::logicCursorY();
+            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
 
             try {
                 for (int i = 0; i < vec_id.size(); ++i) {
-                    scene.setPoint(vec_id[i], Cx, Cy);
+                    scene.setPoint(vec_id[i], cursorNow.x(), cursorNow.y());
                     vecCalls.push_back([=, this]() {
                         // leftMenu->updateParametersById(vec_id[i].get(),{Cx,Cy});
                     });
@@ -85,14 +82,18 @@ void Application::setupQTPainterConnections() {
         });
 
         // Перемещение отрезка
-        QObject::connect(painter, &QTPainter::MovingSection, [this](std::vector<ID> vec_id) {
-
-            double dx = Scaling::logic(Scaling::getCursorDeltaX());
-            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+        QObject::connect(painter, &QTPainter::MovingSection, [this](std::vector<ID> vec_id,QPointF p1,QPointF p2) {
+            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
+            QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
             try {
+                if(vec_id.size()==1){
+                    scene.setSection(vec_id[0], cursorNow.x() + p1.x(),  cursorNow.y() + p1.y(),
+                                     cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
+                    return;
+                }
                 for (int i = 0; i < vec_id.size(); ++i) {
-                    scene.moveSection(vec_id[i], dx, dy);
+                    scene.moveSection(vec_id[i], delta.x(),delta.y());
                     vecCalls.push_back([=, this]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
@@ -106,14 +107,22 @@ void Application::setupQTPainterConnections() {
         });
 
         // Перемещение круга
-        QObject::connect(painter, &QTPainter::MovingCircle, [this](std::vector<ID> vec_id) {
+        QObject::connect(painter, &QTPainter::MovingCircle, [this](std::vector<ID> vec_id,QPointF offset) {
 
-            double dx = Scaling::logic(Scaling::getCursorDeltaX());
-            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
+            QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
             try {
+                if(vec_id.size()==1){
+                    ObjectData obj=scene.getObjectData(vec_id[0]);
+                    QPointF newCenter = cursorNow + offset;
+
+                    double radius = obj.params[2];
+                    scene.setCircle(vec_id[0], newCenter.x(), newCenter.y(), radius);
+                    return;
+                }
                 for (int i = 0; i < vec_id.size(); ++i) {
-                    scene.moveCircle(ID(vec_id[i]), dx, dy);
+                    scene.moveCircle(vec_id[i], delta.x(),delta.y());
                     vecCalls.push_back([=, this]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
@@ -356,30 +365,39 @@ void Application::setupQTPainterConnections() {
 
     // Удаление элемента
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
-
         std::vector<ID> vecPoint = painter->getVecIDPoints();
         std::vector<ID> vecSection = painter->getVecIDSections();
         std::vector<ID> vecCircle = painter->getVecIDCircles();
 
+        Transaction txn("Delete objects");
+
         for (int i = 0; i < vecPoint.size(); ++i) {
-            scene.deletePoint(vecPoint[i]);
+            CommandDeletePoint* cmd = new CommandDeletePoint(scene, vecPoint[i]);
+            txn.addCommand(cmd);
+
             vecCalls.push_back([=, this]() {
                 leftMenu->removeFigureById(vecPoint[i].get());
             });
-
         }
         for (int i = 0; i < vecSection.size(); ++i) {
-            scene.deleteSection(vecSection[i]);
+            CommandDeleteSection* cmd = new CommandDeleteSection(scene, vecSection[i]);
+            txn.addCommand(cmd);
+
             vecCalls.push_back([=, this]() {
                 leftMenu->removeFigureById(vecSection[i].get());
             });
         }
         for (int i = 0; i < vecCircle.size(); ++i) {
-            scene.deleteCircle(vecCircle[i]);
+            CommandDeleteCircle* cmd = new CommandDeleteCircle(scene, vecCircle[i]);
+            txn.addCommand(cmd);
+
             vecCalls.push_back([=, this]() {
                 leftMenu->removeFigureById(vecCircle[i].get());
             });
         }
+
+        undoRedo.push(std::move(txn));
+
         painter->selectedClear();
         painter->draw();
         updateState();
@@ -593,10 +611,7 @@ void Application::setupRequirementsConnections() {
             if (pairID) {
                 InputWindow window("Enter parameters: ");
                 if (window.exec() == QDialog::Accepted) {
-                    bool ok = false;
-                    double parameters = window.getText().toDouble(&ok);
-                    if (!ok) return;
-                    addRequirement(ET_SECTIONONCIRCLE, pairID->first, pairID->second, parameters);
+                    addRequirement(ET_SECTIONONCIRCLE, pairID->first, pairID->second);
                     updateState();
                 }
             }
@@ -739,7 +754,7 @@ void Application::setupAddingCommandsConnections() {
         scene.paint();
     });
 
-    //UNDO
+    // UNDO
     QObject::connect(&mainWind, &MainWindow::UNDO, [this]() {
         bool b = undoRedo.undo();
         if (!b) {

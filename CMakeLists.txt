@@ -24,6 +24,8 @@ include_directories(ourpaint
         headers/UndoRedo
         headers/objects
         headers/commands
+        headers/commands/Add
+        headers/commands/Delete
         GUI/GUI_h
         GUI/GUI_h/Unnecessary
         GUI/GUI_h/client_server
@@ -89,13 +91,19 @@ add_executable(ourpaint
 
         ########### UNDO/REDO ###########
 
-        headers/commands/CommandAddObject.h
-        headers/commands/CommandAddPoint.h
-        headers/commands/CommandAddSection.h
-        headers/commands/CommandAddCircle.h
-        headers/commands/CommandAddArc.h
+        headers/commands/Add/CommandAddObject.h
+        headers/commands/Add/CommandAddPoint.h
+        headers/commands/Add/CommandAddSection.h
+        headers/commands/Add/CommandAddCircle.h
+        headers/commands/Add/CommandAddArc.h
 
-        src/commands/CommandAddObject.cc
+        headers/commands/Delete/CommandDeletePoint.h
+        headers/commands/Delete/CommandDeleteSection.h
+        headers/commands/Delete/CommandDeleteCircle.h
+        headers/commands/Delete/CommandDeleteArc.h
+
+        src/commands/Add/CommandAddObject.cc
+        src/commands/Delete/CommandDeleteObject.cc
 
         ###########  GUI  ############
 

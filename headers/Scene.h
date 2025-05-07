@@ -13,8 +13,12 @@
 #include "objectInFile.h"
 #include "LMWithSparse.h"
 #include "Component.h"
+<<<<<<< HEAD
 #include "enums.h"
 
+=======
+#include "LMWithSparse.h"
+>>>>>>> 0a8c139434e958cb7810c928daf79eadaaa67d2e
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
