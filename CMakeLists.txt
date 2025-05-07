@@ -164,7 +164,6 @@ add_executable(ourpaint
         GUI/GUI_h/Drawing/Scaling.h
         GUI/GUI_h/Drawing/QTPainter.h
         GUI/GUI_h/Drawing/DrawMouse.h
-        GUI/GUI_h/Drawing/DrawMode.h
         GUI/GUI_h/Drawing/SelectedRectangle.h
 
 
