@@ -11,7 +11,9 @@
 #include "LMForTest.h"
 #include "FileOurP.h"
 #include "objectInFile.h"
+#include "LMWithSparse.h"
 #include "Component.h"
+#include "enums.h"
 
 #include <vector>
 #include <unordered_map>

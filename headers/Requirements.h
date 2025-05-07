@@ -169,5 +169,20 @@ public:
     double getDimension() const override;
 };
 
+class ReqArcCenterOnPerpendicular : public IReq {
+public:
+    ReqArcCenterOnPerpendicular(Point* p1, Point* p2, Point* p3);
+    ErrorFunctions* getFunction() override;
+    std::vector<PARAM_ID> getParams() override;
+    Requirement getType() const override;
+    std::vector<IGeometricObject*> getObjects() override;
+    std::vector<Variable*> getVariables() override;
+    double getDimension() const override;
+
+private:
+    Point* m_p1;
+    Point* m_p2;
+    Point* m_p3;
+};
 
 #endif // ! OURPAINT_HEADERS_REQUIREMENTS_H_
