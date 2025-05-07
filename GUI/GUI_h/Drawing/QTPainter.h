@@ -51,18 +51,18 @@ private:
     DrawMouse drawFigM;
     bool drawing=false;
 
-    SelectedRectangle SelectedRectangle;
+    SelectedRectangle selectedRectangle;
 
     std::chrono::steady_clock::time_point lastClickTime;
 
 public:
     QTPainter(QWidget *parent);
 
-    std::vector<ID>& getVecIDPoints();
-    std::vector<ID>& getVecIDSections();
-    std::vector<ID>& getVecIDCircles();
+    std::vector<ID>& getVecSelectedIDPoints();
+    std::vector<ID>& getVecSelectedIDSections();
+    std::vector<ID>& getVecSelectedIDCircles();
     std::optional<std::pair<ID, ID>> getPairID();
-
+    Point *p=new Po;
     void draw();
     void clear();
 

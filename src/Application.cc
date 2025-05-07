@@ -368,9 +368,9 @@ void Application::setupQTPainterConnections() {
     // Удаление элемента
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
 
-        std::vector<ID> vecPoint = painter->getVecIDPoints();
-        std::vector<ID> vecSection = painter->getVecIDSections();
-        std::vector<ID> vecCircle = painter->getVecIDCircles();
+        std::vector<ID> vecPoint = painter->getVecSelectedIDPoints();
+        std::vector<ID> vecSection = painter->getVecSelectedIDSections();
+        std::vector<ID> vecCircle = painter->getVecSelectedIDCircles();
 
         for (int i = 0; i < vecPoint.size(); ++i) {
             scene.deletePoint(vecPoint[i]);
@@ -561,7 +561,7 @@ void Application::setupRequirementsConnections() {
                     updateState();
                 }
             } else {
-                std::vector<ID> vec_id = painter->getVecIDSections();
+                std::vector<ID> vec_id = painter->getVecSelectedIDSections();
                 if (vec_id.size() == 1) {
                     InputWindow window("Enter parameters: ");
                     if (window.exec() == QDialog::Accepted) {

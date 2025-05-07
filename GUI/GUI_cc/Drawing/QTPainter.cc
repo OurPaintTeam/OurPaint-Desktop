@@ -26,15 +26,15 @@ QTPainter::QTPainter(QWidget *parent) : QFrame(parent), circleStorage(nullptr),
     Scaling::setStartMonitorSize((short int) width(), (short int) height());
 }
 
-std::vector<ID> &QTPainter::getVecIDPoints() {
+std::vector<ID> &QTPainter::getVecSelectedIDPoints() {
     return selectedIDPoint;
 }
 
-std::vector<ID> &QTPainter::getVecIDSections() {
+std::vector<ID> &QTPainter::getVecSelectedIDSections() {
     return selectedIDSection;
 }
 
-std::vector<ID> &QTPainter::getVecIDCircles() {
+std::vector<ID> &QTPainter::getVecSelectedIDCircles() {
     return selectedIDCircle;
 }
 
@@ -72,7 +72,7 @@ void QTPainter::clear() {
     selectedClear();
     Scaling::setZoomZero();
 
-    SelectedRectangle.clear();
+    selectedRectangle.clear();
 }
 
 void QTPainter::selectedClear() {
@@ -400,7 +400,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                 //findClosesObject();
         }
     } else if (ModeManager::getActiveMode(WorkModes::Selected)) {
-        QRectF rect = SelectedRectangle.selected(painter);
+        QRectF rect = selectedRectangle.selected(painter);
         ClosesPoint::enteringInRect(*pointStorage, rect, selectedIDPoint);
         ClosesPoint::enteringInRect(*sectionStorage, rect, selectedIDSection);
         ClosesPoint::enteringInRect(*circleStorage, rect, selectedIDCircle);
