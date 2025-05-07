@@ -7,9 +7,9 @@ std::bitset<static_cast<size_t>(WorkModes::Editor) + 1> ModeManager::workModes{
         (0 << static_cast<size_t>(WorkModes::Section)) |
         (0 << static_cast<size_t>(WorkModes::Point)) |
         (0 << static_cast<size_t>(WorkModes::Circle)) |
-                (0 << static_cast<size_t>(WorkModes::Section)) |
-                (0 << static_cast<size_t>(WorkModes::Arc)) |
-                (0 << static_cast<size_t>(WorkModes::Selected)) |
+        (0 << static_cast<size_t>(WorkModes::Section)) |
+        (0 << static_cast<size_t>(WorkModes::Arc)) |
+        (0 << static_cast<size_t>(WorkModes::Selected)) |
         (0 << static_cast<size_t>(WorkModes::Rotate)) |
         (0 << static_cast<size_t>(WorkModes::Resize)) // Только Editor = true (самый младший бит)
 };

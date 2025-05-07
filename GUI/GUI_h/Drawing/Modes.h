@@ -16,7 +16,6 @@ enum class WorkModes {
     Point,
     Section,
     Circle,
-    Sector,
     Arc,
     Move,
     Selected,
