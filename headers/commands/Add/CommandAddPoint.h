@@ -2,7 +2,6 @@
 #define OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_POINT_
 
 #include "CommandAddObject.h"
-
 #include "Scene.h"
 #include "ID.h"
 #include "Objects.h"

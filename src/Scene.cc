@@ -215,6 +215,14 @@ void Scene::addArc(ObjectData data, ID pointID1, ID pointID2, ID pointID3, ID ar
     _graph.addEdge(pointID3, arcID, _connectionEdgeID);
     _allFiguresRectangle = _allFiguresRectangle | a->getBox();
     _isComponentsDirty = true;
+
+    // Накладываем требование, что центр арки находится на серединном перпендикуляре
+    RequirementData reqData;
+    reqData.req = ET_ARCCENTERONPERPENDICULAR;
+    reqData.objects.push_back(pointID1.get());
+    reqData.objects.push_back(pointID2.get());
+    reqData.objects.push_back(pointID3.get());
+    addRequirement(reqData);
 }
 
 bool Scene::deleteObject(ID objectID) {
@@ -950,6 +958,21 @@ void Scene::addReq(const RequirementData& reqData, ID reqID) {
             break;
         }
 
+        case ET_ARCCENTERONPERPENDICULAR: {
+            if (reqData.objects.size() < 3) {
+                throw std::invalid_argument("Insufficient data for requirement");
+            }
+            ID id3(reqData.objects[2]);
+            if (!_points.contains(id1) || !_points.contains(id2) || !_points.contains(id3)) {
+                throw std::invalid_argument("Objects must be three Points");
+            }
+            Point* p1 = _points[id1];
+            Point* p2 = _points[id2];
+            Point* p3 = _points[id3];
+            requirement = new ReqArcCenterOnPerpendicular(p1, p2, p3);
+            break;
+        }
+
         default: {
             throw std::invalid_argument("Unknown requirement type");
         }
@@ -1024,7 +1047,7 @@ void Scene::updateRequirements(ID id) {
     }
 
     LSMFORLMTask* task = new LSMFORLMTask(component._errorRequirementFunctions, component._componentVars);
-    LMSparse solver(10000, 1e-3,  1e-06, 1e-06);
+    LMSparse solver(100, 3, 1e-6, 1e-6);
     solver.setTask(task);
     solver.optimize();
 

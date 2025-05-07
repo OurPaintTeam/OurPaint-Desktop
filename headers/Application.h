@@ -25,6 +25,11 @@
 #include "CommandAddSection.h"
 #include "CommandAddCircle.h"
 #include "CommandAddArc.h"
+#include "CommandDeleteObject.h"
+#include "CommandDeletePoint.h"
+#include "CommandDeleteSection.h"
+#include "CommandDeleteCircle.h"
+#include "CommandDeleteArc.h"
 
 class Application {
 private:

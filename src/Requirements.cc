@@ -415,3 +415,50 @@ double ReqSecSecAngel::getDimension() const {
     return desired_angle;
 }
 
+
+// 11
+ReqArcCenterOnPerpendicular::ReqArcCenterOnPerpendicular(Point* p1, Point* p2, Point* p3) {
+    m_p1 = p1;
+    m_p2 = p2;
+    m_p3 = p3;
+}
+
+ErrorFunctions* ReqArcCenterOnPerpendicular::getFunction() {
+    return new ArcCenterOnPerpendicularError(getVariables());
+}
+
+std::vector<PARAM_ID> ReqArcCenterOnPerpendicular::getParams() {
+    std::vector<PARAM_ID> res;
+    res.push_back(&(m_p1->x));
+    res.push_back(&(m_p1->y));
+    res.push_back(&(m_p2->x));
+    res.push_back(&(m_p2->y));
+    res.push_back(&(m_p3->x));
+    res.push_back(&(m_p3->y));
+    return res;
+}
+
+Requirement ReqArcCenterOnPerpendicular::getType() const {
+    return ET_ARCCENTERONPERPENDICULAR;
+}
+
+std::vector<IGeometricObject*> ReqArcCenterOnPerpendicular::getObjects() {
+    return {m_p1, m_p2, m_p3};
+}
+
+std::vector<Variable*> ReqArcCenterOnPerpendicular::getVariables() {
+    std::vector<Variable*> variables = {
+        new Variable(&m_p1->x),
+        new Variable(&m_p1->y),
+        new Variable(&m_p2->x),
+        new Variable(&m_p2->y),
+        new Variable(&m_p3->x),
+        new Variable(&m_p3->y)
+    };
+    return variables;
+}
+
+double ReqArcCenterOnPerpendicular::getDimension() const {
+    return 0;
+}
+
