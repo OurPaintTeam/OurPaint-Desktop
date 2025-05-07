@@ -62,7 +62,7 @@ public:
     std::vector<ID>& getVecSelectedIDSections();
     std::vector<ID>& getVecSelectedIDCircles();
     std::optional<std::pair<ID, ID>> getPairID();
-    Point *p=new Po;
+
     void draw();
     void clear();
 
