@@ -30,6 +30,8 @@
 #include "CommandDeleteSection.h"
 #include "CommandDeleteCircle.h"
 #include "CommandDeleteArc.h"
+#include "CommandAddRequirement.h"
+#include "CommandDeleteRequirement.h"
 
 class Application {
 private:

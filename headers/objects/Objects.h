@@ -2,6 +2,7 @@
 #define OURPAINT_HEADERS_OBJECTS_H_
 
 #include "Enums.h"
+#include "ID.h"
 #include <vector>
 #include <limits>
 #include <unordered_map>
@@ -11,32 +12,56 @@
 
 struct ObjectData {
     Element et;
+    std::vector<ID> subObjects;
     std::vector<double> params;
+    ID id;
 
     bool operator==(const ObjectData& other) const {
         return et == other.et && params == other.params;
     }
 
     bool operator!=(const ObjectData& other) const {
-        return (this == &other);
+        return !(*this == other);
     }
 };
 
 struct RequirementData {
     Requirement req;
-    std::vector<unsigned int> objects;
+    std::vector<ID> objects;
     std::vector<double> params;
+    ID id;
 
     bool operator==(const RequirementData& other) const {
         return req == other.req
-               && objects == other.objects
-               && params == other.params;
+                && objects == other.objects
+                && params == other.params
+                && id == other.id;
     }
 
     bool operator!=(const RequirementData& other) const {
         return !(*this == other);
     }
 };
+
+namespace std {
+    template <>
+    struct hash<RequirementData> {
+        std::size_t operator()(const RequirementData& rd) const {
+            std::size_t h1 = std::hash<Requirement>()(rd.req);
+            std::size_t h2 = 0;
+            for (const auto& obj : rd.objects) {
+                h2 ^= std::hash<ID>()(obj) + 0x9e3779b9 + (h2 << 6) + (h2 >> 2);
+            }
+            std::size_t h3 = 0;
+            for (const auto& param : rd.params) {
+                h3 ^= std::hash<double>()(param) + 0x9e3779b9 + (h3 << 6) + (h3 >> 2);
+            }
+            std::size_t h4 = std::hash<ID>()(rd.id);
+
+            return h1 ^ h2 ^ h3 ^ h4;
+        }
+    };
+}
 
 class VarsStorage {
 private:

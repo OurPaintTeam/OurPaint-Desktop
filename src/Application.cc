@@ -918,7 +918,7 @@ void Application::handler(const QString &command) {
         });
         updateState();
     }
-    else if (commandParts[0] == "addreq" && commandParts.size() > 3) {
+    else if (commandParts[0] == "addReq" && commandParts.size() > 3) {
         int req = commandParts[1].toInt();
         ID obj1(commandParts[2].toInt());
         ID obj2(commandParts[3].toInt());
@@ -967,6 +967,20 @@ void Application::handler(const QString &command) {
             mainWind.showError(e.what());
         }
     }
+    else if (commandParts[0] == "delReq" && commandParts.size() > 1) {
+        ID reqID(commandParts[1].toInt());
+        CommandDeleteRequirement* cmd = new CommandDeleteRequirement(scene, reqID);
+        Transaction txn(cmd->description());
+        txn.addCommand(cmd);
+        undoRedo.push(std::move(txn));
+    }
+    else if (commandParts[0] == "delObj" && commandParts.size() > 1) {
+        ID objID(commandParts[1].toInt());
+        CommandDeleteObject* cmd = new CommandDeleteObject(scene, objID);
+        Transaction txn(cmd->description());
+        txn.addCommand(cmd);
+        undoRedo.push(std::move(txn));
+    }
 }
 
 void Application::addRequirement(Requirement RQ, ID id1, ID id2, double parameters) {
@@ -975,11 +989,15 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2, double paramete
     QString name = vec_requirements[RQ];
 
     reqData.req = type;
-    reqData.objects.push_back(id1.get());
-    reqData.objects.push_back(id2.get());
+    reqData.objects.push_back(id1);
+    reqData.objects.push_back(id2);
     reqData.params.push_back(parameters);
     try {
-        scene.addRequirement(reqData);
+        CommandAddRequirement* cmd = new CommandAddRequirement(scene, reqData);
+        Transaction txn(cmd->description());
+        txn.addCommand(cmd);
+        undoRedo.push(std::move(txn));
+
         ModeManager::setSave(false);
         vecCalls.push_back([=, this]() {
             leftMenu->addRequirementElem(name, RQ, id1.get(),
@@ -996,10 +1014,14 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
     QString name = vec_requirements[RQ];
 
     reqData.req = type;
-    reqData.objects.push_back(id1.get());
-    reqData.objects.push_back(id2.get());
+    reqData.objects.push_back(id1);
+    reqData.objects.push_back(id2);
     try {
-        scene.addRequirement(reqData);
+        CommandAddRequirement* cmd = new CommandAddRequirement(scene, reqData);
+        Transaction txn(cmd->description());
+        txn.addCommand(cmd);
+        undoRedo.push(std::move(txn));
+
         ModeManager::setSave(false);
         vecCalls.push_back([=, this]() {
             leftMenu->addRequirementElem(name, RQ, id1.get(),

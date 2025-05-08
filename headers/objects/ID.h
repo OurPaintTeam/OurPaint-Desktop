@@ -2,20 +2,22 @@
 #define OURPAINT_HEADERS_ID_H_
 
 #include <fstream>
+#include <unordered_set>
+#include <cstdint>
 
 class ID {
 private:
-    long long int _value;
+    int64_t _value;
 
 public:
-    explicit ID(long long int value = 0) : _value(value) {}
+    explicit ID(int64_t value = 0) : _value(value) {}
     ID(const ID&) = default;
     ID(ID&&) = default;
 
     ID& operator=(const ID&) = default;
     ID& operator=(ID&&) noexcept = default;
 
-    long long int get() const { return _value; }
+    int64_t get() const { return _value; }
 
     // Explicitly deleted to prevent misuse — IDs must not be altered.
     ID& operator++() = delete;
@@ -39,21 +41,37 @@ namespace std {
     template <>
     struct hash<ID> {
         std::size_t operator()(const ID &id) const {
-            return hash<long long int>()(id.get());
+            return hash<int64_t>()(id.get());
         }
     };
 }
 
 class IDGenerator {
-    long long int last_id = 0;
+    int64_t last_id = 0;
+    std::unordered_set<ID> excluded_ids;
 
 public:
     ID generate() {
-        return ID(++last_id);
+        do {
+            ++last_id;
+        } while (excluded_ids.contains(ID(last_id)));
+        return ID(last_id);
     }
 
-    void reset(long long int _id = 0) {
+    void exclude(ID id) {
+        excluded_ids.insert(id);
+    }
+
+    void include(ID id) {
+        excluded_ids.erase(id);
+    }
+
+    void reset(int64_t _id = 0) {
         last_id = _id;
+    }
+
+    ID getLast() const {
+        return ID(last_id);
     }
 };
 
