@@ -31,8 +31,8 @@ void FileOurP::parseFile(std::istream &file) {
                 data >> param;
                 RequirementData req;
                 req.req = static_cast<enum Requirement>(type.c_str()[0] - '0');
-                req.objects.push_back(id1);
-                req.objects.push_back(id2);
+                req.objects.push_back(ID(id1));
+                req.objects.push_back(ID(id2));
                 req.params.push_back(param);
                 std::pair<unsigned int, RequirementData> ll = {object_id, req};
                 requirements.emplace_back(ll);
