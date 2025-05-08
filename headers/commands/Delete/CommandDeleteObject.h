@@ -13,12 +13,11 @@ protected:
     Scene& _scene;
     ID _id;
     ObjectData _data;
+    std::vector<RequirementData> _reqData;
 
     bool Execute() override;
 
     bool Undo() override;
-
-    bool Redo() override;
 
 public:
     CommandDeleteObject(Scene& scene, ID id) : _scene(scene), _id(id) {}

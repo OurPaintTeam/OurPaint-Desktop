@@ -23,13 +23,9 @@ bool CommandAddObject::Undo() {
 
 bool CommandAddObject::Redo() {
     try {
-        _id = _scene.addObject(_data, _id);
-        if (_id == ID(-1)) {
-            return false;
-        }
+        return _scene.tryRestoreObject(_data, _id);
     } catch (...) {
         return false;
     }
-    return true;
 }
 

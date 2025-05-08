@@ -2,7 +2,8 @@
 
 bool CommandDeleteObject::Execute() {
     try {
-        _data = _scene.getObjectData(_id);
+        _reqData = _scene.getObjectRequirementsWithConnectedObjects(_id);
+        _data = _scene.getRootObjectData(_id);
         return _scene.deleteObject(_id);
     } catch (...) {
         return false;
@@ -11,19 +12,15 @@ bool CommandDeleteObject::Execute() {
 
 bool CommandDeleteObject::Undo() {
     try {
-        _id = _scene.addObject(_data, _id);
+        if (_scene.tryRestoreObject(_data, _data.id)) {
+            for (auto& rd : _reqData) {
+                if (!_scene.tryRestoreRequirement(rd, rd.id)) {
+                    return false;
+                }
+            }
+        }
         return true;
     } catch (...) {
         return false;
     }
 }
-
-bool CommandDeleteObject::Redo() {
-    try {
-        _data = _scene.getObjectData(_id);
-        return _scene.deleteObject(_id);
-    } catch (...) {
-        return false;
-    }
-}
-
