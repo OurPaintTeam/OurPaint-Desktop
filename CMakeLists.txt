@@ -102,8 +102,13 @@ add_executable(ourpaint
         headers/commands/Delete/CommandDeleteCircle.h
         headers/commands/Delete/CommandDeleteArc.h
 
+        headers/commands/CommandAddRequirement.h
+        headers/commands/CommandDeleteRequirement.h
+
         src/commands/Add/CommandAddObject.cc
         src/commands/Delete/CommandDeleteObject.cc
+        src/commands/CommandAddRequirement.cc
+        src/commands/CommandDeleteRequirement.cc
 
         ###########  GUI  ############
 
