@@ -609,11 +609,8 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::sixRequirements, [this]() {
             auto pairID = painter->getPairID();
             if (pairID) {
-                InputWindow window("Enter parameters: ");
-                if (window.exec() == QDialog::Accepted) {
                     addRequirement(ET_SECTIONONCIRCLE, pairID->first, pairID->second);
                     updateState();
-                }
             }
         });
 
