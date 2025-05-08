@@ -1,5 +1,5 @@
 #include "ClosesPoint.h"
-#include <qDebug>
+#include <QDebug>
 
 // Функция поиска ближайшей точки
 QPointF ClosesPoint::findClosestPoint(std::unordered_map<ID, Point *> &points) {

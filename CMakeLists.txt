@@ -38,7 +38,7 @@ include_directories(ourpaint
         GUI/GUI_h/Settings
         Math/headers
         Math/headers/decomposition
-        Math/headers/Optimizers
+        Math/headers/optimizers
         Math/headers/graph
 )
 

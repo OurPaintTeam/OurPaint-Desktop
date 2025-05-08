@@ -51,7 +51,7 @@ private:
     DrawMouse drawFigM;
     bool drawing=false;
 
-    SelectedRectangle SelectedRectangle;
+    SelectedRectangle selectedRectangle;
 
     std::chrono::steady_clock::time_point lastClickTime;
 

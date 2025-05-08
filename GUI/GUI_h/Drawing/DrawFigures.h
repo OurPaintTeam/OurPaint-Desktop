@@ -8,7 +8,7 @@
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
 #include "GeometricObjects.h"
-#include <qDebug>
+#include <QDebug>
 //     Класс для отрисовки фигур
 //     Преобразование координат с учётом масштабирования и инвертированной оси Y,
 //     а также использует дополнительные функции для выделения объектов
