@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.16)
 project(ourpainttest)
 
 # GoogleTest requires at least C++14
@@ -31,7 +31,32 @@ add_executable(ObjectsGTEST  ObjectsGTEST.cc
 target_include_directories(ObjectsGTEST PRIVATE ../headers/objects ../Math/headers)
 target_link_libraries(ObjectsGTEST GTest::gtest_main Math Eigen3::Eigen)
 
-
+#Test for move functionality
+add_executable(MoveGTEST MoveGTEST.cc
+        ../src/Scene.cc
+        ../src/objects/GeometricObjects.cc
+        ../src/objects/BoundBox.cc
+        ../src/painters/BMPpainter.cc
+        ../src/BMPfile.cc
+        ../src/Requirements.cc
+        ../src/saveload/FileOurP.cc
+        ../src/saveload/objectInFile.cc
+        ../src/saveload/requirementInFile.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+        ../Math/src/LevenbergMarquardtSolver.cc
+)
+target_include_directories(MoveGTEST PRIVATE
+        ../headers
+        ../headers/objects
+        ../headers/painters
+        ../headers/saveload
+        ../Math/headers/decomposition
+        ../Math/headers
+        ../Math/headers/graph
+        ../Math/headers/optimizers
+)
+target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 #Test for Scene
 add_executable(SceneGTEST SceneGTEST.cc
@@ -62,14 +87,10 @@ target_include_directories(SceneGTEST PRIVATE
 )
 target_link_libraries(SceneGTEST GTest::gtest_main Math Eigen3::Eigen)
 
-
-
 #Test for UndoRedo
 add_executable(UndoRedoGTEST UndoRedoTests.cc  ../src/UndoRedo/Transaction.cc  ../src/UndoRedo/UndoRedo.cc)
 target_include_directories(UndoRedoGTEST PRIVATE ../headers/UndoRedo)
 target_link_libraries(UndoRedoGTEST GTest::gtest_main)
-
-
 
 #Test for UndoRedoTemplate
 #add_executable(UndoRedoTemplateGTEST UndoRedoGTEST.cc ../src/UndoRedo/UndoRedoTemplate.cc)
