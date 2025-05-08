@@ -33,7 +33,7 @@ public:
     bool isCommitted() const;
 
 private:
-    void rollback(); // Откат (если ошибка)
+    void rollback() noexcept; // Откат (если ошибка)
 };
 
 #endif // ! OURPAINT_HEADERS_UNDOREDO_TRANSACTIONS_H_

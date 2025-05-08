@@ -24,7 +24,6 @@ Transaction& Transaction::operator=(Transaction&& other) {
         other.commands.clear();
         name = std::move(other.name);
         committed = other.committed;
-        other.committed = false;
     }
     return *this;
 }
@@ -43,23 +42,32 @@ void Transaction::commit() {
     if (committed) {
         throw std::logic_error("Transaction already committed");
     }
-    try {
-        for (auto& cmd: commands) {
-            cmd->execute();
+    std::vector<Command *> executed;
+    for (auto& cmd: commands) {
+        if (!cmd->execute()) {
+            for (auto it = executed.rbegin(); it != executed.rend(); ++it) {
+                (*it)->undo();
+            }
+            throw std::runtime_error("Transaction failed to commit");
         }
-        committed = true;
-    } catch (...) {
-        rollback();
-        throw std::runtime_error("Transaction failed to commit");
+        executed.push_back(cmd);
     }
+    committed = true;
 }
 
 bool Transaction::undo() {
     if (!committed) {
         return false;
     }
+    std::vector<Command*> undone;
     for (auto it = commands.rbegin(); it != commands.rend(); ++it) {
-        (*it)->undo();
+        if (!(*it)->undo()) {
+            for (auto rit = undone.rbegin(); rit != undone.rend(); ++rit) {
+                (*rit)->redo();
+            }
+            return false;
+        }
+        undone.push_back(*it);
     }
     return true;
 }
@@ -68,13 +76,20 @@ bool Transaction::redo() {
     if (!committed) {
         return false;
     }
+    std::vector<Command*> redone;
     for (Command* cmd: commands) {
-        cmd->redo();
+        if (!cmd->redo()) {
+            for (auto it = redone.rbegin(); it != redone.rend(); ++it) {
+                (*it)->undo();
+            }
+            return false;
+        }
+        redone.push_back(cmd);
     }
     return true;
 }
 
-void Transaction::rollback() {
+void Transaction::rollback() noexcept {
     for (auto it = commands.rbegin(); it != commands.rend(); ++it) {
         (*it)->undo();
     }

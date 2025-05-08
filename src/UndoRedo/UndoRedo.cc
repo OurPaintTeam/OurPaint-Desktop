@@ -18,22 +18,28 @@ bool UndoRedo::undo() {
     if (transactions_undo.empty()) {
         return false;
     }
-    Transaction txn = std::move(transactions_undo.back());
-    transactions_undo.pop_back();
-    txn.undo();
-    transactions_redo.push(std::move(txn));
-    return true;
+    Transaction& txn_ref = transactions_undo.back();
+    if (txn_ref.undo()) {
+        Transaction txn = std::move(txn_ref);
+        transactions_undo.pop_back();
+        transactions_redo.push(std::move(txn));
+        return true;
+    }
+    return false;
 }
 
 bool UndoRedo::redo() {
     if (transactions_redo.empty()) {
         return false;
     }
-    Transaction txn = std::move(transactions_redo.top());
-    transactions_redo.pop();
-    txn.redo();
-    transactions_undo.push_back(std::move(txn));
-    return true;
+    Transaction& txn_ref = transactions_redo.top();
+    if (txn_ref.redo()) {
+        Transaction txn = std::move(txn_ref);
+        transactions_redo.pop();
+        transactions_undo.push_back(std::move(txn));
+        return true;
+    }
+    return false;
 }
 
 void UndoRedo::setMaxUndoSteps(unsigned int steps) {
