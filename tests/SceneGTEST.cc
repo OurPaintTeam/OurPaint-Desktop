@@ -83,6 +83,6 @@ TEST_F(SceneFixture, boundingBox_and_moveObject) {
     EXPECT_EQ(bbox.width(), 1000);
     EXPECT_EQ(bbox.height(), 1000);
 
-    EXPECT_EQ(scene.vertexCount(), 3);
-    EXPECT_EQ(scene.edgeCount(), 0);
+    EXPECT_EQ(scene.objectsCount(), 3);
+    EXPECT_EQ(scene.requirementsCount(), 0);
 }
