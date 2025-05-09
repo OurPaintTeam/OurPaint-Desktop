@@ -24,9 +24,13 @@ void guiLogger(QtMsgType type, const QMessageLogContext &context, const QString 
             break;
     }
 
-    // Timestamp + Message
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
     QString fullMessage = QString("[%1] %2\n").arg(timestamp, logMessage);
+
+    if (!logFile.isOpen()) {
+        logFile.setFileName("log.txt");
+        logFile.open(QIODevice::Append | QIODevice::Text);
+    }
 
     if (logFile.isOpen()) {
         QTextStream out(&logFile);
@@ -34,11 +38,13 @@ void guiLogger(QtMsgType type, const QMessageLogContext &context, const QString 
         out.flush();
     }
 
-    QByteArray byteArray = fullMessage.toLocal8Bit();
-    fwrite(byteArray.constData(), 1, byteArray.size(), stderr);
-    fflush(stderr);
+    if (stderr && _fileno(stderr) >= 0) {
+        QByteArray byteArray = fullMessage.toLocal8Bit();
+        fwrite(byteArray.constData(), 1, byteArray.size(), stderr);
+        fflush(stderr);}
 
-    if (type == QtFatalMsg) {
+
+        if (type == QtFatalMsg) {
         abort();
-    }
+      }
 }
