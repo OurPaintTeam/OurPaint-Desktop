@@ -38,7 +38,7 @@ std::vector<ID> &QTPainter::getVecSelectedIDCircles() {
     return selectedIDCircle;
 }
 
-std::optional<std::pair<ID, ID>> QTPainter::getPairID() {
+std::optional<std::pair<ID, ID>> QTPainter::getPairSelectedID() {
     std::vector<ID> IDs;
 
     for (const ID &id: selectedIDPoint) {

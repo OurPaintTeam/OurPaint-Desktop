@@ -61,7 +61,7 @@ public:
     std::vector<ID>& getVecSelectedIDPoints();
     std::vector<ID>& getVecSelectedIDSections();
     std::vector<ID>& getVecSelectedIDCircles();
-    std::optional<std::pair<ID, ID>> getPairID();
+    std::optional<std::pair<ID, ID>> getPairSelectedID();
 
     void draw();
     void clear();

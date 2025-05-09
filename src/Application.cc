@@ -533,38 +533,38 @@ void Application::setupRequirementsConnections() {
     try {
         // Требования
         QObject::connect(&mainWind, &MainWindow::oneRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
                 InputWindow window("Enter parameters: ");
                 if (window.exec() == QDialog::Accepted) {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) return;
-                    addRequirement(ET_POINTSECTIONDIST, pairID->first, pairID->second, parameters);
+                    addRequirement(ET_POINTSECTIONDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             }
         });
 
         QObject::connect(&mainWind, &MainWindow::twoRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
                 RequirementData reqData;
-                addRequirement(ET_POINTONSECTION, pairID->first, pairID->second);
+                addRequirement(ET_POINTONSECTION, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
 
         QObject::connect(&mainWind, &MainWindow::threeRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
                 InputWindow window("Enter parameters: ");
                 if (window.exec() == QDialog::Accepted) {
                     RequirementData reqData;
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) return;
-                    addRequirement(ET_POINTPOINTDIST, pairID->first, pairID->second, parameters);
+                    addRequirement(ET_POINTPOINTDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             } else {
@@ -584,70 +584,70 @@ void Application::setupRequirementsConnections() {
         });
 
         QObject::connect(&mainWind, &MainWindow::fourRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
-                addRequirement(ET_POINTONPOINT, pairID->first, pairID->second);
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
+                addRequirement(ET_POINTONPOINT, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
 
         QObject::connect(&mainWind, &MainWindow::fiveRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
                 InputWindow window("Enter parameters: ");
                 if (window.exec() == QDialog::Accepted) {
                     RequirementData reqData;
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) return;
-                    addRequirement(ET_SECTIONCIRCLEDIST, pairID->first, pairID->second, parameters);
+                    addRequirement(ET_SECTIONCIRCLEDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             }
         });
 
         QObject::connect(&mainWind, &MainWindow::sixRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
-                    addRequirement(ET_SECTIONONCIRCLE, pairID->first, pairID->second);
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
+                    addRequirement(ET_SECTIONONCIRCLE, pairSelectedID->first, pairSelectedID->second);
                     updateState();
             }
         });
 
         QObject::connect(&mainWind, &MainWindow::sevenRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
-                addRequirement(ET_SECTIONINCIRCLE, pairID->first, pairID->second);
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
+                addRequirement(ET_SECTIONINCIRCLE, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
 
         QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
-                addRequirement(ET_SECTIONSECTIONPARALLEL, pairID->first, pairID->second);
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
+                addRequirement(ET_SECTIONSECTIONPARALLEL, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
 
         });
 
         QObject::connect(&mainWind, &MainWindow::nineRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
-                addRequirement(ET_SECTIONSECTIONPERPENDICULAR, pairID->first, pairID->second);
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
+                addRequirement(ET_SECTIONSECTIONPERPENDICULAR, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
 
         QObject::connect(&mainWind, &MainWindow::tenRequirements, [this]() {
-            auto pairID = painter->getPairID();
-            if (pairID) {
+            auto pairSelectedID = painter->getPairSelectedID();
+            if (pairSelectedID) {
                 InputWindow window("Enter parameters: ");
                 if (window.exec() == QDialog::Accepted) {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) return;
-                    addRequirement(ET_SECTIONSECTIONANGLE, pairID->first, pairID->second, parameters);
+                    addRequirement(ET_SECTIONSECTIONANGLE, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             }
