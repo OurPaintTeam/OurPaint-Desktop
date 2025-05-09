@@ -34,7 +34,8 @@ void guiLogger(QtMsgType type, const QMessageLogContext &context, const QString 
         out.flush();
     }
 
-    fprintf(stderr, "%s", fullMessage.toLocal8Bit().constData());
+    QByteArray byteArray = fullMessage.toLocal8Bit();
+    fwrite(byteArray.constData(), 1, byteArray.size(), stderr);
     fflush(stderr);
 
     if (type == QtFatalMsg) {
