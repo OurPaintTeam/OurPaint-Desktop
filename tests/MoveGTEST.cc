@@ -5,7 +5,7 @@
 TEST(MoveTest, LoadAndMove) {
     Scene scene(nullptr);
     
-    scene.loadFromFile("../testStructures/homeFINAL2.ourp");
+    scene.loadFromFile("/testStructures/homeFINAL2.ourp");
     
     try {
         scene.moveObject(ID(1), 10.0, 10.0);
