@@ -48,7 +48,7 @@ private:
     Server server;
     Client client;
 
-    UndoRedo undoRedo;
+    UndoRedo::UndoRedoManager undoRedo;
 
     void initialize();
     void initLogger();

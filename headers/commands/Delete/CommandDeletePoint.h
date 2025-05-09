@@ -6,14 +6,17 @@
 #include "ID.h"
 #include "Objects.h"
 
-// Command -> CommandDeleteObject -> CommandDeletePoint
+namespace UndoRedo {
 
-class CommandDeletePoint : public CommandDeleteObject {
-protected:
-    using CommandDeleteObject::CommandDeleteObject;
+    // Command -> CommandDeleteObject -> CommandDeletePoint
+    class CommandDeletePoint : public CommandDeleteObject {
+    protected:
+        using CommandDeleteObject::CommandDeleteObject;
 
-public:
-    std::string description() const override { return "Delete point from Scene"; }
-};
+    public:
+        std::string description() const override { return "Delete point from Scene"; }
+    };
+
+}
 
 #endif // ! OURPAINT_HEADERS_COMMANDS_DELETE_COMMAND_DELETE_POINT_

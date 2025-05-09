@@ -6,21 +6,24 @@
 #include "ID.h"
 #include "Objects.h"
 
-// Command -> CommandAddObject -> CommandAddPoint
+namespace UndoRedo {
 
-class CommandAddPoint : public CommandAddObject {
-protected:
-    using CommandAddObject::CommandAddObject;
+    // Command -> CommandAddObject -> CommandAddPoint
+    class CommandAddPoint : public CommandAddObject {
+    protected:
+        using CommandAddObject::CommandAddObject;
 
-public:
-    ID getPointID() {
-        if (_id == ID{}) {
-            return Scene::_errorID;
+    public:
+        ID getPointID() {
+            if (_id == ID{}) {
+                return Scene::_errorID;
+            }
+            return _id;
         }
-        return _id;
-    }
 
-    std::string description() const override { return "Add point to Scene"; }
-};
+        std::string description() const override { return "Add point to Scene"; }
+    };
+
+}
 
 #endif // ! OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_POINT_

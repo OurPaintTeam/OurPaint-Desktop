@@ -6,15 +6,17 @@
 #include "ID.h"
 #include "Objects.h"
 
-// Command -> CommandDeleteObject -> CommandDeleteCircle
+namespace UndoRedo {
 
-class CommandDeleteCircle : public CommandDeleteObject {
-protected:
-    using CommandDeleteObject::CommandDeleteObject;
+    // Command -> CommandDeleteObject -> CommandDeleteCircle
+    class CommandDeleteCircle : public CommandDeleteObject {
+    protected:
+        using CommandDeleteObject::CommandDeleteObject;
 
-public:
+    public:
+        std::string description() const override { return "Delete circle from scene"; }
+    };
 
-    std::string description() const override { return "Delete circle from scene"; }
-};
+}
 
 #endif // ! OURPAINT_HEADERS_COMMANDS_DELETE_COMMAND_DELETE_CIRCLE_

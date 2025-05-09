@@ -164,8 +164,8 @@ void Application::setupQTPainterConnections() {
                     point.params.push_back(x);
                     point.params.push_back(y);
 
-                    CommandAddPoint* cmd = new CommandAddPoint(scene, point);
-                    Transaction txn(cmd->description());
+                    UndoRedo::CommandAddPoint* cmd = new UndoRedo::CommandAddPoint(scene, point);
+                    UndoRedo::Transaction txn(cmd->description());
                     txn.addCommand(cmd);
                     undoRedo.push(std::move(txn));
 
@@ -184,8 +184,8 @@ void Application::setupQTPainterConnections() {
                 point.params.push_back(x);
                 point.params.push_back(y);
 
-                CommandAddPoint* cmd = new CommandAddPoint(scene, point);
-                Transaction txn(cmd->description());
+                UndoRedo::CommandAddPoint* cmd = new UndoRedo::CommandAddPoint(scene, point);
+                UndoRedo::Transaction txn(cmd->description());
                 txn.addCommand(cmd);
                 undoRedo.push(std::move(txn));
 
@@ -208,8 +208,8 @@ void Application::setupQTPainterConnections() {
                                      section.params.push_back(endX);
                                      section.params.push_back(endY);
 
-                                     CommandAddSection* cmd = new CommandAddSection(scene, section);
-                                     Transaction txn(cmd->description());
+                                     UndoRedo::CommandAddSection* cmd = new UndoRedo::CommandAddSection(scene, section);
+                                     UndoRedo::Transaction txn(cmd->description());
                                      txn.addCommand(cmd);
                                      undoRedo.push(std::move(txn));
                                      ID id = cmd->getSectionID();
@@ -234,8 +234,8 @@ void Application::setupQTPainterConnections() {
                                  section.params.push_back(endX);
                                  section.params.push_back(endY);
 
-                                 CommandAddSection* cmd = new CommandAddSection(scene, section);
-                                 Transaction txn(cmd->description());
+                                 UndoRedo::CommandAddSection* cmd = new UndoRedo::CommandAddSection(scene, section);
+                                 UndoRedo::Transaction txn(cmd->description());
                                  txn.addCommand(cmd);
                                  undoRedo.push(std::move(txn));
                                  ID id = cmd->getSectionID();
@@ -261,8 +261,8 @@ void Application::setupQTPainterConnections() {
                     circle.params.push_back(radius);
                     ModeManager::setSave(false);
 
-                    CommandAddCircle* cmd = new CommandAddCircle(scene, circle);
-                    Transaction txn(cmd->description());
+                    UndoRedo::CommandAddCircle* cmd = new UndoRedo::CommandAddCircle(scene, circle);
+                    UndoRedo::Transaction txn(cmd->description());
                     txn.addCommand(cmd);
                     undoRedo.push(std::move(txn));
                     ID id = cmd->getCircleID();
@@ -284,8 +284,8 @@ void Application::setupQTPainterConnections() {
                 circle.params.push_back(radius);
                 ModeManager::setSave(false);
 
-                CommandAddCircle* cmd = new CommandAddCircle(scene, circle);
-                Transaction txn(cmd->description());
+                UndoRedo::CommandAddCircle* cmd = new UndoRedo::CommandAddCircle(scene, circle);
+                UndoRedo::Transaction txn(cmd->description());
                 txn.addCommand(cmd);
                 undoRedo.push(std::move(txn));
                 ID id = cmd->getCircleID();
@@ -312,8 +312,8 @@ void Application::setupQTPainterConnections() {
                                      arc.params.push_back(yc);
                                      arc.params.push_back(1);
 
-                                     CommandAddArc* cmd = new CommandAddArc(scene, arc);
-                                     Transaction txn(cmd->description());
+                                     UndoRedo::CommandAddArc* cmd = new UndoRedo::CommandAddArc(scene, arc);
+                                     UndoRedo::Transaction txn(cmd->description());
                                      txn.addCommand(cmd);
                                      undoRedo.push(std::move(txn));
                                      ID id = cmd->getArcID();
@@ -344,8 +344,8 @@ void Application::setupQTPainterConnections() {
                                  arc.params.push_back(yc);
                                  arc.params.push_back(1);
 
-                                 CommandAddArc* cmd = new CommandAddArc(scene, arc);
-                                 Transaction txn(cmd->description());
+                                 UndoRedo::CommandAddArc* cmd = new UndoRedo::CommandAddArc(scene, arc);
+                                 UndoRedo::Transaction txn(cmd->description());
                                  txn.addCommand(cmd);
                                  undoRedo.push(std::move(txn));
                                  ID id = cmd->getArcID();
@@ -369,10 +369,10 @@ void Application::setupQTPainterConnections() {
         std::vector<ID> vecSection = painter->getVecSelectedIDSections();
         std::vector<ID> vecCircle = painter->getVecSelectedIDCircles();
 
-        Transaction txn("Delete objects");
+        UndoRedo::Transaction txn("Delete objects");
 
         for (int i = 0; i < vecPoint.size(); ++i) {
-            CommandDeletePoint* cmd = new CommandDeletePoint(scene, vecPoint[i]);
+            UndoRedo::CommandDeletePoint* cmd = new UndoRedo::CommandDeletePoint(scene, vecPoint[i]);
             txn.addCommand(cmd);
 
             vecCalls.push_back([=, this]() {
@@ -380,7 +380,7 @@ void Application::setupQTPainterConnections() {
             });
         }
         for (int i = 0; i < vecSection.size(); ++i) {
-            CommandDeleteSection* cmd = new CommandDeleteSection(scene, vecSection[i]);
+            UndoRedo::CommandDeleteSection* cmd = new UndoRedo::CommandDeleteSection(scene, vecSection[i]);
             txn.addCommand(cmd);
 
             vecCalls.push_back([=, this]() {
@@ -388,7 +388,7 @@ void Application::setupQTPainterConnections() {
             });
         }
         for (int i = 0; i < vecCircle.size(); ++i) {
-            CommandDeleteCircle* cmd = new CommandDeleteCircle(scene, vecCircle[i]);
+            UndoRedo::CommandDeleteCircle* cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircle[i]);
             txn.addCommand(cmd);
 
             vecCalls.push_back([=, this]() {
@@ -799,8 +799,8 @@ void Application::handler(const QString &command) {
             point.params.push_back(x);
             point.params.push_back(y);
 
-            CommandAddPoint* cmd = new CommandAddPoint(scene, point);
-            Transaction txn(cmd->description());
+            UndoRedo::CommandAddPoint* cmd = new UndoRedo::CommandAddPoint(scene, point);
+            UndoRedo::Transaction txn(cmd->description());
             txn.addCommand(cmd);
             undoRedo.push(std::move(txn));
 
@@ -826,8 +826,8 @@ void Application::handler(const QString &command) {
             section.params.push_back(z);
             section.params.push_back(r);
 
-            CommandAddSection* cmd = new CommandAddSection(scene, section);
-            Transaction txn(cmd->description());
+            UndoRedo::CommandAddSection* cmd = new UndoRedo::CommandAddSection(scene, section);
+            UndoRedo::Transaction txn(cmd->description());
             txn.addCommand(cmd);
             undoRedo.push(std::move(txn));
             ID id = cmd->getSectionID();
@@ -854,8 +854,8 @@ void Application::handler(const QString &command) {
             circle.params.push_back(y);
             circle.params.push_back(r);
 
-            CommandAddCircle* cmd = new CommandAddCircle(scene, circle);
-            Transaction txn(cmd->description());
+            UndoRedo::CommandAddCircle* cmd = new UndoRedo::CommandAddCircle(scene, circle);
+            UndoRedo::Transaction txn(cmd->description());
             txn.addCommand(cmd);
             undoRedo.push(std::move(txn));
             ID id = cmd->getCircleID();
@@ -888,8 +888,8 @@ void Application::handler(const QString &command) {
                 arc.params.push_back(cy);
                 arc.params.push_back(r);
 
-                CommandAddArc* cmd = new CommandAddArc(scene, arc);
-                Transaction txn(cmd->description());
+                UndoRedo::CommandAddArc* cmd = new UndoRedo::CommandAddArc(scene, arc);
+                UndoRedo::Transaction txn(cmd->description());
                 txn.addCommand(cmd);
                 undoRedo.push(std::move(txn));
                 ID id = cmd->getArcID();
@@ -969,15 +969,15 @@ void Application::handler(const QString &command) {
     }
     else if (commandParts[0] == "delReq" && commandParts.size() > 1) {
         ID reqID(commandParts[1].toInt());
-        CommandDeleteRequirement* cmd = new CommandDeleteRequirement(scene, reqID);
-        Transaction txn(cmd->description());
+        UndoRedo::CommandDeleteRequirement* cmd = new UndoRedo::CommandDeleteRequirement(scene, reqID);
+        UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
     }
     else if (commandParts[0] == "delObj" && commandParts.size() > 1) {
         ID objID(commandParts[1].toInt());
-        CommandDeleteObject* cmd = new CommandDeleteObject(scene, objID);
-        Transaction txn(cmd->description());
+        UndoRedo::CommandDeleteObject* cmd = new UndoRedo::CommandDeleteObject(scene, objID);
+        UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
     }
@@ -993,8 +993,8 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2, double paramete
     reqData.objects.push_back(id2);
     reqData.params.push_back(parameters);
     try {
-        CommandAddRequirement* cmd = new CommandAddRequirement(scene, reqData);
-        Transaction txn(cmd->description());
+        UndoRedo::CommandAddRequirement* cmd = new UndoRedo::CommandAddRequirement(scene, reqData);
+        UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
 
@@ -1017,8 +1017,8 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
     reqData.objects.push_back(id1);
     reqData.objects.push_back(id2);
     try {
-        CommandAddRequirement* cmd = new CommandAddRequirement(scene, reqData);
-        Transaction txn(cmd->description());
+        UndoRedo::CommandAddRequirement* cmd = new UndoRedo::CommandAddRequirement(scene, reqData);
+        UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
 

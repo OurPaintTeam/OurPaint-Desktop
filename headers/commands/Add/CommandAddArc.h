@@ -7,21 +7,24 @@
 #include "ID.h"
 #include "Objects.h"
 
-// Command -> CommandAddObject -> CommandAddArc
+namespace UndoRedo {
 
-class CommandAddArc : public CommandAddObject {
-protected:
-    using CommandAddObject::CommandAddObject;
+    // Command -> CommandAddObject -> CommandAddArc
+    class CommandAddArc : public CommandAddObject {
+    protected:
+        using CommandAddObject::CommandAddObject;
 
-public:
-    ID getArcID() {
-        if (_id == ID{}) {
-            return Scene::_errorID;
+    public:
+        ID getArcID() {
+            if (_id == ID{}) {
+                return Scene::_errorID;
+            }
+            return _id;
         }
-        return _id;
-    }
 
-    std::string description() const override { return "Add arc to scene"; }
-};
+        std::string description() const override { return "Add arc to scene"; }
+    };
+
+}
 
 #endif // ! OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_ARC_

@@ -7,33 +7,36 @@
 
 #include "Command.h"
 
-class Transaction {
-private:
-    std::vector<Command*> commands;
-    std::string name;
-    bool committed = false;
+namespace UndoRedo {
 
-public:
-    Transaction(std::string&& name);
-    ~Transaction();
+    class Transaction {
+    private:
+        std::vector<Command *> commands;
+        std::string name;
+        bool committed = false;
 
-    Transaction(const Transaction&) = delete;
-    Transaction& operator=(const Transaction&) = delete;
+    public:
+        Transaction(std::string &&name);
+        ~Transaction();
+        Transaction(const Transaction &) = delete;
+        Transaction &operator=(const Transaction &) = delete;
+        Transaction(Transaction &&);
+        Transaction &operator=(Transaction &&);
 
-    Transaction(Transaction&&);
-    Transaction& operator=(Transaction&&);
+        void addCommand(Command *cnd);
 
-    void addCommand(Command* cnd);
+        void commit(); // Фиксация транзакции
+        bool undo();
 
-    void commit(); // Фиксация транзакции
-    bool undo();
-    bool redo();
+        bool redo();
 
-    std::string label() const; // Название транзакции
-    bool isCommitted() const;
+        std::string label() const; // Название транзакции
+        bool isCommitted() const;
 
-private:
-    void rollback() noexcept; // Откат (если ошибка)
-};
+    private:
+        void rollback() noexcept; // Откат (если ошибка)
+    };
+
+}
 
 #endif // ! OURPAINT_HEADERS_UNDOREDO_TRANSACTIONS_H_
