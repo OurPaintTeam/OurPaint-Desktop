@@ -4,28 +4,13 @@ on: [push, pull_request]
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: true
-          fetch-depth: 0
-      - name: Set up CMake
-        uses: jwlawson/actions-setup-cmake@v1
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake g++
-          sudo apt-get install -y valgrind --fix-missing
-          git clone https://github.com/google/googletest.git
-          cd googletest
-          mkdir build
-          cd build
-          cmake ..
-          make
-          sudo cp lib/*.a /usr/lib
-          cd ../..
+          fetch-depth: 0     
       - name: Configure
         run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release
       - name: Cache CMake build
