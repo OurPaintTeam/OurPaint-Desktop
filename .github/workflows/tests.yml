@@ -37,4 +37,4 @@ jobs:
         working-directory: build
         run: ./MoveGTEST
       - name: Run MoveGTEST - Valgrind
-        run: valgrind --leak-check=full --error-exitcode=1 ./MoveGTEST
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/MoveGTEST
