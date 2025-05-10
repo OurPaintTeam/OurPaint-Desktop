@@ -33,6 +33,10 @@ jobs:
       - name: Run UndoRedoGTEST - Valgrind
         run: valgrind --leak-check=full --error-exitcode=1 ./build/UndoRedoGTEST
       # MoveGTEST
+      - name: some tests things
+        run: |
+          pwd
+          ls build
       - name: Run MoveGTEST
         run: ./build/MoveGTEST
       - name: Run MoveGTEST - Valgrind
