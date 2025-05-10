@@ -13,13 +13,6 @@ jobs:
           fetch-depth: 0     
       - name: configure resources
         run: mkdir build && cp -r tests/testStructures build/
-      - name: some tests things
-        run: |
-          pwd
-          echo "------------------"
-          ls build
-          echo "------------------"
-          ls build/testStructures
       - name: Configure
         run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release
       - name: Build
