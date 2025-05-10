@@ -32,7 +32,6 @@ jobs:
         run: valgrind --leak-check=full --error-exitcode=1 ./build/UndoRedoGTEST
       # MoveGTEST
       - name: Run MoveGTEST
-        working-directory: ./tests/
         run: ./build/MoveGTEST
       - name: Run MoveGTEST - Valgrind
         run: valgrind --leak-check=full --error-exitcode=1 ./build/MoveGTEST
