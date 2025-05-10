@@ -1417,7 +1417,7 @@ public:
         figureMoving = new QPushButton("", toolPanel);
         figureMoving->setToolTip("Mouse");
         figureMoving->setObjectName("Mouse");
-        QIcon IcoMoving("../Static/icons/move.ico");
+        QIcon IcoMoving("../Static/icons/cursorTool.png");
         figureMoving->setIcon(IcoMoving);
         figureMoving->setFixedSize(40, 40);
         figureMoving->setStyleSheet(buttonStyle);
@@ -1427,7 +1427,7 @@ public:
         toolMoving = new QPushButton("", toolPanel);
         toolMoving->setToolTip("Moving");
         toolMoving->setObjectName("Moving");
-        QIcon IcoMove("../Static/icons/icoMove.ico");
+        QIcon IcoMove("../Static/icons/MoveTool.png");
         toolMoving->setIcon(IcoMove);
         toolMoving->setFixedSize(40, 40);
         toolMoving->setStyleSheet(buttonStyle);
@@ -1458,7 +1458,7 @@ public:
         toolSelected = new QPushButton("", toolPanel);
         toolSelected->setToolTip("Selected");
         toolSelected->setObjectName("Resize");
-        QIcon IcoSel("../Static/icons/icoResize.ico");
+        QIcon IcoSel("../Static/icons/SelectionTool.png");
         toolSelected->setIcon(IcoSel);
         toolSelected->setFixedSize(40, 40);
         toolSelected->setStyleSheet(buttonStyle);
