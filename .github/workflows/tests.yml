@@ -11,6 +11,8 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0     
+      - name:
+        run: mkdir build && cp tests/testStructures build/
       - name: Configure
         run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release
       - name: Build
