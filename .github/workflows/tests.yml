@@ -13,16 +13,6 @@ jobs:
           fetch-depth: 0     
       - name: Configure
         run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release
-      - name: Cache CMake build
-        uses: actions/cache@v4.2.3
-        with:
-          path: |
-            ~/.cache/googletest
-            build
-          key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
-            
       - name: Build
         run: cmake --build build
       # ObjectsGTEST
@@ -43,6 +33,6 @@ jobs:
       # MoveGTEST
       - name: Run MoveGTEST
         working-directory: ./tests/
-        run: ../build/MoveGTEST
+        run: ./build/MoveGTEST
       - name: Run MoveGTEST - Valgrind
         run: valgrind --leak-check=full --error-exitcode=1 ./build/MoveGTEST
