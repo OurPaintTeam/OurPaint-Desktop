@@ -25,10 +25,16 @@ int Application::exec() {
 }
 
 void Application::initLogger() {
-    freopen(R"(..\\loggs\\guiLog.txt)", "a", stderr);
-    logFile.setFileName("guiLog.txt");
-    logFile.open(QIODevice::Append | QIODevice::Text);
-    qInstallMessageHandler(guiLogger);
+    try {
+        QString logPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../loggs/guiLog.txt");
+        logFile.setFileName(logPath);
+        if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
+            throw std::runtime_error("Can't open log file");
+        }
+        qInstallMessageHandler(guiLogger);
+    }catch(std::runtime_error &error){
+        mainWind.showWarning("Can't open log file!");
+    }
 }
 
 void Application::initialize() {
