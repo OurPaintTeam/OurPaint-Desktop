@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDateTime>
+#include <stdexcept>
 
 extern QFile logFile;
 

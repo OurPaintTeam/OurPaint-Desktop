@@ -26,14 +26,28 @@ int Application::exec() {
 
 void Application::initLogger() {
     try {
-        QString logPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../loggs/guiLog.txt");
-        logFile.setFileName(logPath);
-        if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
-            throw std::runtime_error("Can't open log file");
+        QString logDirPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../loggs");
+        QDir logDir(logDirPath);
+
+        if (!logDir.exists()) {
+            if (!logDir.mkpath(".")) {
+                throw std::runtime_error("Failed to create log directory: " + logDirPath.toStdString());
+            }
         }
+
+        QString logPath = logDirPath + "/guiLog.txt";
+        logFile.setFileName(logPath);
+
+        if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
+            QString errorMsg = QString("Failed to open log file '%1': %2")
+                    .arg(logPath, logFile.errorString());
+            throw std::runtime_error(errorMsg.toStdString());
+        }
+
         qInstallMessageHandler(guiLogger);
-    }catch(std::runtime_error &error){
-        mainWind.showWarning("Can't open log file!");
+
+    } catch (const std::runtime_error &error) {
+        mainWind.showWarning("Can't open or create log file!");
     }
 }
 
