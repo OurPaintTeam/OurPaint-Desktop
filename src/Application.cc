@@ -33,7 +33,7 @@ void Application::initLogger() {
         }
         qInstallMessageHandler(guiLogger);
     }catch(std::runtime_error &error){
-        mainWind.showWarning("Can't open log file");
+        mainWind.showWarning("Can't open log file!");
     }
 }
 
