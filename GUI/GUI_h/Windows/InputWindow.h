@@ -57,7 +57,7 @@ public:
         // Создание иконки закрытия
         closeButton = new QPushButton(this);
         closeButton->setFixedSize(25, 25);
-        closeButton->setIcon(QIcon("../Static/icons/close.ico")); // Установка иконки
+        closeButton->setIcon(QIcon("../Static/icons/topRight/Close.png")); // Установка иконки
         closeButton->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
                                    "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
         connect(closeButton, &QPushButton::clicked, this, &InputWindow::CloseClicked);

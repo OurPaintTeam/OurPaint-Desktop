@@ -120,7 +120,7 @@ public:
     {
         closeButton = new QPushButton("", topBar);
         closeButton->setFixedSize(25, 25);
-        closeButton->setIcon(QIcon("../Static/icons/close.ico"));
+        closeButton->setIcon(QIcon("../Static/icons/topRight/Close.png"));
         closeButton->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
                                    "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }");
         QObject::connect(closeButton, &QPushButton::clicked, HelpWindow, &QMainWindow::close);
