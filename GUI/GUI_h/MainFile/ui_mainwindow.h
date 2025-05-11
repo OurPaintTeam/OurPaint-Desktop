@@ -951,7 +951,7 @@ public:
         closeButton->setObjectName("closeButton");
         closeButton->setFixedSize(25, 25);
         closeButton->setToolTip("Close");
-        closeButton->setIcon(QIcon("../Static/icons/close.ico")); // Установка иконки
+        closeButton->setIcon(QIcon("../Static/icons/topRight/Close.png")); // Установка иконки
         closeButton->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px;}"
                                    "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
         QObject::connect(closeButton, &QPushButton::clicked, MainWindow, &QMainWindow::close);
@@ -961,7 +961,7 @@ public:
         minimizeButton->setObjectName("minimizeButton");
         minimizeButton->setToolTip("Roll");
         minimizeButton->setFixedSize(25, 25);
-        minimizeButton->setIcon(QIcon("../Static/icons/minus.ico"));
+        minimizeButton->setIcon(QIcon("../Static/icons/topRight/Minimize.png"));
         minimizeButton->setStyleSheet(
                 "QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
@@ -972,7 +972,7 @@ public:
         maximizeButton->setObjectName("maximizeButton");
         maximizeButton->setFixedSize(25, 25);
         maximizeButton->setToolTip("Unwrap");
-        maximizeButton->setIcon(QIcon("../Static/icons/big.ico"));
+        maximizeButton->setIcon(QIcon("../Static/icons/topRight/Maximize.png"));
         maximizeButton->setStyleSheet(
                 "QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
@@ -990,7 +990,7 @@ public:
         settings->setObjectName("settings");
         settings->setToolTip("Settings");
         settings->setFixedSize(25, 25);
-        settings->setIcon(QIcon("../Static/icons/SettingsIco.ico"));
+        settings->setIcon(QIcon("../Static/icons/topRight/Settings.png"));
         settings->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
                                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
     }
