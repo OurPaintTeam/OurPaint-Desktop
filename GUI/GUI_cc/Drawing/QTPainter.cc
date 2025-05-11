@@ -336,7 +336,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
     // Если не активен то не рисуем
     if (!painter.isActive()) {
-        return;
+        throw std::runtime_error("Painter not active!");
     }
 
     painter.setRenderHint(QPainter::Antialiasing, true);

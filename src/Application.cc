@@ -55,11 +55,19 @@ void Application::initialize() {
     QApplication::setStyle("Fusion");
     app.setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
 
+    mainWind.show();
+    mainWind.resize();
+
+    if(mainWind.getQTPainter() == nullptr){
+        mainWind.showWarning("Can't opened QTPainter");
+    }
+    if(mainWind.getLeftMenuBar() == nullptr){
+        mainWind.showWarning("Can't opened LeftMenu");
+    }
+
     painter = mainWind.getQTPainter();
     scene.setPainter(painter);
     leftMenu = mainWind.getLeftMenuBar();
-    mainWind.show();
-    mainWind.resize();
 
     vec_requirements = {
             "PointSectionDist",

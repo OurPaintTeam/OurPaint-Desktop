@@ -1100,7 +1100,7 @@ public:
         // Создание свернутой панели
         collapsedPanel = new QWidget(centralwindow);
         collapsedPanel->setFocusPolicy(Qt::NoFocus);
-        collapsedPanel->setObjectName("coolapsed");
+        collapsedPanel->setObjectName("collapsedPanel");
         collapsedPanel->setFixedWidth(40);
         collapsedPanel->setStyleSheet("background-color: #494850; border-bottom-left-radius: 10px;\n"
                                       "border-bottom-right-radius: 0px;");
