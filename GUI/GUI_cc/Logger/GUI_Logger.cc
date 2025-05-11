@@ -3,48 +3,31 @@
 QFile logFile;
 
 void guiLogger(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
-    QByteArray localMsg = msg.toLocal8Bit();
     QString logMessage;
 
     switch (type) {
-        case QtDebugMsg:
-            logMessage = QString("Debug: %1").arg(localMsg.constData());
-            break;
-        case QtInfoMsg:
-            logMessage = QString("Info: %1").arg(localMsg.constData());
-            break;
-        case QtWarningMsg:
-            logMessage = QString("Warning: %1").arg(localMsg.constData());
-            break;
-        case QtCriticalMsg:
-            logMessage = QString("Critical: %1").arg(localMsg.constData());
-            break;
-        case QtFatalMsg:
-            logMessage = QString("Fatal: %1").arg(localMsg.constData());
-            break;
+        case QtDebugMsg:    logMessage = "Debug";   break;
+        case QtInfoMsg:     logMessage = "Info";    break;
+        case QtWarningMsg:  logMessage = "Warning"; break;
+        case QtCriticalMsg: logMessage = "Critical";break;
+        case QtFatalMsg:    logMessage = "Fatal";   break;
     }
 
-    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
-    QString fullMessage = QString("[%1] %2\n").arg(timestamp, logMessage);
+    QString times = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+    QString fullMessage = QString("[%1] %2: %3\n").arg(times, logMessage, msg);
 
     if (!logFile.isOpen()) {
         logFile.setFileName("log.txt");
-        logFile.open(QIODevice::Append | QIODevice::Text);
+        if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
+            throw std::runtime_error("Failed to open log file");
+        }
     }
 
-    if (logFile.isOpen()) {
-        QTextStream out(&logFile);
-        out << fullMessage;
-        out.flush();
-    }
+    QTextStream out(&logFile);
+    out << fullMessage;
+    out.flush();
 
-    if (stderr && _fileno(stderr) >= 0) {
-        QByteArray byteArray = fullMessage.toLocal8Bit();
-        fwrite(byteArray.constData(), 1, byteArray.size(), stderr);
-        fflush(stderr);}
-
-
-        if (type == QtFatalMsg) {
+    if (type == QtFatalMsg) {
         abort();
-      }
+    }
 }
