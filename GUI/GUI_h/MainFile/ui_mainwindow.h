@@ -179,8 +179,9 @@ public:
         MainWindow->setWindowFlags(Qt::FramelessWindowHint | Qt::Window);
         MainWindow->setAttribute(Qt::WA_TranslucentBackground); // Прозрачность
 //
-        if (MainWindow->objectName().isEmpty())
-            MainWindow->setObjectName("OurPaint");
+        if (MainWindow->objectName().isEmpty()) { MainWindow->setObjectName("MainWindow"); }
+        MainWindow->setWindowTitle("OurPaint");
+
 
         MainWindow->setStyleSheet(
                 "QWidget { "
@@ -1858,7 +1859,7 @@ public:
 
     void reTranslateUi(QMainWindow *MainWindow) const {
 // Установка текста для элементов интерфейса
-        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
+        MainWindow->setWindowTitle(QCoreApplication::translate("OurPaint", "OurPaint", nullptr));
 
         actionSave_project_to->setText(QCoreApplication::translate("MainWindow", "Save project to...", nullptr));
         actionImport_project->setText(QCoreApplication::translate("MainWindow", "Import project", nullptr));
