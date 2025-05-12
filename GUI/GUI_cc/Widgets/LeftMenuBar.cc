@@ -255,7 +255,7 @@ void LeftMenuBar::updateParametersById(unsigned long long id, const std::vector<
 void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly)) {
-        qWarning("Не удалось открыть файл для записи");
+        qWarning("Not opened file for save bin file in left menu!");
         return;
     }
 
@@ -267,6 +267,10 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
     out << figureCount;
 
     for (int i = 0; i < figureCount; ++i) {
+        if(figuresNode == NULL){
+            qWarning("FiguresNode is null in left menu!");
+            return;
+        }
         TreeNode* node = figuresNode->child(i);
         QString name = node->data(0).toString();
         unsigned long long id = 0;
@@ -289,6 +293,10 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
     out << reqCount;
 
     for (int i = 0; i < reqCount; ++i) {
+        if(requirementsNode == NULL){
+            qWarning("RequirementsNode is null in left menu!");
+            return;
+        }
         TreeNode* node = requirementsNode->child(i);
         QString name = node->data(0).toString();
 
@@ -322,7 +330,7 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
 void LeftMenuBar::loadFromBinaryFile(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        qWarning("Не удалось открыть файл для чтения");
+        qWarning("Not opened file for load bin file in left menu!");
         return;
     }
 
@@ -371,6 +379,74 @@ void LeftMenuBar::loadFromBinaryFile(const QString& filePath) {
         } else {
             addRequirementElem(name, ReqID, ElemID1, ElemID2);
         }
+    }
+
+    file.close();
+}
+
+void LeftMenuBar::saveToTextFile(const QString& filePath) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning("Not opened file for save txt file in left menu!");
+        return;
+    }
+
+    QTextStream out(&file);
+
+    /******************* Сохраняем фигуры **************************/
+    const int figureCount = figuresNode ? figuresNode->childCount() : 0;
+    out << "Figures: " << figureCount << "\n\n";
+
+    for (int i = 0; i < figureCount; ++i) {
+        if(figuresNode == NULL){
+            qWarning("FiguresNode is null in left menu!");
+            return;
+        }
+        TreeNode* node = figuresNode->child(i);
+        QString name = node->data(0).toString();
+        out << name << "\n";
+
+        unsigned long long id = 0;
+        QList<QString> paramNames;
+        QList<double> paramValues;
+
+        for (int j = 0; j < node->childCount(); ++j) {
+            QString text = node->child(j)->data(0).toString();
+            if (text.startsWith("ID: ")) {
+                id = text.section(": ", 1).toULongLong();
+            } else {
+                QString paramName = text.section(": ", 0, 0);
+                double value = text.section(": ", 1).toDouble();
+                paramNames.append(paramName);
+                paramValues.append(value);
+            }
+        }
+
+        out << "ID: " << id << "\n";
+        for (int k = 0; k < paramNames.size(); ++k) {
+            out << paramNames[k] << ": " << paramValues[k] << "\n";
+        }
+        out << "\n";
+    }
+
+    /******************* Сохраняем требования **************************/
+    const int reqCount = requirementsNode ? requirementsNode->childCount() : 0;
+    out << "Requirements: " << reqCount << "\n\n";
+
+    for (int i = 0; i < reqCount; ++i) {
+        if(requirementsNode == NULL){
+            qWarning("RequirementsNode is null in left menu!");
+            return;
+        }
+        TreeNode* node = requirementsNode->child(i);
+        QString name = node->data(0).toString();
+        out << name << "\n";
+
+        for (int j = 0; j < node->childCount(); ++j) {
+            QString text = node->child(j)->data(0).toString();
+            out << text << "\n";
+        }
+        out << "\n";
     }
 
     file.close();

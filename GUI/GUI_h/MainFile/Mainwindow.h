@@ -104,6 +104,7 @@ public:
     /***     Сохранение и импорт настроек       ***/
     void saveSettings();
     void loadSettings();
+    void saveCommandsInTxt(const QString &path);
 
 protected:
 

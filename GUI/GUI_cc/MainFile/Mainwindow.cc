@@ -365,6 +365,10 @@ void MainWindow::saveSettings() {
     );
 }
 
+void MainWindow::saveCommandsInTxt(const QString &path){
+    leftMenuBar->saveToTextFile(path);
+}
+
 void MainWindow::loadSettings() {
     bool gridChecked, axisChecked;
     QString userName;
@@ -380,6 +384,7 @@ void MainWindow::loadSettings() {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
+
     if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
         dialog.setModal(true);
