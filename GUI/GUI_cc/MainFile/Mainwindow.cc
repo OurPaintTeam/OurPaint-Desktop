@@ -357,6 +357,10 @@ void MainWindow::showSuccess(const QString &text) {
     success->show();
 }
 
+QString MainWindow::getUserName(){
+    return ui->nameUsers->text();
+}
+
 void MainWindow::saveSettings() {
     settings->saveSettings(
             ui->componentGrid->isChecked(),
@@ -554,10 +558,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
             return true;
             // Я красивый белорус!!!
         }else if (!ui->console->isActiveWindow() &&
-                keyEvent->key() == Qt::Key_Up ||
-                keyEvent->key() == Qt::Key_Down ||
-                keyEvent->key() == Qt::Key_Right ||
-                keyEvent->key() == Qt::Key_Left) {
+                  keyEvent->key() != Qt::ControlModifier &&
+                  (keyEvent->key() == Qt::Key_Up ||
+                   keyEvent->key() == Qt::Key_Down ||
+                   keyEvent->key() == Qt::Key_Right ||
+                   keyEvent->key() == Qt::Key_Left)) {
             return true;
         }
 
@@ -768,7 +773,7 @@ void MainWindow::buttonScript() {
 }
 
 void MainWindow::openServer() {
-    InputWindow *windowServer = new InputWindow("Enter port: ");
+    InputWindow *windowServer = new InputWindow("Enter port: ", this);
     QObject::connect(windowServer, &InputWindow::textEnter, [this](const QString &text) {
         emit SigOpenServer(text);
     });
@@ -776,7 +781,7 @@ void MainWindow::openServer() {
 }
 
 void MainWindow::joinServer() {
-    InputWindow *windowServer = new InputWindow("Enter IP: ");
+    InputWindow *windowServer = new InputWindow("Enter IP: ",this);
     QObject::connect(windowServer, &InputWindow::textEnter, [this](const QString &text) {
         emit SigJoinServer(text);
     });

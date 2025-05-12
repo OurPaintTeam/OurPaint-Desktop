@@ -39,11 +39,11 @@ private slots:
     }
 
 public:
-    InputWindow(const QString &message, QWidget *parent = nullptr) : QDialog(parent) {
-
-        setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
+    InputWindow(const QString &message, QWidget *parent) : QDialog(parent) {
+        setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
         setAttribute(Qt::WA_TranslucentBackground);
         setModal(true);
+        setWindowModality(Qt::WindowModal);
 
         setWindowModality(Qt::ApplicationModal);  // Для модальности только в пределах родительского окна
 

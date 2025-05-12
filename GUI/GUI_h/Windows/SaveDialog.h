@@ -17,7 +17,8 @@ private:
     QPoint mousePos;
 public:
     //void setFile(QString File){file=File;}
-    SaveDialog(QWidget *parent = nullptr) : QDialog(parent) {
+    SaveDialog(QWidget *parent ) : QDialog(parent) {
+        setParent(parent, Qt::SubWindow);
         setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
         setAttribute(Qt::WA_TranslucentBackground);
         setWindowModality(Qt::ApplicationModal);  // Для модальности только в пределах родительского окна

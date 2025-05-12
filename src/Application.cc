@@ -5,7 +5,7 @@ Application::Application(int& argc, char** argv)
           mainWind(),
           painter(nullptr),
           scene(nullptr),
-          username("User"),
+          username(mainWind.getUserName()),
           server(username),
           client(username),
           undoRedo(100) {
@@ -81,6 +81,8 @@ void Application::initialize() {
             "SectionSectionPerpendicular",
             "SectionSectionAngle"
     };
+
+
 
     QObject::connect(qApp, &QCoreApplication::aboutToQuit, [this]() {
         leftMenu->saveToTextFile(pathTxtFileCommands);
@@ -605,7 +607,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::oneRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                InputWindow window("Enter parameters: ");
+                InputWindow window("Enter parameters: ",&mainWind);
                 if (window.exec() == QDialog::Accepted) {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
@@ -628,7 +630,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::threeRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                InputWindow window("Enter parameters: ");
+                InputWindow window("Enter parameters: ",&mainWind);
                 if (window.exec() == QDialog::Accepted) {
                     RequirementData reqData;
                     bool ok = false;
@@ -640,7 +642,7 @@ void Application::setupRequirementsConnections() {
             } else {
                 std::vector<ID> vec_id = painter->getVecSelectedIDSections();
                 if (vec_id.size() == 1) {
-                    InputWindow window("Enter parameters: ");
+                    InputWindow window("Enter parameters: ",&mainWind);
                     if (window.exec() == QDialog::Accepted) {
                         RequirementData reqData;
                         bool ok = false;
@@ -664,7 +666,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::fiveRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                InputWindow window("Enter parameters: ");
+                InputWindow window("Enter parameters: ",&mainWind);
                 if (window.exec() == QDialog::Accepted) {
                     RequirementData reqData;
                     bool ok = false;
@@ -712,7 +714,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::tenRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                InputWindow window("Enter parameters: ");
+                InputWindow window("Enter parameters: ",&mainWind);
                 if (window.exec() == QDialog::Accepted) {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);

@@ -101,6 +101,7 @@ public:
     void showWarning(const QString &text);
 
     /***     Сохранение и импорт настроек       ***/
+    QString getUserName();
     void saveSettings();
     void loadSettings();
     void saveCommandsInTxt(const QString &path);

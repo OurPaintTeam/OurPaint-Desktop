@@ -15,7 +15,8 @@ class CastomeWindowError : public QWidget {
 Q_OBJECT
 
 public:
-    CastomeWindowError(const QString &message, QWidget *parent = nullptr) : QWidget(parent) {
+    CastomeWindowError(const QString &message, QWidget *parent ) : QWidget(parent) {
+        setParent(parent, Qt::SubWindow);
         setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
         setAttribute(Qt::WA_TranslucentBackground);
 

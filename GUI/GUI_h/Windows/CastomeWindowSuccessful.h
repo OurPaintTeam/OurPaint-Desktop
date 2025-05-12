@@ -15,7 +15,8 @@ class CastomeWindowSuccessful : public QWidget {
 Q_OBJECT
 
 public:
-    CastomeWindowSuccessful(const QString &message, QWidget *parent = nullptr) : QWidget(parent) {
+    CastomeWindowSuccessful(const QString &message, QWidget *parent) : QWidget(parent) {
+        setParent(parent, Qt::SubWindow);
         setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
         setAttribute(Qt::WA_TranslucentBackground);
 

@@ -16,7 +16,8 @@ class CastomeWindowWarning : public QWidget {
 Q_OBJECT
 
 public:
-    CastomeWindowWarning(const QString &message, QWidget *parent = nullptr) : QWidget(parent) {
+    CastomeWindowWarning(const QString &message, QWidget *parent ) : QWidget(parent) {
+        setParent(parent, Qt::SubWindow);
         setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
         setAttribute(Qt::WA_TranslucentBackground);
 
