@@ -50,6 +50,8 @@ public:
     // Отрисовка подсказок
     void drawHints(QPainter &painter, const QPointF &closesPoint) ;
 
+    void clear();
+
 signals:
     void SigPoint(double x, double y);
     void SigCircle(double x, double y, double r);

@@ -123,7 +123,6 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
                         double y1 = cursorY;
                         emit SigSection(x0, y0, x1, y1);
                     }
-                    tabPressCount = 0;
                 } else if (modeCircle) {
                     double x1 = cursorX;
                     double y1 = cursorY;
@@ -139,6 +138,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
                     emit SigArc(x1,y1,x0,y0,xc,yc);
                 }
                 resetCoordinates();
+                tabPressCount = 0;
                 drawingInProgress = false;
 
 
@@ -202,7 +202,7 @@ void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
     if (modeSection) {
         if (tabPressed) {
             ++tabPressCount;
-            if (tabPressCount == 1 && (closestStartPoint.x() != 0 || closestStartPoint.y() != 0)) {
+            if (tabPressCount == 1) {
                 startCoordinates = closestStartPoint;
             }
         }
@@ -237,4 +237,12 @@ void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
         tabPressCount = 0;
         resetCoordinates();
     }
+}
+
+void DrawMouse::clear() {
+     closestStartPoint=QPointF();
+     closestPointNext=QPointF();
+     startCoordinates=QPointF();
+     drawingInProgress=false;
+     tabPressCount=0;
 }

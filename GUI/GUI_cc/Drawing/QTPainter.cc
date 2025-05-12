@@ -71,7 +71,7 @@ void QTPainter::clear() {
 
     selectedClear();
     Scaling::setZoomZero();
-
+    drawFigM.clear();
     selectedRectangle.clear();
 }
 
