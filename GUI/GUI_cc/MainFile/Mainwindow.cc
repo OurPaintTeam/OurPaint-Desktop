@@ -148,7 +148,7 @@ void MainWindow::initConnections() {
     });
 
     QStringList commandList = {
-            "circle ", "exit", "addreq ", "delReq", "section ","arc ", "point ", "clear", "delObj"
+            "circle ", "exit", "addReq ", "delReq", "section ","arc ", "point ", "clear", "delObj"
     };
 
     ui->console->setCommands(commandList);

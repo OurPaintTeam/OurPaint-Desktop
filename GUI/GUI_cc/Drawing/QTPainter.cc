@@ -445,6 +445,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                     emit MovingArc(selectedIDArc);
                 }
             } else {
+                emit EndMoving();
                 drawing = false;
             }
         }

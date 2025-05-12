@@ -104,6 +104,7 @@ signals:
     void MovingSection(const std::vector<ID>& selectedIDSections,QPointF&,QPointF&);
     void MovingCircle(const std::vector<ID>& selectedIDCircles,QPointF&);
     void MovingArc(const std::vector<ID>& selectedIDArcs);
+    void EndMoving();
 
     // При отрисовке мышкой
     void SigPoint(double x, double y);

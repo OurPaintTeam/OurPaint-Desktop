@@ -62,6 +62,9 @@ private:
     void addRequirement(Requirement RQ,ID id1,ID id2,double parameters);
     void addRequirement(Requirement RQ,ID id1,ID id2);
 
+private:
+
+
 public:
     Application(int &argc, char **argv);
     int exec();

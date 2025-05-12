@@ -90,9 +90,14 @@ void Application::setupQTPainterConnections() {
 
         });
 
+        QObject::connect(painter, &QTPainter::EndMoving, [this](){
+            mainWind.showError("End Moving");
+            static int i;
+            std::cout << i++ << '\n';
+        });
+
         // Перемещение точки
         QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
-
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
 
             try {
@@ -393,42 +398,69 @@ void Application::setupQTPainterConnections() {
 
     // Удаление элемента
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
-        std::vector<ID> vecPoint = painter->getVecSelectedIDPoints();
-        std::vector<ID> vecSection = painter->getVecSelectedIDSections();
-        std::vector<ID> vecCircle = painter->getVecSelectedIDCircles();
+        try {
+            std::vector<ID> vecPoint = painter->getVecSelectedIDPoints();
+            std::vector<ID> vecSection = painter->getVecSelectedIDSections();
+            std::vector<ID> vecCircle = painter->getVecSelectedIDCircles();
 
-        UndoRedo::Transaction txn("Delete objects");
 
-        for (int i = 0; i < vecPoint.size(); ++i) {
-            UndoRedo::CommandDeletePoint* cmd = new UndoRedo::CommandDeletePoint(scene, vecPoint[i]);
-            txn.addCommand(cmd);
+            for (auto& sectionID : vecSection) {
+                ObjectData obj = scene.getObjectData(sectionID);
+                std::vector<ID> points = obj.subObjects;
+                for (auto& p : points) {
+                    auto it = std::find(vecPoint.begin(), vecPoint.end(), p);
+                    if (it != vecPoint.end()) {
+                        vecPoint.erase(it);
+                    }
+                }
+            }
 
-            vecCalls.push_back([=, this]() {
-                leftMenu->removeFigureById(vecPoint[i].get());
-            });
+            for (auto& circleID : vecCircle) {
+                ObjectData obj = scene.getObjectData(circleID);
+                std::vector<ID> points = obj.subObjects;
+                for (auto& p : points) {
+                    auto it = std::find(vecPoint.begin(), vecPoint.end(), p);
+                    if (it != vecPoint.end()) {
+                        vecPoint.erase(it);
+                    }
+                }
+            }
+
+            UndoRedo::Transaction txn("Delete objects");
+
+            for (int i = 0; i < vecPoint.size(); ++i) {
+                UndoRedo::CommandDeletePoint *cmd = new UndoRedo::CommandDeletePoint(scene, vecPoint[i]);
+                txn.addCommand(cmd);
+
+                vecCalls.push_back([=, this]() {
+                    leftMenu->removeFigureById(vecPoint[i].get());
+                });
+            }
+            for (int i = 0; i < vecSection.size(); ++i) {
+                UndoRedo::CommandDeleteSection *cmd = new UndoRedo::CommandDeleteSection(scene, vecSection[i]);
+                txn.addCommand(cmd);
+
+                vecCalls.push_back([=, this]() {
+                    leftMenu->removeFigureById(vecSection[i].get());
+                });
+            }
+            for (int i = 0; i < vecCircle.size(); ++i) {
+                UndoRedo::CommandDeleteCircle *cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircle[i]);
+                txn.addCommand(cmd);
+
+                vecCalls.push_back([=, this]() {
+                    leftMenu->removeFigureById(vecCircle[i].get());
+                });
+            }
+
+            undoRedo.push(std::move(txn));
+
+            painter->selectedClear();
+            painter->draw();
+            updateState();
+        } catch (std::exception& e) {
+            mainWind.showError(e.what());
         }
-        for (int i = 0; i < vecSection.size(); ++i) {
-            UndoRedo::CommandDeleteSection* cmd = new UndoRedo::CommandDeleteSection(scene, vecSection[i]);
-            txn.addCommand(cmd);
-
-            vecCalls.push_back([=, this]() {
-                leftMenu->removeFigureById(vecSection[i].get());
-            });
-        }
-        for (int i = 0; i < vecCircle.size(); ++i) {
-            UndoRedo::CommandDeleteCircle* cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircle[i]);
-            txn.addCommand(cmd);
-
-            vecCalls.push_back([=, this]() {
-                leftMenu->removeFigureById(vecCircle[i].get());
-            });
-        }
-
-        undoRedo.push(std::move(txn));
-
-        painter->selectedClear();
-        painter->draw();
-        updateState();
     });
 
     // Изменение размера
