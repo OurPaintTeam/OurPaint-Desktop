@@ -24,6 +24,7 @@ public:
     static std::vector<ID>  enteringInRect(std::unordered_map<ID,  Point*>& points,QRectF &rect,std::vector<ID>&);
     static std::vector<ID>  enteringInRect(std::unordered_map<ID, Section*>& sections,QRectF &rect,std::vector<ID>&);
     static std::vector<ID>  enteringInRect(std::unordered_map<ID,  Circle*>& circles,QRectF &rect,std::vector<ID>&);
+    static std::vector<ID>  enteringInRect(std::unordered_map<ID,  Arc*>& arcs,QRectF &rect,std::vector<ID>&);
 
     // Функция проверки координат курсора и точки для перемещения
     static bool checkFigure(double x, double y);

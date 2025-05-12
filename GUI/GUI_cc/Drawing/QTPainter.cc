@@ -94,7 +94,9 @@ bool QTPainter::findClosesObject() {
     }
 
     auto currentTime = std::chrono::steady_clock::now();
-    if (currentTime - lastClickTime < std::chrono::milliseconds(300)) {
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastClickTime);
+
+    if (duration < std::chrono::milliseconds(300)) {
         return false;
     }
 
@@ -189,7 +191,7 @@ bool QTPainter::findClosesObject() {
             }
 
             if (!found) {
-                updated.push_back(arcs.first); // добавляем
+                 updated.push_back(arcs.first); // добавляем
             }
 
             selectedIDArc = std::move(updated); // заменяем старый вектор
@@ -197,6 +199,7 @@ bool QTPainter::findClosesObject() {
         }
     }
 
+    selectedClear();
     return false;
 }
 
@@ -389,9 +392,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                 sectionStorage != nullptr && sectionStorage->size() > 0 ||
                 pointStorage != nullptr && pointStorage->size() > 0)
 
-                if(!findClosesObject()){
-                    selectedClear();
-                }
+                findClosesObject();
 
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
             if (circleStorage != nullptr && circleStorage->size() > 0 ||
@@ -404,6 +405,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         ClosesPoint::enteringInRect(*pointStorage, rect, selectedIDPoint);
         ClosesPoint::enteringInRect(*sectionStorage, rect, selectedIDSection);
         ClosesPoint::enteringInRect(*circleStorage, rect, selectedIDCircle);
+        ClosesPoint::enteringInRect(*arcStorage, rect, selectedIDArc);
     } else if (ModeManager::getActiveMode(WorkModes::Move)) {
 
         if (ModeManager::getActiveMode(MouseMode::RightClick)) {

@@ -19,6 +19,12 @@
 // Отрисовка фона
 void DrawBackground::drawFon(QPainter &painter) {
 
+    // Для записи координат для отрисовки
+    std::vector<QPointF> pointXR;
+    std::vector<QPointF> pointXL;
+    std::vector<QPointF> pointYU;
+    std::vector<QPointF> pointYD;
+
     double _width = Scaling::getCenteredCoordinatesX();
     double _height = Scaling::getCenteredCoordinatesY();
     short int width = Scaling::getActualMonitorWidth();
@@ -37,11 +43,6 @@ void DrawBackground::drawFon(QPainter &painter) {
         double stepLogical = Step(minStep / zoom);
         double currentCellSize = stepLogical * zoom;
 
-        // Для записи координат для отрисовки
-        std::vector<QPointF> pointXR;
-        std::vector<QPointF> pointXL;
-        std::vector<QPointF> pointYU;
-        std::vector<QPointF> pointYD;
 
         short int index = 1; // Делаем блоки 5 на 5
 
@@ -72,44 +73,51 @@ void DrawBackground::drawFon(QPainter &painter) {
             ++index;
         }
 
-        // Отрисовка значений
-        DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD);
     }
 
 
-if(ModeManager::getAxis()) { // Оси координат
-    painter.setPen(Qt::black);
+    if (ModeManager::getAxis()) { // Оси координат
 
-    // Если ось становится невидимой мы ее рисуем на границе
+        painter.setPen(Qt::black);
 
-    // Отрисовка вертикальной оси Oy
-    if (_width <= std::abs(deltaX)) {
-        if (deltaX > 0) {
-            // крайняя правая
-            painter.drawLine(QPointF(_width - 1 - deltaX, -_height - deltaY),
-                             QPointF(_width - 1 - deltaX, height - deltaY));  // Oy
+        // Отрисовка значений
+        DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD);
+
+        // Если ось становится невидимой мы ее рисуем на границе
+
+        // Отрисовка вертикальной оси Oy
+        if (_width <= std::abs(deltaX)) {
+            if (deltaX > 0) {
+                // крайняя правая
+                painter.drawLine(QPointF(_width - 1 - deltaX, -_height - deltaY),
+                                 QPointF(_width - 1 - deltaX, height - deltaY));  // Oy
+            } else {
+                // крайняя левая
+                painter.drawLine(QPointF(-_width + 1 - deltaX, -_height - deltaY),
+                                 QPointF(-_width + 1 - deltaX, height - deltaY));  // Oy
+            }
         } else {
-            // крайняя левая
-            painter.drawLine(QPointF(-_width + 1 - deltaX, -_height - deltaY),
-                             QPointF(-_width + 1 - deltaX, height - deltaY));  // Oy
+            painter.drawLine(QPointF(0, (-_height - deltaY)), QPointF(0, (height - deltaY)));  // Oy
+        }
+
+        // Отрисовка горизонтальной оси Ox
+        if (_height <= std::abs(deltaY)) {
+            if (deltaY > 0) {
+                // Нижняя
+                painter.drawLine(QPointF(-_width - deltaX, _height - 1 - deltaY),
+                                 QPointF(_width - deltaX, _height - 1 - deltaY));  // Ox
+            } else {
+                // Верхняя
+                painter.drawLine(QPointF(-_width - deltaX, -_height - deltaY),
+                                 QPointF(_width - deltaX, -_height - deltaY));  // Ox
+            }
+        } else {
+            painter.drawLine(QPointF((-_width - deltaX), 0), QPointF((_width - deltaX), 0));  // Ox
         }
     } else {
+        painter.setPen(Qt::darkGray);
+        painter.drawLine(QPointF((-_width - deltaX), 0), QPointF((_width - deltaX), 0));  // Ox
         painter.drawLine(QPointF(0, (-_height - deltaY)), QPointF(0, (height - deltaY)));  // Oy
     }
 
-    // Отрисовка горизонтальной оси Ox
-    if (_height <= std::abs(deltaY)) {
-        if (deltaY > 0) {
-            // Нижняя
-            painter.drawLine(QPointF(-_width - deltaX, _height - 1 - deltaY),
-                             QPointF(_width - deltaX, _height - 1 - deltaY));  // Ox
-        } else {
-            // Верхняя
-            painter.drawLine(QPointF(-_width - deltaX, -_height - deltaY),
-                             QPointF(_width - deltaX, -_height - deltaY));  // Ox
-        }
-    } else {
-        painter.drawLine(QPointF((-_width - deltaX), 0), QPointF((_width - deltaX), 0));  // Ox
-    }
-}
 }

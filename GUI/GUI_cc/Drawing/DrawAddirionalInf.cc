@@ -284,30 +284,43 @@ void DrawAdditionalInf::drawArcID(QPainter &painter,
                                   double endAngleDeg,
                                   double radius)
 {
-    if (arcID == ID(0)) return;
-
+    if (arcID == ID(0)) { return; }
     QString idText = QString("ID: %1").arg(arcID.get());
 
+    // Нормализуем углы
+    startAngleDeg = fmod(startAngleDeg + 360.0, 360.0);
+    endAngleDeg = fmod(endAngleDeg + 360.0, 360.0);
+
     double span = endAngleDeg - startAngleDeg;
-    if (span <= 0) span += 360;
+    if (span <= 0.1) span += 360.0;
 
     double midAngleDeg = startAngleDeg + span / 2.0;
+    midAngleDeg = fmod(midAngleDeg, 360.0);
     double midAngleRad = qDegreesToRadians(midAngleDeg);
 
     double labelRadius = radius + 10.0;
-
     QPointF labelPos(center.x() + labelRadius * std::cos(midAngleRad),
                      center.y() - labelRadius * std::sin(midAngleRad));
 
-    painter.save();
 
+    double tangentAngle = -midAngleDeg + 90.0;
+    double normalizedAngle = fmod(tangentAngle + 360.0, 360.0);
+    if (normalizedAngle > 90.0 && normalizedAngle < 270.0) {
+        tangentAngle += 180.0;
+    }
+
+    painter.save();
     painter.translate(labelPos);
-    painter.rotate(midAngleDeg + 90);
+    painter.rotate(tangentAngle);
 
     painter.setPen(QPen(Qt::black, 1));
     painter.drawText(QPointF(-painter.fontMetrics().horizontalAdvance(idText) / 2.0, 0), idText);
 
     painter.restore();
+
+    qDebug() << "Label position: " << labelPos;
+    qDebug() << "Mid angle (deg): " << midAngleDeg;
+    qDebug() << "Tangent angle (deg): " << tangentAngle;
 }
 
 
@@ -518,6 +531,10 @@ void DrawAdditionalInf::drawCoordinateLine(QPainter &painter, QPointF &start, QP
     QString lengthText = QString::number(length, 'f', 2);
     QFontMetrics metrics(painter.font());
     QRectF textRect = metrics.boundingRect(lengthText);
+
+    if (textRect.width() >= QLineF(start, end).length()) {
+        return;
+    }
 
     // Середина линии
     double midX = (start.x() + end.x()) / 2;
