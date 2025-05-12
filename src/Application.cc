@@ -26,14 +26,28 @@ int Application::exec() {
 
 void Application::initLogger() {
     try {
-        QString logPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../loggs/guiLog.txt");
-        logFile.setFileName(logPath);
-        if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
-            throw std::runtime_error("Can't open log file");
+        QString logDirPath = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../loggs");
+        QDir logDir(logDirPath);
+
+        if (!logDir.exists()) {
+            if (!logDir.mkpath(".")) {
+                throw std::runtime_error("Failed to create log directory: " + logDirPath.toStdString());
+            }
         }
+
+        QString logPath = logDirPath + "/guiLog.txt";
+        logFile.setFileName(logPath);
+
+        if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
+            QString errorMsg = QString("Failed to open log file '%1': %2")
+                    .arg(logPath, logFile.errorString());
+            throw std::runtime_error(errorMsg.toStdString());
+        }
+
         qInstallMessageHandler(guiLogger);
-    }catch(std::runtime_error &error){
-        mainWind.showWarning("Can't open log file!");
+
+    } catch (const std::runtime_error &error) {
+        mainWind.showWarning("Can't open or create log file!");
     }
 }
 
@@ -41,11 +55,19 @@ void Application::initialize() {
     QApplication::setStyle("Fusion");
     app.setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
 
+    mainWind.show();
+    mainWind.resize();
+
+    if(mainWind.getQTPainter() == nullptr){
+        mainWind.showWarning("Can't opened QTPainter");
+    }
+    if(mainWind.getLeftMenuBar() == nullptr){
+        mainWind.showWarning("Can't opened LeftMenu");
+    }
+
     painter = mainWind.getQTPainter();
     scene.setPainter(painter);
     leftMenu = mainWind.getLeftMenuBar();
-    mainWind.show();
-    mainWind.resize();
 
     vec_requirements = {
             "PointSectionDist",
@@ -59,18 +81,33 @@ void Application::initialize() {
             "SectionSectionPerpendicular",
             "SectionSectionAngle"
     };
+
+    QObject::connect(qApp, &QCoreApplication::aboutToQuit, [this]() {
+        leftMenu->saveToTextFile(pathTxtFileCommands);
+        qDebug() << "Save to txt.";
+    });
+
+    autoSaveTimer = new QTimer(this);
+    connect(autoSaveTimer, &QTimer::timeout, this, &Application::autoSave);
+    autoSaveTimer->start(180000);
 }
 
-void Application::setupQTPainterConnections() {
+void Application::autoSave() {
+    leftMenu->saveToTextFile(pathTxtFileCommands);
+    qDebug() << "Save to txt.";
+}
+
+    void Application::setupQTPainterConnections() {
     if (painter) {
         // Двойное нажатие на обьект и открытие его в левом меню
         QObject::connect(painter, &QTPainter::DoubleClickOnObject, [](ID id) {
 
         });
 
+        QObject::connect(painter, &QTPainter::EndMoving, [](){});
+
         // Перемещение точки
         QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
-
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
 
             try {
@@ -371,42 +408,69 @@ void Application::setupQTPainterConnections() {
 
     // Удаление элемента
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
-        std::vector<ID> vecPoint = painter->getVecSelectedIDPoints();
-        std::vector<ID> vecSection = painter->getVecSelectedIDSections();
-        std::vector<ID> vecCircle = painter->getVecSelectedIDCircles();
+        try {
+            std::vector<ID> vecPoint = painter->getVecSelectedIDPoints();
+            std::vector<ID> vecSection = painter->getVecSelectedIDSections();
+            std::vector<ID> vecCircle = painter->getVecSelectedIDCircles();
 
-        UndoRedo::Transaction txn("Delete objects");
 
-        for (int i = 0; i < vecPoint.size(); ++i) {
-            UndoRedo::CommandDeletePoint* cmd = new UndoRedo::CommandDeletePoint(scene, vecPoint[i]);
-            txn.addCommand(cmd);
+            for (auto& sectionID : vecSection) {
+                ObjectData obj = scene.getObjectData(sectionID);
+                std::vector<ID> points = obj.subObjects;
+                for (auto& p : points) {
+                    auto it = std::find(vecPoint.begin(), vecPoint.end(), p);
+                    if (it != vecPoint.end()) {
+                        vecPoint.erase(it);
+                    }
+                }
+            }
 
-            vecCalls.push_back([=, this]() {
-                leftMenu->removeFigureById(vecPoint[i].get());
-            });
+            for (auto& circleID : vecCircle) {
+                ObjectData obj = scene.getObjectData(circleID);
+                std::vector<ID> points = obj.subObjects;
+                for (auto& p : points) {
+                    auto it = std::find(vecPoint.begin(), vecPoint.end(), p);
+                    if (it != vecPoint.end()) {
+                        vecPoint.erase(it);
+                    }
+                }
+            }
+
+            UndoRedo::Transaction txn("Delete objects");
+
+            for (int i = 0; i < vecPoint.size(); ++i) {
+                UndoRedo::CommandDeletePoint *cmd = new UndoRedo::CommandDeletePoint(scene, vecPoint[i]);
+                txn.addCommand(cmd);
+
+                vecCalls.push_back([=, this]() {
+                    leftMenu->removeFigureById(vecPoint[i].get());
+                });
+            }
+            for (int i = 0; i < vecSection.size(); ++i) {
+                UndoRedo::CommandDeleteSection *cmd = new UndoRedo::CommandDeleteSection(scene, vecSection[i]);
+                txn.addCommand(cmd);
+
+                vecCalls.push_back([=, this]() {
+                    leftMenu->removeFigureById(vecSection[i].get());
+                });
+            }
+            for (int i = 0; i < vecCircle.size(); ++i) {
+                UndoRedo::CommandDeleteCircle *cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircle[i]);
+                txn.addCommand(cmd);
+
+                vecCalls.push_back([=, this]() {
+                    leftMenu->removeFigureById(vecCircle[i].get());
+                });
+            }
+
+            undoRedo.push(std::move(txn));
+
+            painter->selectedClear();
+            painter->draw();
+            updateState();
+        } catch (std::exception& e) {
+            mainWind.showError(e.what());
         }
-        for (int i = 0; i < vecSection.size(); ++i) {
-            UndoRedo::CommandDeleteSection* cmd = new UndoRedo::CommandDeleteSection(scene, vecSection[i]);
-            txn.addCommand(cmd);
-
-            vecCalls.push_back([=, this]() {
-                leftMenu->removeFigureById(vecSection[i].get());
-            });
-        }
-        for (int i = 0; i < vecCircle.size(); ++i) {
-            UndoRedo::CommandDeleteCircle* cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircle[i]);
-            txn.addCommand(cmd);
-
-            vecCalls.push_back([=, this]() {
-                leftMenu->removeFigureById(vecCircle[i].get());
-            });
-        }
-
-        undoRedo.push(std::move(txn));
-
-        painter->selectedClear();
-        painter->draw();
-        updateState();
     });
 
     // Изменение размера
@@ -786,6 +850,7 @@ void Application::updateState() {
             call();
         }
     });
+
 
     leftMenu->updateLeftMenu();
 }

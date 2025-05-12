@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QtConcurrent/QtConcurrent>
 #include <QIcon>
+#include <QTimer>
 
 #include "Mainwindow.h"
 #include "QTPainter.h"
@@ -33,13 +34,17 @@
 #include "CommandAddRequirement.h"
 #include "CommandDeleteRequirement.h"
 
-class Application {
+class Application : public QObject {
+
+Q_OBJECT
+
 private:
     QApplication app;
     MainWindow mainWind;
     Scene scene;
     QTPainter *painter;
     LeftMenuBar* leftMenu;
+    QTimer* autoSaveTimer;
 
     std::vector<std::function<void()>> vecCalls;
     std::vector<QString> vec_requirements;
@@ -61,6 +66,12 @@ private:
     void handler(const QString &command);
     void addRequirement(Requirement RQ,ID id1,ID id2,double parameters);
     void addRequirement(Requirement RQ,ID id1,ID id2);
+
+private:
+    const QString pathTxtFileCommands = "../CommandsFile.txt";
+
+private slots:
+    void autoSave();
 
 public:
     Application(int &argc, char **argv);

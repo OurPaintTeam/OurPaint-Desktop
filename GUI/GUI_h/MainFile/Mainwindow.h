@@ -104,12 +104,12 @@ public:
     /***     Сохранение и импорт настроек       ***/
     void saveSettings();
     void loadSettings();
+    void saveCommandsInTxt(const QString &path);
 
 protected:
 
     void closeEvent(QCloseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
-    void paintEvent(QPaintEvent *event) override;
 
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;

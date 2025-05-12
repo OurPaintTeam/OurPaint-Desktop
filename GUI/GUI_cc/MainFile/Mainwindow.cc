@@ -148,7 +148,7 @@ void MainWindow::initConnections() {
     });
 
     QStringList commandList = {
-            "circle ", "exit", "addreq ", "delReq", "section ","arc ", "point ", "clear", "delObj"
+            "circle ", "exit", "addReq ", "delReq", "section ","arc ", "point ", "clear", "delObj"
     };
 
     ui->console->setCommands(commandList);
@@ -160,73 +160,81 @@ void MainWindow::setupLeftMenu() {;
     ui->leftMenuView->setHeaderHidden(true);
 }
 
-void  MainWindow::updateStyle(){
-
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
-    QPainterPath path;
-
+void  MainWindow::updateStyle() {
     if (!isMaximized() && !isFullScreen()) {
-
-        path.addRoundedRect(0, 0, width(), height(), 10, 10);
-
         ui->topBar->setStyleSheet("QWidget#topBar { "
                                   "background-color: #494850; "
                                   "color: #D8D8F6; "
                                   "border-top-left-radius: 10px; "
                                   "border-top-right-radius: 10px; "
-                                  "border-bottom-left-radius: 0px; "
-                                  "border-bottom-right-radius: 0px; "
                                   "border: none; "
                                   "border-bottom: 1px solid #262222; }");
-
-        /*  ui->leftMenu->setStyleSheet(QString::fromUtf8(R"(
-          background: #494850;
-          color: #D8D8F6;
-          border: none; /* Убираем все границы */
-        //  border-bottom-left-radius: 10px;   /* Закругление нижнего левого угла */
-        //border-bottom-right-radius: 0px;
-        //)"));
-
-        ui->messageConsole->setStyleSheet(QString::fromUtf8(R"(
-        background: "#3e3d3d";
-        color: "#D8D8F6";
+        ui->collapsedPanel->setStyleSheet("QWidget#collapsedPanel { "
+                                          "background-color: #494850;"
+                                          "color: #D8D8F6;"
+                                          "border-bottom-left-radius: 10px;"
+                                          "}");
+        ui->centralwindow->setStyleSheet("QWidget#centralwindow { "
+                                         "background-color: #978897;"
+                                         "color: #D8D8F6;"
+                                         "border-top-left-radius: 10px; "
+                                         "border-top-right-radius: 10px; "
+                                         "border-bottom-left-radius: 10px; "
+                                         "border-bottom-right-radius: 10px; "
+                                         "border: none; }");
+        ui->messageConsole->setStyleSheet(R"(
+        background-color: #3e3d3d;
+        color: #D8D8F6;
         border: 1px solid black;
         border-bottom-left-radius: 10px;
         border-bottom-right-radius: 0px;
-    )"));
-        ui->collapsedPanel->setStyleSheet("background-color: #494850; border-bottom-left-radius: 10px;\n"
-                                          "border-bottom-right-radius: 0px;");
+    )");
+        ui->leftMenuView->setStyleSheet(R"(
+        QTreeView {
+            background-color: #494850;
+            color: #D8D8F6;
+            border: none;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 0px;
+        }
+    )");
+
     } else {
-        path.addRect(0, 0, width(), height());
         ui->topBar->setStyleSheet("QWidget#topBar { "
                                   "background-color: #494850; "
                                   "color: #D8D8F6; "
-                                  "border-radius: 0px; "
+                                  "border-top-left-radius: 0px; "
+                                  "border-top-right-radius: 0px; "
                                   "border: none; "
                                   "border-bottom: 1px solid #262222; }");
-
-        // ui->leftMenu->setStyleSheet(QString::fromUtf8(R"(
-        //background: #494850;
-        //color: #D8D8F6;
-        //QHeaderView::section {
-        //  background: #494850;
-        // color: #D8D8F6;
-        // }
-        // )"));
-        ui->messageConsole->setStyleSheet(QString::fromUtf8(R"(
-        background: "#3e3d3d";
-        color: "#D8D8F6";
+        ui->collapsedPanel->setStyleSheet("QWidget#collapsedPanel { "
+                                          "background-color: #494850;"
+                                          "color: #D8D8F6;"
+                                          "border-bottom-left-radius: 0px;"
+                                          "}");
+        ui->centralwindow->setStyleSheet("QWidget#centralwindow { "
+                                         "background-color: #978897;"
+                                         "color: #D8D8F6;"
+                                         "border-top-left-radius: 0px; "
+                                         "border-top-right-radius: 0px; "
+                                         "border: none; }");
+        ui->messageConsole->setStyleSheet(R"(
+        background-color: #3e3d3d;
+        color: #D8D8F6;
         border: 1px solid black;
-    )"));
-        ui->collapsedPanel->setStyleSheet("background-color: #494850; ");
+        border-bottom-left-radius: 0px;
+        border-bottom-right-radius: 0px;
+    )");
+        ui->leftMenuView->setStyleSheet(R"(
+        QTreeView {
+            background-color: #494850;
+            color: #D8D8F6;
+            border: none;
+            border-bottom-left-radius: 0px;
+            border-bottom-right-radius: 0px;
+        }
+    )");
     }
-
-
-    painter.setClipPath(path);
-    painter.fillPath(path, QColor("#978897"));
-    painter.drawPath(path);
-
 }
 
 void MainWindow::updateExitServerStyle(bool connect){
@@ -357,6 +365,10 @@ void MainWindow::saveSettings() {
     );
 }
 
+void MainWindow::saveCommandsInTxt(const QString &path){
+    leftMenuBar->saveToTextFile(path);
+}
+
 void MainWindow::loadSettings() {
     bool gridChecked, axisChecked;
     QString userName;
@@ -372,6 +384,7 @@ void MainWindow::loadSettings() {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
+
     if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
         dialog.setModal(true);
@@ -408,7 +421,6 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
     QMainWindow::resizeEvent(event);
 }
 
-void MainWindow::paintEvent(QPaintEvent *event) {}
 
 void MainWindow::mousePressEvent(QMouseEvent *event) {
     dragStartPos = event->globalPosition().toPoint();
@@ -541,7 +553,14 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
             }
             return true;
             // Я красивый белорус!!!
+        }else if (!ui->console->isActiveWindow() &&
+                keyEvent->key() == Qt::Key_Up ||
+                keyEvent->key() == Qt::Key_Down ||
+                keyEvent->key() == Qt::Key_Right ||
+                keyEvent->key() == Qt::Key_Left) {
+            return true;
         }
+
     }
 
 
@@ -646,20 +665,15 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
 
 
     // Буфер команд
-    if (ui->console->isActiveWindow()) { // Если консоль активна
-        if (event->key() == Qt::Key_Up) { // Кнопка вверх
-            if (Index == 0) {
-                Index = static_cast<int>(commands.size()) - 1;
-            } else {
-                Index = (Index + 1) % commands.size();
-            }
-            ui->console->setText(commands[Index]);
-        } else if (event->key() == Qt::Key_Down) { // Кнопка вниз
+    if (ui->console->isActiveWindow() && !commands.empty()) {
+        if (event->key() == Qt::Key_Up) {
             Index = (Index - 1 + commands.size()) % commands.size();
+            ui->console->setText(commands[Index]);
+        } else if (event->key() == Qt::Key_Down) {
+            Index = (Index + 1) % commands.size();
             ui->console->setText(commands[Index]);
         }
     }
-
 
     if (event->key() == Qt::Key_Tab) {
         event->ignore();

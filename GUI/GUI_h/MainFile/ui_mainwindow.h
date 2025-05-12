@@ -638,8 +638,6 @@ public:
                 "   padding-left: 10px;"  // Отступ текста от левого края
                 "   text-align: left;"
                 "   qproperty-iconSize: 16px;"  // Размер иконки
-                "   display: flex;"  // Добавляем flex для управления расположением
-                "   justify-content: space-between;"  // Раздвигаем текст и иконку
                 "}"
                 "QToolButton#actionSave_project_to::icon {"
                 "   margin-left: 10px;"  // Отступ между текстом и иконкой
@@ -673,8 +671,6 @@ public:
                 "   padding-left: 10px;"  // Отступ текста от левого края
                 "   text-align: left;"
                 "   qproperty-iconSize: 16px;"  // Размер иконки
-                "   display: flex;"  // Добавляем flex для управления расположением
-                "   justify-content: space-between;"  // Раздвигаем текст и иконку
                 "}"
                 "QToolButton#actionImport_project::icon {"
                 "   margin-left: 10px;"  // Отступ между текстом и иконкой
@@ -1104,7 +1100,7 @@ public:
         // Создание свернутой панели
         collapsedPanel = new QWidget(centralwindow);
         collapsedPanel->setFocusPolicy(Qt::NoFocus);
-        collapsedPanel->setObjectName("coolapsed");
+        collapsedPanel->setObjectName("collapsedPanel");
         collapsedPanel->setFixedWidth(40);
         collapsedPanel->setStyleSheet("background-color: #494850; border-bottom-left-radius: 10px;\n"
                                       "border-bottom-right-radius: 0px;");

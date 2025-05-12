@@ -27,10 +27,6 @@ bool KeyWorkWindow::eventFilter(QObject *obj, QEvent *event)
 }
 
 void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
-    if (event->key() == Qt::Key_Shift) {
-        ModeManager::setActiveMode(KeyMode::Shift);
-        m_parent->update();
-    }
 
     if (event->key() == Qt::Key_Enter) {
         ModeManager::setActiveMode(KeyMode::Enter);
@@ -43,12 +39,23 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
         event->accept();  // Принять событие Tab, чтобы предотвратить его дальнейшую обработку
         return;
     }
+
+    if ((event->modifiers() & Qt::ControlModifier) &&
+        (event->modifiers() & Qt::ShiftModifier) &&
+        event->key() == Qt::Key_Z) {
+        // Ctrl+Shift+Z
+        emit REDO();
+        m_parent->update();
+    } else if ((event->modifiers() & Qt::ControlModifier) &&
+               !(event->modifiers() & Qt::ShiftModifier) &&
+               event->key() == Qt::Key_Z) {
+        // Ctrl+Z
+        emit UNDO();
+        m_parent->update();
+    }
+
     if (event->modifiers() & Qt::ControlModifier) {
-        if (event->key() == Qt::Key_W) { // Ctrl+W
-            //  emit REDO(); // Сигнал
-        } else if (event->key() == Qt::Key_Z) { // Ctrl+Z
-            //  emit UNDO(); // Сигнал
-        } else if (event->key() == Qt::Key_Plus) {
+         if (event->key() == Qt::Key_Plus) {
             Scaling::setZoomPlus();
             m_parent->update();
         } else if (event->key() == Qt::Key_Minus) {
@@ -65,10 +72,10 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
         Scaling::setDelta(0,10);
         m_parent->update();
     }else if (event->key() == Qt::Key_Left) {
-        Scaling::setDelta(-10,0);
+        Scaling::setDelta(10,0);
         m_parent->update();
     }else if (event->key() == Qt::Key_Right) {
-        Scaling::setDelta(10,0);
+        Scaling::setDelta(-10,0);
         m_parent->update();
     }else if(event->key() == Qt::Key_1){
         emit firstReq();
@@ -104,11 +111,10 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
     if (event->key() == Qt::Key_Delete ||event->key() == Qt::Key_Backspace ) {
         emit DELETE();
         m_parent->update();
-    }else if (event->key() == Qt::Key_W) { // Ctrl+W
-        emit REDO(); // Сигнал
-        m_parent->update();
-    } else if (event->key() == Qt::Key_Z) { // Ctrl+Z
-        emit UNDO(); // Сигнал
+    }
+
+    if (event->key() == Qt::Key_Shift) {
+        ModeManager::setActiveMode(KeyMode::Shift);
         m_parent->update();
     }
 }
