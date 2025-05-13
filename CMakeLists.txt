@@ -6,14 +6,13 @@ project(ourpaint)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Для использования этого приложения необходимо установить QT6. Если у вас есть вопросы, обращайтесь к @ardrasss
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Svg)
 
 include(FetchContent)
 FetchContent_Declare(
         Eigen
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG 3.4.0  # Замените на нужную версию Eigen
+        GIT_TAG 3.4.0
 )
 FetchContent_MakeAvailable(Eigen)
 
@@ -38,7 +37,7 @@ include_directories(ourpaint
         GUI/GUI_h/Settings
         Math/headers
         Math/headers/decomposition
-        Math/headers/Optimizers
+        Math/headers/optimizers
         Math/headers/graph
 )
 
@@ -203,3 +202,9 @@ target_link_libraries(ourpaint
         Qt6::Svg
         Math
 )
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(ourpaint PRIVATE -Wall)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_compile_options(ourpaint PRIVATE /W4)
+endif()
