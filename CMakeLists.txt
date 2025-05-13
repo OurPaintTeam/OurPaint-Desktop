@@ -204,7 +204,7 @@ target_link_libraries(ourpaint
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(ourpaint PRIVATE -Wall)
+    add_compile_options(-Wall)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_options(ourpaint PRIVATE /W4)
+    add_compile_options(/W4)
 endif()
