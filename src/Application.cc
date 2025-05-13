@@ -3,8 +3,8 @@
 Application::Application(int& argc, char** argv)
         : app(argc, argv),
           mainWind(),
-          painter(nullptr),
           scene(nullptr),
+          painter(nullptr),
           username("User"),
           server(username),
           client(username),
@@ -111,7 +111,7 @@ void Application::autoSave() {
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
 
             try {
-                for (int i = 0; i < vec_id.size(); ++i) {
+                for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.setPoint(vec_id[i], cursorNow.x(), cursorNow.y());
                     vecCalls.push_back([=, this]() {
                         // leftMenu->updateParametersById(vec_id[i].get(),{Cx,Cy});
@@ -135,7 +135,7 @@ void Application::autoSave() {
                                      cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
                     return;
                 }
-                for (int i = 0; i < vec_id.size(); ++i) {
+                for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.moveSection(vec_id[i], delta.x(),delta.y());
                     vecCalls.push_back([=, this]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
@@ -164,7 +164,7 @@ void Application::autoSave() {
                     scene.setCircle(vec_id[0], newCenter.x(), newCenter.y(), radius);
                     return;
                 }
-                for (int i = 0; i < vec_id.size(); ++i) {
+                for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.moveCircle(vec_id[i], delta.x(),delta.y());
                     vecCalls.push_back([=, this]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
@@ -184,7 +184,7 @@ void Application::autoSave() {
             double dy = Scaling::logic(Scaling::getCursorDeltaY());
 
             try {
-                for (int i = 0; i < vec_id.size(); ++i) {
+                for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.moveArc(ID(vec_id[i]), dx, dy);
                     vecCalls.push_back([=, this]() {
                         //   leftMenu->updateParametersById(vec_id[i].get(),{});
@@ -438,7 +438,7 @@ void Application::autoSave() {
 
             UndoRedo::Transaction txn("Delete objects");
 
-            for (int i = 0; i < vecPoint.size(); ++i) {
+            for (std::size_t i = 0; i < vecPoint.size(); ++i) {
                 UndoRedo::CommandDeletePoint *cmd = new UndoRedo::CommandDeletePoint(scene, vecPoint[i]);
                 txn.addCommand(cmd);
 
@@ -446,7 +446,7 @@ void Application::autoSave() {
                     leftMenu->removeFigureById(vecPoint[i].get());
                 });
             }
-            for (int i = 0; i < vecSection.size(); ++i) {
+            for (std::size_t i = 0; i < vecSection.size(); ++i) {
                 UndoRedo::CommandDeleteSection *cmd = new UndoRedo::CommandDeleteSection(scene, vecSection[i]);
                 txn.addCommand(cmd);
 
@@ -454,7 +454,7 @@ void Application::autoSave() {
                     leftMenu->removeFigureById(vecSection[i].get());
                 });
             }
-            for (int i = 0; i < vecCircle.size(); ++i) {
+            for (std::size_t i = 0; i < vecCircle.size(); ++i) {
                 UndoRedo::CommandDeleteCircle *cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircle[i]);
                 txn.addCommand(cmd);
 

@@ -37,7 +37,6 @@
 class Application : public QObject {
 
 Q_OBJECT
-
 private:
     QApplication app;
     MainWindow mainWind;
