@@ -21,7 +21,7 @@ void DrawBackground::drawFon(QPainter &painter) {
 
     double _width = Scaling::getCenteredCoordinatesX();
     double _height = Scaling::getCenteredCoordinatesY();
-    short int width = Scaling::getActualMonitorWidth();
+    //short int width = Scaling::getActualMonitorWidth();
     short int height = Scaling::getActualMonitorHeight();
 
     double deltaX = Scaling::getDeltaX();

@@ -48,6 +48,7 @@ public slots:
 
 protected:
     void paintEvent(QPaintEvent *event) override {
+        (void)event;
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setBrush(QColor(50, 50, 50, 240));

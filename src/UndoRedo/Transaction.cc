@@ -2,7 +2,7 @@
 
 namespace UndoRedo {
 
-    Transaction::Transaction(std::string &&name) : name(std::move(name)), commands() {}
+    Transaction::Transaction(std::string &&name) : commands(), name(std::move(name)) {}
 
     Transaction::~Transaction() {
         for (Command *cmd: commands) {

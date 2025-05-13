@@ -119,8 +119,7 @@ double Scaling::scaleCoordinateY(double Y) {
 
 
 
-void Scaling::scaling(int widgetWidth, int widgetHeight, const std::vector<double> &size) {
-
+void Scaling::scaling(/* int widgetWidth, int widgetHeight, const std::vector<double> &size */) {
 }
 
 void Scaling::setZoom(double z){

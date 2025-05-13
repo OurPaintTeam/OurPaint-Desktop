@@ -68,7 +68,7 @@ private:
     std::unordered_map<PARAM_ID, Variable*> _vars;
 
 public:
-    std::vector<Variable*> getVars(PARAM_ID id) {
+    std::vector<Variable*> getVars() {
         std::vector<Variable*> vars;
         for (auto var : _vars) {
             vars.push_back(var.second);
