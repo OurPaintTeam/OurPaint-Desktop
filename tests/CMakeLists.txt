@@ -99,7 +99,7 @@ target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(ourpainttest PRIVATE -Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_options(ourpainttest PRIVATE /W4)
+    add_compile_options(/W4)
 endif()
