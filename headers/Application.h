@@ -13,7 +13,7 @@
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
-#include "TreeModelLazy.h"
+#include "TreeModel.h"
 #include "GUI_Logger.h"
 #include "Scene.h"
 #include "Painter.h"

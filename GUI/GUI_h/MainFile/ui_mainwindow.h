@@ -1048,6 +1048,7 @@ public:
       // Создание и настройка QTreeView
       leftMenuView = new QTreeView();
       leftMenuView->setObjectName("leftMenuView");
+      leftMenuView->setEditTriggers(QAbstractItemView::DoubleClicked);
       leftMenuView->setHeaderHidden(true);
       leftMenuView->setIndentation(16);
       leftMenuView->setStyleSheet(R"(

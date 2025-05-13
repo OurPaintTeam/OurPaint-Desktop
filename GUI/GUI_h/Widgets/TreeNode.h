@@ -55,6 +55,10 @@ public:
     // Удаление одного
     bool removeChild(TreeNode* child);
 
+    QString getName() const;
+
+    void setName(const QString& name);
+
 };
 
 #endif // OURPAINT_TREENODE_H

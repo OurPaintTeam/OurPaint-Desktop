@@ -775,6 +775,7 @@ void Application::setupAddingCommandsConnections() {
             catch (std::runtime_error &error){
                 qWarning("Don't save to file");
                 mainWind.showError("Don't save to file");
+                return;
             }
             painter->draw();
         }

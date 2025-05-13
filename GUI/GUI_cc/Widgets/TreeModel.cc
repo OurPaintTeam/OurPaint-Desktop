@@ -1,51 +1,60 @@
-#include "TreeModelLazy.h"
+#include "TreeModel.h"
 
-TreeModelLazy::TreeModelLazy(QObject* parent)
+TreeModel::TreeModel(QObject* parent)
         : QAbstractItemModel(parent) {
     rootNode = new TreeNode("Root");
 }
 
-TreeModelLazy::~TreeModelLazy() {
+TreeModel::~TreeModel() {
     delete rootNode;
 }
 
 // Возвращает данные для конкретной ячейки
-QVariant TreeModelLazy::data(const QModelIndex& index, int role) const {
-    if (!index.isValid()) { return QVariant(); }
-
+QVariant TreeModel::data(const QModelIndex& index, int role) const {
+    if (!index.isValid()) {
+        return QVariant();
+    }
 
     TreeNode* item = static_cast<TreeNode*>(index.internalPointer());
 
-    if (role == Qt::DisplayRole) {
+    if (role == Qt::DisplayRole || role == Qt::EditRole) {
         return item->data(index.column());
-    }
-
-    else if (role == Qt::FontRole) {
+    } else if (role == Qt::FontRole) {
         return item->getFont();
-    }
-
-    if (role == Qt::DecorationRole) {
-        TreeNode* node = static_cast<TreeNode*>(index.internalPointer());
-        return node->getIcon();
+    } else if (role == Qt::DecorationRole) {
+        return item->getIcon();
     }
 
     return QVariant();
 }
 
+bool TreeModel::setData(const QModelIndex& index, const QVariant& value, int role) {
+    if (!index.isValid() || role != Qt::EditRole)
+        return false;
+
+    TreeNode* node = static_cast<TreeNode*>(index.internalPointer());
+    if (!node)
+        return false;
+
+    node->setName(value.toString());
+    emit dataChanged(index, index, {Qt::DisplayRole, Qt::EditRole});
+    return true;
+}
+
 // Определяет, какие действия возможны с элементом
-Qt::ItemFlags TreeModelLazy::flags(const QModelIndex& index) const {
+Qt::ItemFlags TreeModel::flags(const QModelIndex& index) const {
     if (!index.isValid()) { return Qt::NoItemFlags; }
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
 }
 
 // Заголовок столбца
-QVariant TreeModelLazy::headerData(int section, Qt::Orientation orientation, int role) const {
+QVariant TreeModel::headerData(int section, Qt::Orientation orientation, int role) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) { return QString("Title"); }
     return QVariant();
 }
 
 // Создаёт QModelIndex для элемента по координатам row, column и родителю
-QModelIndex TreeModelLazy::index(int row, int column, const QModelIndex& parent) const {
+QModelIndex TreeModel::index(int row, int column, const QModelIndex& parent) const {
     if (!hasIndex(row, column, parent)) { return QModelIndex(); }
 
     TreeNode* parentItem;
@@ -62,7 +71,7 @@ QModelIndex TreeModelLazy::index(int row, int column, const QModelIndex& parent)
 }
 
 // Возвращает QModelIndex родителя текущего элемента
-QModelIndex TreeModelLazy::parent(const QModelIndex& index) const {
+QModelIndex TreeModel::parent(const QModelIndex& index) const {
     if (!index.isValid()) { return QModelIndex(); }
 
     // Получаем текущий и родительский узлы
@@ -77,7 +86,7 @@ QModelIndex TreeModelLazy::parent(const QModelIndex& index) const {
 }
 
 // Количество дочерних элементов у родителя
-int TreeModelLazy::rowCount(const QModelIndex& parent) const {
+int TreeModel::rowCount(const QModelIndex& parent) const {
     TreeNode* parentItem;
 
     // Если родитель не задан — корень
@@ -88,11 +97,11 @@ int TreeModelLazy::rowCount(const QModelIndex& parent) const {
 }
 
 // Возвращает количество колонок
-int TreeModelLazy::columnCount(const QModelIndex& parent) const {
+int TreeModel::columnCount(const QModelIndex& parent) const {
     Q_UNUSED(parent);  // Параметр не используется
     return 1;
 }
 
-TreeNode* TreeModelLazy::getRootNode() const {
+TreeNode* TreeModel::getRootNode() const {
     return rootNode;
 }

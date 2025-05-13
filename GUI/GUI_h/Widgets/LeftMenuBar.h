@@ -12,14 +12,14 @@
 #include <QDataStream>
 #include <QLabel>
 
-#include "TreeModelLazy.h"
+#include "TreeModel.h"
 
 // Класс для управления деревом
 
 class LeftMenuBar {
 // Q_OBJECT
 private:
-    TreeModelLazy *treeModel = nullptr;
+    TreeModel *treeModel = nullptr;
     TreeNode *rootNode = nullptr;
     TreeNode *figuresNode = nullptr;
     TreeNode *requirementsNode = nullptr;
@@ -32,7 +32,7 @@ private:
 public:
     explicit LeftMenuBar(QObject *parent);
 
-    TreeModelLazy *getTreeModel();
+    TreeModel *getTreeModel();
 
     // Добавление фигуры
     void addElemLeftMenu(const QString &name, unsigned long long ID, const std::vector<double> &params);

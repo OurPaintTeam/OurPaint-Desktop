@@ -132,7 +132,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Widgets/CastomeConsole.cc
         GUI/GUI_cc/Widgets/EmojiWidget.cc
         GUI/GUI_cc/Widgets/TreeNode.cc
-        GUI/GUI_cc/Widgets/TreeModelLazy.cc
+        GUI/GUI_cc/Widgets/TreeModel.cc
 
         GUI/GUI_cc/client_server/Server.cc
         GUI/GUI_cc/client_server/Client.cc
@@ -172,7 +172,7 @@ add_executable(ourpaint
         GUI/GUI_h/Widgets/CastomeConsole.h
         GUI/GUI_h/Widgets/EmojiWidget.h
         GUI/GUI_h/Widgets/TreeNode.h
-        GUI/GUI_h/Widgets/TreeModelLazy.h
+        GUI/GUI_h/Widgets/TreeModel.h
 
         GUI/GUI_h/Drawing/Scaling.h
         GUI/GUI_h/Drawing/QTPainter.h
@@ -203,3 +203,5 @@ target_link_libraries(ourpaint
         Qt6::Svg
         Math
 )
+
+add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)

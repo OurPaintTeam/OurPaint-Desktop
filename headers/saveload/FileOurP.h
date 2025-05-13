@@ -35,9 +35,9 @@ public:
 
     void addObject(std::pair<unsigned int, IGeometricObject*>& obj);
     void addRequirement(std::pair<unsigned int, RequirementData>& req);
-    void saveToOurP(const std::filesystem::path& filePath) const;
+    void saveToOurP(const std::string &filePath) const;
 
-    void loadFromOurP(const std::filesystem::path& filePath);
+    void loadFromOurP(const std::string &filePath);
 
     const std::vector<objectInFile>& getObjects() const;
     const std::vector<requirementInFile>& getRequirements() const;

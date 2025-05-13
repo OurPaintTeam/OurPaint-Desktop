@@ -2,7 +2,7 @@
 
 LeftMenuBar::LeftMenuBar(QObject  *parent) {
     // Создаём модель
-    treeModel = new TreeModelLazy(parent);
+    treeModel = new TreeModel(parent);
     rootNode = treeModel->getRootNode();
 
     // Создаём узлы
@@ -24,18 +24,18 @@ LeftMenuBar::LeftMenuBar(QObject  *parent) {
     paraam = QIcon("../Static/icons/Icon.ico");
 }
 
-TreeModelLazy* LeftMenuBar::getTreeModel(){
+TreeModel* LeftMenuBar::getTreeModel(){
     return treeModel;
 }
 
 // Добавление фигуры
-void LeftMenuBar::addElemLeftMenu(const QString &name, unsigned long long ID, const std::vector<double> &params) {
+void LeftMenuBar::addElemLeftMenu(const QString &type, unsigned long long ID, const std::vector<double> &params) {
     if (!figuresNode) { return; }
 
     font.setPointSize(9);
 
     // Создаем основной узел элемента
-    TreeNode* elemNode = new TreeNode(name, figuresNode);
+    TreeNode* elemNode = new TreeNode(type, figuresNode);
     elemNode->setIcon(elem);
     figuresNode->addChild(elemNode);
 
@@ -45,28 +45,28 @@ void LeftMenuBar::addElemLeftMenu(const QString &name, unsigned long long ID, co
     elemNode->addChild(idNode);
 
 
-    if (name == "Point") {
+    if (type == "Point") {
         QStringList paramNames = { "x", "y" };
         for (int i = 0; i < paramNames.size(); ++i) {
             TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
             paramNode->setIcon(paraam);
             elemNode->addChild(paramNode);
         }
-    } else if (name == "Section") {
+    } else if (type == "Section") {
         QStringList paramNames = { "x₀", "y₀", "x₁", "y₁" };
         for (int i = 0; i < paramNames.size(); ++i) {
             TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
             paramNode->setIcon(paraam);
             elemNode->addChild(paramNode);
         }
-    }else if (name == "Circle") {
+    }else if (type == "Circle") {
         QStringList paramNames = { "x₀", "y₀", "r" };
         for (int i = 0; i < paramNames.size(); ++i) {
             TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
             paramNode->setIcon(paraam);
             elemNode->addChild(paramNode);
         }
-    }else if (name == "Arc") {
+    }else if (type == "Arc") {
         QStringList paramNames = { "x₀", "y₀", "x₁", "y₁","x","y" };
         for (int i = 0; i < paramNames.size(); ++i) {
             TreeNode* paramNode = new TreeNode(QString("%1: %2").arg(paramNames[i]).arg(params[i]), elemNode);
@@ -352,7 +352,7 @@ void LeftMenuBar::loadFromBinaryFile(const QString& filePath) {
 
         in >> name >> id >> paramCount;
         for (quint32 j = 0; j < paramCount; ++j) {
-            double p;
+            double p = 0;
             in >> p;
             params.push_back(p);
         }

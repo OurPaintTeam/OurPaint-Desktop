@@ -75,3 +75,13 @@ bool TreeNode::removeChild(TreeNode* child) {
     }
     return false;
 }
+
+QString TreeNode::getName() const {
+    return dataChild.toString();
+}
+
+void TreeNode::setName(const QString& name) {
+    dataChild = name;
+}
+
+
