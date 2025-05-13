@@ -81,20 +81,30 @@ void Application::initialize() {
             "SectionSectionPerpendicular",
             "SectionSectionAngle"
     };
+
+    QObject::connect(qApp, &QCoreApplication::aboutToQuit, [this]() {
+        leftMenu->saveToTextFile(pathTxtFileCommands);
+        qDebug() << "Save to txt.";
+    });
+
+    autoSaveTimer = new QTimer(this);
+    connect(autoSaveTimer, &QTimer::timeout, this, &Application::autoSave);
+    autoSaveTimer->start(180000);
 }
 
-void Application::setupQTPainterConnections() {
+void Application::autoSave() {
+    leftMenu->saveToTextFile(pathTxtFileCommands);
+    qDebug() << "Save to txt.";
+}
+
+    void Application::setupQTPainterConnections() {
     if (painter) {
         // Двойное нажатие на обьект и открытие его в левом меню
         QObject::connect(painter, &QTPainter::DoubleClickOnObject, [](ID id) {
 
         });
 
-        QObject::connect(painter, &QTPainter::EndMoving, [this](){
-            mainWind.showError("End Moving");
-            static int i;
-            std::cout << i++ << '\n';
-        });
+        QObject::connect(painter, &QTPainter::EndMoving, [](){});
 
         // Перемещение точки
         QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
@@ -840,6 +850,7 @@ void Application::updateState() {
             call();
         }
     });
+
 
     leftMenu->updateLeftMenu();
 }

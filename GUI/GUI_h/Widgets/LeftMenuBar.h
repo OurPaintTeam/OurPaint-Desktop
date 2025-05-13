@@ -70,6 +70,8 @@ public:
     // Считывание бин файла
     void loadFromBinaryFile(const QString &filePath);
 
+    void saveToTextFile(const QString& filePath);
+
 
 signals:
 

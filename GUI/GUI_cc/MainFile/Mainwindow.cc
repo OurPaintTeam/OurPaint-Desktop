@@ -365,6 +365,10 @@ void MainWindow::saveSettings() {
     );
 }
 
+void MainWindow::saveCommandsInTxt(const QString &path){
+    leftMenuBar->saveToTextFile(path);
+}
+
 void MainWindow::loadSettings() {
     bool gridChecked, axisChecked;
     QString userName;
@@ -380,6 +384,7 @@ void MainWindow::loadSettings() {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
+
     if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
         dialog.setModal(true);
@@ -548,7 +553,14 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
             }
             return true;
             // Я красивый белорус!!!
+        }else if (!ui->console->isActiveWindow() &&
+                keyEvent->key() == Qt::Key_Up ||
+                keyEvent->key() == Qt::Key_Down ||
+                keyEvent->key() == Qt::Key_Right ||
+                keyEvent->key() == Qt::Key_Left) {
+            return true;
         }
+
     }
 
 
@@ -653,20 +665,15 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
 
 
     // Буфер команд
-    if (ui->console->isActiveWindow()) { // Если консоль активна
-        if (event->key() == Qt::Key_Up) { // Кнопка вверх
-            if (Index == 0) {
-                Index = static_cast<int>(commands.size()) - 1;
-            } else {
-                Index = (Index + 1) % commands.size();
-            }
-            ui->console->setText(commands[Index]);
-        } else if (event->key() == Qt::Key_Down) { // Кнопка вниз
+    if (ui->console->isActiveWindow() && !commands.empty()) {
+        if (event->key() == Qt::Key_Up) {
             Index = (Index - 1 + commands.size()) % commands.size();
+            ui->console->setText(commands[Index]);
+        } else if (event->key() == Qt::Key_Down) {
+            Index = (Index + 1) % commands.size();
             ui->console->setText(commands[Index]);
         }
     }
-
 
     if (event->key() == Qt::Key_Tab) {
         event->ignore();
