@@ -57,8 +57,8 @@ private:
     CastomeWindowWarning *warning;
     CastomeWindowSuccessful *success;
 
-    QString directory = QDir::homePath() + "/OurPaint-Desktop/project";
-    QString settingsDirectory=QDir::homePath() + "/OurPaint-Desktop/settings/settings.set";
+    QString directory = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../projects");
+    QString settingsDirectory=QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../settings/settings.set");
 
     std::vector<QString> commands; // Буфер команд для консоли
     int Index;                      // Индекс для навигации по командам

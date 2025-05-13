@@ -704,7 +704,7 @@ void MainWindow::deleteButton(){
 void MainWindow::loadProjectFile() {
     if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
-        int result = dialog.exec(); // Показать диалог
+        int result = dialog.exec();
 
         if (result == QMessageBox::Yes) {
             saveProjectToFile("ourp");
@@ -713,7 +713,6 @@ void MainWindow::loadProjectFile() {
         }
     }
 
-    // Открытие диалога выбора файла проекта
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
                                                     directory,
                                                     tr("Project Files (*.ourp);;All Files (*)"));
@@ -725,39 +724,110 @@ void MainWindow::loadProjectFile() {
             binFileName += ".bin";
         }
 
-        leftMenuBar->loadFromBinaryFile(binFileName);
+        try { leftMenuBar->loadFromBinaryFile(binFileName); }
+        catch (std::runtime_error& error){
+            qWarning(error.what());
+            showError("Don't load file");
+            return;
+        }
         emit LoadFile(fileName);
     }
 }
 
 void MainWindow::saveProjectToFile(const QString& format) {
-    QString baseName = "project";
-    QString fileName;
-    int index = 1; // Уникальности имени
+    QString extension = format.startsWith('.') ? format : "." + format;
+    QString defaultName = "project";
 
-    QDir dir(directory);
-    if (!dir.exists()) {
-        dir.mkpath("."); // Создание директории, если она не существует
+    QDir baseDir(directory);
+    if (!baseDir.exists()) {
+        QDir().mkpath(directory);
     }
 
-    fileName = QString("%1/%2").arg(directory, baseName); // Формирование полного имени файла
+    QString defaultPath = QDir(directory).filePath(defaultName + extension);
+    QString selectedPath;
 
-    while (QFile::exists(fileName)) { // Проверка на существование файла
-        fileName = QString("%1/%2_%3").arg(directory).arg(baseName).arg(index);
-        index++;
-    }
+    while (true) {
+        selectedPath = QFileDialog::getSaveFileName(
+                this,
+                tr("Save Project As"),
+                defaultPath,
+                tr("Project Files (*.ourp *.jpg *.jpeg *.png *.bmp *.svg *.tiff *.pdf);;All Files (*)"));
 
-    // Открытие диалога для сохранения файла
-    QString selectedFileName = QFileDialog::getSaveFileName(this, tr("Save Project"), fileName,
-                                                            tr("Project Files (*format);;All Files (*)"));
+        if (selectedPath.isEmpty()) {
+            ModeManager::setSave(false);
+            return;
+        }
 
-    if (!selectedFileName.isEmpty()) {
+        QFileInfo fileInfo(selectedPath);
+        QString projectName = fileInfo.completeBaseName();
+        QString selectedDir = fileInfo.absolutePath();
+        QString mainFilePath;
+        QString binFilePath;
+
+        if (extension == ".ourp") {
+            QString projectFolder = QDir(selectedDir).filePath(projectName);
+            QDir dir(projectFolder);
+
+            if (dir.exists()) {
+                QMessageBox::StandardButton reply = QMessageBox::question(
+                        this,
+                        tr("Folder Exists"),
+                        tr("The project folder already exists:\n%1\nDo you want to overwrite it?")
+                                .arg(projectFolder),
+                        QMessageBox::Yes | QMessageBox::No);
+
+                if (reply != QMessageBox::Yes) {
+                    continue;
+                }
+
+                if (!dir.removeRecursively()) {
+                    QMessageBox::critical(this, tr("Error"),
+                                          tr("Failed to remove existing project folder:\n%1").arg(projectFolder));
+                    ModeManager::setSave(false);
+                    return;
+                }
+            }
+
+            if (!QDir().mkpath(projectFolder)) {
+                QMessageBox::critical(this, tr("Error"),
+                                      tr("Failed to create project folder:\n%1").arg(projectFolder));
+                ModeManager::setSave(false);
+                return;
+            }
+
+            mainFilePath = QDir(projectFolder).filePath(projectName + extension);
+            binFilePath  = QDir(projectFolder).filePath(projectName + ".bin");
+
+            QFile file(mainFilePath);
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QMessageBox::critical(this, tr("Error"), tr("Failed to create file:\n%1").arg(mainFilePath));
+                ModeManager::setSave(false);
+                return;
+            }
+            file.close();
+
+            try {
+                leftMenuBar->saveToBinaryFile(binFilePath);
+            } catch (const std::exception& e) {
+                QMessageBox::critical(this, tr("Error"),
+                                      tr("Exception while saving binary file:\n%1\nError: %2")
+                                              .arg(binFilePath, e.what()));
+                ModeManager::setSave(false);
+                return;
+            } catch (...) {
+                QMessageBox::critical(this, tr("Error"),
+                                      tr("Unknown error while saving binary file:\n%1").arg(binFilePath));
+                ModeManager::setSave(false);
+                return;
+            }
+
+        } else {
+            mainFilePath = fileInfo.absoluteFilePath();
+        }
+
         ModeManager::setSave(true);
-        leftMenuBar->saveToBinaryFile(selectedFileName+".bin");
-        selectedFileName+=format;
-        emit projectSaved(selectedFileName,format); //Сигнал
-    } else {
-       ModeManager::setSave(false);
+        emit projectSaved(mainFilePath, extension);
+        return;
     }
 }
 

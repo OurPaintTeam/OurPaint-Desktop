@@ -128,11 +128,12 @@ std::string FileOurP::to_string() const {
     return ss.str();
 }
 
-void FileOurP::saveToOurP(const std::string &fileName) const {
-    std::ofstream file(fileName);
+void FileOurP::saveToOurP(const std::filesystem::path& filePath) const {
+    std::ofstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error("File not found");
+        throw std::runtime_error("File not found: " + filePath.string());
     }
+
     std::vector<objectInFile> sort_objects = m_objects;
     std::vector<requirementInFile> sort_requirements = m_requirements;
     std::sort(sort_objects.begin(), sort_objects.end(), [](const objectInFile &a, const objectInFile &b) {
@@ -155,12 +156,16 @@ void FileOurP::saveToOurP(const std::string &fileName) const {
     file.close();
 }
 
-void FileOurP::loadFromOurP(const std::string &fileName) {
-    std::ifstream file(fileName);
+void FileOurP::loadFromOurP(const std::filesystem::path& filePath){
+    std::ifstream file(filePath);
     if (!file.is_open()) {
-        throw std::runtime_error("File not found");
+        throw std::runtime_error("File not found: " + filePath.string());
     }
-    parseFile(file);
+
+    try { parseFile(file); }
+    catch (std::runtime_error &error){
+        throw error;
+    }
 }
 
 const std::vector<objectInFile> &FileOurP::getObjects() const {

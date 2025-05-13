@@ -255,8 +255,8 @@ void LeftMenuBar::updateParametersById(unsigned long long id, const std::vector<
 void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly)) {
+        throw std::runtime_error(("Failed to open binary file for writing: " + filePath).toStdString());
         qWarning("Not opened file for save bin file in left menu!");
-        return;
     }
 
     QDataStream out(&file);
@@ -268,8 +268,8 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
 
     for (int i = 0; i < figureCount; ++i) {
         if(figuresNode == NULL){
+            throw std::runtime_error("FiguresNode is null in left menu!");
             qWarning("FiguresNode is null in left menu!");
-            return;
         }
         TreeNode* node = figuresNode->child(i);
         QString name = node->data(0).toString();
@@ -295,7 +295,7 @@ void LeftMenuBar::saveToBinaryFile(const QString& filePath) {
     for (int i = 0; i < reqCount; ++i) {
         if(requirementsNode == NULL){
             qWarning("RequirementsNode is null in left menu!");
-            return;
+            throw std::runtime_error("RequirementsNode is null in left menu!");
         }
         TreeNode* node = requirementsNode->child(i);
         QString name = node->data(0).toString();
@@ -331,7 +331,7 @@ void LeftMenuBar::loadFromBinaryFile(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning("Not opened file for load bin file in left menu!");
-        return;
+        throw std::runtime_error("Not opened file for load bin file in left menu!");
     }
 
     QDataStream in(&file);
@@ -388,7 +388,7 @@ void LeftMenuBar::saveToTextFile(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         qWarning("Not opened file for save txt file in left menu!");
-        return;
+        throw std::runtime_error("Not opened file for save txt file in left menu!");
     }
 
     QTextStream out(&file);
@@ -400,7 +400,7 @@ void LeftMenuBar::saveToTextFile(const QString& filePath) {
     for (int i = 0; i < figureCount; ++i) {
         if(figuresNode == NULL){
             qWarning("FiguresNode is null in left menu!");
-            return;
+            throw std::runtime_error("FiguresNode is null in left menu!");
         }
         TreeNode* node = figuresNode->child(i);
         QString name = node->data(0).toString();
@@ -436,7 +436,7 @@ void LeftMenuBar::saveToTextFile(const QString& filePath) {
     for (int i = 0; i < reqCount; ++i) {
         if(requirementsNode == NULL){
             qWarning("RequirementsNode is null in left menu!");
-            return;
+            throw std::runtime_error("RequirementsNode is null in left menu!");
         }
         TreeNode* node = requirementsNode->child(i);
         QString name = node->data(0).toString();

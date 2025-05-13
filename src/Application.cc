@@ -771,7 +771,11 @@ void Application::setupAddingCommandsConnections() {
             painter->saveToImage(fileName, format);
         } else {
             std::string File = fileName.toStdString();
-            scene.saveToFile(File.c_str());
+            try { scene.saveToFile(File.c_str()); }
+            catch (std::runtime_error &error){
+                qWarning("Don't save to file");
+                mainWind.showError("Don't save to file");
+            }
             painter->draw();
         }
         mainWind.showSuccess("The project is saved!");
@@ -787,6 +791,7 @@ void Application::setupAddingCommandsConnections() {
             scene.paint();
             mainWind.showSuccess("The project is loaded!");
         } catch (std::exception& e) {
+            qWarning(e.what());
             mainWind.showError(e.what());
         }
     });

@@ -3,11 +3,17 @@
 
 #include <fstream>
 #include <vector>
-#include "objectInFile.h"
-#include "requirementInFile.h"
 #include <sstream>
 #include <algorithm>
 #include <queue>
+#include <sstream>
+#include <algorithm>
+#include <queue>
+#include <filesystem>
+
+#include "objectInFile.h"
+#include "requirementInFile.h"
+
 
 class FileOurP {
     std::vector<objectInFile> m_objects;
@@ -29,9 +35,9 @@ public:
 
     void addObject(std::pair<unsigned int, IGeometricObject*>& obj);
     void addRequirement(std::pair<unsigned int, RequirementData>& req);
-    void saveToOurP(const std::string &fileName) const;
+    void saveToOurP(const std::filesystem::path& filePath) const;
 
-    void loadFromOurP(const std::string &fileName);
+    void loadFromOurP(const std::filesystem::path& filePath);
 
     const std::vector<objectInFile>& getObjects() const;
     const std::vector<requirementInFile>& getRequirements() const;
