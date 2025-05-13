@@ -193,7 +193,10 @@ set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
 
 add_subdirectory(tests)
 
-target_link_libraries(ourpaint
+find_package(OpenMP REQUIRED)
+
+# Основное подключение библиотек с ключевым словом
+target_link_libraries(ourpaint PRIVATE
         Qt6::Core
         Qt6::Gui
         Qt6::Widgets
@@ -202,6 +205,18 @@ target_link_libraries(ourpaint
         Qt6::Svg
         Math
 )
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(ourpaint PRIVATE
+            OpenMP::OpenMP_CXX
+    )
+    target_compile_options(ourpaint PRIVATE
+            ${OpenMP_CXX_FLAGS}
+    )
+    target_link_options(ourpaint PRIVATE
+            ${OpenMP_CXX_FLAGS}
+    )
+endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(ourpaint PRIVATE -Wall -Wextra -Wpedantic)

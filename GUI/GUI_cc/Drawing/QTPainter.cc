@@ -1,7 +1,7 @@
 #include "QTPainter.h"
 
-QTPainter::QTPainter(QWidget *parent) : QFrame(parent), circleStorage(nullptr),
-                                        sectionStorage(nullptr), pointStorage(nullptr), arcStorage(nullptr) {
+QTPainter::QTPainter(QWidget *parent) : QFrame(parent), pointStorage(nullptr),
+                                        sectionStorage(nullptr), circleStorage(nullptr), arcStorage(nullptr) {
 
     if (parent) {
         resize(parentWidget()->size()); // Берем размер от отца
@@ -385,18 +385,18 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     // Выделение
     if (ModeManager::getActiveMode(WorkModes::Editor)) {
         if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
-            if (circleStorage != nullptr && circleStorage->size() > 0 ||
-                sectionStorage != nullptr && sectionStorage->size() > 0 ||
-                pointStorage != nullptr && pointStorage->size() > 0)
+            if ((circleStorage != nullptr && circleStorage->size() > 0) ||
+                (sectionStorage != nullptr && sectionStorage->size() > 0) ||
+                (pointStorage != nullptr && pointStorage->size() > 0))
 
                 if(!findClosesObject()){
                     selectedClear();
                 }
 
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
-            if (circleStorage != nullptr && circleStorage->size() > 0 ||
-                sectionStorage != nullptr && sectionStorage->size() > 0 ||
-                pointStorage != nullptr && pointStorage->size() > 0){}
+            if ((circleStorage != nullptr && circleStorage->size() > 0) ||
+                (sectionStorage != nullptr && sectionStorage->size() > 0) ||
+                (pointStorage != nullptr && pointStorage->size() > 0)){}
                 //findClosesObject();
         }
     } else if (ModeManager::getActiveMode(WorkModes::Selected)) {

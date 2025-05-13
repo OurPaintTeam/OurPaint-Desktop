@@ -100,11 +100,12 @@ void Application::autoSave() {
     void Application::setupQTPainterConnections() {
     if (painter) {
         // Двойное нажатие на обьект и открытие его в левом меню
-        QObject::connect(painter, &QTPainter::DoubleClickOnObject, [](ID id) {
-
+        QObject::connect(painter, &QTPainter::DoubleClickOnObject, []() {
         });
 
-        QObject::connect(painter, &QTPainter::EndMoving, [](){});
+        QObject::connect(painter, &QTPainter::EndMoving, [](){
+
+        });
 
         // Перемещение точки
         QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
@@ -113,7 +114,7 @@ void Application::autoSave() {
             try {
                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.setPoint(vec_id[i], cursorNow.x(), cursorNow.y());
-                    vecCalls.push_back([=, this]() {
+                    vecCalls.push_back([]() {
                         // leftMenu->updateParametersById(vec_id[i].get(),{Cx,Cy});
                     });
                 }
@@ -137,7 +138,7 @@ void Application::autoSave() {
                 }
                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.moveSection(vec_id[i], delta.x(),delta.y());
-                    vecCalls.push_back([=, this]() {
+                    vecCalls.push_back([]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
                 }
@@ -166,7 +167,7 @@ void Application::autoSave() {
                 }
                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.moveCircle(vec_id[i], delta.x(),delta.y());
-                    vecCalls.push_back([=, this]() {
+                    vecCalls.push_back([]() {
                         //  leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
                 }
@@ -186,7 +187,7 @@ void Application::autoSave() {
             try {
                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.moveArc(ID(vec_id[i]), dx, dy);
-                    vecCalls.push_back([=, this]() {
+                    vecCalls.push_back([]() {
                         //   leftMenu->updateParametersById(vec_id[i].get(),{});
                     });
                 }
@@ -562,7 +563,7 @@ void Application::setupServerConnections() {
         server.sendToClients(QString::fromStdString(scene.to_string()));
     });
 
-    QObject::connect(&client, &Client::newStateReceived, [&](const QString& state) {
+    QObject::connect(&client, &Client::newStateReceived, [&](/* const QString& state */) {
         // TODO scene.loadFromString(state.toStdString());
         updateState();
     });

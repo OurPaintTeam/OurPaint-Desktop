@@ -1,7 +1,6 @@
 #include "Scene.h"
 
 Scene::Scene(Painter* p) :
-        _painter(p),
         _points(),
         _sections(),
         _circles(),
@@ -10,6 +9,7 @@ Scene::Scene(Painter* p) :
         _components(),
         _idToComponent(),
         _isComponentsDirty(false),
+        _painter(p),
         _isRectangleDirty(false),
         _allFiguresRectangle(),
         _graph()
@@ -799,7 +799,7 @@ void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2)
         throw std::out_of_range("There is no section to change");
     }
     Section* s = _sections[sectionID];
-    if (s->beg->x != x1 || s->beg->y != y1 != s->beg->x != x2 || s->beg->x != y2) {
+    if (s->beg->x != x1 || s->beg->y != y1 || s->beg->x != x2 || s->beg->x != y2) {
         s->beg->x = x1;
         s->beg->y = y1;
         s->end->x = x2;
@@ -1200,7 +1200,6 @@ void Scene::rebuildComponents() {
 
 void Scene::updateRequirements(ID id) {
     const Component& component = findComponentByID(id);
-
     std::size_t number_of_obj_in_component = component._objectIDs.size();
     std::cout << "Objects in component:  " << number_of_obj_in_component << '\n';
 
@@ -1407,7 +1406,6 @@ void Scene::saveToFile(const char* filename) const {
 
 void Scene::loadFromFile(const char* filename) {
     FileOurP loader;
-
     loader.loadFromOurP(filename);
     clear();
     ID maxID = ID(0);

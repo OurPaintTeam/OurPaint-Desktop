@@ -3,13 +3,13 @@
 MainWindow::MainWindow(QWidget *parent)
         : QMainWindow(parent),
           ui(new Ui::MainWindow),
-          moving(false),
-          resizing(false),
           helpWindow(nullptr),
           error(nullptr),
           warning(nullptr),
-          success(nullptr) ,
-          Index(0){
+          success(nullptr),
+          Index(0),
+          resizing(false) ,
+          moving(false){
 
     ui->setupUi(this);
     setMouseTracking(true);
@@ -553,8 +553,8 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
             }
             return true;
             // Я красивый белорус!!!
-        }else if (!ui->console->isActiveWindow() &&
-                keyEvent->key() == Qt::Key_Up ||
+        }else if ((!ui->console->isActiveWindow() &&
+                keyEvent->key() == Qt::Key_Up) ||
                 keyEvent->key() == Qt::Key_Down ||
                 keyEvent->key() == Qt::Key_Right ||
                 keyEvent->key() == Qt::Key_Left) {

@@ -3,6 +3,7 @@
 QFile logFile;
 
 void guiLogger(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+    (void)context; // !!!
     QString logMessage;
 
     switch (type) {

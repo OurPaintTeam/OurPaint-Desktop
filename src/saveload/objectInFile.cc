@@ -6,7 +6,6 @@ std::string objectInFile::to_string() const {
         return "{\nID " + std::to_string(id) + "\npoint " + std::to_string(p->x) + " " + std::to_string(p->y) +
                "\n}";
     } else if (s_obj->getType() == ET_SECTION) {
-        Section *s = dynamic_cast<Section *>(s_obj);
         return "{\nID " + std::to_string(id) + "\nsection" + "\n}";
     } else if (s_obj->getType() == ET_CIRCLE) {
         Circle *s = dynamic_cast<Circle *>(s_obj);
@@ -47,4 +46,4 @@ objectInFile &objectInFile::operator=(objectInFile &&other) noexcept {
 
 std::pair<unsigned int, IGeometricObject *> objectInFile::to_pair() const { return std::make_pair(id, s_obj); };
 
-objectInFile::objectInFile(std::pair<unsigned int, IGeometricObject *> &obj) : s_obj(obj.second), id(obj.first) {}
+objectInFile::objectInFile(std::pair<unsigned int, IGeometricObject *> &obj) : id(obj.first), s_obj(obj.second) {}
