@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
-set(CMAKE_CXX_STANDARD 20)
-
 project(ourpaint)
+
+set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -189,7 +189,7 @@ add_executable(ourpaint
         GUI/GUI_h/Settings/Settings.h
 )
 
-set_target_properties(ourpaint PROPERTIES UNITY_BUILD ON)
+set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
 
 add_subdirectory(tests)
 
@@ -204,7 +204,8 @@ target_link_libraries(ourpaint
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall)
+    target_compile_options(ourpaint PRIVATE -Wall -Wextra -Wpedantic)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    add_compile_options(/W4)
+    target_compile_options(ourpaint PRIVATE /W4)
 endif()
+
