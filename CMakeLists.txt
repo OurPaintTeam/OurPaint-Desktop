@@ -206,7 +206,7 @@ target_link_libraries(ourpaint PRIVATE
         Math
 )
 
-if(OpenMP_CXX_FOUND)
+if (OpenMP_CXX_FOUND)
     target_link_libraries(ourpaint PRIVATE
             OpenMP::OpenMP_CXX
     )
@@ -216,11 +216,14 @@ if(OpenMP_CXX_FOUND)
     target_link_options(ourpaint PRIVATE
             ${OpenMP_CXX_FLAGS}
     )
-endif()
+endif ()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(ourpaint PRIVATE -Wall -Wextra -Wpedantic)
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_options(ourpaint PRIVATE /W4)
-endif()
+set(TYPE_OF_COMPILING BOOL 1)
+if (TYPE_OF_COMPILING)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(ourpaint PRIVATE -Wall -Wextra -Wpedantic)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        target_compile_options(ourpaint PRIVATE /W4)
+    endif ()
+endif ()
 
