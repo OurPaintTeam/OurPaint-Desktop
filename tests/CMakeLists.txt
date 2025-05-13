@@ -96,3 +96,10 @@ target_include_directories(MoveGTEST PRIVATE
         ../Math/headers/optimizers
 )
 target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
+
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(ourpaint PRIVATE -Wall)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_compile_options(ourpaint PRIVATE /W4)
+endif()
