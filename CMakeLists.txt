@@ -203,5 +203,3 @@ target_link_libraries(ourpaint
         Qt6::Svg
         Math
 )
-
-add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
