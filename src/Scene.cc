@@ -767,30 +767,21 @@ void Scene::setPoint(ID pointID, double x, double y) {
     if (p->x != x || p->y != y) {
         p->x = x;
         p->y = y;
-        //if (_isComponentsDirty) {
+        Component& c = findComponentByID(pointID);
+        std::vector<Variable*> target;
+        std::vector<Variable*>& vars = c._componentVars;
+        for (auto it = vars.begin(); it != vars.end();) {
+            Variable* var = *it;
+            if (var->value == &p->x || var->value == &p->y) {
+                target.push_back(var);
+                it = vars.erase(it);
+            } else {
+                ++it;
+            }
+        }
         updateRequirements(pointID);
-        //}
-        /* std::vector<Variable*> target;
-         Component c = _components[0];
-         std::vector<Variable*> vr = c._componentVars;
-         for (auto it = vr.begin(); it != vr.end();) {
-             Variable* var = *it;
-             if (var->value == &p->x || var->value == &p->y) {
-                 target.push_back(var);
-                 it = vr.erase(it);
-             } else {
-                 ++it;
-             }
-         }
-         _components[0]._componentVars = vr;
-         updateRequirements(pointID);
-         for (auto var : target) {
-             _components[0]._componentVars.push_back(var);
-         }
-         target.clear();
-         vr.clear();
-         _isRectangleDirty = true;
-     }*/
+        vars.insert(vars.end(), target.begin(), target.end());
+        _isRectangleDirty = true;
     }
 }
 
@@ -1150,7 +1141,7 @@ void Scene::addRequirement(const RequirementData& reqData, ID reqID) {
     _isComponentsDirty = true;
 }
 
-const Component& Scene::findComponentByID(ID id) {
+Component& Scene::findComponentByID(ID id) {
     if (_isComponentsDirty) {
         rebuildComponents();
     }
