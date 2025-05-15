@@ -52,6 +52,21 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
         // Ctrl+Z
         emit UNDO();
         m_parent->update();
+    } else if ((event->modifiers() & Qt::ControlModifier) &&
+             !(event->modifiers() & Qt::ShiftModifier) &&
+             event->key() == Qt::Key_C) {
+        // Ctrl+C
+        emit COPY();
+    } else if ((event->modifiers() & Qt::ControlModifier) &&
+               !(event->modifiers() & Qt::ShiftModifier) &&
+               event->key() == Qt::Key_V) {
+        // Ctrl+V
+        emit PASTE();
+    } else if ((event->modifiers() & Qt::ControlModifier) &&
+               !(event->modifiers() & Qt::ShiftModifier) &&
+               event->key() == Qt::Key_X) {
+        // Ctrl+X
+        emit CUT();
     }
 
     if (event->modifiers() & Qt::ControlModifier) {

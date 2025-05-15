@@ -27,6 +27,10 @@ protected:
     void REDO();
     void UNDO();
     void DELETE();
+    void COPY();
+    void CUT();
+    void PASTE();
+
 
     void firstReq();
     void secondReq();
