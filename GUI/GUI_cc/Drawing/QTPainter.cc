@@ -524,7 +524,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
                 if (!selectedIDCircle.empty()) {
                     ID id = selectedIDCircle.begin()->first;
 
-                    if (sectionStorage->contains(id)) {
+                    if (circleStorage->contains(id)) {
                         Circle *c = (*circleStorage)[id];
                         QPointF center(c->center->x, c->center->y);
                         VecCircle = center - cursorPressPos;
