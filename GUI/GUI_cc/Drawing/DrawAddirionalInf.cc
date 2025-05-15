@@ -311,52 +311,57 @@ void DrawAdditionalInf::drawArcID(QPainter &painter,
 
 
 void DrawAdditionalInf::setPointGradientColor(QRadialGradient &radialGradient, const Color &color) {
-    if (color == Color::blue) {
-        radialGradient.setColorAt(0.0, QColor(30, 120, 200, 120));
-        radialGradient.setColorAt(0.8, QColor(30, 120, 200, 60));
-        radialGradient.setColorAt(1.0, QColor(30, 120, 200, 0));
-    } else if (color == Color::purple) {
-        radialGradient.setColorAt(0.0, QColor(170, 0, 255, 120));
-        radialGradient.setColorAt(0.8, QColor(170, 0, 255, 60));
-        radialGradient.setColorAt(1.0, QColor(170, 0, 255, 0));
-    } else if (color == Color::cyan) {
+    if(colorToString(color)=="Unknown"){
+        return;
     }
+
+    QColor baseColor = colorToQColor(color);
+    baseColor.setAlpha(120);
+    radialGradient.setColorAt(0.0, baseColor);
+
+    baseColor.setAlpha(60);
+    radialGradient.setColorAt(0.8, baseColor);
+
+    baseColor.setAlpha(0);
+    radialGradient.setColorAt(1.0, baseColor);
 }
 
 
 void DrawAdditionalInf::setSectionGradientColor(QLinearGradient &gradient, const Color &color) {
-    if (color == Color::blue) {
-        gradient.setColorAt(0.0, QColor(30, 120, 200, 0));
-        gradient.setColorAt(0.3, QColor(30, 120, 200, 40));
-        gradient.setColorAt(0.5, QColor(30, 120, 200, 80));
-        gradient.setColorAt(0.7, QColor(30, 120, 200, 40));
-        gradient.setColorAt(1.0, QColor(30, 120, 200, 0));
-    } else if (color == Color::purple) {
-        gradient.setColorAt(0.0, QColor(170, 0, 255, 0));
-        gradient.setColorAt(0.4, QColor(170, 0, 255, 40));
-        gradient.setColorAt(0.5, QColor(170, 0, 255, 80));
-        gradient.setColorAt(0.6, QColor(170, 0, 255,40));
-        gradient.setColorAt(1.0, QColor(170, 0, 255, 0));
-    } else if (color == Color::cyan) {
+    if(colorToString(color)=="Unknown"){
+        return;
     }
+
+    QColor baseColor = colorToQColor(color);
+    baseColor.setAlpha(0);
+    gradient.setColorAt(0.0, baseColor);
+    baseColor.setAlpha(40);
+    gradient.setColorAt(0.3, baseColor);
+    baseColor.setAlpha(80);
+    gradient.setColorAt(0.5, baseColor);
+    baseColor.setAlpha(40);
+    gradient.setColorAt(0.7, baseColor);
+    baseColor.setAlpha(0);
+    gradient.setColorAt(1.0, baseColor);
 }
 
 
 void DrawAdditionalInf::setCircleGradientColor(QRadialGradient &radialGradient,qreal stopTransparent1,qreal stopTransparent2,qreal stopCyan,const Color &color){
-    if(color==Color::blue){
-        radialGradient.setColorAt(0.0,              QColor(30, 120, 200, 0));
-        radialGradient.setColorAt(stopTransparent1, QColor(30, 120, 200, 40));
-        radialGradient.setColorAt(stopCyan,         QColor(30, 120, 200, 80));
-        radialGradient.setColorAt(stopTransparent2, QColor(30, 120, 200, 40));
-        radialGradient.setColorAt(1.0,              QColor(30, 120, 200, 0));
-    }else if(color==Color::purple){
-        radialGradient.setColorAt(0.0,              QColor(170, 0, 255, 0));
-        radialGradient.setColorAt(stopTransparent1, QColor(170, 0, 255, 40));
-        radialGradient.setColorAt(stopCyan,         QColor(170, 0, 255, 80));
-        radialGradient.setColorAt(stopTransparent2, QColor(170, 0, 255, 40));
-        radialGradient.setColorAt(1.0,              QColor(170, 0, 255, 0));
-    }else if (color == Color::cyan) {
+    if(colorToString(color)=="Unknown"){
+        return;
     }
+
+    QColor baseColor = colorToQColor(color);
+    baseColor.setAlpha(0);
+    radialGradient.setColorAt(0.0, baseColor);
+    baseColor.setAlpha(40);
+    radialGradient.setColorAt(stopTransparent1, baseColor);
+    baseColor.setAlpha(80);
+    radialGradient.setColorAt(stopCyan, baseColor);
+    baseColor.setAlpha(40);
+    radialGradient.setColorAt(stopTransparent2, baseColor);
+    baseColor.setAlpha(0);
+    radialGradient.setColorAt(1.0, baseColor);
 }
 
 
