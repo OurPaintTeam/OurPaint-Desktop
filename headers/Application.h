@@ -65,6 +65,10 @@ private:
     void handler(const QString &command);
     void addRequirement(Requirement RQ,ID id1,ID id2,double parameters);
     void addRequirement(Requirement RQ,ID id1,ID id2);
+    void addPoints(double x,double y);
+    void addSections(double x0,double y0,double x1,double y1);
+    void addCircles(double x,double y,double r);
+    void addArcs(double x0,double y0,double x1,double y1,double cx,double cy);
 
 private:
     const QString pathTxtFileCommands = "../CommandsFile.txt";
