@@ -118,7 +118,7 @@ signals:
     void SigSection(double x, double y, double x1, double y1);
     void SigArc(double x, double y, double x1, double y1, double xc, double yc);
 
-    void DoubleClickOnObject();
+    void DoubleClickOnObject(ID id);
 
 private slots:
     void onWorkWindowResized();

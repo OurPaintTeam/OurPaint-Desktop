@@ -463,7 +463,8 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
         if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
 
-            if (circleStorage != nullptr && circleStorage->size() > 0 ||
+            if (arcStorage != nullptr && arcStorage->size() > 0 ||
+                circleStorage != nullptr && circleStorage->size() > 0 ||
                 sectionStorage != nullptr && sectionStorage->size() > 0 ||
                 pointStorage != nullptr && pointStorage->size() > 0) {
 
@@ -471,11 +472,31 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             }
 
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
-            if (circleStorage != nullptr && circleStorage->size() > 0 ||
-                sectionStorage != nullptr && sectionStorage->size() > 0 ||
-                pointStorage != nullptr && pointStorage->size() > 0){
+            if (circleStorage != nullptr && circleStorage->size() == 0 ||
+                sectionStorage != nullptr && sectionStorage->size() == 0 ||
+                pointStorage != nullptr && pointStorage->size() == 0 ||
+                arcStorage != nullptr && arcStorage->size() == 0){
                 if(findClosesObject()){
-                    emit DoubleClickOnObject();
+                    if (selectedIDSection.size() == 1) {
+                        auto it = selectedIDSection.begin();
+                        ID key = it->first;
+                        emit DoubleClickOnObject(key);
+                    }
+                    if (selectedIDPoint.size()==1) {
+                        auto it = selectedIDPoint.begin();
+                        ID key = it->first;
+                        emit DoubleClickOnObject(key);
+                    }
+                    if (selectedIDCircle.empty()==1) {
+                        auto it = selectedIDCircle.begin();
+                        ID key = it->first;
+                        emit DoubleClickOnObject(key);
+                    }
+                    if (selectedIDArc.empty()==1) {
+                        auto it = selectedIDArc.begin();
+                        ID key = it->first;
+                        emit DoubleClickOnObject(key);
+                    }
                 }
             }
         }
