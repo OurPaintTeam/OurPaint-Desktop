@@ -7,7 +7,6 @@
 #include <cmath>
 
 #include "Modes.h"
-#include "Scaling.h"
 #include "DrawAdditionalInf.h"
 #include "DrawFigures.h"
 
@@ -42,12 +41,12 @@ public:
     static double snapAngle(double angle) ;
 
     // Drawing shapes with the mouse
-    void DrawFiguresMouse(QPainter &painter);
+    void DrawFiguresMouse(QPainter &painter,QPointF &cursor);
     static void drawCircles(QPainter &painter, const QPointF &startCoordinates,QPointF &cursor);
-    static void drawSections(QPainter &painter, const QPointF &startCoordinates);
+    static void drawSections(QPainter &painter, const QPointF &startCoordinates,QPointF &cursor);
 
     // Drawing suggestions
-    void drawHints(QPainter &painter, const QPointF &closesPoint) ;
+    void drawHints(QPainter &painter, const QPointF &closesPoint,QPointF &cursor);
 
     void clear();
 

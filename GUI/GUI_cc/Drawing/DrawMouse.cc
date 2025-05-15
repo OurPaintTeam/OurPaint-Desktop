@@ -72,13 +72,13 @@ void DrawMouse::drawPreviewSection(QPainter &painter, const QPointF &start, cons
 }
 
 
-void DrawMouse::DrawFiguresMouse(QPainter &painter) {
+void DrawMouse::DrawFiguresMouse(QPainter &painter,QPointF &cursor) {
 
     painter.setPen(Qt::black);
 
     // Rounding the mouse to 1 decimal place
-    double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
-    double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+    double cursorX = std::round(cursor.x() * 10.0) / 10.0;
+    double cursorY = std::round(cursor.y() * 10.0) / 10.0;
     QPointF Cursor(cursorX, cursorY);
 
     bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
@@ -157,7 +157,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
             drawCircles(painter,startCoordinates,Cursor);
 
         } else if (modeSection) {
-            drawSections(painter, startCoordinates);
+            drawSections(painter, startCoordinates,Cursor);
         }else if(modeArc){
             QPointF center = (startCoordinates + Cursor) / 2.0;
             DrawFigures::drawArc(painter, Cursor,startCoordinates,center);
@@ -179,14 +179,14 @@ void DrawMouse::drawCircles(QPainter &painter, const QPointF &startCoordinates,Q
 }
 
 
-void DrawMouse::drawSections(QPainter &painter, const QPointF &startCoordinates)  {
+void DrawMouse::drawSections(QPainter &painter, const QPointF &startCoordinates,QPointF &cursor)  {
     if (!ModeManager::getActiveMode(WorkModes::Section)) {
         return;
     }
 
     // Rounding the mouse to 1 decimal place
-    double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
-    double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+    double cursorX = std::round(cursor.x() * 10.0) / 10.0;
+    double cursorY = std::round(cursor.y() * 10.0) / 10.0;
     QPointF Cursor(cursorX, cursorY);
     bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 
@@ -199,7 +199,7 @@ void DrawMouse::drawSections(QPainter &painter, const QPointF &startCoordinates)
 }
 
 
-void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
+void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint,QPointF &cursor) {
 
     bool tabPressed = ModeManager::getActiveMode(KeyMode::Tab);
     bool modeSection = ModeManager::getActiveMode(WorkModes::Section);
@@ -215,8 +215,8 @@ void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
         if (tabPressCount == 0) {
             closestStartPoint = closesPoint;
             // Rounding the mouse to 1 decimal place
-            double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
-            double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+            double cursorX = std::round(cursor.x() * 10.0) / 10.0;
+            double cursorY = std::round(cursor.y() * 10.0) / 10.0;
             QPointF Cursor = QPointF(cursorX, cursorY);
             drawPreviewSection(painter, closestStartPoint, Cursor);
             releaseTabIfPressed();
