@@ -836,6 +836,42 @@ void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double 
     updateRequirements(arcID);
 }
 
+std::vector<const double*> Scene::getPointParams(ID pointID) const{
+    if (!_points.contains(pointID)) {
+        throw std::out_of_range("There is no point to change position");
+    }
+    const Point* p = _points.at(pointID);
+    return { &p->x, &p->y };
+}
+
+std::vector<const double*> Scene::getSectionParams(ID sectionID) const{
+    if (!_sections.contains(sectionID)) {
+        throw std::out_of_range("There is no section to change");
+    }
+    const Section* s = _sections.at(sectionID);
+    return { &s->beg->x, &s->beg->y, &s->end->x, &s->end->y };
+}
+
+std::vector<const double*> Scene::getCircleParams(ID circleID) const{
+    if (!_circles.contains(circleID)) {
+        throw std::out_of_range("There is no circle to change");
+    }
+    const Circle* c = _circles.at(circleID);
+    return { &c->center->x, &c->center->y, &c->r };
+}
+
+std::vector<const double*> Scene::getArcParams(ID arcID) const{
+    if (!_arcs.contains(arcID)) {
+        throw std::out_of_range("There is no arc to change");
+    }
+    const Arc* a = _arcs.at(arcID);
+    return {
+            &a->beg->x, &a->beg->y,
+            &a->end->x, &a->end->y,
+            &a->center->x, &a->center->y
+    };
+}
+
 ID Scene::addRequirement(const RequirementData& reqData, const bool updateRequirementFlag) {
     if (reqData.objects.size() < 2) {
         throw std::invalid_argument("Insufficient data for requirement");

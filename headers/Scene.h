@@ -99,6 +99,11 @@ public:
     void setCircle(ID pointID, double x, double y, double r);
     void setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r);
 
+    std::vector<const double*> getPointParams(ID pointID) const;
+    std::vector<const double*> getSectionParams(ID sectionID) const;
+    std::vector<const double*> getCircleParams(ID circleID) const;
+    std::vector<const double*> getArcParams(ID arcID) const;
+
     ID addRequirement(const RequirementData& reqData, const bool updateRequirementFlag = true);
     void updateRequirements(ID objectID);
     RequirementData getRequirementData(ID reqID) const;
