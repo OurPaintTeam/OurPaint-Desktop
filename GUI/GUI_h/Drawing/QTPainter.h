@@ -13,6 +13,7 @@
 #include <QSvgGenerator>
 #include <unordered_map>
 #include <algorithm>
+#include <QPixmap>
 
 #include "Painter.h"
 #include "Scaling.h"
@@ -25,69 +26,76 @@
 #include "GeometricObjects.h"
 #include "ID.h"
 #include "BoundBox.h"
+#include "Colors.h"
 
 class QTPainter : public QFrame, public Painter {
+
 Q_OBJECT
 
 private:
-    //  Выделенные обьекты
-    std::vector<ID> selectedIDPoint;
-    std::vector<ID> selectedIDCircle;
-    std::vector<ID> selectedIDSection;
-    std::vector<ID> selectedIDArc;
+    // Selected objects
+    std::unordered_map<ID,Color> selectedIDPoint;
+    std::unordered_map<ID,Color> selectedIDCircle;
+    std::unordered_map<ID,Color> selectedIDSection;
+    std::unordered_map<ID,Color> selectedIDArc;
 
-    // Указатели
      std::unordered_map<ID,  Point*>* pointStorage;
      std::unordered_map<ID,  Section*>* sectionStorage;
      std::unordered_map<ID,  Circle*>* circleStorage;
      std::unordered_map<ID,  Arc*>* arcStorage;
      const BoundBox2D* Rectangle;
 
+     // To move a segment, we remember the point of pressing
      QPointF LineVecBeg;
      QPointF LineVecEnd;
      QPointF VecCircle;
 
-    // Класс для отрисовки мышкой
-    DrawMouse drawFigM;
-    bool drawing=false;
-
+    // The highlighting area
     SelectedRectangle selectedRectangle;
 
+    // Class for mouse rendering
+    DrawMouse drawingWithMouse;
+    bool drawing;
+
+    // To avoid having to process multiple clicks
     std::chrono::steady_clock::time_point lastClickTime;
 
 public:
     QTPainter(QWidget *parent);
 
-    std::vector<ID>& getVecSelectedIDPoints();
-    std::vector<ID>& getVecSelectedIDSections();
-    std::vector<ID>& getVecSelectedIDCircles();
+    std::vector<ID> getVecSelectedIDPoints();
+    std::vector<ID> getVecSelectedIDSections();
+    std::vector<ID> getVecSelectedIDCircles();
+    std::vector<ID> getVecSelectedIDArcs();
     std::optional<std::pair<ID, ID>> getPairSelectedID();
 
     void draw();
     void clear();
-
     void selectedClear();
+
     void resizeRectangle();
     bool findClosesObject();
     void drawingFigures(QPainter &painter);
     void saveToImage(const QString &fileName, QString &format);
+    void selectedElemByID(ID id,const std::string &type);
 
-    void selectedElemByID();
+    void pointInRect(QRectF &rect);
+    void sectionInRect(QRectF &rect);
+    void circleInRect(QRectF &rect);
+    void arcsInRect(QRectF &rect);
 
-
-    /*******   Сигналы   ******/
+    /*******   Signals   ******/
     void onSigPoint(double x, double y);
     void onSigCircle(double x, double y, double r);
     void onSigSection(double x, double y, double x1, double y1);
     void onSigArc(double x, double y, double x1, double y1, double xc, double yc);
 
-
 protected:
 
-    void resizeEvent(QResizeEvent *event) override;
+    [[maybe_unused]] void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
 
-    unsigned long long getWeight() override ;
+    unsigned long long getWeight() override;
     unsigned long long getHeight() override;
     void getBoundBox(const BoundBox2D& allObjects) override;
 
@@ -96,30 +104,23 @@ protected:
     void initCircle( std::unordered_map<ID,  Circle*>& circles) override;
     void initSection( std::unordered_map<ID,  Section*>& sections) override;
 
-
 signals:
 
-    // Перемещение
     void MovingPoint(const std::vector<ID>& selectedIDPoints);
     void MovingSection(const std::vector<ID>& selectedIDSections,QPointF&,QPointF&);
     void MovingCircle(const std::vector<ID>& selectedIDCircles,QPointF&);
     void MovingArc(const std::vector<ID>& selectedIDArcs);
     void EndMoving();
 
-    // При отрисовке мышкой
+    // Mouse rendering
     void SigPoint(double x, double y);
     void SigCircle(double x, double y, double r);
     void SigSection(double x, double y, double x1, double y1);
     void SigArc(double x, double y, double x1, double y1, double xc, double yc);
 
-
-    void DoubleClickOnObject(ID id);
+    void DoubleClickOnObject();
 
 private slots:
     void onWorkWindowResized();
-
-
 };
-
-
 #endif // QTPAINTER_H
