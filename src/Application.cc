@@ -303,38 +303,41 @@ void Application::setupQTPainterConnections() {
 
     // ctrl+v
     QObject::connect(&mainWind, &MainWindow::PASTE, [this]() {
-
-
-        for(auto& obj: objectsBuffer){
-            ID id=scene.addObject(obj);
-           std::vector<const double*> param = scene.getPointParams(id);
-           if(obj.et==ET_POINT) {
-               vecCalls.push_back([=, this]() {
-                   leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
-               });
-           }else if(obj.et==ET_SECTION){
-               vecCalls.push_back([=, this]() {
-                   leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
-                                                  id.get(), id.get() - 1, id.get() - 2,
-                                                  {param[0], param[1]}, {param[2], param[3]});
-               });
-           }
-           else if(obj.et==ET_CIRCLE){
-               vecCalls.push_back([=, this]() {
-                   leftMenu->addCircleInLeftMenu("Circle", "Center",
-                                                 id.get(),id.get()-1,
-                                                 {param[0], param[1]},*param[2]);
-               });
-           }
-           else if(obj.et==ET_ARC){
-               vecCalls.push_back([=, this]() {
-                   leftMenu->addArcInLeftMenu("Arc", "Point", "Point","Center",
-                                              id.get(), id.get() - 1, id.get() - 2,id.get() - 3,
-                                              {param[0], param[1]}, {param[2], param[3]},{param[4], param[5]});
-               });
-           }
+        try {
+            for (auto &obj: objectsBuffer) {
+                ID id = scene.addObject(obj);
+                if (obj.et == ET_POINT) {
+                    std::vector<const double *> param = scene.getPointParams(id);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
+                    });
+                } else if (obj.et == ET_SECTION) {
+                    std::vector<const double *> param = scene.getSectionParams(id);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
+                                                       id.get(), id.get() - 1, id.get() - 2,
+                                                       {param[0], param[1]}, {param[2], param[3]});
+                    });
+                } else if (obj.et == ET_CIRCLE) {
+                    std::vector<const double *> param = scene.getCircleParams(id);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->addCircleInLeftMenu("Circle", "Center",
+                                                      id.get(), id.get() - 1,
+                                                      {param[0], param[1]}, *param[2]);
+                    });
+                } else if (obj.et == ET_ARC) {
+                    std::vector<const double *> param = scene.getArcParams(id);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->addArcInLeftMenu("Arc", "Point", "Point", "Center",
+                                                   id.get(), id.get() - 1, id.get() - 2, id.get() - 3,
+                                                   {param[0], param[1]}, {param[2], param[3]}, {param[4], param[5]});
+                    });
+                }
+            }
+        }catch (std::runtime_error &error){
+            qWarning()<<error.what();
+            mainWind.showError("Error pasted");
         }
-
         updateState();
     });
 
