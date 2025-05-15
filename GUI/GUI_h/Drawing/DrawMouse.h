@@ -6,7 +6,6 @@
 #include <QPainter>
 #include <cmath>
 
-
 #include "Modes.h"
 #include "Scaling.h"
 #include "DrawAdditionalInf.h"
@@ -15,39 +14,38 @@
 class DrawMouse : public QObject {
 Q_OBJECT
 
-//  Класс для отрисовки мышью
-//  Добавлены подсказки по ближайшим точкам
+// Class for drawing with the mouse
+// Added hints for the nearest points
 
 private:
-    QPointF closestStartPoint; // Ближайшая точка
-    QPointF closestPointNext;  // Следующая ближайшая точка
-    QPointF startCoordinates; // Точка нажатия курсора
-    bool drawingInProgress; // Для отслеживания состояния
-    short int tabPressCount; // Для подсказок
+    QPointF closestStartPoint; // Nearest point
+    QPointF closestPointNext;  // Next nearest point
+    QPointF startCoordinates; // Cursor click point
+    bool drawingInProgress; // To track the status
+    short int tabPressCount; // For hints
 
-    static QColor hintColor(); // Серая линия
+    static QColor hintColor(); // Grey line
+    static void releaseTabIfPressed(); // Pressing tab
 
-    void resetCoordinates(); // Обнуление всего
+    void resetCoordinates(); // Reset everything
 
-    static void releaseTabIfPressed(); // Нажатие таба
-
-    // Для отрисовки с шифтом
+    // For rendering with a shift
     static QPointF getSnappedPoint(const QPointF &start, const QPointF &current) ;
 
-    // Предварительная отрисовка серых линий подсказок
+    // Preliminary drawing of the gray lines of the suggestions
     static void drawPreviewSection(QPainter &painter, const QPointF &start, const QPointF &end) ;
 
 public:
     explicit DrawMouse(QObject *parent = nullptr);
 
-    // Вычисление угла
+    // Calculating the angle
     static double snapAngle(double angle) ;
 
-    // Отрисовка фигур мышью
+    // Drawing shapes with the mouse
     void DrawFiguresMouse(QPainter &painter);
     static void drawSections(QPainter &painter, const QPointF &startCoordinates);
 
-    // Отрисовка подсказок
+    // Drawing suggestions
     void drawHints(QPainter &painter, const QPointF &closesPoint) ;
 
     void clear();
