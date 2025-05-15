@@ -838,7 +838,7 @@ void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double 
 
 std::vector<const double*> Scene::getPointParams(ID pointID) const{
     if (!_points.contains(pointID)) {
-        throw std::out_of_range("There is no point to change position");
+        throw std::out_of_range("There is no point");
     }
     const Point* p = _points.at(pointID);
     return { &p->x, &p->y };
@@ -846,7 +846,7 @@ std::vector<const double*> Scene::getPointParams(ID pointID) const{
 
 std::vector<const double*> Scene::getSectionParams(ID sectionID) const{
     if (!_sections.contains(sectionID)) {
-        throw std::out_of_range("There is no section to change");
+        throw std::out_of_range("There is no section");
     }
     const Section* s = _sections.at(sectionID);
     return { &s->beg->x, &s->beg->y, &s->end->x, &s->end->y };
@@ -854,7 +854,7 @@ std::vector<const double*> Scene::getSectionParams(ID sectionID) const{
 
 std::vector<const double*> Scene::getCircleParams(ID circleID) const{
     if (!_circles.contains(circleID)) {
-        throw std::out_of_range("There is no circle to change");
+        throw std::out_of_range("There is no circle");
     }
     const Circle* c = _circles.at(circleID);
     return { &c->center->x, &c->center->y, &c->r };
@@ -862,7 +862,7 @@ std::vector<const double*> Scene::getCircleParams(ID circleID) const{
 
 std::vector<const double*> Scene::getArcParams(ID arcID) const{
     if (!_arcs.contains(arcID)) {
-        throw std::out_of_range("There is no arc to change");
+        throw std::out_of_range("There is no arc");
     }
     const Arc* a = _arcs.at(arcID);
     return {
