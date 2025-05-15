@@ -69,8 +69,14 @@ private:
     void addSections(double x0,double y0,double x1,double y1);
     void addCircles(double x,double y,double r);
     void addArcs(double x0,double y0,double x1,double y1,double cx,double cy);
+    void bufferSelectedIDsClear();
+    void fillSelectedIDBuffer();
+    void deleteOwnPoints(std::vector<ID>& vecPoints,std::vector<ID>& vecSections,std::vector<ID>& vecCircles,std::vector<ID>& vecArcs);
+    void deleteObjects(std::vector<ID>& vecPoints,std::vector<ID>& vecSections,std::vector<ID>& vecCircles,std::vector<ID>& vecArcs);
 
 private:
+    std::vector<ObjectData> objectsBuffer;
+
     const QString pathTxtFileCommands = "../CommandsFile.txt";
 
 private slots:

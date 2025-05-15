@@ -282,53 +282,8 @@ void Application::setupQTPainterConnections() {
             std::vector<ID> vecCircle = painter->getVecSelectedIDCircles();
             std::vector<ID> vecArcs = painter->getVecSelectedIDArcs();
 
-            for (auto &sectionID: vecSection) {
-                ObjectData obj = scene.getObjectData(sectionID);
-                std::vector<ID> points = obj.subObjects;
-                for (auto &p: points) {
-                    auto it = std::find(vecPoint.begin(), vecPoint.end(), p);
-                    if (it != vecPoint.end()) {
-                        vecPoint.erase(it);
-                    }
-                }
-            }
-
-            for (auto &circleID: vecCircle) {
-                ObjectData obj = scene.getObjectData(circleID);
-                std::vector<ID> points = obj.subObjects;
-                for (auto &p: points) {
-                    auto it = std::find(vecPoint.begin(), vecPoint.end(), p);
-                    if (it != vecPoint.end()) {
-                        vecPoint.erase(it);
-                    }
-                }
-            }
-
-            UndoRedo::Transaction txn("Delete objects");
-
-            for (std::size_t i = 0; i < vecPoint.size(); ++i) {
-                UndoRedo::CommandDeletePoint *cmd = new UndoRedo::CommandDeletePoint(scene, vecPoint[i]);
-                txn.addCommand(cmd);
-                vecCalls.push_back([=, this]() {
-                    leftMenu->removeFigureById(vecPoint[i].get());
-                });
-            }
-            for (std::size_t i = 0; i < vecSection.size(); ++i) {
-                UndoRedo::CommandDeleteSection *cmd = new UndoRedo::CommandDeleteSection(scene, vecSection[i]);
-                txn.addCommand(cmd);
-                vecCalls.push_back([=, this]() {
-                    leftMenu->removeFigureById(vecSection[i].get());
-                });
-            }
-            for (std::size_t i = 0; i < vecCircle.size(); ++i) {
-                UndoRedo::CommandDeleteCircle *cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircle[i]);
-                txn.addCommand(cmd);
-                vecCalls.push_back([=, this]() {
-                    leftMenu->removeFigureById(vecCircle[i].get());
-                });
-            }
-
-            undoRedo.push(std::move(txn));
+            deleteOwnPoints(vecPoint,vecSection,vecCircle,vecArcs);
+            deleteObjects(vecPoint,vecSection,vecCircle,vecArcs);
 
             painter->selectedClear();
             painter->draw();
@@ -338,10 +293,150 @@ void Application::setupQTPainterConnections() {
         }
     });
 
+    // ctrl+c
+    QObject::connect(&mainWind, &MainWindow::COPY, [this]() {
+        objectsBuffer.clear();
+        fillSelectedIDBuffer();
+        painter->selectedClear();
+        painter->draw();
+    });
+
+    // ctrl+v
+    QObject::connect(&mainWind, &MainWindow::PASTE, [this]() {
+
+
+        for(auto& obj: objectsBuffer){
+            ID id=scene.addObject(obj);
+           std::vector<const double*> param = scene.getPointParams(id);
+           if(obj.et==ET_POINT) {
+               vecCalls.push_back([=, this]() {
+                   leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
+               });
+           }else if(obj.et==ET_SECTION){
+               vecCalls.push_back([=, this]() {
+                   leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
+                                                  id.get(), id.get() - 1, id.get() - 2,
+                                                  {param[0], param[1]}, {param[2], param[3]});
+               });
+           }
+           else if(obj.et==ET_CIRCLE){
+               vecCalls.push_back([=, this]() {
+                   leftMenu->addCircleInLeftMenu("Circle", "Center",
+                                                 id.get(),id.get()-1,
+                                                 {param[0], param[1]},*param[2]);
+               });
+           }
+           else if(obj.et==ET_ARC){
+               vecCalls.push_back([=, this]() {
+                   leftMenu->addArcInLeftMenu("Arc", "Point", "Point","Center",
+                                              id.get(), id.get() - 1, id.get() - 2,id.get() - 3,
+                                              {param[0], param[1]}, {param[2], param[3]},{param[4], param[5]});
+               });
+           }
+        }
+
+        updateState();
+    });
+
+    // ctrl+x
+    QObject::connect(&mainWind, &MainWindow::CUT, [this]() {
+        objectsBuffer.clear();
+        fillSelectedIDBuffer();
+
+        for(auto& obj: objectsBuffer){
+
+            vecCalls.push_back([=, this]() {
+                leftMenu->removeFigureById(obj.id.get());
+            });
+            scene.deleteObject(obj.id);
+        }
+
+        painter->selectedClear();
+        updateState();
+    });
+
     // Changing the size
     QObject::connect(&mainWind, &MainWindow::resize, [this]() {
         painter->update();
     });
+}
+
+
+void Application::deleteOwnPoints(std::vector<ID>& vecPoints,std::vector<ID>& vecSections,std::vector<ID>& vecCircles,std::vector<ID>& vecArcs){
+    for (auto &sectionID: vecSections) {
+        ObjectData obj = scene.getObjectData(sectionID);
+        std::vector<ID> points = obj.subObjects;
+        for (auto &p: points) {
+            auto it = std::find(vecPoints.begin(), vecPoints.end(), p);
+            if (it != vecPoints.end()) {
+                vecPoints.erase(it);
+            }
+        }
+    }
+
+    for (auto &circleID: vecCircles) {
+        ObjectData obj = scene.getObjectData(circleID);
+        std::vector<ID> points = obj.subObjects;
+        for (auto &p: points) {
+            auto it = std::find(vecPoints.begin(), vecPoints.end(), p);
+            if (it != vecPoints.end()) {
+                vecPoints.erase(it);
+            }
+        }
+    }
+}
+
+
+void Application::deleteObjects(std::vector<ID>& vecPoints,std::vector<ID>& vecSections,std::vector<ID>& vecCircles,std::vector<ID>& vecArcs){
+    UndoRedo::Transaction txn("Delete objects");
+
+    for (std::size_t i = 0; i < vecPoints.size(); ++i) {
+        UndoRedo::CommandDeletePoint *cmd = new UndoRedo::CommandDeletePoint(scene, vecPoints[i]);
+        txn.addCommand(cmd);
+        vecCalls.push_back([=, this]() {
+            leftMenu->removeFigureById(vecPoints[i].get());
+        });
+    }
+    for (std::size_t i = 0; i < vecSections.size(); ++i) {
+        UndoRedo::CommandDeleteSection *cmd = new UndoRedo::CommandDeleteSection(scene, vecSections[i]);
+        txn.addCommand(cmd);
+        vecCalls.push_back([=, this]() {
+            leftMenu->removeFigureById(vecSections[i].get());
+        });
+    }
+    for (std::size_t i = 0; i < vecCircles.size(); ++i) {
+        UndoRedo::CommandDeleteCircle *cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircles[i]);
+        txn.addCommand(cmd);
+        vecCalls.push_back([=, this]() {
+            leftMenu->removeFigureById(vecCircles[i].get());
+        });
+    }
+    undoRedo.push(std::move(txn));
+}
+
+
+void Application::fillSelectedIDBuffer() {
+    std::vector<ID> bufferSelectedIDPoints = painter->getVecSelectedIDPoints();
+    std::vector<ID> bufferSelectedIDSections = painter->getVecSelectedIDSections();
+    std::vector<ID> bufferSelectedIDCircles = painter->getVecSelectedIDCircles();
+    std::vector<ID> bufferSelectedIDArcs = painter->getVecSelectedIDArcs();
+    deleteOwnPoints(bufferSelectedIDPoints,bufferSelectedIDSections,bufferSelectedIDCircles,bufferSelectedIDArcs);
+
+    for (auto& id : bufferSelectedIDPoints) {
+        objectsBuffer.push_back(scene.getObjectData(id));
+    }
+
+    for (auto& id : bufferSelectedIDSections) {
+        objectsBuffer.push_back(scene.getObjectData(id));
+    }
+
+    for (auto& id : bufferSelectedIDCircles) {
+        objectsBuffer.push_back(scene.getObjectData(id));
+    }
+
+    for (auto& id : bufferSelectedIDArcs) {
+        objectsBuffer.push_back(scene.getObjectData(id));
+    }
 }
 
 
@@ -640,10 +735,12 @@ void Application::setupLeftMenuConnections() {
                              }
                          });
 
+
         QObject::connect(leftMenu, &LeftMenuBar::reqParamChanged,
                          [](const long long id, const double &parameter) {
         // TODD по айди изменить параметр требования
                          });
+
 
         // Двойное нажатие левого меню
         QObject::connect(leftMenu, &LeftMenuBar::doubleClickLeftMenu,
