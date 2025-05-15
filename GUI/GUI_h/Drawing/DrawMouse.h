@@ -36,13 +36,14 @@ private:
     static void drawPreviewSection(QPainter &painter, const QPointF &start, const QPointF &end) ;
 
 public:
-    explicit DrawMouse(QObject *parent = nullptr);
+    [[maybe_unused]] explicit DrawMouse(QObject *parent = nullptr);
 
     // Calculating the angle
     static double snapAngle(double angle) ;
 
     // Drawing shapes with the mouse
     void DrawFiguresMouse(QPainter &painter);
+    static void drawCircles(QPainter &painter, const QPointF &startCoordinates,QPointF &cursor);
     static void drawSections(QPainter &painter, const QPointF &startCoordinates);
 
     // Drawing suggestions
