@@ -1,33 +1,34 @@
 #include "DrawMouse.h"
 
-DrawMouse::DrawMouse(QObject *parent)
+
+[[maybe_unused]] DrawMouse::DrawMouse(QObject *parent)
         : QObject(parent), drawingInProgress(false), tabPressCount(0) {}
 
-        // Серый цвет
+
 QColor DrawMouse::hintColor() {
     return {169, 169, 169, 128};
 }
 
-// Сброс
+
 void DrawMouse::resetCoordinates() {
-    startCoordinates = QPoint(0, 0);
-    closestStartPoint = QPoint(0, 0);
-    closestPointNext = QPoint(0, 0);
+    startCoordinates = QPoint();
+    closestStartPoint = QPoint();
+    closestPointNext = QPoint();
 }
 
-// Нажатие таба
+
 void DrawMouse::releaseTabIfPressed() {
     if (ModeManager::getActiveMode(KeyMode::Tab)) {
         ModeManager::setActiveMode(KeyMode::ReleasingTab);
     }
 }
 
-// Вычисление угла
+
 double DrawMouse::snapAngle(double angle) {
     return std::round(angle / 45.0) * 45.0;
 }
 
-// Для отрисовки с шифтом
+
 QPointF DrawMouse::getSnappedPoint(const QPointF &start, const QPointF &current) {
     double dx = current.x() - start.x();
     double dy = current.y() - start.y();
@@ -64,18 +65,18 @@ QPointF DrawMouse::getSnappedPoint(const QPointF &start, const QPointF &current)
     return {snappedX, snappedY};
 }
 
-// Предварительная серая линия
+
 void DrawMouse::drawPreviewSection(QPainter &painter, const QPointF &start, const QPointF &end){
     DrawFigures::setPen(QPen(hintColor()));
     DrawFigures::drawSection(painter, start, end);
 }
 
-// Отрисовка мышью
+
 void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
     painter.setPen(Qt::black);
 
-    // Округление мыши до 1 знака после запятой
+    // Rounding the mouse to 1 decimal place
     double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
     double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
     QPointF Cursor(cursorX, cursorY);
@@ -98,7 +99,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
     if (leftClick) {
       if (modePoint) {
-            // Если одно нажатие и точка => точка
+            // If one tap and a dot => dot
             emit SigPoint(cursorX,cursorY);
         } else {
             if (!drawingInProgress) {
@@ -112,7 +113,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
                 if (modeSection) {
 
                     if (shiftPressed) {
-                        // При нажатии фиксированы углы под 45
+                        // When pressed, the angles are fixed at 45
                         QPointF snapped = getSnappedPoint(startCoordinates, Cursor);
                         double x1 = snapped.x();
                         double y1 = snapped.y();
@@ -140,15 +141,12 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
                 resetCoordinates();
                 tabPressCount = 0;
                 drawingInProgress = false;
-
-
             }
         }
         ModeManager::setActiveMode(MouseMode::ReleasingLeft);
     }
 
     if (rightClick) {
-        // Сброс всего правой клавишей
         resetCoordinates();
         tabPressCount = 0;
         drawingInProgress = false;
@@ -156,16 +154,7 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
 
     if (drawingInProgress) {
         if (modeCircle) {
-            // Отрисовка круга
-            double centerX = (startCoordinates.x() + cursorX) / 2;
-            double centerY = (startCoordinates.y() + cursorY) / 2;
-            double radius = std::hypot(startCoordinates.x() - centerX, startCoordinates.y() - centerY);
-
-            DrawFigures::drawCircle(painter, QPointF(centerX, centerY), radius);
-            DrawFigures::drawPoint(painter, QPointF(centerX, centerY));
-
-            DrawFigures::setPen(hintColor());
-            DrawFigures::drawSection(painter, QPointF(centerX, centerY), QPointF(cursorX, cursorY));
+            drawCircles(painter,startCoordinates,Cursor);
 
         } else if (modeSection) {
             drawSections(painter, startCoordinates);
@@ -176,10 +165,26 @@ void DrawMouse::DrawFiguresMouse(QPainter &painter) {
     }
 }
 
-// Отрисовка линии
+
+void DrawMouse::drawCircles(QPainter &painter, const QPointF &startCoordinates,QPointF &cursor) {
+    double centerX = (startCoordinates.x() + cursor.x()) / 2;
+    double centerY = (startCoordinates.y() + cursor.y()) / 2;
+    double radius = std::hypot(startCoordinates.x() - centerX, startCoordinates.y() - centerY);
+
+    DrawFigures::drawCircle(painter, QPointF(centerX, centerY), radius);
+    DrawFigures::drawPoint(painter, QPointF(centerX, centerY));
+
+    DrawFigures::setPen(hintColor());
+    DrawFigures::drawSection(painter, QPointF(centerX, centerY), cursor);
+}
+
+
 void DrawMouse::drawSections(QPainter &painter, const QPointF &startCoordinates)  {
-    if (!ModeManager::getActiveMode(WorkModes::Section)) return;
-    // Округление мыши до 1 знака после запятой
+    if (!ModeManager::getActiveMode(WorkModes::Section)) {
+        return;
+    }
+
+    // Rounding the mouse to 1 decimal place
     double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
     double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
     QPointF Cursor(cursorX, cursorY);
@@ -193,7 +198,7 @@ void DrawMouse::drawSections(QPainter &painter, const QPointF &startCoordinates)
     }
 }
 
-// Отрисовка подсказок
+
 void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
 
     bool tabPressed = ModeManager::getActiveMode(KeyMode::Tab);
@@ -209,7 +214,7 @@ void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
 
         if (tabPressCount == 0) {
             closestStartPoint = closesPoint;
-            // Округление мыши до 1 знака после запятой
+            // Rounding the mouse to 1 decimal place
             double cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
             double cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
             QPointF Cursor = QPointF(cursorX, cursorY);
@@ -238,6 +243,7 @@ void DrawMouse::drawHints(QPainter &painter, const QPointF &closesPoint) {
         resetCoordinates();
     }
 }
+
 
 void DrawMouse::clear() {
      closestStartPoint=QPointF();
