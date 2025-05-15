@@ -1,2 +1,339 @@
 #include "DrawFigures.h"
+
 QPen DrawFigures::MyColor(Qt::black);
+
+void DrawFigures::setPen(const QPen &color) {
+    MyColor = color;
+}
+
+double DrawFigures::angleBetween(const QPointF &center, const QPointF &point) {
+    return QLineF(center, point).angle();
+}
+
+void DrawFigures::drawPoint(QPainter &painter, const std::unordered_map<ID, Point *> &points,
+                                               const std::unordered_map<ID, Color> &vec_id) {
+
+    if (points.empty()) {
+        return;
+    }
+
+    painter.setBrush(QBrush(Qt::black));
+    if(MyColor.color() != Qt::black){
+        painter.setBrush(MyColor.color());
+    }
+    painter.setPen(Qt::NoPen);
+
+    short int pointRadius = 1;
+
+    if (vec_id.empty()) {
+        for (const auto &pt : points) {
+            const Point *point = pt.second;
+            painter.drawEllipse(QPointF(Scaling::scaleCoordinate(point->x),
+                                               Scaling::scaleCoordinate(-point->y)),
+                                                 pointRadius, pointRadius);
+        }
+
+
+    } else {
+
+        for (const auto &pt : points) {
+            const Point *point = pt.second;
+
+            QPointF logicPoint(Scaling::scaleCoordinate(point->x), Scaling::scaleCoordinate(-point->y));
+
+            bool isSelected = vec_id.contains(pt.first);
+            pointRadius = isSelected ? 2 : 1;
+
+            painter.setBrush(QBrush(Qt::black));
+            painter.setPen(Qt::NoPen);
+
+            painter.drawEllipse(logicPoint, pointRadius, pointRadius);
+
+            if (isSelected) {
+                DrawAdditionalInf::drawPointID(painter, logicPoint, pt.first);
+                DrawAdditionalInf::drawPointGlow(painter, logicPoint,vec_id.at(pt.first));
+            }
+        }
+    }
+    MyColor = QPen(Qt::black);
+}
+
+
+void DrawFigures::drawCircle(QPainter &painter, const std::unordered_map<ID, Circle *> &circles,const  std::unordered_map<ID,Color> &vec_id) {
+    if (circles.empty()) {
+        return;
+    }
+
+    QPen pen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+    pen.setWidth(1);
+    pen.setJoinStyle(Qt::RoundJoin);
+    pen.setCapStyle(Qt::RoundCap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(pen);
+
+    if (vec_id.empty()) {
+        for (const auto &cir : circles) {
+            const Circle *circle = cir.second;
+            painter.drawEllipse(QPointF(Scaling::scaleCoordinate(circle->center->x),
+                                               Scaling::scaleCoordinate(-circle->center->y)),
+                                                 Scaling::scaleCoordinate(circle->r),
+                                                 Scaling::scaleCoordinate(circle->r));
+        }
+    }else {
+
+        for (const auto &pair: circles) {
+            const ID &id = pair.first;
+            const Circle *circle = pair.second;
+
+            double scaledRadius = Scaling::scaleCoordinate(circle->r);
+            QPointF logicCenter(Scaling::scaleCoordinate(circle->center->x),
+                                Scaling::scaleCoordinate(-circle->center->y));
+
+            bool selected = vec_id.contains(id);
+
+            pen.setWidth(selected ? 2 : 1);
+            painter.setPen(pen);
+
+
+            painter.drawEllipse(logicCenter, scaledRadius, scaledRadius);
+
+            if (selected) {
+                DrawAdditionalInf::drawCircleID(painter, logicCenter, scaledRadius, id);
+                DrawAdditionalInf::drawCircleGlow(painter, logicCenter, scaledRadius,vec_id.at(id));
+            }
+        }
+    }
+
+    MyColor = QPen(Qt::black);
+}
+
+
+void DrawFigures::drawSection(QPainter &painter, const std::unordered_map<ID, Section *> &sections,const  std::unordered_map<ID,Color> &vec_id) {
+    if (sections.empty()) { return; }
+
+    painter.setRenderHint(QPainter::Antialiasing);
+    QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+    currentPen.setWidth(1);
+    currentPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(currentPen);
+
+    if (vec_id.empty()) {
+        for (const auto &sec : sections) {
+            const Section *section = sec.second;
+
+            QPointF start(Scaling::scaleCoordinate(section->beg->x),
+                          Scaling::scaleCoordinate(-section->beg->y));
+            QPointF end(Scaling::scaleCoordinate(section->end->x),
+                        Scaling::scaleCoordinate(-section->end->y));
+
+            painter.drawLine(start, end);
+
+            DrawAdditionalInf::drawCoordinateLine(painter, start, end);
+        }
+    }else {
+
+        for (const auto &pair: sections) {
+            const ID &id = pair.first;
+            const Section *section = pair.second;
+
+            QPointF start(Scaling::scaleCoordinate(section->beg->x),
+                          Scaling::scaleCoordinate(-section->beg->y));
+            QPointF end(Scaling::scaleCoordinate(section->end->x),
+                        Scaling::scaleCoordinate(-section->end->y));
+
+            bool selected = vec_id.contains(id);
+
+            currentPen.setWidth(selected ? 2 : 1);
+            painter.setPen(currentPen);
+
+            painter.drawLine(start, end);
+
+            DrawAdditionalInf::drawCoordinateLine(painter, start, end);
+
+            if (selected) {
+                DrawAdditionalInf::drawSectionID(painter, start, end, id);
+                DrawAdditionalInf::drawSectionGlow(painter, start, end,vec_id.at(id));
+            }
+        }
+    }
+
+    MyColor = QPen(Qt::black);
+}
+
+
+void DrawFigures::drawArc(QPainter &painter, const std::unordered_map<ID,  Arc*> &arcs, const  std::unordered_map<ID,Color> &vec_id) {
+    if (arcs.size() == 0) {
+        return;
+    }
+
+    QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+    currentPen.setWidth(1);
+    currentPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(currentPen);
+
+    if (!vec_id.empty()) {
+        for (const auto &elem: arcs) {
+            const ID &id = elem.first;
+            const Arc *arc = elem.second;
+
+            bool selected = vec_id.contains(id);
+
+            currentPen.setWidth(selected ? 2 : 1);
+            painter.setPen(currentPen);
+
+            QPointF center(Scaling::scaleCoordinate(arc->center->x), Scaling::scaleCoordinate(-arc->center->y));
+            QPointF start(Scaling::scaleCoordinate(arc->beg->x), Scaling::scaleCoordinate(-arc->beg->y));
+            QPointF end(Scaling::scaleCoordinate(arc->end->x), Scaling::scaleCoordinate(-arc->end->y));
+
+            double radius = std::hypot(start.x() - center.x(), start.y() - center.y());
+
+            double startAngleDeg = angleBetween(center, start);
+            double endAngleDeg = angleBetween(center, end);
+            double spanAngleDeg = endAngleDeg - startAngleDeg;
+
+            if (spanAngleDeg <= 0) spanAngleDeg += 360;
+
+            QRectF rect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+
+            int qtStart = static_cast<int>(startAngleDeg * 16);
+            int qtSpan = static_cast<int>(spanAngleDeg * 16);
+
+            painter.drawArc(rect, qtStart, qtSpan);
+
+            if (selected) {
+                DrawAdditionalInf::drawArcGlow(painter, rect, qtStart, qtSpan, vec_id.at(id));
+                DrawAdditionalInf::drawArcID(painter, id, center, startAngleDeg, endAngleDeg, radius);
+            }
+
+        }
+    } else {
+        for (const auto &elem: arcs) {
+
+            const Arc *arc = elem.second;
+
+            QPointF center(Scaling::scaleCoordinate(arc->center->x), Scaling::scaleCoordinate(-arc->center->y));
+            QPointF start(Scaling::scaleCoordinate(arc->beg->x), Scaling::scaleCoordinate(-arc->beg->y));
+            QPointF end(Scaling::scaleCoordinate(arc->end->x), Scaling::scaleCoordinate(-arc->end->y));
+
+            double radius = std::hypot(start.x() - center.x(), start.y() - center.y());
+
+            double startAngleDeg = angleBetween(center, start);
+            double endAngleDeg = angleBetween(center, end);
+            double spanAngleDeg = endAngleDeg - startAngleDeg;
+
+            if (spanAngleDeg <= 0) spanAngleDeg += 360;
+
+            QRectF rect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+
+            int qtStart = static_cast<int>(startAngleDeg * 16);
+            int qtSpan = static_cast<int>(spanAngleDeg * 16);
+
+            painter.drawArc(rect, qtStart, qtSpan);
+        }
+    }
+
+    MyColor = QPen(Qt::black);
+}
+
+
+void DrawFigures::drawPoint(QPainter &painter, QPointF point) {
+    short int pointRadius =  1;
+
+    QPointF logicPoint(Scaling::scaleCoordinate(point.x()), Scaling::scaleCoordinate(-point.y()));
+
+    QBrush pointBrush = Qt::black;
+    if(MyColor.color() != Qt::black){
+        pointBrush=MyColor.color();
+    }
+    painter.setBrush(pointBrush);
+    painter.setPen(Qt::NoPen);
+
+
+    painter.drawEllipse(logicPoint, pointRadius, pointRadius);
+    MyColor = QPen(Qt::black);
+}
+
+
+void DrawFigures::drawCircle(QPainter &painter, QPointF center, double radius) {
+    double scaledRadius = radius * Scaling::getZoom();
+    QPointF logicCenter(Scaling::scaleCoordinate(center.x()), Scaling::scaleCoordinate(-center.y()));
+
+    QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+
+    currentPen.setWidth( 1);
+    currentPen.setJoinStyle(Qt::RoundJoin);
+    currentPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(currentPen);
+    painter.setBrush(Qt::NoBrush);
+
+    painter.drawEllipse(logicCenter, scaledRadius, scaledRadius);
+
+    MyColor = QPen(Qt::black);
+}
+
+
+void DrawFigures::drawSection(QPainter &painter, QPointF beg, QPointF end) {
+    QPen currentPen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+    currentPen.setWidth(1);
+    currentPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(currentPen);
+
+    QPointF start(Scaling::scaleCoordinate(beg.x()), Scaling::scaleCoordinate(-beg.y()));
+    QPointF endLogic(Scaling::scaleCoordinate(end.x()), Scaling::scaleCoordinate(-end.y()));
+
+    painter.drawLine(start, endLogic);
+
+    currentPen = QColor(Qt::black);
+    painter.setPen(currentPen);
+
+    DrawAdditionalInf::drawCoordinateLine(painter, start, endLogic);
+
+    MyColor = QPen(Qt::black);
+}
+
+
+void DrawFigures::drawArc(QPainter &painter, QPointF &s, QPointF &e,QPointF& c) {
+    QPen pen = (MyColor.color() == Qt::black) ? QPen(Qt::black) : MyColor;
+    pen.setWidth(1);
+    pen.setCapStyle(Qt::RoundCap);
+    painter.setPen(pen);
+
+    QPointF center(Scaling::scaleCoordinate(c.x()), Scaling::scaleCoordinate(-c.y()));
+    QPointF start(Scaling::scaleCoordinate(s.x()), Scaling::scaleCoordinate(-s.y()));
+    QPointF end(Scaling::scaleCoordinate(e.x()), Scaling::scaleCoordinate(-e.y()));
+
+    double radius = std::hypot(start.x() - center.x(), start.y() - center.y());
+
+    double startAngleDeg = angleBetween(center, start);
+    double endAngleDeg = angleBetween(center, end);
+    double spanAngleDeg = endAngleDeg - startAngleDeg;
+
+    if (spanAngleDeg <= 0) spanAngleDeg += 360;
+
+    QRectF rect(center.x() - radius, center.y() - radius, radius * 2, radius * 2);
+
+    int qtStart = static_cast<int>(startAngleDeg * 16);
+    int qtSpan = static_cast<int>(spanAngleDeg * 16);
+
+    painter.drawArc(rect, qtStart, qtSpan);
+
+    MyColor = QPen(Qt::black);
+}
+
+
+void DrawFigures::drawRectangle(QPainter &painter, QPointF &X, QPointF &Y) {
+    QPen currentPen = QPen(Qt::blue);
+    currentPen.setCapStyle(Qt::RoundCap);
+    painter.setPen(currentPen);
+
+    QPointF start(Scaling::scaleCoordinate(X.x()), Scaling::scaleCoordinate(-X.y()));
+    QPointF end(Scaling::scaleCoordinate(Y.x()), Scaling::scaleCoordinate(-Y.y()));
+
+    painter.setBrush(
+            QBrush(QColor(173, 216, 230, 128), Qt::SolidPattern));
+
+    painter.drawRect(QRectF(start, end));
+
+    MyColor = QPen(Qt::black);
+}
