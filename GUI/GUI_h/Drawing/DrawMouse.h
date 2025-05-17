@@ -21,7 +21,7 @@ private:
     QPointF closestPointNext;  // Next nearest point
     QPointF startCoordinates; // Cursor click point
     bool drawingInProgress; // To track the status
-    short int tabPressCount; // For hints
+    qint16 tabPressCount; // For hints
 
     static QColor hintColor(); // Grey line
     static void releaseTabIfPressed(); // Pressing tab
@@ -29,32 +29,33 @@ private:
     void resetCoordinates(); // Reset everything
 
     // For rendering with a shift
-    static QPointF getSnappedPoint(const QPointF &start, const QPointF &current) ;
+    static QPointF getSnappedPoint(const QPointF& start, const QPointF& current);
 
     // Preliminary drawing of the gray lines of the suggestions
-    static void drawPreviewSection(QPainter &painter, const QPointF &start, const QPointF &end) ;
+    static void drawPreviewSection(QPainter& painter, const QPointF& start, const QPointF& end);
 
 public:
-    [[maybe_unused]] explicit DrawMouse(QObject *parent = nullptr);
+    [[maybe_unused]] explicit DrawMouse(QObject* parent = nullptr);
 
     // Calculating the angle
-    static double snapAngle(double angle) ;
+    static qreal snapAngle(qreal angle);
 
     // Drawing shapes with the mouse
-    void DrawFiguresMouse(QPainter &painter,QPointF &cursor);
-    static void drawCircles(QPainter &painter, const QPointF &startCoordinates,QPointF &cursor);
-    static void drawSections(QPainter &painter, const QPointF &startCoordinates,QPointF &cursor);
+    void DrawFiguresMouse(QPainter& painter,const QPointF& cursor);
+    static void drawCircles(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
+    static void drawSections(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
 
     // Drawing suggestions
-    void drawHints(QPainter &painter, const QPointF &closesPoint,QPointF &cursor);
+    void drawHints(QPainter& painter, const QPointF& closesPoint,const QPointF& cursor);
 
     void clear();
 
 signals:
-    void SigPoint(double x, double y);
-    void SigCircle(double x, double y, double r);
-    void SigSection(double x, double y, double x1, double y1);
-    void SigArc(double x, double y, double x1, double y1, double xc, double yc);
+
+    void SigPoint(const QPointF& point);
+    void SigCircle(const QPointF& center,const qreal radius);
+    void SigSection(const QPointF& stratPoint,const QPointF& endPoint);
+    void SigArc(const QPointF& stratPoint,const QPointF& endPoint,const QPointF& centerPoint);
 };
 
 #endif // OURPAINT_DRAWMOUSE_H
