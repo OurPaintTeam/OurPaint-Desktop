@@ -47,11 +47,11 @@ public:
 
     /**** Functions for single rendering (with mouse) *****/
 
-    static void drawPoint(QPainter &painter, QPointF point);
-    static void drawCircle(QPainter &painter, QPointF center, double radius);
-    static void drawSection(QPainter &painter, QPointF beg, QPointF end);
-    static void drawArc(QPainter &painter, QPointF &s, QPointF &e,QPointF& c);
-    static void drawRectangle(QPainter &painter, QPointF &X, QPointF &Y);
+    static void drawPoint(QPainter &painter,const QPointF point);
+    static void drawCircle(QPainter &painter,const QPointF center,const double radius);
+    static void drawSection(QPainter &painter,const QPointF beg,const QPointF end);
+    static void drawArc(QPainter &painter,const QPointF startPoint,const QPointF endPoint,const QPointF centerPoint);
+    static void drawRectangle(QPainter &painter,const QPointF startPoint,const QPointF endPoint);
 
 
 };
