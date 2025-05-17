@@ -24,18 +24,18 @@ void DrawBackground::backgroundRender(QPainter &painter) {
     QVector<QPointF> pointYU;
     QVector<QPointF> pointYD;
 
-    qreal screenHalfWidth = Scaling::getCenteredCoordinatesX();
-    qreal screenHalfHeight = Scaling::getCenteredCoordinatesY();
-    qint16 screenHeight = Scaling::getActualMonitorHeight();
+    const qreal screenHalfWidth = Scaling::getCenteredCoordinatesX();
+    const qreal screenHalfHeight = Scaling::getCenteredCoordinatesY();
+    const qint16 screenHeight = Scaling::getActualMonitorHeight();
 
-    qreal deltaX = Scaling::getDeltaX();
-    qreal deltaY = Scaling::getDeltaY();
+    const qreal deltaX = Scaling::getDeltaX();
+    const qreal deltaY = Scaling::getDeltaY();
 
-    qreal zoom = Scaling::getZoom();
+    const qreal zoom = Scaling::getZoom();
 
-    const qint16 SIZE = 1;
-    QPen darkPen(Qt::darkGray, SIZE);
-    QPen greyPen(Qt::lightGray, SIZE);
+    constexpr qint16 SIZE = 1;
+    const QPen darkPen(Qt::darkGray, SIZE);
+    const QPen greyPen(Qt::lightGray, SIZE);
 
     // Rendering a checkered background
     if (ModeManager::getCell()) {
@@ -121,12 +121,12 @@ void DrawBackground::backgroundRender(QPainter &painter) {
 }
 
 void DrawBackground::mainBackgroundRender(QPainter &painter){
-    qreal screenHalfWidth = Scaling::getCenteredCoordinatesX();
-    qreal screenHalfHeight = Scaling::getCenteredCoordinatesY();
-    qint16 screenHeight = Scaling::getActualMonitorHeight();
+    const qreal screenHalfWidth = Scaling::getCenteredCoordinatesX();
+    const qreal screenHalfHeight = Scaling::getCenteredCoordinatesY();
+    const qint16 screenHeight = Scaling::getActualMonitorHeight();
 
-    qreal deltaX = Scaling::getDeltaX();
-    qreal deltaY = Scaling::getDeltaY();
+    const qreal deltaX = Scaling::getDeltaX();
+    const qreal deltaY = Scaling::getDeltaY();
     const qreal absDeltaX =  qAbs(deltaX);
     const qreal absDeltaY = qAbs(deltaY);
 
