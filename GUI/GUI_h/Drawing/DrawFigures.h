@@ -20,38 +20,37 @@ private:
     static QPen MyColor;
 
 public:
-    static void setPen(const QPen &color);
+    static void setPen(const QPen& color);
 
-    static qreal angleBetween(const QPointF &center, const QPointF &point);
+    static qreal angleBetween(const QPointF& center, const QPointF& point);
 
     // Function for drawing points
-    static void drawPoint(QPainter &painter, const std::unordered_map<ID, Point *> &points,
-                                             const std::unordered_map<ID, Color> &vec_id);
+    static void drawPoint(QPainter& painter, const std::unordered_map<ID, Point*>& points,
+                          const std::unordered_map<ID, Color>& vec_id);
 
 
     // Function for drawing circles
-    static void drawCircle(QPainter &painter, const std::unordered_map<ID, Circle *> &circles,
-                                              const  std::unordered_map<ID,Color> &vec_id);
+    static void drawCircle(QPainter& painter, const std::unordered_map<ID, Circle*>& circles,
+                           const std::unordered_map<ID, Color>& vec_id);
 
 
     // Function for drawing lines
-    static void drawSection(QPainter &painter, const std::unordered_map<ID, Section *> &sections,
-                                               const std::unordered_map<ID,Color> &vec_id);
-
+    static void drawSection(QPainter& painter, const std::unordered_map<ID, Section*>& sections,
+                            const std::unordered_map<ID, Color>& vec_id);
 
 
     // Function for drawing arcs
-    static void drawArc(QPainter &painter, const std::unordered_map<ID,  Arc*> &arcs,
-                                           const  std::unordered_map<ID,Color> &vec_id);
+    static void drawArc(QPainter& painter, const std::unordered_map<ID, Arc*>& arcs,
+                        const std::unordered_map<ID, Color>& vec_id);
 
 
     /**** Functions for single rendering (with mouse) *****/
 
-    static void drawPoint(QPainter &painter,const QPointF point);
-    static void drawCircle(QPainter &painter,const QPointF center,const qreal radius);
-    static void drawSection(QPainter &painter,const QPointF beg,const QPointF end);
-    static void drawArc(QPainter &painter,const QPointF startPoint,const QPointF endPoint,const QPointF centerPoint);
-    static void drawRectangle(QPainter &painter,const QPointF startPoint,const QPointF endPoint);
+    static void drawPoint(QPainter& painter, const QPointF point);
+    static void drawCircle(QPainter& painter, const QPointF center, const qreal radius);
+    static void drawSection(QPainter& painter, const QPointF beg, const QPointF end);
+    static void drawArc(QPainter& painter, const QPointF startPoint, const QPointF endPoint, const QPointF centerPoint);
+    static void drawRectangle(QPainter& painter, const QPointF startPoint, const QPointF endPoint);
 
 
 };

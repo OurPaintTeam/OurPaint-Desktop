@@ -31,18 +31,18 @@ void DrawFigures::drawPoint(QPainter &painter, const std::unordered_map<ID, Poin
     constexpr qint16 SMALL_RADIUS = 1;
     constexpr qint16 BIG_RADIUS = 2;
 
-    
+
     if (vec_id.empty()) {
-        
+
         for (const auto &pt : points) {
             const Point *point = pt.second;
             painter.drawEllipse(QPointF(Scaling::scaleCoordinate(point->x),
                                                Scaling::scaleCoordinate(-point->y)),
                                                      SMALL_RADIUS, SMALL_RADIUS);
         }
-        
+
     } else {
-        
+
         for (const auto &pt : points) {
             const Point *point = pt.second;
             const QPointF logicPoint(Scaling::scaleCoordinate(point->x), Scaling::scaleCoordinate(-point->y));
@@ -59,7 +59,7 @@ void DrawFigures::drawPoint(QPainter &painter, const std::unordered_map<ID, Poin
                 DrawAdditionalInf::drawPointID(painter, pt.first,logicPoint);
                 DrawAdditionalInf::drawPointGlow(painter, logicPoint,vec_id.at(pt.first));
             }
-            
+
         }
     }
     MyColor = QPen(Qt::black);
@@ -74,15 +74,15 @@ void DrawFigures::drawCircle(QPainter &painter, const std::unordered_map<ID, Cir
     const QPen blackPen=QPen(Qt::black);
     const QPen otherPen=QPen(MyColor);
     QPen pen = (MyColor.color() == Qt::black) ? blackPen : otherPen;
-    
+
     constexpr qint16 SIZE_PEN = 1;
     constexpr qint16 BIG_SIZE = 2;
-    
+
     pen.setWidth(SIZE_PEN);
-    
+
     pen.setJoinStyle(Qt::RoundJoin);
     pen.setCapStyle(Qt::RoundCap);
-    
+
     painter.setBrush(Qt::NoBrush);
     painter.setPen(pen);
 
@@ -108,7 +108,7 @@ void DrawFigures::drawCircle(QPainter &painter, const std::unordered_map<ID, Cir
 
             pen.setWidth(selected ? BIG_SIZE : SIZE_PEN);
             painter.setPen(pen);
-            
+
             painter.drawEllipse(logicCenter, scaledRadius, scaledRadius);
 
             if (selected) {
@@ -123,7 +123,7 @@ void DrawFigures::drawCircle(QPainter &painter, const std::unordered_map<ID, Cir
 
 
 void DrawFigures::drawSection(QPainter &painter, const std::unordered_map<ID, Section *> &sections,const  std::unordered_map<ID,Color> &vec_id) {
-    if (sections.empty()) { 
+    if (sections.empty()) {
         return;
     }
 
@@ -133,7 +133,7 @@ void DrawFigures::drawSection(QPainter &painter, const std::unordered_map<ID, Se
 
     constexpr qint16 SIZE_PEN = 1;
     constexpr qint16 BIG_SIZE = 2;
-    
+
     currentPen.setCapStyle(Qt::RoundCap);
     painter.setPen(currentPen);
 
