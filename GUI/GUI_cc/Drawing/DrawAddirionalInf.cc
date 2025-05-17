@@ -1,12 +1,11 @@
 #include "DrawAdditionalInf.h"
 
 
-void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
-                                             const QVector<QPointF> &pointsXRight,
-                                             const QVector<QPointF> &pointsXLeft,
-                                             const QVector<QPointF> &pointsYUp,
-                                             const QVector<QPointF> &pointsYDown)
-{
+void DrawAdditionalInf::drawCoordinateLabels(QPainter& painter,
+                                             const QVector<QPointF>& pointsXRight,
+                                             const QVector<QPointF>& pointsXLeft,
+                                             const QVector<QPointF>& pointsYUp,
+                                             const QVector<QPointF>& pointsYDown) {
     constexpr int FontSize = 8;
     constexpr int MARGIN = 3;
 
@@ -20,7 +19,7 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
 
     painter.setPen(Qt::black);
 
-    auto drawLabel = [&](const QPointF &point, qreal value, bool below) {
+    auto drawLabel = [&](const QPointF& point, qreal value, bool below) {
         QPointF textPos = point;
         textPos.setX(point.x() + MARGIN);
         textPos.setY(point.y() + (below ? MARGIN_HEIGHT : -MARGIN));
@@ -28,29 +27,30 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
     };
 
     // Draw X-axis labels
-    for (const QPointF &point : pointsXRight) {
+    for (const QPointF& point: pointsXRight) {
         drawLabel(point, Scaling::logic(point.x()), true);
     }
 
-    for (const QPointF &point : pointsXLeft) {
+    for (const QPointF& point: pointsXLeft) {
         drawLabel(point, Scaling::logic(point.x()), true);
     }
 
     // Draw Y-axis labels
-    for (const QPointF &point : pointsYDown) {
+    for (const QPointF& point: pointsYDown) {
         drawLabel(point, Scaling::logic(point.y()), false);
     }
 
-    for (const QPointF &point : pointsYUp) {
+    for (const QPointF& point: pointsYUp) {
         drawLabel(point, Scaling::logic(point.y()), false);
     }
 }
 
 
-[[maybe_unused]] void DrawAdditionalInf::drawAxes(QPainter &painter) {
+[[maybe_unused]]
+void DrawAdditionalInf::drawAxes(QPainter& painter) {
 
     // Centering
-    const QPointF centerMonitor =   Scaling::getCenteredCoordinates();
+    const QPointF centerMonitor = Scaling::getCenteredCoordinates();
 
     // Offset
     const QPointF delta = Scaling::getDelta();
@@ -112,7 +112,8 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
         drawTextCorner(text, x, textHeight);
     } else if (!yAxisVisible && std::abs(logicUpperY) > std::abs(logicLowerY)) {
         QString text = QString::number(logicUpperY);
-        int x = (std::abs(logicRightX) > std::abs(logicLeftX)) ? MARGIN : (windowSize.x() - metrics.horizontalAdvance(text) - MARGIN);
+        int x = (std::abs(logicRightX) > std::abs(logicLeftX)) ? MARGIN : (windowSize.x() -
+                                                                           metrics.horizontalAdvance(text) - MARGIN);
         drawTextCorner(text, x, textHeight);
     }
 
@@ -133,15 +134,14 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
 }
 
 
-void DrawAdditionalInf::drawCursor(QPainter &painter) {
+void DrawAdditionalInf::drawCursor(QPainter& painter) {
     const QPointF cursor(Scaling::scaleCoordinateX(Scaling::getCursorX()),
                          Scaling::scaleCoordinateY(Scaling::getCursorY()));
 
-    const QPointF logicCursor=Scaling::logicCursor();
+    const QPointF logicCursor = Scaling::logicCursor();
     const qint16 RANGE = 5;
 
     painter.setPen(Qt::black);
-
 
     painter.drawText(QPointF(cursor.x() + RANGE, cursor.y() - RANGE),
                      QStringLiteral("X: %1, Y: %2").arg(logicCursor.x(), 0, 'f', 1)
@@ -150,7 +150,7 @@ void DrawAdditionalInf::drawCursor(QPainter &painter) {
 }
 
 
-void DrawAdditionalInf::drawPointID(QPainter &painter,const ID &pointID,const QPointF &point) {
+void DrawAdditionalInf::drawPointID(QPainter& painter, const ID& pointID, const QPointF& point) {
 
     if (pointID == ID(0)) {
         return;
@@ -171,7 +171,8 @@ void DrawAdditionalInf::drawPointID(QPainter &painter,const ID &pointID,const QP
 }
 
 
-void DrawAdditionalInf::drawSectionID(QPainter &painter,const ID &sectionID,const QPointF &start,const QPointF &end) {
+void
+DrawAdditionalInf::drawSectionID(QPainter& painter, const ID& sectionID, const QPointF& start, const QPointF& end) {
     if (sectionID == ID(0)) {
         return;
     }
@@ -216,7 +217,7 @@ void DrawAdditionalInf::drawSectionID(QPainter &painter,const ID &sectionID,cons
 }
 
 
-void DrawAdditionalInf::drawCircleID(QPainter &painter,const ID &circleID,const QPointF &center, qreal radius) {
+void DrawAdditionalInf::drawCircleID(QPainter& painter, const ID& circleID, const QPointF& center, qreal radius) {
     if (circleID == ID(0)) {
         return;
     }
@@ -238,13 +239,12 @@ void DrawAdditionalInf::drawCircleID(QPainter &painter,const ID &circleID,const 
 }
 
 
-void DrawAdditionalInf::drawArcID(QPainter &painter,
-                                  const ID &arcID,
-                                  const QPointF &center,
+void DrawAdditionalInf::drawArcID(QPainter& painter,
+                                  const ID& arcID,
+                                  const QPointF& center,
                                   qreal startAngleDeg,
                                   qreal endAngleDeg,
-                                  qreal radius)
-{
+                                  qreal radius) {
     if (arcID == ID(0)) {
         return;
     }
@@ -267,7 +267,7 @@ void DrawAdditionalInf::drawArcID(QPainter &painter,
     const qreal labelRadius = radius + 10.0;
 
     const QPointF labelPos(center.x() + labelRadius * std::cos(midAngleRad),
-                     center.y() - labelRadius * std::sin(midAngleRad));
+                           center.y() - labelRadius * std::sin(midAngleRad));
 
 
     qreal tangentAngle = -midAngleDeg + 90.0;
@@ -289,8 +289,8 @@ void DrawAdditionalInf::drawArcID(QPainter &painter,
 }
 
 
-void DrawAdditionalInf::setPointGradientColor(QRadialGradient &radialGradient, const Color &color) {
-    if(colorToString(color)=="Unknown"){
+void DrawAdditionalInf::setPointGradientColor(QRadialGradient& radialGradient, const Color& color) {
+    if (colorToString(color) == "Unknown") {
         return;
     }
 
@@ -306,8 +306,8 @@ void DrawAdditionalInf::setPointGradientColor(QRadialGradient &radialGradient, c
 }
 
 
-void DrawAdditionalInf::setSectionGradientColor(QLinearGradient &gradient, const Color &color) {
-    if(colorToString(color)=="Unknown"){
+void DrawAdditionalInf::setSectionGradientColor(QLinearGradient& gradient, const Color& color) {
+    if (colorToString(color) == "Unknown") {
         return;
     }
 
@@ -325,8 +325,9 @@ void DrawAdditionalInf::setSectionGradientColor(QLinearGradient &gradient, const
 }
 
 
-void DrawAdditionalInf::setCircleGradientColor(QRadialGradient &radialGradient,qreal stopTransparent1,qreal stopTransparent2,qreal stopCyan,const Color &color){
-    if(colorToString(color)=="Unknown"){
+void DrawAdditionalInf::setCircleGradientColor(QRadialGradient& radialGradient, qreal stopTransparent1,
+                                               qreal stopTransparent2, qreal stopCyan, const Color& color) {
+    if (colorToString(color) == "Unknown") {
         return;
     }
 
@@ -344,10 +345,10 @@ void DrawAdditionalInf::setCircleGradientColor(QRadialGradient &radialGradient,q
 }
 
 
-void DrawAdditionalInf::drawPointGlow(QPainter &painter,const QPointF &point,const Color &color) {
+void DrawAdditionalInf::drawPointGlow(QPainter& painter, const QPointF& point, const Color& color) {
     const qint16 glowRadius = 5;
     QRadialGradient radialGradient(point, glowRadius, point);
-    setPointGradientColor(radialGradient,color);
+    setPointGradientColor(radialGradient, color);
 
     QBrush glowBrush(radialGradient);
     painter.setBrush(glowBrush);
@@ -356,7 +357,8 @@ void DrawAdditionalInf::drawPointGlow(QPainter &painter,const QPointF &point,con
 }
 
 
-void DrawAdditionalInf::drawSectionGlow(QPainter &painter,const QPointF &start,const QPointF &end,const Color &color) {
+void
+DrawAdditionalInf::drawSectionGlow(QPainter& painter, const QPointF& start, const QPointF& end, const Color& color) {
 
     // Calculating the direction of the line
     const qreal dx = end.x() - start.x();
@@ -382,7 +384,7 @@ void DrawAdditionalInf::drawSectionGlow(QPainter &painter,const QPointF &start,c
 
     // Creating a linear gradient perpendicular to the line
     QLinearGradient gradient(gradStartX, gradStartY, gradEndX, gradEndY);
-    setSectionGradientColor(gradient,color);
+    setSectionGradientColor(gradient, color);
 
     QPen glowPen;
     constexpr qint16 SIZE_PEN = 8;
@@ -395,7 +397,8 @@ void DrawAdditionalInf::drawSectionGlow(QPainter &painter,const QPointF &start,c
 }
 
 
-void DrawAdditionalInf::drawCircleGlow(QPainter &painter,const QPointF &center,const qreal Radius,const Color &color) {
+void
+DrawAdditionalInf::drawCircleGlow(QPainter& painter, const QPointF& center, const qreal Radius, const Color& color) {
     constexpr qreal glowDistance = 20.0;
     const qreal gradientRadius = Radius + glowDistance;
 
@@ -410,7 +413,7 @@ void DrawAdditionalInf::drawCircleGlow(QPainter &painter,const QPointF &center,c
 
     // Creating a radial gradient
     QRadialGradient radialGradient(center, gradientRadius, center);
-    setCircleGradientColor(radialGradient,stopTransparent1,stopTransparent2,stopCyan,color);
+    setCircleGradientColor(radialGradient, stopTransparent1, stopTransparent2, stopCyan, color);
 
     // Setting up the pen for the glow
     constexpr qint16 SIZE_PEN = 8;
@@ -424,7 +427,8 @@ void DrawAdditionalInf::drawCircleGlow(QPainter &painter,const QPointF &center,c
 }
 
 
-void DrawAdditionalInf::drawArcGlow(QPainter& painter,const QRectF &rect,const int qtStart, const int qtSpan,const Color &color) {
+void DrawAdditionalInf::drawArcGlow(QPainter& painter, const QRectF& rect, const int qtStart, const int qtSpan,
+                                    const Color& color) {
     constexpr qreal glowDistance = 20.0;
     const qreal radius = rect.width() / 2.0;
     const QPointF center = rect.center();
@@ -461,7 +465,7 @@ void DrawAdditionalInf::drawArcGlow(QPainter& painter,const QRectF &rect,const i
 }
 
 
-void DrawAdditionalInf::drawCoordinateLine(QPainter &painter,const QPointF &start,const QPointF &end) {
+void DrawAdditionalInf::drawCoordinateLine(QPainter& painter, const QPointF& start, const QPointF& end) {
     const qreal dx = start.x() - end.x();
     const qreal dy = start.y() - end.y();
 
