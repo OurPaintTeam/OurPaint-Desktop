@@ -1,5 +1,5 @@
-#ifndef OURPAINT_CLOSESPOINT_H
-#define OURPAINT_CLOSESPOINT_H
+#ifndef OURPAINT_CLOSESTPOINT_H
+#define OURPAINT_CLOSESTPOINT_H
 
 #include <vector>
 #include <limits>
@@ -16,7 +16,7 @@
 
 // A class for searching for the closest points to the cursor
 
-class ClosesPoint {
+class ClosestPoint {
 
 public:
     // Nearest point search function
@@ -44,4 +44,4 @@ public:
     static double distancePointToSection(const QPointF cursor, const QPointF startPoint, const QPointF endPoint);
 };
 
-#endif //OURPAINT_CLOSESPOINT_H
+#endif //OURPAINT_CLOSESTPOINT_H
