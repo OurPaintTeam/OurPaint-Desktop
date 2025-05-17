@@ -1,63 +1,70 @@
 #include "Scaling.h"
 
-
 // Static member initializations
-const short int Scaling::userUnitSize = 20;
-double Scaling::zoom = userUnitSize;
-double Scaling::scale =1.0;
-bool Scaling::usersResize = false;
+constexpr qint16 Scaling::userUnitSize = 20;
+qreal Scaling::zoom = userUnitSize;
+qreal Scaling::scale = 1.0;
+[[maybe_unused]] bool Scaling::usersResize = false;
 
+qreal Scaling::Delta::X = 0;
+qreal Scaling::Delta::Y = 0;
 
-double Scaling::Delta::X = 0;
-double Scaling::Delta::Y = 0;
+qint16 Scaling::LastMousePos::x = 0;
+qint16 Scaling::LastMousePos::y = 0;
 
-short int Scaling::LastMousePos::x = 0;
-short int Scaling::LastMousePos::y = 0;
+qint16 Scaling::StartMonitorSize::StartMonitorWidth = 1;
+qint16 Scaling::StartMonitorSize::StartMonitorHeight = 1;
 
-short int Scaling::StartMonitorSize::StartMonitorWidth = 1;
-short int Scaling::StartMonitorSize::StartMonitorHeight = 1;
+qreal Scaling::CenteredCoordinates::CenteredCoordinatesX = 1.0;
+qreal Scaling::CenteredCoordinates::CenteredCoordinatesY = 1.0;
 
-double Scaling::CenteredCoordinates::CenteredCoordinatesX = 1.0;
-double Scaling::CenteredCoordinates::CenteredCoordinatesY = 1.0;
+qint16 Scaling::ActualMonitorSize::ActualMonitorWidth = 1;
+qint16 Scaling::ActualMonitorSize::ActualMonitorHeight = 1;
 
-short int Scaling::ActualMonitorSize::ActualMonitorWidth = 1;
-short int Scaling::ActualMonitorSize::ActualMonitorHeight = 1;
+qint16 Scaling::Cursor::x = 0;
+qint16 Scaling::Cursor::y = 0;
 
-short int Scaling::Cursor::x = 0;
-short int Scaling::Cursor::y = 0;
-
-short int Scaling::getStartWidth() {
+[[maybe_unused]] qint16 Scaling::getStartWidth() {
     return Scaling::StartMonitorSize::StartMonitorWidth;
 }
 
-short int Scaling::getStartHeight() {
+[[maybe_unused]] qint16 Scaling::getStartHeight() {
     return Scaling::StartMonitorSize::StartMonitorHeight;
 }
 
-short int Scaling::getActualMonitorWidth() {
+qint16 Scaling::getActualMonitorWidth() {
     return Scaling::ActualMonitorSize::ActualMonitorWidth;
 }
 
-short int Scaling::getActualMonitorHeight() {
+qint16 Scaling::getActualMonitorHeight() {
     return Scaling::ActualMonitorSize::ActualMonitorHeight;
 }
 
-double Scaling::getCenteredCoordinatesX() {
+QPoint Scaling::getActualMonitorSize() {
+    return {Scaling::getActualMonitorWidth(), Scaling::getActualMonitorHeight()};
+}
+
+qreal Scaling::getCenteredCoordinatesX() {
     return Scaling::CenteredCoordinates::CenteredCoordinatesX;
 }
 
-double Scaling::getCenteredCoordinatesY() {
+qreal Scaling::getCenteredCoordinatesY() {
     return Scaling::CenteredCoordinates::CenteredCoordinatesY;
 }
 
-void Scaling::setCenteredCoordinatesX(double x) {
+QPointF Scaling::getCenteredCoordinates() {
+    return {Scaling::getCenteredCoordinatesX(), Scaling::getCenteredCoordinatesY()};
+}
+
+[[maybe_unused]]
+void Scaling::setCenteredCoordinatesX(qreal x) {
     Scaling::CenteredCoordinates::CenteredCoordinatesX = x;
 }
 
-void Scaling::setCenteredCoordinatesY(double y) {
+[[maybe_unused]]
+void Scaling::setCenteredCoordinatesY(qreal y) {
     Scaling::CenteredCoordinates::CenteredCoordinatesY = y;
 }
-
 
 
 void Scaling::updateScaling() {
@@ -66,75 +73,65 @@ void Scaling::updateScaling() {
     usersResize = false;
 }
 
-void Scaling::setStartMonitorSize(short int x, short int y) {
+void Scaling::setStartMonitorSize(qint16 x, qint16 y) {
     Scaling::StartMonitorSize::StartMonitorWidth = x;
     Scaling::StartMonitorSize::StartMonitorHeight = y;
     Scaling::CenteredCoordinates::CenteredCoordinatesX = x / 2.0;
     Scaling::CenteredCoordinates::CenteredCoordinatesY = y / 2.0;
 }
 
-void Scaling::setActualMonitorSize(short int x,short int y) {
-    Scaling::ActualMonitorSize::ActualMonitorWidth =  x;
-    Scaling::ActualMonitorSize::ActualMonitorHeight =  y;
+void Scaling::setActualMonitorSize(qint16 x, qint16 y) {
+    Scaling::ActualMonitorSize::ActualMonitorWidth = x;
+    Scaling::ActualMonitorSize::ActualMonitorHeight = y;
     Scaling::CenteredCoordinates::CenteredCoordinatesX = x / 2.0;
     Scaling::CenteredCoordinates::CenteredCoordinatesY = y / 2.0;
 }
 
 
-
-
-
-
-double Scaling::logic(double X) {
+qreal Scaling::logic(qreal X) {
     return X / (scale * zoom);
 }
 
-double Scaling::logicCursorX() {
+qreal Scaling::logicCursorX() {
     return ((Scaling::getCursorX() - Scaling::CenteredCoordinates::CenteredCoordinatesX - Scaling::Delta::X) /
             (scale * zoom));
 }
 
-double Scaling::logicCursorY() {
-    // У оси у ось инвертирована
+qreal Scaling::logicCursorY() {
+    // The y-axis is inverted
     return ((-Scaling::getCursorY() + Scaling::CenteredCoordinates::CenteredCoordinatesY + Scaling::Delta::Y) /
             (scale * zoom));
 }
 
+QPointF Scaling::logicCursor() {
+    return {Scaling::logicCursorX(), Scaling::logicCursorY()};
+}
 
 
-
-
-
-double Scaling::scaleCoordinate(double X) {
+qreal Scaling::scaleCoordinate(qreal X) {
     return (X * scale * zoom);
 }
 
-double Scaling::scaleCoordinateX(double X) {
-    return (X - Scaling::Delta::X - Scaling::CenteredCoordinates::CenteredCoordinatesX);//();
+qreal Scaling::scaleCoordinateX(qreal X) {
+    return (X - Scaling::Delta::X - Scaling::CenteredCoordinates::CenteredCoordinatesX);
 }
 
-double Scaling::scaleCoordinateY(double Y) {
-    return (Y - Scaling::Delta::Y - Scaling::CenteredCoordinates::CenteredCoordinatesY);//+ ();
+qreal Scaling::scaleCoordinateY(qreal Y) {
+    return (Y - Scaling::Delta::Y - Scaling::CenteredCoordinates::CenteredCoordinatesY);
 }
 
-
-
-void Scaling::scaling(int widgetWidth, int widgetHeight, const std::vector<double> &size) {
-
-}
-
-void Scaling::setZoom(double z){
-    zoom=z;
+[[maybe_unused]]
+void Scaling::setZoom(qreal z) {
+    zoom = z;
 }
 
 void Scaling::setZoomPlus() {
     usersResize = true;
 
-    const short int MAXSIZE =50;
+    const qint16 MAXSIZE = 50;
     if (zoom < MAXSIZE) {
         zoom *= 1.1;
-    }
-    else {
+    } else {
         zoom = MAXSIZE;
     }
     scale = 1.0;
@@ -142,11 +139,10 @@ void Scaling::setZoomPlus() {
 
 void Scaling::setZoomMinus() {
     usersResize = true;
-    const double MINSIZE=9e-07;
+    const qreal MINSIZE = 9e-07;
     if (zoom > MINSIZE) {
         zoom /= 1.1;
-    }
-    else {
+    } else {
         zoom = MINSIZE;
     }
     scale = 1.0;
@@ -155,29 +151,34 @@ void Scaling::setZoomMinus() {
 void Scaling::setZoomZero() {
     usersResize = true;
     zoom = userUnitSize;
-    scale=1.0;
+    scale = 1.0;
     Scaling::Delta::X = 0;
     Scaling::Delta::Y = 0;
 }
 
-short int Scaling::getUserUnitSize() {
+qint16 Scaling::getUserUnitSize() {
     return userUnitSize;
 }
 
-double Scaling::getScale() {
+[[maybe_unused]]
+qreal Scaling::getScale() {
     return scale;
 }
 
-double Scaling::getZoom() {
+qreal Scaling::getZoom() {
     return zoom;
 }
 
-double Scaling::getDeltaX() {
+qreal Scaling::getDeltaX() {
     return Scaling::Delta::X;
 }
 
-double Scaling::getDeltaY() {
+qreal Scaling::getDeltaY() {
     return Scaling::Delta::Y;
+}
+
+QPointF Scaling::getDelta() {
+    return {Scaling::getDeltaX(), Scaling::getDeltaY()};
 }
 
 int Scaling::getCursorX() {
@@ -188,27 +189,34 @@ int Scaling::getCursorY() {
     return Scaling::Cursor::y;
 }
 
-void Scaling::setCursor(short int x,short int y) {
+[[maybe_unused]]
+QPoint Scaling::getCursor() {
+    return {getCursorX(), getCursorY()};
+}
+
+void Scaling::setCursor(qint16 x, qint16 y) {
     Scaling::Cursor::x = x;
     Scaling::Cursor::y = y;
 }
 
-void Scaling::setDelta(double dx, double dy) {
+void Scaling::setDelta(qreal dx, qreal dy) {
     Scaling::Delta::X += dx;
     Scaling::Delta::Y += dy;
 }
 
+[[maybe_unused]]
 void Scaling::setDeltaX() {
-    const short int step=10;
+    const qint16 step = 10;
     Scaling::Delta::X += step;
 }
 
+[[maybe_unused]]
 void Scaling::setDeltaY() {
-    const short int step=10;
+    const qint16 step = 10;
     Scaling::Delta::Y += step;
 }
 
-void Scaling::startMousePress(int x, int y) {
+void Scaling::startMousePress(qint16 x, qint16 y) {
     Scaling::LastMousePos::x = x;
     Scaling::LastMousePos::y = y;
 }
@@ -236,6 +244,7 @@ int Scaling::getCursorDeltaY() {
     return temp;
 }
 
+[[maybe_unused]]
 void Scaling::resetUsersResize() {
     usersResize = false;
 }
