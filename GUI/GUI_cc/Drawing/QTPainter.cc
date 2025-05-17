@@ -1,8 +1,6 @@
 #include "QTPainter.h"
 
-QTPainter::QTPainter(QWidget *parent) : QFrame(parent), circleStorage(nullptr),
-                                        sectionStorage(nullptr), pointStorage(nullptr),
-                                        arcStorage(nullptr),drawing(false) {
+QTPainter::QTPainter(QWidget* parent) : QFrame(parent), drawing(false) {
 
     if (parent) {
         // We take the size from the father
@@ -24,80 +22,94 @@ QTPainter::QTPainter(QWidget *parent) : QFrame(parent), circleStorage(nullptr),
 }
 
 
-std::vector<ID> QTPainter::getVecSelectedIDPoints() {
-    std::vector<ID> vec_id;
+QVector<ID> QTPainter::getVecSelectedIDPoints() {
+    QVector<ID> vec_id;
     vec_id.reserve(selectedIDPoint.size());
+
     for (const auto& pair : selectedIDPoint) {
         vec_id.push_back(pair.first);
     }
+
     return vec_id;
 }
 
 
-std::vector<ID> QTPainter::getVecSelectedIDSections() {
-    std::vector<ID> vec_id;
+
+QVector<ID> QTPainter::getVecSelectedIDSections() {
+    QVector<ID> vec_id;
     vec_id.reserve(selectedIDSection.size());
+
     for (const auto& pair : selectedIDSection) {
         vec_id.push_back(pair.first);
     }
+
     return vec_id;
 }
 
 
-std::vector<ID> QTPainter::getVecSelectedIDCircles() {
-    std::vector<ID> vec_id;
+
+QVector<ID> QTPainter::getVecSelectedIDCircles() {
+    QVector<ID> vec_id;
     vec_id.reserve(selectedIDCircle.size());
+
     for (const auto& pair : selectedIDCircle) {
         vec_id.push_back(pair.first);
     }
+
     return vec_id;
 }
 
 
-std::vector<ID> QTPainter::getVecSelectedIDArcs() {
-    std::vector<ID> vec_id;
+QVector<ID> QTPainter::getVecSelectedIDArcs() {
+    QVector<ID> vec_id;
     vec_id.reserve(selectedIDArc.size());
+
     for (const auto& pair : selectedIDArc) {
         vec_id.push_back(pair.first);
     }
+
     return vec_id;
 }
 
 
-std::optional<std::pair<ID, ID>> QTPainter::getPairSelectedID() {
-    std::vector<ID> IDs;
+std::optional<QPair<ID, ID>> QTPainter::getPairSelectedID() const {
+    QVector<ID> IDs;
 
-    // It will return only if two
+    auto appendIDs = [&](const auto& container) {
+        for (auto it = container.cbegin(); it != container.cend(); ++it) {
+            IDs.push_back(it->first);
+            if (IDs.size() > 2) {
+                return false;
+            }
+        }
+        return true;
+    };
 
-    for (const auto& pair : selectedIDPoint) {
-        IDs.push_back(pair.first);
-        if (IDs.size() > 2) { return std::nullopt; }
+    if (!appendIDs(selectedIDPoint)) {
+        return std::nullopt;
     }
 
-    for (const auto& pair : selectedIDSection) {
-        IDs.push_back(pair.first);
-        if (IDs.size() > 2) { return std::nullopt; }
+    if (!appendIDs(selectedIDSection)) {
+        return std::nullopt;
     }
 
-    for (const auto& pair : selectedIDCircle) {
-        IDs.push_back(pair.first);
-        if (IDs.size() > 2) { return std::nullopt; }
+    if (!appendIDs(selectedIDCircle)) {
+        return std::nullopt;
     }
 
-    for (const auto& pair : selectedIDArc) {
-        IDs.push_back(pair.first);
-        if (IDs.size() > 2) { return std::nullopt; }
+    if (!appendIDs(selectedIDArc)) {
+        return std::nullopt;
     }
 
     if (IDs.size() == 2) {
-        return std::make_pair(IDs[0], IDs[1]);
+        return QPair<ID, ID>(IDs[0], IDs[1]);
     }
 
     return std::nullopt;
 }
 
 
-void QTPainter::draw() {
+void QTPainter::draw(){
     update();
 }
 
@@ -119,121 +131,102 @@ void QTPainter::selectedClear() {
 }
 
 
-void QTPainter::resizeRectangle() {}
-
-
 bool QTPainter::findClosesObject() {
     bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
     bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
-    bool shiftPress=ModeManager::getActiveMode(KeyMode::Shift);
+    bool shiftPress = ModeManager::getActiveMode(KeyMode::Shift);
 
     if (!leftClick && !doubleClick) {
         return false;
     }
 
-    auto currentTime = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastClickTime);
-
-    if (duration < std::chrono::milliseconds(300)) {
+    if (lastClickTime.isValid() && lastClickTime.elapsed() < 300) {
         return false;
     }
 
-    lastClickTime = currentTime;
+    lastClickTime.restart();
 
-    if(!shiftPress){
+    if (!shiftPress) {
         selectedClear();
     }
 
-    for (const auto &pt : *pointStorage) {
-        const Point *point = pt.second;
-        if (ClosesPoint::checkFigure(point->x, point->y,Scaling::logicCursorX(),Scaling::logicCursorY(),Scaling::getZoom())) {
-            bool found = false;
-            std::unordered_map<ID,Color> updated;
+    if (casePoints != nullptr) {
+        for (auto it = casePoints->cbegin(); it != casePoints->cend(); ++it) {
+            const Point* point = it->second;
+            const QPointF pos(point->x, point->y);
 
-            for (const auto &pair : selectedIDPoint) {
-                if (pair.first == pt.first) {
-                    found = true; // не добавляем
+            if (ClosestPoint::checkFigure(pos, Scaling::logicCursor(), Scaling::getZoom())) {
+                const ID& id = it->first;
+
+                if (selectedIDPoint.contains(id)) {
+                    selectedIDPoint.erase(id);
                 } else {
-                    updated.emplace(pair.first,pair.second);
+                    selectedIDPoint.emplace(id, Color::Blue);
                 }
-            }
 
-            if (!found) {
-                updated.emplace(pt.first,Color::Blue);
+                return true;
             }
-
-            selectedIDPoint = std::move(updated);
-            return true;
         }
     }
 
-    for (const auto &sec : *sectionStorage) {
-        const Section *section = sec.second;
-        if (ClosesPoint::checkFigure(section->beg->x, section->beg->y,
-                                     section->end->x, section->end->y,Scaling::logicCursorX(),Scaling::logicCursorY(),Scaling::getZoom())) {
-            bool found = false;
-            std::unordered_map<ID,Color> updated;
+    if (caseSections != nullptr) {
+        for (auto it = caseSections->cbegin(); it != caseSections->cend(); ++it) {
+            const Section* section = it->second;
+            const QPointF startPoint(section->beg->x, section->beg->y);
+            const QPointF endPoint(section->end->x, section->end->y);
 
-            for (const auto &pair : selectedIDSection) {
-                if (pair.first == sec.first) {
-                    found = true;
+            if (ClosestPoint::checkFigure(startPoint,endPoint,Scaling::logicCursor(), Scaling::getZoom())) {
+                const ID& id = it->first;
+
+                if (selectedIDSection.contains(id)) {
+                    selectedIDSection.erase(id);
                 } else {
-                    updated.emplace(pair.first,pair.second);
+                    selectedIDSection.emplace(id, Color::Blue);
                 }
-            }
 
-            if (!found) {
-                updated.emplace(sec.first,Color::Blue);
+                return true;
             }
-
-            selectedIDSection = std::move(updated);
-            return true;
         }
     }
 
-    for (const auto &cir : *circleStorage) {
-        const Circle *circle = cir.second;
-        if (ClosesPoint::checkFigure(circle->center->x, circle->center->y, circle->r,Scaling::logicCursorX(),Scaling::logicCursorY(),Scaling::getZoom())) {
-            bool found = false;
-            std::unordered_map<ID,Color> updated;
+    if (caseCircles != nullptr) {
+        for (auto it = caseCircles->cbegin(); it != caseCircles->cend(); ++it) {
+            const Circle* circle = it->second;
+            const QPointF center(circle->center->x, circle->center->y);
+            if (ClosestPoint::checkFigure(center, circle->r,
+                                          Scaling::logicCursor(), Scaling::getZoom())) {
+                const ID& id = it->first;
 
-            for (const auto &pair : selectedIDCircle) {
-                if (pair.first == cir.first) {
-                    found = true; // не добавляем
+                if (selectedIDCircle.contains(id)) {
+                    selectedIDCircle.erase(id);
                 } else {
-                    updated.emplace(pair.first,pair.second);
+                    selectedIDCircle.emplace(id, Color::Blue);
                 }
-            }
 
-            if (!found) {
-                updated.emplace(cir.first,Color::Blue);
+                return true;
             }
-
-            selectedIDCircle = std::move(updated);
-            return true;
         }
     }
 
-    for (const auto &arcs : *arcStorage) {
-        const Arc *arc = arcs.second;
-        if (ClosesPoint::checkFigure(arc->beg->x,arc->beg->y,arc->end->x,arc->end->y,arc->center->x,arc->center->y)) {
-            bool found = false;
-            std::unordered_map<ID,Color> updated;
+    if (caseArcs != nullptr) {
+        for (auto it = caseArcs->cbegin(); it != caseArcs->cend(); ++it) {
+            const Arc* arc = it->second;
+            const QPointF startPoint(arc->beg->x, arc->beg->y);
+            const QPointF endPoint(arc->end->x, arc->end->y);
+            const QPointF centerPoint(arc->center->x, arc->center->y);
 
-            for (const auto &pair : selectedIDArc) {
-                if (pair.first == arcs.first) {
-                    found = true; // не добавляем
+            if (ClosestPoint::checkFigure(startPoint, endPoint,centerPoint,
+                                          Scaling::logicCursor(), Scaling::getZoom())) {
+                const ID& id = it->first;
+
+                if (selectedIDArc.contains(id)) {
+                    selectedIDArc.erase(id);
                 } else {
-                    updated.emplace(pair.first,pair.second);
+                    selectedIDArc.emplace(id, Color::Blue);
                 }
-            }
 
-            if (!found) {
-                updated.emplace(arcs.first,Color::Blue);
+                return true;
             }
-
-            selectedIDArc = std::move(updated);
-            return true;
         }
     }
 
@@ -242,31 +235,31 @@ bool QTPainter::findClosesObject() {
 }
 
 
-void QTPainter::drawingFigures(QPainter &painter) {
+void QTPainter::drawingFigures(QPainter& painter) {
 
-    if (pointStorage != nullptr && !pointStorage->empty()) {
-        DrawFigures::drawPoint(painter, *pointStorage, selectedIDPoint);
+    if (casePoints != nullptr && !casePoints->empty()) {
+        DrawFigures::drawPoint(painter, *casePoints, selectedIDPoint);
     }
 
-    if (sectionStorage != nullptr && !sectionStorage->empty()) {
-        DrawFigures::drawSection(painter, *sectionStorage, selectedIDSection);
+    if (caseSections != nullptr && !caseSections->empty()) {
+        DrawFigures::drawSection(painter, *caseSections, selectedIDSection);
     }
 
-    if (circleStorage != nullptr && !circleStorage->empty()) {
-        DrawFigures::drawCircle(painter, *circleStorage, selectedIDCircle);
+    if (caseCircles != nullptr && !caseCircles->empty()) {
+        DrawFigures::drawCircle(painter, *caseCircles, selectedIDCircle);
     }
 
-    if (arcStorage != nullptr && !arcStorage->empty()) {
-        DrawFigures::drawArc(painter, *arcStorage, selectedIDArc);
+    if (caseArcs != nullptr && !caseArcs->empty()) {
+        DrawFigures::drawArc(painter, *caseArcs, selectedIDArc);
     }
 }
 
-void QTPainter::saveToImage(const QString &fileName, QString &format) {
 
-    resizeRectangle();
+void QTPainter::saveToImage(const QString& fileName, QString& format) {
 
-    if (format.startsWith('.'))
+    if (format.startsWith('.')) {
         format = format.mid(1);
+    }
 
     QString originalFormat = format.toLower();
     QString chosenFormat;
@@ -343,75 +336,94 @@ void QTPainter::saveToImage(const QString &fileName, QString &format) {
 }
 
 
-void QTPainter::selectedElemByID(ID id,const std::string &type) {
-    if(type=="Point"){
-        selectedIDPoint.emplace(id,Color::Purple);
-    }else  if(type=="Circle"){
-        selectedIDCircle.emplace(id,Color::Purple);
-    }else  if(type=="Section"){
-        selectedIDSection.emplace(id,Color::Purple);
-    }else  if(type=="Arc"){
-        selectedIDArc.emplace(id,Color::Purple);
+void QTPainter::selectedElemByID(ID id, const std::string& type) {
+    if (type == "Point") {
+        selectedIDPoint.emplace(id, Color::Purple);
+    } else if (type == "Circle") {
+        selectedIDCircle.emplace(id, Color::Purple);
+    } else if (type == "Section") {
+        selectedIDSection.emplace(id, Color::Purple);
+    } else if (type == "Arc") {
+        selectedIDArc.emplace(id, Color::Purple);
     }
 }
 
 
-void QTPainter::onSigPoint(double x, double y) {
-    emit SigPoint(x, y);
+void QTPainter::onSigPoint(const QPointF& point) {
+    emit SigPoint(point);
 }
 
-void QTPainter::onSigCircle(double x, double y, double r) {
-    emit SigCircle(x, y, r);
+void QTPainter::onSigCircle(const QPointF& center, qreal radius) {
+    emit SigCircle(center, radius);
 }
 
-void QTPainter::onSigSection(double x, double y, double x1, double y1) {
-    emit SigSection(x, y, x1, y1);
+void QTPainter::onSigSection(const QPointF& startPoint, const QPointF& endPoint) {
+    emit SigSection(startPoint, endPoint);
 }
 
-void QTPainter::onSigArc(double x, double y, double x1, double y1, double xc, double yc) {
-    emit SigArc(x, y, x1, y1,xc,yc);
+void QTPainter::onSigArc(const QPointF& startPoint, const QPointF& endPoint, const QPointF& center) {
+    emit SigArc(startPoint, endPoint, center);
 }
 
 
-void QTPainter::pointInRect(QRectF &rect){
-    std::vector<ID> vecPointID=ClosesPoint::enteringInRect(*pointStorage, rect);
+void QTPainter::pointInRect(QRectF& rect) {
+    if (casePoints == nullptr) {
+        return;
+    }
+
+    QVector<ID> vecPointID = ClosestPoint::enteringInRect(*casePoints, rect);
     selectedIDPoint.clear();
-    for (const ID &id : vecPointID) {
+    for (const ID& id: vecPointID) {
         selectedIDPoint[id] = Color::Blue;
     }
 }
 
-void QTPainter::sectionInRect(QRectF &rect){
-    std::vector<ID> vecSectionID=ClosesPoint::enteringInRect(*sectionStorage, rect );
+
+void QTPainter::sectionInRect(QRectF& rect) {
+    if (caseSections == nullptr) {
+        return;
+    }
+
+    QVector<ID> vecSectionID = ClosestPoint::enteringInRect(*caseSections, rect);
     selectedIDSection.clear();
-    for (const ID &id : vecSectionID) {
+    for (const ID& id: vecSectionID) {
         selectedIDSection[id] = Color::Blue;
     }
 }
-void QTPainter::circleInRect(QRectF &rect){
-    std::vector<ID> vecCircleID=ClosesPoint::enteringInRect(*circleStorage, rect);
+
+void QTPainter::circleInRect(QRectF& rect) {
+    if (caseCircles == nullptr) {
+        return;
+    }
+
+    QVector<ID> pressPointCircleID = ClosestPoint::enteringInRect(*caseCircles, rect);
     selectedIDCircle.clear();
-    for (const ID &id : vecCircleID) {
+    for (const ID& id: pressPointCircleID) {
         selectedIDCircle[id] = Color::Blue;
     }
 }
-void QTPainter::arcsInRect(QRectF &rect){
-    std::vector<ID> vecArcID=ClosesPoint::enteringInRect(*arcStorage, rect);
+
+void QTPainter::arcsInRect(QRectF& rect) {
+    if (caseArcs == nullptr) {
+        return;
+    }
+
+    QVector<ID> vecArcID = ClosestPoint::enteringInRect(*caseArcs, rect);
     selectedIDArc.clear();
-    for (const ID &id : vecArcID) {
+    for (const ID& id: vecArcID) {
         selectedIDArc[id] = Color::Blue;
     }
 }
 
 
-[[maybe_unused]] void QTPainter::resizeEvent(QResizeEvent *event) {
+[[maybe_unused]] void QTPainter::resizeEvent(QResizeEvent* event) {
     QFrame::resizeEvent(event);
     Scaling::setActualMonitorSize(width(), height());
     update();
 }
 
 
-void QTPainter::paintEvent(QPaintEvent *event) {
+void QTPainter::paintEvent(QPaintEvent* event) {
 
     QPainter painter(this);
 
@@ -424,7 +436,7 @@ void QTPainter::paintEvent(QPaintEvent *event) {
     // Moving to the center of the screen
     painter.translate((int) (width() / 2 + Scaling::getDeltaX()), (int) (height() / 2 + Scaling::getDeltaY()));
 
-    DrawBackground::drawFon(painter);
+    DrawBackground::backgroundRender(painter);
 
     // If the cursor is in the area, then draw its values
     if (ModeManager::getCursor()) {
@@ -436,22 +448,25 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
     if (ModeManager::getCursor()) {
 
-        QPointF cursor={Scaling::logicCursorX(),Scaling::logicCursorY()};
+        const QPointF cursor = {Scaling::logicCursorX(), Scaling::logicCursorY()};
 
-         if ( ModeManager::getActiveMode(WorkModes::Point)||
-              ModeManager::getActiveMode(WorkModes::Circle) ||
-              ModeManager::getActiveMode(WorkModes::Arc)) {
+        if (ModeManager::getActiveMode(WorkModes::Point) ||
+            ModeManager::getActiveMode(WorkModes::Circle) ||
+            ModeManager::getActiveMode(WorkModes::Arc)) {
 
-            drawingWithMouse.DrawFiguresMouse(painter,cursor);
+            drawingWithMouse.DrawFiguresMouse(painter, cursor);
 
         } else if (ModeManager::getActiveMode(WorkModes::Section)) {
 
-             drawingWithMouse.DrawFiguresMouse(painter,cursor);
+            drawingWithMouse.DrawFiguresMouse(painter, cursor);
 
-            if (pointStorage != nullptr && pointStorage->size() > 0) {
-                QPointF closes = ClosesPoint::findClosestPoint(*pointStorage,cursor.x(),cursor.y()); // Ищем ближайшие точки
-                drawingWithMouse.drawHints(painter, closes,cursor);
+            if (casePoints != nullptr) {
+                QPointF closes = ClosestPoint::findClosestPoint(*casePoints, cursor); // Finding the closest points
+                if (closes != QPointF{}) {
+                    drawingWithMouse.drawHints(painter, closes, cursor);
+                }
             }
+
         }
     }
 
@@ -460,32 +475,26 @@ void QTPainter::paintEvent(QPaintEvent *event) {
 
 
     if (ModeManager::getActiveMode(WorkModes::Editor)) {
-        if (arcStorage != nullptr && arcStorage->size() > 0 ||
-            circleStorage != nullptr && circleStorage->size() > 0 ||
-            sectionStorage != nullptr && sectionStorage->size() > 0 ||
-            pointStorage != nullptr && pointStorage->size() > 0){
-
-            if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
-                findClosesObject();
-            }else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
-                if(findClosesObject()){
-                    if (selectedIDSection.size() == 1) {
-                        auto it = selectedIDSection.begin();
-                        ID key = it->first;
-                        emit DoubleClickOnObject(key);
-                    }else if (selectedIDPoint.size()==1) {
-                        auto it = selectedIDPoint.begin();
-                        ID key = it->first;
-                        emit DoubleClickOnObject(key);
-                    }else if (selectedIDCircle.empty()==1) {
-                        auto it = selectedIDCircle.begin();
-                        ID key = it->first;
-                        emit DoubleClickOnObject(key);
-                    }else if (selectedIDArc.empty()==1) {
-                        auto it = selectedIDArc.begin();
-                        ID key = it->first;
-                        emit DoubleClickOnObject(key);
-                    }
+        if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
+            findClosesObject();
+        } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
+            if (findClosesObject()) {
+                if (selectedIDSection.size() == 1) {
+                    auto it = selectedIDSection.begin();
+                    ID key = it->first;
+                    emit DoubleClickOnObject(key);
+                } else if (selectedIDPoint.size() == 1) {
+                    auto it = selectedIDPoint.begin();
+                    ID key = it->first;
+                    emit DoubleClickOnObject(key);
+                } else if (selectedIDCircle.size() == 1) {
+                    auto it = selectedIDCircle.begin();
+                    ID key = it->first;
+                    emit DoubleClickOnObject(key);
+                } else if (selectedIDArc.size() == 1) {
+                    auto it = selectedIDArc.begin();
+                    ID key = it->first;
+                    emit DoubleClickOnObject(key);
                 }
             }
         }
@@ -509,25 +518,25 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         if (!drawing) {
             if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
                 drawing = true;
-                QPointF cursorPressPos = QPointF(Scaling::logicCursorX(), Scaling::logicCursorY());
+                const QPointF cursorPressPos = QPointF(Scaling::logicCursorX(), Scaling::logicCursorY());
 
                 if (!selectedIDSection.empty()) {
-                    ID id = selectedIDSection.begin()->first;
+                    const ID id = selectedIDSection.begin()->first;
 
-                    if (sectionStorage->contains(id)) {
-                        Section* s = (*sectionStorage)[id];
-                        LineVecBeg = QPointF(s->beg->x, s->beg->y) - cursorPressPos;
-                        LineVecEnd = QPointF(s->end->x, s->end->y) - cursorPressPos;
+                    if (caseSections->contains(id)) {
+                        const Section* s = (*caseSections)[id];
+                        pressLineVecBeg = QPointF(s->beg->x, s->beg->y) - cursorPressPos;
+                        pressLineVecEnd = QPointF(s->end->x, s->end->y) - cursorPressPos;
                     }
                 }
 
                 if (!selectedIDCircle.empty()) {
-                    ID id = selectedIDCircle.begin()->first;
+                    const ID id = selectedIDCircle.begin()->first;
 
-                    if (circleStorage->contains(id)) {
-                        Circle *c = (*circleStorage)[id];
-                        QPointF center(c->center->x, c->center->y);
-                        VecCircle = center - cursorPressPos;
+                    if (caseCircles->contains(id)) {
+                        const Circle* c = (*caseCircles)[id];
+                        const QPointF center(c->center->x, c->center->y);
+                        pressPointCircle = center - cursorPressPos;
                     }
                 }
             } else {
@@ -537,13 +546,13 @@ void QTPainter::paintEvent(QPaintEvent *event) {
         } else {
             if (!ModeManager::getActiveMode(MouseMode::ReleasingLeft)) {
                 if (!selectedIDSection.empty()) {
-                    emit MovingSection(getVecSelectedIDSections(), LineVecBeg, LineVecEnd);
+                    emit MovingSection(getVecSelectedIDSections(), pressLineVecBeg, pressLineVecEnd);
                 }
                 if (!selectedIDPoint.empty()) {
                     emit MovingPoint(getVecSelectedIDPoints());
                 }
                 if (!selectedIDCircle.empty()) {
-                    emit MovingCircle(getVecSelectedIDCircles(),VecCircle);
+                    emit MovingCircle(getVecSelectedIDCircles(), pressPointCircle);
                 }
                 if (!selectedIDArc.empty()) {
                     emit MovingArc(getVecSelectedIDArcs());
@@ -554,8 +563,6 @@ void QTPainter::paintEvent(QPaintEvent *event) {
             }
         }
     }
-
-
 
     drawingFigures(painter);
 
@@ -570,24 +577,24 @@ unsigned long long QTPainter::getHeight() {
     return Scaling::getActualMonitorHeight();
 }
 
-void QTPainter::getBoundBox(const BoundBox2D &allObjects) {
-    Rectangle = &allObjects;
+void QTPainter::getBoundBox(const BoundBox2D& allObjects) {
+    rectangle = &allObjects;
 }
 
-void QTPainter::initPoint(std::unordered_map<ID, Point *> &points) {
-    pointStorage = &points;
+void QTPainter::initPointCase(std::unordered_map<ID, Point*>& points) {
+    casePoints = &points;
 }
 
-void QTPainter::initSection(std::unordered_map<ID, Section *> &sections) {
-    sectionStorage = &sections;
+void QTPainter::initSectionCase(std::unordered_map<ID, Section*>& sections) {
+    caseSections = &sections;
 }
 
-void QTPainter::initCircle(std::unordered_map<ID, Circle *> &circles) {
-    circleStorage = &circles;
+void QTPainter::initCircleCase(std::unordered_map<ID, Circle*>& circles) {
+    caseCircles = &circles;
 }
 
-void QTPainter::initArc(std::unordered_map<ID, Arc *> &arcs) {
-    arcStorage = &arcs;
+void QTPainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {
+    caseArcs = &arcs;
 }
 
 void QTPainter::onWorkWindowResized() {
