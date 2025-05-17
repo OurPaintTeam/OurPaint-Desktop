@@ -1,12 +1,13 @@
 #include "MouseEventWorkWindow.h"
-#include "Modes.h"
-#include "Scaling.h"
+
 
 MouseWorkWindow::MouseWorkWindow(QWidget *parent)
         : QObject(parent), m_parent(parent) {
     if (m_parent) {
         m_parent->installEventFilter(this);
-        setMouseTrackingRecursively(m_parent, true); // Включаем отслеживание мыши для родительского виджета
+
+        // Enabling mouse tracking for the parent widget
+        setMouseTrackingRecursively(m_parent, true);
     }
 
     m_mouseIdleTimer.setInterval(200);
@@ -19,12 +20,17 @@ MouseWorkWindow::MouseWorkWindow(QWidget *parent)
 }
 
 void MouseWorkWindow::setMouseTrackingRecursively(QWidget *widget, bool enable) {
-    if (!widget) return;
+    if (!widget) {
+        return;
+    }
+
     widget->setMouseTracking(enable);
+
     for (auto child: widget->findChildren<QWidget *>()) {
         setMouseTrackingRecursively(child, enable);
     }
 }
+
 
 bool MouseWorkWindow::eventFilter(QObject *obj, QEvent *event) {
 
@@ -55,7 +61,7 @@ bool MouseWorkWindow::eventFilter(QObject *obj, QEvent *event) {
             return true;
         } else if (event->type() == QEvent::Enter) {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
-            mouseMoveEvent(mouseEvent); // Обработка события, когда мышь входит в область объекта
+            mouseMoveEvent(mouseEvent); // Event handling when the mouse enters the object area
             ModeManager::setCursor(true);
             m_parent->update();
 
@@ -70,6 +76,7 @@ bool MouseWorkWindow::eventFilter(QObject *obj, QEvent *event) {
     return QObject::eventFilter(obj, event);
 }
 
+
 void MouseWorkWindow::mousePressEvent(QMouseEvent *event) {
 
     if (event->button() == Qt::RightButton) {
@@ -79,11 +86,11 @@ void MouseWorkWindow::mousePressEvent(QMouseEvent *event) {
     }
     if (event->button() == Qt::LeftButton) {
         ModeManager::setActiveMode(MouseMode::LeftClick);
-        // Scaling::setLastMouse(event->pos().x(), event->pos().y());
         Scaling::startMousePress(event->pos().x(), event->pos().y());
         m_parent->update();
     }
 }
+
 
 void MouseWorkWindow::mouseMoveEvent(QMouseEvent *event) {
 
@@ -101,6 +108,7 @@ void MouseWorkWindow::mouseMoveEvent(QMouseEvent *event) {
 
 }
 
+
 void MouseWorkWindow::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         ModeManager::setActiveMode(MouseMode::ReleasingRight);
@@ -113,6 +121,7 @@ void MouseWorkWindow::mouseReleaseEvent(QMouseEvent *event) {
 
     }
 }
+
 
 void MouseWorkWindow::mouseDoubleClickEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {

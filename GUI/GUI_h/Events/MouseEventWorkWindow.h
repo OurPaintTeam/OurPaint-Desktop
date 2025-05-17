@@ -6,6 +6,9 @@
 #include <QMouseEvent>
 #include <QTimer>
 
+#include "Modes.h"
+#include "Scaling.h"
+
 class MouseWorkWindow : public QObject {
 private:
     QWidget *m_parent;
