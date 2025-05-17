@@ -22,10 +22,10 @@ public:
     static qreal Step(double rawStep);
 
     // Background rendering
-    static void backgroundRender(QPainter &painter);
+    static void backgroundRender(QPainter& painter);
 
     // Drawing the main coordinate axes
-    static void mainBackgroundRender(QPainter &painter);
+    static void mainBackgroundRender(QPainter& painter);
 
 };
 

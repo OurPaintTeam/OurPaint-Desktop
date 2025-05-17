@@ -16,7 +16,7 @@ qreal DrawBackground::Step(qreal rawStep) {
 }
 
 
-void DrawBackground::backgroundRender(QPainter &painter) {
+void DrawBackground::backgroundRender(QPainter& painter) {
 
     // To record coordinates for rendering
     QVector<QPointF> pointXR;
@@ -24,11 +24,11 @@ void DrawBackground::backgroundRender(QPainter &painter) {
     QVector<QPointF> pointYU;
     QVector<QPointF> pointYD;
 
-    const QPointF delta =Scaling::getDelta();
+    const QPointF delta = Scaling::getDelta();
     const QPointF centredMonitor = Scaling::getCenteredCoordinates();
 
     const qint16 screenHeight = Scaling::getActualMonitorHeight();
-    
+
     const qreal zoom = Scaling::getZoom();
 
     constexpr qint16 SIZE = 1;
@@ -40,13 +40,13 @@ void DrawBackground::backgroundRender(QPainter &painter) {
 
         const QPointF absDelta = {qAbs(delta.x()), qAbs(delta.y())};
 
-        const qreal X_SIZE=centredMonitor.x() + absDelta.x();
-        const qreal Y_SIZE=centredMonitor.y() + absDelta.y();
+        const qreal X_SIZE = centredMonitor.x() + absDelta.x();
+        const qreal Y_SIZE = centredMonitor.y() + absDelta.y();
 
-        const qreal Y_UPPER_LINE=-centredMonitor.y() - absDelta.y();
-        const qreal Y_LOWER_LINE=centredMonitor.y() + absDelta.y();
-        const qreal X_LEFT_LINE=-centredMonitor.x() - absDelta.x();
-        const qreal X_RIGHT_LINE=centredMonitor.x() + absDelta.x();
+        const qreal Y_UPPER_LINE = -centredMonitor.y() - absDelta.y();
+        const qreal Y_LOWER_LINE = centredMonitor.y() + absDelta.y();
+        const qreal X_LEFT_LINE = -centredMonitor.x() - absDelta.x();
+        const qreal X_RIGHT_LINE = centredMonitor.x() + absDelta.x();
 
         const qreal MIN_STEP = Scaling::getUserUnitSize();
         qreal stepLogical = Step(MIN_STEP / zoom);
@@ -57,7 +57,7 @@ void DrawBackground::backgroundRender(QPainter &painter) {
 
 
         // Vertical lines
-        for (qreal x = currentCellSize; x <= X_SIZE; x += currentCellSize,++index) {
+        for (qreal x = currentCellSize; x <= X_SIZE; x += currentCellSize, ++index) {
 
             const bool IS_FIVES_LINES = (index % 5 == 0);
             painter.setPen(IS_FIVES_LINES ? darkPen : greyPen);
@@ -67,7 +67,7 @@ void DrawBackground::backgroundRender(QPainter &painter) {
                 pointXL.emplace_back(-x, 0);
             }
 
-            painter.drawLine(QPointF(x,Y_UPPER_LINE),
+            painter.drawLine(QPointF(x, Y_UPPER_LINE),
                              QPointF(x, Y_LOWER_LINE));
             painter.drawLine(QPointF(-x, Y_UPPER_LINE),
                              QPointF(-x, Y_LOWER_LINE));
@@ -75,7 +75,7 @@ void DrawBackground::backgroundRender(QPainter &painter) {
 
         // Horizontal lines
         index = 1;
-        for (qreal y = currentCellSize; y <= Y_SIZE; y += currentCellSize,++index) {
+        for (qreal y = currentCellSize; y <= Y_SIZE; y += currentCellSize, ++index) {
 
             const bool IS_FIVES_LINES = (index % 5 == 0);
             painter.setPen(IS_FIVES_LINES ? darkPen : greyPen);
@@ -102,7 +102,7 @@ void DrawBackground::backgroundRender(QPainter &painter) {
 
         // If the axis becomes invisible, we draw it on the border
         DrawBackground::mainBackgroundRender(painter);
-    } else if(ModeManager::getCell()){
+    } else if (ModeManager::getCell()) {
         painter.setPen(greyPen);
 
         // Ox
@@ -113,17 +113,17 @@ void DrawBackground::backgroundRender(QPainter &painter) {
         painter.drawLine(QPointF(0, (-centredMonitor.y() - delta.y())),
                          QPointF(0, (screenHeight - delta.y())));
     }
-       
+
 
 }
 
-void DrawBackground::mainBackgroundRender(QPainter &painter){
-    const QPointF delta =Scaling::getDelta();
+void DrawBackground::mainBackgroundRender(QPainter& painter) {
+    const QPointF delta = Scaling::getDelta();
     const QPointF centredMonitor = Scaling::getCenteredCoordinates();
     const QPointF absDelta = {qAbs(delta.x()), qAbs(delta.y())};
 
     const qint16 screenHeight = Scaling::getActualMonitorHeight();
-    
+
     // Drawing the vertical Oy axis
     if (centredMonitor.x() <= absDelta.x()) {
         if (delta.x() > 0) {
@@ -160,6 +160,6 @@ void DrawBackground::mainBackgroundRender(QPainter &painter){
         // Ox
         painter.drawLine(QPointF((-centredMonitor.x() - delta.x()), 0),
                          QPointF((centredMonitor.x() - delta.x()), 0));
-    } 
-    
+    }
+
 }
