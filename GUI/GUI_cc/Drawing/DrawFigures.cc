@@ -48,7 +48,7 @@ void DrawFigures::drawPoint(QPainter &painter, const std::unordered_map<ID, Poin
             const QPointF logicPoint(Scaling::scaleCoordinate(point->x), Scaling::scaleCoordinate(-point->y));
 
             bool isSelected = vec_id.contains(pt.first);
-            const qint16 pointRadius = isSelected ? SMALL_RADIUS : BIG_RADIUS;
+            const qint16 pointRadius = isSelected ? BIG_RADIUS : SMALL_RADIUS;
 
             painter.setBrush(QBrush(Qt::black));
             painter.setPen(Qt::NoPen);
