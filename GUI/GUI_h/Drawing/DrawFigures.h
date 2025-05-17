@@ -22,7 +22,7 @@ private:
 public:
     static void setPen(const QPen &color);
 
-    static double angleBetween(const QPointF &center, const QPointF &point);
+    static qreal angleBetween(const QPointF &center, const QPointF &point);
 
     // Function for drawing points
     static void drawPoint(QPainter &painter, const std::unordered_map<ID, Point *> &points,
@@ -48,7 +48,7 @@ public:
     /**** Functions for single rendering (with mouse) *****/
 
     static void drawPoint(QPainter &painter,const QPointF point);
-    static void drawCircle(QPainter &painter,const QPointF center,const double radius);
+    static void drawCircle(QPainter &painter,const QPointF center,const qreal radius);
     static void drawSection(QPainter &painter,const QPointF beg,const QPointF end);
     static void drawArc(QPainter &painter,const QPointF startPoint,const QPointF endPoint,const QPointF centerPoint);
     static void drawRectangle(QPainter &painter,const QPointF startPoint,const QPointF endPoint);
