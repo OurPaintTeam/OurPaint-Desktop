@@ -4,8 +4,8 @@ KeyWorkWindow::KeyWorkWindow(QWidget *parent)
         : QObject(parent)
 {
     m_parent=parent;
-    parent->setFocusPolicy(Qt::StrongFocus);  // Устанавливаем политику фокуса для родительского виджета
-    parent->installEventFilter(this);  // Устанавливаем фильтр событий
+    parent->setFocusPolicy(Qt::StrongFocus); // Setting the focus policy for the parent widget
+    parent->installEventFilter(this);  // Setting the event filter
 
 }
 
@@ -15,16 +15,17 @@ bool KeyWorkWindow::eventFilter(QObject *obj, QEvent *event)
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
             handleKeyPress(keyEvent);
-            return true;  // Событие обработано
+            return true;
         }
         else if (event->type() == QEvent::KeyRelease) {
             QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
             handleKeyRelease(keyEvent);
-            return true;  // Событие обработано
+            return true;
         }
     }
-    return QObject::eventFilter(obj, event);  // Перехватываем событие и передаем его дальше
+    return QObject::eventFilter(obj, event);
 }
+
 
 void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
 
@@ -36,7 +37,7 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
     if (event->key() == Qt::Key_Tab) {
         ModeManager::setActiveMode(KeyMode::Tab);
         m_parent->update();
-        event->accept();  // Принять событие Tab, чтобы предотвратить его дальнейшую обработку
+        event->accept();  // Accept the Tab event to prevent its further processing
         return;
     }
 
@@ -134,6 +135,7 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
     }
 }
 
+
 void KeyWorkWindow::handleKeyRelease(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Shift) {
@@ -144,7 +146,7 @@ void KeyWorkWindow::handleKeyRelease(QKeyEvent *event)
     if (event->key() == Qt::Key_Tab) {
         ModeManager::setActiveMode(KeyMode::ReleasingTab);
         m_parent->update();
-        event->accept();  // Принять событие, чтобы предотвратить его распространение
+        event->accept();  // Accept the event to prevent it from spreading
         return;
     }
 

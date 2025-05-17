@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QWidget>
 #include <QKeyEvent>
-#include <QPushButton>
 
 #include "Modes.h"
 #include "Scaling.h"
