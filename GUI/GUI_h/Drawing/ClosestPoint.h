@@ -23,10 +23,10 @@ public:
     static QPointF findClosestPoint(std::unordered_map<ID, Point *> &points,const QPointF cursor);
 
     // Checking for entry into a rectangle
-    [[maybe_unused]] static QVector<ID>  enteringInRect(std::unordered_map<ID,  Point*>& points,QRectF &rect,QVector<ID>&);
+    [[maybe_unused]] static QVector<ID>  enteringInRect(std::unordered_map<ID, Point*>& points,QRectF &rect,QVector<ID>&);
     [[maybe_unused]] static QVector<ID>  enteringInRect(std::unordered_map<ID, Section*>& sections,QRectF &rect,QVector<ID>&);
-    [[maybe_unused]] static QVector<ID>  enteringInRect(std::unordered_map<ID,  Circle*>& circles,QRectF &rect,QVector<ID>&);
-    [[maybe_unused]] static QVector<ID>  enteringInRect(std::unordered_map<ID,  Arc*>& arcs,QRectF &rect,QVector<ID>&);
+    [[maybe_unused]] static QVector<ID>  enteringInRect(std::unordered_map<ID, Circle*>& circles,QRectF &rect,QVector<ID>&);
+    [[maybe_unused]] static QVector<ID>  enteringInRect(std::unordered_map<ID, Arc*>& arcs,QRectF &rect,QVector<ID>&);
 
     static QVector<ID> enteringInRect(std::unordered_map<ID, Arc *> &arcs, QRectF &rect);
     static QVector<ID> enteringInRect(std::unordered_map<ID, Section *> &sections, QRectF &rect);
