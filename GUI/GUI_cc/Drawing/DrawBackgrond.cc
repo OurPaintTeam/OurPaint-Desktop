@@ -1,9 +1,9 @@
 #include "DrawBackground.h"
 
- double DrawBackground::Step(double rawStep) {
-    double exp = std::floor(std::log10(rawStep));
-    double fraction = rawStep / std::pow(10.0, exp);
-    double newFraction=0;
+qreal DrawBackground::Step(qreal rawStep) {
+    qreal exp = qFloor(qLn(rawStep) / qLn(10.0));
+    qreal fraction = rawStep / qPow(10.0, exp);
+    qreal newFraction;
 
     if (fraction < 1.5) { newFraction = 1; }
     else if (fraction < 2.5) { newFraction = 2; }
@@ -12,112 +12,161 @@
     else if (fraction < 7.5) { newFraction = 5; }
     else { newFraction = 10; }
 
-    return newFraction * std::pow(10.0, exp);
+    return newFraction * qPow(10.0, exp);
 }
 
 
-// Отрисовка фона
-void DrawBackground::drawFon(QPainter &painter) {
+void DrawBackground::backgroundRender(QPainter &painter) {
 
-    // Для записи координат для отрисовки
-    std::vector<QPointF> pointXR;
-    std::vector<QPointF> pointXL;
-    std::vector<QPointF> pointYU;
-    std::vector<QPointF> pointYD;
+    // To record coordinates for rendering
+    QVector<QPointF> pointXR;
+    QVector<QPointF> pointXL;
+    QVector<QPointF> pointYU;
+    QVector<QPointF> pointYD;
 
-    double _width = Scaling::getCenteredCoordinatesX();
-    double _height = Scaling::getCenteredCoordinatesY();
-    short int width = Scaling::getActualMonitorWidth();
-    short int height = Scaling::getActualMonitorHeight();
+    qreal screenHalfWidth = Scaling::getCenteredCoordinatesX();
+    qreal screenHalfHeight = Scaling::getCenteredCoordinatesY();
+    qint16 screenHeight = Scaling::getActualMonitorHeight();
 
-    double deltaX = Scaling::getDeltaX();
-    double deltaY = Scaling::getDeltaY();
+    qreal deltaX = Scaling::getDeltaX();
+    qreal deltaY = Scaling::getDeltaY();
 
+    qreal zoom = Scaling::getZoom();
 
-    double zoom = Scaling::getZoom();
+    const qint16 SIZE = 1;
+    QPen darkPen(Qt::darkGray, SIZE);
+    QPen greyPen(Qt::lightGray, SIZE);
 
-    // Отрисовка клетчатого фона
+    // Rendering a checkered background
     if (ModeManager::getCell()) {
 
-        const double minStep = Scaling::getUserUnitSize();
-        double stepLogical = Step(minStep / zoom);
-        double currentCellSize = stepLogical * zoom;
+        const qreal absDeltaX =  qAbs(deltaX);
+        const qreal absDeltaY = qAbs(deltaY);
+        
+        const qreal X_SIZE=screenHalfWidth + absDeltaX;
+        const qreal Y_SIZE=screenHalfHeight + absDeltaY;
+
+        const qreal Y_UPPER_LINE=-screenHalfHeight - absDeltaY;
+        const qreal Y_LOWER_LINE=screenHalfHeight + absDeltaY;
+        const qreal X_LEFT_LINE=-screenHalfWidth - absDeltaX;
+        const qreal X_RIGHT_LINE=screenHalfWidth + absDeltaX;
+
+        const qreal MIN_STEP = Scaling::getUserUnitSize();
+        qreal stepLogical = Step(MIN_STEP / zoom);
+        qreal currentCellSize = stepLogical * zoom;
+
+        qint16 index = 1; // Making blocks 5 by 5
 
 
-        short int index = 1; // Делаем блоки 5 на 5
 
-        painter.setPen(QPen(Qt::lightGray, 1));
+        // Vertical lines
+        for (qreal x = currentCellSize; x <= X_SIZE; x += currentCellSize,++index) {
 
-        // Вертикальные линии
-        for (double x = currentCellSize; x <= (_width + abs(deltaX)); x += currentCellSize) {
-            painter.setPen(index % 5 == 0 ? Qt::darkGray : Qt::lightGray);
-            if (index % 5 == 0) {
+            const bool IS_FIVES_LINES = (index % 5 == 0);
+            painter.setPen(IS_FIVES_LINES ? darkPen : greyPen);
+
+            if (IS_FIVES_LINES) {
                 pointXR.emplace_back(x, 0);
                 pointXL.emplace_back(-x, 0);
             }
-            painter.drawLine(QPointF(x, (-_height - abs(deltaY))), QPointF(x, (_height + abs(deltaY))));
-            painter.drawLine(QPointF(-x, (-_height - abs(deltaY))), QPointF(-x, (_height + abs(deltaY))));
-            ++index;
+
+            painter.drawLine(QPointF(x,Y_UPPER_LINE),
+                             QPointF(x, Y_LOWER_LINE));
+            painter.drawLine(QPointF(-x, Y_UPPER_LINE),
+                             QPointF(-x, Y_LOWER_LINE));
         }
 
-        // Горизонтальные линии
+        // Horizontal lines
         index = 1;
-        for (double y = currentCellSize; y <= (_height + abs(deltaY)); y += currentCellSize) {
-            painter.setPen(index % 5 == 0 ? Qt::darkGray : Qt::lightGray);
-            if (index % 5 == 0) {
+        for (qreal y = currentCellSize; y <= Y_SIZE; y += currentCellSize,++index) {
+
+            const bool IS_FIVES_LINES = (index % 5 == 0);
+            painter.setPen(IS_FIVES_LINES ? darkPen : greyPen);
+
+            if (IS_FIVES_LINES) {
                 pointYU.emplace_back(0, y);
                 pointYD.emplace_back(0, -y);
             }
-            painter.drawLine(QPointF((-_width - abs(deltaX)), y), QPointF((_width + abs(deltaX)), y));
-            painter.drawLine(QPointF((-_width - abs(deltaX)), -y), QPointF((_width + abs(deltaX)), -y));
-            ++index;
+
+            painter.drawLine(QPointF((X_LEFT_LINE), y),
+                             QPointF(X_RIGHT_LINE, y));
+            painter.drawLine(QPointF((X_LEFT_LINE), -y),
+                             QPointF(X_RIGHT_LINE, -y));
         }
 
     }
 
+    // Coordinate axes
+    if (ModeManager::getAxis()) {
 
-    if (ModeManager::getAxis()) { // Оси координат
-
-        painter.setPen(Qt::black);
-
-        // Отрисовка значений
+        painter.setPen(darkPen);
+        // Rendering values
         DrawAdditionalInf::drawCoordinateLabels(painter, pointXL, pointXR, pointYU, pointYD);
 
-        // Если ось становится невидимой мы ее рисуем на границе
+        // If the axis becomes invisible, we draw it on the border
+        DrawBackground::mainBackgroundRender(painter);
+    } else if(ModeManager::getCell()){
+        painter.setPen(greyPen);
 
-        // Отрисовка вертикальной оси Oy
-        if (_width <= std::abs(deltaX)) {
-            if (deltaX > 0) {
-                // крайняя правая
-                painter.drawLine(QPointF(_width - 1 - deltaX, -_height - deltaY),
-                                 QPointF(_width - 1 - deltaX, height - deltaY));  // Oy
-            } else {
-                // крайняя левая
-                painter.drawLine(QPointF(-_width + 1 - deltaX, -_height - deltaY),
-                                 QPointF(-_width + 1 - deltaX, height - deltaY));  // Oy
-            }
-        } else {
-            painter.drawLine(QPointF(0, (-_height - deltaY)), QPointF(0, (height - deltaY)));  // Oy
-        }
+        // Ox
+        painter.drawLine(QPointF((-screenHalfWidth - deltaX), 0),
+                         QPointF((screenHalfWidth - deltaX), 0));
 
-        // Отрисовка горизонтальной оси Ox
-        if (_height <= std::abs(deltaY)) {
-            if (deltaY > 0) {
-                // Нижняя
-                painter.drawLine(QPointF(-_width - deltaX, _height - 1 - deltaY),
-                                 QPointF(_width - deltaX, _height - 1 - deltaY));  // Ox
-            } else {
-                // Верхняя
-                painter.drawLine(QPointF(-_width - deltaX, -_height - deltaY),
-                                 QPointF(_width - deltaX, -_height - deltaY));  // Ox
-            }
+        // Oy
+        painter.drawLine(QPointF(0, (-screenHalfHeight - deltaY)),
+                         QPointF(0, (screenHeight - deltaY)));
+    }
+       
+
+}
+
+void DrawBackground::mainBackgroundRender(QPainter &painter){
+    qreal screenHalfWidth = Scaling::getCenteredCoordinatesX();
+    qreal screenHalfHeight = Scaling::getCenteredCoordinatesY();
+    qint16 screenHeight = Scaling::getActualMonitorHeight();
+
+    qreal deltaX = Scaling::getDeltaX();
+    qreal deltaY = Scaling::getDeltaY();
+    const qreal absDeltaX =  qAbs(deltaX);
+    const qreal absDeltaY = qAbs(deltaY);
+
+
+    // Drawing the vertical Oy axis
+    if (screenHalfWidth <= absDeltaX) {
+        if (deltaX > 0) {
+            // Far right
+            // Oy
+            painter.drawLine(QPointF(screenHalfWidth - 1 - deltaX, -screenHalfHeight - deltaY),
+                             QPointF(screenHalfWidth - 1 - deltaX, screenHeight - deltaY));
         } else {
-            painter.drawLine(QPointF((-_width - deltaX), 0), QPointF((_width - deltaX), 0));  // Ox
+            // Far left
+            // Oy
+            painter.drawLine(QPointF(-screenHalfWidth + 1 - deltaX, -screenHalfHeight - deltaY),
+                             QPointF(-screenHalfWidth + 1 - deltaX, screenHeight - deltaY));
         }
     } else {
-        painter.setPen(Qt::darkGray);
-        painter.drawLine(QPointF((-_width - deltaX), 0), QPointF((_width - deltaX), 0));  // Ox
-        painter.drawLine(QPointF(0, (-_height - deltaY)), QPointF(0, (height - deltaY)));  // Oy
+        painter.drawLine(QPointF(0, (-screenHalfHeight - deltaY)),
+                         QPointF(0, (screenHeight - deltaY)));  // Oy
     }
 
+
+    // Drawing the horizontal Ox axis
+    if (screenHalfHeight <= absDeltaY) {
+        if (deltaY > 0) {
+            // Lower
+            // Ox
+            painter.drawLine(QPointF(-screenHalfWidth - deltaX, screenHalfHeight - 1 - deltaY),
+                             QPointF(screenHalfWidth - deltaX, screenHalfHeight - 1 - deltaY));
+        } else {
+            // Upper
+            // Ox
+            painter.drawLine(QPointF(-screenHalfWidth - deltaX, -screenHalfHeight - deltaY),
+                             QPointF(screenHalfWidth - deltaX, -screenHalfHeight - deltaY));
+        }
+    } else {
+        // Ox
+        painter.drawLine(QPointF((-screenHalfWidth - deltaX), 0),
+                         QPointF((screenHalfWidth - deltaX), 0));
+    } 
+    
 }

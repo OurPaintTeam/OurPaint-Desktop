@@ -16,10 +16,10 @@ public:
 
     // The function of drawing values on axes
     static void drawCoordinateLabels(QPainter &painter,
-                                     const std::vector<QPointF> &pointXR,
-                                     const std::vector<QPointF> &pointXL,
-                                     const std::vector<QPointF> &pointYU,
-                                     const std::vector<QPointF> &pointYD);
+                                     const QVector<QPointF> &pointXR,
+                                     const QVector<QPointF> &pointXL,
+                                     const QVector<QPointF> &pointYU,
+                                     const QVector<QPointF> &pointYD);
 
     // Drawing the coordinate values on the axes
     [[maybe_unused]] static void drawAxes(QPainter &painter);
