@@ -76,6 +76,7 @@ public:
     const Component& findComponentByID(ID id);
 
     void paint() const;
+    void clearImage() const;
 
     ObjectData getObjectData(ID objectID) const;
     ObjectData getRootObjectData(ID objectID) const;

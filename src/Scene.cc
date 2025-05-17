@@ -19,11 +19,12 @@ Scene::Scene(Painter* p) :
     _circles.reserve(std::size_t(1024));
     _arcs.reserve(std::size_t(1024));
     _requirements.reserve(std::size_t(512));
+
     if (p) {
-        p->initPoint(_points);
-        p->initSection(_sections);
-        p->initCircle(_circles);
-        p->initArc(_arcs);
+        p->initPointCase(_points);
+        p->initSectionCase(_sections);
+        p->initCircleCase(_circles);
+        p->initArcCase(_arcs);
     }
 }
 
@@ -475,6 +476,11 @@ void Scene::updateBoundingBox() const {
 void Scene::paint() const {
     updateBoundingBox();
     _painter->getBoundBox(_allFiguresRectangle);
+    _painter->draw();
+}
+
+void Scene::clearImage() const {
+    _painter->clear();
 }
 
 ObjectData Scene::getObjectData(ID id) const {
@@ -671,10 +677,10 @@ std::vector<RequirementData> Scene::getObjectRequirementsWithConnectedObjects(ID
 
 void Scene::setPainter(Painter* p) {
     _painter = p;
-    _painter->initPoint(_points);
-    _painter->initSection(_sections);
-    _painter->initCircle(_circles);
-    _painter->initArc(_arcs);
+    _painter->initPointCase(_points);
+    _painter->initSectionCase(_sections);
+    _painter->initCircleCase(_circles);
+    _painter->initArcCase(_arcs);
 }
 
 void Scene::moveObject(ID id, double dx, double dy) {
