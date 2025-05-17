@@ -30,18 +30,17 @@ public:
     /************* ID ********************/
 
 
-    static void drawPointID(QPainter &painter,QPointF &point,const ID& pointID);
-    static void drawSectionID(QPainter &painter, QPointF &start, QPointF &end,const ID& sectionID) ;
-    static void drawCircleID(QPainter& painter, QPointF &center, double r,const ID& circleID);
-    static void drawArcID(QPainter &painter,const ID &arcID,const QPointF &center,double startAngleDeg,double endAngleDeg,double radius);
+    static void drawPointID(QPainter &painter,const ID& pointID,const QPointF &point);
+    static void drawSectionID(QPainter &painter,const ID& sectionID,const QPointF &start,const QPointF &end);
+    static void drawCircleID(QPainter& painter,const ID& circleID,const QPointF &center, qreal radius);
+    static void drawArcID(QPainter &painter,const ID &arcID,const QPointF &center,qreal startAngleDeg,qreal endAngleDeg,qreal radius);
 
 
     /************* Glow ********************/
-
-    static void drawPointGlow(QPainter &painter, QPointF &point,const Color &color) ;
-    static void drawSectionGlow(QPainter &painter, QPointF &start,QPointF &end,const Color &color) ;
-    static void drawCircleGlow(QPainter& painter, QPointF &center,double Radius,const Color &color);
-    static void drawArcGlow(QPainter& painter, QRectF &rect, int qtStart, int qtSpan,const Color &color);
+    static void drawPointGlow(QPainter &painter,const QPointF &point,const Color &color);
+    static void drawSectionGlow(QPainter &painter,const QPointF &start,const QPointF &end,const Color &color);
+    static void drawCircleGlow(QPainter& painter,const QPointF &center,const qreal radius,const Color &color);
+    static void drawArcGlow(QPainter& painter,const QRectF &rect,const int qtStart, int qtSpan,const Color &color);
 
 
     /****************** Colors *********************/
@@ -53,7 +52,7 @@ public:
     /****************** Length *********************/
 
     // Drawing the line length
-    static void drawCoordinateLine(QPainter &painter, QPointF& start,QPointF &end);
+    static void drawCoordinateLine(QPainter &painter,const QPointF& start, const QPointF &end);
 };
 
 #endif //OURPAINT_DRAWADDITIONALINF_H
