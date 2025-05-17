@@ -50,22 +50,19 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
 [[maybe_unused]] void DrawAdditionalInf::drawAxes(QPainter &painter) {
 
     // Centering
-    const qreal centerX = Scaling::getCenteredCoordinatesX();
-    const qreal centerY = Scaling::getCenteredCoordinatesY();
+    const QPointF centerMonitor =   Scaling::getCenteredCoordinates();
 
     // Offset
-    const qreal deltaX = Scaling::getDeltaX();
-    const qreal deltaY = Scaling::getDeltaY();
+    const QPointF delta = Scaling::getDelta();
 
     // Logical coordinates
-    const qreal logicRightX = Scaling::logic(centerX) - Scaling::logic(deltaX);
-    const qreal logicUpperY = Scaling::logic(centerY) + Scaling::logic(deltaY);
-    const qreal logicLeftX = -Scaling::logic(centerX) - Scaling::logic(deltaX);
-    const qreal logicLowerY = -Scaling::logic(centerY) + Scaling::logic(deltaY);
+    const qreal logicRightX = Scaling::logic(centerMonitor.x()) - Scaling::logic(delta.x());
+    const qreal logicUpperY = Scaling::logic(centerMonitor.y()) + Scaling::logic(delta.y());
+    const qreal logicLeftX = -Scaling::logic(centerMonitor.x()) - Scaling::logic(delta.x());
+    const qreal logicLowerY = -Scaling::logic(centerMonitor.y()) + Scaling::logic(delta.y());
 
     // Window dimensions
-    const qint16 windowWidth = Scaling::getActualMonitorWidth();
-    const qint16 windowHeight = Scaling::getActualMonitorHeight();
+    const QPointF windowSize = Scaling::getActualMonitorSize();
 
     // Font metrics
     QFontMetrics metrics(painter.font());
@@ -74,8 +71,8 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
     constexpr int MARGIN = 5;
 
     // Check axis visibility
-    bool xAxisVisible = (centerY + deltaY >= 0) && (centerY + deltaY <= windowHeight);
-    bool yAxisVisible = (centerX + deltaX >= 0) && (centerX + deltaX <= windowWidth);
+    bool xAxisVisible = (centerMonitor.y() + delta.y() >= 0) && (centerMonitor.y() + delta.y() <= windowSize.y());
+    bool yAxisVisible = (centerMonitor.x() + delta.x() >= 0) && (centerMonitor.x() + delta.x() <= windowSize.x());
 
     auto drawTextCorner = [&](const QString& text, int x, int y) {
         painter.drawText(x, y, text);
@@ -85,11 +82,11 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
     if (logicLeftX < 0 && xAxisVisible) {
         QString text = QString::number(logicLeftX);
         int x = MARGIN;
-        int y = static_cast<int>(centerY) + deltaY - MARGIN;
+        int y = static_cast<int>(centerMonitor.y()) + delta.y() - MARGIN;
         drawTextCorner(text, x, y);
     } else if (!xAxisVisible && std::abs(logicLeftX) > logicRightX) {
         QString text = QString::number(logicLeftX);
-        int y = (std::abs(logicUpperY) > std::abs(logicLowerY)) ? (windowHeight - MARGIN) : textHeight;
+        int y = (std::abs(logicUpperY) > std::abs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
         drawTextCorner(text, MARGIN, y);
     }
 
@@ -97,39 +94,39 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
     if (logicRightX > 0 && xAxisVisible) {
         QString text = QString::number(logicRightX);
         int textWidth = metrics.horizontalAdvance(text);
-        int x = windowWidth - textWidth - MARGIN;
-        int y = static_cast<int>(centerY) + deltaY - MARGIN;
+        int x = windowSize.y() - textWidth - MARGIN;
+        int y = static_cast<int>(centerMonitor.y()) + delta.y() - MARGIN;
         drawTextCorner(text, x, y);
     } else if (!xAxisVisible && std::abs(logicRightX) > std::abs(logicLeftX)) {
         QString text = QString::number(logicRightX);
         int textWidth = metrics.horizontalAdvance(text);
-        int x = windowWidth - textWidth - MARGIN;
-        int y = (std::abs(logicUpperY) > std::abs(logicLowerY)) ? (windowHeight - MARGIN) : textHeight;
+        int x = windowSize.x() - textWidth - MARGIN;
+        int y = (std::abs(logicUpperY) > std::abs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
         drawTextCorner(text, x, y);
     }
 
     // Draw upper Y value
     if (logicUpperY > 0 && yAxisVisible) {
         QString text = QString::number(logicUpperY);
-        int x = static_cast<int>(centerX) + deltaX + MARGIN;
+        int x = static_cast<int>(centerMonitor.x()) + delta.x() + MARGIN;
         drawTextCorner(text, x, textHeight);
     } else if (!yAxisVisible && std::abs(logicUpperY) > std::abs(logicLowerY)) {
         QString text = QString::number(logicUpperY);
-        int x = (std::abs(logicRightX) > std::abs(logicLeftX)) ? MARGIN : (windowWidth - metrics.horizontalAdvance(text) - MARGIN);
+        int x = (std::abs(logicRightX) > std::abs(logicLeftX)) ? MARGIN : (windowSize.x() - metrics.horizontalAdvance(text) - MARGIN);
         drawTextCorner(text, x, textHeight);
     }
 
     // Draw lower Y value
     if (logicLowerY < 0 && yAxisVisible) {
         QString text = QString::number(logicLowerY);
-        int x = static_cast<int>(centerX) + deltaX + MARGIN;
-        int y = windowHeight - MARGIN;
+        int x = static_cast<int>(centerMonitor.x()) + delta.x() + MARGIN;
+        int y = windowSize.y() - MARGIN;
         drawTextCorner(text, x, y);
     } else if (!yAxisVisible && std::abs(logicLowerY) > std::abs(logicUpperY)) {
         QString text = QString::number(logicLowerY);
-        int y = windowHeight - MARGIN;
+        int y = windowSize.y() - MARGIN;
         int x = (std::abs(logicRightX) < std::abs(logicLeftX))
-                ? (windowWidth - metrics.horizontalAdvance(text) - MARGIN)
+                ? (windowSize.x() - metrics.horizontalAdvance(text) - MARGIN)
                 : MARGIN;
         drawTextCorner(text, x, y);
     }
@@ -137,19 +134,18 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
 
 
 void DrawAdditionalInf::drawCursor(QPainter &painter) {
-    const qreal cursorX = Scaling::scaleCoordinateX(Scaling::getCursorX());
-    const qreal cursorY = Scaling::scaleCoordinateY(Scaling::getCursorY());
+    const QPointF cursor(Scaling::scaleCoordinateX(Scaling::getCursorX()),
+                         Scaling::scaleCoordinateY(Scaling::getCursorY()));
 
-    const qreal logicalX = Scaling::logicCursorX();
-    const qreal logicalY = Scaling::logicCursorY();
+    const QPointF logicCursor=Scaling::logicCursor();
     const qint16 RANGE = 5;
 
     painter.setPen(Qt::black);
 
 
-    painter.drawText(QPointF(cursorX + RANGE, cursorY -RANGE),
-                     QStringLiteral("X: %1, Y: %2").arg(logicalX, 0, 'f', 1)
-                             .arg(logicalY, 0, 'f', 1));
+    painter.drawText(QPointF(cursor.x() + RANGE, cursor.y() - RANGE),
+                     QStringLiteral("X: %1, Y: %2").arg(logicCursor.x(), 0, 'f', 1)
+                             .arg(logicCursor.y(), 0, 'f', 1));
 
 }
 
