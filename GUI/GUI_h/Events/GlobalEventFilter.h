@@ -4,9 +4,8 @@
 #include <QObject>
 #include <QEvent>
 #include <QKeyEvent>
-#include <QDebug>
 
-class GlobalEventFilter : public QObject {
+class [[maybe_unused]] GlobalEventFilter : public QObject {
 Q_OBJECT
 
 public:

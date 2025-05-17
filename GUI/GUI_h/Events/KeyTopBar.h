@@ -4,11 +4,11 @@
 #include <QKeyEvent>
 #include <QWidget>
 
-class KeyEventTopBar : public QWidget {
+class [[maybe_unused]] KeyEventTopBar : public QWidget {
 Q_OBJECT
 
 public:
-    KeyEventTopBar(QWidget *parent) : QWidget(parent) {}
+    [[maybe_unused]] KeyEventTopBar(QWidget *parent) : QWidget(parent) {}
 
 protected:
     void keyPressEvent(QKeyEvent *event) override {
