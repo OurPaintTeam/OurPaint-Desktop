@@ -1,6 +1,6 @@
 #include "Mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget* parent)
         : QMainWindow(parent),
           ui(new Ui::MainWindow),
           moving(false),
@@ -8,25 +8,29 @@ MainWindow::MainWindow(QWidget *parent)
           helpWindow(nullptr),
           error(nullptr),
           warning(nullptr),
-          success(nullptr) ,
-          Index(0){
+          success(nullptr),
+          Index(0) {
 
     ui->setupUi(this);
     setMouseTracking(true);
-    setAllMouseTracking(this); // Отслеживание мыши
+    setAllMouseTracking(this); // Mouse Tracking
     setAttribute(Qt::WA_OpaquePaintEvent);
 
     this->setFocusPolicy(Qt::StrongFocus);
     this->installEventFilter(this);
     this->setFocus();
 
+    documentsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    projectsPath = QDir::cleanPath(documentsPath + "/OurPaint/projects");
+    settingsPath = QDir::cleanPath(documentsPath + "/OurPaint/settings/settings.set");
+
     painter = new QTPainter(ui->workWindow);
     mouseWW = new MouseWorkWindow(ui->workWindow);
     keyWW = new KeyWorkWindow(ui->workWindow);
-    settings = new Settings(settingsDirectory);
+    settings = new Settings(settingsPath);
 
     loadSettings();
-    initConnections(); // Инициализация сигналов
+    initConnections(); // Initialization of signals
     setupLeftMenu();
 }
 
@@ -38,7 +42,7 @@ MainWindow::~MainWindow() {
     delete error;
 }
 
-QTPainter *MainWindow::getQTPainter() const{
+QTPainter* MainWindow::getQTPainter() const {
     return painter;
 }
 
@@ -47,7 +51,7 @@ LeftMenuBar* MainWindow::getLeftMenuBar() const {
 }
 
 void MainWindow::initConnections() {
-    // Кнопки режимов
+    // Mode buttons
     connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
     connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
     connect(ui->figureSection, &QPushButton::clicked, this, &MainWindow::Section);
@@ -56,7 +60,7 @@ void MainWindow::initConnections() {
     connect(ui->toolMoving, &QPushButton::clicked, this, &MainWindow::ToolMoving);
     connect(ui->toolSelected, &QPushButton::clicked, this, &MainWindow::ToolSelected);
 
-    // Кнопки Требований
+    // Requirements Buttons
     connect(ui->oneReq, &QPushButton::clicked, this, &MainWindow::firstReq);
     connect(ui->twoReq, &QPushButton::clicked, this, &MainWindow::secondReq);
     connect(ui->threeReq, &QPushButton::clicked, this, &MainWindow::thirdReq);
@@ -71,44 +75,47 @@ void MainWindow::initConnections() {
     connect(keyWW, &KeyWorkWindow::firstReq, this, &MainWindow::firstReq);
     connect(keyWW, &KeyWorkWindow::secondReq, this, &MainWindow::secondReq);
     connect(keyWW, &KeyWorkWindow::thirdReq, this, &MainWindow::thirdReq);
-    connect(keyWW,&KeyWorkWindow::fourthReq, this, &MainWindow::fourthReq);
+    connect(keyWW, &KeyWorkWindow::fourthReq, this, &MainWindow::fourthReq);
     connect(keyWW, &KeyWorkWindow::fifthReq, this, &MainWindow::fifthReq);
     connect(keyWW, &KeyWorkWindow::sixthReq, this, &MainWindow::sixthReq);
     connect(keyWW, &KeyWorkWindow::seventhReq, this, &MainWindow::seventhReq);
     connect(keyWW, &KeyWorkWindow::eighthReq, this, &MainWindow::eighthReq);
-    connect(keyWW,&KeyWorkWindow::ninthReq, this, &MainWindow::ninthReq);
+    connect(keyWW, &KeyWorkWindow::ninthReq, this, &MainWindow::ninthReq);
     connect(keyWW, &KeyWorkWindow::tenthReq, this, &MainWindow::tenthReq);
 
-    // Кнопки сохранение/импорт
-    connect(ui->actionJPG,  &QToolButton::clicked, this, &MainWindow::onExportJPG);
+    // Save/import buttons
+    connect(ui->actionJPG, &QToolButton::clicked, this, &MainWindow::onExportJPG);
     connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
-    connect(ui->actionPNG,  &QToolButton::clicked, this, &MainWindow::onExportPNG);
-    connect(ui->actionBMP,  &QToolButton::clicked, this, &MainWindow::onExportBMP);
+    connect(ui->actionPNG, &QToolButton::clicked, this, &MainWindow::onExportPNG);
+    connect(ui->actionBMP, &QToolButton::clicked, this, &MainWindow::onExportBMP);
     connect(ui->actionTIFF, &QToolButton::clicked, this, &MainWindow::onExportTIFF);
-    connect(ui->actionPDF,  &QToolButton::clicked, this, &MainWindow::onExportPDF);
-    connect(ui->actionSVG,  &QToolButton::clicked, this, &MainWindow::onExportSVG);
+    connect(ui->actionPDF, &QToolButton::clicked, this, &MainWindow::onExportPDF);
+    connect(ui->actionSVG, &QToolButton::clicked, this, &MainWindow::onExportSVG);
     connect(ui->actionOURP, &QToolButton::clicked, this, &MainWindow::onExportOURP);
-    connect(ui->actionImport_project, &QToolButton::clicked,this, &MainWindow::loadProjectFile);
-    connect(ui->actionScript,&QToolButton::clicked, this, &MainWindow::buttonScript);
+    connect(ui->actionImport_project, &QToolButton::clicked, this, &MainWindow::loadProjectFile);
+    connect(ui->actionScript, &QToolButton::clicked, this, &MainWindow::buttonScript);
 
-    // Кнопки сервера
+    // Server buttons
     connect(ui->actionOpen_server, &QToolButton::clicked, this, &MainWindow::openServer);
     connect(ui->actionJoin_server, &QToolButton::clicked, this, &MainWindow::joinServer);
     connect(ui->actionJoin_local_server, &QToolButton::clicked, this, &MainWindow::joinLocalServer);
     connect(ui->actionExit_from_session, &QToolButton::clicked, this, &MainWindow::exitSession);
 
-    // Кнопка помощь
+    // Help button
     connect(ui->helpButton, &QPushButton::clicked, this, &MainWindow::showHelp);
 
-    // Обработка ввода в консоль чата
+    // Processing input to the chat console
     connect(ui->messageConsole, &QLineEdit::returnPressed, this, &MainWindow::Message);
     connect(ui->enterMes, &QPushButton::clicked, this, &MainWindow::Message);
 
-    connect(keyWW, &KeyWorkWindow::UNDO,this, &MainWindow::undo);
-    connect(keyWW, &KeyWorkWindow::REDO,this, &MainWindow::redo);
-    connect(keyWW, &KeyWorkWindow::DELETE,this, &MainWindow::deleteButton);
+    connect(keyWW, &KeyWorkWindow::UNDO, this, &MainWindow::undo);
+    connect(keyWW, &KeyWorkWindow::REDO, this, &MainWindow::redo);
+    connect(keyWW, &KeyWorkWindow::DELETE, this, &MainWindow::deleteButton);
+    connect(keyWW, &KeyWorkWindow::CUT, this, &MainWindow::cut);
+    connect(keyWW, &KeyWorkWindow::PASTE, this, &MainWindow::paste);
+    connect(keyWW, &KeyWorkWindow::COPY, this, &MainWindow::copy);
 
-    // Настройки имя
+    // Settings name
     connect(ui->nameUsers, &QLineEdit::returnPressed, this, [this]() {
         QString input = ui->nameUsers->text();
         if (!input.isEmpty()) {
@@ -119,7 +126,7 @@ void MainWindow::initConnections() {
     });
 
 
-    // Настройки сетка
+    // Grid Settings
     connect(ui->componentGrid, &QCheckBox::toggled, [&](bool checked) {
         ModeManager::setCell(checked);
         ui->workWindow->update();
@@ -129,7 +136,7 @@ void MainWindow::initConnections() {
         ui->workWindow->update();
     });
 
-    // Обработка ввода в консоли
+    // Console input processing
     connect(ui->console, &QLineEdit::returnPressed, this, [this]() {
         QString input = ui->console->text();
         if (!input.isEmpty()) {
@@ -148,19 +155,37 @@ void MainWindow::initConnections() {
     });
 
     QStringList commandList = {
-            "circle ", "exit", "addReq ", "delReq", "section ","arc ", "point ", "clear", "delObj"
+            "circle ", "exit", "addReq ", "delReq", "section ", "arc ", "point ", "clear", "delObj"
     };
 
     ui->console->setCommands(commandList);
 }
 
-void MainWindow::setupLeftMenu() {;
+void MainWindow::setupLeftMenu() {
     leftMenuBar = new LeftMenuBar(this);
     ui->leftMenuView->setModel(leftMenuBar->getTreeModel());
     ui->leftMenuView->setHeaderHidden(true);
+    ui->leftMenuView->setItemDelegate(new ParameterDelegate(leftMenuBar));
+    connect(static_cast<ParameterDelegate*>(ui->leftMenuView->itemDelegate()),
+            &ParameterDelegate::doubleClickOnID,
+            leftMenuBar,
+            &LeftMenuBar::doubleClickID);
 }
 
-void  MainWindow::updateStyle() {
+void MainWindow::selectLeftMenuElem(QModelIndex& index) {
+    ui->leftMenuView->setCurrentIndex(index);    // selection
+    ui->leftMenuView->scrollTo(index);           // scrolling
+    QModelIndex parent = index.parent();
+    while (parent.isValid()) {
+        ui->leftMenuView->expand(parent);
+        parent = parent.parent();
+    }
+    ui->leftMenuView->expand(index);
+    ui->leftMenuView->update();
+    leftMenuBar->update();
+}
+
+void MainWindow::updateStyle() {
     if (!isMaximized() && !isFullScreen()) {
         ui->topBar->setStyleSheet("QWidget#topBar { "
                                   "background-color: #494850; "
@@ -237,8 +262,8 @@ void  MainWindow::updateStyle() {
     }
 }
 
-void MainWindow::updateExitServerStyle(bool connect){
-    if(!connect) {
+void MainWindow::updateExitServerStyle(bool connect) {
+    if (!connect) {
         ui->actionExit_from_session->setStyleSheet(
                 "QToolButton#actionExit_from_session {"
                 "   background-color: transparent;"
@@ -248,8 +273,7 @@ void MainWindow::updateExitServerStyle(bool connect){
                 "   padding: 5px;"
                 "}"
         );
-    }
-    else{
+    } else {
         ui->actionExit_from_session->setStyleSheet(
                 "QToolButton#actionExit_from_session {"
                 "   background-color: transparent;"
@@ -266,7 +290,7 @@ void MainWindow::updateExitServerStyle(bool connect){
     }
 }
 
-void MainWindow::updateShapeCursor(const QPoint &pos) {
+void MainWindow::updateShapeCursor(const QPoint& pos) {
     int x = pos.x();
     int y = pos.y();
     int w = width();
@@ -287,21 +311,31 @@ void MainWindow::updateShapeCursor(const QPoint &pos) {
 
     switch (region) {
         case TopLeft:
-        case BottomRight: setCursor(Qt::SizeFDiagCursor); break;
+        case BottomRight:
+            setCursor(Qt::SizeFDiagCursor);
+            break;
         case TopRight:
-        case BottomLeft: setCursor(Qt::SizeBDiagCursor); break;
+        case BottomLeft:
+            setCursor(Qt::SizeBDiagCursor);
+            break;
         case Left:
-        case Right: setCursor(Qt::SizeHorCursor); break;
+        case Right:
+            setCursor(Qt::SizeHorCursor);
+            break;
         case Top:
-        case Bottom: setCursor(Qt::SizeVerCursor); break;
-        default: setCursor(Qt::ArrowCursor); break;
+        case Bottom:
+            setCursor(Qt::SizeVerCursor);
+            break;
+        default:
+            setCursor(Qt::ArrowCursor);
+            break;
     }
 }
 
-void MainWindow::setMessage(const std::string &name, const std::string &message) {
+void MainWindow::setMessage(const std::string& name, const std::string& message) {
     QString messageText = QString::fromStdString(name) + ": " + QString::fromStdString(message);
 
-    QLabel *messageLabel = new QLabel(messageText);
+    QLabel* messageLabel = new QLabel(messageText);
     messageLabel->setStyleSheet("color: #D8D8F6;");
     messageLabel->setWordWrap(true);
     messageLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
@@ -309,16 +343,16 @@ void MainWindow::setMessage(const std::string &name, const std::string &message)
     ui->messageContentLayout->addWidget(messageLabel);
 }
 
-void MainWindow::setAllMouseTracking(QWidget *widget) {
+void MainWindow::setAllMouseTracking(QWidget* widget) {
     widget->setMouseTracking(true);
-    for (QObject *child: widget->children()) {
-        if (QWidget *childWidget = qobject_cast<QWidget *>(child)) {
+    for (QObject* child: widget->children()) {
+        if (QWidget* childWidget = qobject_cast<QWidget*>(child)) {
             setAllMouseTracking(childWidget);
         }
     }
 }
 
-void MainWindow::showHelp() {
+void MainWindow::showHelp(){
     if (!helpWindow) {
         helpWindow = new Help(this);
     }
@@ -327,9 +361,9 @@ void MainWindow::showHelp() {
     helpWindow->activateWindow();
 }
 
-void MainWindow::showError(const QString &text) {
+void MainWindow::showError(const QString& text) {
     delete error;
-    error = new CastomeWindowError(text, this);
+    error = new CustomWindowError(text, this);
     int x = this->width() - error->width() - 100;
     int y = this->height() - error->height() - 50;
     QPoint pos = this->mapToGlobal(QPoint(x, y));
@@ -337,9 +371,9 @@ void MainWindow::showError(const QString &text) {
     error->show();
 }
 
-void MainWindow::showWarning(const QString &text) {
+void MainWindow::showWarning(const QString& text) {
     delete warning;
-    warning = new CastomeWindowWarning(text, this);
+    warning = new CustomWindowWarning(text, this);
     int x = this->width() - warning->width() - 100;
     int y = this->height() - warning->height() - 50;
     QPoint pos = this->mapToGlobal(QPoint(x, y));
@@ -347,9 +381,9 @@ void MainWindow::showWarning(const QString &text) {
     warning->show();
 }
 
-void MainWindow::showSuccess(const QString &text) {
+void MainWindow::showSuccess(const QString& text) {
     delete success;
-    success = new CastomeWindowSuccessful(text, this);
+    success = new CustomWindowSuccessful(text, this);
     int x = this->width() - success->width() - 150;
     int y = this->height() - success->height() - 50;
     QPoint pos = this->mapToGlobal(QPoint(x, y));
@@ -357,7 +391,7 @@ void MainWindow::showSuccess(const QString &text) {
     success->show();
 }
 
-QString MainWindow::getUserName(){
+QString MainWindow::getUserName() {
     return ui->nameUsers->text();
 }
 
@@ -367,10 +401,6 @@ void MainWindow::saveSettings() {
             ui->componentAxis->isChecked(),
             ui->nameUsers->text()
     );
-}
-
-void MainWindow::saveCommandsInTxt(const QString &path){
-    leftMenuBar->saveToTextFile(path);
 }
 
 void MainWindow::loadSettings() {
@@ -387,12 +417,12 @@ void MainWindow::loadSettings() {
     ModeManager::setAxis(axisChecked);
 }
 
-void MainWindow::closeEvent(QCloseEvent *event) {
+void MainWindow::closeEvent(QCloseEvent* event) {
 
     if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
         dialog.setModal(true);
-        int result = dialog.exec(); // Показать окно
+        int result = dialog.exec();  // Show the window
 
         if (result == QMessageBox::Yes) {
             saveProjectToFile(".ourp");
@@ -418,7 +448,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     }
 }
 
-void MainWindow::resizeEvent(QResizeEvent *event) {
+void MainWindow::resizeEvent(QResizeEvent* event) {
     updateStyle();
     emit resize();
     ui->workWindow->update();
@@ -426,7 +456,7 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
 }
 
 
-void MainWindow::mousePressEvent(QMouseEvent *event) {
+void MainWindow::mousePressEvent(QMouseEvent* event) {
     dragStartPos = event->globalPosition().toPoint();
     originalGeometry = geometry();
 
@@ -441,7 +471,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event) {
     QMainWindow::mousePressEvent(event);
 }
 
-void MainWindow::mouseMoveEvent(QMouseEvent *event) {
+void MainWindow::mouseMoveEvent(QMouseEvent* event) {
     QPoint globalPos = event->globalPosition().toPoint();
 
     if (resizing) {
@@ -449,10 +479,18 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event) {
         QPoint delta = globalPos - dragStartPos;
 
         switch (currentRegion) {
-            case Top: geom.setTop(geom.top() + delta.y()); break;
-            case Bottom: geom.setBottom(geom.bottom() + delta.y()); break;
-            case Left: geom.setLeft(geom.left() + delta.x()); break;
-            case Right: geom.setRight(geom.right() + delta.x()); break;
+            case Top:
+                geom.setTop(geom.top() + delta.y());
+                break;
+            case Bottom:
+                geom.setBottom(geom.bottom() + delta.y());
+                break;
+            case Left:
+                geom.setLeft(geom.left() + delta.x());
+                break;
+            case Right:
+                geom.setRight(geom.right() + delta.x());
+                break;
             case TopLeft:
                 geom.setTop(geom.top() + delta.y());
                 geom.setLeft(geom.left() + delta.x());
@@ -469,7 +507,8 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event) {
                 geom.setBottom(geom.bottom() + delta.y());
                 geom.setRight(geom.right() + delta.x());
                 break;
-            default: break;
+            default:
+                break;
         }
 
         setGeometry(geom);
@@ -483,7 +522,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event) {
     QMainWindow::mouseMoveEvent(event);
 }
 
-void MainWindow::mouseReleaseEvent(QMouseEvent *event) {
+void MainWindow::mouseReleaseEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton) {
         setCursor(Qt::ArrowCursor);
         resizing = false;
@@ -494,7 +533,7 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event) {
     }
 }
 
-void MainWindow::mouseDoubleClickEvent(QMouseEvent *event) {
+void MainWindow::mouseDoubleClickEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton) {
         moving = true;
         dragStartPos = event->globalPosition().toPoint();
@@ -503,7 +542,7 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent *event) {
     QMainWindow::mouseDoubleClickEvent(event);
 }
 
-void MainWindow::wheelEvent(QWheelEvent *event) {
+void MainWindow::wheelEvent(QWheelEvent* event) {
     if (ui->workWindow && ui->workWindow->underMouse()) {
         if (event->angleDelta().y() > 0) {
             Scaling::setZoomPlus();
@@ -517,12 +556,12 @@ void MainWindow::wheelEvent(QWheelEvent *event) {
     }
 }
 
-bool MainWindow::event(QEvent *event) {
+bool MainWindow::event(QEvent* event) {
 
     if (event->type() == QEvent::Gesture) {
-        QGestureEvent *gestureEvent = static_cast<QGestureEvent *>(event);
-        if (QGesture *pinch = gestureEvent->gesture(Qt::PinchGesture)) {
-            QPinchGesture *pinchGesture = static_cast<QPinchGesture *>(pinch);
+        QGestureEvent* gestureEvent = static_cast<QGestureEvent*>(event);
+        if (QGesture* pinch = gestureEvent->gesture(Qt::PinchGesture)) {
+            QPinchGesture* pinchGesture = static_cast<QPinchGesture*>(pinch);
             if (pinchGesture->changeFlags() & QPinchGesture::ScaleFactorChanged) {
                 if (pinchGesture->scaleFactor() > 1.0) {
 
@@ -538,14 +577,14 @@ bool MainWindow::event(QEvent *event) {
     return QMainWindow::event(event);
 }
 
-bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
 
     if (obj == ui->workWindow) {
         ui->workWindow->update();
     }
 
     if (event->type() == QEvent::KeyPress) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
         if (keyEvent->key() == Qt::Key_Tab) {
             event->accept();
@@ -556,26 +595,24 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
                 }
             }
             return true;
-            // Я красивый белорус!!!
-        }else if (!ui->console->isActiveWindow() &&
-                  keyEvent->key() != Qt::ControlModifier &&
-                  (keyEvent->key() == Qt::Key_Up ||
-                   keyEvent->key() == Qt::Key_Down ||
-                   keyEvent->key() == Qt::Key_Right ||
-                   keyEvent->key() == Qt::Key_Left)) {
+        } else if (!ui->console->isActiveWindow() &&
+                   keyEvent->key() != Qt::ControlModifier &&
+                   (keyEvent->key() == Qt::Key_Up ||
+                    keyEvent->key() == Qt::Key_Down ||
+                    keyEvent->key() == Qt::Key_Right ||
+                    keyEvent->key() == Qt::Key_Left)) {
             return true;
         }
 
     }
 
 
-
     return QObject::eventFilter(obj, event);
 }
 
-void MainWindow::keyPressEvent(QKeyEvent *event) {
+void MainWindow::keyPressEvent(QKeyEvent* event) {
 
-    // Обработка комбинаций ctrl + стрелочки -> перемещает окно в разные положения
+    // // Processing ctrl + arrow keys -> moves the window to different positions
     if (event->modifiers() & Qt::ControlModifier) {
         QRect screenGeometry = QApplication::primaryScreen()->availableGeometry();
         if (event->key() == Qt::Key_Left) {
@@ -669,7 +706,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     }
 
 
-    // Буфер команд
+    // Command Buffer
     if (ui->console->isActiveWindow() && !commands.empty()) {
         if (event->key() == Qt::Key_Up) {
             Index = (Index - 1 + commands.size()) % commands.size();
@@ -689,15 +726,27 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     QWidget::keyPressEvent(event);
 }
 
+void MainWindow::cut() {
+    emit CUT();
+};
+
+void MainWindow::paste() {
+    emit PASTE();
+};
+
+void MainWindow::copy() {
+    emit COPY();
+};
+
 void MainWindow::redo() {
     emit REDO();
 };
 
-void MainWindow::undo(){
+void MainWindow::undo() {
     emit UNDO();
 };
 
-void MainWindow::deleteButton(){
+void MainWindow::deleteButton() {
     emit DELETE();
 };
 
@@ -714,22 +763,16 @@ void MainWindow::loadProjectFile() {
     }
 
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
-                                                    directory,
+                                                    projectsPath,
                                                     tr("Project Files (*.ourp);;All Files (*)"));
 
     if (!fileName.isEmpty()) {
         QString binFileName = fileName;
         if (binFileName.endsWith("ourp")) {
             binFileName.chop(5);
-            binFileName += ".bin";
         }
 
-        try { leftMenuBar->loadFromBinaryFile(binFileName); }
-        catch (std::runtime_error& error){
-            qWarning(error.what());
-            showError("Don't load file");
-            return;
-        }
+
         emit LoadFile(fileName);
     }
 }
@@ -738,12 +781,12 @@ void MainWindow::saveProjectToFile(const QString& format) {
     QString extension = format.startsWith('.') ? format : "." + format;
     QString defaultName = "project";
 
-    QDir baseDir(directory);
+    QDir baseDir(projectsPath);
     if (!baseDir.exists()) {
-        QDir().mkpath(directory);
+        QDir().mkpath(projectsPath);
     }
 
-    QString defaultPath = QDir(directory).filePath(defaultName + extension);
+    QString defaultPath = QDir(projectsPath).filePath(defaultName + extension);
     QString selectedPath;
 
     while (true) {
@@ -796,7 +839,6 @@ void MainWindow::saveProjectToFile(const QString& format) {
             }
 
             mainFilePath = QDir(projectFolder).filePath(projectName + extension);
-            binFilePath  = QDir(projectFolder).filePath(projectName + ".bin");
 
             QFile file(mainFilePath);
             if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -805,21 +847,6 @@ void MainWindow::saveProjectToFile(const QString& format) {
                 return;
             }
             file.close();
-
-            try {
-                leftMenuBar->saveToBinaryFile(binFilePath);
-            } catch (const std::exception& e) {
-                QMessageBox::critical(this, tr("Error"),
-                                      tr("Exception while saving binary file:\n%1\nError: %2")
-                                              .arg(binFilePath, e.what()));
-                ModeManager::setSave(false);
-                return;
-            } catch (...) {
-                QMessageBox::critical(this, tr("Error"),
-                                      tr("Unknown error while saving binary file:\n%1").arg(binFilePath));
-                ModeManager::setSave(false);
-                return;
-            }
 
         } else {
             mainFilePath = fileInfo.absoluteFilePath();
@@ -832,7 +859,7 @@ void MainWindow::saveProjectToFile(const QString& format) {
 }
 
 void MainWindow::buttonScript() {
-    // Открытие диалога выбора файла проекта
+    // Opening the project file selection dialog
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
                                                     QDir::homePath(),
                                                     tr("Project Files (*.txt);;All Files (*)"));
@@ -843,16 +870,16 @@ void MainWindow::buttonScript() {
 }
 
 void MainWindow::openServer() {
-    InputWindow *windowServer = new InputWindow("Enter port: ", this);
-    QObject::connect(windowServer, &InputWindow::textEnter, [this](const QString &text) {
+    InputWindow* windowServer = new InputWindow("Enter port: ", this);
+    QObject::connect(windowServer, &InputWindow::textEnter, [this](const QString& text) {
         emit SigOpenServer(text);
     });
     windowServer->show();
 }
 
 void MainWindow::joinServer() {
-    InputWindow *windowServer = new InputWindow("Enter IP: ",this);
-    QObject::connect(windowServer, &InputWindow::textEnter, [this](const QString &text) {
+    InputWindow* windowServer = new InputWindow("Enter IP: ", this);
+    QObject::connect(windowServer, &InputWindow::textEnter, [this](const QString& text) {
         emit SigJoinServer(text);
     });
     windowServer->show();
@@ -860,15 +887,15 @@ void MainWindow::joinServer() {
 
 void MainWindow::joinLocalServer() {
     QStringList IPs = PortScanner().scanNetwork();
-    CastomeIPListWindow *windowServer = new CastomeIPListWindow(IPs, this);
-    QObject::connect(windowServer, &CastomeIPListWindow::onConnectButtonClicked, [this](const QString &text) {
+    CustomIPListWindow* windowServer = new CustomIPListWindow(IPs, this);
+    QObject::connect(windowServer, &CustomIPListWindow::onConnectButtonClicked, [this](const QString& text) {
         emit SigJoinServer(text + ":2005");
     });
     windowServer->show();
 }
 
 void MainWindow::exitSession() {
-    if(ModeManager::getConnection()) { emit SigExitSession(); }
+    if (ModeManager::getConnection()) { emit SigExitSession(); }
 }
 
 void MainWindow::Message() {
@@ -907,7 +934,7 @@ void MainWindow::ToolSelected() {
     ModeManager::setActiveMode(WorkModes::Selected);
 };
 
-void MainWindow::onWorkWindowResized(){
+void MainWindow::onWorkWindowResized() {
     emit resize();
 };
 
@@ -951,34 +978,35 @@ void MainWindow::tenthReq() {
     emit tenRequirements();
 }
 
-void MainWindow::onExportJPG(){
+void MainWindow::onExportJPG() {
     saveProjectToFile(QString(".jpg"));
 };
 
-void MainWindow::onExportJPEG(){
+void MainWindow::onExportJPEG() {
     saveProjectToFile(".jpeg");
 };
 
-void MainWindow::onExportPNG(){
+void MainWindow::onExportPNG() {
     saveProjectToFile(".png");
 };
 
-void MainWindow::onExportBMP(){
+void MainWindow::onExportBMP() {
     saveProjectToFile(".bmp");
 };
 
-void MainWindow::onExportTIFF(){
+void MainWindow::onExportTIFF() {
     saveProjectToFile(".tiff");
 };
 
-void MainWindow::onExportPDF(){
+void MainWindow::onExportPDF() {
     saveProjectToFile(".pdf");
 };
-void MainWindow::onExportOURP(){
+
+void MainWindow::onExportOURP() {
     saveProjectToFile(".ourp");
 };
 
-void MainWindow::onExportSVG(){
+void MainWindow::onExportSVG() {
     saveProjectToFile(".svg");
 };
 
