@@ -43,7 +43,6 @@ private:
     Scene scene;
     QTPainter *painter;
     LeftMenuBar* leftMenu;
-    QTimer* autoSaveTimer;
 
     std::vector<std::function<void()>> vecCalls;
     std::vector<QString> vec_requirements;
@@ -69,18 +68,13 @@ private:
     void addSections(double x0,double y0,double x1,double y1);
     void addCircles(double x,double y,double r);
     void addArcs(double x0,double y0,double x1,double y1,double cx,double cy);
-    void bufferSelectedIDsClear();
     void fillSelectedIDBuffer();
-    void deleteOwnPoints(std::vector<ID>& vecPoints,std::vector<ID>& vecSections,std::vector<ID>& vecCircles,std::vector<ID>& vecArcs);
-    void deleteObjects(std::vector<ID>& vecPoints,std::vector<ID>& vecSections,std::vector<ID>& vecCircles,std::vector<ID>& vecArcs);
+    void deleteOwnPoints(QVector<ID>& vecPoints,const QVector<ID>& vecSections,const QVector<ID>& vecCircles,const QVector<ID>& vecArcs);
+    void deleteObjects(QVector<ID>& vecPoints,QVector<ID>& vecSections,QVector<ID>& vecCircles,QVector<ID>& vecArcs);
 
 private:
     std::vector<ObjectData> objectsBuffer;
-
     const QString pathTxtFileCommands = "../CommandsFile.txt";
-
-private slots:
-    void autoSave();
 
 public:
     Application(int &argc, char **argv);
