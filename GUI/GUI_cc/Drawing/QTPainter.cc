@@ -487,19 +487,20 @@ void QTPainter::paintEvent(QPaintEvent* event) {
             findClosesObject();
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
             if (findClosesObject()) {
-                if (selectedIDSection.size() == 1) {
+                constexpr qreal SIZE = 1;
+                if (selectedIDSection.size() == SIZE) {
                     auto it = selectedIDSection.begin();
                     ID key = it->first;
                     emit DoubleClickOnObject(key);
-                } else if (selectedIDPoint.size() == 1) {
+                } else if (selectedIDPoint.size() == SIZE) {
                     auto it = selectedIDPoint.begin();
                     ID key = it->first;
                     emit DoubleClickOnObject(key);
-                } else if (selectedIDCircle.size() == 1) {
+                } else if (selectedIDCircle.size() == SIZE) {
                     auto it = selectedIDCircle.begin();
                     ID key = it->first;
                     emit DoubleClickOnObject(key);
-                } else if (selectedIDArc.size() == 1) {
+                } else if (selectedIDArc.size() == SIZE) {
                     auto it = selectedIDArc.begin();
                     ID key = it->first;
                     emit DoubleClickOnObject(key);
