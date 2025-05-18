@@ -146,10 +146,6 @@ bool QTPainter::findClosesObject() {
 
     lastClickTime.restart();
 
-    if (!shiftPress) {
-        selectedClear();
-    }
-
     if (casePoints != nullptr) {
         for (auto it = casePoints->cbegin(); it != casePoints->cend(); ++it) {
             const Point* point = it->second;
@@ -161,6 +157,9 @@ bool QTPainter::findClosesObject() {
                 if (selectedIDPoint.contains(id)) {
                     selectedIDPoint.erase(id);
                 } else {
+                    if (!shiftPress) {
+                        selectedClear();
+                    }
                     selectedIDPoint.emplace(id, Color::Blue);
                 }
 
@@ -181,6 +180,9 @@ bool QTPainter::findClosesObject() {
                 if (selectedIDSection.contains(id)) {
                     selectedIDSection.erase(id);
                 } else {
+                    if (!shiftPress) {
+                        selectedClear();
+                    }
                     selectedIDSection.emplace(id, Color::Blue);
                 }
 
@@ -200,6 +202,9 @@ bool QTPainter::findClosesObject() {
                 if (selectedIDCircle.contains(id)) {
                     selectedIDCircle.erase(id);
                 } else {
+                    if (!shiftPress) {
+                        selectedClear();
+                    }
                     selectedIDCircle.emplace(id, Color::Blue);
                 }
 
@@ -222,6 +227,9 @@ bool QTPainter::findClosesObject() {
                 if (selectedIDArc.contains(id)) {
                     selectedIDArc.erase(id);
                 } else {
+                    if (!shiftPress) {
+                        selectedClear();
+                    }
                     selectedIDArc.emplace(id, Color::Blue);
                 }
 
