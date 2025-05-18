@@ -54,15 +54,15 @@ void FrameOverlay::updateFrameColor() {
     int avgB = sumB / samplePixels;
 
     // Brightness calculation
-    double backgroundLuminance = (0.2126 * avgR + 0.7152 * avgG + 0.0722 * avgB) / 255.0;
+    const qreal backgroundLuminance = (0.2126 * avgR + 0.7152 * avgG + 0.0722 * avgB) / 255.0;
 
     // Brightness of black and white colors
-    double blackLuminance = 0.0;
-    double whiteLuminance = 1.0;
+    constexpr qreal blackLuminance = 0.0;
+    constexpr qreal whiteLuminance = 1.0;
 
     // Contrast calculation
-    double contrastWithBlack = (backgroundLuminance + 0.05) / (blackLuminance + 0.05);
-    double contrastWithWhite = (whiteLuminance + 0.05) / (backgroundLuminance + 0.05);
+    qreal contrastWithBlack = (backgroundLuminance + 0.05) / (blackLuminance + 0.05);
+    qreal contrastWithWhite = (whiteLuminance + 0.05) / (backgroundLuminance + 0.05);
 
     // Setting the color of the frame depending on the contrast
     if (contrastWithBlack > contrastWithWhite) {
