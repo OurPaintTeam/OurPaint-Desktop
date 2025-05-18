@@ -10,12 +10,13 @@ class SmileRightClickFilter : public QObject {
 Q_OBJECT
 
 public:
-    SmileRightClickFilter(QObject *parent = nullptr) : QObject(parent) {}
+    SmileRightClickFilter(QObject* parent = nullptr) : QObject(parent) {}
+
 signals:
-    void rightClicked(QObject *obj);
+    void rightClicked(QObject* obj);
 
 protected:
-    bool eventFilter(QObject *obj, QEvent *event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
 };
 
 #endif //OURPAINT_SMILERIGHTCLICKFILTER_H

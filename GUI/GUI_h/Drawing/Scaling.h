@@ -37,7 +37,7 @@ private:
 
     struct ActualMonitorSize {
         static qint16 ActualMonitorWidth;
-        static int short ActualMonitorHeight;
+        static qint16 ActualMonitorHeight;
     };
 public:
 

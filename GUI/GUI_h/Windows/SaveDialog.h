@@ -2,11 +2,11 @@
 #define OURPAINT_HEADERS_GUI_WINDOWS_SAVEDIALOG_H_
 
 /*
- *
- *  Кастомное окошко для вопроса сохранения окна
- *
- *
- * */
+*
+* Custom window for saving the window
+*
+*
+*/
 
 
 
@@ -21,7 +21,7 @@ public:
         setParent(parent, Qt::SubWindow);
         setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
         setAttribute(Qt::WA_TranslucentBackground);
-        setWindowModality(Qt::ApplicationModal);  // Для модальности только в пределах родительского окна
+        setWindowModality(Qt::ApplicationModal); // For the modality only within the parent window
 
         // setStyleSheet("background-color: gray; color: black;");
 
@@ -32,13 +32,9 @@ public:
 
         QHBoxLayout * buttonLayout = new QHBoxLayout();
 
-        QPushButton * yesButton = new QPushButton("Да", this);
-        QPushButton * noButton = new QPushButton("Нет", this);
-        QPushButton * cancelButton = new QPushButton("Отмена", this);
-
-        //  yesButton->setStyleSheet("background-color: darkgray; color: black;");
-        //  noButton->setStyleSheet("background-color: darkgray; color: black;");
-        // cancelButton->setStyleSheet("background-color: darkgray; color: black;");
+        QPushButton * yesButton = new QPushButton("Yes", this);
+        QPushButton * noButton = new QPushButton("No", this);
+        QPushButton * cancelButton = new QPushButton("Cancel", this);
 
         buttonLayout->addWidget(yesButton);
         buttonLayout->addWidget(noButton);
@@ -66,7 +62,7 @@ protected:
         painter.drawRoundedRect(rect(), 10, 10);
     }
 
-    void mousePressEvent(QMouseEvent *event) override { // Нажатие
+    void mousePressEvent(QMouseEvent *event) override { // Press
         if (event->button() == Qt::LeftButton) {
             setCursor(Qt::SizeAllCursor);
             mousePressed = true;
@@ -75,7 +71,7 @@ protected:
         }
     }
 
-    void mouseMoveEvent(QMouseEvent *event) override { // Перемещение
+    void mouseMoveEvent(QMouseEvent *event) override { // Moving
         if (mousePressed) {
             //move(event->globalPos() - mousePos);
             QPoint Pos = pos();
@@ -85,7 +81,7 @@ protected:
         }
     }
 
-    void mouseReleaseEvent(QMouseEvent *event) override { // Отпускание
+    void mouseReleaseEvent(QMouseEvent *event) override { // release
         if (event->button() == Qt::LeftButton) {
             setCursor(Qt::ArrowCursor);
             mousePressed = false;
