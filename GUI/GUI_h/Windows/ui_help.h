@@ -225,7 +225,7 @@ public:
                                           "font-size: 12px; "
                                           "border: none; }");
         helpContentBrowser->setReadOnly(true);
-        helpContentBrowser->setOpenExternalLinks(false); // Чтобы ссылки обрабатывались внутри приложения
+        helpContentBrowser->setOpenExternalLinks(false); // So that the links are processed inside the application
 
         contentLayout->addWidget(helpContentBrowser);
     }
