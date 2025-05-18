@@ -14,9 +14,9 @@ BMPpainter& BMPpainter::operator=(const BMPpainter &other)
 
 BMPpainter::BMPpainter(const BMPfile &file): c_file(file), v_height(file.getHeight()), v_weight(file.getWidth()){}
 /*
- * сделаем некоторые преобразования, чтобы центр СК всегда была в середине листа
- * x = v_height - y; y = v_weight + x
- */
+* // let's make some transformations so that the center of the CC is always in the middle of the sheet
+* x = v_height - y; y = v_weight + x
+*/
 void BMPpainter::initSectionCase(std::unordered_map<ID, Section*>& sections) {
     caseSections=&sections;
 }
@@ -38,7 +38,7 @@ void BMPpainter::drawPoints() {
 
 void BMPpainter::drawSections() {
     for (const auto &s : *caseSections) {
-        //Алгоритм Брезенхема
+        // The Bresenham Algorithm
         int x0 = static_cast<int>(-s.second->beg->y + v_height / 2);
         int y0 = static_cast<int>(s.second->beg->x + v_weight / 2);
         int x1 = static_cast<int>(-s.second->end->y + v_height / 2);
