@@ -216,8 +216,8 @@ void DrawFigures::drawArc(QPainter &painter, const std::unordered_map<ID,  Arc*>
             const qreal startAngleDeg = angleBetween(center, start);
             const qreal endAngleDeg = angleBetween(center, end);
             qreal spanAngleDeg = endAngleDeg - startAngleDeg;
-
-            if (spanAngleDeg <= 0) {
+            constexpr qreal EPS = 0.1;
+            if (spanAngleDeg <= EPS) {
                 spanAngleDeg += 360;
             }
 
@@ -248,8 +248,8 @@ void DrawFigures::drawArc(QPainter &painter, const std::unordered_map<ID,  Arc*>
             const qreal startAngleDeg = angleBetween(center, start);
             const qreal endAngleDeg = angleBetween(center, end);
             qreal spanAngleDeg = endAngleDeg - startAngleDeg;
-
-            if (spanAngleDeg <= 0){
+            constexpr qreal EPS = 0.1;
+            if (spanAngleDeg <= EPS){
                 spanAngleDeg += 360;
             }
 
@@ -346,8 +346,8 @@ void DrawFigures::drawArc(QPainter &painter,const QPointF startPoint,const QPoin
     const qreal startAngleDeg = angleBetween(center, start);
     const qreal endAngleDeg = angleBetween(center, end);
     qreal spanAngleDeg = endAngleDeg - startAngleDeg;
-
-    if (spanAngleDeg <= 0) {
+    constexpr qreal EPS = 0.1;
+    if (spanAngleDeg <= EPS) {
         spanAngleDeg += 360;
     }
 

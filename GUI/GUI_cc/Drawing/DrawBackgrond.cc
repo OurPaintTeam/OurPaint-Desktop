@@ -55,7 +55,6 @@ void DrawBackground::backgroundRender(QPainter& painter) {
         qint16 index = 1; // Making blocks 5 by 5
 
 
-
         // Vertical lines
         for (qreal x = currentCellSize; x <= X_SIZE; x += currentCellSize, ++index) {
 
