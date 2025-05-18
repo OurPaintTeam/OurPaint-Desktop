@@ -9,96 +9,175 @@ TreeModel::~TreeModel() {
     delete rootNode;
 }
 
-// Возвращает данные для конкретной ячейки
+QModelIndex TreeModel::indexFromNode(TreeNode* node) const {
+    if (!node || node == rootNode) {
+        return QModelIndex();
+    }
+
+    TreeNode* parent = node->parent();
+    if (!parent) {
+        return QModelIndex();
+    }
+
+    int row = node->row();
+    return createIndex(row, 0, node);
+}
+
+void TreeModel::safelyResetModel() {
+    beginResetModel();
+    delete rootNode;
+    rootNode = new TreeNode("Root");
+    endResetModel();
+}
+
+void TreeModel::removeNode(TreeNode* parent, TreeNode* child) {
+    if (!parent || !child) {
+        return;
+    }
+
+    int row = -1;
+    for (int i = 0; i < parent->childCount(); ++i) {
+        if (parent->child(i) == child) {
+            row = i;
+            break;
+        }
+    }
+
+    if (row < 0) {
+        return;
+    }
+
+    QModelIndex parentIndex = indexFromNode(parent);
+
+    beginRemoveRows(parentIndex, row, row);
+    parent->removeChildAt(row);
+    endRemoveRows();
+}
+
 QVariant TreeModel::data(const QModelIndex& index, int role) const {
-    if (!index.isValid()) {
+    if (!index.isValid() || index.column() != 0) {
         return QVariant();
     }
 
     TreeNode* item = static_cast<TreeNode*>(index.internalPointer());
-
-    if (role == Qt::DisplayRole || role == Qt::EditRole) {
-        return item->data(index.column());
-    } else if (role == Qt::FontRole) {
-        return item->getFont();
-    } else if (role == Qt::DecorationRole) {
-        return item->getIcon();
+    if (!item) {
+        return QVariant();
     }
 
-    return QVariant();
+    switch (role) {
+        case Qt::DisplayRole:
+        case Qt::EditRole:
+            return item->data(0);
+        case Qt::FontRole:
+            return item->getFont();
+        case Qt::DecorationRole:
+            return item->getIcon();
+        default:
+            return QVariant();
+    }
 }
 
 bool TreeModel::setData(const QModelIndex& index, const QVariant& value, int role) {
-    if (!index.isValid() || role != Qt::EditRole)
+    if (!index.isValid() || role != Qt::EditRole || index.column() != 0) {
         return false;
+    }
 
     TreeNode* node = static_cast<TreeNode*>(index.internalPointer());
-    if (!node)
-        return false;
+    if (!node) return false;
 
-    node->setName(value.toString());
+    QString oldText = node->data(0).toString();
+
+    if (node->isNumber()) {
+        QString name = oldText.section(": ", 0, 0);
+        bool ok = false;
+        double number = value.toString().toDouble(&ok);
+        if (!ok) return false;
+
+        QString newText = QString("%1: %2").arg(name).arg(number, 0, 'g', 10);
+        node->setName(newText.isEmpty() ? oldText : newText);
+
+    } else if (node->isLiteral()) {
+        QString str = value.toString();
+        node->setName(str.isEmpty() ? oldText : str);
+    }
+
     emit dataChanged(index, index, {Qt::DisplayRole, Qt::EditRole});
+
+    if (node->isNumber() && node->parent()) {
+        emit treeModelChanged(node->parent());
+    }
+
     return true;
 }
 
-// Определяет, какие действия возможны с элементом
 Qt::ItemFlags TreeModel::flags(const QModelIndex& index) const {
-    if (!index.isValid()) { return Qt::NoItemFlags; }
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
+    TreeNode* node = static_cast<TreeNode*>(index.internalPointer());
+    if (!node) return Qt::NoItemFlags;
+
+    Qt::ItemFlags flags = Qt::NoItemFlags;
+    if (node->isEnable()) {
+        flags |= Qt::ItemIsEnabled;
+    }
+    if (node->isSelected()){
+        flags |= Qt::ItemIsSelectable;
+    }
+    if (node->isEditable()){
+        flags |= Qt::ItemIsEditable;
+    }
+    if (node->isDropEnabled()) {
+        flags |= Qt::ItemIsDropEnabled;
+    }
+    return flags;
 }
 
-// Заголовок столбца
 QVariant TreeModel::headerData(int section, Qt::Orientation orientation, int role) const {
-    if (orientation == Qt::Horizontal && role == Qt::DisplayRole) { return QString("Title"); }
+    if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
+        return QString("Title");
+    }
     return QVariant();
 }
 
-// Создаёт QModelIndex для элемента по координатам row, column и родителю
 QModelIndex TreeModel::index(int row, int column, const QModelIndex& parent) const {
-    if (!hasIndex(row, column, parent)) { return QModelIndex(); }
+    if (!hasIndex(row, column, parent)) {
+        return QModelIndex();
+    }
 
-    TreeNode* parentItem;
+    TreeNode* parentItem = parent.isValid()
+                           ? static_cast<TreeNode*>(parent.internalPointer())
+                           : rootNode;
 
-    if (!parent.isValid()) { parentItem = rootNode; }
-    else { parentItem = static_cast<TreeNode *>(parent.internalPointer()); }
-
-    // Получаем нужного ребёнка
     TreeNode* childItem = parentItem->child(row);
-    if (childItem) {
-        return createIndex(row, column, childItem);  // Создаём индекс, привязанный к узлу
-         }
-    return QModelIndex();
+    return childItem ? createIndex(row, column, childItem) : QModelIndex();
 }
 
-// Возвращает QModelIndex родителя текущего элемента
 QModelIndex TreeModel::parent(const QModelIndex& index) const {
-    if (!index.isValid()) { return QModelIndex(); }
+    if (!index.isValid()){
+        return QModelIndex();
+    }
 
-    // Получаем текущий и родительский узлы
     TreeNode* childItem = static_cast<TreeNode*>(index.internalPointer());
-    TreeNode* parentItem = childItem->parentItem();
+    if (!childItem) {
+        return QModelIndex();
+    }
 
-    // Если родитель — корень или nullptr, значит, это верхний уровень — нет родителя
-    if (parentItem == rootNode || parentItem == nullptr) { return QModelIndex(); }
+    TreeNode* parentItem = childItem->parent();
+    if (!parentItem || parentItem == rootNode) {
+        return QModelIndex();
+    }
 
-    // Возвращаем индекс родителя
     return createIndex(parentItem->row(), 0, parentItem);
 }
 
-// Количество дочерних элементов у родителя
 int TreeModel::rowCount(const QModelIndex& parent) const {
-    TreeNode* parentItem;
+    TreeNode* parentItem = parent.isValid()
+                           ? static_cast<TreeNode*>(parent.internalPointer())
+                           : rootNode;
 
-    // Если родитель не задан — корень
-    if (!parent.isValid()) { parentItem = rootNode; }
-    else { parentItem = static_cast<TreeNode *>(parent.internalPointer()); }
-
-    return parentItem->childCount();
+    return parentItem ? parentItem->childCount() : 0;
 }
 
-// Возвращает количество колонок
 int TreeModel::columnCount(const QModelIndex& parent) const {
-    Q_UNUSED(parent);  // Параметр не используется
+    Q_UNUSED(parent)
     return 1;
 }
 

@@ -1,46 +1,58 @@
 #ifndef OURPAINT_TREEMODEL_H
 #define OURPAINT_TREEMODEL_H
 
-#include <QAbstractItemModel>  // Базовый абстрактный класс
-#include "TreeNode.h"          // класс узла дерева
+#include <QAbstractItemModel>
+#include <QAbstractItemView>
+#include "TreeNode.h"
 
-// Класс TreeModelLazy реализует ленивую модель дерева на основе QAbstractItemModel
-// Он используется в QTreeView для отображения иерархических структур
+// The TreeModelLazy class implements a lazy tree model based on QAbstractItemModel
+// It is used in QTreeView to display hierarchical structures
 
 class TreeModel : public QAbstractItemModel {
 Q_OBJECT
 private:
-    TreeNode* rootNode;  // Корневой узел дерева
+    TreeNode* rootNode;  // Root node of the tree
 
 public:
     explicit TreeModel(QObject* parent = nullptr);
 
     ~TreeModel() override;
 
-    // Возвращает данные
+    QModelIndex indexFromNode(TreeNode* node) const;
+
+    void safelyResetModel();
+
+    void removeNode(TreeNode* parent, TreeNode* child);
+
+    // Returns data
     QVariant data(const QModelIndex& index, int role) const override;
 
-    bool setData(const QModelIndex& index, const QVariant& value, int role);
+    bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
-    // Возвращает флаги элемента
+    // Returns element flags
     Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-    // Возвращает заголовок столбца или строки
+    // Returns the column or row header
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
-    // Создаёт QModelIndex для указанного элемента по строке, колонке и родителю
+    // Creates a QModelIndex for the specified element by row, column, and parent
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
 
-    // Возвращает родительский QModelIndex для указанного элемента
+    // Returns the parent QModelIndex for the specified element
     QModelIndex parent(const QModelIndex& index) const override;
 
-    // Возвращает количество дочерних элементов у указанного родителя
+    // Returns the number of child elements of the specified parent
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 
-    // Возвращает количество колонок
+    // Returns the number of columns
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
     TreeNode* getRootNode() const;
+
+signals:
+
+    void treeModelChanged(TreeNode* node);
+
 
 };
 
