@@ -74,7 +74,7 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Section*>& sections, QRectF&
             polygon << rect.topLeft() << rect.topRight()
                     << rect.bottomRight() << rect.bottomLeft();
 
-            for (int i = 0; i < polygon.size(); ++i) {
+            for (qsizetype i = 0; i < polygon.size(); ++i) {
                 const QLineF edge(polygon[i], polygon[(i + 1) % polygon.size()]);
                 QPointF intersection;
                 if (line.intersects(edge, &intersection) == QLineF::BoundedIntersection) {
@@ -179,7 +179,7 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Section*>& sections, QRectF&
             polygon << rect.topLeft() << rect.topRight()
                     << rect.bottomRight() << rect.bottomLeft();
 
-            for (int i = 0; i < polygon.size(); ++i) {
+            for (qsizetype i = 0; i < polygon.size(); ++i) {
                 const QLineF edge(polygon[i], polygon[(i + 1) % polygon.size()]);
                 QPointF intersection;
                 if (line.intersects(edge, &intersection) == QLineF::BoundedIntersection) {
