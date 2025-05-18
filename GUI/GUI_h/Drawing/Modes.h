@@ -48,7 +48,7 @@ private:
     static bool isConnected;
 
 public:
-    // Методы для работы с режимами
+    // Methods for working with modes
     static void setActiveMode(WorkModes mode);
     static bool getActiveMode(WorkModes mode);
 
