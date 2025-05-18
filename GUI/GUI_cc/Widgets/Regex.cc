@@ -1,6 +1,6 @@
 #include "Regex.h"
 
-bool Regex::parseDoubleNumber(const QString &text) {
+bool Regex::parseDoubleNumber(const QString& text) {
     if (text.isEmpty()) {
         return true; // An empty input is acceptable for now
     }
