@@ -1040,7 +1040,7 @@ public:
 
 
     void setupLeftMenu() {
-        // Создание и настройка QTreeView
+        // Creating and configuring a QTreeView
         leftMenuView = new QTreeView();
         leftMenuView->setObjectName("leftMenuView");
         leftMenuView->setEditTriggers(QAbstractItemView::DoubleClicked);
@@ -1299,12 +1299,12 @@ public:
         messageScrollArea->setWidget(messageContent);
         messageScrollArea->setStyleSheet("background-color: #494850; border: none;");
 
-        // Добавление элементов в макет message
+        // Adding elements to the message layout
         messageLayout->addWidget(messageCollapseButton, 0, 0, Qt::AlignTop | Qt::AlignRight);
         messageLayout->addWidget(messageScrollArea, 1, 0);
         messageLayout->addWidget(messageConsole, 2, 0);
 
-        // Изначально скрываем messageContainer
+        // // Initially hiding the messageContainer
         messageContainer->hide();
     }
 
