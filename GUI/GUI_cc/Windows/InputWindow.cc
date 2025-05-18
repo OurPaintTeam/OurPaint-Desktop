@@ -4,9 +4,7 @@ InputWindow::InputWindow(const QString& message, QWidget* parent) : QDialog(pare
     setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
     setAttribute(Qt::WA_TranslucentBackground);
     setModal(true);
-    setWindowModality(Qt::WindowModal);
-
-    setWindowModality(Qt::ApplicationModal);  // For the modality only within the parent window
+    setWindowModality(Qt::ApplicationModal); // Modal only within the parent window
 
     QVBoxLayout * layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 10, 10, 10);
@@ -15,18 +13,18 @@ InputWindow::InputWindow(const QString& message, QWidget* parent) : QDialog(pare
     topLayout->setContentsMargins(0, 0, 0, 0);
     topLayout->setSpacing(0);
 
-    // Creating a closure icon
+    // Create close button
     closeButton = new QPushButton(this);
     closeButton->setFixedSize(25, 25);
-    closeButton->setIcon(QIcon("../Static/icons/topRight/Close.png")); // Icon Installation
+    closeButton->setIcon(QIcon("../Static/icons/topRight/Close.png")); // Set icon
     closeButton->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
-                               "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Illumination when pointing
+                               "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Highlight on hover
     connect(closeButton, &QPushButton::clicked, this, &InputWindow::CloseClicked);
 
     QLabel* label = new QLabel(message, this);
     label->setStyleSheet("color: #D8D8F6; font-weight: bold; font-size: 16px;");
 
-    // Adding the label first, and then the close button
+    // Add the label first, then the close button
     topLayout->addWidget(label);
     topLayout->addWidget(closeButton, 0, Qt::AlignRight);
 
@@ -49,7 +47,6 @@ QString InputWindow::getText() const {
     return lineEdit->text();
 }
 
-
 void InputWindow::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -67,4 +64,13 @@ bool InputWindow::eventFilter(QObject* enter, QEvent* event) {
         }
     }
     return QWidget::eventFilter(enter, event);
+}
+
+void InputWindow::OkClicked() {
+    emit textEnter(getText());
+    accept();
+}
+
+void InputWindow::CloseClicked() {
+    reject();
 }
