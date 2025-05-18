@@ -1,6 +1,6 @@
 /*
- *     Окошко для кнопки сервера
- * */
+*    Information entry window
+*/
 
 #ifndef OURPAINT_HEADERS_GUI_WINDOWS_WINDOWSERVER_H_
 #define OURPAINT_HEADERS_GUI_WINDOWS_WINDOWSERVER_H_
@@ -15,14 +15,15 @@
 #include <QLineEdit>
 #include <QHBoxLayout>
 
-class InputWindow: public QDialog {
+class InputWindow : public QDialog {
 Q_OBJECT
 private:
-    QLineEdit *lineEdit;
-    QPushButton *okButton;
-    QPushButton *closeButton;
+    QLineEdit* lineEdit;
+    QPushButton* okButton;
+    QPushButton* closeButton;
 signals:
-    void textEnter(const QString &text);
+
+    void textEnter(const QString& text);
 
 private slots:
 
@@ -39,33 +40,33 @@ private slots:
     }
 
 public:
-    InputWindow(const QString &message, QWidget *parent) : QDialog(parent) {
+    InputWindow(const QString& message, QWidget* parent) : QDialog(parent) {
         setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
         setAttribute(Qt::WA_TranslucentBackground);
         setModal(true);
         setWindowModality(Qt::WindowModal);
 
-        setWindowModality(Qt::ApplicationModal);  // Для модальности только в пределах родительского окна
+        setWindowModality(Qt::ApplicationModal);  // For the modality only within the parent window
 
-        QVBoxLayout *layout = new QVBoxLayout(this);
+        QVBoxLayout * layout = new QVBoxLayout(this);
         layout->setContentsMargins(10, 10, 10, 10);
 
-        QHBoxLayout *topLayout = new QHBoxLayout();
+        QHBoxLayout * topLayout = new QHBoxLayout();
         topLayout->setContentsMargins(0, 0, 0, 0);
         topLayout->setSpacing(0);
 
-        // Создание иконки закрытия
+        // Creating a closure icon
         closeButton = new QPushButton(this);
         closeButton->setFixedSize(25, 25);
-        closeButton->setIcon(QIcon("../Static/icons/topRight/Close.png")); // Установка иконки
+        closeButton->setIcon(QIcon("../Static/icons/topRight/Close.png")); // Icon Installation
         closeButton->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
-                                   "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Подсветка при наведении
+                                   "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Illumination when pointing
         connect(closeButton, &QPushButton::clicked, this, &InputWindow::CloseClicked);
 
-        QLabel *label = new QLabel(message, this);
+        QLabel* label = new QLabel(message, this);
         label->setStyleSheet("color: #D8D8F6; font-weight: bold; font-size: 16px;");
 
-        // Добавляем метку сначала, а затем кнопку закрытия
+        // Adding the label first, and then the close button
         topLayout->addWidget(label);
         topLayout->addWidget(closeButton, 0, Qt::AlignRight);
 
@@ -74,7 +75,7 @@ public:
         lineEdit = new QLineEdit(this);
         layout->addWidget(lineEdit);
 
-         okButton = new QPushButton("OK", this);
+        okButton = new QPushButton("OK", this);
         connect(okButton, &QPushButton::clicked, this, &InputWindow::OkClicked);
         layout->addWidget(okButton);
 
@@ -89,7 +90,7 @@ public:
     }
 
 protected:
-    void paintEvent(QPaintEvent *event) override {
+    void paintEvent(QPaintEvent* event) override {
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setBrush(QColor(50, 50, 50, 240));
@@ -97,9 +98,9 @@ protected:
         painter.drawRoundedRect(rect(), 10, 10);
     }
 
-    bool eventFilter(QObject *enter, QEvent *event) override {
+    bool eventFilter(QObject* enter, QEvent* event) override {
         if (enter == lineEdit && event->type() == QEvent::KeyPress) {
-            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
             if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
                 OkClicked();
                 return true;

@@ -1,24 +1,21 @@
 #include "KeyWorkWindow.h"
 
-KeyWorkWindow::KeyWorkWindow(QWidget *parent)
-        : QObject(parent)
-{
-    m_parent=parent;
+KeyWorkWindow::KeyWorkWindow(QWidget* parent)
+        : QObject(parent) {
+    m_parent = parent;
     parent->setFocusPolicy(Qt::StrongFocus); // Setting the focus policy for the parent widget
     parent->installEventFilter(this);  // Setting the event filter
 
 }
 
-bool KeyWorkWindow::eventFilter(QObject *obj, QEvent *event)
-{
+bool KeyWorkWindow::eventFilter(QObject* obj, QEvent* event) {
     if (obj->isWidgetType()) {
         if (event->type() == QEvent::KeyPress) {
-            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
             handleKeyPress(keyEvent);
             return true;
-        }
-        else if (event->type() == QEvent::KeyRelease) {
-            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        } else if (event->type() == QEvent::KeyRelease) {
+            QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
             handleKeyRelease(keyEvent);
             return true;
         }
@@ -27,7 +24,7 @@ bool KeyWorkWindow::eventFilter(QObject *obj, QEvent *event)
 }
 
 
-void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
+void KeyWorkWindow::handleKeyPress(QKeyEvent* event) {
 
     if (event->key() == Qt::Key_Enter) {
         ModeManager::setActiveMode(KeyMode::Enter);
@@ -54,8 +51,8 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
         emit UNDO();
         m_parent->update();
     } else if ((event->modifiers() & Qt::ControlModifier) &&
-             !(event->modifiers() & Qt::ShiftModifier) &&
-             event->key() == Qt::Key_C) {
+               !(event->modifiers() & Qt::ShiftModifier) &&
+               event->key() == Qt::Key_C) {
         // Ctrl+C
         emit COPY();
     } else if ((event->modifiers() & Qt::ControlModifier) &&
@@ -71,7 +68,7 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
     }
 
     if (event->modifiers() & Qt::ControlModifier) {
-         if (event->key() == Qt::Key_Plus) {
+        if (event->key() == Qt::Key_Plus) {
             Scaling::setZoomPlus();
             m_parent->update();
         } else if (event->key() == Qt::Key_Minus) {
@@ -81,50 +78,41 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
             Scaling::setZoomZero();
             m_parent->update();
         }
-    }else if (event->key() == Qt::Key_Down) {
-        Scaling::setDelta(0,-10);
+    } else if (event->key() == Qt::Key_Down) {
+        Scaling::setDelta(0, -10);
         m_parent->update();
-    }else if (event->key() == Qt::Key_Up) {
-        Scaling::setDelta(0,10);
+    } else if (event->key() == Qt::Key_Up) {
+        Scaling::setDelta(0, 10);
         m_parent->update();
-    }else if (event->key() == Qt::Key_Left) {
-        Scaling::setDelta(10,0);
+    } else if (event->key() == Qt::Key_Left) {
+        Scaling::setDelta(10, 0);
         m_parent->update();
-    }else if (event->key() == Qt::Key_Right) {
-        Scaling::setDelta(-10,0);
+    } else if (event->key() == Qt::Key_Right) {
+        Scaling::setDelta(-10, 0);
         m_parent->update();
-    }else if(event->key() == Qt::Key_1){
+    } else if (event->key() == Qt::Key_1) {
         emit firstReq();
-    }
-    else if(event->key() == Qt::Key_2){
+    } else if (event->key() == Qt::Key_2) {
         emit secondReq();
-    }
-    else if(event->key() == Qt::Key_3){
+    } else if (event->key() == Qt::Key_3) {
         emit thirdReq();
-    }
-    else if(event->key() == Qt::Key_4){
+    } else if (event->key() == Qt::Key_4) {
         emit fourthReq();
-    }
-    else if(event->key() == Qt::Key_5){
+    } else if (event->key() == Qt::Key_5) {
         emit fifthReq();
-    }
-    else if(event->key() == Qt::Key_6){
+    } else if (event->key() == Qt::Key_6) {
         emit sixthReq();
-    }
-    else if(event->key() == Qt::Key_7){
+    } else if (event->key() == Qt::Key_7) {
         emit seventhReq();
-    }
-    else if(event->key() == Qt::Key_8){
+    } else if (event->key() == Qt::Key_8) {
         emit eighthReq();
-    }
-    else if(event->key() == Qt::Key_9){
+    } else if (event->key() == Qt::Key_9) {
         emit ninthReq();
-    }
-    else if(event->key() == Qt::Key_0){
+    } else if (event->key() == Qt::Key_0) {
         emit tenthReq();
     }
 
-    if (event->key() == Qt::Key_Delete ||event->key() == Qt::Key_Backspace ) {
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
         emit DELETE();
         m_parent->update();
     }
@@ -136,8 +124,7 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent *event) {
 }
 
 
-void KeyWorkWindow::handleKeyRelease(QKeyEvent *event)
-{
+void KeyWorkWindow::handleKeyRelease(QKeyEvent* event) {
     if (event->key() == Qt::Key_Shift) {
         ModeManager::setActiveMode(KeyMode::ReleasingShift);
         m_parent->update();

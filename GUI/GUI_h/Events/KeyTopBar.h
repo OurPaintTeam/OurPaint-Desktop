@@ -8,10 +8,10 @@ class [[maybe_unused]] KeyEventTopBar : public QWidget {
 Q_OBJECT
 
 public:
-    [[maybe_unused]] KeyEventTopBar(QWidget *parent) : QWidget(parent) {}
+    [[maybe_unused]] KeyEventTopBar(QWidget* parent) : QWidget(parent) {}
 
 protected:
-    void keyPressEvent(QKeyEvent *event) override {
+    void keyPressEvent(QKeyEvent* event) override {
         QWidget::keyPressEvent(event);
     }
 };

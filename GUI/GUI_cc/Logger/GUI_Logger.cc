@@ -2,15 +2,25 @@
 
 QFile logFile;
 
-void guiLogger(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+void guiLogger(QtMsgType type, const QMessageLogContext&, const QString& msg) {
     QString logMessage;
 
     switch (type) {
-        case QtDebugMsg:    logMessage = "Debug";   break;
-        case QtInfoMsg:     logMessage = "Info";    break;
-        case QtWarningMsg:  logMessage = "Warning"; break;
-        case QtCriticalMsg: logMessage = "Critical";break;
-        case QtFatalMsg:    logMessage = "Fatal";   break;
+        case QtDebugMsg:
+            logMessage = "Debug";
+            break;
+        case QtInfoMsg:
+            logMessage = "Info";
+            break;
+        case QtWarningMsg:
+            logMessage = "Warning";
+            break;
+        case QtCriticalMsg:
+            logMessage = "Critical";
+            break;
+        case QtFatalMsg:
+            logMessage = "Fatal";
+            break;
     }
 
     QString times = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");

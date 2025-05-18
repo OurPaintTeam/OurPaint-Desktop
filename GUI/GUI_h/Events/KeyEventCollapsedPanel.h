@@ -8,10 +8,10 @@ class [[maybe_unused]] KeyEventcollapsedPanel : public QWidget {
 Q_OBJECT
 
 public:
-    [[maybe_unused]] KeyEventcollapsedPanel(QWidget *parent) : QWidget(parent) {}
+    [[maybe_unused]] KeyEventcollapsedPanel(QWidget* parent) : QWidget(parent) {}
 
 protected:
-    void keyPressEvent(QKeyEvent *event) override {
+    void keyPressEvent(QKeyEvent* event) override {
         QWidget::keyPressEvent(event);
     }
 };

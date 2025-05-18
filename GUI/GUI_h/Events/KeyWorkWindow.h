@@ -8,28 +8,27 @@
 #include "Modes.h"
 #include "Scaling.h"
 
-class KeyWorkWindow : public QObject
-{
+class KeyWorkWindow : public QObject {
 Q_OBJECT
 private:
-    QWidget *m_parent;
+    QWidget* m_parent;
 
 public:
-    explicit KeyWorkWindow(QWidget *parent);
-    void handleKeyPress(QKeyEvent *event);
-    void handleKeyRelease(QKeyEvent *event);
+    explicit KeyWorkWindow(QWidget* parent);
+    void handleKeyPress(QKeyEvent* event);
+    void handleKeyRelease(QKeyEvent* event);
 
 protected:
-    bool eventFilter(QObject *obj, QEvent *event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
 
-    signals:
+signals:
+
     void REDO();
     void UNDO();
     void DELETE();
     void COPY();
     void CUT();
     void PASTE();
-
 
     void firstReq();
     void secondReq();
