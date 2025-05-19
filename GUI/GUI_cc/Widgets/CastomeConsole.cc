@@ -9,6 +9,7 @@ void CastomeConsole::setCommands(const QStringList &commands) {
 }
 
 bool CastomeConsole::focusNextPrevChild(bool next) {
+    (void)next;
     return false; // Для того, чтобы TAB не переключался между виджетами
 }
 

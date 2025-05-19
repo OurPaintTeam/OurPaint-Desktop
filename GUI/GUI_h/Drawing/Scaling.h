@@ -62,7 +62,7 @@ public:
     static double scaleCoordinateY(double Y);
     static double logic(double X);
 
-    static void scaling(int widgetWidth, int widgetHeight, const std::vector<double>& size);
+    static void scaling(/* int widgetWidth, int widgetHeight, const std::vector<double>& size */);
     static void setZoomPlus();
     static void setZoomMinus();
     static void setZoomZero();

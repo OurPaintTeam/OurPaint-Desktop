@@ -47,7 +47,7 @@ public slots:
     }
 
 protected:
-    void paintEvent(QPaintEvent *event) override {
+    void paintEvent(QPaintEvent*) override {
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setBrush(QColor(50, 50, 50, 240));
@@ -57,7 +57,7 @@ protected:
 
     void showEvent(QShowEvent *event) override {
         QWidget::showEvent(event);
-        QPropertyAnimation *animation = new QPropertyAnimation(this, "windowOpacity");
+        QPropertyAnimation* animation = new QPropertyAnimation(this, "windowOpacity");
         animation->setDuration(500); // Устанавливает длительность анимации
         animation->setStartValue(0);  // Начальная прозрачность
         animation->setEndValue(1);    // Конечная прозрачность

@@ -12,11 +12,10 @@ TEST(MoveTest, LoadAndMove) {
         
         scene.moveObject(ID(3), 5.0, 5.0);
         scene.moveObject(ID(92), -5.0, -5.0);
-        
-        SUCCEED();
     } catch (const std::exception& e) {
         FAIL() << "Exception occurred: " << e.what();
     }
+    SUCCEED();
 }
 
 int main(int argc, char **argv) {

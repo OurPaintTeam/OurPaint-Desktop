@@ -40,6 +40,7 @@ Qt::ItemFlags TreeModelLazy::flags(const QModelIndex& index) const {
 
 // Заголовок столбца
 QVariant TreeModelLazy::headerData(int section, Qt::Orientation orientation, int role) const {
+    (void)section;
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) { return QString("Title"); }
     return QVariant();
 }

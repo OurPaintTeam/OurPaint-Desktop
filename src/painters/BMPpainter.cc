@@ -12,12 +12,12 @@ BMPpainter& BMPpainter::operator=(const BMPpainter &other)
     return *this;
 }
 
-BMPpainter::BMPpainter(const BMPfile &file): c_file(file), v_height(file.getHeight()), v_weight(file.getWidth()){}
+BMPpainter::BMPpainter(const BMPfile &file): c_file(file), v_weight(file.getWidth()), v_height(file.getHeight()){}
 /*
  * сделаем некоторые преобразования, чтобы центр СК всегда была в середине листа
  * x = v_height - y; y = v_weight + x
  */
-void BMPpainter::initSection(std::unordered_map<ID, Section*>& sections) {
+void BMPpainter::initSection(/*std::unordered_map<ID, Section*>& sections*/) {
     //Алгоритм Брезенхема
   /*  int x0 = static_cast<int>(-s.beg->y + v_height / 2);
     int y0 = static_cast<int>(s.beg->x + v_weight / 2);
@@ -33,16 +33,16 @@ void BMPpainter::initSection(std::unordered_map<ID, Section*>& sections) {
         c_file.setPixel(x0, y0, isWhite);
         if (x0 == x1 && y0 == y1) break;
         e2 = 2 * err;
-        if (e2 <= deltaX) { err += deltaX; y0 += dirY; } /* e_xy+e_y < 0 */
+        if (e2 <= deltaX) { err += deltaX; y0 += dirY; }  e_xy+e_y < 0 */
      //   if (e2 >= deltaY) { err += deltaY; x0 += dirX; } /* e_xy+e_x > 0 */
    // }
 }
 
-void BMPpainter::initPoint(std::unordered_map<ID, Point*>& points) {
+void BMPpainter::initPoint(/*std::unordered_map<ID, Point*>& points*/) {
  //   c_file.setPixel(static_cast<int>(v_height/2 - p.y), static_cast<int>( v_weight / 2 + p.x ), isWhite);
 }
 
-void BMPpainter::initCircle(std::unordered_map<ID, Circle*>& circles) {
+void BMPpainter::initCircle(/*std::unordered_map<ID, Circle*>& circles*/) {
    /* int x = 0;
     int y = static_cast<int>(c.r);
     int x0 = v_height/2 - c.center->y;
