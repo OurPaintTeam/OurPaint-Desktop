@@ -1,22 +1,27 @@
 #include "EmojiWidget.h"
 
-EmojiWidget::EmojiWidget(QWidget *parent) : QWidget(parent) {
+EmojiWidget::EmojiWidget(QWidget* parent) : QWidget(parent) {
     gridLayout = new QGridLayout(this);
 
     setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
 
-    gridLayout->setContentsMargins(5, 5, 5, 5);
-    gridLayout->setSpacing(5);
+    constexpr qint16 MARGINS =5;
+    gridLayout->setContentsMargins(MARGINS, MARGINS, MARGINS, MARGINS);
+    gridLayout->setSpacing(MARGINS);
 
     emojiList = QStringList() << "😀" << "😂" << "😍" << "😎" << "😭" << "😡" << "👍" << "🙏" << "💪" << "🔥";
-    int columns = 5;
-    int row = 0;
-    int column = 0;
+    constexpr int columns = 5;
 
-    for (const QString &emoji: emojiList) {
-        QPushButton *emojiButton = new QPushButton(emoji);
-        emojiButton->setFixedSize(30, 30);
+    qint16 row = 0;
+    qint16 column = 0;
+
+    for (const QString& emoji: emojiList) {
+        QPushButton* emojiButton = new QPushButton(emoji);
+
+        constexpr qint16 SIZE = 30;
+        emojiButton->setFixedSize(SIZE, SIZE);
+
         emojiButton->setStyleSheet(
                 "QPushButton {"
                 "   font-size: 16px;"
@@ -30,28 +35,31 @@ EmojiWidget::EmojiWidget(QWidget *parent) : QWidget(parent) {
         );
         connect(emojiButton, &QPushButton::clicked, this, &EmojiWidget::onEmojiClicked);
         gridLayout->addWidget(emojiButton, row, column);
+
         column++;
+
         if (column >= columns) {
             column = 0;
-            row++;
+            ++row;
         }
+
     }
 }
 
-// Переопределяем paintEvent для рисования с гладкими краями
-void EmojiWidget::paintEvent(QPaintEvent *event) {
-    Q_UNUSED(event);
+// Redefine paintEvent for drawing with smooth edges
+void EmojiWidget::paintEvent(QPaintEvent* event) {
+    Q_UNUSED(event)
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-    QColor backgroundColor(128, 128, 128, 255);
+    constexpr QColor backgroundColor(128, 128, 128, 255);
     QPainterPath path;
     path.addRoundedRect(rect(), 10, 10);
     painter.fillPath(path, backgroundColor);
 }
 
 void EmojiWidget::onEmojiClicked() {
-    QPushButton *button = qobject_cast<QPushButton *>(sender());
+    const QPushButton* button = qobject_cast<QPushButton*>(sender());
     if (button) {
         QString emoji = button->text();
         emit emojiSelected(emoji);

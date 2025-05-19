@@ -1,92 +1,117 @@
 #ifndef SCALING_H
 #define SCALING_H
-#include <vector>
+#include <QVector>
+#include <QPointF>
 
 class Scaling {
 private:
-    static double scale;      // Scale factor for window resizing
-    static double zoom;       // Zoom level
-    static bool usersResize;  // Flag for user resizing
-    const static short int userUnitSize; // Пользовательский размер 20пикселей=1единице
+    static qreal scale;      // Scale factor for window resizing
+    static qreal zoom;       // Zoom level
+    [[maybe_unused]] static bool usersResize;  // Flag for user resizing
+    const static qint16 userUnitSize; // Custom size of 20 pixels = 1 unit
 
     struct Delta {
-        static double X;        // Movement along the X axis
-        static double Y;        // Movement along the Y axis
+        static qreal X;        // Movement along the X axis
+        static qreal Y;        // Movement along the Y axis
     };
 
     struct LastMousePos {
-        static short int x;
-        static short int y;
+        static qint16 x;
+        static qint16 y;
     };
 
     struct Cursor {
-        static short int x;
-        static short int y;
+        static qint16 x;
+        static qint16 y;
     };
 
     struct StartMonitorSize {
-        static short int StartMonitorWidth;     // Initial width of the window
-        static short int StartMonitorHeight;    // Initial height of the window
+        static qint16 StartMonitorWidth;     // Initial width of the window
+        static qint16 StartMonitorHeight;    // Initial height of the window
     };
 
     struct CenteredCoordinates {
-        static double CenteredCoordinatesX;
-        static double CenteredCoordinatesY;
+        static qreal CenteredCoordinatesX;
+        static qreal CenteredCoordinatesY;
     };
 
     struct ActualMonitorSize {
-        static short int ActualMonitorWidth;
-        static int short ActualMonitorHeight;
+        static qint16 ActualMonitorWidth;
+        static qint16 ActualMonitorHeight;
     };
-
-
 public:
 
     // Methods to get various properties of the scaling and window size
-    static short int getStartWidth();
-    static short int getStartHeight();
+    [[maybe_unused]]
+    static qint16 getStartWidth();
+    [[maybe_unused]]
+    static qint16 getStartHeight();
 
-    static short int getActualMonitorWidth();
-    static short int getActualMonitorHeight();
-    static double getCenteredCoordinatesX();
-    static double getCenteredCoordinatesY();
-    static void setCenteredCoordinatesX(double x);
-    static void  setCenteredCoordinatesY(double y);
+    static qint16 getActualMonitorWidth();
+    static qint16 getActualMonitorHeight();
+    static QPoint getActualMonitorSize();
+
+    static qreal getCenteredCoordinatesX();
+    static qreal getCenteredCoordinatesY();
+    static QPointF getCenteredCoordinates();
+
+    [[maybe_unused]]
+    static void setCenteredCoordinatesX(qreal x);
+    [[maybe_unused]]
+    static void  setCenteredCoordinatesY(qreal y);
 
     static void updateScaling();
-    static void setStartMonitorSize(short int x, short int y);
-    static void setActualMonitorSize(short int x,short int y);
+    static void setStartMonitorSize(qint16 x, qint16 y);
+    static void setActualMonitorSize(qint16 x,qint16 y);
 
-    static double scaleCoordinate(double X);
-    static double scaleCoordinateX(double X);
-    static double scaleCoordinateY(double Y);
-    static double logic(double X);
+    static qreal scaleCoordinate(qreal X);
+    static qreal scaleCoordinateX(qreal X);
+    static qreal scaleCoordinateY(qreal Y);
+    static qreal logic(qreal X);
 
-    static void scaling(/* int widgetWidth, int widgetHeight, const std::vector<double>& size */);
     static void setZoomPlus();
     static void setZoomMinus();
     static void setZoomZero();
-    static void setZoom(double z);
-    static void setDelta(double dx, double dy);
-    static void setDeltaX();
-    static void setDeltaY();
-    static void setCursor(short int x,short int y);
 
-    static double getScale();
-    static short int getUserUnitSize();
-    static double getZoom();
-    static double getDeltaX();
-    static double getDeltaY();
+    [[maybe_unused]]
+    static void setZoom(qreal z);
+
+    static void setDelta(qreal dx, qreal dy);
+
+    [[maybe_unused]]
+    static void setDeltaX();
+
+    [[maybe_unused]]
+    static void setDeltaY();
+
+    static void setCursor(qint16 x,qint16 y);
+
+    [[maybe_unused]]
+    static qreal getScale();
+    static qint16 getUserUnitSize();
+    static qreal getZoom();
+
+    static qreal getDeltaX();
+    static qreal getDeltaY();
+    static QPointF getDelta();
+
     static int getCursorX();
     static int getCursorY();
 
-    static void startMousePress(int x, int y);
+    [[maybe_unused]]
+    static QPoint getCursor();
+
+    static void startMousePress(qint16 x, qint16 y);
     static void mouseMove();
+
     static int getCursorDeltaX();
     static int getCursorDeltaY();
-    static double logicCursorX();
-    static double logicCursorY();
 
+    static qreal logicCursorX();
+    static qreal logicCursorY();
+    static QPointF logicCursor();
+
+    [[maybe_unused]]
     static void resetUsersResize();
 
 };

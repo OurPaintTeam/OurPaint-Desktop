@@ -2,13 +2,21 @@
 #define OURPAINT_HEADERS_GUI_WINDOWS_SAVEDIALOG_H_
 
 /*
- *
- *  Кастомное окошко для вопроса сохранения окна
- *
- *
- * */
+*
+* Custom window for saving the window
+*
+*
+*/
 
-
+#include <QDialog>
+#include <QPainter>
+#include <QKeyEvent>
+#include <QMouseEvent>
+#include <QPushButton>
+#include <QMessageBox>
+#include <QLayout>
+#include <QLabel>
+#include <QWidget>
 
 class SaveDialog : public QDialog {
 private:
@@ -16,82 +24,20 @@ private:
     bool mousePressed;
     QPoint mousePos;
 public:
-    //void setFile(QString File){file=File;}
-    SaveDialog(QWidget *parent = nullptr) : QDialog(parent) {
-        setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
-        setAttribute(Qt::WA_TranslucentBackground);
-        setWindowModality(Qt::ApplicationModal);  // Для модальности только в пределах родительского окна
 
-        // setStyleSheet("background-color: gray; color: black;");
-
-        QVBoxLayout * layout = new QVBoxLayout(this);
-        layout->setContentsMargins(10, 10, 10, 10);
-        QLabel * label = new QLabel("Сохранить проект?", this);
-        layout->addWidget(label);
-
-        QHBoxLayout * buttonLayout = new QHBoxLayout();
-
-        QPushButton * yesButton = new QPushButton("Да", this);
-        QPushButton * noButton = new QPushButton("Нет", this);
-        QPushButton * cancelButton = new QPushButton("Отмена", this);
-
-        //  yesButton->setStyleSheet("background-color: darkgray; color: black;");
-        //  noButton->setStyleSheet("background-color: darkgray; color: black;");
-        // cancelButton->setStyleSheet("background-color: darkgray; color: black;");
-
-        buttonLayout->addWidget(yesButton);
-        buttonLayout->addWidget(noButton);
-        buttonLayout->addWidget(cancelButton);
-
-        layout->addLayout(buttonLayout);
-
-        connect(yesButton, &QPushButton::clicked, this, [this]() {
-            done(QMessageBox::Yes);
-        });
-        connect(noButton, &QPushButton::clicked, this, [this]() {
-            done(QMessageBox::No);
-        });
-        connect(cancelButton, &QPushButton::clicked, this, [this]() {
-            done(QMessageBox::Cancel);
-        });
-    }
+    SaveDialog(QWidget* parent);
 
 protected:
-    void paintEvent(QPaintEvent *event) override {
-        (void)event;
-        QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);
-        painter.setBrush(QColor(50, 50, 50, 240));
-        painter.setPen(Qt::NoPen);
-        painter.drawRoundedRect(rect(), 10, 10);
-    }
+    void paintEvent(QPaintEvent* event) override;
 
-    void mousePressEvent(QMouseEvent *event) override { // Нажатие
-        if (event->button() == Qt::LeftButton) {
-            setCursor(Qt::SizeAllCursor);
-            mousePressed = true;
-            mousePos = event->pos();
-            event->accept();
-        }
-    }
+    // Press
+    void mousePressEvent(QMouseEvent* event) override;
 
-    void mouseMoveEvent(QMouseEvent *event) override { // Перемещение
-        if (mousePressed) {
-            //move(event->globalPos() - mousePos);
-            QPoint Pos = pos();
-            QPoint newPos = Pos + (event->pos() - mousePos);
-            move(newPos);
-            event->accept();
-        }
-    }
+    // Moving
+    void mouseMoveEvent(QMouseEvent* event) override;
 
-    void mouseReleaseEvent(QMouseEvent *event) override { // Отпускание
-        if (event->button() == Qt::LeftButton) {
-            setCursor(Qt::ArrowCursor);
-            mousePressed = false;
-            event->accept();
-        }
-    }
+    // release
+    void mouseReleaseEvent(QMouseEvent* event) override;
 
 };
 

@@ -88,6 +88,6 @@ void Server::stopServer() {
     clients.clear();
     if(tcpServer->isListening()) {
         tcpServer->close();
-        qDebug() << "Сервер остановлен.";
+        qDebug() << "The server is stopped.";
     }
 }

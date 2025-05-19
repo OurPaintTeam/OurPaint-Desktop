@@ -1,412 +1,355 @@
 #include "DrawAdditionalInf.h"
 
-unsigned long long DrawAdditionalInf::id = 0;
-unsigned long long DrawAdditionalInf::LeftMenuID = 0;
 
-
-void DrawAdditionalInf::setLeftMenuID(unsigned long long ID) {
-    LeftMenuID = ID;
-}
-
-void DrawAdditionalInf::setID(unsigned long long ID) {
-    id = ID;
-}
-
-// Отрисовка значений на координтах
-void DrawAdditionalInf::drawCoordinateLabels(QPainter &painter,
-                                             const std::vector<QPointF> &pointXR,
-                                             const std::vector<QPointF> &pointXL,
-                                             const std::vector<QPointF> &pointYU,
-                                             const std::vector<QPointF> &pointYD) {
-
+void DrawAdditionalInf::drawCoordinateLabels(QPainter& painter,
+                                             const QVector<QPointF>& pointsXRight,
+                                             const QVector<QPointF>& pointsXLeft,
+                                             const QVector<QPointF>& pointsYUp,
+                                             const QVector<QPointF>& pointsYDown) {
+    constexpr qint16 FontSize = 8;
+    constexpr qint16 MARGIN = 3;
 
     QFont font = painter.font();
-    font.setPointSize(8);  // фиксированный размер шрифта
+    font.setPointSize(FontSize);
     painter.setFont(font);
+
     QFontMetrics fontMetrics(font);
-    int heightOfText = fontMetrics.height();
-    short const  int MARGINS = 3; // Отступ
+    const int TEXT_HEIGHT = fontMetrics.height();
+    const int MARGIN_HEIGHT = TEXT_HEIGHT - MARGIN;
 
     painter.setPen(Qt::black);
 
-    // по X влево
-    for (const QPointF &point: pointXR) {
-        QPointF newPoint = point;
-        newPoint.setY(point.y() + heightOfText - MARGINS);
-        newPoint.setX(point.x() + MARGINS);
-        double value = Scaling::logic(point.x());
-        QString text = QString::number(value, 'f', 1);
-        painter.drawText(newPoint, text);
-    }
-    // по Y вниз
-    for (const QPointF &point: pointXL) {
-        QPointF newPoint = point;
-        newPoint.setY(point.y() + heightOfText - MARGINS);
-        newPoint.setX(point.x() + MARGINS);
-        double value = Scaling::logic(point.x());
-        QString text = QString::number(value, 'f', 1);
-        painter.drawText(newPoint, text);
-    }
-    // по Y вверх
-    for (const QPointF &point: pointYD) {
-        QPointF newPoint = point;
-        newPoint.setX(point.x() + MARGINS);
-        newPoint.setY(point.y() - MARGINS);
-        double value = Scaling::logic(-point.y());
-        QString text = QString::number(value, 'f', 1);
-        painter.drawText(newPoint, text);
-    }
-    // по Y вниз
-    for (const QPointF &point: pointYU) {
-        QPointF newPoint = point;
-        newPoint.setX(point.x() + MARGINS);
-        newPoint.setY(point.y() - MARGINS);
-        double value = Scaling::logic(-point.y());
-        QString text = QString::number(value, 'f', 1);
-        painter.drawText(newPoint, text);
+    auto drawLabel = [&](const QPointF& point, qreal value, bool below) {
+        QPointF textPos = point;
+        textPos.setX(point.x() + MARGIN);
+        textPos.setY(point.y() + (below ? MARGIN_HEIGHT : -MARGIN));
+        painter.drawText(textPos, QString::number(value, 'f', 1));
+    };
+
+    // Draw X-axis labels
+    for (const QPointF& point: pointsXRight) {
+        drawLabel(point, Scaling::logic(point.x()), true);
     }
 
+    for (const QPointF& point: pointsXLeft) {
+        drawLabel(point, Scaling::logic(point.x()), true);
+    }
+
+    // Draw Y-axis labels
+    for (const QPointF& point: pointsYDown) {
+        drawLabel(point, Scaling::logic(point.y()), false);
+    }
+
+    for (const QPointF& point: pointsYUp) {
+        drawLabel(point, Scaling::logic(point.y()), false);
+    }
 }
 
-// Рисуем значения координат на осях
-void DrawAdditionalInf::drawAxes(QPainter &painter) {
-    // Центрируем
-    double _width = Scaling::getCenteredCoordinatesX();
-    double _height = Scaling::getCenteredCoordinatesY();
 
-    // Смещение
-    double deltaX = Scaling::getDeltaX();
-    double deltaY = Scaling::getDeltaY();
+[[maybe_unused]]
+void DrawAdditionalInf::drawAxes(QPainter& painter) {
 
-    double logicXR = Scaling::logic(_width) - Scaling::logic(deltaX); // х правый
-    double logicYU = Scaling::logic(_height) + Scaling::logic(deltaY); // у верхний
-    double logicXL = -Scaling::logic(_width) - Scaling::logic(deltaX); // х левый
-    double logicYD = -Scaling::logic(_height) + Scaling::logic(deltaY); // у нижний
+    // Centering
+    const QPointF centerMonitor = Scaling::getCenteredCoordinates();
 
-    // Размеры окна
-    short int width = Scaling::getActualMonitorWidth();
-    short int height = Scaling::getActualMonitorHeight();
+    // Offset
+    const QPointF delta = Scaling::getDelta();
 
+    // Logical coordinates
+    const qreal logicRightX = Scaling::logic(centerMonitor.x()) - Scaling::logic(delta.x());
+    const qreal logicUpperY = Scaling::logic(centerMonitor.y()) + Scaling::logic(delta.y());
+    const qreal logicLeftX = -Scaling::logic(centerMonitor.x()) - Scaling::logic(delta.x());
+    const qreal logicLowerY = -Scaling::logic(centerMonitor.y()) + Scaling::logic(delta.y());
+
+    // Window dimensions
+    const QPointF windowSize = Scaling::getActualMonitorSize();
+
+    // Font metrics
     QFontMetrics metrics(painter.font());
-    int textHeight = metrics.height(); // Размер текста
-    const short int MARGINS = 5; // Отступы
+    const qint16 textHeight = metrics.height();
 
-    // Проверяем видимость осей
-    bool xAxisVisible = (_height + deltaY >= 0) && (_height + deltaY <= height);
-    bool yAxisVisible = (_width + deltaX >= 0) && (_width + deltaX <= width);
+    constexpr qint16 MARGIN = 5;
 
-    // Левая координата по X (отрицательная часть)
-    if (logicXL < 0 && xAxisVisible) {
-        QString textLeftX = QString::number(logicXL);
-        int x = MARGINS;
-        int y = static_cast<int>(_height) + deltaY - MARGINS;
-        painter.drawText(x, y, textLeftX);
-    } else if (!xAxisVisible && std::abs(logicXL) > logicXR) {
-        QString textCorner = QString::number(logicXL);
-        if (std::abs(logicYU) > std::abs(logicYD)) {
-            int y = height - MARGINS; // Левый нижний угол (II)
-            painter.drawText(MARGINS, y, textCorner);
-        } else {
-            int y = textHeight; // Левый верхний угол (III)
-            painter.drawText(MARGINS, y, textCorner);
-        }
+    // Check axis visibility
+    bool xAxisVisible = (centerMonitor.y() + delta.y() >= 0) && (centerMonitor.y() + delta.y() <= windowSize.y());
+    bool yAxisVisible = (centerMonitor.x() + delta.x() >= 0) && (centerMonitor.x() + delta.x() <= windowSize.x());
+
+    auto drawTextCorner = [&](const QString& text, int x, int y) {
+        painter.drawText(x, y, text);
+    };
+
+    // Draw left X value
+    if (logicLeftX < 0 && xAxisVisible) {
+        QString text = QString::number(logicLeftX);
+        qint16 x = MARGIN;
+        int y = static_cast<int>(centerMonitor.y()) + delta.y() - MARGIN;
+        drawTextCorner(text, x, y);
+    } else if (!xAxisVisible && qAbs(logicLeftX) > logicRightX) {
+        QString text = QString::number(logicLeftX);
+        int y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
+        drawTextCorner(text, MARGIN, y);
     }
 
-    //  Правая координата по X (положительная часть)
-    if (logicXR > 0 && xAxisVisible) {
-        QString textRightX = QString::number(logicXR);
-        int textWidth = metrics.horizontalAdvance(textRightX);
-        int x = width - textWidth - MARGINS;
-        int y = static_cast<int>(_height) + deltaY - MARGINS;
-        painter.drawText(x, y, textRightX);
-    } else if (!xAxisVisible && std::abs(logicXR) > std::abs(logicXL)) {
-        QString textCorner = QString::number(logicXR);
-        int textWidth = metrics.horizontalAdvance(textCorner);
-        if (std::abs(logicYU) > std::abs(logicYD)) {
-            int x = width - textWidth - MARGINS;
-            int y = height - MARGINS; // Правый нижний угол (I)
-            painter.drawText(x, y, textCorner);
-        } else {
-            int x = width - textWidth - MARGINS;
-            int y = textHeight; // Правый верхний угол (IV)
-            painter.drawText(x, y, textCorner);
-        }
+    // Draw right X value
+    if (logicRightX > 0 && xAxisVisible) {
+        QString text = QString::number(logicRightX);
+        int textWidth = metrics.horizontalAdvance(text);
+        int x = windowSize.y() - textWidth - MARGIN;
+        int y = static_cast<int>(centerMonitor.y()) + delta.y() - MARGIN;
+        drawTextCorner(text, x, y);
+    } else if (!xAxisVisible && qAbs(logicRightX) > qAbs(logicLeftX)) {
+        QString text = QString::number(logicRightX);
+        int textWidth = metrics.horizontalAdvance(text);
+        int x = windowSize.x() - textWidth - MARGIN;
+        int y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
+        drawTextCorner(text, x, y);
     }
 
-    // Верхняя координата по Y (положительная часть)
-    if (logicYU > 0 && yAxisVisible) {
-        QString textTopY = QString::number(logicYU);
-        int x = static_cast<int>(_width) + deltaX + MARGINS;  // смещаем текст вправо
-        int y = textHeight;
-        painter.drawText(x, y, textTopY);
-    } else if (!yAxisVisible && std::abs(logicYU) > std::abs(logicYD)) {
-        QString textCorner = QString::number(logicYU);
-        if (std::abs(logicXR) > std::abs(logicXL)) {
-            int y = textHeight;
-            painter.drawText(MARGINS, y, textCorner); // Левый верхний угол (I)
-        } else {
-            int textWidth = metrics.horizontalAdvance(textCorner);
-            int x = width - textWidth - MARGINS;
-            int y = textHeight; // Правый верхний угол (II)
-            painter.drawText(x, y, textCorner);
-        }
+    // Draw upper Y value
+    if (logicUpperY > 0 && yAxisVisible) {
+        QString text = QString::number(logicUpperY);
+        int x = static_cast<int>(centerMonitor.x()) + delta.x() + MARGIN;
+        drawTextCorner(text, x, textHeight);
+    } else if (!yAxisVisible && qAbs(logicUpperY) > qAbs(logicLowerY)) {
+        QString text = QString::number(logicUpperY);
+        int x = (qAbs(logicRightX) > qAbs(logicLeftX)) ? MARGIN : (windowSize.x() -
+                                                                           metrics.horizontalAdvance(text) - MARGIN);
+        drawTextCorner(text, x, textHeight);
     }
 
-    //  Нижняя координата по Y (отрицательная часть)
-    if (logicYD < 0 && yAxisVisible) {
-        QString textBottomY = QString::number(logicYD);
-        int x = static_cast<int>(_width) + deltaX + MARGINS;
-        int y = height - MARGINS;
-        painter.drawText(x, y, textBottomY);
-    } else if (!yAxisVisible && std::abs(logicYD) > std::abs(logicYU)) {
-        QString textCorner = QString::number(logicYD);
-        int textWidth = metrics.horizontalAdvance(textCorner);
-        if (std::abs(logicXR) < std::abs(logicXL)) {
-            int x = width - textWidth - MARGINS;
-            int y = height - MARGINS; // Правый нижний угол (III)
-            painter.drawText(x, y, textCorner);
-        } else {
-            int x = MARGINS;
-            int y = height - MARGINS; // Левый нижний угол (IV)
-            painter.drawText(x, y, textCorner);
-        }
+    // Draw lower Y value
+    if (logicLowerY < 0 && yAxisVisible) {
+        QString text = QString::number(logicLowerY);
+        int x = static_cast<int>(centerMonitor.x()) + delta.x() + MARGIN;
+        int y = windowSize.y() - MARGIN;
+        drawTextCorner(text, x, y);
+    } else if (!yAxisVisible && qAbs(logicLowerY) > qAbs(logicUpperY)) {
+        QString text = QString::number(logicLowerY);
+        int y = windowSize.y() - MARGIN;
+        int x = (qAbs(logicRightX) < qAbs(logicLeftX))
+                ? (windowSize.x() - metrics.horizontalAdvance(text) - MARGIN)
+                : MARGIN;
+        drawTextCorner(text, x, y);
     }
-
 }
 
-// Функция отрисовки координат курсора
-void DrawAdditionalInf::drawCursor(QPainter &painter) {
-    double cursorX = Scaling::scaleCoordinateX(Scaling::getCursorX());
-    double cursorY = Scaling::scaleCoordinateY(Scaling::getCursorY());
+
+void DrawAdditionalInf::drawCursor(QPainter& painter) {
+    const QPointF cursor(Scaling::scaleCoordinateX(Scaling::getCursorX()),
+                         Scaling::scaleCoordinateY(Scaling::getCursorY()));
+
+    const QPointF logicCursor = Scaling::logicCursor();
+    const qint16 RANGE = 5;
 
     painter.setPen(Qt::black);
-    double logicalX = Scaling::logicCursorX();
-    double logicalY = Scaling::logicCursorY();
-    const short int RANGE = 5;
 
-    painter.drawText(QPointF(cursorX + RANGE, cursorY -RANGE),
-                     QString("X: %1, Y: %2").arg(logicalX, 0, 'f', 1)
-                             .arg(logicalY, 0, 'f', 1));
-
+    painter.drawText(QPointF(cursor.x() + RANGE, cursor.y() - RANGE),
+                     QStringLiteral("X: %1, Y: %2").arg(logicCursor.x(), 0, 'f', 1)
+                             .arg(logicCursor.y(), 0, 'f', 1));
 
 }
 
 
-// Отрисовка айди для точки
-void DrawAdditionalInf::drawPointID(QPainter &painter, QPointF &point,const ID &pointID) {
-    if (pointID != ID(0)) {
-        QString idText = QString("ID: %1").arg(pointID.get());
+void DrawAdditionalInf::drawPointID(QPainter& painter, const ID& pointID, const QPointF& point) {
 
-        // Смещение вверх над точкой
-        const short int offsetY = 10;
-
-        QRectF textRect = painter.fontMetrics().boundingRect(idText);
-        double textX = point.x() - textRect.width() / 2;
-        double textY = point.y() - offsetY;
-
-        painter.setPen(QPen(Qt::black, 1));
-        painter.drawText(QPointF(textX, textY), idText);
+    if (pointID == ID(0)) {
+        return;
     }
+
+    const QString idText = QStringLiteral("ID: %1").arg(pointID.get());
+
+    // Offset up above the point
+    constexpr qint16 OFFSET_Y = 10;
+
+    const QRectF textRect = painter.fontMetrics().boundingRect(idText);
+    const qreal textX = point.x() - textRect.width() / 2;
+    const qreal textY = point.y() - OFFSET_Y;
+
+    constexpr qint16 SIZE_PEN = 1;
+    painter.setPen(QPen(Qt::black, SIZE_PEN));
+    painter.drawText(QPointF(textX, textY), idText);
 }
 
 
-// Отрисовка айди для линии
-void DrawAdditionalInf::drawSectionID(QPainter &painter, QPointF &start, QPointF &end,const ID &sectionID) {
-    if (sectionID != ID(0)) {
-        // Преобразуем координаты
-        qreal dx = start.x() - end.x();
-        qreal dy = start.y() - end.y();
-
-        double midX = (start.x() + end.x()) / 2;
-        double midY = (start.y() + end.y()) / 2;
-
-        QString idText = QString("ID: %1").arg(sectionID.get());
-        QFontMetrics metrics(painter.font());
-        QRectF textRect = metrics.boundingRect(idText);
-
-        // Вычисление угла наклона линии
-        qreal angle = qAtan2(dy, dx) * 180.0 / M_PI;
-
-        // Если линия в обратную сторону, перевернем текст
-        if (angle > 90 || angle < -90) {
-            angle += 180;
-        }
-
-        // Смещение от линии
-        const qreal fixedOffset = 1.0;
-        qreal perpAngle = angle - 90.0;
-        qreal rad = qDegreesToRadians(perpAngle);
-
-        // Смещаем на фиксированное расстояние от линии
-        qreal offsetX = fixedOffset * qCos(rad);
-        qreal offsetY = fixedOffset * qSin(rad);
-
-        painter.save();
-        painter.translate(midX, midY);
-        painter.rotate(angle);
-
-        // Центрируем по горизонтали и вертикали
-        painter.translate(offsetX - textRect.width() / 2, offsetY - textRect.height() / 2);
-
-        painter.drawText(0, 0, idText);
-        painter.restore();
-
-
+void
+DrawAdditionalInf::drawSectionID(QPainter& painter, const ID& sectionID, const QPointF& start, const QPointF& end) {
+    if (sectionID == ID(0)) {
+        return;
     }
-}
 
-// Отрисовка айди для круга
-void DrawAdditionalInf::drawCircleID(QPainter &painter, QPointF &center, double r,const ID &circleID) {
-    if (circleID != ID(0)) {
-        QString idText = QString("ID: %1").arg(circleID.get());
+    // Delta for angle
+    const qreal dx = end.x() - start.x();
+    const qreal dy = end.y() - start.y();
 
-        // Смещение над кругом
-        short int offsetY = 10;
+    // Calculating the slope angle of the line
+    qreal angle = qAtan2(dy, dx) * 180.0 / M_PI;
 
-        QRectF textRect = painter.fontMetrics().boundingRect(idText);
-        double textX = (center.x() - textRect.width() / 2);
-        double textY = center.y() - r - offsetY;
-
-        painter.save();
-        painter.setPen(QPen(Qt::black, 1));
-        painter.drawText(QPointF(textX, textY), idText);
-        painter.restore();
-
+    // If the line is in the opposite direction, flip the text
+    if (angle > 90 || angle < -90) {
+        angle += 180;
     }
-}
 
+    const QString idText = QStringLiteral("ID: %1").arg(sectionID.get());
+    const QFontMetrics metrics(painter.font());
+    const QRectF textRect = metrics.boundingRect(idText);
 
-// Отрисовка айди для арки
-void DrawAdditionalInf::drawArcID(QPainter &painter,
-                                  const ID &arcID,
-                                  const QPointF &center,
-                                  double startAngleDeg,
-                                  double endAngleDeg,
-                                  double radius)
-{
-    if (arcID == ID(0)) return;
+    // Offset from the line
+    constexpr qint16 FIX_OFFSET = 1;
+    const qreal rad = qDegreesToRadians(angle - 90.0);
 
-    QString idText = QString("ID: %1").arg(arcID.get());
+    // Offset by a fixed distance from the line
+    const qreal offsetX = FIX_OFFSET * qCos(rad);
+    const qreal offsetY = FIX_OFFSET * qSin(rad);
 
-    double span = endAngleDeg - startAngleDeg;
-    if (span <= 0) span += 360;
-
-    double midAngleDeg = startAngleDeg + span / 2.0;
-    double midAngleRad = qDegreesToRadians(midAngleDeg);
-
-    double labelRadius = radius + 10.0;
-
-    QPointF labelPos(center.x() + labelRadius * std::cos(midAngleRad),
-                     center.y() - labelRadius * std::sin(midAngleRad));
+    // Midpoint
+    const qreal midX = (start.x() + end.x()) / 2.0;
+    const qreal midY = (start.y() + end.y()) / 2.0;
 
     painter.save();
+    painter.translate(midX, midY);
+    painter.rotate(angle);
 
+    // Centering horizontally and vertically
+    painter.translate(offsetX - textRect.width() / 2, offsetY - textRect.height() / 2);
+
+    painter.drawText(0, 0, idText);
+    painter.restore();
+}
+
+
+void DrawAdditionalInf::drawCircleID(QPainter& painter, const ID& circleID, const QPointF& center, qreal radius) {
+    if (circleID == ID(0)) {
+        return;
+    }
+
+    const QString idText = QStringLiteral("ID: %1").arg(circleID.get());
+
+    // Offset above the circle
+    const qint16 offsetY = 10;
+
+    const QRectF textRect = painter.fontMetrics().boundingRect(idText);
+    const qreal textX = (center.x() - textRect.width() / 2);
+    const qreal textY = center.y() - radius - offsetY;
+    constexpr qint16 SIZE_PEN = 1;
+
+    painter.save();
+    painter.setPen(QPen(Qt::black, SIZE_PEN));
+    painter.drawText(QPointF(textX, textY), idText);
+    painter.restore();
+}
+
+
+void DrawAdditionalInf::drawArcID(QPainter& painter,
+                                  const ID& arcID,
+                                  const QPointF& center,
+                                  qreal startAngleDeg,
+                                  qreal endAngleDeg,
+                                  qreal radius) {
+    if (arcID == ID(0)) {
+        return;
+    }
+
+    QString idText = QStringLiteral("ID: %1").arg(arcID.get());
+
+    // Normalize the angles
+    startAngleDeg = fmod(startAngleDeg + 360.0, 360.0);
+    endAngleDeg = fmod(endAngleDeg + 360.0, 360.0);
+
+    qreal span = endAngleDeg - startAngleDeg;
+    constexpr qreal EPS = 0.1;
+    if (span <= EPS) {
+        span += 360.0;
+    }
+
+    qreal midAngleDeg = startAngleDeg + span / 2.0;
+    midAngleDeg = fmod(midAngleDeg, 360.0);
+
+    const qreal midAngleRad = qDegreesToRadians(midAngleDeg);
+    const qreal labelRadius = radius + 10.0;
+
+    const QPointF labelPos(center.x() + labelRadius * qCos(midAngleRad),
+                           center.y() - labelRadius * qSin(midAngleRad));
+
+
+    qreal tangentAngle = -midAngleDeg + 90.0;
+    qreal normalizedAngle = fmod(tangentAngle + 360.0, 360.0);
+    if (normalizedAngle > 90.0 && normalizedAngle < 270.0) {
+        tangentAngle += 180.0;
+    }
+
+    painter.save();
     painter.translate(labelPos);
-    painter.rotate(midAngleDeg + 90);
+    painter.rotate(tangentAngle);
 
-    painter.setPen(QPen(Qt::black, 1));
+    constexpr qint16 SIZE_PEN = 1;
+
+    painter.setPen(QPen(Qt::black, SIZE_PEN));
     painter.drawText(QPointF(-painter.fontMetrics().horizontalAdvance(idText) / 2.0, 0), idText);
 
     painter.restore();
 }
 
 
-// Отрисовка айди для круга
-void DrawAdditionalInf::drawCircleLeftID(QPainter &painter, QPointF &center, double r) {
-    if (LeftMenuID != 0) {
-        // Преобразование
-
-        QString idText = QString("ID: %1").arg(LeftMenuID);
-
-        // Смещение над кругом
-        const short int offsetY = 10;
-
-        QRectF textRect = painter.fontMetrics().boundingRect(idText);
-        double textX = (center.x() - textRect.width() / 2);
-        double textY = center.y() - r - offsetY;
-
-        painter.save();
-        painter.setPen(QPen(Qt::black, 1));
-        painter.drawText(QPointF(textX, textY), idText);
-        painter.restore();
-
+void DrawAdditionalInf::setPointGradientColor(QRadialGradient& radialGradient, const Color& color) {
+    if (colorToString(color) == "Unknown") {
+        return;
     }
+
+    QColor baseColor = colorToQColor(color);
+    baseColor.setAlpha(120);
+    radialGradient.setColorAt(0.0, baseColor);
+
+    baseColor.setAlpha(60);
+    radialGradient.setColorAt(0.8, baseColor);
+
+    baseColor.setAlpha(0);
+    radialGradient.setColorAt(1.0, baseColor);
 }
 
 
-// Отрисовка айди для линии
-void DrawAdditionalInf::drawSectionLeftID(QPainter &painter, QPointF &start, QPointF &end) {
-    if (LeftMenuID != 0) {
-        // Преобразуем координаты
-
-        qreal dx = start.x() - end.x();
-        qreal dy = start.y() - start.y();
-
-        double midX = (start.x() + end.x()) / 2;
-        double midY = (start.y() + end.y()) / 2;
-
-        QString idText = QString("ID: %1").arg(LeftMenuID);
-        QFontMetrics metrics(painter.font());
-        QRectF textRect = metrics.boundingRect(idText);
-
-        // Вычисление угла наклона линии
-        qreal angle = qAtan2(dy, dx) * 180.0 / M_PI;
-
-        // Если линия в обратную сторону, перевернем текст
-        if (angle > 90 || angle < -90) {
-            angle += 180;
-        }
-
-        // Смещение от линии
-        const qreal fixedOffset = 1.0;
-        qreal perpAngle = angle - 90.0;
-        qreal rad = qDegreesToRadians(perpAngle);
-
-        // Смещаем на фиксированное расстояние от линии
-        qreal offsetX = fixedOffset * qCos(rad);
-        qreal offsetY = fixedOffset * qSin(rad);
-
-        painter.save();
-        painter.translate(midX, midY);
-        painter.rotate(angle);
-
-        // Центрируем по горизонтали и вертикали
-        painter.translate(offsetX - textRect.width() / 2, offsetY - textRect.height() / 2);
-
-        painter.drawText(0, 0, idText);
-        painter.restore();
-
+void DrawAdditionalInf::setSectionGradientColor(QLinearGradient& gradient, const Color& color) {
+    if (colorToString(color) == "Unknown") {
+        return;
     }
+
+    QColor baseColor = colorToQColor(color);
+    baseColor.setAlpha(0);
+    gradient.setColorAt(0.0, baseColor);
+    baseColor.setAlpha(40);
+    gradient.setColorAt(0.3, baseColor);
+    baseColor.setAlpha(80);
+    gradient.setColorAt(0.5, baseColor);
+    baseColor.setAlpha(40);
+    gradient.setColorAt(0.7, baseColor);
+    baseColor.setAlpha(0);
+    gradient.setColorAt(1.0, baseColor);
 }
 
-// Отрисовка айди для точки
-void DrawAdditionalInf::drawPointLeftID(QPainter &painter, QPointF &point) {
-    if (LeftMenuID != 0) {
 
-        QString idText = QString("ID: %1").arg(LeftMenuID);
-
-        // Смещение вверх над точкой
-        const short int offsetY = 10;
-
-        QRectF textRect = painter.fontMetrics().boundingRect(idText);
-        double textX = (point.x() - textRect.width() / 2);
-        double textY = point.y() - offsetY;
-
-        painter.save();
-        painter.setPen(QPen(Qt::black, 1));
-        painter.drawText(QPointF(textX, textY), idText);
-        painter.restore();
-
+void DrawAdditionalInf::setCircleGradientColor(QRadialGradient& radialGradient, qreal stopTransparent1,
+                                               qreal stopTransparent2, qreal stopCyan, const Color& color) {
+    if (colorToString(color) == "Unknown") {
+        return;
     }
+
+    QColor baseColor = colorToQColor(color);
+    baseColor.setAlpha(0);
+    radialGradient.setColorAt(0.0, baseColor);
+    baseColor.setAlpha(40);
+    radialGradient.setColorAt(stopTransparent1, baseColor);
+    baseColor.setAlpha(80);
+    radialGradient.setColorAt(stopCyan, baseColor);
+    baseColor.setAlpha(40);
+    radialGradient.setColorAt(stopTransparent2, baseColor);
+    baseColor.setAlpha(0);
+    radialGradient.setColorAt(1.0, baseColor);
 }
 
-// Отрисовка свечения для точки
-void DrawAdditionalInf::drawPointGlow(QPainter &painter, QPointF &point) {
-    // Рисуем свечение для выбранной точки
-    const short int glowRadius = 5;
+
+void DrawAdditionalInf::drawPointGlow(QPainter& painter, const QPointF& point, const Color& color) {
+    const qint16 glowRadius = 5;
     QRadialGradient radialGradient(point, glowRadius, point);
-    radialGradient.setColorAt(0.0, QColor(0, 128, 255, 200));
-    radialGradient.setColorAt(1.0, QColor(0, 128, 255, 0));
+    setPointGradientColor(radialGradient, color);
 
     QBrush glowBrush(radialGradient);
     painter.setBrush(glowBrush);
@@ -414,146 +357,165 @@ void DrawAdditionalInf::drawPointGlow(QPainter &painter, QPointF &point) {
     painter.drawEllipse(QPointF(point.x() - glowRadius, point.y() - glowRadius), glowRadius * 2, glowRadius * 2);
 }
 
-// Отрисовка свечения для линии
-void DrawAdditionalInf::drawSectionGlow(QPainter &painter, QPointF &start, QPointF &end) {
 
-    // Вычисляем направление линии
-    qreal dx = end.x() - start.x();
-    qreal dy = end.y() - start.y();
+void
+DrawAdditionalInf::drawSectionGlow(QPainter& painter, const QPointF& start, const QPointF& end, const Color& color) {
+
+    // Calculating the direction of the line
+    const qreal dx = end.x() - start.x();
+    const qreal dy = end.y() - start.y();
     qreal length = qSqrt(dx * dx + dy * dy);
 
     if (length == 0) {
         length = 1;
     }
 
-    // Перпендикулярный вектор
-    qreal perpX = -dy / length;
-    qreal perpY = dx / length;
+    // Perpendicular vector
+    const qreal perpX = -dy / length;
+    const qreal perpY = dx / length;
 
-    // Задаем расстояние для градиента
-    const qreal glowDistance = 10.0;
+    // Setting the distance for the gradient
+    constexpr qint16 glowDistance = 10;
 
-    // Определяем точки начала и конца градиента
-    qreal gradStartX = start.x() + perpX * glowDistance;
-    qreal gradStartY = start.y() + perpY * glowDistance;
-    qreal gradEndX = start.x() - perpX * glowDistance;
-    qreal gradEndY = start.y() - perpY * glowDistance;
+    // Defining the points of the beginning and end of the gradient
+    const qreal gradStartX = start.x() + perpX * glowDistance;
+    const qreal gradStartY = start.y() + perpY * glowDistance;
+    const qreal gradEndX = start.x() - perpX * glowDistance;
+    const qreal gradEndY = start.y() - perpY * glowDistance;
 
-    // Создаём линейный градиент перпендикулярный линии
+    // Creating a linear gradient perpendicular to the line
     QLinearGradient gradient(gradStartX, gradStartY, gradEndX, gradEndY);
-    gradient.setColorAt(0.0, QColor(0, 255, 255, 150)); // Голубой с прозрачностью
-    gradient.setColorAt(1.0, QColor(0, 255, 255, 0));   // Прозрачный
+    setSectionGradientColor(gradient, color);
 
     QPen glowPen;
-    glowPen.setWidth(8);
+    constexpr qint16 SIZE_PEN = 8;
+    glowPen.setWidth(SIZE_PEN);
     glowPen.setBrush(gradient);
-    glowPen.setCapStyle(Qt::RoundCap); // Устанавливаем закругленные концы
+    glowPen.setCapStyle(Qt::RoundCap);
     painter.setPen(glowPen);
 
     painter.drawLine(start.x(), start.y(), end.x(), end.y());
 }
 
-// Отрисовка свечения для круга
-void DrawAdditionalInf::drawCircleGlow(QPainter &painter, QPointF &center, double Radius) {
-    const qreal glowDistance = 20.0; // Расстояние свечения от обводки
-    qreal gradientRadius = (Radius) + glowDistance; // Общий радиус градиента
 
-    // Вычисляем относительные позиции для цветовых остановок
+void
+DrawAdditionalInf::drawCircleGlow(QPainter& painter, const QPointF& center, const qreal Radius, const Color& color) {
+    constexpr qint16 glowDistance = 20;
+    const qreal gradientRadius = Radius + glowDistance;
+
+    // Calculating relative positions for color stops
     qreal stopTransparent1 = (Radius - glowDistance) / gradientRadius;
-    qreal stopCyan = (Radius) / gradientRadius;
+    qreal stopCyan = Radius / gradientRadius;
     qreal stopTransparent2 = (Radius + glowDistance) / gradientRadius;
 
     stopTransparent1 = qBound(0.0, stopTransparent1, 1.0);
     stopCyan = qBound(0.0, stopCyan, 1.0);
     stopTransparent2 = qBound(0.0, stopTransparent2, 1.0);
 
-    // Создаём радиальный градиент
+    // Creating a radial gradient
     QRadialGradient radialGradient(center, gradientRadius, center);
-    radialGradient.setColorAt(0.0, QColor(0, 255, 255, 0));         // Прозрачный в центре
-    radialGradient.setColorAt(stopTransparent1, QColor(0, 255, 255, 0));   // Прозрачный до внутренней границы свечения
-    radialGradient.setColorAt(stopCyan, QColor(0, 255, 255, 150));      // Насыщенный циан на обводке
-    radialGradient.setColorAt(stopTransparent2, QColor(0, 255, 255, 0)); // Прозрачный после внешней границы свечения
-    radialGradient.setColorAt(1.0, QColor(0, 255, 255,
-                                          0));            // Прозрачный за пределами свечения        // Прозрачный за пределами свечения
+    setCircleGradientColor(radialGradient, stopTransparent1, stopTransparent2, stopCyan, color);
 
-    // Настраиваем перо для свечения
-    QPen glowPen(QBrush(radialGradient), 4); // Толщина пера 4 пикселя
+    // Setting up the pen for the glow
+    constexpr qint16 SIZE_PEN = 8;
+    QPen glowPen(QBrush(radialGradient), SIZE_PEN);
     glowPen.setJoinStyle(Qt::RoundJoin);
     glowPen.setCapStyle(Qt::RoundCap);
     painter.setPen(glowPen);
-    painter.setBrush(Qt::NoBrush); // Без заливки
+    painter.setBrush(Qt::NoBrush);
 
-    // Рисуем круг с градиентной обводкой для свечения
     painter.drawEllipse(center, Radius, Radius);
 }
 
 
-// Отрисовка свечения для арки
-void DrawAdditionalInf::drawArcGlow(QPainter& painter, QRectF &rect, int qtStart, int qtSpan) {
-    // Толстое полупрозрачное свечение
-    QPen glowPen(QColor(0, 255, 255, 100));
-    glowPen.setWidthF(12.0);
+void DrawAdditionalInf::drawArcGlow(QPainter& painter, const QRectF& rect, const int qtStart, const int qtSpan,
+                                    const Color& color) {
+    constexpr qint16 glowDistance = 20;
+    const qreal radius = rect.width() / 2.0;
+    const QPointF center = rect.center();
+    const qreal gradientRadius = radius + glowDistance;
+
+    // Color stop positions
+    qreal stopTransparent1 = (radius - glowDistance) / gradientRadius;
+    qreal stopCyan = radius / gradientRadius;
+    qreal stopTransparent2 = (radius + glowDistance) / gradientRadius;
+
+    stopTransparent1 = qBound(0.0, stopTransparent1, 1.0);
+    stopCyan = qBound(0.0, stopCyan, 1.0);
+    stopTransparent2 = qBound(0.0, stopTransparent2, 1.0);
+
+    // Radial gradient
+    QRadialGradient radialGradient(center, gradientRadius, center);
+    setCircleGradientColor(radialGradient, stopTransparent1, stopTransparent2, stopCyan, color);
+
+    // A pen with a glow
+    constexpr qint16 SIZE_PEN = 8;
+    QPen glowPen(QBrush(radialGradient), SIZE_PEN);
     glowPen.setCapStyle(Qt::RoundCap);
     glowPen.setJoinStyle(Qt::RoundJoin);
+
     painter.setPen(glowPen);
     painter.setBrush(Qt::NoBrush);
-    painter.drawArc(rect, qtStart, qtSpan);
 
-    // Тонкая яркая обводка
-    QPen corePen(QColor(0, 255, 255, 200));
-    corePen.setWidthF(2.0);
-    painter.setPen(corePen);
-    painter.drawArc(rect, qtStart, qtSpan);
+    // Building an arc
+    QPainterPath arcPath;
+    arcPath.arcMoveTo(rect, qtStart / 16.0);
+    arcPath.arcTo(rect, qtStart / 16.0, qtSpan / 16.0);
+
+    painter.drawPath(arcPath);
 }
 
 
+void DrawAdditionalInf::drawCoordinateLine(QPainter& painter, const QPointF& start, const QPointF& end) {
+    const qreal dx = start.x() - end.x();
+    const qreal dy = start.y() - end.y();
 
-// Отрисовка длины линии
-void DrawAdditionalInf::drawCoordinateLine(QPainter &painter, QPointF &start, QPointF &end) {
-    double dx = start.x() - end.x();
-    double dy = start.y() - end.y();
+    const qreal length = Scaling::logic(qSqrt(dx * dx + dy * dy));
 
-    qreal length = Scaling::logic(qSqrt(dx * dx + dy * dy));
+    const QString lengthText = QString::number(length, 'f', 2);
+    const QFontMetrics metrics(painter.font());
+    const QRectF textRect = metrics.boundingRect(lengthText);
 
-    QString lengthText = QString::number(length, 'f', 2);
-    QFontMetrics metrics(painter.font());
-    QRectF textRect = metrics.boundingRect(lengthText);
+    if (textRect.width() >= QLineF(start, end).length()) {
+        return;
+    }
 
-    // Середина линии
-    double midX = (start.x() + end.x()) / 2;
-    double midY = (start.y() + end.y()) / 2;
+    // Middle of the line
+    const qreal midX = (start.x() + end.x()) / 2;
+    const qreal midY = (start.y() + end.y()) / 2;
 
     painter.save();
 
-    // Случай вертикальной линии
+    // The case of a vertical line
     if (dx == 0) {
-        qreal offsetX = textRect.width() / 2;
-        qreal offsetY = textRect.height() / 2;
+        const qreal offsetX = textRect.width() / 2;
+        const qreal offsetY = textRect.height() / 2;
 
         painter.translate(midX, midY);
         painter.translate(offsetX, offsetY);
-        painter.rotate(-90);  // Поворачиваем текст на 90 градусов
+        painter.rotate(-90);  // Rotate the text by 90 degrees
         painter.drawText(0, 0, lengthText);
     } else {
-        // Вычисляем угол линии
+        // Calculating the angle of the line
         qreal angle = qAtan2(dy, dx) * 180.0 / M_PI;
 
-        // Проверка на "обратное" направление
+        // Check for the opposite direction
         if (angle > 90 || angle < -90) {
             angle += 180;
         }
 
-        // Смещение вниз от линии
-        qreal perpAngle = angle + 90.0;
-        qreal rad = qDegreesToRadians(perpAngle);
-        qreal offsetX = qCos(rad);
-        qreal offsetY = qSin(rad);
+        // Offset down from the line
+        const qreal perpAngle = angle + 90.0;
+        const qreal rad = qDegreesToRadians(perpAngle);
+        const qreal offsetX = qCos(rad);
+        const qreal offsetY = qSin(rad);
 
         painter.translate(midX, midY);
         painter.rotate(angle);
 
         painter.translate(offsetX - textRect.width() / 2, offsetY + textRect.height());
 
+        painter.setPen(Qt::black);
         painter.drawText(0, 0, lengthText);
     }
 

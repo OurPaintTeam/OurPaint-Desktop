@@ -13,7 +13,7 @@
 #include "QTPainter.h"
 #include "Server.h"
 #include "Client.h"
-#include "TreeModelLazy.h"
+#include "TreeModel.h"
 #include "GUI_Logger.h"
 #include "Scene.h"
 #include "Painter.h"
@@ -42,7 +42,6 @@ private:
     Scene scene;
     QTPainter *painter;
     LeftMenuBar* leftMenu;
-    QTimer* autoSaveTimer;
 
     std::vector<std::function<void()>> vecCalls;
     std::vector<QString> vec_requirements;
@@ -64,12 +63,17 @@ private:
     void handler(const QString &command);
     void addRequirement(Requirement RQ,ID id1,ID id2,double parameters);
     void addRequirement(Requirement RQ,ID id1,ID id2);
+    void addPoints(double x,double y);
+    void addSections(double x0,double y0,double x1,double y1);
+    void addCircles(double x,double y,double r);
+    void addArcs(double x0,double y0,double x1,double y1,double cx,double cy);
+    void fillSelectedIDBuffer();
+    void deleteOwnPoints(QVector<ID>& vecPoints,const QVector<ID>& vecSections,const QVector<ID>& vecCircles,const QVector<ID>& vecArcs);
+    void deleteObjects(QVector<ID>& vecPoints,QVector<ID>& vecSections,QVector<ID>& vecCircles,QVector<ID>& vecArcs);
 
 private:
+    std::vector<ObjectData> objectsBuffer;
     const QString pathTxtFileCommands = "../CommandsFile.txt";
-
-private slots:
-    void autoSave();
 
 public:
     Application(int &argc, char **argv);

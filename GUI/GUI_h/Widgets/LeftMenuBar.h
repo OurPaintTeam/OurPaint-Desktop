@@ -8,18 +8,20 @@
 #include <string>
 #include <QTimer>
 #include <QWidget>
+#include <QObject>
+#include <QMetaObject>
 #include <QFile>
 #include <QDataStream>
 #include <QLabel>
 
-#include "TreeModelLazy.h"
+#include "TreeModel.h"
 
-// Класс для управления деревом
+// A class for managing a tree
 
-class LeftMenuBar {
-// Q_OBJECT
+class LeftMenuBar: public QWidget  {
+    Q_OBJECT
 private:
-    TreeModelLazy *treeModel = nullptr;
+    TreeModel *treeModel = nullptr;
     TreeNode *rootNode = nullptr;
     TreeNode *figuresNode = nullptr;
     TreeNode *requirementsNode = nullptr;
@@ -30,54 +32,76 @@ private:
     QFont font;
 
 public:
+    void refreshAllLinkedParams();
+
+    void refreshLinkedParams(TreeNode* node);
+
     explicit LeftMenuBar(QObject *parent);
 
-    TreeModelLazy *getTreeModel();
+    TreeModel *getTreeModel();
 
-    // Добавление фигуры
-    void addElemLeftMenu(const QString &name, unsigned long long ID, const std::vector<double> &params);
+    void addPointInLeftMenu(const QString &namePoint,const long long pID,
+                              const std::pair<const double*,const double *> &params);
 
-    // Добавление требований
-    void addRequirementElem(const QString &name, const int ReqID, const unsigned long long ElemID1,
+    void addCircleInLeftMenu(const QString &nameCircle, const QString &namePoint,
+                                          const long long cID, const long long pID,
+                                          const std::pair<const double*,const double *> &params,double R);
+
+
+    void addSectionInLeftMenu(const QString &nameSection,const QString &namePoint1,const QString &namePoint2,
+                              const long long secID, const long long pID1, const long long pID2,
+                              const std::pair<const double*,const double *> &firstParams,const std::pair<const double*,const double *> &secondParams);
+
+
+    void addArcInLeftMenu(const QString &nameArc,const QString &namePoint1,const QString &namePoint2,const QString &namePoint3,
+                          const long long arcID, const long long pID1, const long long pID2, const long long pID3,
+                          const std::pair<const double*,const double *> &firstParams,const std::pair<const double*,const double *> &secondParams
+            ,const std::pair<const double*,const double *> &thirdParams);
+
+    // Adding requirements
+    void addRequirementElem(const QString &name,const QString &type, const int ReqID, const unsigned long long ElemID1,
                             const unsigned long long ElemID2, const double param);
 
-    // Добавление требований
-    void addRequirementElem(const QString &name, const int ReqID, const unsigned long long ElemID1,
+    // Adding requirements
+    void addRequirementElem(const QString &name,const QString &type, const int ReqID, const unsigned long long ElemID1,
                             const unsigned long long ElemID2);
+    TreeNode *
+    createParamNode(const QString &name, const QVariant &value, TreeNode *parent, bool editable, bool isNumber,
+                    bool doubleClickable);
 
-    // Очистка всех элементов
+    TreeNode *
+    createParamNode(const QString &name, const double* ptr, TreeNode *parent);
+
+    TreeNode *
+    createPointNode(const QString &name, long long int id, const std::pair<const double*,const double *> &coords, TreeNode *parent);
+
+
+    // Clearing all the elements
     void clearAllFigures();
 
-    // Очистка всех элементов
+    // // Clearing all the requirements
     void clearAllRequirements();
 
     void  updateLeftMenu();
 
-    // Очистка одного элемента по айди
-    void removeFigureById(unsigned long long id);
+    // Clearing one element by ID
+    void removeFigureById(long long id);
 
-    // Очистка одного элемента по айди
-    void removeRequirementById(unsigned long long id);
 
-    // Изменение параметров по айди
-    void updateParametersById(unsigned long long id, const std::vector<double> &newParams);
+    QModelIndex selectFigureById(long long int id);
 
-    // Сохранение в бин файл
-    void saveToBinaryFile(const QString &filePath);
-
-    // Считывание бин файла
-    void loadFromBinaryFile(const QString &filePath);
-
-    void saveToTextFile(const QString& filePath);
-
+public slots:
+    void doubleClickID(const QModelIndex& index);
+private slots:
+    void paramChanged(TreeNode* node);
 
 signals:
+    void figureParamsChanged(const long long id,const std::string &type, const std::vector<double> &parameters);
+    void reqParamChanged(const long long id, const double &parameter);
 
-    void parameterChanged(unsigned long long id, const std::vector<double> &parameters);
+    void doubleClickLeftMenu(const long long id,const std::string &type);
 
-    void DoubleClickLeftMenu(std::vector<double> &parameters, unsigned long long id);
 
-    void showMenu();
 
 };
 

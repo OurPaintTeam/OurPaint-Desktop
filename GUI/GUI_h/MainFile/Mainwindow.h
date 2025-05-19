@@ -17,12 +17,13 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QGestureEvent>
+#include <QStandardPaths>
 
 #include "Help.h"
-#include "CastomeWindowError.h"
-#include "CastomeWindowSuccessful.h"
-#include "CastomeWindowWarning.h"
-#include "CastomeIpListWindow.h"
+#include "CustomWindowError.h"
+#include "CustomWindowSuccessful.h"
+#include "CustomWindowWarning.h"
+#include "CustomIpListWindow.h"
 #include "LocalScanner.h"
 #include "SaveDialog.h"
 #include "InputWindow.h"
@@ -33,6 +34,7 @@
 #include "KeyWorkWindow.h"
 #include "LeftMenuBar.h"
 #include "Settings.h"
+#include "ParameterDelegate.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -44,24 +46,25 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow* ui;
 
-    QTPainter *painter;
-    MouseWorkWindow* mouseWW;             //  Для обработки событий мыши
-    KeyWorkWindow* keyWW;                 //  Для обработки событий клавиш
-    LeftMenuBar* leftMenuBar;             // Класс для управления левым меню
-    Settings *settings;                   // Сохранение настроек
-    Help *helpWindow;                     // Окно справки
+    QTPainter* painter;
+    MouseWorkWindow* mouseWW;            // For processing mouse events
+    KeyWorkWindow* keyWW;                // For handling key events
+    LeftMenuBar* leftMenuBar;             // A class for managing the left menu
+    Settings* settings;                   // Saving Settings
+    Help* helpWindow;                     // Help Window
 
-    CastomeWindowError *error;
-    CastomeWindowWarning *warning;
-    CastomeWindowSuccessful *success;
+    CustomWindowError* error;
+    CustomWindowWarning* warning;
+    CustomWindowSuccessful* success;
 
-    QString directory = QDir::homePath() + "/OurPaint-Desktop/project";
-    QString settingsDirectory=QDir::homePath() + "/OurPaint-Desktop/settings/settings.set";
+    QString documentsPath;
+    QString projectsPath;
+    QString settingsPath;
 
-    std::vector<QString> commands; // Буфер команд для консоли
-    int Index;                      // Индекс для навигации по командам
+    std::vector<QString> commands;  // Command buffer for the console
+    int Index;                      // Index for navigating commands
 
     enum ResizeRegion {
         None,
@@ -69,7 +72,8 @@ private:
         TopLeft, TopRight, BottomLeft, BottomRight
     };
 
-    const int edgeMargin = 8;
+    const qint16 edgeMargin=8;
+
     bool resizing = false;
     bool moving = false;
     QPoint dragStartPos;
@@ -77,48 +81,46 @@ private:
     ResizeRegion currentRegion = None;
 public:
 
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(QWidget* parent = nullptr);
+
     ~MainWindow();
 
-    QTPainter *getQTPainter() const;
+    QTPainter* getQTPainter() const;
     LeftMenuBar* getLeftMenuBar() const;
-
     void initConnections();
     void setupLeftMenu();
-
+    void selectLeftMenuElem(QModelIndex& index);
     void updateStyle();
     void updateExitServerStyle(bool);
-    void updateShapeCursor(const QPoint &pos);
+    void updateShapeCursor(const QPoint& pos);
+    void setMessage(const std::string& name, const std::string& message);
 
-    void setMessage(const std::string &name, const std::string &message);
+    // Mouse Tracking
+    void setAllMouseTracking(QWidget* widget);
 
-    void setAllMouseTracking(QWidget *widget); // Отслеживание мыши
-
-    /***     Кастомные окна       ***/
+    /***    Custom windows      ***/
     void showHelp();
-    void showError(const QString &text);
-    void showSuccess(const QString &text);
-    void showWarning(const QString &text);
+    void showError(const QString& text);
+    void showSuccess(const QString& text);
+    void showWarning(const QString& text);
 
-    /***     Сохранение и импорт настроек       ***/
+    /***     Save/import settings       ***/
+    QString getUserName();
     void saveSettings();
     void loadSettings();
-    void saveCommandsInTxt(const QString &path);
 
 protected:
 
-    void closeEvent(QCloseEvent *event) override;
-    void resizeEvent(QResizeEvent *event) override;
-
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
-    void wheelEvent(QWheelEvent *event) override;
-    bool event(QEvent *event) override;
-
-    bool eventFilter(QObject *obj, QEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
+    void closeEvent(QCloseEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
+    bool event(QEvent* event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 
 public slots:
@@ -126,16 +128,18 @@ public slots:
     void redo();
     void undo();
     void deleteButton();
+    void cut();
+    void paste();
+    void copy();
 
     void loadProjectFile();
     void saveProjectToFile(const QString& format);
-    void buttonScript();
 
+    void buttonScript();
     void openServer();
     void joinServer();
     void joinLocalServer();
     void exitSession();
-
     void Message();
 
     void Point();
@@ -146,7 +150,6 @@ public slots:
     void FigMoving();
     void ToolMoving();
     void ToolSelected();
-
     void onWorkWindowResized();
 
     void firstReq();
@@ -159,7 +162,6 @@ public slots:
     void eighthReq();
     void ninthReq();
     void tenthReq();
-
     void onExportJPG();
     void onExportJPEG();
     void onExportPNG();
@@ -171,17 +173,15 @@ public slots:
 
 signals:
 
-    void EnterPressed(const QString &command);
-
-    void EnterMessage(const QString &text);
-    void NameUsers(const QString &text);
-    void SigOpenServer(const QString &text);
-    void SigJoinServer(const QString &text);
+    void EnterPressed(const QString& command);
+    void EnterMessage(const QString& text);
+    void NameUsers(const QString& text);
+    void SigOpenServer(const QString& text);
+    void SigJoinServer(const QString& text);
     void SigExitSession();
-
-    void projectSaved(const QString &fileName,QString format);
-    void LoadFile(const QString &fileName);
-    void EmitScript(const QString &fileName);
+    void projectSaved(const QString& fileName, QString format);
+    void LoadFile(const QString& fileName);
+    void EmitScript(const QString& fileName);
 
     void oneRequirements();
     void twoRequirements();
@@ -197,7 +197,9 @@ signals:
     void REDO();
     void UNDO();
     void DELETE();
-
+    void CUT();
+    void PASTE();
+    void COPY();
     void resize();
 
 };

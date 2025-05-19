@@ -2,28 +2,30 @@
 #define OURPAINT_DRAWBACKGROUND_H
 
 #include <QPainter>
+#include <QtMath>
 
 #include "DrawAdditionalInf.h"
 #include "Scaling.h"
 #include "Modes.h"
 
-//  Класс отвечающий за отрисовку фона виджета
-//  Центр у нас в центре виджета
-//  Клетки создают эффект передвижения
-//  Оси создают эффект бесконечности
-
+// The class responsible for rendering the background of the widget
+// The center is in the center of the widget
+// The cells create the effect of movement
+// The axes create the effect of infinity
 
 class DrawBackground {
-private:
-
 public:
     explicit DrawBackground() = default;
 
-    // Чтобы на сетке не было сильно дробных чисел ищем близкое значение размера клетки
-    static double Step(double rawStep);
+    // So that there are no strongly fractional numbers on the grid,
+    // we are looking for a close value of the cell size
+    static qreal Step(double rawStep);
 
-    // Отрисовка фона
-    static void drawFon(QPainter &painter);
+    // Background rendering
+    static void backgroundRender(QPainter& painter);
+
+    // Drawing the main coordinate axes
+    static void mainBackgroundRender(QPainter& painter);
 
 };
 
