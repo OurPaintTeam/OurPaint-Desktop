@@ -39,6 +39,7 @@ add_executable(SceneGTEST SceneGTEST.cc
         ../src/Scene.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
+        ../src/objects/Component.cc
         ../src/painters/BMPpainter.cc
         ../src/BMPfile.cc
         ../src/Requirements.cc
