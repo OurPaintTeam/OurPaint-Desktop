@@ -6,24 +6,25 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter& painter,
                                              const QVector<QPointF>& pointsXLeft,
                                              const QVector<QPointF>& pointsYUp,
                                              const QVector<QPointF>& pointsYDown) {
-    constexpr qint16 FontSize = 8;
-    constexpr qint16 MARGIN = 3;
+    constexpr quint16 FontSize = 8;
+    constexpr quint16 MARGIN = 3;
 
     QFont font = painter.font();
     font.setPointSize(FontSize);
     painter.setFont(font);
 
     QFontMetrics fontMetrics(font);
-    const int TEXT_HEIGHT = fontMetrics.height();
-    const int MARGIN_HEIGHT = TEXT_HEIGHT - MARGIN;
+    const quint16 TEXT_HEIGHT = fontMetrics.height();
+    const quint16 MARGIN_HEIGHT = TEXT_HEIGHT - MARGIN;
 
     painter.setPen(Qt::black);
 
-    auto drawLabel = [&](const QPointF& point, qreal value, bool below) {
+    constexpr quint16 PRECISION= 1;
+    auto drawLabel = [&](const QPointF& point, const qreal value,const bool below) {
         QPointF textPos = point;
         textPos.setX(point.x() + MARGIN);
         textPos.setY(point.y() + (below ? MARGIN_HEIGHT : -MARGIN));
-        painter.drawText(textPos, QString::number(value, 'f', 1));
+        painter.drawText(textPos, QString::number(value, 'f', PRECISION));
     };
 
     // Draw X-axis labels
@@ -66,67 +67,67 @@ void DrawAdditionalInf::drawAxes(QPainter& painter) {
 
     // Font metrics
     QFontMetrics metrics(painter.font());
-    const qint16 textHeight = metrics.height();
+    const quint16 textHeight = metrics.height();
 
-    constexpr qint16 MARGIN = 5;
+    constexpr quint16 MARGIN = 5;
 
     // Check axis visibility
     bool xAxisVisible = (centerMonitor.y() + delta.y() >= 0) && (centerMonitor.y() + delta.y() <= windowSize.y());
     bool yAxisVisible = (centerMonitor.x() + delta.x() >= 0) && (centerMonitor.x() + delta.x() <= windowSize.x());
 
-    auto drawTextCorner = [&](const QString& text, int x, int y) {
+    auto drawTextCorner = [&](const QString& text,const qint32 x,const qint32 y) {
         painter.drawText(x, y, text);
     };
 
     // Draw left X value
     if (logicLeftX < 0 && xAxisVisible) {
         QString text = QString::number(logicLeftX);
-        qint16 x = MARGIN;
-        int y = static_cast<int>(centerMonitor.y()) + delta.y() - MARGIN;
+        const quint16 x = MARGIN;
+        const qint32 y = static_cast<qint32>(centerMonitor.y()) + delta.y() - MARGIN;
         drawTextCorner(text, x, y);
     } else if (!xAxisVisible && qAbs(logicLeftX) > logicRightX) {
-        QString text = QString::number(logicLeftX);
-        int y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
+        const QString text = QString::number(logicLeftX);
+        const qint32 y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
         drawTextCorner(text, MARGIN, y);
     }
 
     // Draw right X value
     if (logicRightX > 0 && xAxisVisible) {
-        QString text = QString::number(logicRightX);
-        int textWidth = metrics.horizontalAdvance(text);
-        int x = windowSize.y() - textWidth - MARGIN;
-        int y = static_cast<int>(centerMonitor.y()) + delta.y() - MARGIN;
+        const QString text = QString::number(logicRightX);
+        const quint16 textWidth = metrics.horizontalAdvance(text);
+        const qint32 x = windowSize.y() - textWidth - MARGIN;
+        const qint32 y = static_cast<qint32>(centerMonitor.y()) + delta.y() - MARGIN;
         drawTextCorner(text, x, y);
     } else if (!xAxisVisible && qAbs(logicRightX) > qAbs(logicLeftX)) {
-        QString text = QString::number(logicRightX);
-        int textWidth = metrics.horizontalAdvance(text);
-        int x = windowSize.x() - textWidth - MARGIN;
-        int y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
+        const QString text = QString::number(logicRightX);
+        const quint16 textWidth = metrics.horizontalAdvance(text);
+        const qint32 x = windowSize.x() - textWidth - MARGIN;
+        const qint32 y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
         drawTextCorner(text, x, y);
     }
 
     // Draw upper Y value
     if (logicUpperY > 0 && yAxisVisible) {
-        QString text = QString::number(logicUpperY);
-        int x = static_cast<int>(centerMonitor.x()) + delta.x() + MARGIN;
+        const QString text = QString::number(logicUpperY);
+        const qint32 x = static_cast<qint32>(centerMonitor.x()) + delta.x() + MARGIN;
         drawTextCorner(text, x, textHeight);
     } else if (!yAxisVisible && qAbs(logicUpperY) > qAbs(logicLowerY)) {
-        QString text = QString::number(logicUpperY);
-        int x = (qAbs(logicRightX) > qAbs(logicLeftX)) ? MARGIN : (windowSize.x() -
+        const QString text = QString::number(logicUpperY);
+        const qint32 x = (qAbs(logicRightX) > qAbs(logicLeftX)) ? MARGIN : (windowSize.x() -
                                                                            metrics.horizontalAdvance(text) - MARGIN);
         drawTextCorner(text, x, textHeight);
     }
 
     // Draw lower Y value
     if (logicLowerY < 0 && yAxisVisible) {
-        QString text = QString::number(logicLowerY);
-        int x = static_cast<int>(centerMonitor.x()) + delta.x() + MARGIN;
-        int y = windowSize.y() - MARGIN;
+        const QString text = QString::number(logicLowerY);
+        const qint32 x = static_cast<qint32>(centerMonitor.x()) + delta.x() + MARGIN;
+        const qint32 y = windowSize.y() - MARGIN;
         drawTextCorner(text, x, y);
     } else if (!yAxisVisible && qAbs(logicLowerY) > qAbs(logicUpperY)) {
-        QString text = QString::number(logicLowerY);
-        int y = windowSize.y() - MARGIN;
-        int x = (qAbs(logicRightX) < qAbs(logicLeftX))
+        const QString text = QString::number(logicLowerY);
+        const qint32 y = windowSize.y() - MARGIN;
+        const qint32 x = (qAbs(logicRightX) < qAbs(logicLeftX))
                 ? (windowSize.x() - metrics.horizontalAdvance(text) - MARGIN)
                 : MARGIN;
         drawTextCorner(text, x, y);
@@ -139,33 +140,39 @@ void DrawAdditionalInf::drawCursor(QPainter& painter) {
                          Scaling::scaleCoordinateY(Scaling::getCursorY()));
 
     const QPointF logicCursor = Scaling::logicCursor();
-    const qint16 RANGE = 5;
+    constexpr quint16 RANGE = 5;
 
     painter.setPen(Qt::black);
 
+    constexpr quint16 PRECISION= 1;
     painter.drawText(QPointF(cursor.x() + RANGE, cursor.y() - RANGE),
-                     QStringLiteral("X: %1, Y: %2").arg(logicCursor.x(), 0, 'f', 1)
-                             .arg(logicCursor.y(), 0, 'f', 1));
+                     QStringLiteral("X: %1, Y: %2").arg(logicCursor.x(), 0, 'f', PRECISION)
+                             .arg(logicCursor.y(), 0, 'f', PRECISION));
 
+}
+
+
+inline bool DrawAdditionalInf::isValidID(const ID& id) {
+    return id.get() == 0;
 }
 
 
 void DrawAdditionalInf::drawPointID(QPainter& painter, const ID& pointID, const QPointF& point) {
 
-    if (pointID == ID(0)) {
+    if(!isValidID(pointID)){
         return;
     }
 
     const QString idText = QStringLiteral("ID: %1").arg(pointID.get());
 
     // Offset up above the point
-    constexpr qint16 OFFSET_Y = 10;
+    constexpr quint16 OFFSET_Y = 10;
 
     const QRectF textRect = painter.fontMetrics().boundingRect(idText);
     const qreal textX = point.x() - textRect.width() / 2;
     const qreal textY = point.y() - OFFSET_Y;
 
-    constexpr qint16 SIZE_PEN = 1;
+    constexpr quint16 SIZE_PEN = 1;
     painter.setPen(QPen(Qt::black, SIZE_PEN));
     painter.drawText(QPointF(textX, textY), idText);
 }
@@ -173,7 +180,7 @@ void DrawAdditionalInf::drawPointID(QPainter& painter, const ID& pointID, const 
 
 void
 DrawAdditionalInf::drawSectionID(QPainter& painter, const ID& sectionID, const QPointF& start, const QPointF& end) {
-    if (sectionID == ID(0)) {
+    if(!isValidID(sectionID)){
         return;
     }
 
@@ -194,7 +201,7 @@ DrawAdditionalInf::drawSectionID(QPainter& painter, const ID& sectionID, const Q
     const QRectF textRect = metrics.boundingRect(idText);
 
     // Offset from the line
-    constexpr qint16 FIX_OFFSET = 1;
+    constexpr quint16 FIX_OFFSET = 1;
     const qreal rad = qDegreesToRadians(angle - 90.0);
 
     // Offset by a fixed distance from the line
@@ -218,19 +225,19 @@ DrawAdditionalInf::drawSectionID(QPainter& painter, const ID& sectionID, const Q
 
 
 void DrawAdditionalInf::drawCircleID(QPainter& painter, const ID& circleID, const QPointF& center, qreal radius) {
-    if (circleID == ID(0)) {
+    if(!isValidID(circleID)){
         return;
     }
 
     const QString idText = QStringLiteral("ID: %1").arg(circleID.get());
 
     // Offset above the circle
-    const qint16 offsetY = 10;
+    constexpr quint16 offsetY = 10;
 
     const QRectF textRect = painter.fontMetrics().boundingRect(idText);
     const qreal textX = (center.x() - textRect.width() / 2);
     const qreal textY = center.y() - radius - offsetY;
-    constexpr qint16 SIZE_PEN = 1;
+    constexpr quint16 SIZE_PEN = 1;
 
     painter.save();
     painter.setPen(QPen(Qt::black, SIZE_PEN));
@@ -242,26 +249,26 @@ void DrawAdditionalInf::drawCircleID(QPainter& painter, const ID& circleID, cons
 void DrawAdditionalInf::drawArcID(QPainter& painter,
                                   const ID& arcID,
                                   const QPointF& center,
-                                  qreal startAngleDeg,
-                                  qreal endAngleDeg,
-                                  qreal radius) {
-    if (arcID == ID(0)) {
+                                  const qreal startAngleDeg,
+                                  const qreal endAngleDeg,
+                                  const qreal radius) {
+    if(!isValidID(arcID)){
         return;
     }
 
     QString idText = QStringLiteral("ID: %1").arg(arcID.get());
 
     // Normalize the angles
-    startAngleDeg = fmod(startAngleDeg + 360.0, 360.0);
-    endAngleDeg = fmod(endAngleDeg + 360.0, 360.0);
+    const qreal startAngle = fmod(startAngleDeg + 360.0, 360.0);
+    const qreal endAngle = fmod(endAngleDeg + 360.0, 360.0);
 
-    qreal span = endAngleDeg - startAngleDeg;
+    qreal span = endAngle - startAngle;
     constexpr qreal EPS = 0.1;
     if (span <= EPS) {
         span += 360.0;
     }
 
-    qreal midAngleDeg = startAngleDeg + span / 2.0;
+    qreal midAngleDeg = startAngle + span / 2.0;
     midAngleDeg = fmod(midAngleDeg, 360.0);
 
     const qreal midAngleRad = qDegreesToRadians(midAngleDeg);
@@ -281,7 +288,7 @@ void DrawAdditionalInf::drawArcID(QPainter& painter,
     painter.translate(labelPos);
     painter.rotate(tangentAngle);
 
-    constexpr qint16 SIZE_PEN = 1;
+    constexpr quint16 SIZE_PEN = 1;
 
     painter.setPen(QPen(Qt::black, SIZE_PEN));
     painter.drawText(QPointF(-painter.fontMetrics().horizontalAdvance(idText) / 2.0, 0), idText);
@@ -326,8 +333,8 @@ void DrawAdditionalInf::setSectionGradientColor(QLinearGradient& gradient, const
 }
 
 
-void DrawAdditionalInf::setCircleGradientColor(QRadialGradient& radialGradient, qreal stopTransparent1,
-                                               qreal stopTransparent2, qreal stopCyan, const Color& color) {
+void DrawAdditionalInf::setCircleGradientColor(QRadialGradient& radialGradient,const qreal stopTransparent1,
+        const qreal stopTransparent2,const qreal stopCyan, const Color& color) {
     if (colorToString(color) == "Unknown") {
         return;
     }
@@ -347,7 +354,7 @@ void DrawAdditionalInf::setCircleGradientColor(QRadialGradient& radialGradient, 
 
 
 void DrawAdditionalInf::drawPointGlow(QPainter& painter, const QPointF& point, const Color& color) {
-    const qint16 glowRadius = 5;
+    constexpr quint16 glowRadius = 5;
     QRadialGradient radialGradient(point, glowRadius, point);
     setPointGradientColor(radialGradient, color);
 
@@ -375,7 +382,7 @@ DrawAdditionalInf::drawSectionGlow(QPainter& painter, const QPointF& start, cons
     const qreal perpY = dx / length;
 
     // Setting the distance for the gradient
-    constexpr qint16 glowDistance = 10;
+    constexpr quint16 glowDistance = 10;
 
     // Defining the points of the beginning and end of the gradient
     const qreal gradStartX = start.x() + perpX * glowDistance;
@@ -388,7 +395,7 @@ DrawAdditionalInf::drawSectionGlow(QPainter& painter, const QPointF& start, cons
     setSectionGradientColor(gradient, color);
 
     QPen glowPen;
-    constexpr qint16 SIZE_PEN = 8;
+    constexpr quint16 SIZE_PEN = 8;
     glowPen.setWidth(SIZE_PEN);
     glowPen.setBrush(gradient);
     glowPen.setCapStyle(Qt::RoundCap);
@@ -400,7 +407,7 @@ DrawAdditionalInf::drawSectionGlow(QPainter& painter, const QPointF& start, cons
 
 void
 DrawAdditionalInf::drawCircleGlow(QPainter& painter, const QPointF& center, const qreal Radius, const Color& color) {
-    constexpr qint16 glowDistance = 20;
+    constexpr quint16 glowDistance = 20;
     const qreal gradientRadius = Radius + glowDistance;
 
     // Calculating relative positions for color stops
@@ -417,7 +424,7 @@ DrawAdditionalInf::drawCircleGlow(QPainter& painter, const QPointF& center, cons
     setCircleGradientColor(radialGradient, stopTransparent1, stopTransparent2, stopCyan, color);
 
     // Setting up the pen for the glow
-    constexpr qint16 SIZE_PEN = 8;
+    constexpr quint16 SIZE_PEN = 8;
     QPen glowPen(QBrush(radialGradient), SIZE_PEN);
     glowPen.setJoinStyle(Qt::RoundJoin);
     glowPen.setCapStyle(Qt::RoundCap);
@@ -428,9 +435,9 @@ DrawAdditionalInf::drawCircleGlow(QPainter& painter, const QPointF& center, cons
 }
 
 
-void DrawAdditionalInf::drawArcGlow(QPainter& painter, const QRectF& rect, const int qtStart, const int qtSpan,
+void DrawAdditionalInf::drawArcGlow(QPainter& painter, const QRectF& rect, const qint32 qtStart, const qint32 qtSpan,
                                     const Color& color) {
-    constexpr qint16 glowDistance = 20;
+    constexpr quint16 glowDistance = 20;
     const qreal radius = rect.width() / 2.0;
     const QPointF center = rect.center();
     const qreal gradientRadius = radius + glowDistance;
@@ -449,7 +456,7 @@ void DrawAdditionalInf::drawArcGlow(QPainter& painter, const QRectF& rect, const
     setCircleGradientColor(radialGradient, stopTransparent1, stopTransparent2, stopCyan, color);
 
     // A pen with a glow
-    constexpr qint16 SIZE_PEN = 8;
+    constexpr quint16 SIZE_PEN = 8;
     QPen glowPen(QBrush(radialGradient), SIZE_PEN);
     glowPen.setCapStyle(Qt::RoundCap);
     glowPen.setJoinStyle(Qt::RoundJoin);
