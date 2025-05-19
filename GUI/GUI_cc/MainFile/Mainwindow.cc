@@ -404,7 +404,9 @@ void MainWindow::saveSettings() {
 }
 
 void MainWindow::loadSettings() {
-    bool gridChecked, axisChecked;
+    bool gridChecked=false;
+    bool axisChecked=false;
+
     QString userName;
 
     settings->loadSettings(gridChecked, axisChecked, userName);
