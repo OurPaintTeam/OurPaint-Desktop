@@ -110,6 +110,11 @@ target_include_directories(MoveGTEST PRIVATE
         ../Math/headers
         ../Math/headers/graph
         ../Math/headers/optimizers
+        ../Math/headers/optimizers/EigenOptimizers
+        ../Math/headers/optimizers/MatrixOptimizers
+        ../Math/headers/Tasks
+        ../Math/headers/Tasks/Eigen
+        ../Math/headers/Tasks/Matrix
 )
 target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
 
