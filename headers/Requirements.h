@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "objects/Enums.h"
-#include "ErrorFunctions.h"
+#include "ErrorFunction.h"
 #include "objects/GeometricObjects.h"
 #include "objects/BoundBox.h"
 #include "objects/Objects.h"
@@ -15,7 +15,7 @@ struct IReq {
 public:
     virtual ~IReq() = default;
 
-    virtual ErrorFunctions* getFunction() = 0;
+    virtual ErrorFunction* getFunction() = 0;
     virtual std::vector<PARAM_ID> getParams() = 0;
     virtual Requirement getType() const = 0;
     virtual std::vector<IGeometricObject*> getObjects() = 0;
@@ -32,7 +32,7 @@ class ReqPointSecDist : public IReq {
     double d;
 public:
     ReqPointSecDist(Point* p, Section* s, double dist);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -46,7 +46,7 @@ class ReqPointOnSec : public IReq {
     Section* m_s;
 public:
     ReqPointOnSec(Point* p, Section* s);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -61,7 +61,7 @@ class ReqPointPointDist : public IReq {
     double v_dist;
 public:
     ReqPointPointDist(Point* p1, Point* p2, double dist);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -75,7 +75,7 @@ class ReqPointOnPoint : public IReq {
     Point* m_p2;
 public:
     ReqPointOnPoint(Point* p1, Point* p2);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -90,7 +90,7 @@ class ReqSecCircleDist : public IReq {
     double v_dist;
 public:
     ReqSecCircleDist(Section* m_s, Circle* m_c, double dist);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -104,7 +104,7 @@ class ReqSecOnCircle : public IReq {
     Circle* m_c;
 public:
     ReqSecOnCircle(Section* m_s, Circle* m_c);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -118,7 +118,7 @@ class ReqSecInCircle : public IReq {
     Circle* m_c;
 public:
     ReqSecInCircle(Section* m_s, Circle* m_c);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -132,7 +132,7 @@ class ReqSecSecParallel : public IReq {
     Section* m_s2;
 public:
     ReqSecSecParallel(Section* m_s1, Section* m_s2);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -146,7 +146,7 @@ class ReqSecSecPerpendicular : public IReq {
     Section* m_s2;
 public:
     ReqSecSecPerpendicular(Section* m_s1, Section* m_s2);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -161,7 +161,7 @@ class ReqSecSecAngel : public IReq {
     double desired_angle;
 public:
     ReqSecSecAngel(Section* m_s1, Section* m_s2, double desired_dist);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;
@@ -172,7 +172,7 @@ public:
 class ReqArcCenterOnPerpendicular : public IReq {
 public:
     ReqArcCenterOnPerpendicular(Point* p1, Point* p2, Point* p3);
-    ErrorFunctions* getFunction() override;
+    ErrorFunction* getFunction() override;
     std::vector<PARAM_ID> getParams() override;
     Requirement getType() const override;
     std::vector<IGeometricObject*> getObjects() override;

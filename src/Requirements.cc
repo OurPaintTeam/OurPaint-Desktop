@@ -2,7 +2,7 @@
 
 
 // 1
-ErrorFunctions* ReqPointSecDist::getFunction() {
+ErrorFunction* ReqPointSecDist::getFunction() {
     return new PointSectionDistanceError(getVariables(), d);
 }
 std::vector<PARAM_ID> ReqPointSecDist::getParams() {
@@ -47,7 +47,7 @@ ReqPointOnSec::ReqPointOnSec(Point* p, Section* s) {
     m_p = p;
     m_s = s;
 }
-ErrorFunctions* ReqPointOnSec::getFunction() {
+ErrorFunction* ReqPointOnSec::getFunction() {
     return new PointOnSectionError(getVariables());
 }
 std::vector<PARAM_ID> ReqPointOnSec::getParams() {
@@ -88,7 +88,7 @@ ReqPointPointDist::ReqPointPointDist(Point* p1, Point* p2, double dist) {
     m_p2 = p2;
     v_dist = dist;
 }
-ErrorFunctions* ReqPointPointDist::getFunction() {
+ErrorFunction* ReqPointPointDist::getFunction() {
     return new PointPointDistanceError(getVariables(), v_dist);
 }
 std::vector<PARAM_ID> ReqPointPointDist::getParams() {
@@ -126,7 +126,7 @@ ReqPointOnPoint::ReqPointOnPoint(Point* p1, Point* p2) {
     m_p1 = p1;
     m_p2 = p2;
 }
-ErrorFunctions* ReqPointOnPoint::getFunction() {
+ErrorFunction* ReqPointOnPoint::getFunction() {
     return new PointOnPointError(getVariables());
 }
 std::vector<PARAM_ID> ReqPointOnPoint::getParams() {
@@ -166,7 +166,7 @@ ReqSecCircleDist::ReqSecCircleDist(Section* s, Circle* c, double dist) {
     v_dist = dist;
 
 }
-ErrorFunctions* ReqSecCircleDist::getFunction() {
+ErrorFunction* ReqSecCircleDist::getFunction() {
     return new SectionCircleDistanceError(getVariables(), v_dist);
 }
 std::vector<PARAM_ID> ReqSecCircleDist::getParams() {
@@ -208,7 +208,7 @@ ReqSecOnCircle::ReqSecOnCircle(Section* s, Circle* c) {
     m_s = s;
     m_c = c;
 }
-ErrorFunctions* ReqSecOnCircle::getFunction() {
+ErrorFunction* ReqSecOnCircle::getFunction() {
     return new SectionOnCircleError(getVariables());
 }
 std::vector<PARAM_ID> ReqSecOnCircle::getParams() {
@@ -251,7 +251,7 @@ ReqSecInCircle::ReqSecInCircle(Section* s, Circle* c) {
     m_c = c;
     throw std::runtime_error("Not implemented");
 }
-ErrorFunctions* ReqSecInCircle::getFunction() {
+ErrorFunction* ReqSecInCircle::getFunction() {
     // TODO
     return nullptr;
 }
@@ -286,7 +286,7 @@ ReqSecSecParallel::ReqSecSecParallel(Section* s1, Section* s2) {
     m_s1 = s1;
     m_s2 = s2;
 }
-ErrorFunctions* ReqSecSecParallel::getFunction() {
+ErrorFunction* ReqSecSecParallel::getFunction() {
     return new SectionSectionParallelError(getVariables());
 }
 std::vector<PARAM_ID> ReqSecSecParallel::getParams() {
@@ -330,7 +330,7 @@ ReqSecSecPerpendicular::ReqSecSecPerpendicular(Section* s1, Section* s2) {
     m_s1 = s1;
     m_s2 = s2;
 }
-ErrorFunctions* ReqSecSecPerpendicular::getFunction() {
+ErrorFunction* ReqSecSecPerpendicular::getFunction() {
     return new SectionSectionPerpendicularError(getVariables());
 }
 std::vector<PARAM_ID> ReqSecSecPerpendicular::getParams() {
@@ -377,7 +377,7 @@ ReqSecSecAngel::ReqSecSecAngel(Section* s1, Section* s2, double angle) {
     m_s2 = s2;
     desired_angle = angle;
 }
-ErrorFunctions* ReqSecSecAngel::getFunction() {
+ErrorFunction* ReqSecSecAngel::getFunction() {
     return new SectionSectionAngleError(getVariables(), desired_angle);
 }
 std::vector<PARAM_ID> ReqSecSecAngel::getParams() {
@@ -423,7 +423,7 @@ ReqArcCenterOnPerpendicular::ReqArcCenterOnPerpendicular(Point* p1, Point* p2, P
     m_p3 = p3;
 }
 
-ErrorFunctions* ReqArcCenterOnPerpendicular::getFunction() {
+ErrorFunction* ReqArcCenterOnPerpendicular::getFunction() {
     return new ArcCenterOnPerpendicularError(getVariables());
 }
 
