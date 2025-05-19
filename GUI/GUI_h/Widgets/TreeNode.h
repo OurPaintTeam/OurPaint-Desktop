@@ -36,13 +36,13 @@ public:
     // Add or access child nodes
     void addChild(TreeNode* child);
 
-    TreeNode* child(int row) const;
+    TreeNode* child(qint32 row) const;
 
-    int childCount() const;
+    qint32 childCount() const;
 
-    int row() const;
+    qint32 row() const;
 
-    void removeChildAt(int index);          // Remove child by index
+    void removeChildAt(qint32 index);          // Remove child by index
     bool removeChild(TreeNode* child);      // Remove child by pointer
 
     // Remove all children
@@ -50,9 +50,9 @@ public:
     void deleteRecursively();
 
     // Data access
-    QVariant data(int column) const;
+    QVariant data(qint32 column) const;
 
-    void setData(int column, const QVariant& value);
+    void setData(qint32 column, const QVariant& value);
 
     QString getNameOnly() const;            // Return name (before colon)
     QString getName() const;                // Return full name
@@ -73,7 +73,7 @@ public:
     void updateTextFromLinkedValue();       // Update display based on linked value
 
     TreeNode* parent();                     // Get parent node
-    int depth() const;                      // Depth of this node in the tree
+    qint32 depth() const;                      // Depth of this node in the tree
 
     // Node state flags
     void setEditable(bool e);

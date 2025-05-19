@@ -24,7 +24,7 @@ void FrameOverlay::updateFrameColor() {
     QPixmap screenPixmap = screen->grabWindow(0, frameRect.x(), frameRect.y(), frameRect.width(), frameRect.height());
     QImage image = screenPixmap.toImage();
 
-    int totalPixels = image.width() * image.height();
+    qint32 totalPixels = image.width() * image.height();
 
     if (totalPixels == 0) { // Setting the color
         frameColor = Qt::white;
@@ -34,7 +34,7 @@ void FrameOverlay::updateFrameColor() {
     qint64 sumR = 0, sumG = 0, sumB = 0;
 
     // Calculating the color
-    int step = qMax(1, qMin(image.width(), image.height()) / 100);
+    qint32 step = qMax(1, qMin(image.width(), image.height()) / 100);
 
     for (qsizetype y = 0; y < image.height(); y += step) {
         for (qsizetype x = 0; x < image.width(); x += step) {
@@ -46,12 +46,12 @@ void FrameOverlay::updateFrameColor() {
     }
 
     // Number of pixels
-    int samplePixels = ((image.width() + step - 1) / step) * ((image.height() + step - 1) / step);
+    qint32 samplePixels = ((image.width() + step - 1) / step) * ((image.height() + step - 1) / step);
 
     // Calculating the average value
-    int avgR = sumR / samplePixels;
-    int avgG = sumG / samplePixels;
-    int avgB = sumB / samplePixels;
+    qint32 avgR = sumR / samplePixels;
+    qint32 avgG = sumG / samplePixels;
+    qint32 avgB = sumB / samplePixels;
 
     // Brightness calculation
     const qreal backgroundLuminance = (0.2126 * avgR + 0.7152 * avgG + 0.0722 * avgB) / 255.0;
