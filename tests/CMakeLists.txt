@@ -131,6 +131,13 @@ add_executable(ComponentTest ComponentTest.cc
 target_include_directories(ComponentTest PRIVATE
         ../headers/objects
         ../Math/headers
+        ../Math/headers/graph
+        ../Math/headers/optimizers
+        ../Math/headers/optimizers/EigenOptimizers
+        ../Math/headers/optimizers/MatrixOptimizers
+        ../Math/headers/Tasks
+        ../Math/headers/Tasks/Eigen
+        ../Math/headers/Tasks/Matrix
 )
 target_link_libraries(ComponentTest GTest::gtest_main Math Eigen3::Eigen)
 
