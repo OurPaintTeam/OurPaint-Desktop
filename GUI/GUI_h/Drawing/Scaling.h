@@ -26,8 +26,8 @@ private:
     };
 
     struct StartMonitorSize {
-        static qint16 StartMonitorWidth;     // Initial width of the window
-        static qint16 StartMonitorHeight;    // Initial height of the window
+        static quint16 StartMonitorWidth;     // Initial width of the window
+        static quint16 StartMonitorHeight;    // Initial height of the window
     };
 
     struct CenteredCoordinates {
@@ -36,19 +36,19 @@ private:
     };
 
     struct ActualMonitorSize {
-        static qint16 ActualMonitorWidth;
-        static qint16 ActualMonitorHeight;
+        static quint16 ActualMonitorWidth;
+        static quint16 ActualMonitorHeight;
     };
 public:
 
     // Methods to get various properties of the scaling and window size
     [[maybe_unused]]
-    static qint16 getStartWidth();
+    static quint16 getStartWidth();
     [[maybe_unused]]
-    static qint16 getStartHeight();
+    static quint16 getStartHeight();
 
-    static qint16 getActualMonitorWidth();
-    static qint16 getActualMonitorHeight();
+    static quint16 getActualMonitorWidth();
+    static quint16 getActualMonitorHeight();
     static QPoint getActualMonitorSize();
 
     static qreal getCenteredCoordinatesX();
@@ -61,8 +61,8 @@ public:
     static void  setCenteredCoordinatesY(qreal y);
 
     static void updateScaling();
-    static void setStartMonitorSize(qint16 x, qint16 y);
-    static void setActualMonitorSize(qint16 x,qint16 y);
+    static void setStartMonitorSize(quint16 x, quint16 y);
+    static void setActualMonitorSize(quint16 x,quint16 y);
 
     static qreal scaleCoordinate(qreal X);
     static qreal scaleCoordinateX(qreal X);
@@ -95,8 +95,8 @@ public:
     static qreal getDeltaY();
     static QPointF getDelta();
 
-    static int getCursorX();
-    static int getCursorY();
+    static qint32 getCursorX();
+    static qint32 getCursorY();
 
     [[maybe_unused]]
     static QPoint getCursor();
@@ -104,8 +104,8 @@ public:
     static void startMousePress(qint16 x, qint16 y);
     static void mouseMove();
 
-    static int getCursorDeltaX();
-    static int getCursorDeltaY();
+    static qint32 getCursorDeltaX();
+    static qint32 getCursorDeltaY();
 
     static qreal logicCursorX();
     static qreal logicCursorY();

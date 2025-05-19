@@ -23,7 +23,7 @@ private:
     bool drawingInProgress; // To track the status
     qint16 tabPressCount; // For hints
 
-    static QColor hintColor(); // Grey line
+    static inline QColor hintColor(); // Grey line
     static void releaseTabIfPressed(); // Pressing tab
 
     void resetCoordinates(); // Reset everything
@@ -38,7 +38,7 @@ public:
     [[maybe_unused]] explicit DrawMouse(QObject* parent = nullptr);
 
     // Calculating the angle
-    static qreal snapAngle(qreal angle);
+    static inline qreal snapAngle(qreal angle);
 
     // Drawing shapes with the mouse
     void DrawFiguresMouse(QPainter& painter,const QPointF& cursor);

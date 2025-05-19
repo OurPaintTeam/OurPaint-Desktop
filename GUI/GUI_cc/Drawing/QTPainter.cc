@@ -18,7 +18,7 @@ QTPainter::QTPainter(QWidget* parent) : QFrame(parent), drawing(false) {
     setAttribute(Qt::WA_AcceptTouchEvents);
 
     Scaling::updateScaling();
-    Scaling::setStartMonitorSize(static_cast<qint16>(width()), static_cast<qint16>(height()));
+    Scaling::setStartMonitorSize(static_cast<quint16>(width()), static_cast<quint16>(height()));
 }
 
 
@@ -132,9 +132,9 @@ void QTPainter::selectedClear() {
 
 
 bool QTPainter::findClosesObject() {
-    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-    bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
-    bool shiftPress = ModeManager::getActiveMode(KeyMode::Shift);
+    const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
+    const bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
+    const bool shiftPress = ModeManager::getActiveMode(KeyMode::Shift);
 
     if (!leftClick && !doubleClick) {
         return false;
@@ -269,7 +269,7 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
         format = format.mid(1);
     }
 
-    QString originalFormat = format.toLower();
+    const QString originalFormat = format.toLower();
     QString chosenFormat;
 
     if (originalFormat == "jpg" || originalFormat == "jpeg") {
@@ -426,7 +426,7 @@ void QTPainter::arcsInRect(QRectF& rect) {
 
 [[maybe_unused]] void QTPainter::resizeEvent(QResizeEvent* event) {
     QFrame::resizeEvent(event);
-    Scaling::setActualMonitorSize(width(), height());
+    Scaling::setActualMonitorSize(static_cast<quint16>(width()), static_cast<quint16>(height()));
     update();
 }
 
@@ -442,7 +442,7 @@ void QTPainter::paintEvent(QPaintEvent* event) {
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     // Moving to the center of the screen
-    painter.translate((int) (width() / 2 + Scaling::getDeltaX()), (int) (height() / 2 + Scaling::getDeltaY()));
+    painter.translate((qint32) (width() / 2 + Scaling::getDeltaX()), (qint32) (height() / 2 + Scaling::getDeltaY()));
 
     DrawBackground::backgroundRender(painter);
 
@@ -608,7 +608,7 @@ void QTPainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {
 
 void QTPainter::onWorkWindowResized() {
     // When changing the size of the parent window, we change the size
-    Scaling::setActualMonitorSize(parentWidget()->width(), parentWidget()->height());
+    Scaling::setActualMonitorSize(static_cast<quint16>(parentWidget()->width()), static_cast<quint16>(parentWidget()->height()));
     resize(parentWidget()->size());
 }
 

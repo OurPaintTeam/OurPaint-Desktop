@@ -6,37 +6,37 @@ qreal Scaling::zoom = userUnitSize;
 qreal Scaling::scale = 1.0;
 [[maybe_unused]] bool Scaling::usersResize = false;
 
-qreal Scaling::Delta::X = 0;
-qreal Scaling::Delta::Y = 0;
+qreal Scaling::Delta::X = 0.0;
+qreal Scaling::Delta::Y = 0.0;
 
 qint16 Scaling::LastMousePos::x = 0;
 qint16 Scaling::LastMousePos::y = 0;
 
-qint16 Scaling::StartMonitorSize::StartMonitorWidth = 1;
-qint16 Scaling::StartMonitorSize::StartMonitorHeight = 1;
+quint16 Scaling::StartMonitorSize::StartMonitorWidth = 1;
+quint16 Scaling::StartMonitorSize::StartMonitorHeight = 1;
 
 qreal Scaling::CenteredCoordinates::CenteredCoordinatesX = 1.0;
 qreal Scaling::CenteredCoordinates::CenteredCoordinatesY = 1.0;
 
-qint16 Scaling::ActualMonitorSize::ActualMonitorWidth = 1;
-qint16 Scaling::ActualMonitorSize::ActualMonitorHeight = 1;
+quint16 Scaling::ActualMonitorSize::ActualMonitorWidth = 1;
+quint16 Scaling::ActualMonitorSize::ActualMonitorHeight = 1;
 
 qint16 Scaling::Cursor::x = 0;
 qint16 Scaling::Cursor::y = 0;
 
-[[maybe_unused]] qint16 Scaling::getStartWidth() {
+[[maybe_unused]] quint16 Scaling::getStartWidth() {
     return Scaling::StartMonitorSize::StartMonitorWidth;
 }
 
-[[maybe_unused]] qint16 Scaling::getStartHeight() {
+[[maybe_unused]] quint16 Scaling::getStartHeight() {
     return Scaling::StartMonitorSize::StartMonitorHeight;
 }
 
-qint16 Scaling::getActualMonitorWidth() {
+quint16 Scaling::getActualMonitorWidth() {
     return Scaling::ActualMonitorSize::ActualMonitorWidth;
 }
 
-qint16 Scaling::getActualMonitorHeight() {
+quint16 Scaling::getActualMonitorHeight() {
     return Scaling::ActualMonitorSize::ActualMonitorHeight;
 }
 
@@ -73,14 +73,14 @@ void Scaling::updateScaling() {
     usersResize = false;
 }
 
-void Scaling::setStartMonitorSize(qint16 x, qint16 y) {
+void Scaling::setStartMonitorSize(quint16 x, quint16 y) {
     Scaling::StartMonitorSize::StartMonitorWidth = x;
     Scaling::StartMonitorSize::StartMonitorHeight = y;
     Scaling::CenteredCoordinates::CenteredCoordinatesX = x / 2.0;
     Scaling::CenteredCoordinates::CenteredCoordinatesY = y / 2.0;
 }
 
-void Scaling::setActualMonitorSize(qint16 x, qint16 y) {
+void Scaling::setActualMonitorSize(quint16 x, quint16 y) {
     Scaling::ActualMonitorSize::ActualMonitorWidth = x;
     Scaling::ActualMonitorSize::ActualMonitorHeight = y;
     Scaling::CenteredCoordinates::CenteredCoordinatesX = x / 2.0;
@@ -152,8 +152,8 @@ void Scaling::setZoomZero() {
     usersResize = true;
     zoom = userUnitSize;
     scale = 1.0;
-    Scaling::Delta::X = 0;
-    Scaling::Delta::Y = 0;
+    Scaling::Delta::X = 0.0;
+    Scaling::Delta::Y = 0.0;
 }
 
 qint16 Scaling::getUserUnitSize() {
@@ -181,11 +181,11 @@ QPointF Scaling::getDelta() {
     return {Scaling::getDeltaX(), Scaling::getDeltaY()};
 }
 
-int Scaling::getCursorX() {
+qint32 Scaling::getCursorX() {
     return Scaling::Cursor::x;
 }
 
-int Scaling::getCursorY() {
+qint32 Scaling::getCursorY() {
     return Scaling::Cursor::y;
 }
 
@@ -223,8 +223,8 @@ void Scaling::startMousePress(qint16 x, qint16 y) {
 
 void Scaling::mouseMove() {
     usersResize = true;
-    int deltaX_ = Scaling::Cursor::x - Scaling::LastMousePos::x;
-    int deltaY_ = Scaling::Cursor::y - Scaling::LastMousePos::y;
+    qint32 deltaX_ = Scaling::Cursor::x - Scaling::LastMousePos::x;
+    qint32 deltaY_ = Scaling::Cursor::y - Scaling::LastMousePos::y;
 
     setDelta(deltaX_, deltaY_);
 
@@ -232,14 +232,14 @@ void Scaling::mouseMove() {
     Scaling::LastMousePos::y = Scaling::Cursor::y;
 }
 
-int Scaling::getCursorDeltaX() {
-    int temp = Scaling::Cursor::x - Scaling::LastMousePos::x;
+qint32 Scaling::getCursorDeltaX() {
+    qint32 temp = Scaling::Cursor::x - Scaling::LastMousePos::x;
     Scaling::LastMousePos::x = Scaling::Cursor::x;
     return temp;
 }
 
-int Scaling::getCursorDeltaY() {
-    int temp = -Scaling::Cursor::y + Scaling::LastMousePos::y;
+qint32 Scaling::getCursorDeltaY() {
+    qint32 temp = -Scaling::Cursor::y + Scaling::LastMousePos::y;
     Scaling::LastMousePos::y = Scaling::Cursor::y;
     return temp;
 }

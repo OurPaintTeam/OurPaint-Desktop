@@ -5,7 +5,7 @@
         : QObject(parent), drawingInProgress(false), tabPressCount(0) {}
 
 
-QColor DrawMouse::hintColor() {
+inline QColor DrawMouse::hintColor() {
     return {169, 169, 169, 128};
 }
 
@@ -24,8 +24,8 @@ void DrawMouse::releaseTabIfPressed() {
 }
 
 
-qreal DrawMouse::snapAngle(qreal angle) {
-    return std::round(angle / 45.0) * 45.0;
+inline qreal DrawMouse::snapAngle(qreal angle) {
+    return qRound(angle / 45.0) * 45.0;
 }
 
 
@@ -79,16 +79,15 @@ void DrawMouse::DrawFiguresMouse(QPainter& painter,const QPointF& cursor) {
     const qreal cursorY = std::round(cursor.y() * 10.0) / 10.0;
     const QPointF Cursor(cursorX, cursorY);
 
-    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-    bool rightClick = ModeManager::getActiveMode(MouseMode::RightClick);
+    const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
+    const bool rightClick = ModeManager::getActiveMode(MouseMode::RightClick);
+    const bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 
     bool modePoint = ModeManager::getActiveMode(WorkModes::Point);
     bool modeSection = ModeManager::getActiveMode(WorkModes::Section);
     bool modeCircle = ModeManager::getActiveMode(WorkModes::Circle);
     bool modeArc = ModeManager::getActiveMode(WorkModes::Arc);
 
-
-    bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 
     if (modePoint && !leftClick) {
         DrawFigures::setPen(hintColor());
@@ -171,7 +170,7 @@ void DrawMouse::drawSections(QPainter& painter, const QPointF& startCoordinates,
     const qreal cursorX = std::round(cursor.x() * 10.0) / 10.0;
     const qreal cursorY = std::round(cursor.y() * 10.0) / 10.0;
     const QPointF Cursor(cursorX, cursorY);
-    bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
+    const bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 
     if (shiftPressed) {
         const QPointF snapped = getSnappedPoint(startCoordinates, Cursor);
@@ -184,8 +183,8 @@ void DrawMouse::drawSections(QPainter& painter, const QPointF& startCoordinates,
 
 void DrawMouse::drawHints(QPainter& painter, const QPointF& closesPoint,const QPointF& cursor) {
 
-    bool tabPressed = ModeManager::getActiveMode(KeyMode::Tab);
-    bool modeSection = ModeManager::getActiveMode(WorkModes::Section);
+    const bool tabPressed = ModeManager::getActiveMode(KeyMode::Tab);
+    const  bool modeSection = ModeManager::getActiveMode(WorkModes::Section);
 
     if (modeSection) {
         if (tabPressed) {
