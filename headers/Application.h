@@ -33,6 +33,7 @@
 #include "CommandDeleteArc.h"
 #include "CommandAddRequirement.h"
 #include "CommandDeleteRequirement.h"
+#include "CommandMove.h"
 
 class Application : public QObject {
 Q_OBJECT
@@ -67,6 +68,9 @@ private:
 
 private:
     const QString pathTxtFileCommands = "../CommandsFile.txt";
+
+    bool isStartMoving;
+    std::vector<ObjectData> pre_move_object_states;
 
 private slots:
     void autoSave();

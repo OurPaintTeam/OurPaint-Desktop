@@ -8,7 +8,9 @@ Application::Application(int& argc, char** argv)
           username("User"),
           server(username),
           client(username),
-          undoRedo(100) {
+          undoRedo(100),
+          isStartMoving(true),
+          pre_move_object_states() {
 
 
     initLogger();
@@ -97,18 +99,32 @@ void Application::autoSave() {
     qDebug() << "Save to txt.";
 }
 
-    void Application::setupQTPainterConnections() {
+void Application::setupQTPainterConnections() {
     if (painter) {
         // Двойное нажатие на обьект и открытие его в левом меню
         QObject::connect(painter, &QTPainter::DoubleClickOnObject, []() {
         });
 
-        QObject::connect(painter, &QTPainter::EndMoving, [](){
-
+        QObject::connect(painter, &QTPainter::EndMoving, [this](){
+            UndoRedo::CommandMove* cmd = new UndoRedo::CommandMove(scene, pre_move_object_states);
+            UndoRedo::Transaction txn(cmd->description());
+            txn.addCommand(cmd);
+            undoRedo.push(std::move(txn));
+            isStartMoving = true;
+            painter->draw();
         });
 
         // Перемещение точки
         QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
+            if (isStartMoving) {
+                // I'm afraid. It's really dangerous.
+                Component& c = scene.findComponentByID(vec_id[0]);
+                for (auto& id : c.objectIDs()) {
+                    pre_move_object_states.push_back(scene.getObjectData(id));
+                }
+                isStartMoving = false;
+            }
+
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
 
             try {
@@ -127,6 +143,14 @@ void Application::autoSave() {
 
         // Перемещение отрезка
         QObject::connect(painter, &QTPainter::MovingSection, [this](std::vector<ID> vec_id,QPointF p1,QPointF p2) {
+            if (isStartMoving) {
+                Component& c = scene.findComponentByID(vec_id[0]);
+                for (auto& id : c.objectIDs()) {
+                    pre_move_object_states.push_back(scene.getObjectData(id));
+                }
+                isStartMoving = false;
+            }
+
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
@@ -152,6 +176,14 @@ void Application::autoSave() {
 
         // Перемещение круга
         QObject::connect(painter, &QTPainter::MovingCircle, [this](std::vector<ID> vec_id,QPointF offset) {
+            if (isStartMoving) {
+                Component& c = scene.findComponentByID(vec_id[0]);
+                for (auto& id : c.objectIDs()) {
+                    pre_move_object_states.push_back(scene.getObjectData(id));
+                }
+                isStartMoving = false;
+            }
+
 
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
@@ -180,6 +212,14 @@ void Application::autoSave() {
 
         // Перемещение арки
         QObject::connect(painter, &QTPainter::MovingArc, [this](std::vector<ID> vec_id) {
+            if (isStartMoving) {
+                Component& c = scene.findComponentByID(vec_id[0]);
+                for (auto& id : c.objectIDs()) {
+                    pre_move_object_states.push_back(scene.getObjectData(id));
+                }
+                isStartMoving = false;
+            }
+
 
             double dx = Scaling::logic(Scaling::getCursorDeltaX());
             double dy = Scaling::logic(Scaling::getCursorDeltaY());
