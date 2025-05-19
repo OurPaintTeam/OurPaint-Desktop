@@ -868,6 +868,7 @@ void Application::setupAddingCommandsConnections() {
         if (!b) {
             mainWind.showError("undo failed");
         }
+        leftMenu->updateLeftMenu();
     });
 
     // REDO
@@ -876,6 +877,7 @@ void Application::setupAddingCommandsConnections() {
         if (!b) {
             mainWind.showError("redo failed");
         }
+        leftMenu->updateLeftMenu();
     });
 }
 
