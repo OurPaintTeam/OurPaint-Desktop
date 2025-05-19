@@ -1,6 +1,6 @@
 #include "Application.h"
 
-Application::Application(int &argc, char **argv)
+Application::Application(int& argc, char** argv)
         : app(argc, argv),
           mainWind(),
           scene(nullptr),
@@ -48,7 +48,7 @@ void Application::initLogger() {
 
         qInstallMessageHandler(guiLogger);
 
-    } catch (const std::runtime_error &error) {
+    } catch (const std::runtime_error& error) {
         mainWind.showWarning("Can't open or create log file!");
     }
 }
@@ -88,14 +88,13 @@ void Application::initialize() {
 }
 
 
-
 void Application::setupQTPainterConnections() {
     if (painter) {
 
         // Double-clicking on an object and opening it in the left menu
         QObject::connect(painter, &QTPainter::DoubleClickOnObject, [this](ID id) {
-           // QModelIndex index=leftMenu->selectFigureById(id.get());
-           // mainWind.selectLeftMenuElem(index);
+            // QModelIndex index=leftMenu->selectFigureById(id.get());
+            // mainWind.selectLeftMenuElem(index);
         });
 
 
@@ -110,7 +109,7 @@ void Application::setupQTPainterConnections() {
                     scene.setPoint(vec_id[i], cursorNow.x(), cursorNow.y());
                 }
                 leftMenu->updateLeftMenu();
-            } catch (const std::exception &a) {
+            } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
 
@@ -118,30 +117,31 @@ void Application::setupQTPainterConnections() {
         });
 
 
-        QObject::connect(painter, &QTPainter::MovingSection, [this](const QVector<ID>& vec_id,const QPointF& p1,const QPointF& p2) {
-            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
-            QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
+        QObject::connect(painter, &QTPainter::MovingSection,
+                         [this](const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
+                             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
+                             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
-            try {
-                if (vec_id.size() == 1) {
-                    scene.setSection(vec_id[0], cursorNow.x() + p1.x(), cursorNow.y() + p1.y(),
-                                     cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
-                    leftMenu->refreshAllLinkedParams();
-                    return;
-                }
-                for (std::size_t i = 0; i < vec_id.size(); ++i) {
-                    scene.moveSection(vec_id[i], delta.x(), delta.y());
-                }
-                leftMenu->refreshAllLinkedParams();
-            } catch (const std::exception &a) {
-                mainWind.showError(a.what());
-            }
-             scene.paint();
+                             try {
+                                 if (vec_id.size() == 1) {
+                                     scene.setSection(vec_id[0], cursorNow.x() + p1.x(), cursorNow.y() + p1.y(),
+                                                      cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
+                                     leftMenu->refreshAllLinkedParams();
+                                     return;
+                                 }
+                                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
+                                     scene.moveSection(vec_id[i], delta.x(), delta.y());
+                                 }
+                                 leftMenu->refreshAllLinkedParams();
+                             } catch (const std::exception& a) {
+                                 mainWind.showError(a.what());
+                             }
+                             scene.paint();
 
-        });
+                         });
 
 
-        QObject::connect(painter, &QTPainter::MovingCircle, [this](const QVector<ID>& vec_id,const QPointF& offset) {
+        QObject::connect(painter, &QTPainter::MovingCircle, [this](const QVector<ID>& vec_id, const QPointF& offset) {
 
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
@@ -160,10 +160,10 @@ void Application::setupQTPainterConnections() {
                     scene.moveCircle(vec_id[i], delta.x(), delta.y());
                 }
                 leftMenu->refreshAllLinkedParams();
-            } catch (const std::exception &a) {
+            } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
-             scene.paint();
+            scene.paint();
         });
 
 
@@ -177,10 +177,10 @@ void Application::setupQTPainterConnections() {
                     scene.moveArc(ID(vec_id[i]), dx, dy);
                 }
                 leftMenu->refreshAllLinkedParams();
-            } catch (const std::exception &a) {
+            } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
-             scene.paint();
+            scene.paint();
         });
 
         // Drawing a point
@@ -188,24 +188,24 @@ void Application::setupQTPainterConnections() {
                          [this](const QPointF& point) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
-                                     addPoints(point.x(),point.y());
+                                     addPoints(point.x(), point.y());
                                      server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("point " + QString::number(point.y()) + " " +
                                                                 QString::number(point.x()));
                                  }
                              } else {
-                                 addPoints(point.x(),point.y());
+                                 addPoints(point.x(), point.y());
                              }
                              updateState();
                          });
 
         // Drawing a line
         QObject::connect(painter, &QTPainter::SigSection,
-                         [this](const QPointF& startPoint,const QPointF& endPoint) {
+                         [this](const QPointF& startPoint, const QPointF& endPoint) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
-                                     addSections(startPoint.x(),startPoint.y(),endPoint.x(),endPoint.y());
+                                     addSections(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y());
                                      server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("section " + QString::number(startPoint.x()) + " " +
@@ -214,7 +214,7 @@ void Application::setupQTPainterConnections() {
                                                                 QString::number(endPoint.y()));
                                  }
                              } else {
-                                 addSections(startPoint.x(),startPoint.y(),endPoint.x(),endPoint.y());
+                                 addSections(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y());
                              }
                              updateState();
                          });
@@ -222,10 +222,10 @@ void Application::setupQTPainterConnections() {
 
         // Drawing a circle
         QObject::connect(painter, &QTPainter::SigCircle,
-                         [this](const QPointF& center,const double radius) {
+                         [this](const QPointF& center, const double radius) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
-                                     addCircles(center.x(),center.y(),radius);
+                                     addCircles(center.x(), center.y(), radius);
                                      server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("circle " + QString::number(center.x()) + " " +
@@ -233,7 +233,7 @@ void Application::setupQTPainterConnections() {
                                                                 QString::number(radius));
                                  }
                              } else {
-                                 addCircles(center.x(),center.y(),radius);
+                                 addCircles(center.x(), center.y(), radius);
                              }
                              updateState();
                          });
@@ -241,10 +241,11 @@ void Application::setupQTPainterConnections() {
 
         // Drawing an arcs
         QObject::connect(painter, &QTPainter::SigArc,
-                         [this](const QPointF& startPoint,const QPointF& endPoint, const QPointF& centerPoint) {
+                         [this](const QPointF& startPoint, const QPointF& endPoint, const QPointF& centerPoint) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
-                                     addArcs(startPoint.x(), startPoint.y(),endPoint.x(),endPoint.y(),  centerPoint.x(), centerPoint.y());
+                                     addArcs(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(),
+                                             centerPoint.x(), centerPoint.y());
                                      server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("arc " + QString::number(startPoint.x()) + " " +
@@ -255,7 +256,8 @@ void Application::setupQTPainterConnections() {
                                                                 QString::number(centerPoint.y()));
                                  }
                              } else {
-                                 addArcs(startPoint.x(), startPoint.y(),endPoint.x(),endPoint.y(),  centerPoint.x(), centerPoint.y());
+                                 addArcs(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), centerPoint.x(),
+                                         centerPoint.y());
                              }
                              updateState();
                          });
@@ -271,13 +273,13 @@ void Application::setupQTPainterConnections() {
             QVector<ID> vecCircle = painter->getVecSelectedIDCircles();
             QVector<ID> vecArcs = painter->getVecSelectedIDArcs();
 
-            deleteOwnPoints(vecPoint,vecSection,vecCircle,vecArcs);
-            deleteObjects(vecPoint,vecSection,vecCircle,vecArcs);
+            deleteOwnPoints(vecPoint, vecSection, vecCircle, vecArcs);
+            deleteObjects(vecPoint, vecSection, vecCircle, vecArcs);
 
             painter->selectedClear();
-             scene.paint();
+            scene.paint();
             updateState();
-        } catch (std::exception &e) {
+        } catch (std::exception& e) {
             mainWind.showError(e.what());
         }
     });
@@ -287,35 +289,35 @@ void Application::setupQTPainterConnections() {
         objectsBuffer.clear();
         fillSelectedIDBuffer();
         painter->selectedClear();
-         scene.paint();
+        scene.paint();
     });
 
     // ctrl+v
     QObject::connect(&mainWind, &MainWindow::PASTE, [this]() {
         try {
-            for (auto &obj: objectsBuffer) {
+            for (auto& obj: objectsBuffer) {
                 ID id = scene.addObject(obj);
                 if (obj.et == ET_POINT) {
-                    std::vector<const double *> param = scene.getPointParams(id);
+                    std::vector<const double*> param = scene.getPointParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
                     });
                 } else if (obj.et == ET_SECTION) {
-                    std::vector<const double *> param = scene.getSectionParams(id);
+                    std::vector<const double*> param = scene.getSectionParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
                                                        id.get(), id.get() - 1, id.get() - 2,
                                                        {param[0], param[1]}, {param[2], param[3]});
                     });
                 } else if (obj.et == ET_CIRCLE) {
-                    std::vector<const double *> param = scene.getCircleParams(id);
+                    std::vector<const double*> param = scene.getCircleParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addCircleInLeftMenu("Circle", "Center",
                                                       id.get(), id.get() - 1,
                                                       {param[0], param[1]}, *param[2]);
                     });
                 } else if (obj.et == ET_ARC) {
-                    std::vector<const double *> param = scene.getArcParams(id);
+                    std::vector<const double*> param = scene.getArcParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addArcInLeftMenu("Arc", "Point", "Point", "Center",
                                                    id.get(), id.get() - 1, id.get() - 2, id.get() - 3,
@@ -323,8 +325,8 @@ void Application::setupQTPainterConnections() {
                     });
                 }
             }
-        }catch (std::runtime_error &error){
-            qWarning()<<error.what();
+        } catch (std::runtime_error& error) {
+            qWarning() << error.what();
             mainWind.showError("Error pasted");
         }
         updateState();
@@ -335,7 +337,7 @@ void Application::setupQTPainterConnections() {
         objectsBuffer.clear();
         fillSelectedIDBuffer();
 
-        for(auto& obj: objectsBuffer){
+        for (auto& obj: objectsBuffer) {
 
             vecCalls.push_back([=, this]() {
                 leftMenu->removeFigureById(obj.id.get());
@@ -354,12 +356,14 @@ void Application::setupQTPainterConnections() {
 }
 
 
-void Application::deleteOwnPoints(QVector<ID>& vecPoints,const QVector<ID>& vecSections,const QVector<ID>& vecCircles,const QVector<ID>& vecArcs){
-    for (const auto &sectionID : vecSections) {
+void Application::deleteOwnPoints(QVector<ID>& vecPoints, const QVector<ID>& vecSections, const QVector<ID>& vecCircles,
+                                  const QVector<ID>& vecArcs) {
+
+    for (const auto& sectionID: vecSections) {
         ObjectData obj = scene.getObjectData(sectionID);
         const std::vector<ID>& points = obj.subObjects;
 
-        for (const auto &p : points) {
+        for (const auto& p: points) {
             int index = vecPoints.indexOf(p);
             if (index != -1) {
                 vecPoints.removeAt(index);
@@ -367,11 +371,11 @@ void Application::deleteOwnPoints(QVector<ID>& vecPoints,const QVector<ID>& vecS
         }
     }
 
-    for (auto &circleID: vecCircles) {
+    for (auto& circleID: vecCircles) {
         ObjectData obj = scene.getObjectData(circleID);
         std::vector<ID> points = obj.subObjects;
 
-        for (auto &p: points) {
+        for (auto& p: points) {
             int index = vecPoints.indexOf(p);
             if (index != -1) {
                 vecPoints.removeAt(index);
@@ -381,25 +385,26 @@ void Application::deleteOwnPoints(QVector<ID>& vecPoints,const QVector<ID>& vecS
 }
 
 
-void Application::deleteObjects(QVector<ID>& vecPoints,QVector<ID>& vecSections,QVector<ID>& vecCircles,QVector<ID>& vecArcs){
+void Application::deleteObjects(QVector<ID>& vecPoints, QVector<ID>& vecSections, QVector<ID>& vecCircles,
+                                QVector<ID>& vecArcs) {
     UndoRedo::Transaction txn("Delete objects");
 
     for (std::size_t i = 0; i < vecPoints.size(); ++i) {
-        UndoRedo::CommandDeletePoint *cmd = new UndoRedo::CommandDeletePoint(scene, vecPoints[i]);
+        UndoRedo::CommandDeletePoint* cmd = new UndoRedo::CommandDeletePoint(scene, vecPoints[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
             leftMenu->removeFigureById(vecPoints[i].get());
         });
     }
     for (std::size_t i = 0; i < vecSections.size(); ++i) {
-        UndoRedo::CommandDeleteSection *cmd = new UndoRedo::CommandDeleteSection(scene, vecSections[i]);
+        UndoRedo::CommandDeleteSection* cmd = new UndoRedo::CommandDeleteSection(scene, vecSections[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
             leftMenu->removeFigureById(vecSections[i].get());
         });
     }
     for (std::size_t i = 0; i < vecCircles.size(); ++i) {
-        UndoRedo::CommandDeleteCircle *cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircles[i]);
+        UndoRedo::CommandDeleteCircle* cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircles[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
             leftMenu->removeFigureById(vecCircles[i].get());
@@ -414,22 +419,22 @@ void Application::fillSelectedIDBuffer() {
     QVector<ID> bufferSelectedIDSections = painter->getVecSelectedIDSections();
     QVector<ID> bufferSelectedIDCircles = painter->getVecSelectedIDCircles();
     QVector<ID> bufferSelectedIDArcs = painter->getVecSelectedIDArcs();
-    
-    deleteOwnPoints(bufferSelectedIDPoints,bufferSelectedIDSections,bufferSelectedIDCircles,bufferSelectedIDArcs);
 
-    for (auto& id : bufferSelectedIDPoints) {
+    deleteOwnPoints(bufferSelectedIDPoints, bufferSelectedIDSections, bufferSelectedIDCircles, bufferSelectedIDArcs);
+
+    for (auto& id: bufferSelectedIDPoints) {
         objectsBuffer.push_back(scene.getObjectData(id));
     }
 
-    for (auto& id : bufferSelectedIDSections) {
+    for (auto& id: bufferSelectedIDSections) {
         objectsBuffer.push_back(scene.getObjectData(id));
     }
 
-    for (auto& id : bufferSelectedIDCircles) {
+    for (auto& id: bufferSelectedIDCircles) {
         objectsBuffer.push_back(scene.getObjectData(id));
     }
 
-    for (auto& id : bufferSelectedIDArcs) {
+    for (auto& id: bufferSelectedIDArcs) {
         objectsBuffer.push_back(scene.getObjectData(id));
     }
 }
@@ -444,7 +449,7 @@ void Application::setupServerConnections() {
 
     });
 
-    QObject::connect(&mainWind, &MainWindow::NameUsers, [this](const QString &text) {
+    QObject::connect(&mainWind, &MainWindow::NameUsers, [this](const QString& text) {
         username = text;
         if (!ModeManager::getConnection()) {
             server.setName(username);
@@ -477,7 +482,7 @@ void Application::setupServerConnections() {
         }
     });
 
-    QObject::connect(&mainWind, &MainWindow::SigOpenServer, [&](const QString &text) {
+    QObject::connect(&mainWind, &MainWindow::SigOpenServer, [&](const QString& text) {
         if (ModeManager::getConnection() || ModeManager::getFlagServer()) {
             mainWind.showError("Firstly disconnect!");
             mainWind.updateExitServerStyle(false);
@@ -496,7 +501,7 @@ void Application::setupServerConnections() {
         mainWind.showSuccess("Successfully connected to server!");
     });
 
-    QObject::connect(&mainWind, &MainWindow::SigJoinServer, [&](const QString &text) {
+    QObject::connect(&mainWind, &MainWindow::SigJoinServer, [&](const QString& text) {
         if (ModeManager::getConnection() || ModeManager::getFlagServer()) {
             mainWind.showError("Firstly disconnect!");
             return;
@@ -514,24 +519,24 @@ void Application::setupServerConnections() {
     });
 
     // Servers
-    QObject::connect(&server, &Server::newCommandReceived, [&](const QString &cmd) {
+    QObject::connect(&server, &Server::newCommandReceived, [&](const QString& cmd) {
         handler(cmd);
         updateState();
         server.sendToClients(QString::fromStdString(scene.to_string()));
     });
 
-    QObject::connect(&client, &Client::newStateReceived, [&](const QString &state) {
+    QObject::connect(&client, &Client::newStateReceived, [&](const QString& state) {
         // TODO scene.loadFromString(state.toStdString());
         updateState();
     });
 
     // Chat
-    QObject::connect(&client, &Client::newChatMessageReceived, [&](const QString &msg, const QString &name) {
+    QObject::connect(&client, &Client::newChatMessageReceived, [&](const QString& msg, const QString& name) {
         mainWind.setMessage(name.toStdString(), msg.toStdString());
         updateState();
     });
 
-    QObject::connect(&server, &Server::newMessageReceived, [&](const QString &msg, const QString &name) {
+    QObject::connect(&server, &Server::newMessageReceived, [&](const QString& msg, const QString& name) {
         mainWind.setMessage(name.toStdString(), msg.toStdString());
         updateState();
     });
@@ -540,7 +545,7 @@ void Application::setupServerConnections() {
         server.sendToClients(QString::fromStdString(scene.to_string()));
     });
 
-    QObject::connect(&mainWind, &MainWindow::EnterMessage, [this](const QString &text) {
+    QObject::connect(&mainWind, &MainWindow::EnterMessage, [this](const QString& text) {
         if (ModeManager::getConnection()) {
             if (ModeManager::getFlagServer()) {
                 mainWind.setMessage(username.toStdString(), text.toStdString());
@@ -682,7 +687,7 @@ void Application::setupRequirementsConnections() {
                 }
             }
         });
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
         mainWind.showError(e.what());
     }
 }
@@ -692,7 +697,7 @@ void Application::setupLeftMenuConnections() {
     if (leftMenu) {
         // Changing the settings in the left menu
         QObject::connect(leftMenu, &LeftMenuBar::figureParamsChanged,
-                         [this](const long long id, const std::string &type, const std::vector<double> &parameters) {
+                         [this](const long long id, const std::string& type, const std::vector<double>& parameters) {
                              if (id == 0) {
                                  mainWind.showError("ID = 0");
                                  return;
@@ -700,49 +705,49 @@ void Application::setupLeftMenuConnections() {
                              if (type == "Point" && parameters.size() == 2) {
                                  try {
                                      scene.setPoint(ID(id), parameters[0], parameters[1]);
-                                      scene.paint();
-                                 } catch (const std::exception &a) {
+                                     scene.paint();
+                                 } catch (const std::exception& a) {
                                      mainWind.showError(a.what());
                                  }
                              } else if (type == "Circle" && parameters.size() == 3) {
                                  try {
                                      scene.setCircle(ID(id), parameters[0], parameters[1], parameters[2]);
-                                      scene.paint();
-                                 } catch (const std::exception &a) {
+                                     scene.paint();
+                                 } catch (const std::exception& a) {
                                      mainWind.showError(a.what());
                                  }
                              } else if (type == "Section" && parameters.size() == 4) {
                                  try {
-                                     scene.setSection(ID(id), parameters[0], parameters[1], parameters[2], parameters[3]);
-                                      scene.paint();
-                                 } catch (const std::exception &a) {
+                                     scene.setSection(ID(id), parameters[0], parameters[1], parameters[2],
+                                                      parameters[3]);
+                                     scene.paint();
+                                 } catch (const std::exception& a) {
                                      mainWind.showError(a.what());
                                  }
-                             }
-                             else if (type == "Arc" && parameters.size() == 6) {
+                             } else if (type == "Arc" && parameters.size() == 6) {
                                  try {
                                      // TODO The arch does not store the radius!
-                                    // scene.setArc(ID(id), parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5]);
-                                      scene.paint();
-                                 } catch (const std::exception &a) {
+                                     // scene.setArc(ID(id), parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5]);
+                                     scene.paint();
+                                 } catch (const std::exception& a) {
                                      mainWind.showError(a.what());
                                  }
-                             }else{
+                             } else {
                                  mainWind.showError("Don't move element!");
                              }
                          });
 
 
         QObject::connect(leftMenu, &LeftMenuBar::reqParamChanged,
-                         [](const long long id, const double &parameter) {
+                         [](const long long id, const double& parameter) {
                              // TODD to change the requirement parameter by ID
                          });
 
 
         // Double-tap the left menu
         QObject::connect(leftMenu, &LeftMenuBar::doubleClickLeftMenu,
-                         [this](const long long int id,const std::string &type) {
-                            painter->selectedElemByID(ID(id),type);
+                         [this](const long long int id, const std::string& type) {
+                             painter->selectedElemByID(ID(id), type);
                              scene.paint();
                          });
     }
@@ -753,7 +758,7 @@ void Application::setupLeftMenuConnections() {
 void Application::setupAddingCommandsConnections() {
 
     // Console
-    QObject::connect(&mainWind, &MainWindow::EnterPressed, [&](const QString &command) {
+    QObject::connect(&mainWind, &MainWindow::EnterPressed, [&](const QString& command) {
         if (ModeManager::getConnection()) {
             if (ModeManager::getFlagServer()) {
                 handler(command);
@@ -769,40 +774,43 @@ void Application::setupAddingCommandsConnections() {
     });
 
     // Save
-    QObject::connect(&mainWind, &MainWindow::projectSaved, [this](const QString &fileName, QString format) {
+    QObject::connect(&mainWind, &MainWindow::projectSaved, [this](const QString& fileName, QString format) {
         if (format != (".ourp")) {
             scene.paint();
             painter->saveToImage(fileName, format);
         } else {
             std::string File = fileName.toStdString();
-            try { scene.saveToFile(File.c_str()); }
-            catch (std::runtime_error &error) {
+            try {
+                scene.saveToFile(File.c_str());
+            }
+            catch (std::runtime_error& error) {
                 qWarning("Don't save to file");
                 mainWind.showError("Don't save to file");
                 return;
             }
-             scene.paint();
+            scene.paint();
         }
         mainWind.showSuccess("The project is saved!");
     });
 
     //Load
-    QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString &fileName) {
+    QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString& fileName) {
         try {
             scene.clearImage();
             std::string File = fileName.toStdString();
             scene.loadFromFile(File.c_str());
+
             scene.paint();
             scene.paint();
             mainWind.showSuccess("The project is loaded!");
-        } catch (std::exception &e) {
+        } catch (std::exception& e) {
             qWarning(e.what());
             mainWind.showError(e.what());
         }
     });
 
     // Script
-    QObject::connect(&mainWind, &MainWindow::EmitScript, [&](const QString &fileName) {
+    QObject::connect(&mainWind, &MainWindow::EmitScript, [&](const QString& fileName) {
         std::string File = fileName.toStdString();
         std::ifstream Script(File);
 
@@ -850,14 +858,13 @@ void Application::setupAddingCommandsConnections() {
     });
 }
 
-
 void Application::updateState() {
 
-     scene.paint();
+    scene.paint();
 
-        for (auto &call: vecCalls) {
-            call();
-        }
+    for (auto& call: vecCalls) {
+        call();
+    }
 
     vecCalls.clear();
 
@@ -865,7 +872,7 @@ void Application::updateState() {
 }
 
 
-void Application::handler(const QString &command) {
+void Application::handler(const QString& command) {
 
     QStringList commandParts = command.split(' ');
 
@@ -875,7 +882,7 @@ void Application::handler(const QString &command) {
         double y = commandParts[2].toDouble(&yOk);
 
         if (xOk && yOk) {
-            addPoints(x,y);
+            addPoints(x, y);
         }
 
     } else if (commandParts[0] == "section" && commandParts.size() >= 5) {
@@ -885,7 +892,7 @@ void Application::handler(const QString &command) {
         double z = commandParts[3].toDouble(&zOk);
         double r = commandParts[4].toDouble(&rOk);
         if (xOk && yOk && zOk && rOk) {
-            addSections(x,y,z,r);
+            addSections(x, y, z, r);
         }
     } else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
         bool xOk, yOk, rOk;
@@ -894,7 +901,7 @@ void Application::handler(const QString &command) {
         double r = commandParts[3].toDouble(&rOk);
 
         if (xOk && yOk && rOk) {
-            addCircles(x,y,r);
+            addCircles(x, y, r);
         }
 
     } else if (commandParts[0] == "arc" && commandParts.size() >= 7) {
@@ -906,7 +913,7 @@ void Application::handler(const QString &command) {
         double cx = commandParts[5].toDouble(&cxOk);
         double cy = commandParts[6].toDouble(&cyOk);
         if (x0Ok && y0Ok && x1Ok && y1Ok && cxOk && cyOk) {
-            addArcs(x1,y1,x2,y2,cx,cy);
+            addArcs(x1, y1, x2, y2, cx, cy);
         }
 
     } else if (commandParts[0] == "exit") {
@@ -965,18 +972,18 @@ void Application::handler(const QString &command) {
                     mainWind.showError("Not right number of req");
                     break;
             }
-        } catch (std::exception &e) {
+        } catch (std::exception& e) {
             mainWind.showError(e.what());
         }
     } else if (commandParts[0] == "delReq" && commandParts.size() > 1) {
         ID reqID(commandParts[1].toInt());
-        UndoRedo::CommandDeleteRequirement *cmd = new UndoRedo::CommandDeleteRequirement(scene, reqID);
+        UndoRedo::CommandDeleteRequirement* cmd = new UndoRedo::CommandDeleteRequirement(scene, reqID);
         UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
     } else if (commandParts[0] == "delObj" && commandParts.size() > 1) {
         ID objID(commandParts[1].toInt());
-        UndoRedo::CommandDeleteObject *cmd = new UndoRedo::CommandDeleteObject(scene, objID);
+        UndoRedo::CommandDeleteObject* cmd = new UndoRedo::CommandDeleteObject(scene, objID);
         UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
@@ -994,17 +1001,17 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2, double paramete
     reqData.objects.push_back(id2);
     reqData.params.push_back(parameters);
     try {
-        UndoRedo::CommandAddRequirement *cmd = new UndoRedo::CommandAddRequirement(scene, reqData);
+        UndoRedo::CommandAddRequirement* cmd = new UndoRedo::CommandAddRequirement(scene, reqData);
         UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
 
         ModeManager::setSave(false);
         vecCalls.push_back([=, this]() {
-            leftMenu->addRequirementElem(name,name, RQ, id1.get(),
+            leftMenu->addRequirementElem(name, name, RQ, id1.get(),
                                          id2.get(), parameters);
         });
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
         mainWind.showError(e.what());
     }
 }
@@ -1019,36 +1026,36 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
     reqData.objects.push_back(id1);
     reqData.objects.push_back(id2);
     try {
-        UndoRedo::CommandAddRequirement *cmd = new UndoRedo::CommandAddRequirement(scene, reqData);
+        UndoRedo::CommandAddRequirement* cmd = new UndoRedo::CommandAddRequirement(scene, reqData);
         UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
 
         ModeManager::setSave(false);
         vecCalls.push_back([=, this]() {
-            leftMenu->addRequirementElem(name,name, RQ, id1.get(),
+            leftMenu->addRequirementElem(name, name, RQ, id1.get(),
                                          id2.get());
         });
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
         mainWind.showError(e.what());
     }
 }
 
 
-void Application::addPoints(double x,double y){
+void Application::addPoints(double x, double y) {
     ObjectData point;
     point.et = ET_POINT;
     point.params.push_back(x);
     point.params.push_back(y);
 
-    UndoRedo::CommandAddPoint *cmd = new UndoRedo::CommandAddPoint(scene, point);
+    UndoRedo::CommandAddPoint* cmd = new UndoRedo::CommandAddPoint(scene, point);
     UndoRedo::Transaction txn(cmd->description());
     txn.addCommand(cmd);
     undoRedo.push(std::move(txn));
 
     ID id = cmd->getPointID();
     ModeManager::setSave(false);
-    std::vector<const double*>  param=scene.getPointParams(id);
+    std::vector<const double*> param = scene.getPointParams(id);
 
     vecCalls.push_back([=, this]() {
         leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
@@ -1056,7 +1063,7 @@ void Application::addPoints(double x,double y){
 }
 
 
-void Application::addSections(double x0,double y0,double x1,double y1){
+void Application::addSections(double x0, double y0, double x1, double y1) {
     ObjectData section;
     section.et = ET_SECTION;
     section.params.push_back(x0);
@@ -1064,12 +1071,12 @@ void Application::addSections(double x0,double y0,double x1,double y1){
     section.params.push_back(x1);
     section.params.push_back(y1);
 
-    UndoRedo::CommandAddSection *cmd = new UndoRedo::CommandAddSection(scene, section);
+    UndoRedo::CommandAddSection* cmd = new UndoRedo::CommandAddSection(scene, section);
     UndoRedo::Transaction txn(cmd->description());
     txn.addCommand(cmd);
     undoRedo.push(std::move(txn));
     ID id = cmd->getSectionID();
-    std::vector<const double*>  param=scene.getSectionParams(id);
+    std::vector<const double*> param = scene.getSectionParams(id);
     ModeManager::setSave(false);
     vecCalls.push_back([=, this]() {
         leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
@@ -1079,29 +1086,29 @@ void Application::addSections(double x0,double y0,double x1,double y1){
 }
 
 
-void Application::addCircles(double x,double y,double r){
+void Application::addCircles(double x, double y, double r) {
     ObjectData circle;
     circle.et = ET_CIRCLE;
     circle.params.push_back(x);
     circle.params.push_back(y);
     circle.params.push_back(r);
 
-    UndoRedo::CommandAddCircle *cmd = new UndoRedo::CommandAddCircle(scene, circle);
+    UndoRedo::CommandAddCircle* cmd = new UndoRedo::CommandAddCircle(scene, circle);
     UndoRedo::Transaction txn(cmd->description());
     txn.addCommand(cmd);
     undoRedo.push(std::move(txn));
     ID id = cmd->getCircleID();
-    std::vector<const double*>  param=scene.getCircleParams(id);
+    std::vector<const double*> param = scene.getCircleParams(id);
 
     ModeManager::setSave(false);
     vecCalls.push_back([=, this]() {
         leftMenu->addCircleInLeftMenu("Circle", "Center",
-                                      id.get(),id.get()-1,
-                                      {param[0], param[1]},r);
+                                      id.get(), id.get() - 1,
+                                      {param[0], param[1]}, r);
     });
 }
 
-void Application::addArcs(double x0,double y0,double x1,double y1,double cx,double cy){
+void Application::addArcs(double x0, double y0, double x1, double y1, double cx, double cy) {
     ObjectData arc;
     arc.et = ET_ARC;
     arc.params.push_back(x0);
@@ -1112,17 +1119,17 @@ void Application::addArcs(double x0,double y0,double x1,double y1,double cx,doub
     arc.params.push_back(cy);
     arc.params.push_back(1);
 
-    UndoRedo::CommandAddArc *cmd = new UndoRedo::CommandAddArc(scene, arc);
+    UndoRedo::CommandAddArc* cmd = new UndoRedo::CommandAddArc(scene, arc);
     UndoRedo::Transaction txn(cmd->description());
     txn.addCommand(cmd);
     undoRedo.push(std::move(txn));
     ID id = cmd->getArcID();
-    std::vector<const double*>  param=scene.getArcParams(id);
+    std::vector<const double*> param = scene.getArcParams(id);
 
     ModeManager::setSave(false);
     vecCalls.push_back([=, this]() {
-        leftMenu->addArcInLeftMenu("Arc", "Point", "Point","Center",
-                                   id.get(), id.get() - 1, id.get() - 2,id.get() - 3,
-                                   {param[0], param[1]}, {param[2], param[3]},{param[4], param[5]});
+        leftMenu->addArcInLeftMenu("Arc", "Point", "Point", "Center",
+                                   id.get(), id.get() - 1, id.get() - 2, id.get() - 3,
+                                   {param[0], param[1]}, {param[2], param[3]}, {param[4], param[5]});
     });
 }

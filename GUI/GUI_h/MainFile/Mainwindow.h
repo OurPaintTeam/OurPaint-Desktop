@@ -86,21 +86,13 @@ public:
     ~MainWindow();
 
     QTPainter* getQTPainter() const;
-
     LeftMenuBar* getLeftMenuBar() const;
-
     void initConnections();
-
     void setupLeftMenu();
-
     void selectLeftMenuElem(QModelIndex& index);
-
     void updateStyle();
-
     void updateExitServerStyle(bool);
-
     void updateShapeCursor(const QPoint& pos);
-
     void setMessage(const std::string& name, const std::string& message);
 
     // Mouse Tracking
@@ -108,179 +100,107 @@ public:
 
     /***    Custom windows      ***/
     void showHelp();
-
     void showError(const QString& text);
-
     void showSuccess(const QString& text);
-
     void showWarning(const QString& text);
 
     /***     Сохранение и импорт настроек       ***/
     QString getUserName();
-
     void saveSettings();
-
     void loadSettings();
-
     void saveCommandsInTxt(const QString& path);
 
 protected:
 
     void closeEvent(QCloseEvent* event) override;
-
     void resizeEvent(QResizeEvent* event) override;
-
     void mousePressEvent(QMouseEvent* event) override;
-
     void mouseMoveEvent(QMouseEvent* event) override;
-
     void mouseReleaseEvent(QMouseEvent* event) override;
-
     void mouseDoubleClickEvent(QMouseEvent* event) override;
-
     void wheelEvent(QWheelEvent* event) override;
-
     bool event(QEvent* event) override;
-
     bool eventFilter(QObject* obj, QEvent* event) override;
-
     void keyPressEvent(QKeyEvent* event) override;
 
 
 public slots:
 
     void redo();
-
     void undo();
-
     void deleteButton();
-
     void cut();
-
     void paste();
-
     void copy();
 
     void loadProjectFile();
-
     void saveProjectToFile(const QString& format);
 
     void buttonScript();
-
     void openServer();
-
     void joinServer();
-
     void joinLocalServer();
-
     void exitSession();
-
     void Message();
 
     void Point();
-
     void Section();
-
     void Circle();
-
     void Arc();
 
     void FigMoving();
-
     void ToolMoving();
-
     void ToolSelected();
-
     void onWorkWindowResized();
 
     void firstReq();
-
     void secondReq();
-
     void thirdReq();
-
     void fourthReq();
-
     void fifthReq();
-
     void sixthReq();
-
     void seventhReq();
-
     void eighthReq();
-
     void ninthReq();
-
     void tenthReq();
-
     void onExportJPG();
-
     void onExportJPEG();
-
     void onExportPNG();
-
     void onExportBMP();
-
     void onExportTIFF();
-
     void onExportPDF();
-
     void onExportOURP();
-
     void onExportSVG();
 
 signals:
 
     void EnterPressed(const QString& command);
-
     void EnterMessage(const QString& text);
-
     void NameUsers(const QString& text);
-
     void SigOpenServer(const QString& text);
-
     void SigJoinServer(const QString& text);
-
     void SigExitSession();
-
     void projectSaved(const QString& fileName, QString format);
-
     void LoadFile(const QString& fileName);
-
     void EmitScript(const QString& fileName);
 
     void oneRequirements();
-
     void twoRequirements();
-
     void threeRequirements();
-
     void fourRequirements();
-
     void fiveRequirements();
-
     void sixRequirements();
-
     void sevenRequirements();
-
     void eightRequirements();
-
     void nineRequirements();
-
     void tenRequirements();
 
     void REDO();
-
     void UNDO();
-
     void DELETE();
-
     void CUT();
-
     void PASTE();
-
     void COPY();
-
     void resize();
 
 };

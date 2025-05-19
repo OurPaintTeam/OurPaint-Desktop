@@ -47,7 +47,9 @@ void LeftMenuBar::refreshLinkedParams(TreeNode* node) {
 }
 
 void LeftMenuBar::paramChanged(TreeNode* node) {
-    if (!node) { return; }
+    if (!node) {
+        return;
+    }
 
     long long id = 0;
 
