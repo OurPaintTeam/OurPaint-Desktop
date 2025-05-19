@@ -133,6 +133,7 @@ void FileOurP::saveToOurP(const std::string &fileName) const {
     if (!file.is_open()) {
         throw std::runtime_error("File not found");
     }
+
     std::vector<objectInFile> sort_objects = m_objects;
     std::vector<requirementInFile> sort_requirements = m_requirements;
     std::sort(sort_objects.begin(), sort_objects.end(), [](const objectInFile &a, const objectInFile &b) {
@@ -160,7 +161,12 @@ void FileOurP::loadFromOurP(const std::string &fileName) {
     if (!file.is_open()) {
         throw std::runtime_error("File not found");
     }
-    parseFile(file);
+
+    try {
+        parseFile(file);
+    }catch (std::runtime_error &error){
+        throw error;
+    }
 }
 
 const std::vector<objectInFile> &FileOurP::getObjects() const {

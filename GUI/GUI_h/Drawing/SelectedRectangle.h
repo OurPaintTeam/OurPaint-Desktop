@@ -13,12 +13,12 @@ class SelectedRectangle {
 private:
     QPointF startMouse;
     QPointF endMouse;
-    bool isSelecting = false;
-    bool end = false;
+    bool isSelecting;
+    bool end;
 
 public:
-    QRectF selected(QPainter &painter);
-
+    SelectedRectangle();
+    QRectF selected(QPainter& painter);
     void clear();
 };
 

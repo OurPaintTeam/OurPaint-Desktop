@@ -12,18 +12,18 @@ Scene::Scene(Painter* p) :
         _painter(p),
         _isRectangleDirty(false),
         _allFiguresRectangle(),
-        _graph()
-        {
+        _graph() {
     _points.reserve(std::size_t(1024));
     _sections.reserve(std::size_t(1024));
     _circles.reserve(std::size_t(1024));
     _arcs.reserve(std::size_t(1024));
     _requirements.reserve(std::size_t(512));
+
     if (p) {
-        p->initPoint(_points);
-        p->initSection(_sections);
-        p->initCircle(_circles);
-        p->initArc(_arcs);
+        p->initPointCase(_points);
+        p->initSectionCase(_sections);
+        p->initCircleCase(_circles);
+        p->initArcCase(_arcs);
     }
 }
 
@@ -35,7 +35,7 @@ Scene::~Scene() {
     for (auto& pair: _points) {
         pointsWithoutDub.insert(pair.second);
     }
-    for (auto& p : pointsWithoutDub) {
+    for (auto& p: pointsWithoutDub) {
         delete p;
     }
     pointsWithoutDub.clear();
@@ -226,7 +226,7 @@ bool Scene::deletePoint(ID pointID) {
     }
 
     std::vector<Edge<ID, ID>> pointEdges = _graph.getVertexEdges(pointID);
-    for (auto &pointEdge: pointEdges) {
+    for (auto& pointEdge: pointEdges) {
         if (pointEdge.weight == Scene::_connectionEdgeID) {
             if (pointEdge.from == pointID) {
                 return deleteObject(pointEdge.to);
@@ -237,7 +237,7 @@ bool Scene::deletePoint(ID pointID) {
     }
 
     bool deleting = true;
-    for (auto &pointEdge: pointEdges) {
+    for (auto& pointEdge: pointEdges) {
         if (_requirements[pointEdge.weight]->getType() == ET_POINTONPOINT) {
             deleting = false;
         }
@@ -269,14 +269,13 @@ bool Scene::deleteSection(ID sectionID) {
             ID pointID;
             if (sectionEdge.from == sectionID) {
                 pointID = sectionEdge.to;
-            }
-            else if (sectionEdge.to == sectionID) {
+            } else if (sectionEdge.to == sectionID) {
                 pointID = sectionEdge.from;
             }
 
             bool deleting = true;
             std::vector<Edge<ID, ID>> pointEdges = _graph.getVertexEdges(pointID);
-            for (auto& pointEdge : pointEdges) {
+            for (auto& pointEdge: pointEdges) {
                 if (pointEdge.weight != Scene::_connectionEdgeID) {
                     if (_requirements[pointEdge.weight]->getType() == ET_POINTONPOINT) {
                         deleting = false;
@@ -292,8 +291,7 @@ bool Scene::deleteSection(ID sectionID) {
             _points.erase(pointID);
             _graph.removeVertex(pointID);
             _idDeletedGeometricObject.insert(pointID);
-        }
-        else {
+        } else {
             _requirements.erase(sectionEdge.weight);
             _idDeletedRequirements.insert(sectionEdge.weight);
         }
@@ -322,14 +320,13 @@ bool Scene::deleteCircle(ID circleID) {
             ID pointID;
             if (circleEdge.from == circleID) {
                 pointID = circleEdge.to;
-            }
-            else if (circleEdge.to == circleID) {
+            } else if (circleEdge.to == circleID) {
                 pointID = circleEdge.from;
             }
 
             bool deleting = true;
             std::vector<Edge<ID, ID>> pointEdges = _graph.getVertexEdges(pointID);
-            for (auto& pointEdge : pointEdges) {
+            for (auto& pointEdge: pointEdges) {
                 if (pointEdge.weight != Scene::_connectionEdgeID) {
                     if (_requirements[pointEdge.weight]->getType() == ET_POINTONPOINT) {
                         deleting = false;
@@ -345,8 +342,7 @@ bool Scene::deleteCircle(ID circleID) {
             _points.erase(pointID);
             _graph.removeVertex(pointID);
             _idDeletedGeometricObject.insert(pointID);
-        }
-        else {
+        } else {
             _requirements.erase(circleEdge.weight);
             _idDeletedRequirements.insert(circleEdge.weight);
         }
@@ -375,14 +371,13 @@ bool Scene::deleteArc(ID arcID) {
             ID pointID;
             if (arcEdge.from == arcID) {
                 pointID = arcEdge.to;
-            }
-            else if (arcEdge.to == arcID) {
+            } else if (arcEdge.to == arcID) {
                 pointID = arcEdge.from;
             }
 
             bool deleting = true;
             std::vector<Edge<ID, ID>> pointEdges = _graph.getVertexEdges(pointID);
-            for (auto& pointEdge : pointEdges) {
+            for (auto& pointEdge: pointEdges) {
                 if (pointEdge.weight != Scene::_connectionEdgeID) {
                     if (_requirements[pointEdge.weight]->getType() == ET_POINTONPOINT) {
                         deleting = false;
@@ -398,8 +393,7 @@ bool Scene::deleteArc(ID arcID) {
             _points.erase(pointID);
             _graph.removeVertex(pointID);
             _idDeletedGeometricObject.insert(pointID);
-        }
-        else {
+        } else {
             _requirements.erase(arcEdge.weight);
             _idDeletedRequirements.insert(arcEdge.weight);
         }
@@ -420,7 +414,7 @@ void Scene::clear() {
     for (auto& pair: _points) {
         pointsWithoutDub.insert(pair.second);
     }
-    for (auto& p : pointsWithoutDub) {
+    for (auto& p: pointsWithoutDub) {
         delete p;
     }
     for (auto& pair: _sections) {
@@ -475,6 +469,11 @@ void Scene::updateBoundingBox() const {
 void Scene::paint() const {
     updateBoundingBox();
     _painter->getBoundBox(_allFiguresRectangle);
+    _painter->draw();
+}
+
+void Scene::clearImage() const {
+    _painter->clear();
 }
 
 ObjectData Scene::getObjectData(ID id) const {
@@ -537,12 +536,11 @@ ObjectData Scene::getRootObjectData(ID id) const {
         throw std::invalid_argument("Point not found");
     }
     std::vector<Edge<ID, ID>> objectEdges = _graph.getVertexEdges(id);
-    for (auto& edge : objectEdges) {
+    for (auto& edge: objectEdges) {
         if (edge.weight == Scene::_connectionEdgeID) {
             if (edge.from == id) {
                 return getObjectData(edge.to);
-            }
-            else if (edge.to == id) {
+            } else if (edge.to == id) {
                 return getObjectData(edge.from);
             }
         }
@@ -559,10 +557,12 @@ ObjectData Scene::getRootObjectData(ID id) const {
 }
 
 RequirementData Scene::getRequirementData(ID object1, ID object2) const {
-    if (!_points.contains(object1) && !_sections.contains(object1) && !_circles.contains(object1) && !_arcs.contains(object1)) {
+    if (!_points.contains(object1) && !_sections.contains(object1) && !_circles.contains(object1) &&
+        !_arcs.contains(object1)) {
         throw std::invalid_argument("Objects not found");
     }
-    if (!_points.contains(object2) && !_sections.contains(object2) && !_circles.contains(object2) && !_arcs.contains(object2)) {
+    if (!_points.contains(object2) && !_sections.contains(object2) && !_circles.contains(object2) &&
+        !_arcs.contains(object2)) {
         throw std::invalid_argument("Objects not found");
     }
     ID reqID = _graph.getEdgeWeight(object1, object2);
@@ -586,16 +586,16 @@ std::size_t Scene::requirementsCount() const {
 
 std::vector<ObjectData> Scene::getObjects() const {
     std::vector<ObjectData> objs;
-    for (auto& [id, _] : _points) {
+    for (auto& [id, _]: _points) {
         objs.push_back(getObjectData(id));
     }
-    for (auto& [id, _] : _sections) {
+    for (auto& [id, _]: _sections) {
         objs.push_back(getObjectData(id));
     }
-    for (auto& [id, _] : _circles) {
+    for (auto& [id, _]: _circles) {
         objs.push_back(getObjectData(id));
     }
-    for (auto& [id, _] : _arcs) {
+    for (auto& [id, _]: _arcs) {
         objs.push_back(getObjectData(id));
     }
     return objs;
@@ -603,19 +603,20 @@ std::vector<ObjectData> Scene::getObjects() const {
 
 std::vector<RequirementData> Scene::getRequirements() const {
     std::vector<RequirementData> reqs;
-    for (auto& [id, _] : _requirements) {
+    for (auto& [id, _]: _requirements) {
         reqs.push_back(getRequirementData(id));
     }
     return reqs;
 }
 
 std::vector<RequirementData> Scene::getObjectRequirements(ID objectID) const {
-    if (!_points.contains(objectID) && !_sections.contains(objectID) && !_circles.contains(objectID) && !_arcs.contains(objectID)) {
+    if (!_points.contains(objectID) && !_sections.contains(objectID) && !_circles.contains(objectID) &&
+        !_arcs.contains(objectID)) {
         throw std::invalid_argument("Objects not found");
     }
     std::vector<Edge<ID, ID>> objReqsIds = _graph.getVertexEdges(objectID);
     std::vector<RequirementData> objReqs;
-    for (auto& edge : objReqsIds) {
+    for (auto& edge: objReqsIds) {
         if (edge.weight != Scene::_connectionEdgeID) {
             objReqs.push_back(getRequirementData(edge.weight));
         }
@@ -627,42 +628,36 @@ std::vector<RequirementData> Scene::getObjectRequirementsWithConnectedObjects(ID
     std::unordered_set<RequirementData> objectRequirements;
     if (_points.contains(objectID)) {
         std::vector<Edge<ID, ID>> objectEdges = _graph.getVertexEdges(objectID);
-        for (auto& edge : objectEdges) {
+        for (auto& edge: objectEdges) {
             if (edge.weight == Scene::_connectionEdgeID) {
                 if (edge.from == objectID) {
                     std::vector<RequirementData> data = getObjectRequirementsWithConnectedObjects(edge.to);
                     return {data.begin(), data.end()};
-                }
-                else if (edge.to == objectID) {
+                } else if (edge.to == objectID) {
                     std::vector<RequirementData> data = getObjectRequirementsWithConnectedObjects(edge.from);
                     return {data.begin(), data.end()};
                 }
-            }
-            else {
+            } else {
                 objectRequirements.insert(getRequirementData(edge.weight));
             }
         }
-    }
-    else if (_sections.contains(objectID) || _circles.contains(objectID) || _arcs.contains(objectID)) {
+    } else if (_sections.contains(objectID) || _circles.contains(objectID) || _arcs.contains(objectID)) {
         std::vector<Edge<ID, ID>> objectEdges = _graph.getVertexEdges(objectID);
-        for (auto& edge : objectEdges) {
+        for (auto& edge: objectEdges) {
             if (edge.weight == Scene::_connectionEdgeID) {
                 std::vector<RequirementData> data;
                 if (edge.from == objectID) {
                     data = getObjectRequirements(edge.to);
                     objectRequirements.insert(data.begin(), data.end());
-                }
-                else if (edge.to == objectID) {
+                } else if (edge.to == objectID) {
                     data = getObjectRequirements(edge.from);
                     objectRequirements.insert(data.begin(), data.end());
                 }
-            }
-            else {
+            } else {
                 objectRequirements.insert(getRequirementData(edge.weight));
             }
         }
-    }
-    else {
+    } else {
         throw std::invalid_argument("Objects not found");
     }
 
@@ -671,10 +666,10 @@ std::vector<RequirementData> Scene::getObjectRequirementsWithConnectedObjects(ID
 
 void Scene::setPainter(Painter* p) {
     _painter = p;
-    _painter->initPoint(_points);
-    _painter->initSection(_sections);
-    _painter->initCircle(_circles);
-    _painter->initArc(_arcs);
+    _painter->initPointCase(_points);
+    _painter->initSectionCase(_sections);
+    _painter->initCircleCase(_circles);
+    _painter->initArcCase(_arcs);
 }
 
 void Scene::moveObject(ID id, double dx, double dy) {
@@ -836,6 +831,42 @@ void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double 
     updateRequirements(arcID);
 }
 
+std::vector<const double*> Scene::getPointParams(ID pointID) const {
+    if (!_points.contains(pointID)) {
+        throw std::out_of_range("There is no point");
+    }
+    const Point* p = _points.at(pointID);
+    return {&p->x, &p->y};
+}
+
+std::vector<const double*> Scene::getSectionParams(ID sectionID) const {
+    if (!_sections.contains(sectionID)) {
+        throw std::out_of_range("There is no section");
+    }
+    const Section* s = _sections.at(sectionID);
+    return {&s->beg->x, &s->beg->y, &s->end->x, &s->end->y};
+}
+
+std::vector<const double*> Scene::getCircleParams(ID circleID) const {
+    if (!_circles.contains(circleID)) {
+        throw std::out_of_range("There is no circle");
+    }
+    const Circle* c = _circles.at(circleID);
+    return {&c->center->x, &c->center->y, &c->r};
+}
+
+std::vector<const double*> Scene::getArcParams(ID arcID) const {
+    if (!_arcs.contains(arcID)) {
+        throw std::out_of_range("There is no arc");
+    }
+    const Arc* a = _arcs.at(arcID);
+    return {
+            &a->beg->x, &a->beg->y,
+            &a->end->x, &a->end->y,
+            &a->center->x, &a->center->y
+    };
+}
+
 ID Scene::addRequirement(const RequirementData& reqData, const bool updateRequirementFlag) {
     if (reqData.objects.size() < 2) {
         throw std::invalid_argument("Insufficient data for requirement");
@@ -930,7 +961,7 @@ void Scene::addRequirement(const RequirementData& reqData, ID reqID) {
             Point* p2 = _points[id2];
 
             delete p1;
-            for (auto& [id, p] : _points) {
+            for (auto& [id, p]: _points) {
                 if (p == p1) {
                     p = p2;
                 }
@@ -958,8 +989,7 @@ void Scene::addRequirement(const RequirementData& reqData, ID reqID) {
                     IReq* newReq = new ReqPointPointDist(pt1, pt2, v);
                     delete _requirements[id];
                     _requirements[id] = newReq;
-                }
-                else if (req->getType() == ET_SECTIONSECTIONPERPENDICULAR) {
+                } else if (req->getType() == ET_SECTIONSECTIONPERPENDICULAR) {
                     std::vector<IGeometricObject*> vec = req->getObjects();
                     if (vec.size() == 0) {
                         break;
@@ -976,8 +1006,7 @@ void Scene::addRequirement(const RequirementData& reqData, ID reqID) {
                     IReq* newReq = new ReqSecSecPerpendicular(s1, s2);
                     delete _requirements[id];
                     _requirements[id] = newReq;
-                }
-                else if (req->getType() == ET_SECTIONSECTIONPARALLEL) {
+                } else if (req->getType() == ET_SECTIONSECTIONPARALLEL) {
                     std::vector<IGeometricObject*> vec = req->getObjects();
                     if (vec.size() == 0) {
                         break;
@@ -997,7 +1026,7 @@ void Scene::addRequirement(const RequirementData& reqData, ID reqID) {
                 }
             }
 
-            for (auto& [id, sec] : _sections) {
+            for (auto& [id, sec]: _sections) {
                 if (sec->beg == p1) {
                     sec->beg = p2;
                 }
@@ -1006,7 +1035,7 @@ void Scene::addRequirement(const RequirementData& reqData, ID reqID) {
                 }
             }
 
-            for (auto& [id, circle] : _circles) {
+            for (auto& [id, circle]: _circles) {
                 if (circle->center == p1) {
                     circle->center = p2;
                 }
@@ -1165,8 +1194,8 @@ void Scene::rebuildComponents() {
     _components.clear();
     _idToComponent.clear();
     std::vector<std::vector<ID>> allComponents = _graph.connectedComponents();
-    for (std::size_t i = 0; auto& vec : allComponents) {
-        for (auto& vertexID : vec) {
+    for (std::size_t i = 0; auto& vec: allComponents) {
+        for (auto& vertexID: vec) {
             _idToComponent[vertexID] = i;
         }
         ++i;
@@ -1176,11 +1205,11 @@ void Scene::rebuildComponents() {
         Component c;
         std::vector<Variable*> variables;
         std::unordered_set<double*> seen;
-        for (auto& edge : componentEdges) {
+        for (auto& edge: componentEdges) {
             if (edge.weight != ID(-2) && _requirements[edge.weight]->getType() != ET_POINTONPOINT) {
                 std::vector<Variable*> variablesWithDuplicates = _requirements[edge.weight]->getVariables();
                 variables.reserve(variablesWithDuplicates.size());
-                for (auto& var : variablesWithDuplicates) {
+                for (auto& var: variablesWithDuplicates) {
                     if (seen.insert(var->value).second) {
                         variables.push_back(var);
                     }
@@ -1237,7 +1266,7 @@ RequirementData Scene::getRequirementData(ID reqID) const {
 
 std::vector<RequirementData> Scene::getAllRequirementsData() const {
     std::vector<RequirementData> rds;
-    for (const auto& [id, req] : _requirements) {
+    for (const auto& [id, req]: _requirements) {
         RequirementData rd;
         rd.req = req->getType();
         rd.params.push_back(req->getDimension());
@@ -1270,13 +1299,13 @@ bool Scene::deleteRequirement(ID reqID) {
             return edge.weight != ID(-2) && reqs[edge.weight]->getType() == ET_POINTONPOINT;
         });
 
-        for (auto& obj : component) {
+        for (auto& obj: component) {
             // objects
             if (_points.contains(obj)) {
                 _points[obj] = pNew;
             }
-            for (auto& [id, vec] : _objectSubObjects) {
-                for (auto& subID : vec) {
+            for (auto& [id, vec]: _objectSubObjects) {
+                for (auto& subID: vec) {
                     if (subID == obj) {
                         if (_sections.contains(id)) {
                             Section* s = _sections[id];
@@ -1286,14 +1315,12 @@ bool Scene::deleteRequirement(ID reqID) {
                             if (s->end == p1) {
                                 s->end = pNew;
                             }
-                        }
-                        else if (_circles.contains(id)) {
+                        } else if (_circles.contains(id)) {
                             Circle* c = _circles[id];
                             if (c->center == p1) {
                                 c->center = pNew;
                             }
-                        }
-                        else if (_arcs.contains(id)) {
+                        } else if (_arcs.contains(id)) {
                             Arc* a = _arcs[id];
                             if (a->beg == p1) {
                                 a->beg = pNew;
@@ -1311,11 +1338,12 @@ bool Scene::deleteRequirement(ID reqID) {
 
             // reqs
             std::vector<Edge<ID, ID>> edges = _graph.getVertexEdges(obj);
-            for (auto& edge : edges) {
-                if (edge.weight != Scene::_connectionEdgeID && _requirements[edge.weight]->getType() != ET_POINTONPOINT) {
+            for (auto& edge: edges) {
+                if (edge.weight != Scene::_connectionEdgeID &&
+                    _requirements[edge.weight]->getType() != ET_POINTONPOINT) {
                     IReq* r = _requirements[edge.weight];
                     std::vector<IGeometricObject*> objects = r->getObjects();
-                    for (auto& reqObj : objects) {
+                    for (auto& reqObj: objects) {
                         if (reqObj->getType() == ET_POINT) {
                             Point* p = static_cast<Point*>(reqObj);
                             if (p == p1) {
@@ -1426,12 +1454,10 @@ void Scene::loadFromFile(const char* filename) {
                 objData.params.push_back(p->y);
                 addPoint(objData, ID(pointObjectData.front().first));
                 pointObjectData.pop();
-            }
-            else {
+            } else {
                 pointObjectData.push(obj);
             }
-        }
-        else if (obj.second->getType() == ET_SECTION) {
+        } else if (obj.second->getType() == ET_SECTION) {
             Section* s = static_cast<Section*>(obj.second);
             objData.et = ET_SECTION;
             objData.params.push_back(s->beg->x);
@@ -1441,10 +1467,12 @@ void Scene::loadFromFile(const char* filename) {
             ID id1 = ID(pointObjectData.front().first);
             pointObjectData.pop();
             ID id2 = ID(pointObjectData.front().first);
+            objData.subObjects.push_back(id1);
+            objData.subObjects.push_back(id2);
+            _objectSubObjects[id] = {id1, id2};
             pointObjectData.pop();
             addSection(objData, id1, id2, ID(obj.first));
-        }
-        else if (obj.second->getType() == ET_CIRCLE) {
+        } else if (obj.second->getType() == ET_CIRCLE) {
             Circle* c = static_cast<Circle*>(obj.second);
             objData.et = ET_CIRCLE;
             objData.params.push_back(c->center->x);
@@ -1453,8 +1481,7 @@ void Scene::loadFromFile(const char* filename) {
             ID id1 = ID(pointObjectData.front().first);
             pointObjectData.pop();
             addCircle(objData, id1, ID(pointObjectData.front().first));
-        }
-        else if (obj.second->getType() == ET_ARC) {
+        } else if (obj.second->getType() == ET_ARC) {
             // TODO
         }
     }
@@ -1464,7 +1491,7 @@ void Scene::loadFromFile(const char* filename) {
 
     maxID = ID(0);
     const std::vector<requirementInFile> vecReqInFile = loader.getRequirements();
-    for (auto& reqInFile : vecReqInFile) {
+    for (auto& reqInFile: vecReqInFile) {
         std::pair<unsigned int, RequirementData> pair = reqInFile.to_pair();
         if (ID(pair.first) > maxID) {
             maxID = ID(pair.first);
@@ -1480,20 +1507,17 @@ bool Scene::tryRestoreObject(const ObjectData& data, ID id) {
     if (data.et == ET_POINT) {
         addPoint(data, id);
         _idDeletedGeometricObject.erase(id);
-    }
-    else if (data.et == ET_SECTION) {
+    } else if (data.et == ET_SECTION) {
         if (data.subObjects.size() < 2) {
             return false;
         }
         addSection(data, data.subObjects[0], data.subObjects[1], id);
-    }
-    else if (data.et == ET_CIRCLE) {
+    } else if (data.et == ET_CIRCLE) {
         if (data.subObjects.size() < 1) {
             return false;
         }
         addCircle(data, data.subObjects[0], id);
-    }
-    else if (data.et == ET_ARC) {
+    } else if (data.et == ET_ARC) {
         if (data.subObjects.size() < 3) {
             return false;
         }

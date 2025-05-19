@@ -1,6 +1,6 @@
 #include "Modes.h"
 
-// Инициализация статических переменных
+// Initialization of static variables
 std::bitset<static_cast<size_t>(WorkModes::Editor) + 1> ModeManager::workModes{
         (1 << static_cast<size_t>(WorkModes::Editor)) |
         (0 << static_cast<size_t>(WorkModes::Move)) |
@@ -9,13 +9,12 @@ std::bitset<static_cast<size_t>(WorkModes::Editor) + 1> ModeManager::workModes{
         (0 << static_cast<size_t>(WorkModes::Circle)) |
         (0 << static_cast<size_t>(WorkModes::Section)) |
         (0 << static_cast<size_t>(WorkModes::Arc)) |
-        (0 << static_cast<size_t>(WorkModes::Selected)) |
-        (0 << static_cast<size_t>(WorkModes::Rotate)) |
-        (0 << static_cast<size_t>(WorkModes::Resize)) // Только Editor = true (самый младший бит)
+        (0 << static_cast<size_t>(WorkModes::Selected))
+        // Editor only = true (lowest bit)
 };
 
 std::bitset<static_cast<size_t>(MouseMode::DoubleClickLeft) + 1> ModeManager::mouseModes{
-        // Ставим только ReleasingLeft и ReleasingRight
+        // We only set ReleasingLeft and ReleasingRight
         (0 << static_cast<size_t>(MouseMode::MouseMove)) |
         (0 << static_cast<size_t>(MouseMode::DoubleClickLeft)) |
         (0 << static_cast<size_t>(MouseMode::LeftClick)) |
@@ -25,7 +24,7 @@ std::bitset<static_cast<size_t>(MouseMode::DoubleClickLeft) + 1> ModeManager::mo
 };
 
 std::bitset<static_cast<size_t>(KeyMode::ReleasingShift) + 1> ModeManager::keyModes{
-        // Ставим только ReleasingTab и ReleasingShift
+        // We only set ReleasingTab and ReleasingShift
         (1 << static_cast<size_t>(KeyMode::ReleasingTab)) |
         (1 << static_cast<size_t>(KeyMode::ReleasingEnter)) |
         (1 << static_cast<size_t>(KeyMode::ReleasingShift))
@@ -80,7 +79,7 @@ bool ModeManager::getActiveMode(KeyMode mode) {
 }
 
 void ModeManager::setCell(bool flag) {
-    cellEnabled= flag;
+    cellEnabled = flag;
 }
 
 bool ModeManager::getCell() {
@@ -88,11 +87,11 @@ bool ModeManager::getCell() {
 }
 
 void ModeManager::setAxis(bool flag) {
-   axisEnabled=flag;
+    axisEnabled = flag;
 }
 
 bool ModeManager::getAxis() {
-    return  axisEnabled;
+    return axisEnabled;
 }
 
 void ModeManager::setCursor(bool flag) {
@@ -112,17 +111,17 @@ bool ModeManager::getSave() {
 }
 
 void ModeManager::setConnection(bool flag) {
-    isConnected=flag;
+    isConnected = flag;
 }
 
 bool ModeManager::getConnection() {
-    return  isConnected;
+    return isConnected;
 }
 
 void ModeManager::setFlagServer(bool flag) {
-    isServer=flag;
+    isServer = flag;
 }
 
 bool ModeManager::getFlagServer() {
-    return  isServer;
+    return isServer;
 }

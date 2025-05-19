@@ -4,14 +4,14 @@
 #include <QKeyEvent>
 #include <QWidget>
 
-class KeyEventcollapsedPanel : public QWidget {
+class [[maybe_unused]] KeyEventcollapsedPanel : public QWidget {
 Q_OBJECT
 
 public:
-    KeyEventcollapsedPanel(QWidget *parent) : QWidget(parent) {}
+    [[maybe_unused]] KeyEventcollapsedPanel(QWidget* parent) : QWidget(parent) {}
 
 protected:
-    void keyPressEvent(QKeyEvent *event) override {
+    void keyPressEvent(QKeyEvent* event) override {
         QWidget::keyPressEvent(event);
     }
 };

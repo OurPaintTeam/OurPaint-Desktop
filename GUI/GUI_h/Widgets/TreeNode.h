@@ -1,60 +1,108 @@
 #ifndef OURPAINT_TREENODE_H
 #define OURPAINT_TREENODE_H
 
-#include <QVariant>  // Для хранения данных любого типа
-#include <QVector>   // Контейнер для хранения дочерних узлов
+#include <QVariant>
+#include <QVector>
 #include <QFont>
+#include <QStringView>
 #include <QIcon>
 
-// Класс TreeNode представляет собой узел дерева, используемого в TreeModel
-// Каждый узел хранит данные, список дочерних элементов, ссылку на родителя и шрифт
+// TreeNode is a single item in a tree structure used by TreeModel
 
 class TreeNode {
 private:
-    QVector<TreeNode*> vec_child;  // Список дочерних узлов
-    QVariant dataChild;              // Данные, ассоциированные с этим узлом
-    TreeNode* parent;           // Указатель на родительский узел
-    QFont childFont;
-    QIcon icon;
+    QVector<TreeNode*> vec_child;     // List of child nodes
+    QVariant dataChild;               // Data associated with this node
+    TreeNode* _parent;                // Pointer to parent node
+    QFont childFont;                  // Font used to display this node
+    QIcon icon;                       // Icon associated with the node
+
+    const double* _linkedValue = nullptr; // Pointer to external double value
+    bool _isLinkedNumber = false;         // True if this node shows a linked numeric value
+
+    bool editable;                   // Whether the node's data is editable
+    bool doubleClick;                // Whether double-click is allowed
+    bool number;                     // Whether node represents a number
+    bool literal;                    // Whether node represents a literal
+    bool enabled;                    // Whether the node is enabled (visible/selectable)
+    bool selected;                   // Whether the node is currently selected
+    bool dropEnabled;                // Whether node supports drag-and-drop
+
 public:
     explicit TreeNode(const QVariant& data, TreeNode* parent = nullptr);
 
     ~TreeNode();
 
-    // Добавляет дочерний узел к текущему узлу
+    // Add or access child nodes
     void addChild(TreeNode* child);
 
-    // Возвращает указатель на дочерний элемент по индексу
     TreeNode* child(int row) const;
 
-    // Возвращает количество дочерних элементов
     int childCount() const;
 
-    // Возвращает данные узла для заданного столбца
-    QVariant data(int column) const;
-
-    void setIcon(const QIcon& newIcon);
-
-    QIcon getIcon() const ;
-
-    // Назначить данные
-    void setData(int column, const QVariant& value);
-
-    // Возвращает индекс текущего узла в списке детей родительского узла
     int row() const;
 
-    // Возвращает указатель на родительский узел
-    TreeNode* parentItem();
+    void removeChildAt(int index);          // Remove child by index
+    bool removeChild(TreeNode* child);      // Remove child by pointer
+
+    // Remove all children
+    void deleteAll();
+    void deleteRecursively();
+
+    // Data access
+    QVariant data(int column) const;
+
+    void setData(int column, const QVariant& value);
+
+    QString getNameOnly() const;            // Return name (before colon)
+    QString getName() const;                // Return full name
+    void setName(const QString& name);      // Set display name
+
+    // Font and icon customization
+    QFont getFont() const;
 
     void setFont(const QFont& font);
 
-    QFont getFont() const;
+    QIcon getIcon() const;
 
-    void deleteAll();
+    void setIcon(const QIcon& newIcon);
 
-    // Удаление одного
-    bool removeChild(TreeNode* child);
+    void setLinkedValue(const double* ptr); // Set external pointer
+    const double* linkedValue() const;      // Get pointer
+    bool isLinkedNumber() const;            // Check if linked
+    void updateTextFromLinkedValue();       // Update display based on linked value
 
+    TreeNode* parent();                     // Get parent node
+    int depth() const;                      // Depth of this node in the tree
+
+    // Node state flags
+    void setEditable(bool e);
+
+    bool isEditable() const;
+
+    void setDoubleClick(bool e);
+
+    bool isDoubleClick() const;
+
+    void setLiteral(bool e);
+
+    bool isLiteral() const;
+
+    void setNumber(bool e);
+
+    bool isNumber() const;
+
+    void setEnable(bool e);
+
+    bool isEnable() const;
+
+    void setSelected(bool e);
+
+    bool isSelected() const;
+
+    void setDropEnabled(bool e);
+
+    bool isDropEnabled() const;
 };
 
 #endif // OURPAINT_TREENODE_H
