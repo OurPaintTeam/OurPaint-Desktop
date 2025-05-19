@@ -125,7 +125,7 @@ add_executable(ourpaint
         GUI/GUI_cc/MainFile/Mainwindow.cc
 
         GUI/GUI_cc/Drawing/Scaling.cc
-        GUI/GUI_cc/Drawing/ClosesPoint.cc
+        GUI/GUI_cc/Drawing/ClosestPoint.cc
         GUI/GUI_cc/Drawing/DrawAddirionalInf.cc
         GUI/GUI_cc/Drawing/DrawBackgrond.cc
         GUI/GUI_cc/Drawing/DrawFigures.cc
@@ -139,10 +139,13 @@ add_executable(ourpaint
         GUI/GUI_cc/Events/MouseEventWorkWindow.cc
 
         GUI/GUI_cc/Widgets/LeftMenuBar.cc
-        GUI/GUI_cc/Widgets/CastomeConsole.cc
+        GUI/GUI_cc/Widgets/CustomConsole.cc
         GUI/GUI_cc/Widgets/EmojiWidget.cc
         GUI/GUI_cc/Widgets/TreeNode.cc
-        GUI/GUI_cc/Widgets/TreeModelLazy.cc
+        GUI/GUI_cc/Widgets/TreeModel.cc
+        GUI/GUI_cc/Widgets/ParameterDelegate.cc
+        GUI/GUI_cc/Widgets/ProtectedPrefixLineEdit.cc
+        GUI/GUI_cc/Widgets/Regex.cc
 
         GUI/GUI_cc/client_server/Server.cc
         GUI/GUI_cc/client_server/Client.cc
@@ -150,6 +153,12 @@ add_executable(ourpaint
         GUI/GUI_cc/client_server/PortCheckTask.cc
 
         GUI/GUI_cc/Windows/Help.cc
+        GUI/GUI_cc/Windows/CustomWindowError.cc
+        GUI/GUI_cc/Windows/CustomWindowSuccessful.cc
+        GUI/GUI_cc/Windows/CustomWindowWarning.cc
+        GUI/GUI_cc/Windows/CustomIpListWindow.cc
+        GUI/GUI_cc/Windows/InputWindow.cc
+        GUI/GUI_cc/Windows/SaveDialog.cc
 
         GUI/GUI_cc/Unnecessary/FrameOverlay.cc
 
@@ -162,11 +171,11 @@ add_executable(ourpaint
         GUI/GUI_h/client_server/PortCheckTask.h
         GUI/GUI_h/client_server/Server.h
 
-        GUI/GUI_h/Windows/CastomeWindowError.h
-        GUI/GUI_h/Windows/CastomeWindowWarning.h
-        GUI/GUI_h/Windows/CastomeWindowSuccessful.h
+        GUI/GUI_h/Windows/CustomWindowError.h
+        GUI/GUI_h/Windows/CustomWindowWarning.h
+        GUI/GUI_h/Windows/CustomWindowSuccessful.h
         GUI/GUI_h/Windows/Help.h
-        GUI/GUI_h/Windows/CastomeIpListWindow.h
+        GUI/GUI_h/Windows/CustomIpListWindow.h
         GUI/GUI_h/Windows/InputWindow.h
         GUI/GUI_h/Windows/SaveDialog.h
         GUI/GUI_h/Windows/ui_help.h
@@ -179,15 +188,19 @@ add_executable(ourpaint
         GUI/GUI_h/Events/SmileRightClickFilter.h
 
         GUI/GUI_h/Widgets/LeftMenuBar.h
-        GUI/GUI_h/Widgets/CastomeConsole.h
+        GUI/GUI_h/Widgets/CustomConsole.h
         GUI/GUI_h/Widgets/EmojiWidget.h
         GUI/GUI_h/Widgets/TreeNode.h
-        GUI/GUI_h/Widgets/TreeModelLazy.h
+        GUI/GUI_h/Widgets/TreeModel.h
+        GUI/GUI_h/Widgets/ParameterDelegate.h
+        GUI/GUI_h/Widgets/ProtectedPrefixLineEdit.h
+        GUI/GUI_h/Widgets/Regex.h
 
         GUI/GUI_h/Drawing/Scaling.h
         GUI/GUI_h/Drawing/QTPainter.h
         GUI/GUI_h/Drawing/DrawMouse.h
         GUI/GUI_h/Drawing/SelectedRectangle.h
+        GUI/GUI_h/Drawing/Colors.h
 
 
         GUI/GUI_h/MainFile/Mainwindow.h
@@ -206,7 +219,6 @@ add_subdirectory(tests)
 
 find_package(OpenMP REQUIRED)
 
-# Основное подключение библиотек с ключевым словом
 target_link_libraries(ourpaint PRIVATE
         Qt6::Core
         Qt6::Gui

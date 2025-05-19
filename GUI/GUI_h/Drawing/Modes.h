@@ -3,15 +3,7 @@
 
 #include <bitset>
 
-// Перечисления для разных режимов
-enum class CursorMode {
-    InArea,
-};
-
-enum class SaveFileMode {
-    Save,
-};
-
+// Enumerations for different modes
 enum class WorkModes {
     Point,
     Section,
@@ -19,8 +11,6 @@ enum class WorkModes {
     Arc,
     Move,
     Selected,
-    Resize,
-    Rotate,
     Editor,
 };
 
@@ -42,19 +32,14 @@ enum class KeyMode {
     ReleasingShift,
 };
 
-enum class SettingsMode {
-    Cell,
-    Axis
-};
-
 class ModeManager {
 private:
-    // Статические битовые наборы для режимов
+    // Static bitsets for modes
     static std::bitset<static_cast<size_t>(WorkModes::Editor) + 1> workModes;
     static std::bitset<static_cast<size_t>(MouseMode::DoubleClickLeft) + 1> mouseModes;
     static std::bitset<static_cast<size_t>(KeyMode::ReleasingShift) + 1> keyModes;
 
-    // Переменные для флагов состояния
+    // Variables for status flags
     static bool cellEnabled;
     static bool axisEnabled;
     static bool cursorInArea;
@@ -63,20 +48,22 @@ private:
     static bool isConnected;
 
 public:
-    // Методы для работы с режимами
+    // Methods for working with modes
     static void setActiveMode(WorkModes mode);
     static bool getActiveMode(WorkModes mode);
 
     static void setNotActiveMode(MouseMode mode);
     static void setActiveMode(MouseMode mode);
-    static bool getActiveMode(MouseMode mode);
 
+    static bool getActiveMode(MouseMode mode);
     static void setActiveMode(KeyMode mode);
+
     static bool getActiveMode(KeyMode mode);
 
-    // Методы для работы с флагами состояния
+    // Methods for working with status flags
     static void setCell(bool flag);
     static bool getCell();
+
     static void setAxis(bool flag);
     static bool getAxis();
 
@@ -85,8 +72,10 @@ public:
 
     static void setSave(bool flag);
     static bool getSave();
+
     static void setConnection(bool flag);
     static bool getConnection();
+
     static void setFlagServer(bool flag);
     static bool getFlagServer();
 };

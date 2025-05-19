@@ -76,7 +76,9 @@ BMPfile::BMPfile(unsigned int width, unsigned int height)
 		throw std::invalid_argument("Bad height");
 
 	bmpPtr_ = nullptr;
-    std::uint32_t rowSize = ((width + 31) / 32) * 4;//формула из википедии, правильная
+
+    // The formula from wikipedia is correct
+    std::uint32_t rowSize = ((width + 31) / 32) * 4;
     std::uint32_t bodySize = rowSize * height;
     std::uint32_t fileSize = bodySize + HEADER_SIZE_;
 	bmpPtr_ = new std::uint8_t[fileSize];
@@ -88,11 +90,12 @@ BMPfile::BMPfile(unsigned int width, unsigned int height)
 	for (auto i = static_cast<std::uint32_t>(HEADER_SIZE_);
             i < fileSize; ++i)
     {
-        bmpPtr_[i] = 0b11111111;//белый
+        // White
+        bmpPtr_[i] = 0b11111111;
     }
 
-	//записываем параметры
-	
+
+    // Writing down the parameters
 	*(reinterpret_cast<std::uint32_t*>(bmpPtr_ + FS_OFFSET_)) = fileSize;
 	width_ = reinterpret_cast<std::uint32_t*>(bmpPtr_ + WIDTH_OFFSET_);
 	*width_ = width;
@@ -152,12 +155,14 @@ void BMPfile::setPixel(unsigned int row, unsigned int col, bool isWhite) const
 
 	const size_t BYTE_OFFSET = HEADER_SIZE_ + (((*width_ + 31) / 32) * 4 * (*height_ - row - 1))+ col/8;
 	const size_t BIT_OFFSET = 7 - col % 8;
-	if ( !isWhite )//черный
+	if ( !isWhite )
 	{
+        // black
 		bmpPtr_[BYTE_OFFSET] &= ( ~ (1 << BIT_OFFSET));
 	}
-	else//белый
+	else
 	{
+        // White
 		bmpPtr_[BYTE_OFFSET] |= (1 << BIT_OFFSET );
 	}
 }

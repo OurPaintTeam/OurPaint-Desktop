@@ -2,9 +2,9 @@
 #define OURPAINT_HEADERS_GUI_WINDOWS_HELP_H_
 
 #include <QMainWindow>
-#include "ui_help.h"
 #include <QMouseEvent>
 
+#include "ui_help.h"
 class Help : public QMainWindow
 {
 Q_OBJECT

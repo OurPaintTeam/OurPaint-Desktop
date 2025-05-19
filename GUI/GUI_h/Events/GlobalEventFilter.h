@@ -4,13 +4,12 @@
 #include <QObject>
 #include <QEvent>
 #include <QKeyEvent>
-#include <QDebug>
 
-class GlobalEventFilter : public QObject {
+class [[maybe_unused]] GlobalEventFilter : public QObject {
 Q_OBJECT
 
 public:
-    bool eventFilter(QObject *obj, QEvent *event) override {
+    bool eventFilter(QObject* obj, QEvent* event) override {
         return QObject::eventFilter(obj, event);
     }
 };

@@ -1,10 +1,10 @@
 /*
- *
- * // Класс для создания наложения рамки на виджет при перемещении или масштабированнии
- *    Мы сначала перемещаем её,  затем окно принимает ращмер или положение рамки
- *
- *
- * */
+*
+*  Class for creating a frame overlay on a widget when moving or zooming
+*      We first move it, then the window takes on the size or position of the frame
+*
+*
+*/
 
 
 #ifndef OURPAINT_HEADERS_GUI_FRAMEOVERLAY_H_
@@ -18,20 +18,20 @@
 #include <QGuiApplication>
 
 
-class FrameOverlay : public QWidget
-{
+class [[maybe_unused]] FrameOverlay : public QWidget {
 Q_OBJECT
 public:
-    explicit FrameOverlay(QWidget *parent = nullptr);
-    void setFrameRect(const QRect &rect); // Устанавливает прямоугольник рамки
+    [[maybe_unused]] explicit FrameOverlay(QWidget* parent = nullptr);
+    [[maybe_unused]] void setFrameRect(const QRect& rect); // Sets the rectangle of the frame
 
 protected:
-    void paintEvent(QPaintEvent *event) override;     // Обработчик события рисования
+    void paintEvent(QPaintEvent* event) override;
 
 private:
-    QRect frameRect;  // Прямоугольник рамки
-    QColor frameColor; // Цвет рамки
-    void updateFrameColor(); // Обновляет цвет рамки на основе фона
+    [[maybe_unused]] QRect frameRect;  // Rectangle of the frame
+    QColor frameColor;
+
+    void updateFrameColor(); // Updates the frame color based on the background
 };
 
 #endif // ! OURPAINT_HEADERS_GUI_FRAMEOVERLAY_H_

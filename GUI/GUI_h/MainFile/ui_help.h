@@ -24,30 +24,28 @@
 
 QT_BEGIN_NAMESPACE
 
-class Ui_MainWindow
-{
+class Ui_MainWindow {
 public:
-    QAction *actionSave_project_to;
-    QAction *actionImport_project;
-    QAction *actionExport_bmp;
-    QAction *actionOpen_bmp;
-    QAction *actionOpen_server;
-    QAction *actionJoin_server;
-    QAction *actionJoin_local_server;
-    QAction *actionExit_from_session;
-    QAction *action_help;
-    QWidget *centralwindow;
-    QGridLayout *gridLayout_2;
-    QFrame *workWindow;
-    QLineEdit *console;
-    QTreeWidget *leftMenu;
-    QMenuBar *upMenu;
-    QMenu *menuCollaboration;
-    QMenu *menuProject;
-    QMenu *menuHelp;
+    QAction* actionSave_project_to;
+    QAction* actionImport_project;
+    QAction* actionExport_bmp;
+    QAction* actionOpen_bmp;
+    QAction* actionOpen_server;
+    QAction* actionJoin_server;
+    QAction* actionJoin_local_server;
+    QAction* actionExit_from_session;
+    QAction* action_help;
+    QWidget* centralwindow;
+    QGridLayout* gridLayout_2;
+    QFrame* workWindow;
+    QLineEdit* console;
+    QTreeWidget* leftMenu;
+    QMenuBar* upMenu;
+    QMenu* menuCollaboration;
+    QMenu* menuProject;
+    QMenu* menuHelp;
 
-    void setupUi(QMainWindow *MainWindow)
-    {
+    void setupUi(QMainWindow* MainWindow) {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName("MainWindow");
         MainWindow->resize(1024, 576);
@@ -112,12 +110,12 @@ public:
         font2.setKerning(true);
         font2.setStyleStrategy(QFont::PreferDefault);
         leftMenu->headerItem()->setText(0, QString());
-        QTreeWidgetItem *__qtreewidgetitem = new QTreeWidgetItem();
+        QTreeWidgetItem* __qtreewidgetitem = new QTreeWidgetItem();
         __qtreewidgetitem->setFont(0, font2);
         leftMenu->setHeaderItem(__qtreewidgetitem);
-        QTreeWidgetItem *__qtreewidgetitem1 = new QTreeWidgetItem(leftMenu);
+        QTreeWidgetItem* __qtreewidgetitem1 = new QTreeWidgetItem(leftMenu);
         __qtreewidgetitem1->setFont(0, font1);
-        QTreeWidgetItem *__qtreewidgetitem2 = new QTreeWidgetItem(leftMenu);
+        QTreeWidgetItem* __qtreewidgetitem2 = new QTreeWidgetItem(leftMenu);
         __qtreewidgetitem2->setFont(0, font1);
         leftMenu->setObjectName("leftMenu");
         QSizePolicy sizePolicy1(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Expanding);
@@ -165,8 +163,7 @@ public:
         QMetaObject::connectSlotsByName(MainWindow);
     } // setupUi
 
-    void retranslateUi(QMainWindow *MainWindow)
-    {
+    void retranslateUi(QMainWindow* MainWindow) {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
         actionSave_project_to->setText(QCoreApplication::translate("MainWindow", "Save project to...", nullptr));
         actionImport_project->setText(QCoreApplication::translate("MainWindow", "Import project", nullptr));
@@ -176,14 +173,16 @@ public:
         actionJoin_server->setText(QCoreApplication::translate("MainWindow", "Join server", nullptr));
         actionJoin_local_server->setText(QCoreApplication::translate("MainWindow", "Join local server", nullptr));
         actionExit_from_session->setText(QCoreApplication::translate("MainWindow", "Exit from session", nullptr));
-        action_help->setText(QCoreApplication::translate("MainWindow", "\320\222\320\260\320\274 \320\275\320\265 \320\275\321\203\320\266\320\265\320\275 help", nullptr));
+        action_help->setText(QCoreApplication::translate("MainWindow",
+                                                         "\320\222\320\260\320\274 \320\275\320\265 \320\275\321\203\320\266\320\265\320\275 help",
+                                                         nullptr));
         console->setText(QString());
 
         const bool __sortingEnabled = leftMenu->isSortingEnabled();
         leftMenu->setSortingEnabled(false);
-        QTreeWidgetItem *___qtreewidgetitem = leftMenu->topLevelItem(0);
+        QTreeWidgetItem* ___qtreewidgetitem = leftMenu->topLevelItem(0);
         ___qtreewidgetitem->setText(0, QCoreApplication::translate("MainWindow", "Figures", nullptr));
-        QTreeWidgetItem *___qtreewidgetitem1 = leftMenu->topLevelItem(1);
+        QTreeWidgetItem* ___qtreewidgetitem1 = leftMenu->topLevelItem(1);
         ___qtreewidgetitem1->setText(0, QCoreApplication::translate("MainWindow", "Requirements", nullptr));
         leftMenu->setSortingEnabled(__sortingEnabled);
 
@@ -195,7 +194,8 @@ public:
 };
 
 namespace Ui {
-    class MainWindow: public Ui_MainWindow {};
+    class MainWindow : public Ui_MainWindow {
+    };
 } // namespace Ui
 
 QT_END_NAMESPACE

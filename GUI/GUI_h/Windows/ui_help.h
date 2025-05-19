@@ -147,31 +147,31 @@ public:
         QFont buttonFont;
         buttonFont.setPointSize(10);
 
-        commandsButton = new QPushButton("Команды", leftMenu);
+        commandsButton = new QPushButton("Commands", leftMenu);
         commandsButton->setObjectName("commandsButton");
         commandsButton->setFont(buttonFont);
         commandsButton->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(commandsButton);
 
-        requirementsButton = new QPushButton("Требования", leftMenu);
+        requirementsButton = new QPushButton("Requirements", leftMenu);
         requirementsButton->setObjectName("requirementsButton");
         requirementsButton->setFont(buttonFont);
         requirementsButton->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(requirementsButton);
 
-        aboutButton = new QPushButton("О программе", leftMenu);
+        aboutButton = new QPushButton("About the program", leftMenu);
         aboutButton->setObjectName("aboutButton");
         aboutButton->setFont(buttonFont);
         aboutButton->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(aboutButton);
 
-        guide = new QPushButton("Руководство", leftMenu);
+        guide = new QPushButton("Guide", leftMenu);
         guide->setObjectName("guideButton");
         guide->setFont(buttonFont);
         guide->setStyleSheet(buttonStyle());
         leftMenuLayout->addWidget(guide);
 
-        supportButton = new QPushButton("Поддержка", leftMenu);
+        supportButton = new QPushButton("Support", leftMenu);
         supportButton->setObjectName("supportButton");
         supportButton->setFont(buttonFont);
         supportButton->setStyleSheet(buttonStyle());
@@ -225,7 +225,7 @@ public:
                                           "font-size: 12px; "
                                           "border: none; }");
         helpContentBrowser->setReadOnly(true);
-        helpContentBrowser->setOpenExternalLinks(false); // Чтобы ссылки обрабатывались внутри приложения
+        helpContentBrowser->setOpenExternalLinks(false); // So that the links are processed inside the application
 
         contentLayout->addWidget(helpContentBrowser);
     }
@@ -233,14 +233,14 @@ public:
 
     void retranslateUi(QMainWindow *HelpWindow)
     {
-        HelpWindow->setWindowTitle(QCoreApplication::translate("HelpWindow", "Помощь", nullptr));
-        titleLabel->setText(QCoreApplication::translate("HelpWindow", "Помощь", nullptr));
+        HelpWindow->setWindowTitle(QCoreApplication::translate("HelpWindow", "Help", nullptr));
+        titleLabel->setText(QCoreApplication::translate("HelpWindow", "Help", nullptr));
 
-        commandsButton->setText(QCoreApplication::translate("HelpWindow", "Команды", nullptr));
-        requirementsButton->setText(QCoreApplication::translate("HelpWindow", "Требования", nullptr));
-        aboutButton->setText(QCoreApplication::translate("HelpWindow", "О программе", nullptr));
-        guide->setText(QCoreApplication::translate("HelpWindow", "Руководство", nullptr));
-        supportButton->setText(QCoreApplication::translate("HelpWindow", "Поддержка", nullptr));
+        commandsButton->setText(QCoreApplication::translate("HelpWindow", "Commands", nullptr));
+        requirementsButton->setText(QCoreApplication::translate("HelpWindow", "Requirements", nullptr));
+        aboutButton->setText(QCoreApplication::translate("HelpWindow", "About the program", nullptr));
+        guide->setText(QCoreApplication::translate("HelpWindow", "Guide", nullptr));
+        supportButton->setText(QCoreApplication::translate("HelpWindow", "Support", nullptr));
     }
 };
 

@@ -2,7 +2,9 @@
 
 void Settings::saveSettings(bool gridChecked, bool axisChecked, const QString& userName) {
     QDir dir(QFileInfo(SETTINGS_PATH).absolutePath());
-    if (!dir.exists()) dir.mkpath(".");
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
 
     QSettings settings(SETTINGS_PATH, QSettings::IniFormat);
     settings.setValue("componentGrid", gridChecked);

@@ -5,7 +5,7 @@ Application::Application(int& argc, char** argv)
           mainWind(),
           scene(nullptr),
           painter(nullptr),
-          username("User"),
+          username(mainWind.getUserName()),
           server(username),
           client(username),
           undoRedo(100),
@@ -22,9 +22,11 @@ Application::Application(int& argc, char** argv)
     setupRequirementsConnections();
 }
 
+
 int Application::exec() {
     return app.exec();
 }
+
 
 void Application::initLogger() {
     try {
@@ -48,10 +50,11 @@ void Application::initLogger() {
 
         qInstallMessageHandler(guiLogger);
 
-    } catch (const std::runtime_error &error) {
+    } catch (const std::runtime_error& error) {
         mainWind.showWarning("Can't open or create log file!");
     }
 }
+
 
 void Application::initialize() {
     QApplication::setStyle("Fusion");
@@ -60,10 +63,10 @@ void Application::initialize() {
     mainWind.show();
     mainWind.resize();
 
-    if(mainWind.getQTPainter() == nullptr){
+    if (mainWind.getQTPainter() == nullptr) {
         mainWind.showWarning("Can't opened QTPainter");
     }
-    if(mainWind.getLeftMenuBar() == nullptr){
+    if (mainWind.getLeftMenuBar() == nullptr) {
         mainWind.showWarning("Can't opened LeftMenu");
     }
 
@@ -84,25 +87,16 @@ void Application::initialize() {
             "SectionSectionAngle"
     };
 
-    QObject::connect(qApp, &QCoreApplication::aboutToQuit, [this]() {
-        leftMenu->saveToTextFile(pathTxtFileCommands);
-        qDebug() << "Save to txt.";
-    });
-
-    autoSaveTimer = new QTimer(this);
-    connect(autoSaveTimer, &QTimer::timeout, this, &Application::autoSave);
-    autoSaveTimer->start(180000);
 }
 
-void Application::autoSave() {
-    leftMenu->saveToTextFile(pathTxtFileCommands);
-    qDebug() << "Save to txt.";
-}
 
 void Application::setupQTPainterConnections() {
     if (painter) {
-        // Двойное нажатие на обьект и открытие его в левом меню
-        QObject::connect(painter, &QTPainter::DoubleClickOnObject, []() {
+
+        // Double-clicking on an object and opening it in the left menu
+        QObject::connect(painter, &QTPainter::DoubleClickOnObject, [this](ID id) {
+            // QModelIndex index=leftMenu->selectFigureById(id.get());
+            // mainWind.selectLeftMenuElem(index);
         });
 
         QObject::connect(painter, &QTPainter::EndMoving, [this](){
@@ -130,15 +124,13 @@ void Application::setupQTPainterConnections() {
             try {
                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.setPoint(vec_id[i], cursorNow.x(), cursorNow.y());
-                    vecCalls.push_back([]() {
-                        // leftMenu->updateParametersById(vec_id[i].get(),{Cx,Cy});
-                    });
                 }
+                leftMenu->updateLeftMenu();
             } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
-            // updateState();
-            painter->draw();
+
+            scene.paint();
         });
 
         // Перемещение отрезка
@@ -154,26 +146,31 @@ void Application::setupQTPainterConnections() {
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
-            try {
-                if(vec_id.size()==1){
-                    scene.setSection(vec_id[0], cursorNow.x() + p1.x(),  cursorNow.y() + p1.y(),
-                                     cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
-                    return;
-                }
-                for (std::size_t i = 0; i < vec_id.size(); ++i) {
-                    scene.moveSection(vec_id[i], delta.x(),delta.y());
-                    vecCalls.push_back([]() {
-                        //  leftMenu->updateParametersById(vec_id[i].get(),{});
-                    });
-                }
-            } catch (const std::exception& a) {
-                mainWind.showError(a.what());
-            }
-            // updateState();
-            painter->draw();
+        QObject::connect(painter, &QTPainter::MovingSection,
+                         [this](const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
+                             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
+                             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
-        });
+                             try {
+                                 if (vec_id.size() == 1) {
+                                     scene.setSection(vec_id[0], cursorNow.x() + p1.x(), cursorNow.y() + p1.y(),
+                                                      cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
+                                     leftMenu->refreshAllLinkedParams();
+                                     return;
+                                 }
+                                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
+                                     scene.moveSection(vec_id[i], delta.x(), delta.y());
+                                 }
+                                 leftMenu->refreshAllLinkedParams();
+                             } catch (const std::exception& a) {
+                                 mainWind.showError(a.what());
+                             }
+                             scene.paint();
 
+                         });
+
+
+        QObject::connect(painter, &QTPainter::MovingCircle, [this](const QVector<ID>& vec_id, const QPointF& offset) {
         // Перемещение круга
         QObject::connect(painter, &QTPainter::MovingCircle, [this](std::vector<ID> vec_id,QPointF offset) {
             if (isStartMoving) {
@@ -189,25 +186,23 @@ void Application::setupQTPainterConnections() {
             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
             try {
-                if(vec_id.size()==1){
-                    ObjectData obj=scene.getObjectData(vec_id[0]);
+                if (vec_id.size() == 1) {
+                    ObjectData obj = scene.getObjectData(vec_id[0]);
                     QPointF newCenter = cursorNow + offset;
 
                     double radius = obj.params[2];
                     scene.setCircle(vec_id[0], newCenter.x(), newCenter.y(), radius);
+                    leftMenu->refreshAllLinkedParams();
                     return;
                 }
                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
-                    scene.moveCircle(vec_id[i], delta.x(),delta.y());
-                    vecCalls.push_back([]() {
-                        //  leftMenu->updateParametersById(vec_id[i].get(),{});
-                    });
+                    scene.moveCircle(vec_id[i], delta.x(), delta.y());
                 }
+                leftMenu->refreshAllLinkedParams();
             } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
-            // updateState();
-            painter->draw();
+            scene.paint();
         });
 
         // Перемещение арки
@@ -221,302 +216,278 @@ void Application::setupQTPainterConnections() {
             }
 
 
+        QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
+
             double dx = Scaling::logic(Scaling::getCursorDeltaX());
             double dy = Scaling::logic(Scaling::getCursorDeltaY());
 
             try {
                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
                     scene.moveArc(ID(vec_id[i]), dx, dy);
-                    vecCalls.push_back([]() {
-                        //   leftMenu->updateParametersById(vec_id[i].get(),{});
-                    });
                 }
+                leftMenu->refreshAllLinkedParams();
             } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
-            // updateState();
-            painter->draw();
+            scene.paint();
         });
 
-        // Отрисовка точки
+        // Drawing a point
         QObject::connect(painter, &QTPainter::SigPoint,
-                         [this](double x, double y) {
-            if (ModeManager::getConnection()) {
-                if (ModeManager::getFlagServer()) {
-                    ObjectData point;
-                    point.et = ET_POINT;
-                    point.params.push_back(x);
-                    point.params.push_back(y);
-
-                    UndoRedo::CommandAddPoint* cmd = new UndoRedo::CommandAddPoint(scene, point);
-                    UndoRedo::Transaction txn(cmd->description());
-                    txn.addCommand(cmd);
-                    undoRedo.push(std::move(txn));
-
-                    ModeManager::setSave(false);
-                    painter->draw();
-                    leftMenu->addElemLeftMenu("Point", cmd->getPointID().get(), {x, y});
-                    leftMenu->updateLeftMenu();
-                    server.sendToClients(QString::fromStdString(scene.to_string()));
-                } else {
-                    client.sendCommandToServer("point " + QString::number(y) + " " +
-                                               QString::number(x));
-                }
-            } else {
-                ObjectData point;
-                point.et = ET_POINT;
-                point.params.push_back(x);
-                point.params.push_back(y);
-
-                UndoRedo::CommandAddPoint* cmd = new UndoRedo::CommandAddPoint(scene, point);
-                UndoRedo::Transaction txn(cmd->description());
-                txn.addCommand(cmd);
-                undoRedo.push(std::move(txn));
-
-                ModeManager::setSave(false);
-                painter->draw();
-                leftMenu->addElemLeftMenu("Point", cmd->getPointID().get(), {x, y});
-                leftMenu->updateLeftMenu();
-            }
-        });
-
-        // Отрисовка линии
-        QObject::connect(painter, &QTPainter::SigSection,
-                         [this](double startX, double startY, double endX, double endY) {
-                             ObjectData section;
+                         [this](const QPointF& point) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
-                                     section.et = ET_SECTION;
-                                     section.params.push_back(startX);
-                                     section.params.push_back(startY);
-                                     section.params.push_back(endX);
-                                     section.params.push_back(endY);
-
-                                     UndoRedo::CommandAddSection* cmd = new UndoRedo::CommandAddSection(scene, section);
-                                     UndoRedo::Transaction txn(cmd->description());
-                                     txn.addCommand(cmd);
-                                     undoRedo.push(std::move(txn));
-                                     ID id = cmd->getSectionID();
-
-                                     ModeManager::setSave(false);
-                                     leftMenu->addElemLeftMenu("Section", id.get(), {startX, startY, endX, endY});
-                                     leftMenu->addElemLeftMenu("Point", id.get() - 1, {startX, startY});
-                                     leftMenu->addElemLeftMenu("Point", id.get() - 2, {endX, endY});
-                                     painter->draw();
-                                     leftMenu->updateLeftMenu();
+                                     addPoints(point.x(), point.y());
                                      server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
-                                     client.sendCommandToServer("section " + QString::number(startX) + " " +
-                                                                QString::number(startY) + " " +
-                                                                QString::number(endX) + " " +
-                                                                QString::number(endY));
+                                     client.sendCommandToServer("point " + QString::number(point.y()) + " " +
+                                                                QString::number(point.x()));
                                  }
                              } else {
-                                 section.et = ET_SECTION;
-                                 section.params.push_back(startX);
-                                 section.params.push_back(startY);
-                                 section.params.push_back(endX);
-                                 section.params.push_back(endY);
-
-                                 UndoRedo::CommandAddSection* cmd = new UndoRedo::CommandAddSection(scene, section);
-                                 UndoRedo::Transaction txn(cmd->description());
-                                 txn.addCommand(cmd);
-                                 undoRedo.push(std::move(txn));
-                                 ID id = cmd->getSectionID();
-
-                                 ModeManager::setSave(false);
-                                 painter->draw();
-                                 leftMenu->addElemLeftMenu("Point", id.get() - 1, {startX, startY});
-                                 leftMenu->addElemLeftMenu("Point", id.get() - 2, {endX, endY});
-                                 leftMenu->addElemLeftMenu("Section", id.get(), {startX, startY, endX, endY});
-                                 leftMenu->updateLeftMenu();
+                                 addPoints(point.x(), point.y());
                              }
+                             updateState();
                          });
 
-        // Отрисовка круга
-        QObject::connect(painter, &QTPainter::SigCircle,
-                         [this](double x, double y, double radius) {
-            ObjectData circle;
-            if (ModeManager::getConnection()) {
-                if (ModeManager::getFlagServer()) {
-                    circle.et = ET_CIRCLE;
-                    circle.params.push_back(x);
-                    circle.params.push_back(y);
-                    circle.params.push_back(radius);
-                    ModeManager::setSave(false);
-
-                    UndoRedo::CommandAddCircle* cmd = new UndoRedo::CommandAddCircle(scene, circle);
-                    UndoRedo::Transaction txn(cmd->description());
-                    txn.addCommand(cmd);
-                    undoRedo.push(std::move(txn));
-                    ID id = cmd->getCircleID();
-
-                    leftMenu->addElemLeftMenu("Circle", id.get(), {x, y, radius});
-                    leftMenu->addElemLeftMenu("Point", id.get() - 1, {x, y});
-                    painter->draw();
-                    leftMenu->updateLeftMenu();
-                    server.sendToClients(QString::fromStdString(scene.to_string()));
-                } else {
-                    client.sendCommandToServer("circle " + QString::number(x) + " " +
-                                               QString::number(y) + " " +
-                                               QString::number(radius));
-                }
-            } else {
-                circle.et = ET_CIRCLE;
-                circle.params.push_back(x);
-                circle.params.push_back(y);
-                circle.params.push_back(radius);
-                ModeManager::setSave(false);
-
-                UndoRedo::CommandAddCircle* cmd = new UndoRedo::CommandAddCircle(scene, circle);
-                UndoRedo::Transaction txn(cmd->description());
-                txn.addCommand(cmd);
-                undoRedo.push(std::move(txn));
-                ID id = cmd->getCircleID();
-
-                leftMenu->addElemLeftMenu("Circle", id.get(), {x, y, radius});
-                leftMenu->addElemLeftMenu("Point", id.get() - 1, {x, y});
-                painter->draw();
-                leftMenu->updateLeftMenu();
-            }
-        });
-
-        // Отрисовка арки
-        QObject::connect(painter, &QTPainter::SigArc,
-                         [this](double x0, double y0, double x1, double y1, double xc, double yc) {
-                             ObjectData arc;
+        // Drawing a line
+        QObject::connect(painter, &QTPainter::SigSection,
+                         [this](const QPointF& startPoint, const QPointF& endPoint) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
-                                     arc.et = ET_ARC;
-                                     arc.params.push_back(x0);
-                                     arc.params.push_back(y0);
-                                     arc.params.push_back(x1);
-                                     arc.params.push_back(y1);
-                                     arc.params.push_back(xc);
-                                     arc.params.push_back(yc);
-                                     arc.params.push_back(1);
-
-                                     UndoRedo::CommandAddArc* cmd = new UndoRedo::CommandAddArc(scene, arc);
-                                     UndoRedo::Transaction txn(cmd->description());
-                                     txn.addCommand(cmd);
-                                     undoRedo.push(std::move(txn));
-                                     ID id = cmd->getArcID();
-
-                                     ModeManager::setSave(false);
-                                     leftMenu->addElemLeftMenu("Arc", id.get(), {x0, y0, x1, y1, xc, yc});
-                                     leftMenu->addElemLeftMenu("Point", id.get() - 1, {x0, y0});
-                                     leftMenu->addElemLeftMenu("Point", id.get() - 2, {x1, y1});
-                                     leftMenu->addElemLeftMenu("Point", id.get() - 2, {xc, yc});
-                                     leftMenu->updateLeftMenu();
-                                     painter->draw();
+                                     addSections(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y());
                                      server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
-                                     client.sendCommandToServer("arc " + QString::number(x0) + " " +
-                                                                QString::number(y0) + " " +
-                                                                QString::number(x1) + " " +
-                                                                QString::number(y1) + " " +
-                                                                QString::number(xc) + " " +
-                                                                QString::number(yc));
+                                     client.sendCommandToServer("section " + QString::number(startPoint.x()) + " " +
+                                                                QString::number(startPoint.y()) + " " +
+                                                                QString::number(endPoint.x()) + " " +
+                                                                QString::number(endPoint.y()));
                                  }
                              } else {
-                                 arc.et = ET_ARC;
-                                 arc.params.push_back(x0);
-                                 arc.params.push_back(y0);
-                                 arc.params.push_back(x1);
-                                 arc.params.push_back(y1);
-                                 arc.params.push_back(xc);
-                                 arc.params.push_back(yc);
-                                 arc.params.push_back(1);
-
-                                 UndoRedo::CommandAddArc* cmd = new UndoRedo::CommandAddArc(scene, arc);
-                                 UndoRedo::Transaction txn(cmd->description());
-                                 txn.addCommand(cmd);
-                                 undoRedo.push(std::move(txn));
-                                 ID id = cmd->getArcID();
-
-                                 ModeManager::setSave(false);
-                                 painter->draw();
-                                 leftMenu->addElemLeftMenu("Arc", id.get(), {x0, y0, x1, y1, xc, yc});
-                                 leftMenu->addElemLeftMenu("Point", id.get() - 1, {x0, y0});
-                                 leftMenu->addElemLeftMenu("Point", id.get() - 2, {x1, y1});
-                                 leftMenu->addElemLeftMenu("Point", id.get() - 2, {xc, yc});
-                                 leftMenu->updateLeftMenu();
+                                 addSections(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y());
                              }
+                             updateState();
+                         });
+
+
+        // Drawing a circle
+        QObject::connect(painter, &QTPainter::SigCircle,
+                         [this](const QPointF& center, const double radius) {
+                             if (ModeManager::getConnection()) {
+                                 if (ModeManager::getFlagServer()) {
+                                     addCircles(center.x(), center.y(), radius);
+                                     server.sendToClients(QString::fromStdString(scene.to_string()));
+                                 } else {
+                                     client.sendCommandToServer("circle " + QString::number(center.x()) + " " +
+                                                                QString::number(center.y()) + " " +
+                                                                QString::number(radius));
+                                 }
+                             } else {
+                                 addCircles(center.x(), center.y(), radius);
+                             }
+                             updateState();
+                         });
+
+
+        // Drawing an arcs
+        QObject::connect(painter, &QTPainter::SigArc,
+                         [this](const QPointF& startPoint, const QPointF& endPoint, const QPointF& centerPoint) {
+                             if (ModeManager::getConnection()) {
+                                 if (ModeManager::getFlagServer()) {
+                                     addArcs(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(),
+                                             centerPoint.x(), centerPoint.y());
+                                     server.sendToClients(QString::fromStdString(scene.to_string()));
+                                 } else {
+                                     client.sendCommandToServer("arc " + QString::number(startPoint.x()) + " " +
+                                                                QString::number(startPoint.y()) + " " +
+                                                                QString::number(endPoint.x()) + " " +
+                                                                QString::number(endPoint.y()) + " " +
+                                                                QString::number(centerPoint.x()) + " " +
+                                                                QString::number(centerPoint.y()));
+                                 }
+                             } else {
+                                 addArcs(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), centerPoint.x(),
+                                         centerPoint.y());
+                             }
+                             updateState();
                          });
 
 
     }
 
-    // Удаление элемента
+    // Deleting an element
     QObject::connect(&mainWind, &MainWindow::DELETE, [this]() {
         try {
-            std::vector<ID> vecPoint = painter->getVecSelectedIDPoints();
-            std::vector<ID> vecSection = painter->getVecSelectedIDSections();
-            std::vector<ID> vecCircle = painter->getVecSelectedIDCircles();
+            QVector<ID> vecPoint = painter->getVecSelectedIDPoints();
+            QVector<ID> vecSection = painter->getVecSelectedIDSections();
+            QVector<ID> vecCircle = painter->getVecSelectedIDCircles();
+            QVector<ID> vecArcs = painter->getVecSelectedIDArcs();
 
-
-            for (auto& sectionID : vecSection) {
-                ObjectData obj = scene.getObjectData(sectionID);
-                std::vector<ID> points = obj.subObjects;
-                for (auto& p : points) {
-                    auto it = std::find(vecPoint.begin(), vecPoint.end(), p);
-                    if (it != vecPoint.end()) {
-                        vecPoint.erase(it);
-                    }
-                }
-            }
-
-            for (auto& circleID : vecCircle) {
-                ObjectData obj = scene.getObjectData(circleID);
-                std::vector<ID> points = obj.subObjects;
-                for (auto& p : points) {
-                    auto it = std::find(vecPoint.begin(), vecPoint.end(), p);
-                    if (it != vecPoint.end()) {
-                        vecPoint.erase(it);
-                    }
-                }
-            }
-
-            UndoRedo::Transaction txn("Delete objects");
-
-            for (std::size_t i = 0; i < vecPoint.size(); ++i) {
-                UndoRedo::CommandDeletePoint *cmd = new UndoRedo::CommandDeletePoint(scene, vecPoint[i]);
-                txn.addCommand(cmd);
-
-                vecCalls.push_back([=, this]() {
-                    leftMenu->removeFigureById(vecPoint[i].get());
-                });
-            }
-            for (std::size_t i = 0; i < vecSection.size(); ++i) {
-                UndoRedo::CommandDeleteSection *cmd = new UndoRedo::CommandDeleteSection(scene, vecSection[i]);
-                txn.addCommand(cmd);
-
-                vecCalls.push_back([=, this]() {
-                    leftMenu->removeFigureById(vecSection[i].get());
-                });
-            }
-            for (std::size_t i = 0; i < vecCircle.size(); ++i) {
-                UndoRedo::CommandDeleteCircle *cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircle[i]);
-                txn.addCommand(cmd);
-
-                vecCalls.push_back([=, this]() {
-                    leftMenu->removeFigureById(vecCircle[i].get());
-                });
-            }
-
-            undoRedo.push(std::move(txn));
+            deleteOwnPoints(vecPoint, vecSection, vecCircle, vecArcs);
+            deleteObjects(vecPoint, vecSection, vecCircle, vecArcs);
 
             painter->selectedClear();
-            painter->draw();
+            scene.paint();
             updateState();
         } catch (std::exception& e) {
             mainWind.showError(e.what());
         }
     });
 
-    // Изменение размера
-    QObject::connect(&mainWind, &MainWindow::resize, [this]() { painter->update(); });
+    // ctrl+c
+    QObject::connect(&mainWind, &MainWindow::COPY, [this]() {
+        objectsBuffer.clear();
+        fillSelectedIDBuffer();
+        painter->selectedClear();
+        scene.paint();
+    });
+
+    // ctrl+v
+    QObject::connect(&mainWind, &MainWindow::PASTE, [this]() {
+        try {
+            for (auto& obj: objectsBuffer) {
+                ID id = scene.addObject(obj);
+                if (obj.et == ET_POINT) {
+                    std::vector<const double*> param = scene.getPointParams(id);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
+                    });
+                } else if (obj.et == ET_SECTION) {
+                    std::vector<const double*> param = scene.getSectionParams(id);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
+                                                       id.get(), id.get() - 1, id.get() - 2,
+                                                       {param[0], param[1]}, {param[2], param[3]});
+                    });
+                } else if (obj.et == ET_CIRCLE) {
+                    std::vector<const double*> param = scene.getCircleParams(id);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->addCircleInLeftMenu("Circle", "Center",
+                                                      id.get(), id.get() - 1,
+                                                      {param[0], param[1]}, *param[2]);
+                    });
+                } else if (obj.et == ET_ARC) {
+                    std::vector<const double*> param = scene.getArcParams(id);
+                    vecCalls.push_back([=, this]() {
+                        leftMenu->addArcInLeftMenu("Arc", "Point", "Point", "Center",
+                                                   id.get(), id.get() - 1, id.get() - 2, id.get() - 3,
+                                                   {param[0], param[1]}, {param[2], param[3]}, {param[4], param[5]});
+                    });
+                }
+            }
+        } catch (std::runtime_error& error) {
+            qWarning() << error.what();
+            mainWind.showError("Error pasted");
+        }
+        updateState();
+    });
+
+    // ctrl+x
+    QObject::connect(&mainWind, &MainWindow::CUT, [this]() {
+        objectsBuffer.clear();
+        fillSelectedIDBuffer();
+
+        for (auto& obj: objectsBuffer) {
+
+            vecCalls.push_back([=, this]() {
+                leftMenu->removeFigureById(obj.id.get());
+            });
+            scene.deleteObject(obj.id);
+        }
+
+        painter->selectedClear();
+        updateState();
+    });
+
+    // Changing the size
+    QObject::connect(&mainWind, &MainWindow::resize, [this]() {
+        painter->update();
+    });
 }
+
+
+void Application::deleteOwnPoints(QVector<ID>& vecPoints, const QVector<ID>& vecSections, const QVector<ID>& vecCircles,
+                                  const QVector<ID>& vecArcs) {
+
+    for (const auto& sectionID: vecSections) {
+        ObjectData obj = scene.getObjectData(sectionID);
+        const std::vector<ID>& points = obj.subObjects;
+
+        for (const auto& p: points) {
+            int index = vecPoints.indexOf(p);
+            if (index != -1) {
+                vecPoints.removeAt(index);
+            }
+        }
+    }
+
+    for (auto& circleID: vecCircles) {
+        ObjectData obj = scene.getObjectData(circleID);
+        std::vector<ID> points = obj.subObjects;
+
+        for (auto& p: points) {
+            int index = vecPoints.indexOf(p);
+            if (index != -1) {
+                vecPoints.removeAt(index);
+            }
+        }
+    }
+}
+
+
+void Application::deleteObjects(QVector<ID>& vecPoints, QVector<ID>& vecSections, QVector<ID>& vecCircles,
+                                QVector<ID>& vecArcs) {
+    UndoRedo::Transaction txn("Delete objects");
+
+    for (std::size_t i = 0; i < vecPoints.size(); ++i) {
+        UndoRedo::CommandDeletePoint* cmd = new UndoRedo::CommandDeletePoint(scene, vecPoints[i]);
+        txn.addCommand(cmd);
+        vecCalls.push_back([=, this]() {
+            leftMenu->removeFigureById(vecPoints[i].get());
+        });
+    }
+    for (std::size_t i = 0; i < vecSections.size(); ++i) {
+        UndoRedo::CommandDeleteSection* cmd = new UndoRedo::CommandDeleteSection(scene, vecSections[i]);
+        txn.addCommand(cmd);
+        vecCalls.push_back([=, this]() {
+            leftMenu->removeFigureById(vecSections[i].get());
+        });
+    }
+    for (std::size_t i = 0; i < vecCircles.size(); ++i) {
+        UndoRedo::CommandDeleteCircle* cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircles[i]);
+        txn.addCommand(cmd);
+        vecCalls.push_back([=, this]() {
+            leftMenu->removeFigureById(vecCircles[i].get());
+        });
+    }
+    undoRedo.push(std::move(txn));
+}
+
+
+void Application::fillSelectedIDBuffer() {
+    QVector<ID> bufferSelectedIDPoints = painter->getVecSelectedIDPoints();
+    QVector<ID> bufferSelectedIDSections = painter->getVecSelectedIDSections();
+    QVector<ID> bufferSelectedIDCircles = painter->getVecSelectedIDCircles();
+    QVector<ID> bufferSelectedIDArcs = painter->getVecSelectedIDArcs();
+
+    deleteOwnPoints(bufferSelectedIDPoints, bufferSelectedIDSections, bufferSelectedIDCircles, bufferSelectedIDArcs);
+
+    for (auto& id: bufferSelectedIDPoints) {
+        objectsBuffer.push_back(scene.getObjectData(id));
+    }
+
+    for (auto& id: bufferSelectedIDSections) {
+        objectsBuffer.push_back(scene.getObjectData(id));
+    }
+
+    for (auto& id: bufferSelectedIDCircles) {
+        objectsBuffer.push_back(scene.getObjectData(id));
+    }
+
+    for (auto& id: bufferSelectedIDArcs) {
+        objectsBuffer.push_back(scene.getObjectData(id));
+    }
+}
+
 
 void Application::setupServerConnections() {
 
@@ -603,7 +574,7 @@ void Application::setupServerConnections() {
         server.sendToClients(QString::fromStdString(scene.to_string()));
     });
 
-    QObject::connect(&client, &Client::newStateReceived, [&](/* const QString& state */) {
+    QObject::connect(&client, &Client::newStateReceived, [&](const QString& state) {
         // TODO scene.loadFromString(state.toStdString());
         updateState();
     });
@@ -640,17 +611,17 @@ void Application::setupServerConnections() {
     });
 }
 
+
 void Application::setupRequirementsConnections() {
     try {
-        // Требования
         QObject::connect(&mainWind, &MainWindow::oneRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                InputWindow window("Enter parameters: ");
+                InputWindow window("Enter parameters: ", &mainWind);
                 if (window.exec() == QDialog::Accepted) {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
-                    if (!ok) return;
+                    if (!ok) { return; }
                     addRequirement(ET_POINTSECTIONDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
@@ -669,24 +640,26 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::threeRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                InputWindow window("Enter parameters: ");
+                InputWindow window("Enter parameters: ", &mainWind);
                 if (window.exec() == QDialog::Accepted) {
                     RequirementData reqData;
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
-                    if (!ok) return;
+                    if (!ok) { return; }
                     addRequirement(ET_POINTPOINTDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             } else {
-                std::vector<ID> vec_id = painter->getVecSelectedIDSections();
+                QVector<ID> vec_id = painter->getVecSelectedIDSections();
                 if (vec_id.size() == 1) {
-                    InputWindow window("Enter parameters: ");
+                    InputWindow window("Enter parameters: ", &mainWind);
                     if (window.exec() == QDialog::Accepted) {
                         RequirementData reqData;
                         bool ok = false;
                         double parameters = window.getText().toDouble(&ok);
-                        if (!ok) return;
+                        if (!ok) {
+                            return;
+                        }
                         addRequirement(ET_POINTPOINTDIST, ID(vec_id[0].get() - 1), ID(vec_id[0].get() - 2), parameters);
                         updateState();
                     }
@@ -705,12 +678,12 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::fiveRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                InputWindow window("Enter parameters: ");
+                InputWindow window("Enter parameters: ", &mainWind);
                 if (window.exec() == QDialog::Accepted) {
                     RequirementData reqData;
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
-                    if (!ok) return;
+                    if (!ok) { return; }
                     addRequirement(ET_SECTIONCIRCLEDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
@@ -720,8 +693,8 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::sixRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                    addRequirement(ET_SECTIONONCIRCLE, pairSelectedID->first, pairSelectedID->second);
-                    updateState();
+                addRequirement(ET_SECTIONONCIRCLE, pairSelectedID->first, pairSelectedID->second);
+                updateState();
             }
         });
 
@@ -753,11 +726,11 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::tenRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                InputWindow window("Enter parameters: ");
+                InputWindow window("Enter parameters: ", &mainWind);
                 if (window.exec() == QDialog::Accepted) {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
-                    if (!ok) return;
+                    if (!ok) { return; }
                     addRequirement(ET_SECTIONSECTIONANGLE, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
@@ -768,27 +741,73 @@ void Application::setupRequirementsConnections() {
     }
 }
 
+
 void Application::setupLeftMenuConnections() {
-    // Изменение параметра в левом меню
-    /*
-    QObject::connect(leftMenu.get(), &LeftMenuBar::parameterChanged,
-                     [this](unsigned long long Id, const std::vector<double> &parameters) {
+    if (leftMenu) {
+        // Changing the settings in the left menu
+        QObject::connect(leftMenu, &LeftMenuBar::figureParamsChanged,
+                         [this](const long long id, const std::string& type, const std::vector<double>& parameters) {
+                             if (id == 0) {
+                                 mainWind.showError("ID = 0");
+                                 return;
+                             }
+                             if (type == "Point" && parameters.size() == 2) {
+                                 try {
+                                     scene.setPoint(ID(id), parameters[0], parameters[1]);
+                                     scene.paint();
+                                 } catch (const std::exception& a) {
+                                     mainWind.showError(a.what());
+                                 }
+                             } else if (type == "Circle" && parameters.size() == 3) {
+                                 try {
+                                     scene.setCircle(ID(id), parameters[0], parameters[1], parameters[2]);
+                                     scene.paint();
+                                 } catch (const std::exception& a) {
+                                     mainWind.showError(a.what());
+                                 }
+                             } else if (type == "Section" && parameters.size() == 4) {
+                                 try {
+                                     scene.setSection(ID(id), parameters[0], parameters[1], parameters[2],
+                                                      parameters[3]);
+                                     scene.paint();
+                                 } catch (const std::exception& a) {
+                                     mainWind.showError(a.what());
+                                 }
+                             } else if (type == "Arc" && parameters.size() == 6) {
+                                 try {
+                                     // TODO The arch does not store the radius!
+                                     // scene.setArc(ID(id), parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5]);
+                                     scene.paint();
+                                 } catch (const std::exception& a) {
+                                     mainWind.showError(a.what());
+                                 }
+                             } else {
+                                 mainWind.showError("Don't move element!");
+                             }
+                         });
 
-                     });
 
-    // Двойное нажатие левого меню
-    QObject::connect(leftMenu.get(), &LeftMenuBar::DoubleClickLeftMenu,
-                     [this](std::vector<double> &parameters, unsigned long long int ID) {
+        QObject::connect(leftMenu, &LeftMenuBar::reqParamChanged,
+                         [](const long long id, const double& parameter) {
+                             // TODD to change the requirement parameter by ID
+                         });
 
-                     });
-*/
+
+        // Double-tap the left menu
+        QObject::connect(leftMenu, &LeftMenuBar::doubleClickLeftMenu,
+                         [this](const long long int id, const std::string& type) {
+                             painter->selectedElemByID(ID(id), type);
+                             scene.paint();
+                         });
+    }
 
 }
 
+
 void Application::setupAddingCommandsConnections() {
+
     // Console
     QObject::connect(&mainWind, &MainWindow::EnterPressed, [&](const QString& command) {
-        QStringList commandParts = command.split(' ');
         if (ModeManager::getConnection()) {
             if (ModeManager::getFlagServer()) {
                 handler(command);
@@ -810,8 +829,15 @@ void Application::setupAddingCommandsConnections() {
             painter->saveToImage(fileName, format);
         } else {
             std::string File = fileName.toStdString();
-            scene.saveToFile(File.c_str());
-            painter->draw();
+            try {
+                scene.saveToFile(File.c_str());
+            }
+            catch (std::runtime_error& error) {
+                qWarning("Don't save to file");
+                mainWind.showError("Don't save to file");
+                return;
+            }
+            scene.paint();
         }
         mainWind.showSuccess("The project is saved!");
     });
@@ -819,13 +845,15 @@ void Application::setupAddingCommandsConnections() {
     //Load
     QObject::connect(&mainWind, &MainWindow::LoadFile, [&](const QString& fileName) {
         try {
-            painter->clear();
+            scene.clearImage();
             std::string File = fileName.toStdString();
             scene.loadFromFile(File.c_str());
-            painter->draw();
+
+            scene.paint();
             scene.paint();
             mainWind.showSuccess("The project is loaded!");
         } catch (std::exception& e) {
+            qWarning(e.what());
             mainWind.showError(e.what());
         }
     });
@@ -866,7 +894,7 @@ void Application::setupAddingCommandsConnections() {
     QObject::connect(&mainWind, &MainWindow::UNDO, [this]() {
         bool b = undoRedo.undo();
         if (!b) {
-            mainWind.showError("undo failed");
+            mainWind.showError("Undo failed");
         }
         leftMenu->updateLeftMenu();
     });
@@ -875,7 +903,7 @@ void Application::setupAddingCommandsConnections() {
     QObject::connect(&mainWind, &MainWindow::REDO, [this]() {
         bool b = undoRedo.redo();
         if (!b) {
-            mainWind.showError("redo failed");
+            mainWind.showError("Redo failed");
         }
         leftMenu->updateLeftMenu();
     });
@@ -883,22 +911,19 @@ void Application::setupAddingCommandsConnections() {
 
 void Application::updateState() {
 
-    painter->draw();
+    scene.paint();
 
-    auto calls = vecCalls;
+    for (auto& call: vecCalls) {
+        call();
+    }
+
     vecCalls.clear();
-
-    QFuture<void> future = QtConcurrent::run([calls = std::move(calls)]() mutable {
-        for (auto& call : calls) {
-            call();
-        }
-    });
-
 
     leftMenu->updateLeftMenu();
 }
 
-void Application::handler(const QString &command) {
+
+void Application::handler(const QString& command) {
 
     QStringList commandParts = command.split(' ');
 
@@ -908,131 +933,52 @@ void Application::handler(const QString &command) {
         double y = commandParts[2].toDouble(&yOk);
 
         if (xOk && yOk) {
-            ObjectData point;
-            point.et = ET_POINT;
-            point.params.push_back(x);
-            point.params.push_back(y);
-
-            UndoRedo::CommandAddPoint* cmd = new UndoRedo::CommandAddPoint(scene, point);
-            UndoRedo::Transaction txn(cmd->description());
-            txn.addCommand(cmd);
-            undoRedo.push(std::move(txn));
-
-            ID id = cmd->getPointID();
-            ModeManager::setSave(false);
-            vecCalls.push_back([=, this]() {
-                leftMenu->addElemLeftMenu("Point", id.get(), {x, y});
-            });
+            addPoints(x, y);
         }
 
-    }
-    else if (commandParts[0] == "section" && commandParts.size() >= 5) {
+    } else if (commandParts[0] == "section" && commandParts.size() >= 5) {
         bool xOk, yOk, zOk, rOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
         double z = commandParts[3].toDouble(&zOk);
         double r = commandParts[4].toDouble(&rOk);
         if (xOk && yOk && zOk && rOk) {
-            ObjectData section;
-            section.et = ET_SECTION;
-            section.params.push_back(x);
-            section.params.push_back(y);
-            section.params.push_back(z);
-            section.params.push_back(r);
-
-            UndoRedo::CommandAddSection* cmd = new UndoRedo::CommandAddSection(scene, section);
-            UndoRedo::Transaction txn(cmd->description());
-            txn.addCommand(cmd);
-            undoRedo.push(std::move(txn));
-            ID id = cmd->getSectionID();
-
-            ModeManager::setSave(false);
-            vecCalls.push_back([=, this]() {
-                leftMenu->addElemLeftMenu("Point", id.get() - 1, {x, y});
-                leftMenu->addElemLeftMenu("Point", id.get() - 2, {z, r});
-                leftMenu->addElemLeftMenu("Section", id.get(), {x, y, z, r});
-            });
+            addSections(x, y, z, r);
         }
-    }
-    else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
+    } else if (commandParts[0] == "circle" && commandParts.size() >= 4) {
         bool xOk, yOk, rOk;
         double x = commandParts[1].toDouble(&xOk);
         double y = commandParts[2].toDouble(&yOk);
         double r = commandParts[3].toDouble(&rOk);
 
         if (xOk && yOk && rOk) {
-
-            ObjectData circle;
-            circle.et = ET_CIRCLE;
-            circle.params.push_back(x);
-            circle.params.push_back(y);
-            circle.params.push_back(r);
-
-            UndoRedo::CommandAddCircle* cmd = new UndoRedo::CommandAddCircle(scene, circle);
-            UndoRedo::Transaction txn(cmd->description());
-            txn.addCommand(cmd);
-            undoRedo.push(std::move(txn));
-            ID id = cmd->getCircleID();
-
-            ModeManager::setSave(false);
-            vecCalls.push_back([=, this]() {
-                leftMenu->addElemLeftMenu("Circle", id.get(), {x, y, r});
-                leftMenu->addElemLeftMenu("Point", id.get() - 1, {x, y});
-            });
+            addCircles(x, y, r);
         }
 
-    }
-    else if (commandParts[0] == "arc" && commandParts.size() >= 8) {
-            bool x0Ok, y0Ok, x1Ok, y1Ok, cxOk, cyOk, rOk;
-            double x1 = commandParts[1].toDouble(&x0Ok);
-            double y1 = commandParts[2].toDouble(&y0Ok);
-            double x2 = commandParts[3].toDouble(&x1Ok);
-            double y2 = commandParts[4].toDouble(&y1Ok);
-            double cx = commandParts[5].toDouble(&cxOk);
-            double cy = commandParts[6].toDouble(&cyOk);
-            double r = commandParts[7].toDouble(&rOk);
-            if (x0Ok && y0Ok && x1Ok && y1Ok && cxOk && cyOk && rOk) {
-                ObjectData arc;
-                arc.et = ET_ARC;
-                arc.params.push_back(x1);
-                arc.params.push_back(y1);
-                arc.params.push_back(x2);
-                arc.params.push_back(y2);
-                arc.params.push_back(cx);
-                arc.params.push_back(cy);
-                arc.params.push_back(r);
+    } else if (commandParts[0] == "arc" && commandParts.size() >= 7) {
+        bool x0Ok, y0Ok, x1Ok, y1Ok, cxOk, cyOk;
+        double x1 = commandParts[1].toDouble(&x0Ok);
+        double y1 = commandParts[2].toDouble(&y0Ok);
+        double x2 = commandParts[3].toDouble(&x1Ok);
+        double y2 = commandParts[4].toDouble(&y1Ok);
+        double cx = commandParts[5].toDouble(&cxOk);
+        double cy = commandParts[6].toDouble(&cyOk);
+        if (x0Ok && y0Ok && x1Ok && y1Ok && cxOk && cyOk) {
+            addArcs(x1, y1, x2, y2, cx, cy);
+        }
 
-                UndoRedo::CommandAddArc* cmd = new UndoRedo::CommandAddArc(scene, arc);
-                UndoRedo::Transaction txn(cmd->description());
-                txn.addCommand(cmd);
-                undoRedo.push(std::move(txn));
-                ID id = cmd->getArcID();
-
-                ModeManager::setSave(false);
-                vecCalls.push_back([=, this]() {
-                    leftMenu->addElemLeftMenu("Point", id.get() - 3, {x1, y1});
-                    leftMenu->addElemLeftMenu("Point", id.get() - 2, {x2, y2});
-                    leftMenu->addElemLeftMenu("Point", id.get() - 1, {cx, cy});
-                    leftMenu->addElemLeftMenu("Arc", id.get(), {x1, y1, x2, y2, cx, cy});
-                });
-            }
-
-    }
-    else if (commandParts[0] == "exit") {
+    } else if (commandParts[0] == "exit") {
         mainWind.close();
-    }
-    else if (commandParts[0] == "clear") {
+    } else if (commandParts[0] == "clear") {
         ModeManager::setSave(true);
-        painter->clear();
+        scene.clearImage();
         scene.clear();
         vecCalls.push_back([=, this]() {
             leftMenu->clearAllFigures();
             leftMenu->clearAllRequirements();
-            leftMenu->updateLeftMenu();
         });
         updateState();
-    }
-    else if (commandParts[0] == "addReq" && commandParts.size() > 3) {
+    } else if (commandParts[0] == "addReq" && commandParts.size() > 3) {
         int req = commandParts[1].toInt();
         ID obj1(commandParts[2].toInt());
         ID obj2(commandParts[3].toInt());
@@ -1080,15 +1026,13 @@ void Application::handler(const QString &command) {
         } catch (std::exception& e) {
             mainWind.showError(e.what());
         }
-    }
-    else if (commandParts[0] == "delReq" && commandParts.size() > 1) {
+    } else if (commandParts[0] == "delReq" && commandParts.size() > 1) {
         ID reqID(commandParts[1].toInt());
         UndoRedo::CommandDeleteRequirement* cmd = new UndoRedo::CommandDeleteRequirement(scene, reqID);
         UndoRedo::Transaction txn(cmd->description());
         txn.addCommand(cmd);
         undoRedo.push(std::move(txn));
-    }
-    else if (commandParts[0] == "delObj" && commandParts.size() > 1) {
+    } else if (commandParts[0] == "delObj" && commandParts.size() > 1) {
         ID objID(commandParts[1].toInt());
         UndoRedo::CommandDeleteObject* cmd = new UndoRedo::CommandDeleteObject(scene, objID);
         UndoRedo::Transaction txn(cmd->description());
@@ -1096,6 +1040,7 @@ void Application::handler(const QString &command) {
         undoRedo.push(std::move(txn));
     }
 }
+
 
 void Application::addRequirement(Requirement RQ, ID id1, ID id2, double parameters) {
     RequirementData reqData;
@@ -1114,13 +1059,14 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2, double paramete
 
         ModeManager::setSave(false);
         vecCalls.push_back([=, this]() {
-            leftMenu->addRequirementElem(name, RQ, id1.get(),
+            leftMenu->addRequirementElem(name, name, RQ, id1.get(),
                                          id2.get(), parameters);
         });
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
         mainWind.showError(e.what());
     }
 }
+
 
 void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
     RequirementData reqData;
@@ -1138,10 +1084,103 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
 
         ModeManager::setSave(false);
         vecCalls.push_back([=, this]() {
-            leftMenu->addRequirementElem(name, RQ, id1.get(),
+            leftMenu->addRequirementElem(name, name, RQ, id1.get(),
                                          id2.get());
         });
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
         mainWind.showError(e.what());
     }
+}
+
+
+void Application::addPoints(double x, double y) {
+    ObjectData point;
+    point.et = ET_POINT;
+    point.params.push_back(x);
+    point.params.push_back(y);
+
+    UndoRedo::CommandAddPoint* cmd = new UndoRedo::CommandAddPoint(scene, point);
+    UndoRedo::Transaction txn(cmd->description());
+    txn.addCommand(cmd);
+    undoRedo.push(std::move(txn));
+
+    ID id = cmd->getPointID();
+    ModeManager::setSave(false);
+    std::vector<const double*> param = scene.getPointParams(id);
+
+    vecCalls.push_back([=, this]() {
+        leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
+    });
+}
+
+
+void Application::addSections(double x0, double y0, double x1, double y1) {
+    ObjectData section;
+    section.et = ET_SECTION;
+    section.params.push_back(x0);
+    section.params.push_back(y0);
+    section.params.push_back(x1);
+    section.params.push_back(y1);
+
+    UndoRedo::CommandAddSection* cmd = new UndoRedo::CommandAddSection(scene, section);
+    UndoRedo::Transaction txn(cmd->description());
+    txn.addCommand(cmd);
+    undoRedo.push(std::move(txn));
+    ID id = cmd->getSectionID();
+    std::vector<const double*> param = scene.getSectionParams(id);
+    ModeManager::setSave(false);
+    vecCalls.push_back([=, this]() {
+        leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
+                                       id.get(), id.get() - 1, id.get() - 2,
+                                       {param[0], param[1]}, {param[2], param[3]});
+    });
+}
+
+
+void Application::addCircles(double x, double y, double r) {
+    ObjectData circle;
+    circle.et = ET_CIRCLE;
+    circle.params.push_back(x);
+    circle.params.push_back(y);
+    circle.params.push_back(r);
+
+    UndoRedo::CommandAddCircle* cmd = new UndoRedo::CommandAddCircle(scene, circle);
+    UndoRedo::Transaction txn(cmd->description());
+    txn.addCommand(cmd);
+    undoRedo.push(std::move(txn));
+    ID id = cmd->getCircleID();
+    std::vector<const double*> param = scene.getCircleParams(id);
+
+    ModeManager::setSave(false);
+    vecCalls.push_back([=, this]() {
+        leftMenu->addCircleInLeftMenu("Circle", "Center",
+                                      id.get(), id.get() - 1,
+                                      {param[0], param[1]}, r);
+    });
+}
+
+void Application::addArcs(double x0, double y0, double x1, double y1, double cx, double cy) {
+    ObjectData arc;
+    arc.et = ET_ARC;
+    arc.params.push_back(x0);
+    arc.params.push_back(y0);
+    arc.params.push_back(x1);
+    arc.params.push_back(y1);
+    arc.params.push_back(cx);
+    arc.params.push_back(cy);
+    arc.params.push_back(1);
+
+    UndoRedo::CommandAddArc* cmd = new UndoRedo::CommandAddArc(scene, arc);
+    UndoRedo::Transaction txn(cmd->description());
+    txn.addCommand(cmd);
+    undoRedo.push(std::move(txn));
+    ID id = cmd->getArcID();
+    std::vector<const double*> param = scene.getArcParams(id);
+
+    ModeManager::setSave(false);
+    vecCalls.push_back([=, this]() {
+        leftMenu->addArcInLeftMenu("Arc", "Point", "Point", "Center",
+                                   id.get(), id.get() - 1, id.get() - 2, id.get() - 3,
+                                   {param[0], param[1]}, {param[2], param[3]}, {param[4], param[5]});
+    });
 }

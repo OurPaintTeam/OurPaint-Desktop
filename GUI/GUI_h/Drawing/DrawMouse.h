@@ -6,55 +6,56 @@
 #include <QPainter>
 #include <cmath>
 
-
 #include "Modes.h"
-#include "Scaling.h"
 #include "DrawAdditionalInf.h"
 #include "DrawFigures.h"
 
 class DrawMouse : public QObject {
 Q_OBJECT
 
-//  Класс для отрисовки мышью
-//  Добавлены подсказки по ближайшим точкам
+// Class for drawing with the mouse
+// Added hints for the nearest points
 
 private:
-    QPointF closestStartPoint; // Ближайшая точка
-    QPointF closestPointNext;  // Следующая ближайшая точка
-    QPointF startCoordinates; // Точка нажатия курсора
-    bool drawingInProgress; // Для отслеживания состояния
-    short int tabPressCount; // Для подсказок
+    QPointF closestStartPoint; // Nearest point
+    QPointF closestPointNext;  // Next nearest point
+    QPointF startCoordinates; // Cursor click point
+    bool drawingInProgress; // To track the status
+    qint16 tabPressCount; // For hints
 
-    static QColor hintColor(); // Серая линия
+    static QColor hintColor(); // Grey line
+    static void releaseTabIfPressed(); // Pressing tab
 
-    void resetCoordinates(); // Обнуление всего
+    void resetCoordinates(); // Reset everything
 
-    static void releaseTabIfPressed(); // Нажатие таба
+    // For rendering with a shift
+    static QPointF getSnappedPoint(const QPointF& start, const QPointF& current);
 
-    // Для отрисовки с шифтом
-    static QPointF getSnappedPoint(const QPointF &start, const QPointF &current) ;
-
-    // Предварительная отрисовка серых линий подсказок
-    static void drawPreviewSection(QPainter &painter, const QPointF &start, const QPointF &end) ;
+    // Preliminary drawing of the gray lines of the suggestions
+    static void drawPreviewSection(QPainter& painter, const QPointF& start, const QPointF& end);
 
 public:
-    explicit DrawMouse(QObject *parent = nullptr);
+    [[maybe_unused]] explicit DrawMouse(QObject* parent = nullptr);
 
-    // Вычисление угла
-    static double snapAngle(double angle) ;
+    // Calculating the angle
+    static qreal snapAngle(qreal angle);
 
-    // Отрисовка фигур мышью
-    void DrawFiguresMouse(QPainter &painter);
-    static void drawSections(QPainter &painter, const QPointF &startCoordinates);
+    // Drawing shapes with the mouse
+    void DrawFiguresMouse(QPainter& painter,const QPointF& cursor);
+    static void drawCircles(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
+    static void drawSections(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
 
-    // Отрисовка подсказок
-    void drawHints(QPainter &painter, const QPointF &closesPoint) ;
+    // Drawing suggestions
+    void drawHints(QPainter& painter, const QPointF& closesPoint,const QPointF& cursor);
+
+    void clear();
 
 signals:
-    void SigPoint(double x, double y);
-    void SigCircle(double x, double y, double r);
-    void SigSection(double x, double y, double x1, double y1);
-    void SigArc(double x, double y, double x1, double y1, double xc, double yc);
+
+    void SigPoint(const QPointF& point);
+    void SigCircle(const QPointF& center,const qreal radius);
+    void SigSection(const QPointF& stratPoint,const QPointF& endPoint);
+    void SigArc(const QPointF& stratPoint,const QPointF& endPoint,const QPointF& centerPoint);
 };
 
 #endif // OURPAINT_DRAWMOUSE_H

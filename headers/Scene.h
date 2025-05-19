@@ -77,6 +77,7 @@ public:
     Component& findComponentByID(ID id);
 
     void paint() const;
+    void clearImage() const;
 
     ObjectData getObjectData(ID objectID) const;
     ObjectData getRootObjectData(ID objectID) const;
@@ -100,6 +101,11 @@ public:
     void setSection(ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag = true);
     void setCircle(ID pointID, double x, double y, double r, const bool updateRequirementFlag = true);
     void setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r, const bool updateRequirementFlag = true);
+
+    std::vector<const double*> getPointParams(ID pointID) const;
+    std::vector<const double*> getSectionParams(ID sectionID) const;
+    std::vector<const double*> getCircleParams(ID circleID) const;
+    std::vector<const double*> getArcParams(ID arcID) const;
 
     ID addRequirement(const RequirementData& reqData, const bool updateRequirementFlag = true);
     void updateRequirements(ID objectID);

@@ -2,7 +2,6 @@
 #define OURPAINT_GUI_LOGGER_H
 
 #include <QCoreApplication>
-#include <QDebug>
 #include <QFile>
 #include <QTextStream>
 #include <QDateTime>
@@ -10,6 +9,6 @@
 
 extern QFile logFile;
 
-void guiLogger(QtMsgType type, const QMessageLogContext &context, const QString &msg);
+void guiLogger(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 
 #endif //OURPAINT_GUI_LOGGER_H

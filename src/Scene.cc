@@ -22,11 +22,12 @@ Scene::Scene(Painter* p) :
     _circles.reserve(std::size_t(1024));
     _arcs.reserve(std::size_t(1024));
     _requirements.reserve(std::size_t(512));
+
     if (p) {
-        p->initPoint(_points);
-        p->initSection(_sections);
-        p->initCircle(_circles);
-        p->initArc(_arcs);
+        p->initPointCase(_points);
+        p->initSectionCase(_sections);
+        p->initCircleCase(_circles);
+        p->initArcCase(_arcs);
     }
 }
 
@@ -475,6 +476,11 @@ void Scene::updateBoundingBox() const {
 void Scene::paint() const {
     updateBoundingBox();
     _painter->getBoundBox(_allFiguresRectangle);
+    _painter->draw();
+}
+
+void Scene::clearImage() const {
+    _painter->clear();
 }
 
 ObjectData Scene::getObjectData(ID id) const {
@@ -667,10 +673,10 @@ std::vector<RequirementData> Scene::getObjectRequirementsWithConnectedObjects(ID
 
 void Scene::setPainter(Painter* p) {
     _painter = p;
-    _painter->initPoint(_points);
-    _painter->initSection(_sections);
-    _painter->initCircle(_circles);
-    _painter->initArc(_arcs);
+    _painter->initPointCase(_points);
+    _painter->initSectionCase(_sections);
+    _painter->initCircleCase(_circles);
+    _painter->initArcCase(_arcs);
 }
 
 void Scene::moveObject(ID id, double dx, double dy) {
@@ -830,6 +836,42 @@ void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double 
     if (updateRequirementFlag) {
         updateRequirements(arcID);
     }
+}
+
+std::vector<const double*> Scene::getPointParams(ID pointID) const {
+    if (!_points.contains(pointID)) {
+        throw std::out_of_range("There is no point");
+    }
+    const Point* p = _points.at(pointID);
+    return {&p->x, &p->y};
+}
+
+std::vector<const double*> Scene::getSectionParams(ID sectionID) const {
+    if (!_sections.contains(sectionID)) {
+        throw std::out_of_range("There is no section");
+    }
+    const Section* s = _sections.at(sectionID);
+    return {&s->beg->x, &s->beg->y, &s->end->x, &s->end->y};
+}
+
+std::vector<const double*> Scene::getCircleParams(ID circleID) const {
+    if (!_circles.contains(circleID)) {
+        throw std::out_of_range("There is no circle");
+    }
+    const Circle* c = _circles.at(circleID);
+    return {&c->center->x, &c->center->y, &c->r};
+}
+
+std::vector<const double*> Scene::getArcParams(ID arcID) const {
+    if (!_arcs.contains(arcID)) {
+        throw std::out_of_range("There is no arc");
+    }
+    const Arc* a = _arcs.at(arcID);
+    return {
+            &a->beg->x, &a->beg->y,
+            &a->end->x, &a->end->y,
+            &a->center->x, &a->center->y
+    };
 }
 
 ID Scene::addRequirement(const RequirementData& reqData, const bool updateRequirementFlag) {
@@ -1433,6 +1475,9 @@ void Scene::loadFromFile(const char* filename) {
             ID id1 = ID(pointObjectData.front().first);
             pointObjectData.pop();
             ID id2 = ID(pointObjectData.front().first);
+            objData.subObjects.push_back(id1);
+            objData.subObjects.push_back(id2);
+            _objectSubObjects[id] = {id1, id2};
             pointObjectData.pop();
             objData.subObjects.push_back(id1); // 1
             objData.subObjects.push_back(id2); // 2

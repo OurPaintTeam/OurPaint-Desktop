@@ -16,13 +16,13 @@ public:
     void connectToServer(const QString &ip, quint16 port);
     void sendCommandToServer(const QString &command);
     void sendChatMessage(const QString &message);
-    void disconnectFromServer(); // Добавленный метод для ручного отключения
+    void disconnectFromServer(); // Added method for manual shutdown
 
 signals:
     void newChatMessageReceived(const QString& message, const QString& user);
     void newStateReceived(const QString& command);
     void disconnectedFromServer();
-    void serverShutdown(); // Новый сигнал для обработки отключения сервера
+    void serverShutdown(); // New signal to handle server shutdown
 
 private slots:
     void onConnected();
