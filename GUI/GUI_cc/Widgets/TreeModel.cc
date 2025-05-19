@@ -25,8 +25,6 @@ QModelIndex TreeModel::indexFromNode(TreeNode* node) const {
 
 void TreeModel::safelyResetModel() {
     beginResetModel();
-    delete rootNode;
-    rootNode = new TreeNode("Root");
     endResetModel();
 }
 

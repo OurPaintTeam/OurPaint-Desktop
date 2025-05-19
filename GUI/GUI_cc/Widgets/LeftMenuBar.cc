@@ -350,7 +350,7 @@ void LeftMenuBar::clearAllFigures() {
 
     // Deleting all children of the node
     figuresNode->deleteAll();
-
+    treeModel->safelyResetModel();
     QModelIndex figuresIndex = treeModel->index(figuresNode->row(), 0, QModelIndex());
     treeModel->dataChanged(figuresIndex, figuresIndex);
 }

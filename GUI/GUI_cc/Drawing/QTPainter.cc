@@ -18,7 +18,7 @@ QTPainter::QTPainter(QWidget* parent) : QFrame(parent), drawing(false) {
     setAttribute(Qt::WA_AcceptTouchEvents);
 
     Scaling::updateScaling();
-    Scaling::setStartMonitorSize((short int) width(), (short int) height());
+    Scaling::setStartMonitorSize(static_cast<qint16>(width()), static_cast<qint16>(height()));
 }
 
 

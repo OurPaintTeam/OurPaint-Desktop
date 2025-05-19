@@ -104,11 +104,10 @@ public:
     void showSuccess(const QString& text);
     void showWarning(const QString& text);
 
-    /***     Сохранение и импорт настроек       ***/
+    /***     Save/import settings       ***/
     QString getUserName();
     void saveSettings();
     void loadSettings();
-    void saveCommandsInTxt(const QString& path);
 
 protected:
 
