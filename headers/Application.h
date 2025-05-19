@@ -79,9 +79,6 @@ private:
     bool isStartMoving;
     std::vector<ObjectData> pre_move_object_states;
 
-private slots:
-    void autoSave();
-
 public:
     Application(int &argc, char **argv);
     int exec();

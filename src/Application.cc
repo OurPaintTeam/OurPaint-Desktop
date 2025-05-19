@@ -105,11 +105,10 @@ void Application::setupQTPainterConnections() {
             txn.addCommand(cmd);
             undoRedo.push(std::move(txn));
             isStartMoving = true;
-            painter->draw();
+            scene.paint();
         });
 
-        // Перемещение точки
-        QObject::connect(painter, &QTPainter::MovingPoint, [this](std::vector<ID> vec_id) {
+        QObject::connect(painter, &QTPainter::MovingPoint, [this](const QVector<ID>& vec_id) {
             if (isStartMoving) {
                 // I'm afraid. It's really dangerous.
                 Component& c = scene.findComponentByID(vec_id[0]);
@@ -133,21 +132,15 @@ void Application::setupQTPainterConnections() {
             scene.paint();
         });
 
-        // Перемещение отрезка
-        QObject::connect(painter, &QTPainter::MovingSection, [this](std::vector<ID> vec_id,QPointF p1,QPointF p2) {
-            if (isStartMoving) {
-                Component& c = scene.findComponentByID(vec_id[0]);
-                for (auto& id : c.objectIDs()) {
-                    pre_move_object_states.push_back(scene.getObjectData(id));
-                }
-                isStartMoving = false;
-            }
-
-            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
-            QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
-
         QObject::connect(painter, &QTPainter::MovingSection,
                          [this](const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
+                             if (isStartMoving) {
+                                 Component& c = scene.findComponentByID(vec_id[0]);
+                                 for (auto& id : c.objectIDs()) {
+                                     pre_move_object_states.push_back(scene.getObjectData(id));
+                                 }
+                                 isStartMoving = false;
+                             }
                              QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
                              QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
 
@@ -169,10 +162,7 @@ void Application::setupQTPainterConnections() {
 
                          });
 
-
         QObject::connect(painter, &QTPainter::MovingCircle, [this](const QVector<ID>& vec_id, const QPointF& offset) {
-        // Перемещение круга
-        QObject::connect(painter, &QTPainter::MovingCircle, [this](std::vector<ID> vec_id,QPointF offset) {
             if (isStartMoving) {
                 Component& c = scene.findComponentByID(vec_id[0]);
                 for (auto& id : c.objectIDs()) {
@@ -180,7 +170,6 @@ void Application::setupQTPainterConnections() {
                 }
                 isStartMoving = false;
             }
-
 
             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
@@ -206,7 +195,7 @@ void Application::setupQTPainterConnections() {
         });
 
         // Перемещение арки
-        QObject::connect(painter, &QTPainter::MovingArc, [this](std::vector<ID> vec_id) {
+        QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
             if (isStartMoving) {
                 Component& c = scene.findComponentByID(vec_id[0]);
                 for (auto& id : c.objectIDs()) {
@@ -214,9 +203,6 @@ void Application::setupQTPainterConnections() {
                 }
                 isStartMoving = false;
             }
-
-
-        QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
 
             double dx = Scaling::logic(Scaling::getCursorDeltaX());
             double dy = Scaling::logic(Scaling::getCursorDeltaY());
@@ -231,6 +217,7 @@ void Application::setupQTPainterConnections() {
             }
             scene.paint();
         });
+
 
         // Drawing a point
         QObject::connect(painter, &QTPainter::SigPoint,
