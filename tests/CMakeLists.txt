@@ -89,6 +89,7 @@ target_link_libraries(UndoRedoGTEST GTest::gtest_main)
 #Test for move functionality
 add_executable(MoveGTEST MoveGTEST.cc
         ../src/Scene.cc
+        ../src/objects/Component.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
         ../src/painters/BMPpainter.cc
