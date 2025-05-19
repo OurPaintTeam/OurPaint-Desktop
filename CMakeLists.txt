@@ -4,6 +4,8 @@ project(ourpaint)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
@@ -26,6 +28,7 @@ include_directories(ourpaint
         headers/commands
         headers/commands/Add
         headers/commands/Delete
+
         GUI/GUI_h
         GUI/GUI_h/Unnecessary
         GUI/GUI_h/client_server
@@ -36,9 +39,15 @@ include_directories(ourpaint
         GUI/GUI_h/Widgets
         GUI/GUI_h/Logger
         GUI/GUI_h/Settings
+
         Math/headers
         Math/headers/decomposition
         Math/headers/optimizers
+        Math/headers/optimizers/EigenOptimizers
+        Math/headers/optimizers/MatrixOptimizers
+        Math/headers/Tasks
+        Math/headers/Tasks/Eigen
+        Math/headers/Tasks/Matrix
         Math/headers/graph
 )
 
@@ -48,6 +57,7 @@ add_executable(ourpaint
         src/Requirements.cc
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
+        src/objects/Component.cc
 
         src/painters/BMPpainter.cc
 
@@ -96,19 +106,19 @@ add_executable(ourpaint
         headers/commands/Add/CommandAddSection.h
         headers/commands/Add/CommandAddCircle.h
         headers/commands/Add/CommandAddArc.h
-
         headers/commands/Delete/CommandDeletePoint.h
         headers/commands/Delete/CommandDeleteSection.h
         headers/commands/Delete/CommandDeleteCircle.h
         headers/commands/Delete/CommandDeleteArc.h
-
         headers/commands/CommandAddRequirement.h
         headers/commands/CommandDeleteRequirement.h
+        headers/commands/CommandMove.h
 
         src/commands/Add/CommandAddObject.cc
         src/commands/Delete/CommandDeleteObject.cc
         src/commands/CommandAddRequirement.cc
         src/commands/CommandDeleteRequirement.cc
+        src/commands/CommandMove.cc
 
         ###########  GUI  ############
 
