@@ -1,6 +1,6 @@
 #include "ClosestPoint.h"
 
-QPointF ClosestPoint::findClosestPoint(std::unordered_map<ID, Point*>& points, const QPointF cursor) {
+QPointF ClosestPoint::findClosestPoint(const std::unordered_map<ID, Point*>& points, const QPointF cursor) {
     if (points.size() == 0) {
         return QPointF{};
     }
@@ -23,7 +23,7 @@ QPointF ClosestPoint::findClosestPoint(std::unordered_map<ID, Point*>& points, c
 
 
 [[maybe_unused]] QVector<ID>
-ClosestPoint::enteringInRect(std::unordered_map<ID, Point*>& points, QRectF& rect, QVector<ID>& vec_id) {
+ClosestPoint::enteringInRect(const std::unordered_map<ID, Point*>& points,const QRectF& rect, QVector<ID>& vec_id) {
 
     vec_id.clear();
 
@@ -39,7 +39,7 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Point*>& points, QRectF& rec
 
 
 [[maybe_unused]] QVector<ID>
-ClosestPoint::enteringInRect(std::unordered_map<ID, Circle*>& circles, QRectF& rect, QVector<ID>& vec_id) {
+ClosestPoint::enteringInRect(const std::unordered_map<ID, Circle*>& circles,const QRectF& rect, QVector<ID>& vec_id) {
     vec_id.clear();
     for (const auto& pair: circles) {
         const Circle* circle = pair.second;
@@ -59,7 +59,7 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Circle*>& circles, QRectF& r
 
 
 [[maybe_unused]] QVector<ID>
-ClosestPoint::enteringInRect(std::unordered_map<ID, Section*>& sections, QRectF& rect, QVector<ID>& vec_id) {
+ClosestPoint::enteringInRect(const std::unordered_map<ID, Section*>& sections,const QRectF& rect, QVector<ID>& vec_id) {
     vec_id.clear();
     for (const auto& sec: sections) {
         const Section* section = sec.second;
@@ -70,9 +70,7 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Section*>& sections, QRectF&
             vec_id.push_back(sec.first);
         } else {
             const QLineF line(p1, p2);
-            QPolygonF polygon;
-            polygon << rect.topLeft() << rect.topRight()
-                    << rect.bottomRight() << rect.bottomLeft();
+            QPolygonF polygon=rectToPolygon(rect);
 
             for (qsizetype i = 0; i < polygon.size(); ++i) {
                 const QLineF edge(polygon[i], polygon[(i + 1) % polygon.size()]);
@@ -89,7 +87,7 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Section*>& sections, QRectF&
 
 
 [[maybe_unused]] QVector<ID>
-ClosestPoint::enteringInRect(std::unordered_map<ID, Arc*>& arcs, QRectF& rect, QVector<ID>& vec_id) {
+ClosestPoint::enteringInRect(const std::unordered_map<ID, Arc*>& arcs,const QRectF& rect, QVector<ID>& vec_id) {
     vec_id.clear();
 
     for (const auto& elem: arcs) {
@@ -128,14 +126,83 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Arc*>& arcs, QRectF& rect, Q
 }
 
 
+QPolygonF ClosestPoint::rectToPolygon(const QRectF& rect) {
+    return QPolygonF{ rect.topLeft(), rect.topRight(), rect.bottomRight(), rect.bottomLeft() };
+}
+
+
+bool ClosestPoint::pointInRect(const Point* pt, const QRectF& rect) {
+    return rect.contains(QPointF(pt->x, pt->y));
+}
+
+
+bool ClosestPoint::circleInRect(const Circle* circle, const QRectF& rect) {
+    const QPointF center(circle->center->x, circle->center->y);
+    const qreal r = circle->r;
+    return rect.contains(QRectF(center.x() - r, center.y() - r, 2*r, 2*r));
+}
+
+
+bool ClosestPoint::sectionInRect(const Section* section, const QRectF& rect) {
+    const QPointF p1(section->beg->x, section->beg->y);
+    const QPointF p2(section->end->x, section->end->y);
+
+    if (rect.contains(p1) || rect.contains(p2)) {
+        return true;
+    }
+
+    QLineF line(p1, p2);
+    QPolygonF poly = rectToPolygon(rect);
+    for (int i = 0; i < poly.size(); ++i) {
+        QLineF edge(poly[i], poly[(i+1) % poly.size()]);
+        QPointF intersection;
+        if (line.intersects(edge, &intersection) == QLineF::BoundedIntersection) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool ClosestPoint::arcInRect(const Arc* arc, const QRectF& rect){
+    const QPointF beg(arc->beg->x, arc->beg->y);
+    const QPointF end(arc->end->x, arc->end->y);
+    const QPointF center(arc->center->x, arc->center->y);
+
+    const qreal radius = QLineF(center, beg).length();
+    qreal angleStart = QLineF(center, end).angle();
+    qreal angleEnd = QLineF(center, beg).angle();
+
+    angleStart = fmod(angleStart + 360.0, 360.0);
+    angleEnd = fmod(angleEnd + 360.0, 360.0);
+
+    qreal span = angleEnd - angleStart;
+    if (span <= 0.1) {
+        span += 360.0;
+    }
+
+    const qreal midAngleDeg = fmod(angleStart + span / 2.0, 360.0);
+    const qreal midAngleRad = qDegreesToRadians(midAngleDeg);
+
+    const QPointF mid(
+            center.x() + radius * qCos(midAngleRad),
+            center.y() - radius * qSin(midAngleRad)
+    );
+
+    if (rect.contains(beg) || rect.contains(end) || rect.contains(center) || rect.contains(mid)) {
+        return true;
+    }
+
+    return false;
+}
+
+
 QVector<ID>
-ClosestPoint::enteringInRect(std::unordered_map<ID, Point*>& points, QRectF& rect) {
+ClosestPoint::enteringInRect(const std::unordered_map<ID, Point*>& points,const QRectF& rect) {
     QVector<ID> vec_id;
 
     for (const auto& pt: points) {
-        const Point* point = pt.second;
-        const QPointF p(point->x, point->y);
-        if (rect.contains(p)) {
+        if (pointInRect(pt.second,rect)) {
             vec_id.push_back(pt.first);
         }
     }
@@ -144,17 +211,10 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Point*>& points, QRectF& rec
 
 
 QVector<ID>
-ClosestPoint::enteringInRect(std::unordered_map<ID, Circle*>& circles, QRectF& rect) {
+ClosestPoint::enteringInRect(const std::unordered_map<ID, Circle*>& circles,const QRectF& rect) {
     QVector<ID> vec_id;
     for (const auto& pair: circles) {
-        const Circle* circle = pair.second;
-        const QPointF center(circle->center->x, circle->center->y);
-        const qreal radius = circle->r;
-        const qreal diam = 2 * radius;
-
-        const QRectF circleBounds(center.x() - radius, center.y() - radius, diam, diam);
-
-        if (rect.contains(circleBounds)) {
+        if (circleInRect(pair.second,rect)) {
             vec_id.push_back(pair.first);
         }
     }
@@ -163,30 +223,12 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Circle*>& circles, QRectF& r
 
 
 QVector<ID>
-ClosestPoint::enteringInRect(std::unordered_map<ID, Section*>& sections, QRectF& rect) {
+ClosestPoint::enteringInRect(const std::unordered_map<ID, Section*>& sections, const QRectF& rect) {
     QVector<ID> vec_id;
 
     for (const auto& sec: sections) {
-        const Section* section = sec.second;
-        const QPointF p1(section->beg->x, section->beg->y);
-        const QPointF p2(section->end->x, section->end->y);
-
-        if (rect.contains(p1) || rect.contains(p2)) {
+        if (sectionInRect(sec.second, rect)) {
             vec_id.push_back(sec.first);
-        } else {
-            const QLineF line(p1, p2);
-            QPolygonF polygon;
-            polygon << rect.topLeft() << rect.topRight()
-                    << rect.bottomRight() << rect.bottomLeft();
-
-            for (qsizetype i = 0; i < polygon.size(); ++i) {
-                const QLineF edge(polygon[i], polygon[(i + 1) % polygon.size()]);
-                QPointF intersection;
-                if (line.intersects(edge, &intersection) == QLineF::BoundedIntersection) {
-                    vec_id.push_back(sec.first);
-                    break;
-                }
-            }
         }
     }
     return vec_id;
@@ -194,38 +236,12 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Section*>& sections, QRectF&
 
 
 QVector<ID>
-ClosestPoint::enteringInRect(std::unordered_map<ID, Arc*>& arcs, QRectF& rect) {
+ClosestPoint::enteringInRect(const std::unordered_map<ID, Arc*>& arcs,const QRectF& rect) {
     QVector<ID> vec_id;
 
-    for (const auto& elem: arcs) {
-        const Arc* arc = elem.second;
-
-        const QPointF beg(arc->beg->x, arc->beg->y);
-        const QPointF end(arc->end->x, arc->end->y);
-        const QPointF center(arc->center->x, arc->center->y);
-
-        const qreal radius = QLineF(center, beg).length();
-        qreal angleStart = QLineF(center, end).angle();
-        qreal angleEnd = QLineF(center, beg).angle();
-
-        angleStart = fmod(angleStart + 360.0, 360.0);
-        angleEnd = fmod(angleEnd + 360.0, 360.0);
-
-        qreal span = angleEnd - angleStart;
-        if (span <= 0.1) {
-            span += 360.0;
-        }
-
-        const qreal midAngleDeg = fmod(angleStart + span / 2.0, 360.0);
-        const qreal midAngleRad = qDegreesToRadians(midAngleDeg);
-
-        const QPointF mid(
-                center.x() + radius * std::cos(midAngleRad),
-                center.y() - radius * std::sin(midAngleRad)
-        );
-
-        if (rect.contains(beg) || rect.contains(end) || rect.contains(center) || rect.contains(mid)) {
-            vec_id.push_back(elem.first);
+    for (const auto& arc: arcs) {
+        if (arcInRect(arc.second, rect)) {
+            vec_id.push_back(arc.first);
         }
     }
 
@@ -234,49 +250,30 @@ ClosestPoint::enteringInRect(std::unordered_map<ID, Arc*>& arcs, QRectF& rect) {
 
 
 bool ClosestPoint::checkFigure(const QPointF point, const QPointF cursor, const qreal zoom) {
-    const qreal RANGE = 3.0 / zoom;
-    const QPointF delta(cursor - point);
-
-    return qSqrt(delta.x() * delta.x() + delta.y() * delta.y()) <= RANGE;
+    return distanceBetweenPoints(point, cursor) <= roundRange(zoom,3.0);
 }
 
 
-bool ClosestPoint::checkFigure(const QPointF center, qreal radius, const QPointF cursor, const qreal zoom) {
-
-    const QPointF delta(cursor - center);
-    const qreal distance = qSqrt(delta.x() * delta.x() + delta.y() * delta.y());
-    const qreal RANGE = 3.0 / zoom;
-
-    if (qAbs(distance - radius) <= RANGE) {
-        return true;
-    }
-
-    return false;
+bool ClosestPoint::checkFigure(const QPointF center,const qreal radius, const QPointF cursor, const qreal zoom) {
+    const qreal distance = distanceBetweenPoints(center, cursor);
+    return qAbs(distance - radius) <= roundRange(zoom,3.0);
 }
 
 
 bool
 ClosestPoint::checkFigure(const QPointF startPoint, const QPointF endPoint, const QPointF cursor, const qreal zoom) {
-    const qreal RANGE = 5.0 / zoom;
-
-    qreal distance = distancePointToSection(cursor, startPoint, endPoint);
-
-    if (distance <= RANGE) {
-        return true;
-    }
-
-    return false;
+    return distancePointToSection(cursor, startPoint, endPoint) <= roundRange(zoom, 5.0);
 }
 
 
-[[maybe_unused]] bool
+bool
 ClosestPoint::checkFigure(const QPointF startPoint, const QPointF endPoint, const QPointF centerPoint,
                           const QPointF cursor, const qreal zoom) {
-    const qreal radius = std::hypot(startPoint.x() - centerPoint.x(), startPoint.y() - centerPoint.y());
-    const qreal distToCenter = std::hypot(cursor.x() - centerPoint.x(), cursor.y() - centerPoint.y());
+    const qreal radius = distanceBetweenPoints(startPoint, centerPoint);
+    const qreal distToCenter = distanceBetweenPoints(cursor, centerPoint);
 
     const qreal RANGE = 3.0 / zoom;
-    if (std::abs(distToCenter - radius) > RANGE) {
+    if (qAbs(distToCenter - radius) > RANGE) {
         return false;
     }
 
@@ -317,6 +314,19 @@ qreal ClosestPoint::distancePointToSection(const QPointF cursor, const QPointF s
 
     return QLineF(cursor, projection).length();
 }
+
+
+inline qreal ClosestPoint::distanceBetweenPoints(const QPointF& a, const QPointF& b) {
+    return qSqrt((a.x() - b.x()) * (a.x() - b.x()) + (a.y() - b.y()) * (a.y() - b.y()));
+}
+
+
+inline qreal ClosestPoint::roundRange(const qreal zoom,const qreal range = 3.0) {
+    return range / zoom;
+}
+
+
+
 
 
 
