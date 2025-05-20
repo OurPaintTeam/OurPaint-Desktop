@@ -115,7 +115,7 @@ add_executable(ourpaint
 
         GUI/GUI_cc/Drawing/Scaling.cc
         GUI/GUI_cc/Drawing/ClosestPoint.cc
-        GUI/GUI_cc/Drawing/DrawAddirionalInf.cc
+        GUI/GUI_cc/Drawing/DrawAdditionalInf.cc
         GUI/GUI_cc/Drawing/DrawBackgrond.cc
         GUI/GUI_cc/Drawing/DrawFigures.cc
         GUI/GUI_cc/Drawing/Modes.cc
