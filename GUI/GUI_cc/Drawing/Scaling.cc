@@ -9,20 +9,9 @@ qreal Scaling::scale = 1.0;
 QPoint Scaling::Delta(0, 0);
 QPoint Scaling::LastMousePos(0, 0);
 QPoint Scaling::Cursor(0, 0);
-QSize Scaling::StartMonitorSize(0,0);
-QSizeF Scaling::CenteredCoordinates(0,0);
-
-
-quint16 Scaling::ActualMonitorSize::ActualMonitorWidth = 1;
-quint16 Scaling::ActualMonitorSize::ActualMonitorHeight = 1;
-
-QSize Scaling::getActualMonitorSize() {
-    return Scaling::StartMonitorSize;
-}
-
-QSizeF Scaling::getCenteredCoordinates() {
-   return Scaling::CenteredCoordinates;
-}
+QSize Scaling::StartMonitorSize(0, 0);
+QSize Scaling::ActualMonitorSize(0, 0);
+QSizeF Scaling::CenteredCoordinates(1, 1);
 
 
 void Scaling::updateScaling() {
@@ -31,36 +20,30 @@ void Scaling::updateScaling() {
     usersResize = false;
 }
 
-void Scaling::setStartMonitorSize(const QSize &size) {
-    Scaling::StartMonitorSize = size;
-    Scaling::CenteredCoordinates = size/2.0;
+
+QSize Scaling::getActualMonitorSize() {
+    return Scaling::StartMonitorSize;
 }
 
-void Scaling::setActualMonitorSize(const QSize &size) {
-    Scaling::ActualMonitorSize::ActualMonitorWidth = size.width();
-    Scaling::ActualMonitorSize::ActualMonitorHeight = size.height();
-    Scaling::CenteredCoordinates = size/2.0;
+QSizeF Scaling::getCenteredCoordinates() {
+    return Scaling::CenteredCoordinates;
 }
 
 
-qreal Scaling::logic(qreal X) {
-    return X / (scale * zoom);
+void Scaling::setStartMonitorSize(const QSize& size) {
+    if(size.isValid()) {
+        Scaling::StartMonitorSize = size;
+        Scaling::CenteredCoordinates = size / 2.0;
+    }
 }
 
-qreal Scaling::logicCursorX() {
-    return ((Scaling::getCursorX() - Scaling::CenteredCoordinates.width() - Scaling::Delta.x()) /
-            (scale * zoom));
+void Scaling::setActualMonitorSize(const QSize& size) {
+    if(size.isValid()) {
+        Scaling::ActualMonitorSize = size;
+        Scaling::CenteredCoordinates = size / 2.0;
+    }
 }
 
-qreal Scaling::logicCursorY() {
-    // The y-axis is inverted
-    return ((-Scaling::getCursorY() + Scaling::CenteredCoordinates.height() + Scaling::Delta.y()) /
-            (scale * zoom));
-}
-
-QPointF Scaling::logicCursor() {
-    return {Scaling::logicCursorX(), Scaling::logicCursorY()};
-}
 
 
 qreal Scaling::scaleCoordinate(qreal X) {
@@ -76,7 +59,6 @@ qreal Scaling::scaleCoordinateY(qreal Y) {
 }
 
 
-[[maybe_unused]]
 void Scaling::setZoom(qreal z) {
     zoom = z;
 }
@@ -111,17 +93,18 @@ void Scaling::setZoomZero() {
     Scaling::Delta = {0, 0};
 }
 
+
 qint16 Scaling::getUserUnitSize() {
     return userUnitSize;
 }
 
-[[maybe_unused]]
-qreal Scaling::getScale() {
-    return scale;
-}
-
 qreal Scaling::getZoom() {
     return zoom;
+}
+
+
+void Scaling::setDelta(const QPoint& delta) {
+    Scaling::Delta += delta;
 }
 
 qreal Scaling::getDeltaX() {
@@ -136,6 +119,35 @@ QPointF Scaling::getDelta() {
     return {Scaling::getDeltaX(), Scaling::getDeltaY()};
 }
 
+
+QPoint constexpr Scaling::getCursorDelta(){
+    const QPoint temp = Scaling::Cursor- Scaling::LastMousePos;
+    Scaling::LastMousePos=Scaling::Cursor;
+    return temp;
+}
+
+
+void Scaling::startMousePress(const QPoint& pos) {
+    Scaling::LastMousePos = pos;
+}
+
+void Scaling::mouseMove() {
+    usersResize = true;
+    const QPoint delta = Scaling::Cursor - Scaling::LastMousePos;
+    setDelta(delta);
+    Scaling::LastMousePos = Scaling::Cursor;
+}
+
+
+void Scaling::setCursor(const QPoint& cursor) {
+    Scaling::Cursor = cursor;
+}
+
+
+QPoint Scaling::getCursor() {
+    return {getCursorX(), getCursorY()};
+}
+
 qint32 Scaling::getCursorX() {
     return Scaling::Cursor.x();
 }
@@ -144,55 +156,27 @@ qint32 Scaling::getCursorY() {
     return Scaling::Cursor.y();
 }
 
-[[maybe_unused]]
-QPoint Scaling::getCursor() {
-    return {getCursorX(), getCursorY()};
+
+
+qreal Scaling::logic(qreal X) {
+    return X / (scale * zoom);
 }
 
-void Scaling::setCursor(const QPoint& cursor) {
-    Scaling::Cursor = cursor;
+qreal Scaling::logicCursorX() {
+    return ((Scaling::getCursorX() - Scaling::CenteredCoordinates.width() - Scaling::Delta.x()) /
+            ( zoom));
 }
 
-void Scaling::setDelta(const QPoint& delta) {
-    Scaling::Delta += delta;
+qreal Scaling::logicCursorY() {
+    // The y-axis is inverted
+    return ((-Scaling::getCursorY() + Scaling::CenteredCoordinates.height() + Scaling::Delta.y()) /
+            (scale * zoom));
 }
 
-[[maybe_unused]]
-void Scaling::setDeltaX() {
-    constexpr qint16 step = 10;
-    Scaling::Delta.setX(Scaling::Delta.x() + step);
+QPointF Scaling::logicCursor() {
+    return {Scaling::logicCursorX(), Scaling::logicCursorY()};
 }
 
-[[maybe_unused]]
-void Scaling::setDeltaY() {
-    constexpr qint16 step = 10;
-    Scaling::Delta.setX(Scaling::Delta.y() + step);
-}
-
-void Scaling::startMousePress(const QPoint& pos) {
-    Scaling::LastMousePos = pos;
-}
-
-void Scaling::mouseMove() {
-    usersResize = true;
-    const QPoint delta = Scaling::Cursor-Scaling::LastMousePos;
-    setDelta(delta);
-    Scaling::LastMousePos=Scaling::Cursor;
-}
-
-qint32 Scaling::getCursorDeltaX() {
-    qint32 temp = Scaling::Cursor.x() - Scaling::LastMousePos.x();
-    Scaling::LastMousePos.setX(Scaling::Cursor.x());
-    return temp;
-}
-
-qint32 Scaling::getCursorDeltaY() {
-    qint32 temp = Scaling::LastMousePos.y()-Scaling::Cursor.y();
-    Scaling::LastMousePos.setY(Scaling::Cursor.y());
-    return temp;
-}
-
-[[maybe_unused]]
-void Scaling::resetUsersResize() {
-    usersResize = false;
+QPointF Scaling::scaleCursor() {
+    return {Scaling::scaleCoordinateX(Scaling::Cursor.x()),Scaling::scaleCoordinateY(Scaling::Cursor.y())};
 }

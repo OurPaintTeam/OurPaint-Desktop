@@ -15,20 +15,14 @@ private:
     static QPoint LastMousePos;
     static QPoint Cursor;
     static QSize StartMonitorSize;
+    static QSize ActualMonitorSize;
     static QSizeF CenteredCoordinates;
 
-
-    struct ActualMonitorSize {
-        static quint16 ActualMonitorWidth;
-        static quint16 ActualMonitorHeight;
-    };
 public:
+    static void updateScaling();
 
     static QSize getActualMonitorSize();
     static QSizeF getCenteredCoordinates();
-
-
-    static void updateScaling();
 
     static void setStartMonitorSize(const QSize &size);
     static void setActualMonitorSize(const QSize &size);
@@ -36,53 +30,37 @@ public:
     static qreal scaleCoordinate(qreal X);
     static qreal scaleCoordinateX(qreal X);
     static qreal scaleCoordinateY(qreal Y);
-    static qreal logic(qreal X);
 
     static void setZoomPlus();
     static void setZoomMinus();
     static void setZoomZero();
 
-    [[maybe_unused]]
     static void setZoom(qreal z);
 
-    static void setDelta(const QPoint &delta);
-
-    [[maybe_unused]]
-    static void setDeltaX();
-
-    [[maybe_unused]]
-    static void setDeltaY();
-
-    static void setCursor(const QPoint& cursor);
-
-    [[maybe_unused]]
-    static qreal getScale();
     static qint16 getUserUnitSize();
     static qreal getZoom();
 
+    static void setDelta(const QPoint &delta);
     static qreal getDeltaX();
     static qreal getDeltaY();
     static QPointF getDelta();
 
-    static qint32 getCursorX();
-    static qint32 getCursorY();
-
-    [[maybe_unused]]
-    static QPoint getCursor();
+    static QPoint constexpr getCursorDelta();
 
     static void startMousePress(const QPoint& pos);
     static void mouseMove();
 
-    static qint32 getCursorDeltaX();
-    static qint32 getCursorDeltaY();
+    static void setCursor(const QPoint& cursor);
 
+    static QPoint getCursor();
+    static qint32 getCursorX();
+    static qint32 getCursorY();
+
+    static qreal logic(qreal X);
     static qreal logicCursorX();
     static qreal logicCursorY();
     static QPointF logicCursor();
-
-    [[maybe_unused]]
-    static void resetUsersResize();
-
+    static QPointF scaleCursor();
 };
 
 #endif // SCALING_H
