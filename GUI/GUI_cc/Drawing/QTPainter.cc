@@ -456,7 +456,7 @@ void QTPainter::paintEvent(QPaintEvent* event) {
 
     if (ModeManager::getCursor()) {
 
-        const QPointF cursor = {Scaling::logicCursorX(), Scaling::logicCursorY()};
+        const QPointF cursor = Scaling::logicCursor();
 
         if (ModeManager::getActiveMode(WorkModes::Point) ||
             ModeManager::getActiveMode(WorkModes::Circle) ||
@@ -527,7 +527,7 @@ void QTPainter::paintEvent(QPaintEvent* event) {
         if (!drawing) {
             if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
                 drawing = true;
-                const QPointF cursorPressPos = QPointF(Scaling::logicCursorX(), Scaling::logicCursorY());
+                const QPointF cursorPressPos = Scaling::logicCursor();
 
                 if (!selectedIDSection.empty()) {
                     const ID id = selectedIDSection.begin()->first;
