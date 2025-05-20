@@ -1,14 +1,15 @@
-#ifndef OURPAINT_REGEX_H
-#define OURPAINT_REGEX_H
+#ifndef OURPAINT_DREGEX_H
+#define OURPAINT_DREGEX_H
 #include <QString>
 #include <QChar>
 #include <QDebug>
 
 // A class for controlling the input of numbers
 
-class Regex {
+class DRegex {
 public:
     // A method for checking a floating-point number
     static bool parseDoubleNumber(const QString &text);
 };
-#endif //OURPAINT_REGEX_H
+
+#endif //OURPAINT_DREGEX_H

@@ -78,7 +78,6 @@ target_include_directories(UndoRedoGTEST PRIVATE ../headers/UndoRedo)
 target_link_libraries(UndoRedoGTEST GTest::gtest_main)
 
 
-
 #Test for UndoRedoTemplate
 #add_executable(UndoRedoTemplateGTEST UndoRedoGTEST.cc ../src/UndoRedo/UndoRedoTemplate.cc)
 #target_include_directories(UndoRedoTemplateGTEST PRIVATE ../headers/UndoRedo)
@@ -147,6 +146,6 @@ if (TYPE_OF_COMPILING)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         add_compile_options(-Wall -Wextra -Wpedantic)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        add_compile_options(/W4)
+        #add_compile_options(/W4)
     endif ()
 endif ()

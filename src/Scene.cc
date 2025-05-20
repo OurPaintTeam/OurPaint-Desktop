@@ -1210,20 +1210,25 @@ void Scene::rebuildComponents() {
         std::vector<Edge<ID, ID>> componentEdges = component.getAllEdges();
         std::vector<ID> componentVertices = component.getVertices();
         Component c;
+
         std::vector<Variable*> variables;
         std::unordered_set<double*> seen;
+
         for (auto& edge: componentEdges) {
             if (edge.weight != ID(-2) && _requirements[edge.weight]->getType() != ET_POINTONPOINT) {
-                std::vector<Variable*> variablesWithDuplicates = _requirements[edge.weight]->getVariables();
-                variables.reserve(variablesWithDuplicates.size());
-                for (auto& var: variablesWithDuplicates) {
+                auto vars = _requirements[edge.weight]->getVariables();
+                for (Variable* var : vars) {
                     if (seen.insert(var->value).second) {
                         variables.push_back(var);
+                    }
+                    else {
+                        delete var;
                     }
                 }
                 c.errorFunctions().push_back(_requirements[edge.weight]->getFunction());
             }
         }
+
         c.vars() = variables;
         if (!componentVertices.empty()) {
             std::vector<ID> cC = _graph.findConnectedComponent(componentVertices[0]);
