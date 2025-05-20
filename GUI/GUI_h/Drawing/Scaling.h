@@ -41,9 +41,9 @@ public:
     static qreal getZoom();
 
     static void setDelta(const QPoint &delta);
-    static qreal getDeltaX();
-    static qreal getDeltaY();
-    static QPointF getDelta();
+    static qint32 getDeltaX();
+    static qint32 getDeltaY();
+    static QPoint getDelta();
 
     static QPoint getCursorDelta();
     static QPointF getCursorLogicDelta();

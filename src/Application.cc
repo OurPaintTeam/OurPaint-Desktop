@@ -102,11 +102,18 @@ void Application::setupQTPainterConnections() {
 
 
         QObject::connect(painter, &QTPainter::MovingPoint, [this](const QVector<ID>& vec_id) {
-            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
+            const  QPointF cursorNow = Scaling::logicCursor();
+            const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
+                if (vec_id.size() == 1) {
+                    scene.setPoint(vec_id[0], cursorNow.x(), cursorNow.y());
+                    leftMenu->refreshAllLinkedParams();
+                    return;
+                }
+
                 for (qsizetype i = 0; i < vec_id.size(); ++i) {
-                    scene.setPoint(vec_id[i], cursorNow.x(), cursorNow.y());
+                    scene.movePoint(vec_id[i], delta.x(), delta.y());
                 }
                 leftMenu->updateLeftMenu();
             } catch (const std::exception& a) {
@@ -119,8 +126,8 @@ void Application::setupQTPainterConnections() {
 
         QObject::connect(painter, &QTPainter::MovingSection,
                          [this](const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
-                             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
-                             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
+                             const  QPointF cursorNow = Scaling::logicCursor();
+                             const QPointF delta = Scaling::getCursorLogicDelta();
 
                              try {
                                  if (vec_id.size() == 1) {
@@ -143,8 +150,8 @@ void Application::setupQTPainterConnections() {
 
         QObject::connect(painter, &QTPainter::MovingCircle, [this](const QVector<ID>& vec_id, const QPointF& offset) {
 
-            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
-            QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
+            const  QPointF cursorNow = Scaling::logicCursor();
+            const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
                 if (vec_id.size() == 1) {
@@ -168,7 +175,7 @@ void Application::setupQTPainterConnections() {
 
 
         QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
-
+            const  QPointF cursorNow = Scaling::logicCursor();
             const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {

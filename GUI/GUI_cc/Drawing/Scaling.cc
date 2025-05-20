@@ -33,14 +33,14 @@ QSizeF Scaling::getCenteredCoordinates() {
 void Scaling::setStartMonitorSize(const QSize& size) {
     if (size.isValid()) {
         Scaling::StartMonitorSize = size;
-        Scaling::CenteredCoordinates = size / 2.0;
+        Scaling::CenteredCoordinates = QSizeF(size) / 2.0;
     }
 }
 
 void Scaling::setActualMonitorSize(const QSize& size) {
     if (size.isValid()) {
         Scaling::ActualMonitorSize = size;
-        Scaling::CenteredCoordinates = size / 2.0;
+        Scaling::CenteredCoordinates = QSizeF(size) / 2.0;
     }
 }
 
@@ -106,15 +106,15 @@ void Scaling::setDelta(const QPoint& delta) {
     Scaling::Delta += delta;
 }
 
-qreal Scaling::getDeltaX() {
+qint32 Scaling::getDeltaX() {
     return Scaling::Delta.x();
 }
 
-qreal Scaling::getDeltaY() {
+qint32 Scaling::getDeltaY() {
     return Scaling::Delta.y();
 }
 
-QPointF Scaling::getDelta() {
+QPoint Scaling::getDelta() {
     return {Scaling::getDeltaX(), Scaling::getDeltaY()};
 }
 
@@ -166,7 +166,7 @@ qreal Scaling::logic(qreal X) {
 }
 
 QPointF Scaling::logic(QPoint X) {
-    return X / (scale * zoom);
+    return QPointF(X)  / (scale * zoom);
 }
 
 QPointF Scaling::logic(QPointF X) {
