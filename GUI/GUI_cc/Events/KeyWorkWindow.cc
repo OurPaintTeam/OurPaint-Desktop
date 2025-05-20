@@ -79,16 +79,16 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent* event) {
             m_parent->update();
         }
     } else if (event->key() == Qt::Key_Down) {
-        Scaling::setDelta(0, -10);
+        Scaling::setDelta({0, -10});
         m_parent->update();
     } else if (event->key() == Qt::Key_Up) {
-        Scaling::setDelta(0, 10);
+        Scaling::setDelta({0, 10});
         m_parent->update();
     } else if (event->key() == Qt::Key_Left) {
-        Scaling::setDelta(10, 0);
+        Scaling::setDelta({10, 0});
         m_parent->update();
     } else if (event->key() == Qt::Key_Right) {
-        Scaling::setDelta(-10, 0);
+        Scaling::setDelta({-10, 0});
         m_parent->update();
     } else if (event->key() == Qt::Key_1) {
         emit firstReq();

@@ -33,8 +33,8 @@ void ParameterDelegate::setEditorData(QWidget* editor, const QModelIndex& index)
     QString text = index.data(Qt::DisplayRole).toString();
 
     if (text.contains(": ")) {
-        const qint16 colonIndex = text.indexOf(": ");
-        const qint16 prefixLength = colonIndex + 2; //
+        const quint16 colonIndex = text.indexOf(": ");
+        const quint16 prefixLength = colonIndex + 2;
         const qint16 numberLength = text.length() - prefixLength;
 
         QTimer::singleShot(0, lineEdit, [lineEdit, prefixLength, numberLength]() {

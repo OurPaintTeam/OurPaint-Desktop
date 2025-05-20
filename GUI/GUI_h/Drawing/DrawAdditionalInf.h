@@ -30,6 +30,8 @@ public:
 
     /************* ID ********************/
 
+    static inline bool isValidID(const ID& id);
+
     static void drawPointID(QPainter& painter, const ID& pointID, const QPointF& point);
     static void drawSectionID(QPainter& painter, const ID& sectionID, const QPointF& start, const QPointF& end);
     static void drawCircleID(QPainter& painter, const ID& circleID, const QPointF& center, qreal radius);
@@ -48,8 +50,8 @@ public:
     /****************** Colors *********************/
     static void setPointGradientColor(QRadialGradient& radialGradient, const Color& color);
     static void setSectionGradientColor(QLinearGradient& radialGradient, const Color& color);
-    static void setCircleGradientColor(QRadialGradient& radialGradient, qreal stopTransparent1, qreal stopTransparent2,
-                                       qreal stopCyan, const Color& color);
+    static void setCircleGradientColor(QRadialGradient& radialGradient,const qreal stopTransparent1,
+                                       const qreal stopTransparent2,const qreal stopCyan, const Color& color);
 
 
     /****************** Length *********************/

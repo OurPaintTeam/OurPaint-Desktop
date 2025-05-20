@@ -74,8 +74,8 @@ private:
 
     const qint16 edgeMargin=8;
 
-    bool resizing = false;
-    bool moving = false;
+    bool resizing;
+    bool moving;
     QPoint dragStartPos;
     QRect originalGeometry;
     ResizeRegion currentRegion = None;

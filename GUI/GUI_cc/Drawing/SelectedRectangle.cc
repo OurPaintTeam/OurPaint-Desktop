@@ -12,8 +12,8 @@ QRectF SelectedRectangle::selected(QPainter& painter) {
 
     // Start of selection
     if (leftClick && !isSelecting) {
-        const qreal cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
-        const qreal cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+        const qreal cursorX = qRound(Scaling::logicCursorX() * 10.0) / 10.0;
+        const qreal cursorY = qRound(Scaling::logicCursorY() * 10.0) / 10.0;
         startMouse = QPointF(cursorX, cursorY);
 
         ModeManager::setActiveMode(MouseMode::ReleasingLeft);
@@ -25,8 +25,8 @@ QRectF SelectedRectangle::selected(QPainter& painter) {
 
     // On the move
     if (!leftClick && isSelecting) {
-        const qreal cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
-        const qreal cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+        const qreal cursorX = qRound(Scaling::logicCursorX() * 10.0) / 10.0;
+        const qreal cursorY = qRound(Scaling::logicCursorY() * 10.0) / 10.0;
         const QPointF cursor(cursorX, cursorY);
 
         DrawFigures::drawRectangle(painter, startMouse, cursor);
@@ -37,8 +37,8 @@ QRectF SelectedRectangle::selected(QPainter& painter) {
 
     // Completion of selection
     if (leftClick) {
-        const qreal cursorX = std::round(Scaling::logicCursorX() * 10.0) / 10.0;
-        const qreal cursorY = std::round(Scaling::logicCursorY() * 10.0) / 10.0;
+        const qreal cursorX = qRound(Scaling::logicCursorX() * 10.0) / 10.0;
+        const qreal cursorY = qRound(Scaling::logicCursorY() * 10.0) / 10.0;
 
         endMouse = QPointF(cursorX, cursorY);
 

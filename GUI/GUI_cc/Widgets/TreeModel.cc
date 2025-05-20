@@ -19,7 +19,7 @@ QModelIndex TreeModel::indexFromNode(TreeNode* node) const {
         return QModelIndex();
     }
 
-    int row = node->row();
+    qint32 row = node->row();
     return createIndex(row, 0, node);
 }
 
@@ -33,8 +33,8 @@ void TreeModel::removeNode(TreeNode* parent, TreeNode* child) {
         return;
     }
 
-    int row = -1;
-    for (int i = 0; i < parent->childCount(); ++i) {
+    qint32 row = -1;
+    for (qsizetype i = 0; i < parent->childCount(); ++i) {
         if (parent->child(i) == child) {
             row = i;
             break;
@@ -52,7 +52,7 @@ void TreeModel::removeNode(TreeNode* parent, TreeNode* child) {
     endRemoveRows();
 }
 
-QVariant TreeModel::data(const QModelIndex& index, int role) const {
+QVariant TreeModel::data(const QModelIndex& index, qint32 role) const {
     if (!index.isValid() || index.column() != 0) {
         return QVariant();
     }
@@ -75,7 +75,7 @@ QVariant TreeModel::data(const QModelIndex& index, int role) const {
     }
 }
 
-bool TreeModel::setData(const QModelIndex& index, const QVariant& value, int role) {
+bool TreeModel::setData(const QModelIndex& index, const QVariant& value, qint32 role) {
     if (!index.isValid() || role != Qt::EditRole || index.column() != 0) {
         return false;
     }
@@ -128,14 +128,14 @@ Qt::ItemFlags TreeModel::flags(const QModelIndex& index) const {
     return flags;
 }
 
-QVariant TreeModel::headerData(int section, Qt::Orientation orientation, int role) const {
+QVariant TreeModel::headerData(qint32 section, Qt::Orientation orientation, qint32 role) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
         return QString("Title");
     }
     return QVariant();
 }
 
-QModelIndex TreeModel::index(int row, int column, const QModelIndex& parent) const {
+QModelIndex TreeModel::index(qint32 row, qint32 column, const QModelIndex& parent) const {
     if (!hasIndex(row, column, parent)) {
         return QModelIndex();
     }
@@ -166,7 +166,7 @@ QModelIndex TreeModel::parent(const QModelIndex& index) const {
     return createIndex(parentItem->row(), 0, parentItem);
 }
 
-int TreeModel::rowCount(const QModelIndex& parent) const {
+qint32 TreeModel::rowCount(const QModelIndex& parent) const {
     TreeNode* parentItem = parent.isValid()
                            ? static_cast<TreeNode*>(parent.internalPointer())
                            : rootNode;
@@ -174,7 +174,7 @@ int TreeModel::rowCount(const QModelIndex& parent) const {
     return parentItem ? parentItem->childCount() : 0;
 }
 
-int TreeModel::columnCount(const QModelIndex& parent) const {
+qint32 TreeModel::columnCount(const QModelIndex& parent) const {
     Q_UNUSED(parent)
     return 1;
 }

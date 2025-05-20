@@ -18,7 +18,7 @@ QTPainter::QTPainter(QWidget* parent) : QFrame(parent), drawing(false) {
     setAttribute(Qt::WA_AcceptTouchEvents);
 
     Scaling::updateScaling();
-    Scaling::setStartMonitorSize(static_cast<qint16>(width()), static_cast<qint16>(height()));
+    Scaling::setStartMonitorSize(size());
 }
 
 
@@ -132,9 +132,9 @@ void QTPainter::selectedClear() {
 
 
 bool QTPainter::findClosesObject() {
-    bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-    bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
-    bool shiftPress = ModeManager::getActiveMode(KeyMode::Shift);
+    const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
+    const bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
+    const bool shiftPress = ModeManager::getActiveMode(KeyMode::Shift);
 
     if (!leftClick && !doubleClick) {
         return false;
@@ -269,7 +269,7 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
         format = format.mid(1);
     }
 
-    QString originalFormat = format.toLower();
+    const QString originalFormat = format.toLower();
     QString chosenFormat;
 
     if (originalFormat == "jpg" || originalFormat == "jpeg") {
@@ -426,7 +426,7 @@ void QTPainter::arcsInRect(QRectF& rect) {
 
 [[maybe_unused]] void QTPainter::resizeEvent(QResizeEvent* event) {
     QFrame::resizeEvent(event);
-    Scaling::setActualMonitorSize(width(), height());
+    Scaling::setActualMonitorSize(size());
     update();
 }
 
@@ -442,7 +442,7 @@ void QTPainter::paintEvent(QPaintEvent* event) {
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     // Moving to the center of the screen
-    painter.translate((int) (width() / 2 + Scaling::getDeltaX()), (int) (height() / 2 + Scaling::getDeltaY()));
+    painter.translate((qint32) (width() / 2 + Scaling::getDeltaX()), (qint32) (height() / 2 + Scaling::getDeltaY()));
 
     DrawBackground::backgroundRender(painter);
 
@@ -456,17 +456,16 @@ void QTPainter::paintEvent(QPaintEvent* event) {
 
     if (ModeManager::getCursor()) {
 
-        const QPointF cursor = {Scaling::logicCursorX(), Scaling::logicCursorY()};
+        const QPointF cursor = Scaling::logicCursor();
 
-        if (ModeManager::getActiveMode(WorkModes::Point) ||
-            ModeManager::getActiveMode(WorkModes::Circle) ||
-            ModeManager::getActiveMode(WorkModes::Arc)) {
-
-            drawingWithMouse.DrawFiguresMouse(painter, cursor);
-
-        } else if (ModeManager::getActiveMode(WorkModes::Section)) {
-
-            drawingWithMouse.DrawFiguresMouse(painter, cursor);
+        if (ModeManager::getActiveMode(WorkModes::Point)){
+            drawingWithMouse.DrawPoint(painter, cursor);
+        }else if(ModeManager::getActiveMode(WorkModes::Circle)){
+            drawingWithMouse.DrawCircle(painter, cursor);
+        }else if(ModeManager::getActiveMode(WorkModes::Arc)){
+            drawingWithMouse.DrawArc(painter, cursor);
+        }else if (ModeManager::getActiveMode(WorkModes::Section)) {
+            drawingWithMouse.DrawSection(painter, cursor);
 
             if (casePoints != nullptr) {
                 QPointF closes = ClosestPoint::findClosestPoint(*casePoints, cursor); // Finding the closest points
@@ -527,7 +526,7 @@ void QTPainter::paintEvent(QPaintEvent* event) {
         if (!drawing) {
             if (ModeManager::getActiveMode(MouseMode::LeftClick) && findClosesObject()) {
                 drawing = true;
-                const QPointF cursorPressPos = QPointF(Scaling::logicCursorX(), Scaling::logicCursorY());
+                const QPointF cursorPressPos = Scaling::logicCursor();
 
                 if (!selectedIDSection.empty()) {
                     const ID id = selectedIDSection.begin()->first;
@@ -579,11 +578,13 @@ void QTPainter::paintEvent(QPaintEvent* event) {
 }
 
 unsigned long long QTPainter::getWeight() {
-    return Scaling::getActualMonitorWidth();
+    const QSize size = Scaling::getActualMonitorSize();
+    return size.width();
 }
 
 unsigned long long QTPainter::getHeight() {
-    return Scaling::getActualMonitorHeight();
+    const QSize size = Scaling::getActualMonitorSize();
+    return size.height();
 }
 
 void QTPainter::getBoundBox(const BoundBox2D& allObjects) {
@@ -608,7 +609,7 @@ void QTPainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {
 
 void QTPainter::onWorkWindowResized() {
     // When changing the size of the parent window, we change the size
-    Scaling::setActualMonitorSize(parentWidget()->width(), parentWidget()->height());
+    Scaling::setActualMonitorSize(size());
     resize(parentWidget()->size());
 }
 

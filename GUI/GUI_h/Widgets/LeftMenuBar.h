@@ -40,40 +40,40 @@ public:
 
     TreeModel *getTreeModel();
 
-    void addPointInLeftMenu(const QString &namePoint,const long long pID,
-                              const std::pair<const double*,const double *> &params);
+    void addPointInLeftMenu(const QString &namePoint,const qlonglong pID,
+                              const std::pair<const qreal*,const qreal *> &params);
 
     void addCircleInLeftMenu(const QString &nameCircle, const QString &namePoint,
-                                          const long long cID, const long long pID,
-                                          const std::pair<const double*,const double *> &params,double R);
+                                          const qlonglong cID, const qlonglong pID,
+                                          const std::pair<const qreal*,const qreal *> &params,qreal R);
 
 
     void addSectionInLeftMenu(const QString &nameSection,const QString &namePoint1,const QString &namePoint2,
-                              const long long secID, const long long pID1, const long long pID2,
-                              const std::pair<const double*,const double *> &firstParams,const std::pair<const double*,const double *> &secondParams);
+                              const qlonglong secID, const qlonglong pID1, const qlonglong pID2,
+                              const std::pair<const qreal*,const qreal *> &firstParams,const std::pair<const qreal*,const qreal *> &secondParams);
 
 
     void addArcInLeftMenu(const QString &nameArc,const QString &namePoint1,const QString &namePoint2,const QString &namePoint3,
-                          const long long arcID, const long long pID1, const long long pID2, const long long pID3,
-                          const std::pair<const double*,const double *> &firstParams,const std::pair<const double*,const double *> &secondParams
-            ,const std::pair<const double*,const double *> &thirdParams);
+                          const qlonglong arcID, const qlonglong pID1, const qlonglong pID2, const qlonglong pID3,
+                          const std::pair<const qreal*,const qreal *> &firstParams,const std::pair<const qreal*,const qreal *> &secondParams
+            ,const std::pair<const qreal*,const qreal *> &thirdParams);
 
     // Adding requirements
-    void addRequirementElem(const QString &name,const QString &type, const int ReqID, const unsigned long long ElemID1,
-                            const unsigned long long ElemID2, const double param);
+    void addRequirementElem(const QString &name,const QString &type, const int ReqID, const qlonglong ElemID1,
+                            const qlonglong ElemID2, const qreal param);
 
     // Adding requirements
-    void addRequirementElem(const QString &name,const QString &type, const int ReqID, const unsigned long long ElemID1,
-                            const unsigned long long ElemID2);
+    void addRequirementElem(const QString &name,const QString &type, const int ReqID, const qlonglong ElemID1,
+                            const qlonglong ElemID2);
     TreeNode *
     createParamNode(const QString &name, const QVariant &value, TreeNode *parent, bool editable, bool isNumber,
                     bool doubleClickable);
 
     TreeNode *
-    createParamNode(const QString &name, const double* ptr, TreeNode *parent);
+    createParamNode(const QString &name, const qreal* ptr, TreeNode *parent);
 
     TreeNode *
-    createPointNode(const QString &name, long long int id, const std::pair<const double*,const double *> &coords, TreeNode *parent);
+    createPointNode(const QString &name,const qlonglong id, const std::pair<const qreal*,const qreal *> &coords, TreeNode *parent);
 
 
     // Clearing all the elements
@@ -85,10 +85,9 @@ public:
     void  updateLeftMenu();
 
     // Clearing one element by ID
-    void removeFigureById(long long id);
+    void removeFigureById(const qlonglong id);
 
-
-    QModelIndex selectFigureById(long long int id);
+    QModelIndex selectFigureById(const qlonglong id);
 
 public slots:
     void doubleClickID(const QModelIndex& index);
@@ -96,11 +95,9 @@ private slots:
     void paramChanged(TreeNode* node);
 
 signals:
-    void figureParamsChanged(const long long id,const std::string &type, const std::vector<double> &parameters);
-    void reqParamChanged(const long long id, const double &parameter);
-
-    void doubleClickLeftMenu(const long long id,const std::string &type);
-
+    void figureParamsChanged(const qlonglong id,const std::string &type, const std::vector<qreal> &parameters);
+    void reqParamChanged(const qlonglong id, const qreal &parameter);
+    void doubleClickLeftMenu(const qlonglong id,const std::string &type);
 
 
 };

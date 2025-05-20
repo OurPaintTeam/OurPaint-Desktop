@@ -14,22 +14,22 @@ void TreeNode::addChild(TreeNode* child) {
     vec_child.append(child);
 }
 
-TreeNode* TreeNode::child(int row) const {
+TreeNode* TreeNode::child(qint32 row) const {
     return vec_child.value(row);
 }
 
-int TreeNode::childCount() const {
+qint32 TreeNode::childCount() const {
     return vec_child.count();
 }
 
-int TreeNode::row() const {
+qint32 TreeNode::row() const {
     if (_parent) {
         return _parent->vec_child.indexOf(const_cast<TreeNode*>(this));
     }
     return -1;
 }
 
-void TreeNode::removeChildAt(int index) {
+void TreeNode::removeChildAt(qint32 index) {
     if (index >= 0 && index < vec_child.size()) {
         delete vec_child[index];
         vec_child.remove(index);
@@ -37,7 +37,7 @@ void TreeNode::removeChildAt(int index) {
 }
 
 bool TreeNode::removeChild(TreeNode* child) {
-    int index = vec_child.indexOf(child);
+    qint32 index = vec_child.indexOf(child);
     if (index >= 0) {
         child->deleteRecursively();
         vec_child.remove(index);
@@ -64,21 +64,21 @@ void TreeNode::deleteRecursively() {
     vec_child.clear();
 }
 
-QVariant TreeNode::data(int column) const {
+QVariant TreeNode::data(qint32 column) const {
     if (column == 0) {
         return dataChild;
     }
     return {};
 }
 
-void TreeNode::setData(int column, const QVariant& value) {
+void TreeNode::setData(qint32 column, const QVariant& value) {
     if (column == 0)
         dataChild = value;
 }
 
 QString TreeNode::getNameOnly() const {
     QString text = dataChild.toString();
-    int idx = text.indexOf(':');
+    qint32 idx = text.indexOf(':');
     if (idx != -1)
         return text.left(idx).trimmed();
     return text;
@@ -135,8 +135,8 @@ TreeNode* TreeNode::parent() {
     return _parent;
 }
 
-int TreeNode::depth() const {
-    int d = 0;
+qint32 TreeNode::depth() const {
+    qint32 d = 0;
     TreeNode* p = _parent;
     while (p) {
         ++d;

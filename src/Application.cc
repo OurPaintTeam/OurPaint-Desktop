@@ -102,11 +102,18 @@ void Application::setupQTPainterConnections() {
 
 
         QObject::connect(painter, &QTPainter::MovingPoint, [this](const QVector<ID>& vec_id) {
-            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
+            const  QPointF cursorNow = Scaling::logicCursor();
+            const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
-                for (std::size_t i = 0; i < vec_id.size(); ++i) {
-                    scene.setPoint(vec_id[i], cursorNow.x(), cursorNow.y());
+                if (vec_id.size() == 1) {
+                    scene.setPoint(vec_id[0], cursorNow.x(), cursorNow.y());
+                    leftMenu->refreshAllLinkedParams();
+                    return;
+                }
+
+                for (qsizetype i = 0; i < vec_id.size(); ++i) {
+                    scene.movePoint(vec_id[i], delta.x(), delta.y());
                 }
                 leftMenu->updateLeftMenu();
             } catch (const std::exception& a) {
@@ -119,8 +126,8 @@ void Application::setupQTPainterConnections() {
 
         QObject::connect(painter, &QTPainter::MovingSection,
                          [this](const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
-                             QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
-                             QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
+                             const  QPointF cursorNow = Scaling::logicCursor();
+                             const QPointF delta = Scaling::getCursorLogicDelta();
 
                              try {
                                  if (vec_id.size() == 1) {
@@ -129,7 +136,7 @@ void Application::setupQTPainterConnections() {
                                      leftMenu->refreshAllLinkedParams();
                                      return;
                                  }
-                                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
+                                 for (qsizetype i = 0; i < vec_id.size(); ++i) {
                                      scene.moveSection(vec_id[i], delta.x(), delta.y());
                                  }
                                  leftMenu->refreshAllLinkedParams();
@@ -143,8 +150,8 @@ void Application::setupQTPainterConnections() {
 
         QObject::connect(painter, &QTPainter::MovingCircle, [this](const QVector<ID>& vec_id, const QPointF& offset) {
 
-            QPointF cursorNow(Scaling::logicCursorX(), Scaling::logicCursorY());
-            QPointF delta(Scaling::logic(Scaling::getDeltaX()), Scaling::logic(Scaling::getDeltaY()));
+            const  QPointF cursorNow = Scaling::logicCursor();
+            const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
                 if (vec_id.size() == 1) {
@@ -156,7 +163,7 @@ void Application::setupQTPainterConnections() {
                     leftMenu->refreshAllLinkedParams();
                     return;
                 }
-                for (std::size_t i = 0; i < vec_id.size(); ++i) {
+                for (qsizetype i = 0; i < vec_id.size(); ++i) {
                     scene.moveCircle(vec_id[i], delta.x(), delta.y());
                 }
                 leftMenu->refreshAllLinkedParams();
@@ -168,13 +175,12 @@ void Application::setupQTPainterConnections() {
 
 
         QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
-
-            double dx = Scaling::logic(Scaling::getCursorDeltaX());
-            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+            const  QPointF cursorNow = Scaling::logicCursor();
+            const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
-                for (std::size_t i = 0; i < vec_id.size(); ++i) {
-                    scene.moveArc(ID(vec_id[i]), dx, dy);
+                for (qsizetype i = 0; i < vec_id.size(); ++i) {
+                    scene.moveArc(ID(vec_id[i]), delta.x(), delta.y());
                 }
                 leftMenu->refreshAllLinkedParams();
             } catch (const std::exception& a) {
@@ -389,21 +395,21 @@ void Application::deleteObjects(QVector<ID>& vecPoints, QVector<ID>& vecSections
                                 QVector<ID>& vecArcs) {
     UndoRedo::Transaction txn("Delete objects");
 
-    for (std::size_t i = 0; i < vecPoints.size(); ++i) {
+    for (qsizetype i = 0; i < vecPoints.size(); ++i) {
         UndoRedo::CommandDeletePoint* cmd = new UndoRedo::CommandDeletePoint(scene, vecPoints[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
             leftMenu->removeFigureById(vecPoints[i].get());
         });
     }
-    for (std::size_t i = 0; i < vecSections.size(); ++i) {
+    for (qsizetype i = 0; i < vecSections.size(); ++i) {
         UndoRedo::CommandDeleteSection* cmd = new UndoRedo::CommandDeleteSection(scene, vecSections[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
             leftMenu->removeFigureById(vecSections[i].get());
         });
     }
-    for (std::size_t i = 0; i < vecCircles.size(); ++i) {
+    for (qsizetype i = 0; i < vecCircles.size(); ++i) {
         UndoRedo::CommandDeleteCircle* cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircles[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
@@ -740,7 +746,7 @@ void Application::setupLeftMenuConnections() {
 
         QObject::connect(leftMenu, &LeftMenuBar::reqParamChanged,
                          [](const long long id, const double& parameter) {
-                             // TODD to change the requirement parameter by ID
+                             // TODO to change the requirement parameter by ID
                          });
 
 
