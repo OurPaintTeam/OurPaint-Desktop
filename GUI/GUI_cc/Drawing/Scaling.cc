@@ -9,9 +9,7 @@ qreal Scaling::scale = 1.0;
 QPoint Scaling::Delta(0, 0);
 QPoint Scaling::LastMousePos(0, 0);
 QPoint Scaling::Cursor(0, 0);
-
-quint16 Scaling::StartMonitorSize::StartMonitorWidth = 1;
-quint16 Scaling::StartMonitorSize::StartMonitorHeight = 1;
+QSize Scaling::StartMonitorSize(0,0);
 
 qreal Scaling::CenteredCoordinates::CenteredCoordinatesX = 1.0;
 qreal Scaling::CenteredCoordinates::CenteredCoordinatesY = 1.0;
@@ -19,47 +17,13 @@ qreal Scaling::CenteredCoordinates::CenteredCoordinatesY = 1.0;
 quint16 Scaling::ActualMonitorSize::ActualMonitorWidth = 1;
 quint16 Scaling::ActualMonitorSize::ActualMonitorHeight = 1;
 
-
-[[maybe_unused]] quint16 Scaling::getStartWidth() {
-    return Scaling::StartMonitorSize::StartMonitorWidth;
-}
-
-[[maybe_unused]] quint16 Scaling::getStartHeight() {
-    return Scaling::StartMonitorSize::StartMonitorHeight;
-}
-
-quint16 Scaling::getActualMonitorWidth() {
-    return Scaling::ActualMonitorSize::ActualMonitorWidth;
-}
-
-quint16 Scaling::getActualMonitorHeight() {
-    return Scaling::ActualMonitorSize::ActualMonitorHeight;
-}
-
-QPoint Scaling::getActualMonitorSize() {
-    return {Scaling::getActualMonitorWidth(), Scaling::getActualMonitorHeight()};
-}
-
-qreal Scaling::getCenteredCoordinatesX() {
-    return Scaling::CenteredCoordinates::CenteredCoordinatesX;
-}
-
-qreal Scaling::getCenteredCoordinatesY() {
-    return Scaling::CenteredCoordinates::CenteredCoordinatesY;
+QSize Scaling::getActualMonitorSize() {
+    return Scaling::StartMonitorSize;
 }
 
 QPointF Scaling::getCenteredCoordinates() {
-    return {Scaling::getCenteredCoordinatesX(), Scaling::getCenteredCoordinatesY()};
-}
-
-[[maybe_unused]]
-void Scaling::setCenteredCoordinatesX(qreal x) {
-    Scaling::CenteredCoordinates::CenteredCoordinatesX = x;
-}
-
-[[maybe_unused]]
-void Scaling::setCenteredCoordinatesY(qreal y) {
-    Scaling::CenteredCoordinates::CenteredCoordinatesY = y;
+    return QPointF();
+  //  return {Scaling::getCenteredCoordinatesX(), Scaling::getCenteredCoordinatesY()};
 }
 
 
@@ -69,11 +33,10 @@ void Scaling::updateScaling() {
     usersResize = false;
 }
 
-void Scaling::setStartMonitorSize(quint16 x, quint16 y) {
-    Scaling::StartMonitorSize::StartMonitorWidth = x;
-    Scaling::StartMonitorSize::StartMonitorHeight = y;
-    Scaling::CenteredCoordinates::CenteredCoordinatesX = x / 2.0;
-    Scaling::CenteredCoordinates::CenteredCoordinatesY = y / 2.0;
+void Scaling::setStartMonitorSize(const QSize &size) {
+    Scaling::StartMonitorSize = size;
+    Scaling::CenteredCoordinates::CenteredCoordinatesX = size.width() / 2.0;
+    Scaling::CenteredCoordinates::CenteredCoordinatesY = size.height() / 2.0;
 }
 
 void Scaling::setActualMonitorSize(quint16 x, quint16 y) {

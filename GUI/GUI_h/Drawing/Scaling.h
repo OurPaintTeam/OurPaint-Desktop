@@ -2,6 +2,7 @@
 #define SCALING_H
 #include <QVector>
 #include <QPointF>
+#include <QSize>
 
 class Scaling {
 private:
@@ -13,11 +14,7 @@ private:
     static QPoint Delta; // Movement along the X,Y axis
     static QPoint LastMousePos;
     static QPoint Cursor;
-
-    struct StartMonitorSize {
-        static quint16 StartMonitorWidth;     // Initial width of the window
-        static quint16 StartMonitorHeight;    // Initial height of the window
-    };
+    static QSize StartMonitorSize;
 
     struct CenteredCoordinates {
         static qreal CenteredCoordinatesX;
@@ -30,27 +27,13 @@ private:
     };
 public:
 
-    // Methods to get various properties of the scaling and window size
-    [[maybe_unused]]
-    static quint16 getStartWidth();
-    [[maybe_unused]]
-    static quint16 getStartHeight();
-
-    static quint16 getActualMonitorWidth();
-    static quint16 getActualMonitorHeight();
-    static QPoint getActualMonitorSize();
-
-    static qreal getCenteredCoordinatesX();
-    static qreal getCenteredCoordinatesY();
+    static QSize getActualMonitorSize();
     static QPointF getCenteredCoordinates();
 
-    [[maybe_unused]]
-    static void setCenteredCoordinatesX(qreal x);
-    [[maybe_unused]]
-    static void  setCenteredCoordinatesY(qreal y);
 
     static void updateScaling();
-    static void setStartMonitorSize(quint16 x, quint16 y);
+
+    static void setStartMonitorSize(const QSize &size);
     static void setActualMonitorSize(quint16 x,quint16 y);
 
     static qreal scaleCoordinate(qreal X);

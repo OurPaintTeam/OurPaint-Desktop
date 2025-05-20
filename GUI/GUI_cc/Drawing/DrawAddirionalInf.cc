@@ -63,7 +63,7 @@ void DrawAdditionalInf::drawAxes(QPainter& painter) {
     const qreal logicLowerY = -Scaling::logic(centerMonitor.y()) + Scaling::logic(delta.y());
 
     // Window dimensions
-    const QPointF windowSize = Scaling::getActualMonitorSize();
+    const QSize windowSize = Scaling::getActualMonitorSize();
 
     // Font metrics
     QFontMetrics metrics(painter.font());
@@ -72,8 +72,8 @@ void DrawAdditionalInf::drawAxes(QPainter& painter) {
     constexpr quint16 MARGIN = 5;
 
     // Check axis visibility
-    bool xAxisVisible = (centerMonitor.y() + delta.y() >= 0) && (centerMonitor.y() + delta.y() <= windowSize.y());
-    bool yAxisVisible = (centerMonitor.x() + delta.x() >= 0) && (centerMonitor.x() + delta.x() <= windowSize.x());
+    bool xAxisVisible = (centerMonitor.y() + delta.y() >= 0) && (centerMonitor.y() + delta.y() <= windowSize.height());
+    bool yAxisVisible = (centerMonitor.x() + delta.x() >= 0) && (centerMonitor.x() + delta.x() <= windowSize.width());
 
     auto drawTextCorner = [&](const QString& text,const qint32 x,const qint32 y) {
         painter.drawText(x, y, text);
@@ -87,7 +87,7 @@ void DrawAdditionalInf::drawAxes(QPainter& painter) {
         drawTextCorner(text, x, y);
     } else if (!xAxisVisible && qAbs(logicLeftX) > logicRightX) {
         const QString text = QString::number(logicLeftX);
-        const qint32 y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
+        const qint32 y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.height() - MARGIN) : textHeight;
         drawTextCorner(text, MARGIN, y);
     }
 
@@ -95,14 +95,14 @@ void DrawAdditionalInf::drawAxes(QPainter& painter) {
     if (logicRightX > 0 && xAxisVisible) {
         const QString text = QString::number(logicRightX);
         const quint16 textWidth = metrics.horizontalAdvance(text);
-        const qint32 x = windowSize.y() - textWidth - MARGIN;
+        const qint32 x = windowSize.height() - textWidth - MARGIN;
         const qint32 y = static_cast<qint32>(centerMonitor.y()) + delta.y() - MARGIN;
         drawTextCorner(text, x, y);
     } else if (!xAxisVisible && qAbs(logicRightX) > qAbs(logicLeftX)) {
         const QString text = QString::number(logicRightX);
         const quint16 textWidth = metrics.horizontalAdvance(text);
-        const qint32 x = windowSize.x() - textWidth - MARGIN;
-        const qint32 y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.y() - MARGIN) : textHeight;
+        const qint32 x = windowSize.width() - textWidth - MARGIN;
+        const qint32 y = (qAbs(logicUpperY) > qAbs(logicLowerY)) ? (windowSize.height() - MARGIN) : textHeight;
         drawTextCorner(text, x, y);
     }
 
@@ -113,7 +113,7 @@ void DrawAdditionalInf::drawAxes(QPainter& painter) {
         drawTextCorner(text, x, textHeight);
     } else if (!yAxisVisible && qAbs(logicUpperY) > qAbs(logicLowerY)) {
         const QString text = QString::number(logicUpperY);
-        const qint32 x = (qAbs(logicRightX) > qAbs(logicLeftX)) ? MARGIN : (windowSize.x() -
+        const qint32 x = (qAbs(logicRightX) > qAbs(logicLeftX)) ? MARGIN : (windowSize.width() -
                                                                            metrics.horizontalAdvance(text) - MARGIN);
         drawTextCorner(text, x, textHeight);
     }
@@ -122,13 +122,13 @@ void DrawAdditionalInf::drawAxes(QPainter& painter) {
     if (logicLowerY < 0 && yAxisVisible) {
         const QString text = QString::number(logicLowerY);
         const qint32 x = static_cast<qint32>(centerMonitor.x()) + delta.x() + MARGIN;
-        const qint32 y = windowSize.y() - MARGIN;
+        const qint32 y = windowSize.height() - MARGIN;
         drawTextCorner(text, x, y);
     } else if (!yAxisVisible && qAbs(logicLowerY) > qAbs(logicUpperY)) {
         const QString text = QString::number(logicLowerY);
-        const qint32 y = windowSize.y() - MARGIN;
+        const qint32 y = windowSize.height() - MARGIN;
         const qint32 x = (qAbs(logicRightX) < qAbs(logicLeftX))
-                ? (windowSize.x() - metrics.horizontalAdvance(text) - MARGIN)
+                ? (windowSize.width() - metrics.horizontalAdvance(text) - MARGIN)
                 : MARGIN;
         drawTextCorner(text, x, y);
     }

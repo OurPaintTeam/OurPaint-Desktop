@@ -18,7 +18,7 @@ QTPainter::QTPainter(QWidget* parent) : QFrame(parent), drawing(false) {
     setAttribute(Qt::WA_AcceptTouchEvents);
 
     Scaling::updateScaling();
-    Scaling::setStartMonitorSize(static_cast<quint16>(width()), static_cast<quint16>(height()));
+    Scaling::setStartMonitorSize(size());
 }
 
 
@@ -579,11 +579,13 @@ void QTPainter::paintEvent(QPaintEvent* event) {
 }
 
 unsigned long long QTPainter::getWeight() {
-    return Scaling::getActualMonitorWidth();
+    const QSize size = Scaling::getActualMonitorSize();
+    return size.width();
 }
 
 unsigned long long QTPainter::getHeight() {
-    return Scaling::getActualMonitorHeight();
+    const QSize size = Scaling::getActualMonitorSize();
+    return size.height();
 }
 
 void QTPainter::getBoundBox(const BoundBox2D& allObjects) {

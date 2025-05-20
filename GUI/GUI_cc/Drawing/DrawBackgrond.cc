@@ -27,7 +27,7 @@ void DrawBackground::backgroundRender(QPainter& painter) {
     const QPointF delta = Scaling::getDelta();
     const QPointF centredMonitor = Scaling::getCenteredCoordinates();
 
-    const quint16 screenHeight = Scaling::getActualMonitorHeight();
+    const QSize screenSize= Scaling::getActualMonitorSize();
 
     const qreal zoom = Scaling::getZoom();
 
@@ -110,7 +110,7 @@ void DrawBackground::backgroundRender(QPainter& painter) {
 
         // Oy
         painter.drawLine(QPointF(0, (-centredMonitor.y() - delta.y())),
-                         QPointF(0, (screenHeight - delta.y())));
+                         QPointF(0, (screenSize.height() - delta.y())));
     }
 
 
@@ -121,7 +121,7 @@ void DrawBackground::mainBackgroundRender(QPainter& painter) {
     const QPointF centredMonitor = Scaling::getCenteredCoordinates();
     const QPointF absDelta = {qAbs(delta.x()), qAbs(delta.y())};
 
-    const quint16 screenHeight = Scaling::getActualMonitorHeight();
+    const QSize screenSize = Scaling::getActualMonitorSize();
     constexpr quint16 OFFSET = 1;
 
     // Drawing the vertical Oy axis
@@ -130,16 +130,16 @@ void DrawBackground::mainBackgroundRender(QPainter& painter) {
             // Far right
             // Oy
             painter.drawLine(QPointF(centredMonitor.x() - OFFSET - delta.x(), -centredMonitor.y() - delta.y()),
-                             QPointF(centredMonitor.x() - OFFSET - delta.x(), screenHeight - delta.y()));
+                             QPointF(centredMonitor.x() - OFFSET - delta.x(), screenSize.height() - delta.y()));
         } else {
             // Far left
             // Oy
             painter.drawLine(QPointF(-centredMonitor.x() + OFFSET - delta.x(), -centredMonitor.y() - delta.y()),
-                             QPointF(-centredMonitor.x() + OFFSET - delta.x(), screenHeight - delta.y()));
+                             QPointF(-centredMonitor.x() + OFFSET - delta.x(), screenSize.height() - delta.y()));
         }
     } else {
         painter.drawLine(QPointF(0, (-centredMonitor.y() - delta.y())),
-                         QPointF(0, (screenHeight - delta.y())));  // Oy
+                         QPointF(0, (screenSize.height() - delta.y())));  // Oy
     }
 
 
