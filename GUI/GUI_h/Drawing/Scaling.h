@@ -45,7 +45,7 @@ public:
     static qreal getDeltaY();
     static QPointF getDelta();
 
-    static QPoint constexpr getCursorDelta();
+    static QPoint getCursorDelta();
 
     static void startMousePress(const QPoint& pos);
     static void mouseMove();

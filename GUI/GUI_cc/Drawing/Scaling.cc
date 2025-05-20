@@ -120,8 +120,8 @@ QPointF Scaling::getDelta() {
 }
 
 
-QPoint constexpr Scaling::getCursorDelta(){
-    const QPoint temp = Scaling::Cursor- Scaling::LastMousePos;
+QPoint Scaling::getCursorDelta(){
+    const QPoint temp = Scaling::Cursor - Scaling::LastMousePos;
     Scaling::LastMousePos=Scaling::Cursor;
     return temp;
 }
