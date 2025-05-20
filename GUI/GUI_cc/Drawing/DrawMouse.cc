@@ -32,9 +32,9 @@ inline qreal DrawMouse::snapAngle(qreal angle) {
 QPointF DrawMouse::getSnappedPoint(const QPointF& start, const QPointF& current) {
     const qreal dx = current.x() - start.x();
     const qreal dy = current.y() - start.y();
-    const qreal angle = std::atan2(dy, dx) * 180.0 / M_PI;
+    const qreal angle = qAtan2(dy, dx) * 180.0 / M_PI;
     const qreal snappedAngle = snapAngle(angle);
-    const qreal length = std::hypot(dx, dy);
+    const qreal length = qHypot(dx, dy);
 
     QPointF offset(0,0);
 
@@ -75,8 +75,8 @@ void DrawMouse::DrawFiguresMouse(QPainter& painter,const QPointF& cursor) {
     painter.setPen(Qt::black);
 
     // Rounding the mouse to 1 decimal place
-    const qreal cursorX = std::round(cursor.x() * 10.0) / 10.0;
-    const qreal cursorY = std::round(cursor.y() * 10.0) / 10.0;
+    const qreal cursorX = qRound(cursor.x() * 10.0) / 10.0;
+    const qreal cursorY = qRound(cursor.y() * 10.0) / 10.0;
     const QPointF Cursor(cursorX, cursorY);
 
     const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
@@ -115,7 +115,7 @@ void DrawMouse::DrawFiguresMouse(QPainter& painter,const QPointF& cursor) {
                     }
                 } else if (modeCircle) {
                     const QPointF center=(cursor+startCoordinates)/2.0;
-                    qreal radius = std::hypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
+                    qreal radius = qHypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
                     emit SigCircle(center, radius);
                 } else if (modeArc) {
                     const QPointF center=(cursor+startCoordinates)/2.0;
@@ -151,7 +151,7 @@ void DrawMouse::DrawFiguresMouse(QPainter& painter,const QPointF& cursor) {
 
 void DrawMouse::drawCircles(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor) {
     const QPointF center = (startCoordinates + cursor) / 2.0;
-    const qreal radius = std::hypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
+    const qreal radius = qHypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
 
     DrawFigures::drawCircle(painter, center, radius);
     DrawFigures::drawPoint(painter, center);
@@ -167,8 +167,8 @@ void DrawMouse::drawSections(QPainter& painter, const QPointF& startCoordinates,
     }
 
     // Rounding the mouse to 1 decimal place
-    const qreal cursorX = std::round(cursor.x() * 10.0) / 10.0;
-    const qreal cursorY = std::round(cursor.y() * 10.0) / 10.0;
+    const qreal cursorX = qRound(cursor.x() * 10.0) / 10.0;
+    const qreal cursorY = qRound(cursor.y() * 10.0) / 10.0;
     const QPointF Cursor(cursorX, cursorY);
     const bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
 
@@ -198,8 +198,8 @@ void DrawMouse::drawHints(QPainter& painter, const QPointF& closesPoint,const QP
             closestStartPoint = closesPoint;
 
             // Rounding the mouse to 1 decimal place
-            const qreal cursorX = std::round(cursor.x() * 10.0) / 10.0;
-            const qreal cursorY = std::round(cursor.y() * 10.0) / 10.0;
+            const qreal cursorX = qRound(cursor.x() * 10.0) / 10.0;
+            const qreal cursorY = qRound(cursor.y() * 10.0) / 10.0;
             const QPointF Cursor = QPointF(cursorX, cursorY);
 
             drawPreviewSection(painter, closestStartPoint, Cursor);
