@@ -8,6 +8,7 @@ qreal Scaling::scale = 1.0;
 
 QPoint Scaling::Delta(0, 0);
 QPoint Scaling::LastMousePos(0, 0);
+QPoint Scaling::Cursor(0, 0);
 
 quint16 Scaling::StartMonitorSize::StartMonitorWidth = 1;
 quint16 Scaling::StartMonitorSize::StartMonitorHeight = 1;
@@ -18,8 +19,6 @@ qreal Scaling::CenteredCoordinates::CenteredCoordinatesY = 1.0;
 quint16 Scaling::ActualMonitorSize::ActualMonitorWidth = 1;
 quint16 Scaling::ActualMonitorSize::ActualMonitorHeight = 1;
 
-qint16 Scaling::Cursor::x = 0;
-qint16 Scaling::Cursor::y = 0;
 
 [[maybe_unused]] quint16 Scaling::getStartWidth() {
     return Scaling::StartMonitorSize::StartMonitorWidth;
@@ -178,11 +177,11 @@ QPointF Scaling::getDelta() {
 }
 
 qint32 Scaling::getCursorX() {
-    return Scaling::Cursor::x;
+    return Scaling::Cursor.x();
 }
 
 qint32 Scaling::getCursorY() {
-    return Scaling::Cursor::y;
+    return Scaling::Cursor.y();
 }
 
 [[maybe_unused]]
@@ -190,9 +189,8 @@ QPoint Scaling::getCursor() {
     return {getCursorX(), getCursorY()};
 }
 
-void Scaling::setCursor(qint16 x, qint16 y) {
-    Scaling::Cursor::x = x;
-    Scaling::Cursor::y = y;
+void Scaling::setCursor(const QPoint& cursor) {
+    Scaling::Cursor = cursor;
 }
 
 void Scaling::setDelta(const QPoint& delta) {
@@ -217,25 +215,20 @@ void Scaling::startMousePress(const QPoint& pos) {
 
 void Scaling::mouseMove() {
     usersResize = true;
-    const QPoint delta = {
-            (Scaling::Cursor::x - Scaling::LastMousePos.x()),
-            (Scaling::Cursor::y - Scaling::LastMousePos.y())
-    };
+    const QPoint delta = Scaling::Cursor-Scaling::LastMousePos;
     setDelta(delta);
-
-    Scaling::LastMousePos.setX(Scaling::Cursor::x);
-    Scaling::LastMousePos.setY( Scaling::Cursor::y);
+    Scaling::LastMousePos=Scaling::Cursor;
 }
 
 qint32 Scaling::getCursorDeltaX() {
-    qint32 temp = Scaling::Cursor::x - Scaling::LastMousePos.x();
-    Scaling::LastMousePos.setX(Scaling::Cursor::x);
+    qint32 temp = Scaling::Cursor.x() - Scaling::LastMousePos.x();
+    Scaling::LastMousePos.setX(Scaling::Cursor.x());
     return temp;
 }
 
 qint32 Scaling::getCursorDeltaY() {
-    qint32 temp = -Scaling::Cursor::y + Scaling::LastMousePos.y();
-    Scaling::LastMousePos.setY(Scaling::Cursor::y);
+    qint32 temp = Scaling::LastMousePos.y()-Scaling::Cursor.y();
+    Scaling::LastMousePos.setY(Scaling::Cursor.y());
     return temp;
 }
 

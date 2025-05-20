@@ -104,7 +104,7 @@ void MouseWorkWindow::mouseMoveEvent(QMouseEvent* event) {
         m_parent->update();
     }
 
-    Scaling::setCursor(event->pos().x(), event->pos().y());
+    Scaling::setCursor(event->pos());
 
 }
 

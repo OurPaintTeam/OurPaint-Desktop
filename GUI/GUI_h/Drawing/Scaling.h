@@ -12,11 +12,7 @@ private:
 
     static QPoint Delta; // Movement along the X,Y axis
     static QPoint LastMousePos;
-
-    struct Cursor {
-        static qint16 x;
-        static qint16 y;
-    };
+    static QPoint Cursor;
 
     struct StartMonitorSize {
         static quint16 StartMonitorWidth;     // Initial width of the window
@@ -77,7 +73,7 @@ public:
     [[maybe_unused]]
     static void setDeltaY();
 
-    static void setCursor(qint16 x,qint16 y);
+    static void setCursor(const QPoint& cursor);
 
     [[maybe_unused]]
     static qreal getScale();
