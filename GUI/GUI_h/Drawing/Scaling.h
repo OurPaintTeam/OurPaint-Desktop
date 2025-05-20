@@ -10,10 +10,7 @@ private:
     [[maybe_unused]] static bool usersResize;  // Flag for user resizing
     const static qint16 userUnitSize; // Custom size of 20 pixels = 1 unit
 
-    struct Delta {
-        static qreal X;        // Movement along the X axis
-        static qreal Y;        // Movement along the Y axis
-    };
+    static QPoint Delta; // Movement along the X,Y axis
 
     struct LastMousePos {
         static qint16 x;
@@ -76,7 +73,7 @@ public:
     [[maybe_unused]]
     static void setZoom(qreal z);
 
-    static void setDelta(qreal dx, qreal dy);
+    static void setDelta(const QPoint &delta);
 
     [[maybe_unused]]
     static void setDeltaX();
