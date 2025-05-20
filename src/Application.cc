@@ -169,7 +169,7 @@ void Application::setupQTPainterConnections() {
 
         QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
 
-            const QPoint delta = Scaling::getCursorDelta();
+            const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
                 for (qsizetype i = 0; i < vec_id.size(); ++i) {

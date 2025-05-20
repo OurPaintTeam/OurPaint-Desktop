@@ -46,6 +46,7 @@ public:
     static QPointF getDelta();
 
     static QPoint getCursorDelta();
+    static QPointF getCursorLogicDelta();
 
     static void startMousePress(const QPoint& pos);
     static void mouseMove();
@@ -57,6 +58,8 @@ public:
     static qint32 getCursorY();
 
     static qreal logic(qreal X);
+    static QPointF logic(QPointF X);
+    static QPointF logic(QPoint X);
     static qreal logicCursorX();
     static qreal logicCursorY();
     static QPointF logicCursor();
