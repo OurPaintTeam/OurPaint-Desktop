@@ -38,7 +38,7 @@ void Component::cleanup() {
     }
     _errorFunctions.clear();
 
-    //TODO delete _task;
+    delete _task;
     _task = nullptr;
 
     for (auto& c: _vars) {
