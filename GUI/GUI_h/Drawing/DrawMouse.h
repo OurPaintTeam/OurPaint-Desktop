@@ -20,36 +20,38 @@ private:
     QPointF closestStartPoint; // Nearest point
     QPointF closestPointNext;  // Next nearest point
     QPointF startCoordinates; // Cursor click point
-    bool drawingInProgress; // To track the status
     qint16 tabPressCount; // For hints
+    bool drawingInProgress; // To track the status
 
     static inline QColor hintColor(); // Grey line
     static void releaseTabIfPressed(); // Pressing tab
-
-    void resetCoordinates(); // Reset everything
 
     // For rendering with a shift
     static QPointF getSnappedPoint(const QPointF& start, const QPointF& current);
 
     // Preliminary drawing of the gray lines of the suggestions
+    static void drawRunningSection(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
+    static void drawPreviewArcs(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
+    static void drawPreviewCircles(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
     static void drawPreviewSection(QPainter& painter, const QPointF& start, const QPointF& end);
-
+    static void drawPreviewPoint(QPainter& painter, const QPointF& point);
 public:
-    [[maybe_unused]] explicit DrawMouse(QObject* parent = nullptr);
+   explicit DrawMouse(QObject* parent = nullptr);
 
     // Calculating the angle
     static inline qreal snapAngle(qreal angle);
+    static inline QPointF roundCursor(const QPointF& point);
 
     // Drawing shapes with the mouse
-    void DrawFiguresMouse(QPainter& painter,const QPointF& cursor);
-    static void drawCircles(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
-    static void drawSections(QPainter& painter, const QPointF& startCoordinates,const QPointF& cursor);
+    void DrawSection(QPainter& painter, const QPointF& cursor);
+    void DrawPoint(QPainter& painter, const QPointF& cursor);
+    void DrawCircle(QPainter& painter, const QPointF& cursor);
+    void DrawArc(QPainter& painter, const QPointF& cursor);
 
     // Drawing suggestions
     void drawHints(QPainter& painter, const QPointF& closesPoint,const QPointF& cursor);
 
     void clear();
-
 signals:
 
     void SigPoint(const QPointF& point);

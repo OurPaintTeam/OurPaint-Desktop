@@ -458,15 +458,14 @@ void QTPainter::paintEvent(QPaintEvent* event) {
 
         const QPointF cursor = Scaling::logicCursor();
 
-        if (ModeManager::getActiveMode(WorkModes::Point) ||
-            ModeManager::getActiveMode(WorkModes::Circle) ||
-            ModeManager::getActiveMode(WorkModes::Arc)) {
-
-            drawingWithMouse.DrawFiguresMouse(painter, cursor);
-
-        } else if (ModeManager::getActiveMode(WorkModes::Section)) {
-
-            drawingWithMouse.DrawFiguresMouse(painter, cursor);
+        if (ModeManager::getActiveMode(WorkModes::Point)){
+            drawingWithMouse.DrawPoint(painter, cursor);
+        }else if(ModeManager::getActiveMode(WorkModes::Circle)){
+            drawingWithMouse.DrawCircle(painter, cursor);
+        }else if(ModeManager::getActiveMode(WorkModes::Arc)){
+            drawingWithMouse.DrawArc(painter, cursor);
+        }else if (ModeManager::getActiveMode(WorkModes::Section)) {
+            drawingWithMouse.DrawSection(painter, cursor);
 
             if (casePoints != nullptr) {
                 QPointF closes = ClosestPoint::findClosestPoint(*casePoints, cursor); // Finding the closest points
