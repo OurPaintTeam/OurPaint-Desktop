@@ -81,12 +81,12 @@ void MouseWorkWindow::mousePressEvent(QMouseEvent* event) {
 
     if (event->button() == Qt::RightButton) {
         ModeManager::setActiveMode(MouseMode::RightClick);
-        Scaling::startMousePress(event->pos().x(), event->pos().y());
+        Scaling::startMousePress(event->pos());
         m_parent->update();
     }
     if (event->button() == Qt::LeftButton) {
         ModeManager::setActiveMode(MouseMode::LeftClick);
-        Scaling::startMousePress(event->pos().x(), event->pos().y());
+        Scaling::startMousePress(event->pos());
         m_parent->update();
     }
 }

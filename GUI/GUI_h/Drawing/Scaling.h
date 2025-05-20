@@ -11,11 +11,7 @@ private:
     const static qint16 userUnitSize; // Custom size of 20 pixels = 1 unit
 
     static QPoint Delta; // Movement along the X,Y axis
-
-    struct LastMousePos {
-        static qint16 x;
-        static qint16 y;
-    };
+    static QPoint LastMousePos;
 
     struct Cursor {
         static qint16 x;
@@ -98,7 +94,7 @@ public:
     [[maybe_unused]]
     static QPoint getCursor();
 
-    static void startMousePress(qint16 x, qint16 y);
+    static void startMousePress(const QPoint& pos);
     static void mouseMove();
 
     static qint32 getCursorDeltaX();
