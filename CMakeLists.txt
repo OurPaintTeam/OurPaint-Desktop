@@ -145,7 +145,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Widgets/TreeModel.cc
         GUI/GUI_cc/Widgets/ParameterDelegate.cc
         GUI/GUI_cc/Widgets/ProtectedPrefixLineEdit.cc
-        GUI/GUI_cc/Widgets/Regex.cc
+        GUI/GUI_cc/Widgets/DRegex.cc
 
         GUI/GUI_cc/client_server/Server.cc
         GUI/GUI_cc/client_server/Client.cc
@@ -194,7 +194,7 @@ add_executable(ourpaint
         GUI/GUI_h/Widgets/TreeModel.h
         GUI/GUI_h/Widgets/ParameterDelegate.h
         GUI/GUI_h/Widgets/ProtectedPrefixLineEdit.h
-        GUI/GUI_h/Widgets/Regex.h
+        GUI/GUI_h/Widgets/DRegex.h
 
         GUI/GUI_h/Drawing/Scaling.h
         GUI/GUI_h/Drawing/QTPainter.h
