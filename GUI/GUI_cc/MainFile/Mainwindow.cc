@@ -3,13 +3,20 @@
 MainWindow::MainWindow(QWidget* parent)
         : QMainWindow(parent),
           ui(new Ui::MainWindow),
-          moving(false),
-          resizing(false),
           helpWindow(nullptr),
           error(nullptr),
           warning(nullptr),
           success(nullptr),
-          Index(0) {
+          documentsPath(),
+          projectsPath(),
+          settingsPath(),
+          commands(),
+          Index(0),
+          resizing(false),
+          moving(false),
+          dragStartPos(),
+          originalGeometry(),
+          currentRegion(None){
 
     ui->setupUi(this);
     setMouseTracking(true);
