@@ -136,8 +136,7 @@ void DrawAdditionalInf::drawAxes(QPainter& painter) {
 
 
 void DrawAdditionalInf::drawCursor(QPainter& painter) {
-    const QPointF cursor(Scaling::scaleCoordinateX(Scaling::getCursorX()),
-                         Scaling::scaleCoordinateY(Scaling::getCursorY()));
+    const QPointF cursor=Scaling::scaleCursor();
 
     const QPointF logicCursor = Scaling::logicCursor();
     constexpr quint16 RANGE = 5;
