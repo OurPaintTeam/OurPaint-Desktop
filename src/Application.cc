@@ -169,12 +169,11 @@ void Application::setupQTPainterConnections() {
 
         QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
 
-            double dx = Scaling::logic(Scaling::getCursorDeltaX());
-            double dy = Scaling::logic(Scaling::getCursorDeltaY());
+            QPoint delta = Scaling::getCursorDelta();
 
             try {
                 for (std::size_t i = 0; i < vec_id.size(); ++i) {
-                    scene.moveArc(ID(vec_id[i]), dx, dy);
+                    scene.moveArc(ID(vec_id[i]), delta.x(), delta.y());
                 }
                 leftMenu->refreshAllLinkedParams();
             } catch (const std::exception& a) {
