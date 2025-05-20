@@ -15,11 +15,8 @@ private:
     static QPoint LastMousePos;
     static QPoint Cursor;
     static QSize StartMonitorSize;
+    static QSizeF CenteredCoordinates;
 
-    struct CenteredCoordinates {
-        static qreal CenteredCoordinatesX;
-        static qreal CenteredCoordinatesY;
-    };
 
     struct ActualMonitorSize {
         static quint16 ActualMonitorWidth;
@@ -28,13 +25,13 @@ private:
 public:
 
     static QSize getActualMonitorSize();
-    static QPointF getCenteredCoordinates();
+    static QSizeF getCenteredCoordinates();
 
 
     static void updateScaling();
 
     static void setStartMonitorSize(const QSize &size);
-    static void setActualMonitorSize(quint16 x,quint16 y);
+    static void setActualMonitorSize(const QSize &size);
 
     static qreal scaleCoordinate(qreal X);
     static qreal scaleCoordinateX(qreal X);

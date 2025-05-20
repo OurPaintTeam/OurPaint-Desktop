@@ -426,7 +426,7 @@ void QTPainter::arcsInRect(QRectF& rect) {
 
 [[maybe_unused]] void QTPainter::resizeEvent(QResizeEvent* event) {
     QFrame::resizeEvent(event);
-    Scaling::setActualMonitorSize(static_cast<quint16>(width()), static_cast<quint16>(height()));
+    Scaling::setActualMonitorSize(size());
     update();
 }
 
@@ -610,7 +610,7 @@ void QTPainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {
 
 void QTPainter::onWorkWindowResized() {
     // When changing the size of the parent window, we change the size
-    Scaling::setActualMonitorSize(static_cast<quint16>(parentWidget()->width()), static_cast<quint16>(parentWidget()->height()));
+    Scaling::setActualMonitorSize(size());
     resize(parentWidget()->size());
 }
 
