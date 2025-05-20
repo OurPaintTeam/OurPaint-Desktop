@@ -1496,6 +1496,9 @@ void Scene::loadFromFile(const char* filename) {
             // TODO
         }
     }
+    for (auto& objInFile: vecObjectInFile) {
+        delete objInFile.to_pair().second;
+    }
 
 
     _idGeometricObjectsGenerator.reset(maxID.get());
