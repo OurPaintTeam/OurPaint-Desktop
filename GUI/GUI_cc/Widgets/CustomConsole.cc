@@ -8,7 +8,7 @@ void CustomConsole::setCommands(const QStringList& commands) {
     _commands = commands;
 }
 
-bool CustomConsole::focusNextPrevChild(bool next) {
+bool CustomConsole::focusNextPrevChild(bool) {
     return false; // To prevent TAB from switching between widgets
 }
 
