@@ -47,9 +47,9 @@ bool ClosestPoint::sectionInRect(const Section* section, const QRectF& rect) {
         return true;
     }
 
-    QLineF line(p1, p2);
-    QPolygonF poly = rectToPolygon(rect);
-    for (int i = 0; i < poly.size(); ++i) {
+    const QLineF line(p1, p2);
+    const QPolygonF poly = rectToPolygon(rect);
+    for (qsizetype i = 0; i < poly.size(); ++i) {
         QLineF edge(poly[i], poly[(i+1) % poly.size()]);
         QPointF intersection;
         if (line.intersects(edge, &intersection) == QLineF::BoundedIntersection) {
@@ -168,7 +168,7 @@ ClosestPoint::checkFigure(const QPointF startPoint, const QPointF endPoint, cons
     const qreal radius = distanceBetweenPoints(startPoint, centerPoint);
     const qreal distToCenter = distanceBetweenPoints(cursor, centerPoint);
 
-    const qreal RANGE = 3.0 / zoom;
+    const qreal RANGE = roundRange(zoom, 3.0);
     if (qAbs(distToCenter - radius) > RANGE) {
         return false;
     }
