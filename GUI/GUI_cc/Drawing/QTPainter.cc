@@ -1,26 +1,22 @@
 #include "QTPainter.h"
 
-QTPainter::QTPainter(QWidget* parent) : QFrame(parent), drawing(false),
-                                        rectTool(std::make_unique<DrawRectangleTool>()){
+QTPainter::QTPainter(QWidget* parent) : QFrame(parent),
+                                        mouseManager(std::make_unique<MouseDrawingManager>()),
+                                        rectTool(std::make_unique<DrawRectangleTool>()),
+                                                drawing(false){
 
     if (parent) {
         // We take the size from the father
         resize(parentWidget()->size());
         connect(parent->window(), SIGNAL(resize()), this, SLOT(onWorkWindowResized()));
 
-        connect(&drawingWithMouse, &DrawMouse::SigPoint, this, &QTPainter::onSigPoint);
-        connect(&drawingWithMouse, &DrawMouse::SigSection, this, &QTPainter::onSigSection);
-        connect(&drawingWithMouse, &DrawMouse::SigCircle, this, &QTPainter::onSigCircle);
-        connect(&drawingWithMouse, &DrawMouse::SigArc, this, &QTPainter::onSigArc);
-        connect(&drawingWithMouse, &DrawMouse::SigPoint, this, &QTPainter::onSigPoint);
+
     }
 
-    mouseManager = new MouseDrawingManager();
-
-    connect(mouseManager, &MouseDrawingManager::SigPoint, this, &QTPainter::onSigPoint);
-    connect(mouseManager, &MouseDrawingManager::SigSection, this, &QTPainter::onSigSection);
-    connect(mouseManager, &MouseDrawingManager::SigCircle, this, &QTPainter::onSigCircle);
-    connect(mouseManager, &MouseDrawingManager::SigArc, this, &QTPainter::onSigArc);
+    connect(mouseManager.get(), &MouseDrawingManager::SigPoint, this, &QTPainter::onSigPoint);
+    connect(mouseManager.get(), &MouseDrawingManager::SigSection, this, &QTPainter::onSigSection);
+    connect(mouseManager.get(), &MouseDrawingManager::SigCircle, this, &QTPainter::onSigCircle);
+    connect(mouseManager.get(), &MouseDrawingManager::SigArc, this, &QTPainter::onSigArc);
 
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -126,7 +122,6 @@ void QTPainter::clear() {
     selectedClear();
     Scaling::setZoomZero();
     mouseManager->clear();
-    selectedRectangle.clear();
 }
 
 
@@ -135,7 +130,7 @@ void QTPainter::selectedClear() {
     selectedIDSection.clear();
     selectedIDCircle.clear();
     selectedIDArc.clear();
-    selectedRectangle.clear();
+    rectTool->clear();
 }
 
 
@@ -671,11 +666,3 @@ void QTPainter::onWorkWindowResized() {
     Scaling::setActualMonitorSize(size());
     resize(parentWidget()->size());
 }
-
-
-
-
-
-
-
-

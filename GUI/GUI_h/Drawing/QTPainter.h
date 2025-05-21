@@ -17,12 +17,9 @@
 
 #include "Painter.h"
 #include "Scaling.h"
-#include "DrawAdditionalInf.h"
 #include "DrawFigures.h"
 #include "ClosestPoint.h"
 #include "DrawBackground.h"
-#include "DrawMouse.h"
-#include "SelectedRectangle.h"
 #include "GeometricObjects.h"
 #include "ID.h"
 #include "BoundBox.h"
@@ -34,6 +31,10 @@
 class QTPainter : public QFrame, public Painter {
 Q_OBJECT
 private:
+    // Work objects
+    std::unique_ptr<MouseDrawingManager> mouseManager;
+    std::unique_ptr<DrawRectangleTool> rectTool;
+
     // Selected objects
     std::unordered_map<ID, Color>selectedIDPoint;
     std::unordered_map<ID, Color> selectedIDCircle;
@@ -45,20 +46,10 @@ private:
     QPointF pressLineVecEnd;
     QPointF pressPointCircle;
 
-    // The highlighting area
-    SelectedRectangle selectedRectangle;
-
-
-    // Class for mouse rendering
-    DrawMouse drawingWithMouse;
-
-    MouseDrawingManager* mouseManager;
-
-    bool drawing;
-    std::unique_ptr<DrawRectangleTool> rectTool;
     // To avoid having to process multiple clicks
     QElapsedTimer lastClickTime;
     bool leftClickFlag = true;
+    bool drawing;
 
 public:
     QTPainter(QWidget* parent);
