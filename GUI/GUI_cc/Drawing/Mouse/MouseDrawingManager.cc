@@ -35,7 +35,7 @@ void MouseDrawingManager::clear() {
     }
 }
 
-#include <QDebug>
+
 void MouseDrawingManager::managerMouseDrawing(QPainter& painter) {
     const QPointF cursor = Scaling::logicCursor();
     const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
