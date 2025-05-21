@@ -27,11 +27,12 @@
 #include "ID.h"
 #include "BoundBox.h"
 #include "Colors.h"
+#include "MouseDrawingManager.h"
+#include "DrawRectangleTool.h"
+
 
 class QTPainter : public QFrame, public Painter {
-
 Q_OBJECT
-
 private:
     // Selected objects
     std::unordered_map<ID, Color>selectedIDPoint;
@@ -47,12 +48,17 @@ private:
     // The highlighting area
     SelectedRectangle selectedRectangle;
 
+
     // Class for mouse rendering
     DrawMouse drawingWithMouse;
-    bool drawing;
 
+    MouseDrawingManager* mouseManager;
+
+    bool drawing;
+    std::unique_ptr<DrawRectangleTool> rectTool;
     // To avoid having to process multiple clicks
     QElapsedTimer lastClickTime;
+    bool leftClickFlag = true;
 
 public:
     QTPainter(QWidget* parent);
@@ -64,11 +70,18 @@ public:
     std::optional<QPair<ID, ID>> getPairSelectedID() const;
 
     void selectedClear();
+    bool leftClickTimer();
 
     bool findClosesObject();
     void drawingFigures(QPainter& painter);
     void saveToImage(const QString& fileName, QString& format);
     void selectedElemByID(ID id, const std::string& type);
+
+    void managerMoving();
+    void doubleClickEvent();
+    void emitMoveFigures();
+    void poseMovingFigures();
+    void drawRectangle(QPainter& painter);
 
     void pointInRect(QRectF& rect);
     void sectionInRect(QRectF& rect);
