@@ -122,9 +122,16 @@ add_executable(ourpaint
         GUI/GUI_cc/Drawing/DrawBackground.cc
         GUI/GUI_cc/Drawing/DrawFigures.cc
         GUI/GUI_cc/Drawing/Modes.cc
-        GUI/GUI_cc/Unnecessary/DrawMouse.cc
         GUI/GUI_cc/Drawing/QTPainter.cc
         GUI/GUI_cc/Drawing/SelectedRectangle.cc
+
+
+        GUI/GUI_cc/Drawing/Mouse/DrawTool.cc
+        GUI/GUI_cc/Drawing/Mouse/DrawPointTool.cc
+        GUI/GUI_cc/Drawing/Mouse/DrawLineTool.cc
+        GUI/GUI_cc/Drawing/Mouse/DrawCircleTool.cc
+        GUI/GUI_cc/Drawing/Mouse/DrawArcTool.cc
+        GUI/GUI_cc/Drawing/Mouse/MouseDrawingManager.cc
 
         GUI/GUI_cc/Events/SmileRightClickFilter.cc
         GUI/GUI_cc/Events/KeyWorkWindow.cc
@@ -153,6 +160,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Windows/SaveDialog.cc
 
         GUI/GUI_cc/Unnecessary/FrameOverlay.cc
+        GUI/GUI_cc/Unnecessary/DrawMouse.cc
 
         GUI/GUI_cc/Logger/GUI_Logger.cc
 
@@ -190,25 +198,8 @@ add_executable(ourpaint
 
         GUI/GUI_h/Drawing/Scaling.h
         GUI/GUI_h/Drawing/QTPainter.h
-        GUI/GUI_h/Unnecessary/DrawMouse.h
         GUI/GUI_h/Drawing/SelectedRectangle.h
         GUI/GUI_h/Drawing/Colors.h
-
-
-        GUI/GUI_h/MainFile/Mainwindow.h
-        GUI/GUI_h/MainFile/ui_mainwindow.h
-
-        GUI/GUI_h/Unnecessary/FrameOverlay.h
-
-        GUI/GUI_h/Logger/GUI_Logger.h
-
-        GUI/GUI_h/Settings/Settings.h
-
-        GUI/GUI_cc/Drawing/Mouse/DrawTool.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawPointTool.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawLineTool.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawCircleTool.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawArcTool.cc
 
         GUI/GUI_h/Drawing/Mouse/DrawTool.h
         GUI/GUI_h/Drawing/Mouse/DrawPointTool.h
@@ -216,6 +207,18 @@ add_executable(ourpaint
         GUI/GUI_h/Drawing/Mouse/DrawCircleTool.h
         GUI/GUI_h/Drawing/Mouse/DrawArcTool.h
         GUI/GUI_h/Drawing/Mouse/MouseDrawingManager.h
+
+
+        GUI/GUI_h/MainFile/Mainwindow.h
+        GUI/GUI_h/MainFile/ui_mainwindow.h
+
+        GUI/GUI_h/Unnecessary/FrameOverlay.h
+        GUI/GUI_h/Unnecessary/DrawMouse.h
+
+        GUI/GUI_h/Logger/GUI_Logger.h
+
+        GUI/GUI_h/Settings/Settings.h
+
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
