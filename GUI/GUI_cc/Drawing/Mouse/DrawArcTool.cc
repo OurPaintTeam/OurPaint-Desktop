@@ -2,15 +2,15 @@
 
 
 void DrawArcTool::draw(QPainter& painter, const QPointF& nowCursor) {
-    const QPointF Cursor = roundCursor(nowCursor);
+    const QPointF cursor = roundCursor(nowCursor);
 
-    switch (countClick) {
-        case 1:
-            drawPreview(painter, startCoordinates, Cursor);
+    switch (state) {
+        case DrawState::Started:
+            drawPreview(painter, startCoordinates, cursor);
             break;
-        case 2: {
-            const QPointF center = (Cursor + startCoordinates) / 2.0;
-            emit SigArc(Cursor, startCoordinates, center);
+        case DrawState::Completed: {
+            const QPointF center = (cursor + startCoordinates) / 2.0;
+            emit SigArc(cursor, startCoordinates, center);
             clear();
             break;
         }

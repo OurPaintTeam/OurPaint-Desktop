@@ -2,14 +2,14 @@
 
 
 void DrawCircleTool::draw(QPainter& painter, const QPointF& nowCursor) {
-    const QPointF Cursor = roundCursor(nowCursor);
+    const QPointF cursor = roundCursor(nowCursor);
 
-    switch (countClick) {
-        case 1:
-            drawPreview(painter, startCoordinates, Cursor);
+    switch (state) {
+        case DrawState::Started:
+            drawPreview(painter, startCoordinates, cursor);
             break;
-        case 2: {
-            const QPointF center = (Cursor + startCoordinates) / 2.0;
+        case DrawState::Completed: {
+            const QPointF center = (cursor + startCoordinates) / 2.0;
             qreal radius = qHypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
             emit SigCircle(center, radius);
             clear();

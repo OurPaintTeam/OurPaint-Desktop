@@ -4,11 +4,11 @@
 void DrawPointTool::draw(QPainter& painter, const QPointF& nowCursor)  {
     // Rounding the mouse to 1 decimal place
     const QPointF cursor = roundCursor(nowCursor);
-    switch (countClick) {
-        case 0:
+    switch (state) {
+        case DrawState::NotStarted:
             drawPreview(painter, cursor,cursor/*unused*/);
             break;
-        case 1:
+        case DrawState::Started:
             emit SigPoint(cursor);
             clear();
             break;

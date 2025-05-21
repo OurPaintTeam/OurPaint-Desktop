@@ -2,20 +2,23 @@
 
 
 DrawTool::DrawTool(QObject* parent)
-        : QObject(parent),startCoordinates{},countClick(0) {}
+        : QObject(parent),startCoordinates{},state(DrawState::NotStarted) {}
 
 
 void DrawTool::pressButton(const QPointF& cursor) {
-    if (countClick == 0) {
+    if (state == DrawState::NotStarted) {
         startCoordinates = roundCursor(cursor);
+        state = DrawState::Started;
+    } else if (state == DrawState::Started) {
+        state = DrawState::Completed;
     }
-    ++countClick;
-};
+}
+
 
 void DrawTool::clear() {
     startCoordinates = QPointF();
-    countClick = 0;
-};
+    state = DrawState::NotStarted;
+}
 
 
 QPointF DrawTool::roundCursor(const QPointF& point) {

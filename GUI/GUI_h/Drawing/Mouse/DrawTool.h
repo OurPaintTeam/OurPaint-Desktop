@@ -19,7 +19,13 @@ public:
 
 protected:
     QPointF startCoordinates; // Cursor click point
-    quint16 countClick;
+
+    enum class DrawState : quint8 {
+        NotStarted = 0,
+        Started = 1,
+        Completed = 2
+    };
+    DrawState state = DrawState::NotStarted;
 
     QPointF roundCursor(const QPointF& point);
     QColor hintColor() ;
