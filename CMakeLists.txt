@@ -25,16 +25,19 @@ include_directories(ourpaint
         headers/commands
         headers/commands/Add
         headers/commands/Delete
+
         GUI/GUI_h
         GUI/GUI_h/Unnecessary
         GUI/GUI_h/client_server
         GUI/GUI_h/Windows
         GUI/GUI_h/Events
         GUI/GUI_h/Drawing
+        GUI/GUI_h/Drawing/Mouse
         GUI/GUI_h/MainFile
         GUI/GUI_h/Widgets
         GUI/GUI_h/Logger
         GUI/GUI_h/Settings
+
         Math/headers
         Math/headers/decomposition
         Math/headers/optimizers
@@ -119,7 +122,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Drawing/DrawBackground.cc
         GUI/GUI_cc/Drawing/DrawFigures.cc
         GUI/GUI_cc/Drawing/Modes.cc
-        GUI/GUI_cc/Drawing/DrawMouse.cc
+        GUI/GUI_cc/Unnecessary/DrawMouse.cc
         GUI/GUI_cc/Drawing/QTPainter.cc
         GUI/GUI_cc/Drawing/SelectedRectangle.cc
 
@@ -187,7 +190,7 @@ add_executable(ourpaint
 
         GUI/GUI_h/Drawing/Scaling.h
         GUI/GUI_h/Drawing/QTPainter.h
-        GUI/GUI_h/Drawing/DrawMouse.h
+        GUI/GUI_h/Unnecessary/DrawMouse.h
         GUI/GUI_h/Drawing/SelectedRectangle.h
         GUI/GUI_h/Drawing/Colors.h
 
@@ -200,6 +203,19 @@ add_executable(ourpaint
         GUI/GUI_h/Logger/GUI_Logger.h
 
         GUI/GUI_h/Settings/Settings.h
+
+        GUI/GUI_cc/Drawing/Mouse/DrawTool.cc
+        GUI/GUI_cc/Drawing/Mouse/DrawPointTool.cc
+        GUI/GUI_cc/Drawing/Mouse/DrawLineTool.cc
+        GUI/GUI_cc/Drawing/Mouse/DrawCircleTool.cc
+        GUI/GUI_cc/Drawing/Mouse/DrawArcTool.cc
+
+        GUI/GUI_h/Drawing/Mouse/DrawTool.h
+        GUI/GUI_h/Drawing/Mouse/DrawPointTool.h
+        GUI/GUI_h/Drawing/Mouse/DrawLineTool.h
+        GUI/GUI_h/Drawing/Mouse/DrawCircleTool.h
+        GUI/GUI_h/Drawing/Mouse/DrawArcTool.h
+        GUI/GUI_h/Drawing/Mouse/MouseDrawingManager.h
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
