@@ -35,7 +35,7 @@ void MouseDrawingManager::clear() {
     }
 }
 
-
+#include <QDebug>
 void MouseDrawingManager::managerMouseDrawing(QPainter& painter) {
     const QPointF cursor = Scaling::logicCursor();
     const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
@@ -63,8 +63,10 @@ void MouseDrawingManager::managerMouseDrawing(QPainter& painter) {
         }
 
         if (leftClick) {
+            ModeManager::setActiveMode(MouseMode::ReleasingLeft);
             tool->pressButton(finalCursor);
         }
+
         if (rightClick) {
             tool->clear();
         }

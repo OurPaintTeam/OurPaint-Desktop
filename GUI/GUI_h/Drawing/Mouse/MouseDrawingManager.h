@@ -4,6 +4,7 @@
 #include <QObject>
 #include <memory>
 #include <unordered_map>
+#include <QElapsedTimer>
 
 #include "DrawTool.h"
 #include "DrawPointTool.h"
