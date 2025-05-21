@@ -91,24 +91,19 @@ void DrawMouse::drawPreviewArcs(QPainter& painter, const QPointF& startCoordinat
 }
 
 
-void DrawMouse::DrawPoint(QPainter& painter, const QPointF& nowCursor) {
-    if (!ModeManager::getActiveMode(WorkModes::Point)) {
-        return;
+void DrawMouse::startDrawing(const QPointF& Cursor){
+    if (!drawingInProgress) {
+        ++tabPressCount;
+        startCoordinates = Cursor;
+        drawingInProgress = true;
     }
+}
 
-    painter.setPen(Qt::black);
+
+void DrawMouse::DrawPoint(QPainter& painter, const QPointF& nowCursor,const bool leftClick) {
     // Rounding the mouse to 1 decimal place
     const QPointF Cursor = roundCursor(nowCursor);
-    const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-    const bool rightClick = ModeManager::getActiveMode(MouseMode::RightClick);
-
-    if (rightClick) {
-        clear();
-        return;
-    }
-
     if (leftClick) {
-        ModeManager::setActiveMode(MouseMode::ReleasingLeft);
         // If one tap and a dot => dot
         emit SigPoint(Cursor);
         clear();
@@ -118,32 +113,12 @@ void DrawMouse::DrawPoint(QPainter& painter, const QPointF& nowCursor) {
 }
 
 
-void DrawMouse::DrawSection(QPainter& painter, const QPointF& nowCursor) {
-    if (!ModeManager::getActiveMode(WorkModes::Section)) {
-        return;
-    }
-
-    painter.setPen(Qt::black);
+void DrawMouse::DrawSection(QPainter& painter, const QPointF& nowCursor,const bool leftClick) {
     // Rounding the mouse to 1 decimal place
     const QPointF Cursor = roundCursor(nowCursor);
-    const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
     const bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
-    const bool rightClick = ModeManager::getActiveMode(MouseMode::RightClick);
 
-    if (rightClick) {
-        clear();
-        return;
-    }
-
-    if (leftClick) {
-        ModeManager::setActiveMode(MouseMode::ReleasingLeft);
-
-        if (!drawingInProgress) {
-            ++tabPressCount;
-            startCoordinates = Cursor;
-            drawingInProgress = true;
-            return;
-        }
+    if (leftClick && drawingInProgress) {
 
         if (shiftPressed) {
             // When pressed, the angles are fixed at 45
@@ -153,37 +128,17 @@ void DrawMouse::DrawSection(QPainter& painter, const QPointF& nowCursor) {
             emit SigSection(startCoordinates, Cursor);
         }
         clear();
-    } else {
-        if (drawingInProgress) {
-            drawRunningSection(painter, startCoordinates, Cursor);
-        }
+    } else if(drawingInProgress){
+        drawRunningSection(painter, startCoordinates, Cursor);
     }
 }
 
 
 void DrawMouse::DrawCircle(QPainter& painter, const QPointF& nowCursor) {
-    if (!ModeManager::getActiveMode(WorkModes::Circle)) {
-        return;
-    }
     const QPointF Cursor = roundCursor(nowCursor);
     const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-    const bool rightClick = ModeManager::getActiveMode(MouseMode::RightClick);
-
-    if (rightClick) {
-        clear();
-        return;
-    }
 
     if (leftClick) {
-        ModeManager::setActiveMode(MouseMode::ReleasingLeft);
-
-        if (!drawingInProgress) {
-            ++tabPressCount;
-            startCoordinates = Cursor;
-            drawingInProgress = true;
-            return;
-        }
-
         const QPointF center = (Cursor + startCoordinates) / 2.0;
         qreal radius = qHypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
         emit SigCircle(center, radius);
@@ -197,28 +152,10 @@ void DrawMouse::DrawCircle(QPainter& painter, const QPointF& nowCursor) {
 
 
 void DrawMouse::DrawArc(QPainter& painter, const QPointF& nowCursor) {
-    if (!ModeManager::getActiveMode(WorkModes::Arc)) {
-        return;
-    }
     const QPointF Cursor = roundCursor(nowCursor);
     const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
-    const bool rightClick = ModeManager::getActiveMode(MouseMode::RightClick);
-
-    if (rightClick) {
-        clear();
-        return;
-    }
 
     if (leftClick) {
-        ModeManager::setActiveMode(MouseMode::ReleasingLeft);
-
-        if (!drawingInProgress) {
-            ++tabPressCount;
-            startCoordinates = Cursor;
-            drawingInProgress = true;
-            return;
-        }
-
         const QPointF center = (Cursor + startCoordinates) / 2.0;
         emit SigArc(Cursor, startCoordinates, center);
         clear();
@@ -231,9 +168,6 @@ void DrawMouse::DrawArc(QPainter& painter, const QPointF& nowCursor) {
 
 
 void DrawMouse::drawPreviewCircles(QPainter& painter, const QPointF& startCoordinates, const QPointF& cursor) {
-    if (!ModeManager::getActiveMode(WorkModes::Circle)) {
-        return;
-    }
     const QPointF center = (startCoordinates + cursor) / 2.0;
     const qreal radius = qHypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
 
@@ -246,10 +180,6 @@ void DrawMouse::drawPreviewCircles(QPainter& painter, const QPointF& startCoordi
 
 
 void DrawMouse::drawRunningSection(QPainter& painter, const QPointF& startCoordinates, const QPointF& cursor) {
-    if (!ModeManager::getActiveMode(WorkModes::Section)) {
-        return;
-    }
-
     // Rounding the mouse to 1 decimal place
     const QPointF Cursor = roundCursor(cursor);
     const bool shiftPressed = ModeManager::getActiveMode(KeyMode::Shift);
@@ -266,12 +196,6 @@ void DrawMouse::drawRunningSection(QPainter& painter, const QPointF& startCoordi
 void DrawMouse::drawHints(QPainter& painter, const QPointF& closesPoint, const QPointF& cursor) {
 
     const bool tabPressed = ModeManager::getActiveMode(KeyMode::Tab);
-    const bool modeSection = ModeManager::getActiveMode(WorkModes::Section);
-
-    if (!modeSection) {
-        clear();
-        return;
-    }
 
     if (tabPressed) {
         ++tabPressCount;
