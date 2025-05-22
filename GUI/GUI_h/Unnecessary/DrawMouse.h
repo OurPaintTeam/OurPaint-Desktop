@@ -43,8 +43,9 @@ public:
     static inline QPointF roundCursor(const QPointF& point);
 
     // Drawing shapes with the mouse
-    void DrawSection(QPainter& painter, const QPointF& cursor);
-    void DrawPoint(QPainter& painter, const QPointF& cursor);
+    void startDrawing(const QPointF& Cursor);
+    void DrawSection(QPainter& painter, const QPointF& cursor,const bool leftClick);
+    void DrawPoint(QPainter& painter, const QPointF& cursor,const bool leftClick);
     void DrawCircle(QPainter& painter, const QPointF& cursor);
     void DrawArc(QPainter& painter, const QPointF& cursor);
 
@@ -56,8 +57,8 @@ signals:
 
     void SigPoint(const QPointF& point);
     void SigCircle(const QPointF& center,const qreal radius);
-    void SigSection(const QPointF& stratPoint,const QPointF& endPoint);
-    void SigArc(const QPointF& stratPoint,const QPointF& endPoint,const QPointF& centerPoint);
+    void SigSection(const QPointF& startPoint,const QPointF& endPoint);
+    void SigArc(const QPointF& startPoint,const QPointF& endPoint,const QPointF& centerPoint);
 };
 
 #endif // OURPAINT_DRAWMOUSE_H

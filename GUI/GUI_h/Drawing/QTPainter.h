@@ -17,22 +17,24 @@
 
 #include "Painter.h"
 #include "Scaling.h"
-#include "DrawAdditionalInf.h"
 #include "DrawFigures.h"
 #include "ClosestPoint.h"
 #include "DrawBackground.h"
-#include "DrawMouse.h"
-#include "SelectedRectangle.h"
 #include "GeometricObjects.h"
 #include "ID.h"
 #include "BoundBox.h"
 #include "Colors.h"
+#include "MouseDrawingManager.h"
+#include "DrawRectangleTool.h"
+
 
 class QTPainter : public QFrame, public Painter {
-
 Q_OBJECT
-
 private:
+    // Work objects
+    std::unique_ptr<MouseDrawingManager> mouseManager;
+    std::unique_ptr<DrawRectangleTool> rectTool;
+
     // Selected objects
     std::unordered_map<ID, Color>selectedIDPoint;
     std::unordered_map<ID, Color> selectedIDCircle;
@@ -44,15 +46,10 @@ private:
     QPointF pressLineVecEnd;
     QPointF pressPointCircle;
 
-    // The highlighting area
-    SelectedRectangle selectedRectangle;
-
-    // Class for mouse rendering
-    DrawMouse drawingWithMouse;
-    bool drawing;
-
     // To avoid having to process multiple clicks
     QElapsedTimer lastClickTime;
+    bool leftClickFlag = true;
+    bool drawing;
 
 public:
     QTPainter(QWidget* parent);
@@ -64,11 +61,18 @@ public:
     std::optional<QPair<ID, ID>> getPairSelectedID() const;
 
     void selectedClear();
+    bool leftClickTimer();
 
     bool findClosesObject();
     void drawingFigures(QPainter& painter);
     void saveToImage(const QString& fileName, QString& format);
     void selectedElemByID(ID id, const std::string& type);
+
+    void managerMoving();
+    void doubleClickEvent();
+    void emitMoveFigures();
+    void poseMovingFigures();
+    void drawRectangle(QPainter& painter);
 
     void pointInRect(QRectF& rect);
     void sectionInRect(QRectF& rect);
