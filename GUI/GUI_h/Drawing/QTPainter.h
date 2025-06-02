@@ -67,7 +67,7 @@ public:
     void drawingFigures(QPainter& painter);
     void saveToImage(const QString& fileName, QString& format);
     void selectedElemByID(ID id, const std::string& type);
-
+    void drawGostFrame(QPainter* painter, const QSize& size);
     void managerMoving();
     void doubleClickEvent();
     void emitMoveFigures();
