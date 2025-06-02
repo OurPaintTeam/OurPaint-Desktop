@@ -274,37 +274,37 @@ void QTPainter::drawGostFrame(QPainter* painter, const QSize& size) {
 
   //painter->save();
  // painter->restore();
-  constexpr int margin = 20;
-  const int frameWidth = size.width() - 2 * margin;
-  const int frameHeight = size.height() - 2 * margin ;
+  constexpr qint32 margin = 20;
+  const qint32 frameWidth = size.width() - 2 * margin;
+  const qint32 frameHeight = size.height() - 2 * margin ;
 
 
   QRect frameRect(margin, margin, frameWidth, frameHeight);
   painter->setPen(QPen(Qt::black, 1));
   painter->drawRect(frameRect);
 
-  constexpr int stampHeight = 60;
-  constexpr int stampWidth = 180;
+  constexpr qint32 stampHeight = 60;
+  constexpr qint32 stampWidth = 180;
 
 
-  int stampTopY = frameRect.bottom() - stampHeight;
+  qint32 stampTopY = frameRect.bottom() - stampHeight;
   painter->drawLine(frameRect.left(), stampTopY, frameRect.right(), stampTopY);
 
   QRect stampRect(frameRect.right() - stampWidth, stampTopY, stampWidth, stampHeight);
   painter->drawRect(stampRect);
 
-  const int rows = 4;
-  const int cols = 4;
-  int cellWidth = stampWidth / cols;
-  int cellHeight = stampHeight / rows;
+  const qint32 rows = 4;
+  const qint32 cols = 4;
+  qint32 cellWidth = stampWidth / cols;
+  qint32 cellHeight = stampHeight / rows;
 
-  for (int i = 1; i < rows; ++i) {
-    int y = stampRect.top() + i * cellHeight;
+  for (qint32 i = 1; i < rows; ++i) {
+    qint32 y = stampRect.top() + i * cellHeight;
     painter->drawLine(stampRect.left(), y, stampRect.right(), y);
   }
 
-  for (int j = 1; j < cols; ++j) {
-    int x = stampRect.left() + j * cellWidth;
+  for (qint32 j = 1; j < cols; ++j) {
+    qint32 x = stampRect.left() + j * cellWidth;
     painter->drawLine(x, stampRect.top(), x, stampRect.bottom());
   }
   painter->setFont(QFont("Arial", 8));
@@ -362,7 +362,7 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
         this->drawingFigures(painter);
         painter.end();
     } else if (chosenFormat == "PDF") {
-        int dpi = 300;
+        qint32 dpi = 300;
         QFile file(filePath);
         if (file.open(QIODevice::WriteOnly)) {
             QPdfWriter writer(&file);
@@ -445,7 +445,7 @@ void QTPainter::managerMoving() {
 
 
 void QTPainter::doubleClickEvent() {
-    constexpr qreal SIZE = 1;
+    constexpr qint16 SIZE = 1;
     if (selectedIDSection.size() == SIZE) {
         auto it = selectedIDSection.begin();
         ID key = it->first;
