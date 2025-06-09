@@ -19,7 +19,7 @@ public:
 
     // So that there are no strongly fractional numbers on the grid,
     // we are looking for a close value of the cell size
-    static qreal Step(double rawStep);
+    static qreal Step(const qreal rawStep);
 
     // Background rendering
     static void backgroundRender(QPainter& painter);

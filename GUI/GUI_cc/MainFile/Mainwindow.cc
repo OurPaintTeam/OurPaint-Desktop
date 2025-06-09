@@ -3,13 +3,20 @@
 MainWindow::MainWindow(QWidget* parent)
         : QMainWindow(parent),
           ui(new Ui::MainWindow),
-          moving(false),
-          resizing(false),
           helpWindow(nullptr),
           error(nullptr),
           warning(nullptr),
           success(nullptr),
-          Index(0) {
+          documentsPath(),
+          projectsPath(),
+          settingsPath(),
+          commands(),
+          Index(0),
+          resizing(false),
+          moving(false),
+          dragStartPos(),
+          originalGeometry(),
+          currentRegion(None){
 
     ui->setupUi(this);
     setMouseTracking(true);
@@ -291,10 +298,10 @@ void MainWindow::updateExitServerStyle(bool connect) {
 }
 
 void MainWindow::updateShapeCursor(const QPoint& pos) {
-    int x = pos.x();
-    int y = pos.y();
-    int w = width();
-    int h = height();
+    qint32 x = pos.x();
+    qint32 y = pos.y();
+    qint32 w = width();
+    qint32 h = height();
 
     ResizeRegion region = None;
 
@@ -364,8 +371,8 @@ void MainWindow::showHelp(){
 void MainWindow::showError(const QString& text) {
     delete error;
     error = new CustomWindowError(text, this);
-    int x = this->width() - error->width() - 100;
-    int y = this->height() - error->height() - 50;
+    qint32 x = this->width() - error->width() - 100;
+    qint32 y = this->height() - error->height() - 50;
     QPoint pos = this->mapToGlobal(QPoint(x, y));
     error->move(pos);
     error->show();
@@ -374,8 +381,8 @@ void MainWindow::showError(const QString& text) {
 void MainWindow::showWarning(const QString& text) {
     delete warning;
     warning = new CustomWindowWarning(text, this);
-    int x = this->width() - warning->width() - 100;
-    int y = this->height() - warning->height() - 50;
+    qint32 x = this->width() - warning->width() - 100;
+    qint32 y = this->height() - warning->height() - 50;
     QPoint pos = this->mapToGlobal(QPoint(x, y));
     warning->move(pos);
     warning->show();
@@ -384,8 +391,8 @@ void MainWindow::showWarning(const QString& text) {
 void MainWindow::showSuccess(const QString& text) {
     delete success;
     success = new CustomWindowSuccessful(text, this);
-    int x = this->width() - success->width() - 150;
-    int y = this->height() - success->height() - 50;
+    qint32 x = this->width() - success->width() - 150;
+    qint32 y = this->height() - success->height() - 50;
     QPoint pos = this->mapToGlobal(QPoint(x, y));
     success->move(pos);
     success->show();
@@ -424,7 +431,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
         dialog.setModal(true);
-        int result = dialog.exec();  // Show the window
+        qint32 result = dialog.exec();  // Show the window
 
         if (result == QMessageBox::Yes) {
             saveProjectToFile(".ourp");
@@ -755,7 +762,7 @@ void MainWindow::deleteButton() {
 void MainWindow::loadProjectFile() {
     if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
-        int result = dialog.exec();
+        qint32 result = dialog.exec();
 
         if (result == QMessageBox::Yes) {
             saveProjectToFile("ourp");

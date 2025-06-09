@@ -8,7 +8,7 @@ void CustomConsole::setCommands(const QStringList& commands) {
     _commands = commands;
 }
 
-bool CustomConsole::focusNextPrevChild(bool next) {
+bool CustomConsole::focusNextPrevChild(bool) {
     return false; // To prevent TAB from switching between widgets
 }
 
@@ -19,13 +19,13 @@ void CustomConsole::paintEvent(QPaintEvent* event) {
         QPainter painter(this);
         const QString Text = text();
         const QFontMetrics metrics(font());
-        const int width = metrics.horizontalAdvance(Text);
+        const quint16 width = metrics.horizontalAdvance(Text);
 
         const QColor grey(128, 128, 128);
         painter.setPen(grey);
-        const int y = (height() + metrics.ascent() - metrics.descent()) / 2;
-        constexpr int MARGIN=2;
-        constexpr int OFFSET=1;
+        const qint32 y = (height() + metrics.ascent() - metrics.descent()) / 2;
+        constexpr quint16 MARGIN=2;
+        constexpr quint16 OFFSET=1;
         painter.drawText(metrics.leftBearing(Text.at(0)) + width + MARGIN, y + OFFSET, _currentCommands.mid(Text.length()));
     }
 }

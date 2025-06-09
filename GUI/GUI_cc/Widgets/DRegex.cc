@@ -10,7 +10,7 @@ bool DRegex::parseDoubleNumber(const QString& text) {
     bool hasDot = false;
     bool hasDigit = false;
 
-    int startIdx = 0;
+    quint16 startIdx = 0;
     if (trimmedText.startsWith('-') || trimmedText.startsWith('+')) {
         startIdx = 1;
     }

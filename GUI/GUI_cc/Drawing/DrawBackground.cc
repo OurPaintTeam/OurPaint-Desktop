@@ -1,8 +1,8 @@
 #include "DrawBackground.h"
 
-qreal DrawBackground::Step(qreal rawStep) {
-    qreal exp = qFloor(qLn(rawStep) / qLn(10.0));
-    qreal fraction = rawStep / qPow(10.0, exp);
+qreal DrawBackground::Step(const qreal rawStep) {
+    const qreal exp = qFloor(qLn(rawStep) / qLn(10.0));
+    const qreal fraction = rawStep / qPow(10.0, exp);
     qreal newFraction;
 
     if (fraction < 1.5) { newFraction = 1; }
@@ -25,13 +25,13 @@ void DrawBackground::backgroundRender(QPainter& painter) {
     QVector<QPointF> pointYD;
 
     const QPointF delta = Scaling::getDelta();
-    const QPointF centredMonitor = Scaling::getCenteredCoordinates();
+    const QSizeF centredMonitor = Scaling::getCenteredCoordinates();
 
-    const qint16 screenHeight = Scaling::getActualMonitorHeight();
+    const QSize screenSize= Scaling::getActualMonitorSize();
 
     const qreal zoom = Scaling::getZoom();
 
-    constexpr qint16 SIZE = 1;
+    constexpr quint16 SIZE = 1;
     const QPen darkPen(Qt::darkGray, SIZE);
     const QPen greyPen(Qt::lightGray, SIZE);
 
@@ -40,19 +40,19 @@ void DrawBackground::backgroundRender(QPainter& painter) {
 
         const QPointF absDelta = {qAbs(delta.x()), qAbs(delta.y())};
 
-        const qreal X_SIZE = centredMonitor.x() + absDelta.x();
-        const qreal Y_SIZE = centredMonitor.y() + absDelta.y();
+        const qreal X_SIZE = centredMonitor.width() + absDelta.x();
+        const qreal Y_SIZE = centredMonitor.height() + absDelta.y();
 
-        const qreal Y_UPPER_LINE = -centredMonitor.y() - absDelta.y();
-        const qreal Y_LOWER_LINE = centredMonitor.y() + absDelta.y();
-        const qreal X_LEFT_LINE = -centredMonitor.x() - absDelta.x();
-        const qreal X_RIGHT_LINE = centredMonitor.x() + absDelta.x();
+        const qreal Y_UPPER_LINE = -centredMonitor.height() - absDelta.y();
+        const qreal Y_LOWER_LINE = centredMonitor.height() + absDelta.y();
+        const qreal X_LEFT_LINE = -centredMonitor.width() - absDelta.x();
+        const qreal X_RIGHT_LINE = centredMonitor.width() + absDelta.x();
 
         const qreal MIN_STEP = Scaling::getUserUnitSize();
         qreal stepLogical = Step(MIN_STEP / zoom);
         qreal currentCellSize = stepLogical * zoom;
 
-        qint16 index = 1; // Making blocks 5 by 5
+        quint16 index = 1; // Making blocks 5 by 5
 
 
         // Vertical lines
@@ -105,12 +105,12 @@ void DrawBackground::backgroundRender(QPainter& painter) {
         painter.setPen(greyPen);
 
         // Ox
-        painter.drawLine(QPointF((-centredMonitor.x() - delta.x()), 0),
-                         QPointF((centredMonitor.x() - delta.x()), 0));
+        painter.drawLine(QPointF((-centredMonitor.width() - delta.x()), 0),
+                         QPointF((centredMonitor.width() - delta.x()), 0));
 
         // Oy
-        painter.drawLine(QPointF(0, (-centredMonitor.y() - delta.y())),
-                         QPointF(0, (screenHeight - delta.y())));
+        painter.drawLine(QPointF(0, (-centredMonitor.height() - delta.y())),
+                         QPointF(0, (screenSize.height() - delta.y())));
     }
 
 
@@ -118,47 +118,48 @@ void DrawBackground::backgroundRender(QPainter& painter) {
 
 void DrawBackground::mainBackgroundRender(QPainter& painter) {
     const QPointF delta = Scaling::getDelta();
-    const QPointF centredMonitor = Scaling::getCenteredCoordinates();
+    const QSizeF centredMonitor = Scaling::getCenteredCoordinates();
     const QPointF absDelta = {qAbs(delta.x()), qAbs(delta.y())};
 
-    const qint16 screenHeight = Scaling::getActualMonitorHeight();
+    const QSize screenSize = Scaling::getActualMonitorSize();
+    constexpr quint16 OFFSET = 1;
 
     // Drawing the vertical Oy axis
-    if (centredMonitor.x() <= absDelta.x()) {
+    if (centredMonitor.width() <= absDelta.x()) {
         if (delta.x() > 0) {
             // Far right
             // Oy
-            painter.drawLine(QPointF(centredMonitor.x() - 1 - delta.x(), -centredMonitor.y() - delta.y()),
-                             QPointF(centredMonitor.x() - 1 - delta.x(), screenHeight - delta.y()));
+            painter.drawLine(QPointF(centredMonitor.width() - OFFSET - delta.x(), -centredMonitor.height() - delta.y()),
+                             QPointF(centredMonitor.width() - OFFSET - delta.x(), screenSize.height() - delta.y()));
         } else {
             // Far left
             // Oy
-            painter.drawLine(QPointF(-centredMonitor.x() + 1 - delta.x(), -centredMonitor.y() - delta.y()),
-                             QPointF(-centredMonitor.x() + 1 - delta.x(), screenHeight - delta.y()));
+            painter.drawLine(QPointF(-centredMonitor.width() + OFFSET - delta.x(), -centredMonitor.height() - delta.y()),
+                             QPointF(-centredMonitor.width() + OFFSET - delta.x(), screenSize.height() - delta.y()));
         }
     } else {
-        painter.drawLine(QPointF(0, (-centredMonitor.y() - delta.y())),
-                         QPointF(0, (screenHeight - delta.y())));  // Oy
+        painter.drawLine(QPointF(0, (-centredMonitor.height() - delta.y())),
+                         QPointF(0, (screenSize.height() - delta.y())));  // Oy
     }
 
 
     // Drawing the horizontal Ox axis
-    if (centredMonitor.y() <= absDelta.y()) {
+    if (centredMonitor.height() <= absDelta.y()) {
         if (delta.y() > 0) {
             // Lower
             // Ox
-            painter.drawLine(QPointF(-centredMonitor.x() - delta.x(), centredMonitor.y() - 1 - delta.y()),
-                             QPointF(centredMonitor.x() - delta.x(), centredMonitor.y() - 1 - delta.y()));
+            painter.drawLine(QPointF(-centredMonitor.width() - delta.x(), centredMonitor.height() - OFFSET - delta.y()),
+                             QPointF(centredMonitor.width() - delta.x(), centredMonitor.height() - OFFSET - delta.y()));
         } else {
             // Upper
             // Ox
-            painter.drawLine(QPointF(-centredMonitor.x() - delta.x(), -centredMonitor.y() - delta.y()),
-                             QPointF(centredMonitor.x() - delta.x(), -centredMonitor.y() - delta.y()));
+            painter.drawLine(QPointF(-centredMonitor.width() - delta.x(), -centredMonitor.height() - delta.y()),
+                             QPointF(centredMonitor.width() - delta.x(), -centredMonitor.height() - delta.y()));
         }
     } else {
         // Ox
-        painter.drawLine(QPointF((-centredMonitor.x() - delta.x()), 0),
-                         QPointF((centredMonitor.x() - delta.x()), 0));
+        painter.drawLine(QPointF((-centredMonitor.width() - delta.x()), 0),
+                         QPointF((centredMonitor.width() - delta.x()), 0));
     }
 
 }

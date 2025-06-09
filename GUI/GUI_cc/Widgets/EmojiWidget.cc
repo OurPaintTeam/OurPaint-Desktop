@@ -6,12 +6,12 @@ EmojiWidget::EmojiWidget(QWidget* parent) : QWidget(parent) {
     setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
     setAttribute(Qt::WA_TranslucentBackground);
 
-    constexpr qint16 MARGINS =5;
+    constexpr quint16 MARGINS = 5;
     gridLayout->setContentsMargins(MARGINS, MARGINS, MARGINS, MARGINS);
     gridLayout->setSpacing(MARGINS);
 
     emojiList = QStringList() << "😀" << "😂" << "😍" << "😎" << "😭" << "😡" << "👍" << "🙏" << "💪" << "🔥";
-    constexpr int columns = 5;
+    constexpr quint16 columns = 5;
 
     qint16 row = 0;
     qint16 column = 0;
@@ -19,7 +19,7 @@ EmojiWidget::EmojiWidget(QWidget* parent) : QWidget(parent) {
     for (const QString& emoji: emojiList) {
         QPushButton* emojiButton = new QPushButton(emoji);
 
-        constexpr qint16 SIZE = 30;
+        constexpr quint16 SIZE = 30;
         emojiButton->setFixedSize(SIZE, SIZE);
 
         emojiButton->setStyleSheet(
