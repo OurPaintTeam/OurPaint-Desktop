@@ -97,8 +97,7 @@ std::vector<PARAM_ID> ReqPointPointDist::getParams() {
     res.push_back(&(m_p1->y));
     res.push_back(&(m_p2->x));
     res.push_back(&(m_p2->y));
-    double dist_copy = v_dist;
-    res.push_back(&dist_copy);
+    res.push_back(&v_dist);
     return res;
 }
 Requirement ReqPointPointDist::getType() const{

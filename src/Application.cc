@@ -211,8 +211,6 @@ void Application::setupQTPainterConnections() {
                 isStartMoving = false;
             }
 
-            double dx = Scaling::logic(Scaling::getCursorDeltaX());
-            double dy = Scaling::logic(Scaling::getCursorDeltaY());
             const  QPointF cursorNow = Scaling::logicCursor();
             const QPointF delta = Scaling::getCursorLogicDelta();
 
