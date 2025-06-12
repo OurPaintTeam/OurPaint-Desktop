@@ -6,11 +6,6 @@
 #include "ID.h"
 #include "BoundBox.h"
 
-class Point;
-class Section;
-class Circle;
-class Arc;
-
 class Painter {
 protected:
     std::unordered_map<ID, Point*>* casePoints;

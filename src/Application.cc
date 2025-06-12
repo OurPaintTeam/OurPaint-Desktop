@@ -8,7 +8,9 @@ Application::Application(int& argc, char** argv)
           username(mainWind.getUserName()),
           server(username),
           client(username),
-          undoRedo(100) {
+          undoRedo(100),
+          isStartMoving(true),
+          pre_move_object_states() {
 
 
     initLogger();
@@ -97,12 +99,26 @@ void Application::setupQTPainterConnections() {
             // mainWind.selectLeftMenuElem(index);
         });
 
-
-        QObject::connect(painter, &QTPainter::EndMoving, []() {});
-
+        QObject::connect(painter, &QTPainter::EndMoving, [this](){
+            UndoRedo::CommandMove* cmd = new UndoRedo::CommandMove(scene, pre_move_object_states);
+            UndoRedo::Transaction txn(cmd->description());
+            txn.addCommand(cmd);
+            undoRedo.push(std::move(txn));
+            isStartMoving = true;
+            scene.paint();
+        });
 
         QObject::connect(painter, &QTPainter::MovingPoint, [this](const QVector<ID>& vec_id) {
-            const  QPointF cursorNow = Scaling::logicCursor();
+            if (isStartMoving) {
+                // I'm afraid. It's really dangerous.
+                Component& c = scene.findComponentByID(vec_id[0]);
+                for (auto& id : c.objectIDs()) {
+                    pre_move_object_states.push_back(scene.getObjectData(id));
+                }
+                isStartMoving = false;
+            }
+
+           const  QPointF cursorNow = Scaling::logicCursor();
             const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
@@ -123,9 +139,15 @@ void Application::setupQTPainterConnections() {
             scene.paint();
         });
 
-
         QObject::connect(painter, &QTPainter::MovingSection,
                          [this](const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
+                             if (isStartMoving) {
+                                 Component& c = scene.findComponentByID(vec_id[0]);
+                                 for (auto& id : c.objectIDs()) {
+                                     pre_move_object_states.push_back(scene.getObjectData(id));
+                                 }
+                                 isStartMoving = false;
+                             }
                              const  QPointF cursorNow = Scaling::logicCursor();
                              const QPointF delta = Scaling::getCursorLogicDelta();
 
@@ -147,8 +169,14 @@ void Application::setupQTPainterConnections() {
 
                          });
 
-
         QObject::connect(painter, &QTPainter::MovingCircle, [this](const QVector<ID>& vec_id, const QPointF& offset) {
+            if (isStartMoving) {
+                Component& c = scene.findComponentByID(vec_id[0]);
+                for (auto& id : c.objectIDs()) {
+                    pre_move_object_states.push_back(scene.getObjectData(id));
+                }
+                isStartMoving = false;
+            }
 
             const  QPointF cursorNow = Scaling::logicCursor();
             const QPointF delta = Scaling::getCursorLogicDelta();
@@ -173,8 +201,16 @@ void Application::setupQTPainterConnections() {
             scene.paint();
         });
 
-
+        // Перемещение арки
         QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
+            if (isStartMoving) {
+                Component& c = scene.findComponentByID(vec_id[0]);
+                for (auto& id : c.objectIDs()) {
+                    pre_move_object_states.push_back(scene.getObjectData(id));
+                }
+                isStartMoving = false;
+            }
+
             const  QPointF cursorNow = Scaling::logicCursor();
             const QPointF delta = Scaling::getCursorLogicDelta();
 
@@ -188,6 +224,7 @@ void Application::setupQTPainterConnections() {
             }
             scene.paint();
         });
+
 
         // Drawing a point
         QObject::connect(painter, &QTPainter::SigPoint,
@@ -853,6 +890,7 @@ void Application::setupAddingCommandsConnections() {
         if (!b) {
             mainWind.showError("Undo failed");
         }
+        leftMenu->updateLeftMenu();
     });
 
     // REDO
@@ -861,6 +899,7 @@ void Application::setupAddingCommandsConnections() {
         if (!b) {
             mainWind.showError("Redo failed");
         }
+        leftMenu->updateLeftMenu();
     });
 }
 

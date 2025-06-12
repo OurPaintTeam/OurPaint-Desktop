@@ -6,7 +6,7 @@
 #include <vector>
 #include <limits>
 #include <unordered_map>
-#include "ErrorFunctions.h"
+#include "ErrorFunction.h"
 
 #define PARAM_ID double*
 

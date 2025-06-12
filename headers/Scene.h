@@ -8,7 +8,6 @@
 #include "Requirements.h"
 #include "BoundBox.h"
 #include "InheritanceGraph.h"
-#include "LMForTest.h"
 #include "LMWithSparse.h"
 #include "FileOurP.h"
 #include "objectInFile.h"
@@ -36,6 +35,8 @@ private:
     std::unordered_map<ID, std::size_t> _idToComponent;
     bool _isComponentsDirty;
 
+    //LMSparse _solver;
+
     mutable Painter* _painter;
 
     mutable bool _isRectangleDirty;
@@ -56,9 +57,9 @@ public:
 public:
     Scene(Painter* p);
     Scene(const Scene&) = delete;
-    Scene(Scene&&) = delete;
-    Scene& operator=(const Scene&) = delete;
-    Scene& operator=(Scene&&) = delete;
+    Scene operator=(const Scene&) = delete;
+    //Scene(Scene&&);
+    //Scene& operator=(Scene&&);
     ~Scene();
 
     ID addObject(const ObjectData&);
@@ -73,7 +74,7 @@ public:
     void updateBoundingBox() const;
 
     void rebuildComponents();
-    const Component& findComponentByID(ID id);
+    Component& findComponentByID(ID id);
 
     void paint() const;
     void clearImage() const;
@@ -87,6 +88,7 @@ public:
     std::vector<RequirementData> getRequirements() const;
     std::vector<RequirementData> getObjectRequirements(ID objectID) const;
     std::vector<RequirementData> getObjectRequirementsWithConnectedObjects(ID objectID) const;
+
     void setPainter(Painter*);
 
     void moveObject(ID objectID, double dx, double dy);
@@ -95,10 +97,10 @@ public:
     void moveCircle(ID circleID, double dx, double dy);
     void moveArc(ID circleID, double dx, double dy);
 
-    void setPoint(ID pointID, double x, double y);
-    void setSection(ID sectionID, double x1, double y1, double x2, double y2);
-    void setCircle(ID pointID, double x, double y, double r);
-    void setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r);
+    void setPoint(ID pointID, double x, double y, const bool updateRequirementFlag = true);
+    void setSection(ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag = true);
+    void setCircle(ID pointID, double x, double y, double r, const bool updateRequirementFlag = true);
+    void setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r, const bool updateRequirementFlag = true);
 
     std::vector<const double*> getPointParams(ID pointID) const;
     std::vector<const double*> getSectionParams(ID sectionID) const;

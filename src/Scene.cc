@@ -1,5 +1,8 @@
 #include "Scene.h"
 
+const ID Scene::_errorID(-1);
+const ID Scene::_connectionEdgeID(-2);
+
 Scene::Scene(Painter* p) :
         _points(),
         _sections(),
@@ -9,6 +12,7 @@ Scene::Scene(Painter* p) :
         _components(),
         _idToComponent(),
         _isComponentsDirty(false),
+        //_solver(100, 3, 1e-6, 1e-6),
         _painter(p),
         _isRectangleDirty(false),
         _allFiguresRectangle(),
@@ -27,8 +31,11 @@ Scene::Scene(Painter* p) :
     }
 }
 
-const ID Scene::_errorID(-1);
-const ID Scene::_connectionEdgeID(-2);
+//Scene::Scene(Scene &&) {
+//}
+
+//Scene& Scene::operator=(Scene &&) {
+//}
 
 Scene::~Scene() {
     std::unordered_set<Point*> pointsWithoutDub;
@@ -754,7 +761,7 @@ void Scene::moveArc(ID arcID, double dx, double dy) {
     updateRequirements(arcID);
 }
 
-void Scene::setPoint(ID pointID, double x, double y) {
+void Scene::setPoint(ID pointID, double x, double y, const bool updateRequirementFlag) {
     if (!_points.contains(pointID)) {
         throw std::out_of_range("There is no point to change position");
     }
@@ -762,34 +769,27 @@ void Scene::setPoint(ID pointID, double x, double y) {
     if (p->x != x || p->y != y) {
         p->x = x;
         p->y = y;
-        //if (_isComponentsDirty) {
-        updateRequirements(pointID);
-        //}
-        /* std::vector<Variable*> target;
-         Component c = _components[0];
-         std::vector<Variable*> vr = c._componentVars;
-         for (auto it = vr.begin(); it != vr.end();) {
-             Variable* var = *it;
-             if (var->value == &p->x || var->value == &p->y) {
-                 target.push_back(var);
-                 it = vr.erase(it);
-             } else {
-                 ++it;
-             }
-         }
-         _components[0]._componentVars = vr;
-         updateRequirements(pointID);
-         for (auto var : target) {
-             _components[0]._componentVars.push_back(var);
-         }
-         target.clear();
-         vr.clear();
-         _isRectangleDirty = true;
-     }*/
+        if (updateRequirementFlag) {
+            Component& c = findComponentByID(pointID);
+            std::vector<Variable*> target;
+            std::vector<Variable*>& vars = c.vars();
+            for (auto it = vars.begin(); it != vars.end();) {
+                Variable* var = *it;
+                if (var->value == &p->x || var->value == &p->y) {
+                    target.push_back(var);
+                    it = vars.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            updateRequirements(pointID);
+            vars.insert(vars.end(), target.begin(), target.end());
+        }
+        _isRectangleDirty = true;
     }
 }
 
-void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2) {
+void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag) {
     if (!_sections.contains(sectionID)) {
         throw std::out_of_range("There is no section to change");
     }
@@ -799,11 +799,13 @@ void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2)
         s->beg->y = y1;
         s->end->x = x2;
         s->end->y = y2;
-        updateRequirements(sectionID);
+        if (updateRequirementFlag) {
+            updateRequirements(sectionID);
+        }
     }
 }
 
-void Scene::setCircle(ID circleID, double x, double y, double r) {
+void Scene::setCircle(ID circleID, double x, double y, double r, const bool updateRequirementFlag) {
     if (!_circles.contains(circleID)) {
         throw std::out_of_range("There is no circle to change");
     }
@@ -812,11 +814,14 @@ void Scene::setCircle(ID circleID, double x, double y, double r) {
         c->center->x = x;
         c->center->y = y;
         c->r = r;
-        updateRequirements(circleID);
+        if (updateRequirementFlag) {
+            updateRequirements(circleID);
+        }
     }
 }
 
-void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r) {
+void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r,
+                   const bool updateRequirementFlag) {
     if (!_arcs.contains(arcID)) {
         throw std::out_of_range("There is no arc to change");
     }
@@ -828,7 +833,9 @@ void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double 
     a->center->x = x2;
     a->center->y = y2;
     a->r = r;
-    updateRequirements(arcID);
+    if (updateRequirementFlag) {
+        updateRequirements(arcID);
+    }
 }
 
 std::vector<const double*> Scene::getPointParams(ID pointID) const {
@@ -1179,7 +1186,7 @@ void Scene::addRequirement(const RequirementData& reqData, ID reqID) {
     _isComponentsDirty = true;
 }
 
-const Component& Scene::findComponentByID(ID id) {
+Component& Scene::findComponentByID(ID id) {
     if (_isComponentsDirty) {
         rebuildComponents();
     }
@@ -1203,50 +1210,56 @@ void Scene::rebuildComponents() {
         std::vector<Edge<ID, ID>> componentEdges = component.getAllEdges();
         std::vector<ID> componentVertices = component.getVertices();
         Component c;
+
         std::vector<Variable*> variables;
         std::unordered_set<double*> seen;
+
         for (auto& edge: componentEdges) {
             if (edge.weight != ID(-2) && _requirements[edge.weight]->getType() != ET_POINTONPOINT) {
-                std::vector<Variable*> variablesWithDuplicates = _requirements[edge.weight]->getVariables();
-                variables.reserve(variablesWithDuplicates.size());
-                for (auto& var: variablesWithDuplicates) {
+                auto vars = _requirements[edge.weight]->getVariables();
+                for (Variable* var : vars) {
                     if (seen.insert(var->value).second) {
                         variables.push_back(var);
                     }
+                    else {
+                        delete var;
+                    }
                 }
-                c._errorRequirementFunctions.push_back(_requirements[edge.weight]->getFunction());
+                c.errorFunctions().push_back(_requirements[edge.weight]->getFunction());
             }
         }
-        c._componentVars = variables;
+
+        c.vars() = variables;
         if (!componentVertices.empty()) {
             std::vector<ID> cC = _graph.findConnectedComponent(componentVertices[0]);
-            c._objectIDs = std::unordered_set(cC.begin(), cC.end());
+            c.objectIDs() = std::unordered_set(cC.begin(), cC.end());
         }
+        c.task() = new LSMFORLMTask(c.errorFunctions(), c.vars());
         _components.push_back(std::move(c));
     }
     _isComponentsDirty = false;
 }
 
 void Scene::updateRequirements(ID id) {
-    const Component& component = findComponentByID(id);
-    std::size_t number_of_obj_in_component = component._objectIDs.size();
+    Component& component = findComponentByID(id);
+
+    std::size_t number_of_obj_in_component = component.objectIDs().size();
     std::cout << "Objects in component:  " << number_of_obj_in_component << '\n';
 
-    if (component._errorRequirementFunctions.empty()) {
+    if (component.noErrorFunction()) {
         return;
     }
 
-    LSMFORLMTask* task = new LSMFORLMTask(component._errorRequirementFunctions, component._componentVars);
-    LMSparse solver(100, 3, 1e-6, 1e-6);
-    solver.setTask(task);
-    solver.optimize();
+    Task* task = new LSMFORLMTask(component.errorFunctions(), component.vars());
+    LMSparse _solver;
+    _solver.setTask(task);
+    _solver.optimize();
 
     // Check converging
-    if (!solver.isConverged() || solver.getCurrentError() > 1e-3) {
+    if (!_solver.isConverged() || _solver.getCurrentError() > 1e-3) {
         delete task;
         throw std::runtime_error("Not converged");
     }
-
     delete task;
 }
 
@@ -1471,6 +1484,9 @@ void Scene::loadFromFile(const char* filename) {
             objData.subObjects.push_back(id2);
             _objectSubObjects[id] = {id1, id2};
             pointObjectData.pop();
+            objData.subObjects.push_back(id1); // 1
+            objData.subObjects.push_back(id2); // 2
+            _objectSubObjects[id] = {id1, id2};
             addSection(objData, id1, id2, ID(obj.first));
         } else if (obj.second->getType() == ET_CIRCLE) {
             Circle* c = static_cast<Circle*>(obj.second);
@@ -1484,6 +1500,9 @@ void Scene::loadFromFile(const char* filename) {
         } else if (obj.second->getType() == ET_ARC) {
             // TODO
         }
+    }
+    for (auto& objInFile: vecObjectInFile) {
+        delete objInFile.to_pair().second;
     }
 
 

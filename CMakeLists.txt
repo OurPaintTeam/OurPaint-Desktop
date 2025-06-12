@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(ourpaint)
 
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -41,6 +44,11 @@ include_directories(ourpaint
         Math/headers
         Math/headers/decomposition
         Math/headers/optimizers
+        Math/headers/optimizers/EigenOptimizers
+        Math/headers/optimizers/MatrixOptimizers
+        Math/headers/Tasks
+        Math/headers/Tasks/Eigen
+        Math/headers/Tasks/Matrix
         Math/headers/graph
 )
 
@@ -50,6 +58,7 @@ add_executable(ourpaint
         src/Requirements.cc
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
+        src/objects/Component.cc
 
         src/painters/BMPpainter.cc
 
@@ -98,19 +107,19 @@ add_executable(ourpaint
         headers/commands/Add/CommandAddSection.h
         headers/commands/Add/CommandAddCircle.h
         headers/commands/Add/CommandAddArc.h
-
         headers/commands/Delete/CommandDeletePoint.h
         headers/commands/Delete/CommandDeleteSection.h
         headers/commands/Delete/CommandDeleteCircle.h
         headers/commands/Delete/CommandDeleteArc.h
-
         headers/commands/CommandAddRequirement.h
         headers/commands/CommandDeleteRequirement.h
+        headers/commands/CommandMove.h
 
         src/commands/Add/CommandAddObject.cc
         src/commands/Delete/CommandDeleteObject.cc
         src/commands/CommandAddRequirement.cc
         src/commands/CommandDeleteRequirement.cc
+        src/commands/CommandMove.cc
 
         ###########  GUI  ############
 
@@ -145,7 +154,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Widgets/TreeModel.cc
         GUI/GUI_cc/Widgets/ParameterDelegate.cc
         GUI/GUI_cc/Widgets/ProtectedPrefixLineEdit.cc
-        GUI/GUI_cc/Widgets/Regex.cc
+        GUI/GUI_cc/Widgets/DRegex.cc
 
         GUI/GUI_cc/client_server/Server.cc
         GUI/GUI_cc/client_server/Client.cc
@@ -195,7 +204,7 @@ add_executable(ourpaint
         GUI/GUI_h/Widgets/TreeModel.h
         GUI/GUI_h/Widgets/ParameterDelegate.h
         GUI/GUI_h/Widgets/ProtectedPrefixLineEdit.h
-        GUI/GUI_h/Widgets/Regex.h
+        GUI/GUI_h/Widgets/DRegex.h
 
         GUI/GUI_h/Drawing/Scaling.h
         GUI/GUI_h/Drawing/QTPainter.h

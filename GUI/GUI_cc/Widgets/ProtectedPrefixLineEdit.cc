@@ -54,7 +54,7 @@ void ProtectedPrefixLineEdit::keyPressEvent(QKeyEvent* event) {
         simulated += input;
         simulated += afterCursor;
 
-        if (!Regex::parseDoubleNumber(simulated)) {
+        if (!DRegex::parseDoubleNumber(simulated)) {
             return;  // we forbid the input
         }
     }
