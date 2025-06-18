@@ -1,11 +1,11 @@
 #ifndef OURPAINT_HEADERS_ENUMS_H_
 #define OURPAINT_HEADERS_ENUMS_H_
 
-enum Element {
+enum class Element {
     ET_POINT, ET_SECTION, ET_CIRCLE, ET_ARC
 };
 
-enum Requirement {
+enum class Requirement {
     ET_POINTSECTIONDIST,
     ET_POINTONSECTION,
     ET_POINTPOINTDIST,
@@ -17,7 +17,6 @@ enum Requirement {
     ET_SECTIONSECTIONPERPENDICULAR,
     ET_SECTIONSECTIONANGLE,
     ET_ARCCENTERONPERPENDICULAR
-
 };
 
 #endif // ! OURPAINT_HEADERS_ENUMS_H_

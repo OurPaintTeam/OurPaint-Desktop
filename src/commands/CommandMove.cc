@@ -10,7 +10,7 @@ bool UndoRedo::CommandMove::Execute() {
 
 bool UndoRedo::CommandMove::Undo() {
     for (auto& objData : _pre_move_object_states) {
-        if (objData.et == ET_POINT) {
+        if (objData.et == Element::ET_POINT) {
             _scene.setPoint(
                     objData.id,
                     objData.params[0],
@@ -18,7 +18,7 @@ bool UndoRedo::CommandMove::Undo() {
                     false
                     );
         }
-        else if (objData.et == ET_SECTION) {
+        else if (objData.et == Element::ET_SECTION) {
             _scene.setSection(
                     objData.id,
                     objData.params[0],
@@ -28,7 +28,7 @@ bool UndoRedo::CommandMove::Undo() {
                     false
                     );
         }
-        else if (objData.et == ET_CIRCLE) {
+        else if (objData.et == Element::ET_CIRCLE) {
             _scene.setCircle(
                     objData.id,
                     objData.params[0],
@@ -37,7 +37,7 @@ bool UndoRedo::CommandMove::Undo() {
                     false
                     );
         }
-        else if (objData.et == ET_ARC) {
+        else if (objData.et == Element::ET_ARC) {
             _scene.setArc(
                     objData.id,
                     objData.params[0],
@@ -60,7 +60,7 @@ bool UndoRedo::CommandMove::Undo() {
 
 bool UndoRedo::CommandMove::Redo() {
     for (auto& objData : _post_move_object_states) {
-        if (objData.et == ET_POINT) {
+        if (objData.et == Element::ET_POINT) {
             _scene.setPoint(
                     objData.id,
                     objData.params[0],
@@ -68,7 +68,7 @@ bool UndoRedo::CommandMove::Redo() {
                     false
             );
         }
-        else if (objData.et == ET_SECTION) {
+        else if (objData.et == Element::ET_SECTION) {
             _scene.setSection(
                     objData.id,
                     objData.params[0],
@@ -78,7 +78,7 @@ bool UndoRedo::CommandMove::Redo() {
                     false
             );
         }
-        else if (objData.et == ET_CIRCLE) {
+        else if (objData.et == Element::ET_CIRCLE) {
             _scene.setCircle(
                     objData.id,
                     objData.params[0],
@@ -87,7 +87,7 @@ bool UndoRedo::CommandMove::Redo() {
                     false
             );
         }
-        else if (objData.et == ET_ARC) {
+        else if (objData.et == Element::ET_ARC) {
             _scene.setArc(
                     objData.id,
                     objData.params[0],

@@ -6,7 +6,7 @@ BoundBox2D Point::getBox() const {
     return {x, x, y, y};
 }
 inline Element Point::getType() const {
-    return ET_POINT;
+    return Element::ET_POINT;
 }
 std::ifstream& operator>> (std::ifstream& in, Point& x) {
     in >> x.x;
@@ -20,7 +20,7 @@ BoundBox2D Section::getBox() const {
     return {beg->x,end->x, beg->y, end->y};
 }
 inline Element Section::getType() const {
-    return ET_SECTION;
+    return Element::ET_SECTION;
 }
 
 Circle::Circle() : center(nullptr), r() {}
@@ -29,7 +29,7 @@ BoundBox2D Circle::getBox() const {
     return {center->x - r, center->x + r,center->y - r, center->y + r};
 }
 inline Element Circle::getType() const {
-    return ET_CIRCLE;
+    return Element::ET_CIRCLE;
 }
 
 Arc::Arc() : beg(nullptr),end(nullptr), center(nullptr), r() {}
@@ -38,6 +38,6 @@ BoundBox2D Arc::getBox() const {
     return {center->x - r, center->x + r,center->y - r, center->y + r};
 }
 inline Element Arc::getType() const {
-    return ET_ARC;
+    return Element::ET_ARC;
 }
 

@@ -2,11 +2,8 @@
 #define OURPAINT_HEADERS_SCENE_H_
 
 #include "Painter.h"
-#include "GeometricObjects.h"
 #include "Objects.h"
-#include "ID.h"
 #include "Requirements.h"
-#include "BoundBox.h"
 #include "InheritanceGraph.h"
 #include "LMWithSparse.h"
 #include "FileOurP.h"
@@ -18,6 +15,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
+class BoundBox2D;
+class ID;
+struct IGeometricObject;
+struct Point;
+struct Section;
+struct Circle;
+struct Arc;
 
 class Scene {
 private:

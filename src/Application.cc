@@ -340,26 +340,26 @@ void Application::setupQTPainterConnections() {
         try {
             for (auto& obj: objectsBuffer) {
                 ID id = scene.addObject(obj);
-                if (obj.et == ET_POINT) {
+                if (obj.et == Element::ET_POINT) {
                     std::vector<const double*> param = scene.getPointParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
                     });
-                } else if (obj.et == ET_SECTION) {
+                } else if (obj.et == Element::ET_SECTION) {
                     std::vector<const double*> param = scene.getSectionParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
                                                        id.get(), id.get() - 1, id.get() - 2,
                                                        {param[0], param[1]}, {param[2], param[3]});
                     });
-                } else if (obj.et == ET_CIRCLE) {
+                } else if (obj.et == Element::ET_CIRCLE) {
                     std::vector<const double*> param = scene.getCircleParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addCircleInLeftMenu("Circle", "Center",
                                                       id.get(), id.get() - 1,
                                                       {param[0], param[1]}, *param[2]);
                     });
-                } else if (obj.et == ET_ARC) {
+                } else if (obj.et == Element::ET_ARC) {
                     std::vector<const double*> param = scene.getArcParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addArcInLeftMenu("Arc", "Point", "Point", "Center",
@@ -616,7 +616,7 @@ void Application::setupRequirementsConnections() {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) { return; }
-                    addRequirement(ET_POINTSECTIONDIST, pairSelectedID->first, pairSelectedID->second, parameters);
+                    addRequirement(Requirement::ET_POINTSECTIONDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             }
@@ -626,7 +626,7 @@ void Application::setupRequirementsConnections() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
                 RequirementData reqData;
-                addRequirement(ET_POINTONSECTION, pairSelectedID->first, pairSelectedID->second);
+                addRequirement(Requirement::ET_POINTONSECTION, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
@@ -640,7 +640,7 @@ void Application::setupRequirementsConnections() {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) { return; }
-                    addRequirement(ET_POINTPOINTDIST, pairSelectedID->first, pairSelectedID->second, parameters);
+                    addRequirement(Requirement::ET_POINTPOINTDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             } else {
@@ -654,7 +654,7 @@ void Application::setupRequirementsConnections() {
                         if (!ok) {
                             return;
                         }
-                        addRequirement(ET_POINTPOINTDIST, ID(vec_id[0].get() - 1), ID(vec_id[0].get() - 2), parameters);
+                        addRequirement(Requirement::ET_POINTPOINTDIST, ID(vec_id[0].get() - 1), ID(vec_id[0].get() - 2), parameters);
                         updateState();
                     }
                 }
@@ -664,7 +664,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::fourRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                addRequirement(ET_POINTONPOINT, pairSelectedID->first, pairSelectedID->second);
+                addRequirement(Requirement::ET_POINTONPOINT, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
@@ -678,7 +678,7 @@ void Application::setupRequirementsConnections() {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) { return; }
-                    addRequirement(ET_SECTIONCIRCLEDIST, pairSelectedID->first, pairSelectedID->second, parameters);
+                    addRequirement(Requirement::ET_SECTIONCIRCLEDIST, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             }
@@ -687,7 +687,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::sixRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                addRequirement(ET_SECTIONONCIRCLE, pairSelectedID->first, pairSelectedID->second);
+                addRequirement(Requirement::ET_SECTIONONCIRCLE, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
@@ -695,7 +695,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::sevenRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                addRequirement(ET_SECTIONINCIRCLE, pairSelectedID->first, pairSelectedID->second);
+                addRequirement(Requirement::ET_SECTIONINCIRCLE, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
@@ -703,7 +703,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                addRequirement(ET_SECTIONSECTIONPARALLEL, pairSelectedID->first, pairSelectedID->second);
+                addRequirement(Requirement::ET_SECTIONSECTIONPARALLEL, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
 
@@ -712,7 +712,7 @@ void Application::setupRequirementsConnections() {
         QObject::connect(&mainWind, &MainWindow::nineRequirements, [this]() {
             auto pairSelectedID = painter->getPairSelectedID();
             if (pairSelectedID) {
-                addRequirement(ET_SECTIONSECTIONPERPENDICULAR, pairSelectedID->first, pairSelectedID->second);
+                addRequirement(Requirement::ET_SECTIONSECTIONPERPENDICULAR, pairSelectedID->first, pairSelectedID->second);
                 updateState();
             }
         });
@@ -725,7 +725,7 @@ void Application::setupRequirementsConnections() {
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) { return; }
-                    addRequirement(ET_SECTIONSECTIONANGLE, pairSelectedID->first, pairSelectedID->second, parameters);
+                    addRequirement(Requirement::ET_SECTIONSECTIONANGLE, pairSelectedID->first, pairSelectedID->second, parameters);
                     updateState();
                 }
             }
@@ -984,34 +984,34 @@ void Application::handler(const QString& command) {
         try {
             switch (req) {
                 case 1:
-                    addRequirement(ET_POINTSECTIONDIST, obj1, obj2, parameters);
+                    addRequirement(Requirement::ET_POINTSECTIONDIST, obj1, obj2, parameters);
                     break;
                 case 2:
-                    addRequirement(ET_POINTONSECTION, obj1, obj2);
+                    addRequirement(Requirement::ET_POINTONSECTION, obj1, obj2);
                     break;
                 case 3:
-                    addRequirement(ET_POINTPOINTDIST, obj1, obj2, parameters);
+                    addRequirement(Requirement::ET_POINTPOINTDIST, obj1, obj2, parameters);
                     break;
                 case 4:
-                    addRequirement(ET_POINTONPOINT, obj1, obj2);
+                    addRequirement(Requirement::ET_POINTONPOINT, obj1, obj2);
                     break;
                 case 5:
-                    addRequirement(ET_SECTIONCIRCLEDIST, obj1, obj2, parameters);
+                    addRequirement(Requirement::ET_SECTIONCIRCLEDIST, obj1, obj2, parameters);
                     break;
                 case 6:
-                    addRequirement(ET_SECTIONONCIRCLE, obj1, obj2, parameters);
+                    addRequirement(Requirement::ET_SECTIONONCIRCLE, obj1, obj2, parameters);
                     break;
                 case 7:
-                    addRequirement(ET_SECTIONINCIRCLE, obj1, obj2);
+                    addRequirement(Requirement::ET_SECTIONINCIRCLE, obj1, obj2);
                     break;
                 case 8:
-                    addRequirement(ET_SECTIONSECTIONPARALLEL, obj1, obj2);
+                    addRequirement(Requirement::ET_SECTIONSECTIONPARALLEL, obj1, obj2);
                     break;
                 case 9:
-                    addRequirement(ET_SECTIONSECTIONPERPENDICULAR, obj1, obj2);
+                    addRequirement(Requirement::ET_SECTIONSECTIONPERPENDICULAR, obj1, obj2);
                     break;
                 case 10:
-                    addRequirement(ET_SECTIONSECTIONANGLE, obj1, obj2, parameters);
+                    addRequirement(Requirement::ET_SECTIONSECTIONANGLE, obj1, obj2, parameters);
                     break;
                 default:
                     mainWind.showError("Not right number of req");
@@ -1039,7 +1039,7 @@ void Application::handler(const QString& command) {
 void Application::addRequirement(Requirement RQ, ID id1, ID id2, double parameters) {
     RequirementData reqData;
     Requirement type = RQ;
-    QString name = vec_requirements[RQ];
+    QString name = vec_requirements[static_cast<int>(RQ)];
 
     reqData.req = type;
     reqData.objects.push_back(id1);
@@ -1053,7 +1053,7 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2, double paramete
 
         ModeManager::setSave(false);
         vecCalls.push_back([=, this]() {
-            leftMenu->addRequirementElem(name, name, RQ, id1.get(),
+            leftMenu->addRequirementElem(name, name, static_cast<int>(RQ), id1.get(),
                                          id2.get(), parameters);
         });
     } catch (std::exception& e) {
@@ -1065,7 +1065,7 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2, double paramete
 void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
     RequirementData reqData;
     Requirement type = RQ;
-    QString name = vec_requirements[RQ];
+    QString name = vec_requirements[static_cast<int>(RQ)];
 
     reqData.req = type;
     reqData.objects.push_back(id1);
@@ -1078,7 +1078,7 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
 
         ModeManager::setSave(false);
         vecCalls.push_back([=, this]() {
-            leftMenu->addRequirementElem(name, name, RQ, id1.get(),
+            leftMenu->addRequirementElem(name, name, static_cast<int>(RQ), id1.get(),
                                          id2.get());
         });
     } catch (const std::exception& e) {
@@ -1089,7 +1089,7 @@ void Application::addRequirement(Requirement RQ, ID id1, ID id2) {
 
 void Application::addPoints(double x, double y) {
     ObjectData point;
-    point.et = ET_POINT;
+    point.et = Element::ET_POINT;
     point.params.push_back(x);
     point.params.push_back(y);
 
@@ -1110,7 +1110,7 @@ void Application::addPoints(double x, double y) {
 
 void Application::addSections(double x0, double y0, double x1, double y1) {
     ObjectData section;
-    section.et = ET_SECTION;
+    section.et = Element::ET_SECTION;
     section.params.push_back(x0);
     section.params.push_back(y0);
     section.params.push_back(x1);
@@ -1133,7 +1133,7 @@ void Application::addSections(double x0, double y0, double x1, double y1) {
 
 void Application::addCircles(double x, double y, double r) {
     ObjectData circle;
-    circle.et = ET_CIRCLE;
+    circle.et = Element::ET_CIRCLE;
     circle.params.push_back(x);
     circle.params.push_back(y);
     circle.params.push_back(r);
@@ -1155,7 +1155,7 @@ void Application::addCircles(double x, double y, double r) {
 
 void Application::addArcs(double x0, double y0, double x1, double y1, double cx, double cy) {
     ObjectData arc;
-    arc.et = ET_ARC;
+    arc.et = Element::ET_ARC;
     arc.params.push_back(x0);
     arc.params.push_back(y0);
     arc.params.push_back(x1);

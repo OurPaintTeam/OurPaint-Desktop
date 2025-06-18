@@ -15,7 +15,7 @@ struct IGeometricObject {
     virtual inline Element getType() const = 0;
 };
 
-struct Point : public IGeometricObject {
+struct Point : IGeometricObject {
     double x;
     double y;
 
@@ -28,7 +28,7 @@ struct Point : public IGeometricObject {
 
 std::ifstream &operator>>(std::ifstream &in, Point &x);
 
-struct Section : public IGeometricObject {
+struct Section : IGeometricObject {
     Point *beg;
     Point *end;
 
@@ -39,7 +39,7 @@ struct Section : public IGeometricObject {
     inline Element getType() const override;
 };
 
-struct Circle : public IGeometricObject {
+struct Circle : IGeometricObject {
     Point *center;
     double r;
 
@@ -50,7 +50,7 @@ struct Circle : public IGeometricObject {
     inline Element getType() const override;
 };
 
-struct Arc : public IGeometricObject {
+struct Arc : IGeometricObject {
     Point *beg;
     Point *end;
     Point *center;

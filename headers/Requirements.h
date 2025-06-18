@@ -4,13 +4,13 @@
 #include <cmath>
 #include <vector>
 
-#include "objects/Enums.h"
+#include "Enums.h"
 #include "ErrorFunction.h"
-#include "objects/GeometricObjects.h"
-#include "objects/BoundBox.h"
-#include "objects/Objects.h"
+#include "GeometricObjects.h"
+#include "BoundBox.h"
+#include "Objects.h"
 
-// Abstract class
+
 struct IReq {
 public:
     virtual ~IReq() = default;
