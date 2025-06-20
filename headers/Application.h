@@ -35,6 +35,9 @@
 #include "CommandDeleteRequirement.h"
 #include "CommandMove.h"
 
+#include "ConsoleManager.h"
+#include "CommandFactory.h"
+
 class Application : public QObject {
 Q_OBJECT
 private:
@@ -53,6 +56,8 @@ private:
 
     UndoRedo::UndoRedoManager undoRedo;
 
+    CommandManager commandManager;
+
     void initialize();
     void initLogger();
     void setupQTPainterConnections();
@@ -62,15 +67,16 @@ private:
     void setupAddingCommandsConnections();
     void updateState();
     void handler(const QString &command);
-    void addRequirement(Requirement RQ,ID id1,ID id2,double parameters);
-    void addRequirement(Requirement RQ,ID id1,ID id2);
-    void addPoints(double x,double y);
-    void addSections(double x0,double y0,double x1,double y1);
-    void addCircles(double x,double y,double r);
-    void addArcs(double x0,double y0,double x1,double y1,double cx,double cy);
+    //void addRequirement(Requirement RQ,ID id1,ID id2,double parameters);
+    //void addRequirement(Requirement RQ,ID id1,ID id2);
+    //void addPoints(double x,double y);
+    //void addSections(double x0,double y0,double x1,double y1);
+    //void addCircles(double x,double y,double r);
+    //void addArcs(double x0,double y0,double x1,double y1,double cx,double cy);
     void fillSelectedIDBuffer();
     void deleteOwnPoints(QVector<ID>& vecPoints,const QVector<ID>& vecSections,const QVector<ID>& vecCircles,const QVector<ID>& vecArcs);
     void deleteObjects(QVector<ID>& vecPoints,QVector<ID>& vecSections,QVector<ID>& vecCircles,QVector<ID>& vecArcs);
+    void setupConsoleSystem();
 
 private:
     std::vector<ObjectData> objectsBuffer;
@@ -85,3 +91,4 @@ public:
 };
 
 #endif // APPLICATION_H
+

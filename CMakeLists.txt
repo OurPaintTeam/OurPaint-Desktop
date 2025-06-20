@@ -25,9 +25,9 @@ include_directories(ourpaint
         headers/saveload
         headers/UndoRedo
         headers/objects
-        headers/commands
-        headers/commands/Add
-        headers/commands/Delete
+        headers/UndoRedo/commands
+        headers/UndoRedo/commands/Add
+        headers/UndoRedo/commands/Delete
 
         GUI/GUI_h
         GUI/GUI_h/Unnecessary
@@ -102,24 +102,24 @@ add_executable(ourpaint
 
         ########### UNDO/REDO ###########
 
-        headers/commands/Add/CommandAddObject.h
-        headers/commands/Add/CommandAddPoint.h
-        headers/commands/Add/CommandAddSection.h
-        headers/commands/Add/CommandAddCircle.h
-        headers/commands/Add/CommandAddArc.h
-        headers/commands/Delete/CommandDeletePoint.h
-        headers/commands/Delete/CommandDeleteSection.h
-        headers/commands/Delete/CommandDeleteCircle.h
-        headers/commands/Delete/CommandDeleteArc.h
-        headers/commands/CommandAddRequirement.h
-        headers/commands/CommandDeleteRequirement.h
-        headers/commands/CommandMove.h
+        headers/UndoRedo/commands/Add/CommandAddObject.h
+        headers/UndoRedo/commands/Add/CommandAddPoint.h
+        headers/UndoRedo/commands/Add/CommandAddSection.h
+        headers/UndoRedo/commands/Add/CommandAddCircle.h
+        headers/UndoRedo/commands/Add/CommandAddArc.h
+        headers/UndoRedo/commands/Delete/CommandDeletePoint.h
+        headers/UndoRedo/commands/Delete/CommandDeleteSection.h
+        headers/UndoRedo/commands/Delete/CommandDeleteCircle.h
+        headers/UndoRedo/commands/Delete/CommandDeleteArc.h
+        headers/UndoRedo/commands/CommandAddRequirement.h
+        headers/UndoRedo/commands/CommandDeleteRequirement.h
+        headers/UndoRedo/commands/CommandMove.h
 
-        src/commands/Add/CommandAddObject.cc
-        src/commands/Delete/CommandDeleteObject.cc
-        src/commands/CommandAddRequirement.cc
-        src/commands/CommandDeleteRequirement.cc
-        src/commands/CommandMove.cc
+        src/UndoRedo/commands/Add/CommandAddObject.cc
+        src/UndoRedo/commands/Delete/CommandDeleteObject.cc
+        src/UndoRedo/commands/CommandAddRequirement.cc
+        src/UndoRedo/commands/CommandDeleteRequirement.cc
+        src/UndoRedo/commands/CommandMove.cc
 
         ###########  GUI  ############
 

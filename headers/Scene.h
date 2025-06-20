@@ -93,6 +93,9 @@ public:
     std::vector<RequirementData> getObjectRequirements(ID objectID) const;
     std::vector<RequirementData> getObjectRequirementsWithConnectedObjects(ID objectID) const;
 
+    bool hasObject(ID id) const;
+    bool hasRequirement(ID id) const;
+
     void setPainter(Painter*);
 
     void moveObject(ID objectID, double dx, double dy);

@@ -535,6 +535,29 @@ ObjectData Scene::getObjectData(ID id) const {
     throw std::invalid_argument("Object not found");
 }
 
+bool Scene::hasObject(ID id) const {
+    if (auto it = _points.find(id); it != _points.end()) {
+        return true;
+    }
+    if (auto it = _sections.find(id); it != _sections.end()) {
+        return true;
+    }
+    if (auto it = _circles.find(id); it != _circles.end()) {
+        return true;
+    }
+    if (auto it = _arcs.find(id); it != _arcs.end()) {
+        return true;
+    }
+    return false;
+}
+
+bool Scene::hasRequirement(ID id) const {
+    if (auto it = _requirements.find(id); it != _requirements.end()) {
+        return true;
+    }
+    return false;
+}
+
 ObjectData Scene::getRootObjectData(ID id) const {
     if (_sections.contains(id) || _circles.contains(id) || _arcs.contains(id)) {
         return getObjectData(id);

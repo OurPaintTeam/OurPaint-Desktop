@@ -161,12 +161,14 @@ void MainWindow::initConnections() {
         }
     });
 
-    QStringList commandList = {
-            "circle ", "exit", "addReq ", "delReq", "section ", "arc ", "point ", "clear", "delObj"
-    };
 
+}
+
+
+void MainWindow::setupConsoleCommands(const QStringList& commandList ) {
     ui->console->setCommands(commandList);
 }
+
 
 void MainWindow::setupLeftMenu() {
     leftMenuBar = new LeftMenuBar(this);
