@@ -20,6 +20,6 @@ void DrawPointTool::draw(QPainter& painter, const QPointF& nowCursor)  {
 
 
 void DrawPointTool::drawPreview(QPainter& painter, const QPointF& point, const QPointF& /*unused*/) {
-    DrawFigures::setPen(hintColor());
-    DrawFigures::drawPoint(painter, point);
+    // DrawFigures::setPen(hintColor());
+    // DrawFigures::drawPoint(painter, point);
 }
