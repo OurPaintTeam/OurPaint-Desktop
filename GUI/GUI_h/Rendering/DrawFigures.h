@@ -9,6 +9,7 @@
 #include "DrawAdditionalInf.h"
 #include "GeometricObjects.h"
 #include "Colors.h"
+#include "RenderStyle.h"
 
 // A class for drawing shapes
 // Coordinate transformation taking into account scaling and the inverted Y-axis,
@@ -28,6 +29,8 @@ public:
     static void drawPoint(QPainter& painter, const std::unordered_map<ID, Point*>& points,
                           const std::unordered_map<ID, Color>& vec_id);
 
+    static void drawPoint(QPainter& painter, const std::unordered_map<ID, Point*>& points,
+                          const std::unordered_map<ID, PointStyle>& vec_id);
 
     // Function for drawing circles
     static void drawCircle(QPainter& painter, const std::unordered_map<ID, Circle*>& circles,
