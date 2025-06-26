@@ -23,13 +23,20 @@ void DrawLineTool::draw(QPainter& painter, const QPointF& nowCursor) {
 void DrawLineTool::drawRunningSection(QPainter& painter, const QPointF& startCoordinates, const QPointF& cursor) {
     // Rounding the mouse to 1 decimal place
     const QPointF Cursor = roundCursor(cursor);
-    // DrawFigures::drawSection(painter, startCoordinates, Cursor);
+    LineStyle style;
+    style.figure.object.color = Color::Black;
+    style.figure.object.size = 1;
+    render::drawFigure(painter, startCoordinates, Cursor,style);
 }
 
 
 void DrawLineTool::drawPreview(QPainter& painter, const QPointF& start, const QPointF& end) {
-    // DrawFigures::setPen(QPen(hintColor()));
-    // DrawFigures::drawSection(painter, start, end);
+
+    LineStyle style;
+    style.figure.object.color = Color::LightGray;
+    style.figure.object.size = 1;
+
+     render::drawFigure(painter, start, end,style);
 }
 
 

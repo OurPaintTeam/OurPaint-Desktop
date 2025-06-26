@@ -5,7 +5,9 @@
 #include <QPainter>
 #include <QPointF>
 
-#include "DrawFigures.h"
+#include "RenderCircles.h"
+#include "RenderPoints.h"
+#include "RenderLines.h"
 #include "DrawTool.h"
 
 class DrawCircleTool : public DrawTool {

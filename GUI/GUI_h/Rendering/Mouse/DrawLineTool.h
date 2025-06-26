@@ -4,9 +4,11 @@
 #include <QObject>
 #include <QPainter>
 #include <QPointF>
-#include "DrawFigures.h"
+
+#include "RenderLines.h"
 #include "Modes.h"
 #include "DrawTool.h"
+
 
 class DrawLineTool : public DrawTool {
 Q_OBJECT

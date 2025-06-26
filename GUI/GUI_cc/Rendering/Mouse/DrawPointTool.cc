@@ -20,6 +20,9 @@ void DrawPointTool::draw(QPainter& painter, const QPointF& nowCursor)  {
 
 
 void DrawPointTool::drawPreview(QPainter& painter, const QPointF& point, const QPointF& /*unused*/) {
-    // DrawFigures::setPen(hintColor());
-    // DrawFigures::drawPoint(painter, point);
+    PointStyle style;
+    style.figure.object.color = Color::LightGray;
+    style.figure.object.size = 1;
+
+     render::drawFigure(painter, point,style);
 }

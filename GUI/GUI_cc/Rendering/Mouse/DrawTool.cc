@@ -25,11 +25,6 @@ QPointF DrawTool::roundCursor(const QPointF& point) {
     return {qRound(point.x() * 10.0) / 10.0, qRound(point.y() * 10.0) / 10.0};
 }
 
-QColor DrawTool::hintColor() {
-    return {169, 169, 169, 128};
-}
-
-
 
 
 

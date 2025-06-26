@@ -28,6 +28,5 @@ protected:
     DrawState state = DrawState::NotStarted;
 
     QPointF roundCursor(const QPointF& point);
-    QColor hintColor() ;
 };
 #endif //OURPAINT_DRAWTOOL_H

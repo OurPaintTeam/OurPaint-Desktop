@@ -77,7 +77,6 @@ private:
         LineStyle style;
         style.figure.object.color = Color::Black;
         style.figure.object.size = 1;
-        style.figure.glow.size = 0;
         return style;
     }
 
@@ -85,7 +84,6 @@ private:
         ArcStyle style;
         style.figure.object.color = Color::Black;
         style.figure.object.size = 1;
-        style.figure.glow.size = 0;
         return style;
     }
 
@@ -93,7 +91,6 @@ private:
         CircleStyle style;
         style.figure.object.color = Color::Black;
         style.figure.object.size = 1;
-        style.figure.glow.size = 0;
         return style;
     }
 

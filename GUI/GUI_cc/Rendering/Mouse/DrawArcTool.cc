@@ -23,5 +23,10 @@ void DrawArcTool::draw(QPainter& painter, const QPointF& nowCursor) {
 
 void DrawArcTool::drawPreview(QPainter& painter, const QPointF& startCoordinates, const QPointF& cursor) {
     const QPointF center = (startCoordinates + cursor) / 2.0;
-//    DrawFigures::drawArc(painter, cursor, startCoordinates, center);
+
+    ArcStyle style;
+    style.figure.object.color = Color::Black;
+    style.figure.object.size = 1;
+
+    render::drawFigure(painter, cursor, startCoordinates, center,style);
 }

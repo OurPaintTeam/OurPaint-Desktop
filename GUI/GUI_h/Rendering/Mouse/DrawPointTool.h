@@ -5,7 +5,7 @@
 #include <QPainter>
 #include <QPointF>
 
-#include "DrawFigures.h"
+#include "RenderPoints.h"
 #include "DrawTool.h"
 
 class DrawPointTool : public DrawTool{
