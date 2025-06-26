@@ -39,10 +39,9 @@ add_executable(SceneGTEST SceneGTEST.cc
         ../src/Scene.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
-        ../src/objects/Component.cc
         ../src/painters/BMPpainter.cc
         ../src/BMPfile.cc
-        ../src/Requirements.cc
+        ../src/objects/Requirements.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/requirementInFile.cc
@@ -88,12 +87,11 @@ target_link_libraries(UndoRedoGTEST GTest::gtest_main)
 #Test for move functionality
 add_executable(MoveGTEST MoveGTEST.cc
         ../src/Scene.cc
-        ../src/objects/Component.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
         ../src/painters/BMPpainter.cc
         ../src/BMPfile.cc
-        ../src/Requirements.cc
+        ../src/objects/Requirements.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/requirementInFile.cc
@@ -122,7 +120,6 @@ target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 # Test for Component
 add_executable(ComponentTest ComponentTest.cc
-        ../src/objects/Component.cc
         ../src/objects/GeometricObjects.cc
         ../Math/src/ErrorFunctions.cc
         ../Math/src/Function.cc

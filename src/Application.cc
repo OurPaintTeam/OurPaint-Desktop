@@ -12,7 +12,6 @@ Application::Application(int& argc, char** argv)
           isStartMoving(true),
           pre_move_object_states() {
 
-
     initLogger();
     initialize();
     setupAddingCommandsConnections();
@@ -23,11 +22,9 @@ Application::Application(int& argc, char** argv)
     setupConsoleSystem();
 }
 
-
 int Application::exec() {
     return app.exec();
 }
-
 
 void Application::initLogger() {
     try {
@@ -113,7 +110,7 @@ void Application::setupQTPainterConnections() {
             if (isStartMoving) {
                 // I'm afraid. It's really dangerous.
                 Component& c = scene.findComponentByID(vec_id[0]);
-                for (auto& id : c.objectIDs()) {
+                for (auto& id : c._objectIDs) {
                     pre_move_object_states.push_back(scene.getObjectData(id));
                 }
                 isStartMoving = false;
@@ -144,7 +141,7 @@ void Application::setupQTPainterConnections() {
                          [this](const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
                              if (isStartMoving) {
                                  Component& c = scene.findComponentByID(vec_id[0]);
-                                 for (auto& id : c.objectIDs()) {
+                                 for (auto& id : c._objectIDs) {
                                      pre_move_object_states.push_back(scene.getObjectData(id));
                                  }
                                  isStartMoving = false;
@@ -173,7 +170,7 @@ void Application::setupQTPainterConnections() {
         QObject::connect(painter, &QTPainter::MovingCircle, [this](const QVector<ID>& vec_id, const QPointF& offset) {
             if (isStartMoving) {
                 Component& c = scene.findComponentByID(vec_id[0]);
-                for (auto& id : c.objectIDs()) {
+                for (auto& id : c._objectIDs) {
                     pre_move_object_states.push_back(scene.getObjectData(id));
                 }
                 isStartMoving = false;
@@ -206,7 +203,7 @@ void Application::setupQTPainterConnections() {
         QObject::connect(painter, &QTPainter::MovingArc, [this](const QVector<ID>& vec_id) {
             if (isStartMoving) {
                 Component& c = scene.findComponentByID(vec_id[0]);
-                for (auto& id : c.objectIDs()) {
+                for (auto& id : c._objectIDs) {
                     pre_move_object_states.push_back(scene.getObjectData(id));
                 }
                 isStartMoving = false;
@@ -235,7 +232,7 @@ void Application::setupQTPainterConnections() {
                                      //addPoints(point.x(), point.y());
                                      Transaction* txn = commandManager.invoke("POINT", { point.x(), point.y() });
                                      undoRedo.push(std::move(*txn));
-                                     server.sendToClients(QString::fromStdString(scene.to_string()));
+                                     //server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("point " + QString::number(point.y()) + " " +
                                                                 QString::number(point.x()));
@@ -256,7 +253,7 @@ void Application::setupQTPainterConnections() {
                                      //addSections(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y());
                                      Transaction* txn = commandManager.invoke("LINE", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y() });
                                      undoRedo.push(std::move(*txn));
-                                     server.sendToClients(QString::fromStdString(scene.to_string()));
+                                     //server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("section " + QString::number(startPoint.x()) + " " +
                                                                 QString::number(startPoint.y()) + " " +
@@ -280,7 +277,7 @@ void Application::setupQTPainterConnections() {
                                      //addCircles(center.x(), center.y(), radius);
                                      Transaction* txn = commandManager.invoke("CIRCLE", { center.x(), center.y(), radius });
                                      undoRedo.push(std::move(*txn));
-                                     server.sendToClients(QString::fromStdString(scene.to_string()));
+                                     //server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("circle " + QString::number(center.x()) + " " +
                                                                 QString::number(center.y()) + " " +
@@ -303,7 +300,7 @@ void Application::setupQTPainterConnections() {
                                      //addArcs(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), centerPoint.x(), centerPoint.y());
                                      Transaction* txn = commandManager.invoke("ARC", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), centerPoint.x(), centerPoint.y() });
                                      undoRedo.push(std::move(*txn));
-                                     server.sendToClients(QString::fromStdString(scene.to_string()));
+                                     //server.sendToClients(QString::fromStdString(scene.to_string()));
                                  } else {
                                      client.sendCommandToServer("arc " + QString::number(startPoint.x()) + " " +
                                                                 QString::number(startPoint.y()) + " " +
@@ -355,26 +352,26 @@ void Application::setupQTPainterConnections() {
         try {
             for (auto& obj: objectsBuffer) {
                 ID id = scene.addObject(obj);
-                if (obj.et == Element::ET_POINT) {
+                if (obj.et == ObjType::ET_POINT) {
                     std::vector<const double*> param = scene.getPointParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
                     });
-                } else if (obj.et == Element::ET_SECTION) {
+                } else if (obj.et == ObjType::ET_SECTION) {
                     std::vector<const double*> param = scene.getSectionParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addSectionInLeftMenu("Section", "Point", "Point",
                                                        id.get(), id.get() - 1, id.get() - 2,
                                                        {param[0], param[1]}, {param[2], param[3]});
                     });
-                } else if (obj.et == Element::ET_CIRCLE) {
+                } else if (obj.et == ObjType::ET_CIRCLE) {
                     std::vector<const double*> param = scene.getCircleParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addCircleInLeftMenu("Circle", "Center",
                                                       id.get(), id.get() - 1,
                                                       {param[0], param[1]}, *param[2]);
                     });
-                } else if (obj.et == Element::ET_ARC) {
+                } else if (obj.et == ObjType::ET_ARC) {
                     std::vector<const double*> param = scene.getArcParams(id);
                     vecCalls.push_back([=, this]() {
                         leftMenu->addArcInLeftMenu("Arc", "Point", "Point", "Center",
@@ -602,10 +599,10 @@ void Application::setupServerConnections() {
     QObject::connect(&server, &Server::newCommandReceived, [&](const QString& cmd) {
         handler(cmd);
         updateState();
-        server.sendToClients(QString::fromStdString(scene.to_string()));
+        //server.sendToClients(QString::fromStdString(scene.to_string()));
     });
 
-    QObject::connect(&client, &Client::newStateReceived, [&](const QString& state) {
+    QObject::connect(&client, &Client::newStateReceived, [&](/* const QString& state */) {
         // TODO scene.loadFromString(state.toStdString());
         updateState();
     });
@@ -622,7 +619,7 @@ void Application::setupServerConnections() {
     });
 
     QObject::connect(&server, &Server::newConnection, [this]() {
-        server.sendToClients(QString::fromStdString(scene.to_string()));
+        //server.sendToClients(QString::fromStdString(scene.to_string()));
     });
 
     QObject::connect(&mainWind, &MainWindow::EnterMessage, [this](const QString& text) {
@@ -694,14 +691,14 @@ void Application::setupRequirementsConnections() {
                 if (vec_id.size() == 1) {
                     InputWindow window("Enter parameters: ", &mainWind);
                     if (window.exec() == QDialog::Accepted) {
-                        RequirementData reqData;
+                        Requirement reqData;
                         bool ok = false;
                         double parameters = window.getText().toDouble(&ok);
                         if (!ok) {
                             return;
                         }
                         //addRequirement(Requirement::ET_POINTPOINTDIST, ID(vec_id[0].get() - 1), ID(vec_id[0].get() - 2), parameters);
-                        std::vector<double> vec = {3, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()), parameters};
+                        std::vector<double> vec = {3, static_cast<double>(ID(vec_id[0].get() - 1).get()), static_cast<double>(ID(vec_id[0].get() - 2).get()), parameters};
                         Transaction* txn = commandManager.invoke("REQ", { vec });
                         undoRedo.push(std::move(*txn));
                         updateState();
@@ -726,7 +723,7 @@ void Application::setupRequirementsConnections() {
             if (pairSelectedID) {
                 InputWindow window("Enter parameters: ", &mainWind);
                 if (window.exec() == QDialog::Accepted) {
-                    RequirementData reqData;
+                    Requirement reqData;
                     bool ok = false;
                     double parameters = window.getText().toDouble(&ok);
                     if (!ok) { return; }
@@ -885,7 +882,7 @@ void Application::setupAddingCommandsConnections() {
                     // TODO update left menu
 
                     updateState();
-                    server.sendToClients(QString::fromStdString(scene.to_string()));
+                    //server.sendToClients(QString::fromStdString(scene.to_string()));
                 }
             } else {
                 client.sendCommandToServer(command);
@@ -914,7 +911,7 @@ void Application::setupAddingCommandsConnections() {
         } else {
             std::string File = fileName.toStdString();
             try {
-                scene.saveToFile(File.c_str());
+                //scene.saveToFile(File.c_str());
             }
             catch (std::runtime_error& error) {
                 qWarning("Don't save to file");
@@ -931,7 +928,7 @@ void Application::setupAddingCommandsConnections() {
         try {
             scene.clearImage();
             std::string File = fileName.toStdString();
-            scene.loadFromFile(File.c_str());
+            //scene.loadFromFile(File.c_str());
 
             scene.paint();
             scene.paint();
@@ -961,7 +958,7 @@ void Application::setupAddingCommandsConnections() {
             if (ModeManager::getConnection()) {
                 if (ModeManager::getFlagServer()) {
                     handler(qCommand);
-                    server.sendToClients(QString::fromStdString(scene.to_string()));
+                    //server.sendToClients(QString::fromStdString(scene.to_string()));
                 } else {
                     client.sendCommandToServer(qCommand);
                 }

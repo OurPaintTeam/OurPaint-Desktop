@@ -55,10 +55,9 @@ include_directories(ourpaint
 add_executable(ourpaint
         main.cc
         src/Scene.cc
-        src/Requirements.cc
+        src/objects/Requirements.cc
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
-        src/objects/Component.cc
 
         src/painters/BMPpainter.cc
 
@@ -73,7 +72,7 @@ add_executable(ourpaint
         src/Application.cc
         src/BMPfile.cc
 
-        headers/Requirements.h
+        headers/objects/Requirements.h
 
         headers/painters/Painter.h
         headers/painters/BMPpainter.h
@@ -94,7 +93,7 @@ add_executable(ourpaint
         headers/objects/Objects.h
         headers/objects/GeometricObjects.h
         headers/objects/Component.h
-        headers/Requirements.h
+        headers/objects/Requirements.h
         headers/objects/ID.h
         headers/Scene.h
         headers/UndoRedo/UndoRedoTemplate.h

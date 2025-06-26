@@ -13,7 +13,7 @@
 
 #include "objectInFile.h"
 #include "requirementInFile.h"
-
+/*
 
 class FileOurP {
     std::vector<objectInFile> m_objects;
@@ -46,6 +46,6 @@ public:
 
     void loadString(const std::string &basicString);
 };
-
+*/
 
 #endif // ! OURPAINT_HEADERS_SAVELOAD_EXPORTTOFILE_H_

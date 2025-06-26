@@ -1,5 +1,5 @@
 #include "Requirements.h"
-
+/*
 
 // 1
 ErrorFunction* ReqPointSecDist::getFunction() {
@@ -19,9 +19,6 @@ ReqPointSecDist::ReqPointSecDist(Point* p, Section* s, double dist) {
     m_p = p;
     m_s = s;
     d = dist;
-}
-Requirement ReqPointSecDist::getType() const{
-    return Requirement::ET_POINTSECTIONDIST;
 }
 std::vector<IGeometricObject*> ReqPointSecDist::getObjects() {
     return {m_p, m_s};
@@ -60,9 +57,6 @@ std::vector<PARAM_ID> ReqPointOnSec::getParams() {
     res.push_back(&(m_s->end->y));
     return res;
 }
-Requirement ReqPointOnSec::getType() const{
-    return Requirement::ET_POINTONSECTION;
-}
 std::vector<IGeometricObject*> ReqPointOnSec::getObjects() {
     return {m_p, m_s};
 }
@@ -100,9 +94,6 @@ std::vector<PARAM_ID> ReqPointPointDist::getParams() {
     res.push_back(&v_dist);
     return res;
 }
-Requirement ReqPointPointDist::getType() const{
-    return Requirement::ET_POINTPOINTDIST;
-}
 std::vector<IGeometricObject*> ReqPointPointDist::getObjects() {
     return {m_p1, m_p2};
 }
@@ -135,9 +126,6 @@ std::vector<PARAM_ID> ReqPointOnPoint::getParams() {
     res.push_back(&(m_p2->x));
     res.push_back(&(m_p2->y));
     return res;
-}
-Requirement ReqPointOnPoint::getType() const{
-    return Requirement::ET_POINTONPOINT;
 }
 std::vector<IGeometricObject*> ReqPointOnPoint::getObjects() {
     return {m_p1, m_p2};
@@ -179,9 +167,6 @@ std::vector<PARAM_ID> ReqSecCircleDist::getParams() {
     res.push_back(&(m_s->end->y));
     return res;
 }
-Requirement ReqSecCircleDist::getType() const{
-    return Requirement::ET_SECTIONCIRCLEDIST;
-}
 std::vector<IGeometricObject*> ReqSecCircleDist::getObjects() {
     return {m_s, m_c};
 }
@@ -220,9 +205,6 @@ std::vector<PARAM_ID> ReqSecOnCircle::getParams() {
     res.push_back(&(m_s->end->x));
     res.push_back(&(m_s->end->y));
     return res;
-}
-Requirement ReqSecOnCircle::getType() const{
-    return Requirement::ET_SECTIONONCIRCLE;
 }
 std::vector<IGeometricObject*> ReqSecOnCircle::getObjects() {
     return {m_s, m_c};
@@ -265,9 +247,6 @@ std::vector<PARAM_ID> ReqSecInCircle::getParams() {
     res.push_back(&(m_s->end->y));
     return res;
 }
-Requirement ReqSecInCircle::getType() const{
-    return Requirement::ET_SECTIONINCIRCLE;
-}
 std::vector<IGeometricObject*> ReqSecInCircle::getObjects() {
     return {m_s, m_c};
 }
@@ -300,9 +279,6 @@ std::vector<PARAM_ID> ReqSecSecParallel::getParams() {
     res.push_back(&(m_s2->end->y));
     return res;
 }
-Requirement ReqSecSecParallel::getType() const{
-    return Requirement::ET_SECTIONSECTIONPARALLEL;
-}
 std::vector<IGeometricObject*> ReqSecSecParallel::getObjects() {
     return {m_s1, m_s2};
 }
@@ -318,7 +294,7 @@ std::vector<Variable*> ReqSecSecParallel::getVariables() {
             new Variable(&m_s2->end->y)
     };
     return variables;
-};
+}
 double ReqSecSecParallel::getDimension() const {
     return 0;
 }
@@ -343,9 +319,6 @@ std::vector<PARAM_ID> ReqSecSecPerpendicular::getParams() {
     res.push_back(&(m_s2->end->x));
     res.push_back(&(m_s2->end->y));
     return res;
-}
-Requirement ReqSecSecPerpendicular::getType() const{
-    return Requirement::ET_SECTIONSECTIONPERPENDICULAR;
 }
 std::vector<IGeometricObject*> ReqSecSecPerpendicular::getObjects() {
     return {m_s1, m_s2};
@@ -391,9 +364,6 @@ std::vector<PARAM_ID> ReqSecSecAngel::getParams() {
     res.push_back(&(m_s2->end->y));
     return res;
 }
-Requirement ReqSecSecAngel::getType() const {
-    return Requirement::ET_SECTIONSECTIONANGLE;
-}
 std::vector<IGeometricObject*> ReqSecSecAngel::getObjects() {
     return {m_s1, m_s2};
 }
@@ -436,11 +406,6 @@ std::vector<PARAM_ID> ReqArcCenterOnPerpendicular::getParams() {
     res.push_back(&(m_p3->y));
     return res;
 }
-
-Requirement ReqArcCenterOnPerpendicular::getType() const {
-    return Requirement::ET_ARCCENTERONPERPENDICULAR;
-}
-
 std::vector<IGeometricObject*> ReqArcCenterOnPerpendicular::getObjects() {
     return {m_p1, m_p2, m_p3};
 }
@@ -461,3 +426,4 @@ double ReqArcCenterOnPerpendicular::getDimension() const {
     return 0;
 }
 
+*/

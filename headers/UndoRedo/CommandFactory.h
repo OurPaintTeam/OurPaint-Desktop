@@ -53,7 +53,7 @@ public:
             throw std::runtime_error("POINT: need 2 numbers");
         }
         ObjectData obj;
-        obj.et = Element::ET_POINT;
+        obj.et = ObjType::ET_POINT;
         obj.params = {
                 std::stod(rawArgs[0]),
                 std::stod(rawArgs[1]),
@@ -66,7 +66,7 @@ public:
             throw std::runtime_error("POINT: need 2 numbers");
         }
         ObjectData obj;
-        obj.et = Element::ET_POINT;
+        obj.et = ObjType::ET_POINT;
         obj.params = {
                 rawArgs[0],
                 rawArgs[1],
@@ -95,7 +95,7 @@ public:
             throw std::runtime_error("LINE: need 4 numbers");
         }
         ObjectData obj;
-        obj.et = Element::ET_SECTION;
+        obj.et = ObjType::ET_SECTION;
         obj.params = {
                 std::stod(rawArgs[0]),
                 std::stod(rawArgs[1]),
@@ -110,7 +110,7 @@ public:
             throw std::runtime_error("LINE: need 4 numbers");
         }
         ObjectData obj;
-        obj.et = Element::ET_SECTION;
+        obj.et = ObjType::ET_SECTION;
         obj.params = {
                 rawArgs[0],
                 rawArgs[1],
@@ -141,7 +141,7 @@ public:
             throw std::runtime_error("CIRCLE: need 3 numbers");
         }
         ObjectData obj;
-        obj.et = Element::ET_CIRCLE;
+        obj.et = ObjType::ET_CIRCLE;
         obj.params = {
                 std::stod(rawArgs[0]),
                 std::stod(rawArgs[1]),
@@ -155,7 +155,7 @@ public:
             throw std::runtime_error("CIRCLE: need 3 numbers");
         }
         ObjectData obj;
-        obj.et = Element::ET_CIRCLE;
+        obj.et = ObjType::ET_CIRCLE;
         obj.params = {
                 rawArgs[0],
                 rawArgs[1],
@@ -185,7 +185,7 @@ public:
             throw std::runtime_error("ARC: need 6 numbers");
         }
         ObjectData obj;
-        obj.et = Element::ET_ARC;
+        obj.et = ObjType::ET_ARC;
         obj.params = {
                 std::stod(rawArgs[0]),
                 std::stod(rawArgs[1]),
@@ -202,7 +202,7 @@ public:
             throw std::runtime_error("ARC: need 6 numbers");
         }
         ObjectData obj;
-        obj.et = Element::ET_ARC;
+        obj.et = ObjType::ET_ARC;
         obj.params = {
                 rawArgs[0],
                 rawArgs[1],
@@ -235,52 +235,52 @@ public:
             throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
         }
 
-        RequirementData reqData;
-        reqData.objects.push_back(ID(std::stoi(rawArgs[1])));
-        reqData.objects.push_back(ID(std::stoi(rawArgs[2])));
+        Requirement req;
+        req.obj1 = ID(std::stoi(rawArgs[1]));
+        req.obj2 = ID(std::stoi(rawArgs[2]));
 
         if (rawArgs.size() >= 4) {
-            reqData.params.push_back(std::stod(rawArgs[3]));
+            req.param = std::stod(rawArgs[3]);
         }
 
         int req_id = std::stoi(rawArgs[0]);
         switch (req_id) {
             case 1:
-                reqData.req = Requirement::ET_POINTSECTIONDIST;
+                req.type = ReqType::ET_POINTSECTIONDIST;
                 break;
             case 2:
-                reqData.req = Requirement::ET_POINTONSECTION;
+                req.type = ReqType::ET_POINTONSECTION;
                 break;
             case 3:
-                reqData.req = Requirement::ET_POINTPOINTDIST;
+                req.type = ReqType::ET_POINTPOINTDIST;
                 break;
             case 4:
-                reqData.req = Requirement::ET_POINTONPOINT;
+                req.type = ReqType::ET_POINTONPOINT;
                 break;
             case 5:
-                reqData.req = Requirement::ET_SECTIONCIRCLEDIST;
+                req.type = ReqType::ET_SECTIONCIRCLEDIST;
                 break;
             case 6:
-                reqData.req = Requirement::ET_SECTIONONCIRCLE;
+                req.type = ReqType::ET_SECTIONONCIRCLE;
                 break;
             case 7:
-                reqData.req = Requirement::ET_SECTIONINCIRCLE;
+                req.type = ReqType::ET_SECTIONINCIRCLE;
                 break;
             case 8:
-                reqData.req = Requirement::ET_SECTIONSECTIONPARALLEL;
+                req.type = ReqType::ET_SECTIONSECTIONPARALLEL;
                 break;
             case 9:
-                reqData.req = Requirement::ET_SECTIONSECTIONPERPENDICULAR;
+                req.type = ReqType::ET_SECTIONSECTIONPERPENDICULAR;
                 break;
             case 10:
-                reqData.req = Requirement::ET_SECTIONSECTIONANGLE;
+                req.type = ReqType::ET_SECTIONSECTIONANGLE;
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
                 break;
         }
 
-        txn.addCommand(new CommandAddRequirement(_scene, reqData));
+        txn.addCommand(new CommandAddRequirement(_scene, req));
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
@@ -288,52 +288,52 @@ public:
             throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
         }
 
-        RequirementData reqData;
-        reqData.objects.push_back(ID(rawArgs[1]));
-        reqData.objects.push_back(ID(rawArgs[2]));
+        Requirement req;
+        req.obj1 = ID(rawArgs[1]);
+        req.obj2 = ID(rawArgs[2]);
 
         if (rawArgs.size() >= 4) {
-            reqData.params.push_back(rawArgs[3]);
+            req.param = rawArgs[3];
         }
 
         int req_id = rawArgs[0];
         switch (req_id) {
             case 1:
-                reqData.req = Requirement::ET_POINTSECTIONDIST;
+                req.type = ReqType::ET_POINTSECTIONDIST;
                 break;
             case 2:
-                reqData.req = Requirement::ET_POINTONSECTION;
+                req.type = ReqType::ET_POINTONSECTION;
                 break;
             case 3:
-                reqData.req = Requirement::ET_POINTPOINTDIST;
+                req.type = ReqType::ET_POINTPOINTDIST;
                 break;
             case 4:
-                reqData.req = Requirement::ET_POINTONPOINT;
+                req.type = ReqType::ET_POINTONPOINT;
                 break;
             case 5:
-                reqData.req = Requirement::ET_SECTIONCIRCLEDIST;
+                req.type = ReqType::ET_SECTIONCIRCLEDIST;
                 break;
             case 6:
-                reqData.req = Requirement::ET_SECTIONONCIRCLE;
+                req.type = ReqType::ET_SECTIONONCIRCLE;
                 break;
             case 7:
-                reqData.req = Requirement::ET_SECTIONINCIRCLE;
+                req.type = ReqType::ET_SECTIONINCIRCLE;
                 break;
             case 8:
-                reqData.req = Requirement::ET_SECTIONSECTIONPARALLEL;
+                req.type = ReqType::ET_SECTIONSECTIONPARALLEL;
                 break;
             case 9:
-                reqData.req = Requirement::ET_SECTIONSECTIONPERPENDICULAR;
+                req.type = ReqType::ET_SECTIONSECTIONPERPENDICULAR;
                 break;
             case 10:
-                reqData.req = Requirement::ET_SECTIONSECTIONANGLE;
+                req.type = ReqType::ET_SECTIONSECTIONANGLE;
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
                 break;
         }
 
-        txn.addCommand(new CommandAddRequirement(_scene, reqData));
+        txn.addCommand(new CommandAddRequirement(_scene, req));
     }
 
 private:
@@ -396,52 +396,52 @@ public:
             throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
         }
 
-        RequirementData reqData;
-        reqData.objects.push_back(ID(rawArgs[1]));
-        reqData.objects.push_back(ID(rawArgs[2]));
+        Requirement req;
+        req.obj1 = ID(rawArgs[1]);
+        req.obj2 = ID(rawArgs[2]);
 
         if (rawArgs.size() >= 4) {
-            reqData.params.push_back(rawArgs[3]);
+            req.param = rawArgs[3];
         }
 
         int req_id = rawArgs[0];
         switch (req_id) {
             case 1:
-                reqData.req = Requirement::ET_POINTSECTIONDIST;
+                req.type = ReqType::ET_POINTSECTIONDIST;
                 break;
             case 2:
-                reqData.req = Requirement::ET_POINTONSECTION;
+                req.type = ReqType::ET_POINTONSECTION;
                 break;
             case 3:
-                reqData.req = Requirement::ET_POINTPOINTDIST;
+                req.type = ReqType::ET_POINTPOINTDIST;
                 break;
             case 4:
-                reqData.req = Requirement::ET_POINTONPOINT;
+                req.type = ReqType::ET_POINTONPOINT;
                 break;
             case 5:
-                reqData.req = Requirement::ET_SECTIONCIRCLEDIST;
+                req.type = ReqType::ET_SECTIONCIRCLEDIST;
                 break;
             case 6:
-                reqData.req = Requirement::ET_SECTIONONCIRCLE;
+                req.type = ReqType::ET_SECTIONONCIRCLE;
                 break;
             case 7:
-                reqData.req = Requirement::ET_SECTIONINCIRCLE;
+                req.type = ReqType::ET_SECTIONINCIRCLE;
                 break;
             case 8:
-                reqData.req = Requirement::ET_SECTIONSECTIONPARALLEL;
+                req.type = ReqType::ET_SECTIONSECTIONPARALLEL;
                 break;
             case 9:
-                reqData.req = Requirement::ET_SECTIONSECTIONPERPENDICULAR;
+                req.type = ReqType::ET_SECTIONSECTIONPERPENDICULAR;
                 break;
             case 10:
-                reqData.req = Requirement::ET_SECTIONSECTIONANGLE;
+                req.type = ReqType::ET_SECTIONSECTIONANGLE;
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
                 break;
         }
 
-        txn.addCommand(new CommandAddRequirement(_scene, reqData));
+        txn.addCommand(new CommandAddRequirement(_scene, req));
     }
 
 private:

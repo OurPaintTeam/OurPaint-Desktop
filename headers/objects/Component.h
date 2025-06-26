@@ -16,41 +16,64 @@
  * variables, and associated IDs.
  */
 
-class Component {
-public:
-    Component();
-
-    Component(const Component&) = delete;
-    Component& operator=(const Component&) = delete;
-
-    Component(Component&&) noexcept;
-    Component& operator=(Component&&) noexcept;
-
-    ~Component();
-
-    bool contains(ID id) const;
-
-    std::vector<Function*>& errorFunctions();
-    const std::vector<Function*> errorFunctions() const;
-
-    std::vector<Variable*>& vars();
-    const std::vector<Variable*> vars() const;
-
-    std::unordered_set<ID>& objectIDs();
-    const std::unordered_set<ID>& objectIDs() const;
-
-    LSMFORLMTask*& task();
-    const LSMFORLMTask* task() const;
-
-    bool noErrorFunction() const;
-
-private:
+struct Component {
     std::vector<Function*> _errorFunctions;
     std::vector<Variable*> _vars;
     LSMFORLMTask* _task = nullptr;
     std::unordered_set<ID> _objectIDs;
 
-    void cleanup();
+    Component() : _task(nullptr) {}
+
+    ~Component() {
+        cleanup();
+    }
+
+    Component(Component&& other) noexcept
+            : _errorFunctions(std::move(other._errorFunctions)),
+              _vars(std::move(other._vars)),
+              _task(other._task),
+              _objectIDs(std::move(other._objectIDs)) {
+        other._task = nullptr;
+    }
+
+    Component& operator=(Component&& other) noexcept {
+        if (this != &other) {
+            cleanup();
+
+            _errorFunctions = std::move(other._errorFunctions);
+            _vars = std::move(other._vars);
+            _task = other._task;
+            _objectIDs = std::move(other._objectIDs);
+
+            other._task = nullptr;
+        }
+        return *this;
+    }
+
+    void cleanup() {
+        for (auto& f: _errorFunctions) {
+            delete f;
+        }
+        _errorFunctions.clear();
+
+        delete _task;
+        _task = nullptr;
+
+        for (auto& c: _vars) {
+            delete c;
+        }
+        _vars.clear();
+
+        _objectIDs.clear();
+    }
+
+    inline bool contains(ID id) const {
+        return _objectIDs.contains(id);
+    }
+
+    inline bool noErrorFunction() const {
+        return _errorFunctions.empty();
+    }
 };
 
 #endif // ! OURPAINT_HEADERS_OBJECTS_COMPONENT_H_

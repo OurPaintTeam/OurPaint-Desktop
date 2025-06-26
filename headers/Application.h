@@ -9,6 +9,7 @@
 #include <QIcon>
 #include <QTimer>
 
+
 #include "Mainwindow.h"
 #include "QTPainter.h"
 #include "Server.h"
@@ -44,7 +45,7 @@ private:
     QApplication app;
     MainWindow mainWind;
     Scene scene;
-    QTPainter *painter;
+    QTPainter* painter;
     LeftMenuBar* leftMenu;
 
     std::vector<std::function<void()>> vecCalls;

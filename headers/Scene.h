@@ -3,7 +3,6 @@
 
 #include "Painter.h"
 #include "Objects.h"
-#include "Requirements.h"
 #include "InheritanceGraph.h"
 #include "LMWithSparse.h"
 #include "FileOurP.h"
@@ -17,7 +16,6 @@
 
 class BoundBox2D;
 class ID;
-struct IGeometricObject;
 struct Point;
 struct Section;
 struct Circle;
@@ -30,7 +28,20 @@ private:
     std::unordered_map<ID, Circle*> _circles;
     std::unordered_map<ID, Arc*> _arcs;
 
-    std::unordered_map<ID, IReq*> _requirements;
+    mutable Painter* _painter;
+
+    mutable bool _isRectangleDirty;
+    mutable BoundBox2D _allFiguresRectangle;
+
+    IDGenerator _idGeometricObjectsGenerator;
+
+    std::unordered_set<ID> _idDeletedGeometricObject;
+    std::unordered_set<ID> _idDeletedRequirements;
+
+    UndirectedWeightedGraph<ID, ID> _graph;
+
+private:
+    std::unordered_map<ID, Requirement> _requirements;
 
     std::unordered_map<ID, std::unordered_set<ID>> _requirementToObjects;
     std::unordered_map<ID, std::vector<ID>> _objectSubObjects;
@@ -41,18 +52,13 @@ private:
 
     //LMSparse _solver;
 
-    mutable Painter* _painter;
-
-    mutable bool _isRectangleDirty;
-    mutable BoundBox2D _allFiguresRectangle;
-
-    IDGenerator _idGeometricObjectsGenerator;
     IDGenerator _idRequirementsGenerator;
 
-    std::unordered_set<ID> _idDeletedGeometricObject;
-    std::unordered_set<ID> _idDeletedRequirements;
-
-    UndirectedWeightedGraph<ID, ID> _graph;
+    ObjType getObjType(ID id) const;
+    bool exists(ID id, ObjType expected) const;
+    bool isValid(const Requirement& req) const;
+    std::vector<Variable*> getVariables(const Requirement& req) const;
+    Function* getFunction(const Requirement& req);
 
 public:
     static const ID _errorID;
@@ -85,13 +91,13 @@ public:
 
     ObjectData getObjectData(ID objectID) const;
     ObjectData getRootObjectData(ID objectID) const;
-    RequirementData getRequirementData(ID object1, ID object2) const;
+    Requirement getRequirementData(ID object1, ID object2) const;
     std::size_t objectsCount() const;
     std::size_t requirementsCount() const;
     std::vector<ObjectData> getObjects() const;
-    std::vector<RequirementData> getRequirements() const;
-    std::vector<RequirementData> getObjectRequirements(ID objectID) const;
-    std::vector<RequirementData> getObjectRequirementsWithConnectedObjects(ID objectID) const;
+    std::vector<Requirement> getRequirements() const;
+    std::vector<Requirement> getObjectRequirements(ID objectID) const;
+    std::vector<Requirement> getObjectRequirementsWithConnectedObjects(ID objectID) const;
 
     bool hasObject(ID id) const;
     bool hasRequirement(ID id) const;
@@ -114,10 +120,10 @@ public:
     std::vector<const double*> getCircleParams(ID circleID) const;
     std::vector<const double*> getArcParams(ID arcID) const;
 
-    ID addRequirement(const RequirementData& reqData, const bool updateRequirementFlag = true);
+    ID addRequirement(const Requirement& reqData, const bool updateRequirementFlag = true);
     void updateRequirements(ID objectID);
-    RequirementData getRequirementData(ID reqID) const;
-    std::vector<RequirementData> getAllRequirementsData() const;
+    Requirement getRequirementData(ID reqID) const;
+    std::vector<Requirement> getAllRequirementsData() const;
     bool deleteRequirement(ID reqID);
 
     std::string to_string() const;
@@ -125,7 +131,7 @@ public:
     void loadFromFile(const char* filename);
 
     bool tryRestoreObject(const ObjectData&, ID id);
-    bool tryRestoreRequirement(const RequirementData&, ID id);
+    bool tryRestoreRequirement(const Requirement&, ID id);
 
 private:
     void addPoint(ObjectData data, ID id);
@@ -133,7 +139,7 @@ private:
     void addCircle(ObjectData data, ID pointID, ID circleID);
     void addArc(ObjectData data, ID pointID1, ID pointID2, ID pointID3, ID arcID);
 
-    void addRequirement(const RequirementData& reqData, ID reqID);
+    void addRequirement(const Requirement& reqData, ID reqID);
 };
 
 #endif // ! OURPAINT_HEADERS_SCENE_H_
