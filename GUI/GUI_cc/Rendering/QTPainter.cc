@@ -3,7 +3,7 @@
 QTPainter::QTPainter(QWidget* parent) : QFrame(parent),
                                         mouseManager(std::make_unique<MouseDrawingManager>()),
                                         rectTool(std::make_unique<DrawRectangleTool>()),
-                                                drawing(false){
+                                        leftClickFlag(true), drawing(false){
 
     if (parent) {
         // We take the size from the father
@@ -32,8 +32,8 @@ QVector<ID> QTPainter::getVecSelectedIDPoints() {
     QVector<ID> vec_id;
     vec_id.reserve(selectedIDPoint.size());
 
-    for (const auto& pair: selectedIDPoint) {
-        vec_id.push_back(pair.first);
+    for (const auto& id: selectedIDPoint) {
+        vec_id.push_back(id);
     }
 
     return vec_id;
@@ -44,8 +44,8 @@ QVector<ID> QTPainter::getVecSelectedIDSections() {
     QVector<ID> vec_id;
     vec_id.reserve(selectedIDSection.size());
 
-    for (const auto& pair: selectedIDSection) {
-        vec_id.push_back(pair.first);
+    for (const auto& id: selectedIDSection) {
+        vec_id.push_back(id);
     }
 
     return vec_id;
@@ -56,8 +56,8 @@ QVector<ID> QTPainter::getVecSelectedIDCircles() {
     QVector<ID> vec_id;
     vec_id.reserve(selectedIDCircle.size());
 
-    for (const auto& pair: selectedIDCircle) {
-        vec_id.push_back(pair.first);
+    for (const auto& id: selectedIDCircle) {
+        vec_id.push_back(id);
     }
 
     return vec_id;
@@ -68,8 +68,8 @@ QVector<ID> QTPainter::getVecSelectedIDArcs() {
     QVector<ID> vec_id;
     vec_id.reserve(selectedIDArc.size());
 
-    for (const auto& pair: selectedIDArc) {
-        vec_id.push_back(pair.first);
+    for (const auto& id: selectedIDArc) {
+        vec_id.push_back(id);
     }
 
     return vec_id;
@@ -79,9 +79,9 @@ QVector<ID> QTPainter::getVecSelectedIDArcs() {
 std::optional<QPair<ID, ID>> QTPainter::getPairSelectedID() const {
     QVector<ID> IDs;
 
-    auto appendIDs = [&](const auto& container) {
-        for (auto it = container.cbegin(); it != container.cend(); ++it) {
-            IDs.push_back(it->first);
+    auto collectIDs = [&](const auto& container) -> bool {
+        for (const auto& id: container) {
+            IDs.push_back(id);
             if (IDs.size() > 2) {
                 return false;
             }
@@ -89,31 +89,20 @@ std::optional<QPair<ID, ID>> QTPainter::getPairSelectedID() const {
         return true;
     };
 
-    if (!appendIDs(selectedIDPoint)) {
-        return std::nullopt;
-    }
+    if (!collectIDs(selectedIDPoint)) { return std::nullopt; }
+    if (!collectIDs(selectedIDSection)) { return std::nullopt; }
+    if (!collectIDs(selectedIDCircle)) { return std::nullopt; }
+    if (!collectIDs(selectedIDArc)) { return std::nullopt; }
 
-    if (!appendIDs(selectedIDSection)) {
-        return std::nullopt;
-    }
-
-    if (!appendIDs(selectedIDCircle)) {
-        return std::nullopt;
-    }
-
-    if (!appendIDs(selectedIDArc)) {
-        return std::nullopt;
-    }
-
-    if (IDs.size() == 2) {
-        return QPair<ID, ID>(IDs[0], IDs[1]);
-    }
-
-    return std::nullopt;
+    return (IDs.size() == 2)
+           ? std::optional<QPair<ID, ID>>(QPair<ID, ID>(IDs[0], IDs[1]))
+           : std::nullopt;
 }
 
 
+
 void QTPainter::draw() {
+    inArea();
     update();
 }
 
@@ -126,6 +115,18 @@ void QTPainter::clear() {
 
 
 void QTPainter::selectedClear() {
+    for (const ID& id: selectedIDPoint) {
+        visiblePoints[id].style = createNormalPointStyle();
+    }
+    for (const ID& id: selectedIDCircle) {
+        visibleCircles[id].style = createNormalCircleStyle();
+    }
+    for (const ID& id: selectedIDSection) {
+        visibleLines[id].style = createNormalLineStyle();
+    }
+    for (const ID& id: selectedIDArc) {
+        visibleArcs[id].style = createNormalArcStyle();
+    }
     selectedIDPoint.clear();
     selectedIDSection.clear();
     selectedIDCircle.clear();
@@ -144,7 +145,7 @@ bool QTPainter::leftClickTimer() {
 }
 
 
-bool QTPainter::findClosesObject() {
+bool QTPainter::findClosestObject() {
     const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
     const bool doubleClick = ModeManager::getActiveMode(MouseMode::DoubleClickLeft);
     const bool shiftPress = ModeManager::getActiveMode(KeyMode::Shift);
@@ -162,12 +163,14 @@ bool QTPainter::findClosesObject() {
                 const ID& id = it->first;
 
                 if (selectedIDPoint.contains(id)) {
-                    selectedIDPoint.erase(id);
+                    selectedIDPoint.removeOne(id);
+                    visiblePoints[id].style=createNormalPointStyle();
                 } else {
                     if (!shiftPress) {
                         selectedClear();
                     }
-                    selectedIDPoint.emplace(id, Color::Blue);
+                    visiblePoints[id].style=createSelectedPointStyle();
+                    selectedIDPoint.append(id);
                 }
 
                 return true;
@@ -185,12 +188,14 @@ bool QTPainter::findClosesObject() {
                 const ID& id = it->first;
 
                 if (selectedIDSection.contains(id)) {
-                    selectedIDSection.erase(id);
+                    selectedIDSection.removeOne(id);
+                    visibleLines[id].style=createNormalLineStyle();
                 } else {
                     if (!shiftPress) {
                         selectedClear();
                     }
-                    selectedIDSection.emplace(id, Color::Blue);
+                    visibleLines[id].style=createSelectedLineStyle();
+                    selectedIDSection.append(id);
                 }
 
                 return true;
@@ -207,12 +212,14 @@ bool QTPainter::findClosesObject() {
                 const ID& id = it->first;
 
                 if (selectedIDCircle.contains(id)) {
-                    selectedIDCircle.erase(id);
+                    selectedIDCircle.removeOne(id);
+                    visibleCircles[id].style=createNormalCircleStyle();
                 } else {
                     if (!shiftPress) {
                         selectedClear();
                     }
-                    selectedIDCircle.emplace(id, Color::Blue);
+                    visibleCircles[id].style=createSelectedCircleStyle();
+                    selectedIDCircle.append(id);
                 }
 
                 return true;
@@ -232,12 +239,14 @@ bool QTPainter::findClosesObject() {
                 const ID& id = it->first;
 
                 if (selectedIDArc.contains(id)) {
-                    selectedIDArc.erase(id);
+                    selectedIDArc.removeOne(id);
+                    visibleArcs[id].style=createNormalArcStyle();
                 } else {
                     if (!shiftPress) {
                         selectedClear();
                     }
-                    selectedIDArc.emplace(id, Color::Blue);
+                    visibleArcs[id].style=createSelectedArcStyle();
+                    selectedIDArc.append(id);
                 }
 
                 return true;
@@ -253,19 +262,19 @@ bool QTPainter::findClosesObject() {
 void QTPainter::drawingFigures(QPainter& painter) {
 
     if (casePoints != nullptr && !casePoints->empty()) {
-        DrawFigures::drawPoint(painter, *casePoints, selectedIDPoint);
+        render::drawFigures(painter, visiblePoints);
     }
 
     if (caseSections != nullptr && !caseSections->empty()) {
-        DrawFigures::drawSection(painter, *caseSections, selectedIDSection);
+        render::drawFigures(painter, visibleLines);
     }
 
     if (caseCircles != nullptr && !caseCircles->empty()) {
-        DrawFigures::drawCircle(painter, *caseCircles, selectedIDCircle);
+        render::drawFigures(painter, visibleCircles);
     }
 
     if (caseArcs != nullptr && !caseArcs->empty()) {
-        DrawFigures::drawArc(painter, *caseArcs, selectedIDArc);
+        render::drawFigures(painter, visibleArcs);
     }
 }
 
@@ -353,13 +362,21 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
 
 void QTPainter::selectedElemByID(ID id, const std::string& type) {
     if (type == "Point") {
-        selectedIDPoint.emplace(id, Color::Purple);
+        selectedIDPoint.push_back(id);
+        visiblePoints[id].style=createSelectedPointStyle();
+        visiblePoints[id].style.figure.glow.color = Color::Purple;
     } else if (type == "Circle") {
-        selectedIDCircle.emplace(id, Color::Purple);
+        selectedIDCircle.push_back(id);
+        visibleCircles[id].style=createSelectedCircleStyle();
+        visibleCircles[id].style.figure.glow.color = Color::Purple;
     } else if (type == "Section") {
-        selectedIDSection.emplace(id, Color::Purple);
+        selectedIDSection.push_back(id);
+        visibleLines[id].style=createSelectedLineStyle();
+        visibleLines[id].style.figure.glow.color = Color::Purple;
     } else if (type == "Arc") {
-        selectedIDArc.emplace(id, Color::Purple);
+        selectedIDArc.push_back(id);
+        visibleArcs[id].style=createSelectedArcStyle();
+        visibleArcs[id].style.figure.glow.color = Color::Purple;
     }
 }
 
@@ -373,7 +390,7 @@ void QTPainter::managerMoving() {
     // The mouse button is clamped
     if (!drawing) {
         if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
-            if (findClosesObject()) {
+            if (findClosestObject()) {
                 drawing = true;
                 poseMovingFigures();
 
@@ -396,19 +413,19 @@ void QTPainter::doubleClickEvent() {
     constexpr qreal SIZE = 1;
     if (selectedIDSection.size() == SIZE) {
         auto it = selectedIDSection.begin();
-        ID key = it->first;
+        ID key = *it;
         emit DoubleClickOnObject(key);
     } else if (selectedIDPoint.size() == SIZE) {
         auto it = selectedIDPoint.begin();
-        ID key = it->first;
+        ID key = *it;
         emit DoubleClickOnObject(key);
     } else if (selectedIDCircle.size() == SIZE) {
         auto it = selectedIDCircle.begin();
-        ID key = it->first;
+        ID key = *it;
         emit DoubleClickOnObject(key);
     } else if (selectedIDArc.size() == SIZE) {
         auto it = selectedIDArc.begin();
-        ID key = it->first;
+        ID key = *it;
         emit DoubleClickOnObject(key);
     }
 }
@@ -434,7 +451,7 @@ void QTPainter::poseMovingFigures() {
     const QPointF cursorPressPos = Scaling::logicCursor();
 
     if (!selectedIDSection.empty()) {
-        const ID id = selectedIDSection.begin()->first;
+        const ID id = *selectedIDSection.begin();
 
         if (caseSections->contains(id)) {
             const Section* s = (*caseSections)[id];
@@ -444,7 +461,7 @@ void QTPainter::poseMovingFigures() {
     }
 
     if (!selectedIDCircle.empty()) {
-        const ID id = selectedIDCircle.begin()->first;
+        const ID id = *selectedIDCircle.begin();
 
         if (caseCircles->contains(id)) {
             const Circle* c = (*caseCircles)[id];
@@ -504,9 +521,13 @@ void QTPainter::pointInRect(QRectF& rect) {
     }
 
     QVector<ID> vecPointID = ClosestPoint::enteringInRect(*casePoints, rect);
+    for (const ID& id: selectedIDPoint) {
+        visiblePoints[id].style=createNormalPointStyle();
+    }
+
     selectedIDPoint.clear();
     for (const ID& id: vecPointID) {
-        selectedIDPoint[id] = Color::Blue;
+        visiblePoints[id].style = createSelectedPointStyle();
     }
 }
 
@@ -517,9 +538,12 @@ void QTPainter::sectionInRect(QRectF& rect) {
     }
 
     QVector<ID> vecSectionID = ClosestPoint::enteringInRect(*caseSections, rect);
+    for (const ID& id: selectedIDSection) {
+        visibleLines[id].style = createNormalLineStyle();
+    }
     selectedIDSection.clear();
     for (const ID& id: vecSectionID) {
-        selectedIDSection[id] = Color::Blue;
+        visibleLines[id].style = createSelectedLineStyle();
     }
 }
 
@@ -530,9 +554,13 @@ void QTPainter::circleInRect(QRectF& rect) {
     }
 
     QVector<ID> pressPointCircleID = ClosestPoint::enteringInRect(*caseCircles, rect);
+    for (const ID& id: selectedIDCircle) {
+        visibleCircles[id].style = createNormalCircleStyle();
+    }
     selectedIDCircle.clear();
+
     for (const ID& id: pressPointCircleID) {
-        selectedIDCircle[id] = Color::Blue;
+        visibleCircles[id].style = createSelectedCircleStyle();
     }
 }
 
@@ -543,9 +571,12 @@ void QTPainter::arcsInRect(QRectF& rect) {
     }
 
     QVector<ID> vecArcID = ClosestPoint::enteringInRect(*caseArcs, rect);
+    for (const ID& id: selectedIDArc) {
+        visibleArcs[id].style = createNormalArcStyle();
+    }
     selectedIDArc.clear();
     for (const ID& id: vecArcID) {
-        selectedIDArc[id] = Color::Blue;
+        visibleArcs[id].style = createSelectedArcStyle();
     }
 }
 
@@ -601,10 +632,10 @@ void QTPainter::paintEvent(QPaintEvent* event) {
     if (ModeManager::getActiveMode(WorkModes::Editor)) {
         if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
             if (leftClickFlag) {
-                findClosesObject();
+                findClosestObject();
             }
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
-            if (leftClickFlag && findClosesObject()) {
+            if (leftClickFlag && findClosestObject()) {
                 doubleClickEvent();
             }
         }
