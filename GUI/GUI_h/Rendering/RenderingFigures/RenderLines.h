@@ -34,6 +34,11 @@ namespace render {
      void drawFigures(QPainter& painter, const std::unordered_map<ID, lineShell>& sections);
 
      void drawFigure(QPainter &painter,const QPointF beg,const QPointF end,const LineStyle& style);
+
+    void drawArrow(QPainter& painter, const QPointF& from, const QPointF& to, qreal arrowSize = 10.0, qreal angleDeg = 15.0);
+    void lineWithRightArrow(QPainter& painter, const QPointF& start, const QPointF& end);
+    void lineWithLeftArrow(QPainter& painter, const QPointF& start, const QPointF& end);
+    void lineWithLeftRightArrow(QPainter& painter, const QPointF& start, const QPointF& end);
 }
 
 #endif //OURPAINT_DRAWINGLINE_H

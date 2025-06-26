@@ -126,7 +126,6 @@ namespace render {
         util::setupPen(painter, style);
 
         painter.drawEllipse(logicCenter, scaledRadius, scaledRadius);
-
     }
 
 }

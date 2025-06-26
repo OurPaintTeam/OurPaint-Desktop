@@ -217,4 +217,43 @@ namespace render {
 
     }
 
+    void drawArrow(QPainter& painter, const QPointF& from, const QPointF& to, qreal arrowLength, qreal angleDeg) {
+        // Переводим логические координаты в экранные
+        QPointF scaledFrom(Scaling::scaleCoordinate(from.x()), Scaling::scaleCoordinate(-from.y()));
+        QPointF scaledTo(Scaling::scaleCoordinate(to.x()), Scaling::scaleCoordinate(-to.y()));
+
+        QLineF line(scaledFrom, scaledTo);
+        double angleRad = std::atan2(-line.dy(), line.dx());
+        double angleOffset = qDegreesToRadians(angleDeg); // угол между направлением и стрелкой
+
+        // Точки "крыльев"
+        QPointF arrowP1 = scaledTo - QPointF(std::cos(angleRad + angleOffset) * arrowLength,
+                                             -std::sin(angleRad + angleOffset) * arrowLength);
+        QPointF arrowP2 = scaledTo - QPointF(std::cos(angleRad - angleOffset) * arrowLength,
+                                             -std::sin(angleRad - angleOffset) * arrowLength);
+
+        // Рисуем 2 линии-крыла
+        painter.drawLine(scaledTo, arrowP1);
+        painter.drawLine(scaledTo, arrowP2);
+    }
+
+
+
+    void lineWithLeftArrow(QPainter& painter, const QPointF& start, const QPointF& end) {
+        painter.drawLine(start, end);
+        drawArrow(painter, end, start); // стрелка у начала
+    }
+
+    void lineWithRightArrow(QPainter& painter, const QPointF& start, const QPointF& end) {
+        painter.drawLine(start, end);
+        drawArrow(painter, start, end); // стрелка у конца
+    }
+
+    void lineWithLeftRightArrow(QPainter& painter, const QPointF& start, const QPointF& end) {
+        painter.drawLine(start, end);
+        drawArrow(painter, start, end); // правая стрелка
+        drawArrow(painter, end, start); // левая стрелка
+    }
+
+
 }

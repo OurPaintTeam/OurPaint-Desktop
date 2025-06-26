@@ -76,6 +76,7 @@ struct LineStyle {
 struct RadiusLabel {
     TextLabelStyle text;
     Color lineColor = Color::LightGray;
+    bool activity = false;
 
     static RadiusLabel createDefault() {
         return {TextLabelStyle::createDefault(), Color::LightGray};
