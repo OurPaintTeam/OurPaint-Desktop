@@ -1,5 +1,6 @@
 #include "DrawBackground.h"
 
+
 qreal DrawBackground::Step(const qreal rawStep) {
     const qreal exp = qFloor(qLn(rawStep) / qLn(10.0));
     const qreal fraction = rawStep / qPow(10.0, exp);
@@ -116,6 +117,7 @@ void DrawBackground::backgroundRender(QPainter& painter) {
 
 }
 
+
 void DrawBackground::mainBackgroundRender(QPainter& painter) {
     const QPointF delta = Scaling::getDelta();
     const QSizeF centredMonitor = Scaling::getCenteredCoordinates();
@@ -161,5 +163,70 @@ void DrawBackground::mainBackgroundRender(QPainter& painter) {
         painter.drawLine(QPointF((-centredMonitor.width() - delta.x()), 0),
                          QPointF((centredMonitor.width() - delta.x()), 0));
     }
+   // DrawBackground::switchProjection(painter);
+}
 
+void DrawBackground::switchProjection(QPainter& painter) {
+    const int size = 40; // длина от центра до конца оси
+    const QPoint center(70, 70); // положение плашки
+
+    float angleX = -35.26f; // угол поворота по X
+    float angleY = 45.0f;   // угол поворота по Y
+
+    // Сохраняем состояние
+    painter.save();
+    painter.translate(center);
+
+    // Поворот вручную через матрицу
+    QTransform transform;
+    transform.rotate(angleY, Qt::YAxis);
+    transform.rotate(angleX, Qt::XAxis);
+    painter.setTransform(transform, true);
+
+    // Векторы в 3D-плоскости
+    QPointF px(size, 0);
+    QPointF py(0, -size);
+    QPointF pz(-size * 0.7, size * 0.7); // псевдо-ось Z
+
+    // Цвета неоновых голубых плоскостей
+    QColor color(0, 128, 255, 150);
+    QColor darkNeonBlue(0, 191, 255, 100);    // насыщенный голубой для активной XY
+
+    // Заливки
+    QBrush brushXY(color);   // активная плоскость XY
+    QBrush brushXZ(darkNeonBlue);
+    QBrush brushYZ(darkNeonBlue);
+
+    painter.setPen(Qt::NoPen);
+
+    // Плоскость XY — активная, тёмнее
+    painter.setBrush(brushXY);
+    painter.drawPolygon(QPolygonF() << QPointF(0, 0) << px << px + py << py);
+
+    // Плоскость XZ
+    painter.setBrush(brushXZ);
+    painter.drawPolygon(QPolygonF() << QPointF(0, 0) << px << px + pz << pz);
+
+    // Плоскость YZ
+    painter.setBrush(brushYZ);
+    painter.drawPolygon(QPolygonF() << QPointF(0, 0) << py << py + pz << pz);
+
+    // Обводка осей
+    QPen axisPen(Qt::black, 2);
+    painter.setPen(axisPen);
+    painter.setBrush(Qt::NoBrush);
+    painter.drawLine(QPointF(0, 0), px); // X
+    painter.drawLine(QPointF(0, 0), py); // Y
+    painter.drawLine(QPointF(0, 0), pz); // Z
+
+    // Подписи плоскостей
+    QFont font = painter.font();
+    font.setPointSize(7);
+    painter.setFont(font);
+
+    painter.drawText((px + py) / 2, "XY");
+    painter.drawText((px + pz) / 2, "XZ");
+    painter.drawText((py + pz) / 2, "YZ");
+
+    painter.restore();
 }

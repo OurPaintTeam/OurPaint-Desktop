@@ -27,6 +27,9 @@ public:
     // Drawing the main coordinate axes
     static void mainBackgroundRender(QPainter& painter);
 
+    static void switchProjection(QPainter& painter);
+
+    static void drawScribbleCloud(QPainter& painter, const QPointF& center, QColor color, int radius, int count);
 };
 
 #endif //OURPAINT_DRAWBACKGROUND_H

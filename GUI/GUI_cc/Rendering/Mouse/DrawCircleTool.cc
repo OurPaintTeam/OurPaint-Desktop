@@ -25,9 +25,9 @@ void DrawCircleTool::drawPreview(QPainter& painter, const QPointF& startCoordina
     const QPointF center = (startCoordinates + cursor) / 2.0;
     const qreal radius = qHypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
 
-    DrawFigures::drawCircle(painter, center, radius);
-    DrawFigures::drawPoint(painter, center);
+    // DrawFigures::drawCircle(painter, center, radius);
+    // DrawFigures::drawPoint(painter, center);
 
-    DrawFigures::setPen(hintColor());
-    DrawFigures::drawSection(painter, center, cursor);
+    // DrawFigures::setPen(hintColor());
+    // DrawFigures::drawSection(painter, center, cursor);
 }

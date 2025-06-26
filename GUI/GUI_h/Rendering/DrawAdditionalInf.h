@@ -7,6 +7,7 @@
 #include "ID.h"
 #include "Scaling.h"
 #include "Colors.h"
+#include "RenderStyle.h"
 
 // Class for drawing additional information (outlines, numbers)
 
@@ -42,6 +43,7 @@ public:
 
     /************* Glow ********************/
     static void drawPointGlow(QPainter& painter, const QPointF& point, const Color& color);
+    static void drawPointGlow(QPainter& painter, const QPointF& point, const PointStyle& style);
     static void drawSectionGlow(QPainter& painter, const QPointF& start, const QPointF& end, const Color& color);
     static void drawCircleGlow(QPainter& painter, const QPointF& center, const qreal radius, const Color& color);
     static void drawArcGlow(QPainter& painter, const QRectF& rect, const int qtStart, int qtSpan, const Color& color);
