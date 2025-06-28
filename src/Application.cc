@@ -877,6 +877,7 @@ void Application::updateState() {
     leftMenu->updateLeftMenu();
 
     auto IDs = leftMenu->getAllFigureIDs();
+
     for (const auto& pair : IDs) {
         qDebug() << "ID:" << pair.first << "Name:" << pair.second;
     }
