@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+class SceneQtAdapter;
 class BoundBox2D;
 class ID;
 struct Point;
@@ -126,14 +127,14 @@ public:
     std::vector<Requirement> getAllRequirementsData() const;
     bool deleteRequirement(ID reqID);
 
-    std::string to_string() const;
-    void saveToFile(const char* filename) const;
-    void loadFromFile(const char* filename);
-
     bool tryRestoreObject(const ObjectData&, ID id);
     bool tryRestoreRequirement(const Requirement&, ID id);
 
+    void setObserver(SceneQtAdapter* o);
+
 private:
+    SceneQtAdapter* _observer = nullptr;
+
     void addPoint(ObjectData data, ID id);
     void addSection(ObjectData data, ID pointID1, ID pointID2, ID sectionID);
     void addCircle(ObjectData data, ID pointID, ID circleID);

@@ -3,8 +3,9 @@
 Application::Application(int& argc, char** argv)
         : app(argc, argv),
           mainWind(),
-          scene(nullptr),
           painter(nullptr),
+          scene(nullptr),
+          sqa(scene),
           username(mainWind.getUserName()),
           server(username),
           client(username),
@@ -71,6 +72,7 @@ void Application::initialize() {
     painter = mainWind.getQTPainter();
     scene.setPainter(painter);
     leftMenu = mainWind.getLeftMenuBar();
+    leftMenu->setAdapter(sqa);
 
     vec_requirements = {
             "PointSectionDist",
@@ -84,7 +86,6 @@ void Application::initialize() {
             "SectionSectionPerpendicular",
             "SectionSectionAngle"
     };
-
 }
 
 
@@ -92,7 +93,7 @@ void Application::setupQTPainterConnections() {
     if (painter) {
 
         // Double-clicking on an object and opening it in the left menu
-        QObject::connect(painter, &QTPainter::DoubleClickOnObject, [this](ID id) {
+        QObject::connect(painter, &QTPainter::DoubleClickOnObject, [this](ID) {
             // QModelIndex index=leftMenu->selectFigureById(id.get());
             // mainWind.selectLeftMenuElem(index);
         });
@@ -116,20 +117,21 @@ void Application::setupQTPainterConnections() {
                 isStartMoving = false;
             }
 
-           const  QPointF cursorNow = Scaling::logicCursor();
+            const  QPointF cursorNow = Scaling::logicCursor();
             const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
                 if (vec_id.size() == 1) {
                     scene.setPoint(vec_id[0], cursorNow.x(), cursorNow.y());
-                    leftMenu->refreshAllLinkedParams();
+                    updateState();
                     return;
                 }
 
                 for (qsizetype i = 0; i < vec_id.size(); ++i) {
                     scene.movePoint(vec_id[i], delta.x(), delta.y());
                 }
-                leftMenu->updateLeftMenu();
+                updateState();
+               // leftMenu->updateLeftMenu();
             } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
@@ -153,13 +155,13 @@ void Application::setupQTPainterConnections() {
                                  if (vec_id.size() == 1) {
                                      scene.setSection(vec_id[0], cursorNow.x() + p1.x(), cursorNow.y() + p1.y(),
                                                       cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
-                                     leftMenu->refreshAllLinkedParams();
+                                     updateState();
                                      return;
                                  }
                                  for (qsizetype i = 0; i < vec_id.size(); ++i) {
                                      scene.moveSection(vec_id[i], delta.x(), delta.y());
                                  }
-                                 leftMenu->refreshAllLinkedParams();
+                                 updateState();
                              } catch (const std::exception& a) {
                                  mainWind.showError(a.what());
                              }
@@ -186,13 +188,13 @@ void Application::setupQTPainterConnections() {
 
                     double radius = obj.params[2];
                     scene.setCircle(vec_id[0], newCenter.x(), newCenter.y(), radius);
-                    leftMenu->refreshAllLinkedParams();
+                    updateState();
                     return;
                 }
                 for (qsizetype i = 0; i < vec_id.size(); ++i) {
                     scene.moveCircle(vec_id[i], delta.x(), delta.y());
                 }
-                leftMenu->refreshAllLinkedParams();
+                updateState();
             } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
@@ -209,14 +211,14 @@ void Application::setupQTPainterConnections() {
                 isStartMoving = false;
             }
 
-            const  QPointF cursorNow = Scaling::logicCursor();
+            //const QPointF cursorNow = Scaling::logicCursor();
             const QPointF delta = Scaling::getCursorLogicDelta();
 
             try {
                 for (qsizetype i = 0; i < vec_id.size(); ++i) {
                     scene.moveArc(ID(vec_id[i]), delta.x(), delta.y());
                 }
-                leftMenu->refreshAllLinkedParams();
+                updateState();
             } catch (const std::exception& a) {
                 mainWind.showError(a.what());
             }
@@ -229,7 +231,6 @@ void Application::setupQTPainterConnections() {
                          [this](const QPointF& point) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
-                                     //addPoints(point.x(), point.y());
                                      Transaction* txn = commandManager.invoke("POINT", { point.x(), point.y() });
                                      undoRedo.push(std::move(*txn));
                                      //server.sendToClients(QString::fromStdString(scene.to_string()));
@@ -238,7 +239,6 @@ void Application::setupQTPainterConnections() {
                                                                 QString::number(point.x()));
                                  }
                              } else {
-                                 //addPoints(point.x(), point.y());
                                  Transaction* txn = commandManager.invoke("POINT", { point.x(), point.y() });
                                  undoRedo.push(std::move(*txn));
                              }
@@ -412,7 +412,7 @@ void Application::setupQTPainterConnections() {
 
 
 void Application::deleteOwnPoints(QVector<ID>& vecPoints, const QVector<ID>& vecSections, const QVector<ID>& vecCircles,
-                                  const QVector<ID>& vecArcs) {
+                                  const QVector<ID>&) {
 
     for (const auto& sectionID: vecSections) {
         ObjectData obj = scene.getObjectData(sectionID);
@@ -441,7 +441,7 @@ void Application::deleteOwnPoints(QVector<ID>& vecPoints, const QVector<ID>& vec
 
 
 void Application::deleteObjects(QVector<ID>& vecPoints, QVector<ID>& vecSections, QVector<ID>& vecCircles,
-                                QVector<ID>& vecArcs) {
+                                QVector<ID>&) {
     UndoRedo::Transaction txn("Delete objects");
 
     for (qsizetype i = 0; i < vecPoints.size(); ++i) {
@@ -494,6 +494,7 @@ void Application::fillSelectedIDBuffer() {
     }
 }
 
+
 void Application::setupConsoleSystem() {
     mainWind.setupConsoleCommands({
         "POINT ",
@@ -516,6 +517,7 @@ void Application::setupConsoleSystem() {
     commandManager.registerFactory(new ReqFactory(scene));
     commandManager.registerFactory(new DelFactory(scene));
 }
+
 
 void Application::setupServerConnections() {
 
@@ -849,14 +851,14 @@ void Application::setupLeftMenuConnections() {
 
 
         QObject::connect(leftMenu, &LeftMenuBar::reqParamChanged,
-                         [](const long long id, const double& parameter) {
+                         [](const long long, const double&) {
                              // TODO to change the requirement parameter by ID
                          });
 
 
         // Double-tap the left menu
         QObject::connect(leftMenu, &LeftMenuBar::doubleClickLeftMenu,
-                         [this](const long long int id, const std::string& type) {
+                         [this](const long long id, const std::string& type) {
                              painter->selectedElemByID(ID(id), type);
                              scene.paint();
                          });
@@ -990,8 +992,7 @@ void Application::setupAddingCommandsConnections() {
     });
 }
 
-void Application::updateState() {
-
+void Application::updateState()     {
     scene.paint();
 
     for (auto& call: vecCalls) {

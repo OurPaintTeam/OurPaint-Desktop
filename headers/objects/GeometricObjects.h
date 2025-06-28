@@ -43,7 +43,7 @@ inline BoundBox2D getBox(const Circle& c) {
     return {c.center->x - c.r, c.center->x + c.r, c.center->y - c.r, c.center->y + c.r};
 }
 
-inline BoundBox2D getBox(const Arc& a) {
+inline BoundBox2D getBox(const Arc&) {
     return BoundBox2D{}; // TODO
 }
 

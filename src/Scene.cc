@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "SceneObserver.h"
 
 const ID Scene::_errorID(-1);
 const ID Scene::_connectionEdgeID(-2);
@@ -78,6 +79,9 @@ ID Scene::addObject(const ObjectData& objData) {
 
             addPoint(objData, newID);
 
+            std::vector<const double*> vec = getPointParams(newID);
+            _observer->onPointAdded(newID, vec[0], vec[1]);
+
             return newID;
         }
         case ObjType::ET_SECTION: {
@@ -94,6 +98,9 @@ ID Scene::addObject(const ObjectData& objData) {
 
             addSection(objData, pID1, pID2, newID);
 
+            std::vector<const double*> vec = getSectionParams(newID);
+            _observer->onSectionAdded(newID, vec[0], vec[1], vec[2], vec[3]);
+
             return newID;
         }
         case ObjType::ET_CIRCLE: {
@@ -107,6 +114,9 @@ ID Scene::addObject(const ObjectData& objData) {
             _objectSubObjects[newID].push_back(pID);
 
             addCircle(objData, pID, newID);
+
+            std::vector<const double*> vec = getCircleParams(newID);
+            _observer->onCircleAdded(newID, vec[0], vec[1], vec[2]);
 
             return newID;
         }
@@ -126,6 +136,9 @@ ID Scene::addObject(const ObjectData& objData) {
             _objectSubObjects[newID].push_back(pID3);
 
             addArc(objData, pID1, pID2, pID3, newID);
+
+            std::vector<const double*> vec = getArcParams(newID);
+            _observer->onArcAdded(newID, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
 
             return newID;
         }
@@ -910,6 +923,8 @@ void Scene::addRequirement(const Requirement& reqData, ID reqID) {
     _requirementToObjects[reqID].insert(reqData.obj2);
 
     _isComponentsDirty = true;
+
+    _observer->onReqAdded(req);
 }
 
 Component& Scene::findComponentByID(ID id) {
@@ -1211,149 +1226,6 @@ bool Scene::deleteRequirement(ID reqID) {
     return false;
 }
 
-// TODO
-std::string Scene::to_string() const {
-    /*
-    FileOurP saver;
-    for (auto& pair: _points) {
-        std::pair<unsigned int, IGeometricObject*> res;
-        res.first = pair.first.get();
-        res.second = pair.second;
-        saver.addObject(res);
-    }
-    for (auto& pair: _sections) {
-        std::pair<unsigned int, IGeometricObject*> res;
-        res.first = pair.first.get();
-        res.second = pair.second;
-        saver.addObject(res);
-    }
-    for (auto& pair: _circles) {
-        std::pair<unsigned int, IGeometricObject*> res;
-        res.first = pair.first.get();
-        res.second = pair.second;
-        saver.addObject(res);
-    }
-    for (auto& pair: _requirements) {
-        std::pair<unsigned int, RequirementData> res;
-        res.first = pair.first.get();
-        RequirementData rd;
-        rd.req = pair.second->getType();
-        double d = pair.second->getDimension();
-        rd.params.push_back(d);
-        std::unordered_set<ID> reqObjects = _requirementToObjects.at(pair.first);
-        rd.objects.assign(reqObjects.begin(), reqObjects.end());
-        saver.addRequirement(res);
-    }
-    return saver.to_string();
-    */
-    return "";
-}
-
-void Scene::saveToFile(const char* filename) const {
-    /*
-    FileOurP saver;
-    for (const auto& [id, obj]: _points) {
-        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
-        saver.addObject(m);
-    }
-    for (const auto& [id, obj]: _sections) {
-        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
-        saver.addObject(m);
-    }
-    for (const auto& [id, obj]: _circles) {
-        std::pair<unsigned int, IGeometricObject*> m{id.get(), obj};
-        saver.addObject(m);
-    }
-    for (const auto& [id, req]: _requirements) {
-        RequirementData rd;
-        rd.req = req->getType();
-        double d = req->getDimension();
-        rd.params.push_back(d);
-        std::unordered_set<ID> reqObjects = _requirementToObjects.at(id);
-        rd.objects.assign(reqObjects.begin(), reqObjects.end());
-        std::pair<unsigned int, RequirementData> m{id.get(), rd};
-        saver.addRequirement(m);
-    }
-    saver.saveToOurP(filename);
-     */
-}
-
-void Scene::loadFromFile(const char* filename) {
-    /*
-    FileOurP loader;
-    loader.loadFromOurP(filename);
-    clear();
-    ID maxID = ID(0);
-    const std::vector<objectInFile>& vecObjectInFile = loader.getObjects();
-    std::queue<std::pair<unsigned int, IGeometricObject*>> pointObjectData;
-    for (auto& objInFile: vecObjectInFile) {
-        std::pair<unsigned int, IGeometricObject*> obj = objInFile.to_pair();
-        ID id = ID(objInFile.to_pair().first);
-        if (id > maxID) {
-            maxID = id;
-        }
-        ObjectData objData;
-        if (obj.second->getType() == Element::ET_POINT) {
-            if (pointObjectData.size() > 2) {
-                Point* p = static_cast<Point*>(pointObjectData.front().second);
-                objData.et = Element::ET_POINT;
-                objData.params.push_back(p->x);
-                objData.params.push_back(p->y);
-                addPoint(objData, ID(pointObjectData.front().first));
-                pointObjectData.pop();
-            } else {
-                pointObjectData.push(obj);
-            }
-        } else if (obj.second->getType() == Element::ET_SECTION) {
-            Section* s = static_cast<Section*>(obj.second);
-            objData.et = Element::ET_SECTION;
-            objData.params.push_back(s->beg->x);
-            objData.params.push_back(s->beg->y);
-            objData.params.push_back(s->end->x);
-            objData.params.push_back(s->end->y);
-            ID id1 = ID(pointObjectData.front().first);
-            pointObjectData.pop();
-            ID id2 = ID(pointObjectData.front().first);
-            objData.subObjects.push_back(id1);
-            objData.subObjects.push_back(id2);
-            _objectSubObjects[id] = {id1, id2};
-            pointObjectData.pop();
-            objData.subObjects.push_back(id1); // 1
-            objData.subObjects.push_back(id2); // 2
-            _objectSubObjects[id] = {id1, id2};
-            addSection(objData, id1, id2, ID(obj.first));
-        } else if (obj.second->getType() == Element::ET_CIRCLE) {
-            Circle* c = static_cast<Circle*>(obj.second);
-            objData.et = Element::ET_CIRCLE;
-            objData.params.push_back(c->center->x);
-            objData.params.push_back(c->center->y);
-            objData.params.push_back(c->r);
-            ID id1 = ID(pointObjectData.front().first);
-            pointObjectData.pop();
-            addCircle(objData, id1, ID(pointObjectData.front().first));
-        } else if (obj.second->getType() == Element::ET_ARC) {
-            // TODO
-        }
-    }
-    for (auto& objInFile: vecObjectInFile) {
-        delete objInFile.to_pair().second;
-    }
-
-
-    _idGeometricObjectsGenerator.reset(maxID.get());
-
-    maxID = ID(0);
-    const std::vector<requirementInFile> vecReqInFile = loader.getRequirements();
-    for (auto& reqInFile: vecReqInFile) {
-        std::pair<unsigned int, RequirementData> pair = reqInFile.to_pair();
-        if (ID(pair.first) > maxID) {
-            maxID = ID(pair.first);
-        }
-        addRequirement(pair.second, ID(pair.first));
-    }
-     */
-}
-
 bool Scene::tryRestoreObject(const ObjectData& data, ID id) {
     if (!_idDeletedGeometricObject.contains(id)) {
         return false;
@@ -1429,7 +1301,9 @@ bool Scene::isValid(const Requirement& req) const {
     return false;
 }
 
-
+void Scene::setObserver(SceneQtAdapter* o) {
+    _observer = o;
+}
 
 
 

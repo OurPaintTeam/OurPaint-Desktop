@@ -15,6 +15,7 @@
 #include <QLabel>
 
 #include "TreeModel.h"
+#include "SceneObserver.h"
 
 // A class for managing a tree
 
@@ -31,12 +32,48 @@ private:
 
     QFont font;
 
+    QString reqTypes[10] = {
+            "POINT_SECTION_DIST",
+            "POINT_ON_SECTION",
+            "POINT_POINT_DIST",
+            "POINT_ON_POINT",
+            "SECTION_CIRCLE_DIST",
+            "SECTION_ON_CIRCLE",
+            "SECTION_IN_CIRCLE",
+            "SECTION_SECTION_PARALLEL",
+            "SECTION_SECTION_PERPENDICULAR",
+            "SECTION_SECTION_ANGLE"
+    };
+
 public:
     void refreshAllLinkedParams();
 
     void refreshLinkedParams(TreeNode* node);
 
     explicit LeftMenuBar(QObject *parent);
+
+
+    void setAdapter(SceneQtAdapter& bridge);
+    /*
+        add point
+        add section
+        add circle
+        add arc
+        add req
+    */
+    void onPointAdded(ID id, const double* x, const double* y);
+    void onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2);
+    void onCircleAdded(ID id, const double* x, const double* y, const double* r);
+    void onArcAdded(ID id,
+                    const double* beg_x,
+                    const double* beg_y,
+                    const double* end_x,
+                    const double* end_y,
+                    const double* center_x,
+                    const double* center_y);
+    void onReqAdded(const Requirement& req);
+
+
 
     TreeModel *getTreeModel();
 
@@ -63,8 +100,8 @@ public:
                             const qlonglong ElemID2, const qreal param);
 
     // Adding requirements
-    void addRequirementElem(const QString &name,const QString &type, const int ReqID, const qlonglong ElemID1,
-                            const qlonglong ElemID2);
+    void addRequirementElem(const QString &name,const QString &type, const int ReqID, const qlonglong ElemID1, const qlonglong ElemID2);
+
     TreeNode *
     createParamNode(const QString &name, const QVariant &value, TreeNode *parent, bool editable, bool isNumber,
                     bool doubleClickable);

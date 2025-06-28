@@ -44,8 +44,11 @@ Q_OBJECT
 private:
     QApplication app;
     MainWindow mainWind;
-    Scene scene;
     QTPainter* painter;
+
+    Scene scene;
+
+    SceneQtAdapter sqa;
     LeftMenuBar* leftMenu;
 
     std::vector<std::function<void()>> vecCalls;
@@ -68,12 +71,6 @@ private:
     void setupAddingCommandsConnections();
     void updateState();
     void handler(const QString &command);
-    //void addRequirement(Requirement RQ,ID id1,ID id2,double parameters);
-    //void addRequirement(Requirement RQ,ID id1,ID id2);
-    //void addPoints(double x,double y);
-    //void addSections(double x0,double y0,double x1,double y1);
-    //void addCircles(double x,double y,double r);
-    //void addArcs(double x0,double y0,double x1,double y1,double cx,double cy);
     void fillSelectedIDBuffer();
     void deleteOwnPoints(QVector<ID>& vecPoints,const QVector<ID>& vecSections,const QVector<ID>& vecCircles,const QVector<ID>& vecArcs);
     void deleteObjects(QVector<ID>& vecPoints,QVector<ID>& vecSections,QVector<ID>& vecCircles,QVector<ID>& vecArcs);
