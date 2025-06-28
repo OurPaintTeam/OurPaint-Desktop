@@ -264,6 +264,7 @@ public:
 
     void onSigArc(const QPointF& startPoint, const QPointF& endPoint, const QPointF& center);
 
+    void drawGostFrame(QPainter* painter, const QSize& size);
 protected:
 
     [[maybe_unused]] void resizeEvent(QResizeEvent* event) override;
@@ -314,6 +315,7 @@ signals:
 private slots:
 
     void onWorkWindowResized();
+
 };
 
 #endif // QTPAINTER_H
