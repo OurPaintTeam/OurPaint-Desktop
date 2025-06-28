@@ -5,7 +5,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 
-#include "Regex.h"
+#include "DRegex.h"
 
 // A class for managing data in the left menu
 
