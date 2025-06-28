@@ -82,12 +82,18 @@ public:
     // // Clearing all the requirements
     void clearAllRequirements();
 
-    void  updateLeftMenu();
+    void updateLeftMenu();
 
     // Clearing one element by ID
     void removeFigureById(const qlonglong id);
 
     QModelIndex selectFigureById(const qlonglong id);
+
+    QVector<QPair<qlonglong, QString>> collectAllIDs(TreeNode* node) const;
+
+    QVector<QPair<qlonglong, QString>> getAllFigureIDs() const;
+
+    QVector<QPair<qlonglong, QString>> getAllReqIDs() const;
 
 public slots:
     void doubleClickID(const QModelIndex& index);
@@ -98,6 +104,7 @@ signals:
     void figureParamsChanged(const qlonglong id,const std::string &type, const std::vector<qreal> &parameters);
     void reqParamChanged(const qlonglong id, const qreal &parameter);
     void doubleClickLeftMenu(const qlonglong id,const std::string &type);
+
 
 
 };

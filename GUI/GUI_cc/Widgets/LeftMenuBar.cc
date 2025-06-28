@@ -424,3 +424,57 @@ QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
 }
 
 
+QVector<QPair<qlonglong, QString>> LeftMenuBar::collectAllIDs(TreeNode* node) const {
+    QVector<QPair<qlonglong, QString>> result;
+
+    if (!node) return result;
+
+    // Проверяем детей текущего узла
+    for (qsizetype i = 0; i < node->childCount(); ++i) {
+        TreeNode* child = node->child(i);
+
+        QString text = child->data(0).toString().trimmed();
+        if (text.startsWith("ID")) {
+            bool ok = false;
+            qlonglong id = text.section(':', 1).trimmed().toLongLong(&ok);
+            if (ok && id > 0) {
+                QString name = node->data(0).toString();
+                result.append({id, name});
+            }
+        }
+
+        // Рекурсивный вызов для подузла
+        auto childResult = collectAllIDs(child);
+        result.append(childResult);
+    }
+
+    return result;
+}
+
+QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllFigureIDs() const {
+    QVector<QPair<qlonglong, QString>> all;
+
+    if (figuresNode) {
+        auto figs = collectAllIDs(figuresNode);
+        all.append(figs);
+    }
+
+
+
+    return all;
+}
+
+QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllReqIDs() const {
+    QVector<QPair<qlonglong, QString>> all;
+
+
+    if (requirementsNode) {
+        auto reqs = collectAllIDs(requirementsNode);
+        all.append(reqs);
+    }
+
+    return all;
+}
+
+
+
