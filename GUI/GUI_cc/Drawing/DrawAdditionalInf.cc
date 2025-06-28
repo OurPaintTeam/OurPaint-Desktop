@@ -6,7 +6,7 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter& painter,
                                              const QVector<QPointF>& pointsXLeft,
                                              const QVector<QPointF>& pointsYUp,
                                              const QVector<QPointF>& pointsYDown) {
-    constexpr quint16 FontSize = 8;
+    quint16 FontSize = 8;
     constexpr quint16 MARGIN = 3;
 
     QFont font = painter.font();
@@ -19,7 +19,7 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter& painter,
 
     painter.setPen(Qt::black);
 
-    constexpr quint16 PRECISION= 1;
+    constexpr quint16 PRECISION = 1;
     auto drawLabel = [&](const QPointF& point, const qreal value,const bool below) {
         QPointF textPos = point;
         textPos.setX(point.x() + MARGIN);
@@ -38,11 +38,11 @@ void DrawAdditionalInf::drawCoordinateLabels(QPainter& painter,
 
     // Draw Y-axis labels
     for (const QPointF& point: pointsYDown) {
-        drawLabel(point, Scaling::logic(point.y()), false);
+        drawLabel(point, Scaling::logic(-point.y()), false);
     }
 
     for (const QPointF& point: pointsYUp) {
-        drawLabel(point, Scaling::logic(point.y()), false);
+        drawLabel(point, Scaling::logic(-point.y()), false);
     }
 }
 
@@ -152,7 +152,7 @@ void DrawAdditionalInf::drawCursor(QPainter& painter) {
 
 
 inline bool DrawAdditionalInf::isValidID(const ID& id) {
-    return id.get() == 0;
+    return id.get() != 0;
 }
 
 
