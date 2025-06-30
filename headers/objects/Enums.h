@@ -20,4 +20,26 @@ enum Requirement {
 
 };
 
+inline std::string to_string(Element el) {
+  switch (el) {
+    case ET_POINT:
+      return "point";
+    case ET_SECTION:
+      return "section";
+    case ET_CIRCLE:
+      return "circle";
+    case ET_ARC:
+      return "arc";
+  }
+  throw std::runtime_error("Unknown element type");
+}
+inline Element element_from_string(const std::string& s) {
+  if (s == "point") return ET_POINT;
+  if (s == "section") return ET_SECTION;
+  if (s == "circle") return ET_CIRCLE;
+  if (s == "arc") return ET_ARC;
+  throw std::runtime_error("Unknown element type: " + s);
+}
+
+
 #endif // ! OURPAINT_HEADERS_ENUMS_H_

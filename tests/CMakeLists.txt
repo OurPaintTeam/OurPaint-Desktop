@@ -118,6 +118,20 @@ target_include_directories(MoveGTEST PRIVATE
 )
 target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
 
+# Test for objectInJson
+add_executable(ObjectInJsonTest
+        ObjectInJsonGTEST.cc
+        ../src/saveload/objectInJson.cc
+)
+
+target_include_directories(ObjectInJsonTest PRIVATE
+        ../headers/saveload
+        ../headers/objects
+)
+
+target_link_libraries(ObjectInJsonTest
+        GTest::gtest_main
+        nlohmann_json::nlohmann_json)
 
 
 # Test for Component
