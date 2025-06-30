@@ -160,12 +160,12 @@ target_include_directories(ComponentTest PRIVATE
 target_link_libraries(ComponentTest GTest::gtest_main Math Eigen3::Eigen)
 
 # Test for requirementInJson
-add_executable(RequirementJsonTest RequirementInJsonGTEST.cc
+add_executable(RequirementJsonTest requirementInJsonGTEST.cc
         ../src/saveload/requirementInJson.cc
 )
 target_include_directories(RequirementJsonTest PRIVATE ../headers ../headers/saveload)
 
-target_link_libraries(RequirementJsonTest GTest::gtest_main)
+target_link_libraries(RequirementJsonTest GTest::gtest_main nlohmann_json::nlohmann_json)
 
 
 set(TYPE_OF_COMPILING BOOL 1)
