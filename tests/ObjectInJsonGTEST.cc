@@ -24,8 +24,6 @@ TEST(objectInJsonTest, SectionSerializationDeserialization) {
   EXPECT_EQ(j["points"][1]["x"], 300.0);
   EXPECT_EQ(j["points"][1]["y"], 400.0);
 
-  // Проверка десериализации
-  objectInJson o2({}, {});
-  o2.from_json(j);
+  objectInJson o2(j);
   EXPECT_EQ(o2.to_json(), j);
 }
