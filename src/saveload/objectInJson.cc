@@ -22,6 +22,7 @@ objectInJson::objectInJson(const std::vector<std::string>& name, const ObjectDat
       p.params.push_back(obj.params[2]);
       p.params.push_back(obj.params[3]);
       p.subObjects.push_back(obj.subObjects[1]);
+      _subObjects.push_back(p);
       break;
     case ET_CIRCLE:
       p.et = ET_POINT;
@@ -41,11 +42,13 @@ objectInJson::objectInJson(const std::vector<std::string>& name, const ObjectDat
       p.params.push_back(obj.params[2]);
       p.params.push_back(obj.params[3]);
       p.subObjects.push_back(obj.subObjects[1]);
+      _subObjects.push_back(p);
       p.params.clear();
       p.subObjects.clear();
       p.params.push_back(obj.params[4]);
       p.params.push_back(obj.params[5]);
       p.subObjects.push_back(obj.subObjects[2]);
+      _subObjects.push_back(p);
       break;
   }
 }
