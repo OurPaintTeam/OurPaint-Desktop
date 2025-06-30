@@ -1,6 +1,6 @@
 #ifndef OURPAINT_HEADERS_ENUMS_H_
 #define OURPAINT_HEADERS_ENUMS_H_
-
+#include <>
 enum Element {
     ET_POINT, ET_SECTION, ET_CIRCLE, ET_ARC
 };
@@ -31,14 +31,13 @@ inline std::string to_string(Element el) {
     case ET_ARC:
       return "arc";
   }
-  throw std::runtime_error("Unknown element type");
+  return "None";
 }
 inline Element element_from_string(const std::string& s) {
   if (s == "point") return ET_POINT;
   if (s == "section") return ET_SECTION;
   if (s == "circle") return ET_CIRCLE;
   if (s == "arc") return ET_ARC;
-  throw std::runtime_error("Unknown element type: " + s);
 }
 
 
