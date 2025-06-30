@@ -6,12 +6,12 @@ objectInJson::objectInJson(const std::vector<std::string>& name, const ObjectDat
   _name = name;
   _obj = obj;
   Element t = _obj.et;
+  ObjectData p;
+  _subObjects = std::vector<ObjectData>();
   switch (t) {
     case ET_POINT:
-      _subObjects = std::vector<ObjectData>();
       break;
     case ET_SECTION:
-      ObjectData p;
       p.et = ET_POINT;
       p.params.push_back(obj.params[0]);
       p.params.push_back(obj.params[1]);
@@ -24,7 +24,6 @@ objectInJson::objectInJson(const std::vector<std::string>& name, const ObjectDat
       p.subObjects.push_back(obj.subObjects[1]);
       break;
     case ET_CIRCLE:
-      ObjectData p1;
       p.et = ET_POINT;
       p.params.push_back(obj.params[0]);
       p.params.push_back(obj.params[1]);
@@ -32,22 +31,21 @@ objectInJson::objectInJson(const std::vector<std::string>& name, const ObjectDat
       _subObjects.push_back(p);
       break;
     case ET_ARC:
-      ObjectData p2;
-      p2.et = ET_POINT;
-      p2.params.push_back(obj.params[0]);
-      p2.params.push_back(obj.params[1]);
-      p2.subObjects.push_back(obj.subObjects[0]);
-      _subObjects.push_back(p2);
-      p2.params.clear();
-      p2.subObjects.clear();
-      p2.params.push_back(obj.params[2]);
-      p2.params.push_back(obj.params[3]);
-      p2.subObjects.push_back(obj.subObjects[1]);
-      p2.params.clear();
-      p2.subObjects.clear();
-      p2.params.push_back(obj.params[4]);
-      p2.params.push_back(obj.params[5]);
-      p2.subObjects.push_back(obj.subObjects[2]);
+      p.et = ET_POINT;
+      p.params.push_back(obj.params[0]);
+      p.params.push_back(obj.params[1]);
+      p.subObjects.push_back(obj.subObjects[0]);
+      _subObjects.push_back(p);
+      p.params.clear();
+      p.subObjects.clear();
+      p.params.push_back(obj.params[2]);
+      p.params.push_back(obj.params[3]);
+      p.subObjects.push_back(obj.subObjects[1]);
+      p.params.clear();
+      p.subObjects.clear();
+      p.params.push_back(obj.params[4]);
+      p.params.push_back(obj.params[5]);
+      p.subObjects.push_back(obj.subObjects[2]);
       break;
   }
 }

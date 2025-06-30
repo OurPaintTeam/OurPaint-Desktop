@@ -1,6 +1,6 @@
 #ifndef OURPAINT_HEADERS_ENUMS_H_
 #define OURPAINT_HEADERS_ENUMS_H_
-#include <>
+#include <string>
 enum Element {
     ET_POINT, ET_SECTION, ET_CIRCLE, ET_ARC
 };
