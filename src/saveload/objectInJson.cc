@@ -89,12 +89,14 @@ nlohmann::json objectInJson::to_json() const {
     ptJson["y"] = pt.params[1];
     points.push_back(ptJson);
   }
-
   json["points"] = points;
+  if (_obj.et == ET_CIRCLE) {
+    json["R"] = _obj.params[2];
+  }
   return json;
 }
 
-void objectInJson::from_json(const nlohmann::json& j) {
+objectInJson::objectInJson(const nlohmann::json& j) {
   _obj.id = ID(j.at("id").get<unsigned int>());
   _obj.et = element_from_string(j.at("type").get<std::string>());
   _name.clear();
