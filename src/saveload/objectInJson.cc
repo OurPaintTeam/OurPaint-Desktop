@@ -1,6 +1,3 @@
-//
-// Created by Eugene Bychkov on 30.06.2025.
-//
 #include "objectInJson.h"
 objectInJson::objectInJson(const std::vector<std::string>& name, const ObjectData& obj) {
   _name = name;

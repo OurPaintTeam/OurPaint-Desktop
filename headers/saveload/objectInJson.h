@@ -1,11 +1,6 @@
-//
-// Created by Eugene Bychkov on 30.06.2025.
-//
-
 #ifndef OBJECTINJSON_H
 #define OBJECTINJSON_H
 #include <nlohmann/json.hpp>
-
 #include "Objects.h"
 class objectInJson {
   std::vector<std::string> _name;
