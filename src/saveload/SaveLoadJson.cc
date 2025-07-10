@@ -36,3 +36,30 @@ void SaveLoadJson::from_json(const nlohmann::json &obj) {
     _reqs.push_back(r);
   }
 }
+
+void SaveLoadJson::loadToScene() {
+  //TODO add with ID
+  for (const auto &o : _objects) {
+    _scene.addObject(o.to_pair().second);
+  }
+  for (const auto &r : _reqs) {
+    _scene.addRequirement(r.to_pair().second);
+  }
+}
+
+std::vector<ObjectData> SaveLoadJson::getObjects() {
+  std::vector<ObjectData> ret;
+  //TODO get OBJDATA
+  for (const auto &o : _objects) {
+    ret.push_back(o.to_pair().second);
+  }
+  return ret;
+}
+
+std::vector<RequirementData> SaveLoadJson::getRequirements() {
+  std::vector<RequirementData> ret;
+  for (const auto &o : _reqs) {
+    ret.push_back(o.to_pair().second);
+  }
+  return ret;
+}

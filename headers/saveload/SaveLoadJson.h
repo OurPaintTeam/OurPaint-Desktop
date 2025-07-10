@@ -14,5 +14,8 @@ class SaveLoadJson {
             const std::vector<requirementInJson> &reqs);
   nlohmann::json to_json() const;
   void from_json(const nlohmann::json &obj);
+  void loadToScene();
+  std::vector<ObjectData> getObjects();
+  std::vector<RequirementData> getRequirements();
 };
 #endif  // JSONSAVER_H
