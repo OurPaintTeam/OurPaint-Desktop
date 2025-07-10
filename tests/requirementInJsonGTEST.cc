@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include "saveload/requirementInJson.h"
+#include "requirementInJson.h"
 
 
 TEST(RequirementInJsonTest, SerializeDeserialize) {
