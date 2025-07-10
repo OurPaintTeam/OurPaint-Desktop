@@ -41,7 +41,6 @@ add_executable(SceneGTEST SceneGTEST.cc
         ../src/objects/BoundBox.cc
         ../src/painters/BMPpainter.cc
         ../src/BMPfile.cc
-        ../src/objects/Requirements.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/requirementInFile.cc
@@ -91,7 +90,6 @@ add_executable(MoveGTEST MoveGTEST.cc
         ../src/objects/BoundBox.cc
         ../src/painters/BMPpainter.cc
         ../src/BMPfile.cc
-        ../src/objects/Requirements.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/requirementInFile.cc

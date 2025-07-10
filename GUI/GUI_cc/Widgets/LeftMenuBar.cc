@@ -437,6 +437,7 @@ void LeftMenuBar::onPointAdded(ID id, const double* x, const double* y) {
             "Point",
             id.get(),
             {x, y});
+    updateLeftMenu();
 }
 
 void LeftMenuBar::onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2) {
@@ -459,6 +460,7 @@ void LeftMenuBar::onCircleAdded(ID id, const double* x, const double* y, const d
             id.get() - 1,
             {x, y},
             *r);
+    updateLeftMenu();
 }
 
 void LeftMenuBar::onArcAdded(ID id,

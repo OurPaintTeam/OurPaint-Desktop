@@ -77,7 +77,7 @@ public:
 
     TreeModel *getTreeModel();
 
-    void addPointInLeftMenu(const QString &namePoint,const qlonglong pID,
+    void addPointInLeftMenu(const QString &namePoint, const qlonglong pID,
                               const std::pair<const qreal*,const qreal *> &params);
 
     void addCircleInLeftMenu(const QString &nameCircle, const QString &namePoint,

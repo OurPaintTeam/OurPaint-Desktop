@@ -23,7 +23,6 @@ Scene::Scene(Painter* p) :
     _circles.reserve(std::size_t(1024));
     _arcs.reserve(std::size_t(1024));
     _requirements.reserve(std::size_t(512));
-
     if (p) {
         p->initPointCase(_points);
         p->initSectionCase(_sections);
@@ -1134,7 +1133,6 @@ std::vector<Requirement> Scene::getAllRequirementsData() const {
 }
 
 bool Scene::deleteRequirement(ID reqID) {
-/*
     if (!_requirements.contains(reqID)) {
         return false;
     }
@@ -1145,15 +1143,15 @@ bool Scene::deleteRequirement(ID reqID) {
     ID second = *(++it);
     _graph.removeEdge(first, second);
 
-    IReq* req = _requirements[reqID];
+    Requirement req = _requirements[reqID];
     _requirements.erase(reqID);
-    if (dynamic_cast<ReqPointOnPoint*>(req)) {
+    if (req.type == ReqType::ET_POINTONPOINT) {
         Point* p1 = _points[first];
         Point* pNew = new Point(p1->x, p1->y);
 
-        std::unordered_map<ID, IReq*> reqs = _requirements;
+        std::unordered_map<ID, Requirement> reqs = _requirements;
         std::vector<ID> component = _graph.findComponentByEdgeType(first, [&reqs](const Edge<ID, ID>& edge) {
-            return edge.weight != ID(-2) && dynamic_cast<ReqPointOnPoint*>(reqs[edge.weight]);
+            return edge.weight != ID(-2) && reqs[edge.weight].type == ReqType::ET_POINTONPOINT;
         });
 
         for (auto& obj: component) {
@@ -1192,29 +1190,6 @@ bool Scene::deleteRequirement(ID reqID) {
                     }
                 }
             }
-
-            // reqs
-            std::vector<Edge<ID, ID>> edges = _graph.getVertexEdges(obj);
-            for (auto& edge: edges) {
-                if (edge.weight != Scene::_connectionEdgeID && dynamic_cast<ReqPointOnPoint*>(_requirements[edge.weight])) {
-                    IReq* r = _requirements[edge.weight];
-                    for (auto& reqObj: r->getObjects()) {
-                        if (auto* p = dynamic_cast<Point*>(reqObj)) {
-                            if (p == p1) {
-                                Requirement rd;
-                                rd.id = edge.weight;
-                                rd.req = getEnumType(r);
-                                rd.params.push_back(r->getDimension());
-                                std::unordered_set<ID> objs = _requirementToObjects[edge.weight];
-                                rd.objects.assign(objs.begin(), objs.end());
-                                delete _requirements[edge.weight];
-                                _requirements.erase(edge.weight);
-                                addRequirement(rd, rd.id);
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -1222,8 +1197,6 @@ bool Scene::deleteRequirement(ID reqID) {
     _isComponentsDirty = true;
     _isRectangleDirty = true;
     return true;
-    */
-    return false;
 }
 
 bool Scene::tryRestoreObject(const ObjectData& data, ID id) {

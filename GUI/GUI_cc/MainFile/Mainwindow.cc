@@ -31,7 +31,7 @@ MainWindow::MainWindow(QWidget* parent)
     projectsPath = QDir::cleanPath(documentsPath + "/OurPaint/projects");
     settingsPath = QDir::cleanPath(documentsPath + "/OurPaint/settings/settings.set");
 
-    painter = new QTPainter(ui->workWindow);
+
     mouseWW = new MouseWorkWindow(ui->workWindow);
     keyWW = new KeyWorkWindow(ui->workWindow);
     settings = new Settings(settingsPath);
@@ -50,7 +50,7 @@ MainWindow::~MainWindow() {
 }
 
 QTPainter* MainWindow::getQTPainter() const {
-    return painter;
+    return new QTPainter(ui->workWindow);
 }
 
 LeftMenuBar* MainWindow::getLeftMenuBar() const {
