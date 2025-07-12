@@ -17,7 +17,12 @@ if (NOT TARGET gtest)
 endif()
 
 enable_testing()
-
+FetchContent_Declare(
+        json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Math ${CMAKE_BINARY_DIR}/Math)
 
 
@@ -114,6 +119,24 @@ target_include_directories(MoveGTEST PRIVATE
 )
 target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
 
+# Test for objectInJson
+add_executable(ObjectInJsonTest
+        ObjectInJsonGTEST.cc
+        ../src/saveload/objectInJson.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+)
+
+target_include_directories(ObjectInJsonTest PRIVATE
+        ../headers/saveload
+        ../headers/objects
+        ../Math/headers
+)
+
+target_link_libraries(ObjectInJsonTest
+        GTest::gtest_main
+        nlohmann_json::nlohmann_json
+        Math)
 
 
 # Test for Component
@@ -134,6 +157,20 @@ target_include_directories(ComponentTest PRIVATE
         ../Math/headers/Tasks/Matrix
 )
 target_link_libraries(ComponentTest GTest::gtest_main Math Eigen3::Eigen)
+
+# Test for requirementInJson
+add_executable(RequirementJsonTest requirementInJsonGTEST.cc
+        ../src/saveload/requirementInJson.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+)
+target_include_directories(RequirementJsonTest PRIVATE
+        ../headers
+        ../headers/saveload
+        ../headers/objects
+        ../Math/headers)
+
+target_link_libraries(RequirementJsonTest GTest::gtest_main nlohmann_json::nlohmann_json Math)
 
 
 set(TYPE_OF_COMPILING BOOL 1)
