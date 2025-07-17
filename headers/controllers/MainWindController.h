@@ -17,11 +17,11 @@ class Client;
 class MainWindController : public QObject {
 Q_OBJECT
 private:
-    QTPainter* _painter;
+    QTPainter& _painter;
     Scene& _scene;
     MainWindow& _mainWind;
-    LeftMenuBar* _lmb;
-    UndoRedo::UndoRedoManager* _urm;
+    LeftMenuBar& _lmb;
+    UndoRedo::UndoRedoManager& _urm;
     CommandManager& _cm;
     Server& _s;
     Client& _c;
@@ -32,11 +32,11 @@ private:
     const QString pathTxtFileCommands = "../CommandsFile.txt";
 
 public:
-    MainWindController(QTPainter* painter,
+    MainWindController(QTPainter& painter,
                        Scene& scene,
                        MainWindow& mainWind,
-                       LeftMenuBar* lmb,
-                       UndoRedo::UndoRedoManager* urm,
+                       LeftMenuBar& lmb,
+                       UndoRedo::UndoRedoManager& urm,
                        CommandManager& cm,
                        Server& s,
                        Client& c,

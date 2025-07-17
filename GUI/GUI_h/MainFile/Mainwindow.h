@@ -48,6 +48,7 @@ Q_OBJECT
 private:
     Ui::MainWindow* ui;
 
+    QTPainter* painter;
     MouseWorkWindow* mouseWW;            // For processing mouse events
     KeyWorkWindow* keyWW;                // For handling key events
     LeftMenuBar* leftMenuBar;             // A class for managing the left menu

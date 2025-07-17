@@ -89,6 +89,7 @@ add_executable(ourpaint
         headers/Application.h
         headers/BMPfile.h
         headers/SceneObserver.h
+        headers/ExceptionGuard.h
 
         headers/UndoRedo/Command.h
         headers/UndoRedo/Transaction.h

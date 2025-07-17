@@ -5,6 +5,7 @@
 #include <QPointF>
 #include "Scaling.h"
 #include "Mainwindow.h"
+#include "ExceptionGuard.h"
 
 PainterController::PainterController(Scene& scene, CommandManager& commandManager, UndoRedoManager& undoRedo, MainWindow& mainWind)
         : _scene(scene),
@@ -15,26 +16,35 @@ PainterController::PainterController(Scene& scene, CommandManager& commandManage
           _pre_move_object_states() {}
 
 void PainterController::onSigPoint(const QPointF& point) {
+    SLOT_GUARD_MAINWIND_BEGIN
     UndoRedo::Transaction* txn = _commandManager.invoke("POINT", { point.x(), point.y() });
     _undoRedo.push(std::move(*txn));
+    SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onSigSection(const QPointF& startPoint, const QPointF& endPoint) {
+    SLOT_GUARD_MAINWIND_BEGIN
     UndoRedo::Transaction* txn = _commandManager.invoke("LINE", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y() });
     _undoRedo.push(std::move(*txn));
+    SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onSigCircle(const QPointF& center, const double radius) {
+    SLOT_GUARD_MAINWIND_BEGIN
     UndoRedo::Transaction* txn = _commandManager.invoke("CIRCLE", { center.x(), center.y(), radius });
     _undoRedo.push(std::move(*txn));
+    SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onSigArc(const QPointF& startPoint, const QPointF& endPoint, const QPointF& centerPoint) {
+    SLOT_GUARD_MAINWIND_BEGIN
     UndoRedo::Transaction* txn = _commandManager.invoke("ARC", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), centerPoint.x(), centerPoint.y() });
     _undoRedo.push(std::move(*txn));
+    SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onMovingPoint(const QVector<ID>& vec_id) {
+    SLOT_GUARD_MAINWIND_BEGIN
     if (_isStartMoving) {
         // I'm afraid. It's really dangerous.
         Component& c = _scene.findComponentByID(vec_id[0]);
@@ -64,9 +74,11 @@ void PainterController::onMovingPoint(const QVector<ID>& vec_id) {
     }
 
     _scene.paint();
+    SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onMovingSection(const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
+    SLOT_GUARD_MAINWIND_BEGIN
     if (_isStartMoving) {
         Component& c = _scene.findComponentByID(vec_id[0]);
         for (auto& id : c._objectIDs) {
@@ -92,9 +104,11 @@ void PainterController::onMovingSection(const QVector<ID>& vec_id, const QPointF
         _mainWind.showError(a.what());
     }
     _scene.paint();
+    SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onMovingCircle(const QVector<ID>& vec_id, const QPointF& offset) {
+    SLOT_GUARD_MAINWIND_BEGIN
     if (_isStartMoving) {
         Component& c = _scene.findComponentByID(vec_id[0]);
         for (auto& id : c._objectIDs) {
@@ -124,9 +138,11 @@ void PainterController::onMovingCircle(const QVector<ID>& vec_id, const QPointF&
         _mainWind.showError(a.what());
     }
     _scene.paint();
+    SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onMovingArc(const QVector<ID>& vec_id) {
+    SLOT_GUARD_MAINWIND_BEGIN
     if (_isStartMoving) {
         Component& c = _scene.findComponentByID(vec_id[0]);
         for (auto& id : c._objectIDs) {
@@ -147,13 +163,16 @@ void PainterController::onMovingArc(const QVector<ID>& vec_id) {
         _mainWind.showError(a.what());
     }
     _scene.paint();
+    SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onEndMoving() {
+    SLOT_GUARD_BEGIN
     UndoRedo::CommandMove* cmd = new UndoRedo::CommandMove(_scene, _pre_move_object_states);
     UndoRedo::Transaction txn(cmd->description());
     txn.addCommand(cmd);
     _undoRedo.push(std::move(txn));
     _isStartMoving = true;
     _scene.paint();
+    SLOT_GUARD_END
 }

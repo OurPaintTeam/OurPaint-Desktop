@@ -3,6 +3,7 @@
 #include "ID.h"
 #include "QTPainter.h"
 #include "MainWindow.h"
+#include "ExceptionGuard.h"
 
 LeftMenuController::LeftMenuController(MainWindow& mainWind, Scene& scene, QTPainter& painter)
     : _mainWind(mainWind),
@@ -11,6 +12,7 @@ LeftMenuController::LeftMenuController(MainWindow& mainWind, Scene& scene, QTPai
 
 void LeftMenuController::onFigureParamsChanged(long long int id, const std::string& type,
                                              const std::vector<double>& parameters) {
+    SLOT_GUARD_MAINWIND_BEGIN
     if (id == 0) {
         _mainWind.showError("ID = 0");
         return;
@@ -48,12 +50,15 @@ void LeftMenuController::onFigureParamsChanged(long long int id, const std::stri
     } else {
         _mainWind.showError("Don't move element!");
     }
+    SLOT_GUARD_MAINWIND_END
 }
 
 void LeftMenuController::onReqParamChanged(long long int, const double&) {}
 
 void LeftMenuController::onDoubleClickLeftMenu(long long int id, const std::string& type) {
+    SLOT_GUARD_MAINWIND_BEGIN
     _painter.selectedElemByID(ID(id), type);
     _scene.paint();
+    SLOT_GUARD_MAINWIND_END
 }
 
