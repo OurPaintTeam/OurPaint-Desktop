@@ -36,7 +36,14 @@ inline BoundBox2D getBox(const Point& p) {
 }
 
 inline BoundBox2D getBox(const Section& s) {
-    return {s.beg->x, s.end->x, s.beg->y, s.beg->y};
+    double x1 = s.beg->x, y1 = s.beg->y;
+    double x2 = s.end->x, y2 = s.end->y;
+    BoundBox2D bb;
+    bb.min_x = std::min(x1, x2);
+    bb.max_x = std::max(x1, x2);
+    bb.min_y = std::min(y1, y2);
+    bb.max_y = std::max(y1, y2);
+    return bb;
 }
 
 inline BoundBox2D getBox(const Circle& c) {
