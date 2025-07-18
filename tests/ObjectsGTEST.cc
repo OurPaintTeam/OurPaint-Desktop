@@ -8,7 +8,7 @@ TEST(PointTest, RectMethod) {
     Point p;
     p.x = 3;
     p.y = 4;
-    BoundBox2D r = p.getBox();
+    BoundBox2D r = getBox(p);
     EXPECT_EQ(r.min_x, 3);
     EXPECT_EQ(r.max_x, 3);
     EXPECT_EQ(r.min_y, 4);
@@ -22,7 +22,7 @@ TEST(CircleTest, RectMethod) {
     Circle c;
     c.center = &center;
     c.r = 5;
-    BoundBox2D r = c.getBox();
+    BoundBox2D r = getBox(c);
     EXPECT_EQ(r.min_x, -5);
     EXPECT_EQ(r.max_x, 5);
     EXPECT_EQ(r.min_y, -5);
@@ -39,7 +39,7 @@ TEST(SectionTest, RectMethod) {
     Section s;
     s.beg = &beg;
     s.end = &end;
-    BoundBox2D r = s.getBox();
+    BoundBox2D r = getBox(s);
     EXPECT_EQ(r.min_x, 1);
     EXPECT_EQ(r.max_x, 3);
     EXPECT_EQ(r.min_y, 2);

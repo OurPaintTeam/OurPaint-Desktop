@@ -14,6 +14,7 @@
 #include "Server.h"
 #include "Client.h"
 #include "ExceptionGuard.h"
+#include "ID.h"
 
 MainWindController::MainWindController(QTPainter& _painter,
                                        Scene& scene,

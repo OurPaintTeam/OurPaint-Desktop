@@ -52,16 +52,20 @@ struct Component {
 
     void cleanup() {
         for (auto& f: _errorFunctions) {
-            delete f;
+            if (f != nullptr) {
+                delete f;
+            }
         }
         _errorFunctions.clear();
 
-        delete _task;
+        if (_task != nullptr) {
+            delete _task;
+        }
         _task = nullptr;
 
-        for (auto& c: _vars) {
-            delete c;
-        }
+        //for (auto& c: _vars) {
+        //    delete c;
+        //}
         _vars.clear();
 
         _objectIDs.clear();

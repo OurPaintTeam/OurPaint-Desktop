@@ -2,7 +2,9 @@
 #define OURPAINT_HEADERS_SCENE_OBSERVER_H_
 
 #include <QObject>
-#include "Scene.h"
+class Scene;
+class ID;
+class Requirement;
 
 class SceneQtAdapter : public QObject {
     Q_OBJECT

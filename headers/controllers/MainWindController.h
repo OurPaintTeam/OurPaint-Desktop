@@ -2,6 +2,7 @@
 #define OURPAINT_HEADERS_CONTROLLERS_MAIN_WINDOW_CONTROLLER_H_
 
 #include <QObject>
+#include "Objects.h"
 
 class QTPainter;
 class ID;
@@ -9,7 +10,6 @@ class Scene;
 class MainWindow;
 class LeftMenuBar;
 namespace UndoRedo { class UndoRedoManager; }
-class ObjectData;
 class CommandManager;
 class Server;
 class Client;

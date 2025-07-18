@@ -1,4 +1,6 @@
 #include "LeftMenuBar.h"
+#include "ID.h"
+#include "Objects.h"
 
 LeftMenuBar::LeftMenuBar(QObject* parent) {
     // Creating a model
