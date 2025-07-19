@@ -1,26 +1,26 @@
 #ifndef OURPAINT_HEADERS_SCENE_H_
 #define OURPAINT_HEADERS_SCENE_H_
 
-#include "Painter.h"
-#include "Objects.h"
-#include "InheritanceGraph.h"
-#include "LMWithSparse.h"
-#include "FileOurP.h"
-#include "objectInFile.h"
-#include "Component.h"
-#include "Enums.h"
-
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include "InheritanceGraph.h"
+#include "ID.h"
+#include "BoundBox.h"
+#include "Enums.h"
 
-class SceneQtAdapter;
-class BoundBox2D;
+class ISceneObserver;
 class ID;
 struct Point;
 struct Section;
 struct Circle;
 struct Arc;
+class Painter;
+class Requirement;
+class Component;
+class Variable;
+class Function;
+class ObjectData;
 
 class Scene {
 private:
@@ -130,10 +130,10 @@ public:
     bool tryRestoreObject(const ObjectData&, ID id);
     bool tryRestoreRequirement(const Requirement&, ID id);
 
-    void setObserver(SceneQtAdapter* o);
+    void setObserver(ISceneObserver* o);
 
 private:
-    SceneQtAdapter* _observer = nullptr;
+    ISceneObserver* _observer = nullptr;
 
     void addPoint(ObjectData data, ID id);
     void addSection(ObjectData data, ID pointID1, ID pointID2, ID sectionID);

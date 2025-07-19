@@ -1,4 +1,6 @@
 #include "CommandMove.h"
+#include "Component.h"
+#include "Scene.h"
 
 bool UndoRedo::CommandMove::Execute() {
     const Component& c = _scene.findComponentByID(_pre_move_object_states.at(0).id);

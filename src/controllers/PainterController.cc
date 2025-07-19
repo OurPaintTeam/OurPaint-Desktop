@@ -6,6 +6,7 @@
 #include "Scaling.h"
 #include "Mainwindow.h"
 #include "ExceptionGuard.h"
+#include "Component.h"
 
 PainterController::PainterController(Scene& scene, CommandManager& commandManager, UndoRedoManager& undoRedo, MainWindow& mainWind)
         : _scene(scene),

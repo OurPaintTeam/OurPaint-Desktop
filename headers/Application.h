@@ -18,7 +18,7 @@ class QString;
 
 class Application {
 public:
-    Application(int &argc, char **argv);
+    Application(int& argc, char** argv);
     ~Application();
     int exec();
 
@@ -34,10 +34,11 @@ private:
     UndoRedo::UndoRedoManager* undoRedo;
     CommandManager* commandManager;
 
+    SceneQtAdapter* sqa;
+
     QApplication* app;
     MainWindow* mainWind;
     QTPainter* painter;
-    SceneQtAdapter* sqa;
     LeftMenuBar* leftMenu;
     QString* username;
 

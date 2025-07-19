@@ -1,5 +1,12 @@
+#include "GeometricObjects.h"
 #include "Scene.h"
 #include "SceneObserver.h"
+#include "Enums.h"
+#include "Painter.h"
+#include "Objects.h"
+#include "LMWithSparse.h"
+#include "Component.h"
+
 
 const ID Scene::_errorID(-1);
 const ID Scene::_connectionEdgeID(-2);
@@ -79,7 +86,7 @@ ID Scene::addObject(const ObjectData& objData) {
             addPoint(objData, newID);
 
             std::vector<const double*> vec = getPointParams(newID);
-            _observer->onPointAdded(newID, vec[0], vec[1]);
+            _observer->pointAdded(newID, vec[0], vec[1]);
 
             return newID;
         }
@@ -98,7 +105,7 @@ ID Scene::addObject(const ObjectData& objData) {
             addSection(objData, pID1, pID2, newID);
 
             std::vector<const double*> vec = getSectionParams(newID);
-            _observer->onSectionAdded(newID, vec[0], vec[1], vec[2], vec[3]);
+            _observer->sectionAdded(newID, vec[0], vec[1], vec[2], vec[3]);
 
             return newID;
         }
@@ -115,7 +122,7 @@ ID Scene::addObject(const ObjectData& objData) {
             addCircle(objData, pID, newID);
 
             std::vector<const double*> vec = getCircleParams(newID);
-            _observer->onCircleAdded(newID, vec[0], vec[1], vec[2]);
+            _observer->circleAdded(newID, vec[0], vec[1], vec[2]);
 
             return newID;
         }
@@ -137,7 +144,7 @@ ID Scene::addObject(const ObjectData& objData) {
             addArc(objData, pID1, pID2, pID3, newID);
 
             std::vector<const double*> vec = getArcParams(newID);
-            _observer->onArcAdded(newID, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            _observer->arcAdded(newID, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
 
             return newID;
         }
@@ -923,7 +930,7 @@ void Scene::addRequirement(const Requirement& reqData, ID reqID) {
 
     _isComponentsDirty = true;
 
-    _observer->onReqAdded(req);
+    _observer->reqAdded(req);
 }
 
 Component& Scene::findComponentByID(ID id) {
@@ -1274,7 +1281,7 @@ bool Scene::isValid(const Requirement& req) const {
     return false;
 }
 
-void Scene::setObserver(SceneQtAdapter* o) {
+void Scene::setObserver(ISceneObserver* o) {
     _observer = o;
 }
 

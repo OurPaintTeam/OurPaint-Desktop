@@ -15,7 +15,7 @@
 #include <QLabel>
 
 #include "TreeModel.h"
-#include "SceneObserver.h"
+#include "SceneQtAdapter.h"
 
 // A class for managing a tree
 
@@ -32,6 +32,7 @@ private:
 
     QFont font;
 
+    // TODO вынести
     QString reqTypes[10] = {
             "POINT_SECTION_DIST",
             "POINT_ON_SECTION",
@@ -50,17 +51,10 @@ public:
 
     void refreshLinkedParams(TreeNode* node);
 
-    explicit LeftMenuBar(QObject *parent);
+    explicit LeftMenuBar(QWidget* parent = nullptr);
 
 
-    void setAdapter(SceneQtAdapter& bridge);
-    /*
-        add point
-        add section
-        add circle
-        add arc
-        add req
-    */
+public slots:
     void onPointAdded(ID id, const double* x, const double* y);
     void onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2);
     void onCircleAdded(ID id, const double* x, const double* y, const double* r);
@@ -73,8 +67,7 @@ public:
                     const double* center_y);
     void onReqAdded(const Requirement& req);
 
-
-
+public:
     TreeModel *getTreeModel();
 
     void addPointInLeftMenu(const QString &namePoint, const qlonglong pID,

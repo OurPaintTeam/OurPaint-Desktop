@@ -2,7 +2,7 @@
 #include "ID.h"
 #include "Objects.h"
 
-LeftMenuBar::LeftMenuBar(QObject* parent) {
+LeftMenuBar::LeftMenuBar(QWidget* parent) {
     // Creating a model
     treeModel = new TreeModel(parent);
     rootNode = treeModel->getRootNode();
@@ -425,15 +425,6 @@ QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
     return index;
 }
 
-void LeftMenuBar::setAdapter(SceneQtAdapter& bridge) {
-    connect(&bridge, &SceneQtAdapter::pointAddedQt, this, &LeftMenuBar::onPointAdded);
-    connect(&bridge, &SceneQtAdapter::sectionAddedQt, this, &LeftMenuBar::onSectionAdded);
-    connect(&bridge, &SceneQtAdapter::circleAddedQt, this, &LeftMenuBar::onCircleAdded);
-    connect(&bridge, &SceneQtAdapter::arcAddedQt, this, &LeftMenuBar::onArcAdded);
-    connect(&bridge, &SceneQtAdapter::reqAddedQt, this, &LeftMenuBar::onReqAdded);
-}
-
-
 void LeftMenuBar::onPointAdded(ID id, const double* x, const double* y) {
     addPointInLeftMenu(
             "Point",
@@ -452,6 +443,7 @@ void LeftMenuBar::onSectionAdded(ID id, const double* x1, const double* y1, cons
             id.get() - 2,
             {x1, y1},
             {x2, y2});
+    updateLeftMenu();
 }
 
 void LeftMenuBar::onCircleAdded(ID id, const double* x, const double* y, const double* r) {
@@ -484,6 +476,7 @@ void LeftMenuBar::onArcAdded(ID id,
             {beg_x, beg_y},
             {end_x, end_y},
             {center_x, center_y});
+    updateLeftMenu();
 }
 
 void LeftMenuBar::onReqAdded(const Requirement& req) {
@@ -506,6 +499,7 @@ void LeftMenuBar::onReqAdded(const Requirement& req) {
                 static_cast<const qlonglong>(req.obj2.get())
         );
     }
+    updateLeftMenu();
 }
 
 

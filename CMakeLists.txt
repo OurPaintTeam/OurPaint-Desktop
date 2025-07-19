@@ -72,7 +72,7 @@ add_executable(ourpaint
 
         src/Application.cc
         src/BMPfile.cc
-        src/SceneObserver.cc
+        src/SceneQtAdapter.cc
 
         src/controllers/PainterController.cc
         src/controllers/MainWindController.cc
@@ -89,6 +89,7 @@ add_executable(ourpaint
         headers/Application.h
         headers/BMPfile.h
         headers/SceneObserver.h
+        headers/SceneQtAdapter.h
         headers/ExceptionGuard.h
 
         headers/UndoRedo/Command.h

@@ -19,10 +19,10 @@ Application::Application(int& argc, char** argv)
         : scene(nullptr),
           undoRedo(nullptr),
           commandManager(nullptr),
+          sqa(nullptr),
           app(nullptr),
           mainWind(nullptr),
           painter(nullptr),
-          sqa(nullptr),
           leftMenu(nullptr),
           username(nullptr),
           server(nullptr),
@@ -91,7 +91,12 @@ void Application::initGUI(int& argc, char** argv) {
     painter = mainWind->getQTPainter();
     scene->setPainter(painter);
     leftMenu = mainWind->getLeftMenuBar();
-    leftMenu->setAdapter(*sqa);
+
+    QObject::connect(sqa, &SceneQtAdapter::pointAddedQt, leftMenu, &LeftMenuBar::onPointAdded);
+    QObject::connect(sqa, &SceneQtAdapter::sectionAddedQt, leftMenu, &LeftMenuBar::onSectionAdded);
+    QObject::connect(sqa, &SceneQtAdapter::circleAddedQt, leftMenu, &LeftMenuBar::onCircleAdded);
+    QObject::connect(sqa, &SceneQtAdapter::arcAddedQt, leftMenu, &LeftMenuBar::onArcAdded);
+    QObject::connect(sqa, &SceneQtAdapter::reqAddedQt, leftMenu, &LeftMenuBar::onReqAdded);
 
     mainWind->show();
 }
@@ -121,7 +126,9 @@ void Application::initLogger() {
             throw std::runtime_error(errorMsg.toStdString());
         }
 
-        //qInstallMessageHandler(guiLogger);
+#if TIM_GUI_LOGGER
+        qInstallMessageHandler(guiLogger);
+#endif
 
     } catch (const std::runtime_error& error) {
         mainWind->showWarning("Can't open or create log file!");
@@ -185,19 +192,19 @@ int Application::exec() {
 }
 
 Application::~Application() {
-    /* free core */
-    delete scene;
-    delete undoRedo;
-    delete commandManager;
+    /* free controller */
+    delete pc;
+    delete mwc;
+    delete lmc;
 
     /* free network*/
     delete server;
     delete client;
 
-    /* free controller */
-    delete pc;
-    delete mwc;
-    delete lmc;
+    /* free core */
+    delete scene;
+    delete undoRedo;
+    delete commandManager;
 
     /* free gui */
     delete app;
