@@ -8,7 +8,6 @@
 #include "CommandDeletePoint.h"
 #include "CommandDeleteSection.h"
 #include "CommandDeleteCircle.h"
-#include "CommandDeleteArc.h"
 #include "LeftMenuBar.h"
 #include "ConsoleManager.h"
 #include "Server.h"
@@ -362,14 +361,9 @@ void MainWindController::onProjectSaved(const QString& fileName, QString format)
         _painter.saveToImage(fileName, format);
     } else {
         std::string File = fileName.toStdString();
-        try {
-            //scene.saveToFile(File.c_str());
-        }
-        catch (std::runtime_error& error) {
-            qWarning("Don't save to file");
-            _mainWind.showError("Don't save to file");
-            return;
-        }
+
+
+
         _scene.paint();
     }
     _mainWind.showSuccess("The project is saved!");
@@ -403,22 +397,9 @@ void MainWindController::onEmitScript(const QString& fileName) {
     // TODO UNDO/REDO
 
     std::string command;
-
     while (std::getline(Script, command)) {
-        QString qCommand = QString::fromStdString(command);
-
-        // TODO logs
-
-        if (ModeManager::getConnection()) {
-            if (ModeManager::getFlagServer()) {
-                //handler(qCommand);
-                //server.sendToClients(QString::fromStdString(scene.to_string()));
-            } else {
-                //client.sendCommandToServer(qCommand);
-            }
-        } else {
-            //handler(qCommand);
-        }
+        Transaction* txn = _cm.invoke(command);
+        _urm.push(std::move(*txn));
     }
 
     updateState();

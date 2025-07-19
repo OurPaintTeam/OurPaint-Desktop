@@ -69,6 +69,9 @@ add_executable(ourpaint
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
         src/saveload/requirementInFile.cc
+        src/saveload/requirementInJson.cc
+        src/saveload/SaveLoadJson.cc
+        src/saveload/objectInJson.cc
 
         src/Application.cc
         src/BMPfile.cc
@@ -85,6 +88,9 @@ add_executable(ourpaint
         headers/saveload/FileOurP.h
         headers/saveload/requirementInFile.h
         headers/saveload/objectInFile.h
+        headers/saveload/objectInJson.h
+        headers/saveload/SaveLoadJson.h
+        headers/saveload/requirementInJson.h
 
         headers/Application.h
         headers/BMPfile.h
