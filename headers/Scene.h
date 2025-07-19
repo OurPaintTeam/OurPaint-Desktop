@@ -1,13 +1,15 @@
 #ifndef OURPAINT_HEADERS_SCENE_H_
 #define OURPAINT_HEADERS_SCENE_H_
 
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
 #include "InheritanceGraph.h"
 #include "ID.h"
 #include "BoundBox.h"
 #include "Enums.h"
+#include "Objects.h"
+
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
 
 class ISceneObserver;
 class ID;
@@ -16,7 +18,6 @@ struct Section;
 struct Circle;
 struct Arc;
 class Painter;
-struct Requirement;
 class Component;
 class Variable;
 class Function;
