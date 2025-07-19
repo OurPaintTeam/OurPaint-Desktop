@@ -233,7 +233,7 @@ void Scene::addArc(ObjectData data, ID pointID1, ID pointID2, ID pointID3, ID ar
     // Накладываем требование, что центр арки находится на серединном перпендикуляре
     Requirement reqData;
     reqData.type = ReqType::ET_ARCCENTERONPERPENDICULAR;
-    reqData.obj1= pointID1;
+    reqData.obj1 = pointID1;
     reqData.obj2 = pointID2;
     reqData.obj3 = pointID3;
     addRequirement(reqData);
@@ -921,6 +921,12 @@ ID Scene::addRequirement(const Requirement& reqData, const bool updateRequiremen
     if (updateRequirementFlag) {
         updateRequirements(reqData.obj1);
     }
+
+    if (_observer) {
+        // TODO
+        //_observer->reqAdded(reqData);
+    }
+
     return newID;
 }
 
@@ -929,18 +935,66 @@ void Scene::addRequirement(const Requirement& reqData, ID reqID) {
         throw std::invalid_argument("Invalid requirement data");
     }
 
+    if (reqData.type == ReqType::ET_POINTONPOINT) {
+        Point* p1 = _points[reqData.obj1];
+        Point* p2 = _points[reqData.obj2];
+
+        Requirement temp;
+        temp.type = ReqType::ET_POINTPOINTDIST;
+        temp.obj1 = reqData.obj1;
+        temp.obj2 = reqData.obj2;
+        temp.param = 0.;
+        ID tempID(-5);
+
+        _requirements[tempID] = temp;
+        _graph.addEdge(reqData.obj1, reqData.obj2, tempID);
+        updateRequirements(reqData.obj1);
+
+        _graph.removeEdge(reqData.obj1, reqData.obj2);
+        _requirements.erase(tempID);
+
+        delete p1;
+        for (auto& [id, p] : _points) {
+            if (p == p1) {
+                p = p2;
+            }
+        }
+        for (auto& [id, sec] : _sections) {
+            if (sec->beg == p1) {
+                sec->beg = p2;
+            }
+            if (sec->end == p1) {
+                sec->end = p2;
+            }
+        }
+        for (auto& [id, circle] : _circles) {
+            if (circle->center == p1) {
+                circle->center = p2;
+            }
+        }
+        for (auto& [id, arc] : _arcs) {
+            if (arc->beg == p1) {
+                arc->beg = p2;
+            }
+            if (arc->end == p1) {
+                arc->end = p2;
+            }
+            if (arc->center == p1) {
+                arc->center = p2;
+            }
+        }
+    }
+
     Requirement req = reqData;
     req.id = reqID;
     _graph.addEdge(reqData.obj1, reqData.obj2, reqID);
     _requirements[reqID] = req;
     _requirementToObjects[reqID].insert(reqData.obj1);
     _requirementToObjects[reqID].insert(reqData.obj2);
-
-    _isComponentsDirty = true;
-
-    if (_observer) {
-        _observer->reqAdded(req);
+    if (reqData.obj3 != ID(0)) {
+        _requirementToObjects[reqID].insert(reqData.obj3);
     }
+    _isComponentsDirty = true;
 }
 
 Component& Scene::findComponentByID(ID id) {
@@ -1086,7 +1140,7 @@ void Scene::rebuildComponents() {
         std::unordered_set<double*> seen;
 
         for (auto& edge: componentEdges) {
-            if (edge.weight != ID(-2) && _requirements[edge.weight].type != ReqType::ET_POINTONPOINT) {
+            if (edge.weight != Scene::_connectionEdgeID && _requirements[edge.weight].type != ReqType::ET_POINTONPOINT) {
                 std::vector<Variable*> vars = getVariables(_requirements[edge.weight]);
                 for (Variable* var : vars) {
                     if (seen.insert(var->value).second) {

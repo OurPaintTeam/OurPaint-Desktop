@@ -63,9 +63,9 @@ struct Component {
         }
         _task = nullptr;
 
-        //for (auto& c: _vars) {
-        //    delete c;
-        //}
+        for (auto& c: _vars) {
+            delete c;
+        }
         _vars.clear();
 
         _objectIDs.clear();
