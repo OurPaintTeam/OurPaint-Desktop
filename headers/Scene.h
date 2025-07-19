@@ -16,7 +16,7 @@ struct Section;
 struct Circle;
 struct Arc;
 class Painter;
-class Requirement;
+struct Requirement;
 class Component;
 class Variable;
 class Function;
