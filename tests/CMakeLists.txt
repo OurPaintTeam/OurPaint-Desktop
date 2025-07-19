@@ -39,39 +39,39 @@ target_link_libraries(ObjectsGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 
 
-#Test for Scene
-#add_executable(SceneGTEST SceneGTEST.cc
-#        ../src/Scene.cc
-#        ../src/objects/GeometricObjects.cc
-#        ../src/objects/BoundBox.cc
-#        ../src/painters/BMPpainter.cc
-#        ../src/BMPfile.cc
-#        ../src/saveload/FileOurP.cc
-#        ../src/saveload/objectInFile.cc
-#        ../src/saveload/requirementInFile.cc
-#
-#        ../Math/src/ErrorFunctions.cc
-#        ../Math/src/Function.cc
-#        ../Math/src/LevenbergMarquardtSolver.cc
-#)
-#target_include_directories(SceneGTEST PRIVATE
-#        ../headers
-#        ../headers/objects
-#        ../headers/painters
-#        ../headers/saveload
-#
-#        ../Math/headers/decomposition
-#        ../Math/headers
-#        ../Math/headers/graph
-#        ../Math/headers/optimizers
-#        ../Math/headers/optimizers/EigenOptimizers
-#        ../Math/headers/optimizers/MatrixOptimizers
-#        ../Math/headers/Tasks
-#        ../Math/headers/Tasks/Eigen
-#        ../Math/headers/Tasks/Matrix
-#
-#)
-#target_link_libraries(SceneGTEST GTest::gtest_main Math Eigen3::Eigen)
+# Test for Scene
+add_executable(SceneGTEST SceneGTEST.cc
+        ../src/Scene.cc
+        ../src/objects/GeometricObjects.cc
+        ../src/objects/BoundBox.cc
+        ../src/painters/BMPpainter.cc
+        ../src/BMPfile.cc
+        ../src/saveload/FileOurP.cc
+        ../src/saveload/objectInFile.cc
+        ../src/saveload/requirementInFile.cc
+
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+        ../Math/src/LevenbergMarquardtSolver.cc
+)
+target_include_directories(SceneGTEST PRIVATE
+        ../headers
+        ../headers/objects
+        ../headers/painters
+        ../headers/saveload
+
+        ../Math/headers/decomposition
+        ../Math/headers
+        ../Math/headers/graph
+        ../Math/headers/optimizers
+        ../Math/headers/optimizers/EigenOptimizers
+        ../Math/headers/optimizers/MatrixOptimizers
+        ../Math/headers/Tasks
+        ../Math/headers/Tasks/Eigen
+        ../Math/headers/Tasks/Matrix
+
+)
+target_link_libraries(SceneGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 
 
@@ -88,36 +88,36 @@ target_link_libraries(UndoRedoGTEST GTest::gtest_main)
 
 
 
-#Test for move functionality
-#add_executable(MoveGTEST MoveGTEST.cc
-#        ../src/Scene.cc
-#        ../src/objects/GeometricObjects.cc
-#        ../src/objects/BoundBox.cc
-#        ../src/painters/BMPpainter.cc
-#        ../src/BMPfile.cc
-#        ../src/saveload/FileOurP.cc
-#        ../src/saveload/objectInFile.cc
-#        ../src/saveload/requirementInFile.cc
-#        ../Math/src/ErrorFunctions.cc
-#        ../Math/src/Function.cc
-#        ../Math/src/LevenbergMarquardtSolver.cc
-#)
-#target_include_directories(MoveGTEST PRIVATE
-#        ../headers
-#        ../headers/objects
-#        ../headers/painters
-#        ../headers/saveload
-#        ../Math/headers/decomposition
-#        ../Math/headers
-#        ../Math/headers/graph
-#        ../Math/headers/optimizers
-#        ../Math/headers/optimizers/EigenOptimizers
-#        ../Math/headers/optimizers/MatrixOptimizers
-#        ../Math/headers/Tasks
-#        ../Math/headers/Tasks/Eigen
-#        ../Math/headers/Tasks/Matrix
-#)
-#target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
+# Test for move functionality
+add_executable(MoveGTEST MoveGTEST.cc
+        ../src/Scene.cc
+        ../src/objects/GeometricObjects.cc
+        ../src/objects/BoundBox.cc
+        ../src/painters/BMPpainter.cc
+        ../src/BMPfile.cc
+        ../src/saveload/FileOurP.cc
+        ../src/saveload/objectInFile.cc
+        ../src/saveload/requirementInFile.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+        ../Math/src/LevenbergMarquardtSolver.cc
+)
+target_include_directories(MoveGTEST PRIVATE
+        ../headers
+        ../headers/objects
+        ../headers/painters
+        ../headers/saveload
+        ../Math/headers/decomposition
+        ../Math/headers
+        ../Math/headers/graph
+        ../Math/headers/optimizers
+        ../Math/headers/optimizers/EigenOptimizers
+        ../Math/headers/optimizers/MatrixOptimizers
+        ../Math/headers/Tasks
+        ../Math/headers/Tasks/Eigen
+        ../Math/headers/Tasks/Matrix
+)
+target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 # Test for objectInJson
 add_executable(ObjectInJsonTest

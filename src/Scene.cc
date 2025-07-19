@@ -86,7 +86,9 @@ ID Scene::addObject(const ObjectData& objData) {
             addPoint(objData, newID);
 
             std::vector<const double*> vec = getPointParams(newID);
-            _observer->pointAdded(newID, vec[0], vec[1]);
+            if (_observer) {
+                _observer->pointAdded(newID, vec[0], vec[1]);
+            }
 
             return newID;
         }
@@ -105,7 +107,9 @@ ID Scene::addObject(const ObjectData& objData) {
             addSection(objData, pID1, pID2, newID);
 
             std::vector<const double*> vec = getSectionParams(newID);
-            _observer->sectionAdded(newID, vec[0], vec[1], vec[2], vec[3]);
+            if (_observer) {
+                _observer->sectionAdded(newID, vec[0], vec[1], vec[2], vec[3]);
+            }
 
             return newID;
         }
@@ -122,7 +126,9 @@ ID Scene::addObject(const ObjectData& objData) {
             addCircle(objData, pID, newID);
 
             std::vector<const double*> vec = getCircleParams(newID);
-            _observer->circleAdded(newID, vec[0], vec[1], vec[2]);
+            if (_observer) {
+                _observer->circleAdded(newID, vec[0], vec[1], vec[2]);
+            }
 
             return newID;
         }
@@ -144,7 +150,9 @@ ID Scene::addObject(const ObjectData& objData) {
             addArc(objData, pID1, pID2, pID3, newID);
 
             std::vector<const double*> vec = getArcParams(newID);
-            _observer->arcAdded(newID, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            if (_observer) {
+                _observer->arcAdded(newID, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            }
 
             return newID;
         }
@@ -930,7 +938,9 @@ void Scene::addRequirement(const Requirement& reqData, ID reqID) {
 
     _isComponentsDirty = true;
 
-    _observer->reqAdded(req);
+    if (_observer) {
+        _observer->reqAdded(req);
+    }
 }
 
 Component& Scene::findComponentByID(ID id) {

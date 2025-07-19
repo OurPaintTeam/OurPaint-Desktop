@@ -1,9 +1,10 @@
 #include <gtest/gtest.h>
-/*
+
 #include "Scene.h"
 #include "Painter.h"
 #include "ID.h"
 #include "Enums.h"
+#include "Objects.h"
 
 class SceneFixture : public testing::Test {
 protected:
@@ -85,5 +86,5 @@ TEST_F(SceneFixture, boundingBox_and_moveObject) {
     EXPECT_EQ(bbox.height(), 1000);
 
     EXPECT_EQ(scene.objectsCount(), 3);
-    EXPECT_EQ(scene.requirementsCount(), 0);*/
+    EXPECT_EQ(scene.requirementsCount(), 0);
 }
