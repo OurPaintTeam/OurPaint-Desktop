@@ -74,14 +74,23 @@ Scene::~Scene() {
     _idToComponent.clear();
 }
 
-ID Scene::addObject(const ObjectData& objData) {
+ID Scene::addObject(const ObjectData& objData, ID id) {
     switch (objData.et) {
         case ObjType::ET_POINT: {
             if (objData.params.size() < 2) {
                 throw std::invalid_argument("Point requires 2 coordinates");
             }
 
-            ID newID = _idGeometricObjectsGenerator.generate();
+            ID newID;
+            if (id != ID(0)) {
+                newID = id;
+                if (_idGeometricObjectsGenerator.getLast().get() < id.get()) {
+                    _idGeometricObjectsGenerator.reset(id.get());
+                }
+            }
+            else {
+                newID = _idGeometricObjectsGenerator.generate();
+            }
 
             addPoint(objData, newID);
 
@@ -97,9 +106,22 @@ ID Scene::addObject(const ObjectData& objData) {
                 throw std::invalid_argument("Section requires 4 coordinates");
             }
 
-            ID pID1 = _idGeometricObjectsGenerator.generate();
-            ID pID2 = _idGeometricObjectsGenerator.generate();
-            ID newID = _idGeometricObjectsGenerator.generate();
+            ID pID1;
+            ID pID2;
+            ID newID;
+            if (id != ID(0)) {
+                newID = id;
+                if (_idGeometricObjectsGenerator.getLast().get() < id.get()) {
+                    _idGeometricObjectsGenerator.reset(id.get());
+                }
+                pID1 = ID(newID.get() - 1);
+                pID2 = ID(newID.get() - 2);
+            }
+            else {
+                pID1 = _idGeometricObjectsGenerator.generate();
+                pID2 = _idGeometricObjectsGenerator.generate();
+                newID = _idGeometricObjectsGenerator.generate();
+            }
 
             _objectSubObjects[newID].push_back(pID1);
             _objectSubObjects[newID].push_back(pID2);
@@ -118,8 +140,19 @@ ID Scene::addObject(const ObjectData& objData) {
                 throw std::invalid_argument("Circle requires center and radius");
             }
 
-            ID pID = _idGeometricObjectsGenerator.generate();
-            ID newID = _idGeometricObjectsGenerator.generate();
+            ID pID;
+            ID newID;
+            if (id != ID(0)) {
+                newID = id;
+                if (_idGeometricObjectsGenerator.getLast().get() < id.get()) {
+                    _idGeometricObjectsGenerator.reset(id.get());
+                }
+                pID = ID(newID.get() - 1);
+            }
+            else {
+                pID = _idGeometricObjectsGenerator.generate();
+                newID = _idGeometricObjectsGenerator.generate();
+            }
 
             _objectSubObjects[newID].push_back(pID);
 
@@ -137,11 +170,26 @@ ID Scene::addObject(const ObjectData& objData) {
                 throw std::invalid_argument("Arc requires first point, second point, center and radius");
             }
 
-            ID pID1 = _idGeometricObjectsGenerator.generate();
-            ID pID2 = _idGeometricObjectsGenerator.generate();
-            ID pID3 = _idGeometricObjectsGenerator.generate();
 
-            ID newID = _idGeometricObjectsGenerator.generate();
+            ID pID1;
+            ID pID2;
+            ID pID3;
+            ID newID;
+            if (id != ID(0)) {
+                newID = id;
+                if (_idGeometricObjectsGenerator.getLast().get() < id.get()) {
+                    _idGeometricObjectsGenerator.reset(id.get());
+                }
+                pID1 = ID(newID.get() - 1);
+                pID2 = ID(newID.get() - 2);
+                pID3 = ID(newID.get() - 3);
+            }
+            else {
+                pID1 = _idGeometricObjectsGenerator.generate();
+                pID2 = _idGeometricObjectsGenerator.generate();
+                pID3 = _idGeometricObjectsGenerator.generate();
+                newID = _idGeometricObjectsGenerator.generate();
+            }
 
             _objectSubObjects[newID].push_back(pID1);
             _objectSubObjects[newID].push_back(pID2);

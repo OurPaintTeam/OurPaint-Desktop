@@ -354,35 +354,56 @@ void MainWindController::onEnterPressed(const QString& command) {
     SLOT_GUARD_MAINWIND_END
 }
 
+#include <fstream>
+#include "SaveLoadJson.h"
+
 void MainWindController::onProjectSaved(const QString& fileName, QString format) {
     SLOT_GUARD_MAINWIND_BEGIN
-    if (format != (".ourp")) {
+
+    if (format != ".ourp") {
         _scene.paint();
-        _painter.saveToImage(fileName, format);
-    } else {
-        std::string File = fileName.toStdString();
-
-
-
-        _scene.paint();
+        _painter.saveToImage(fileName, format);          // ← работало и раньше
+        _mainWind.showSuccess(tr("Image exported!"));
+        return;
     }
-    _mainWind.showSuccess("The project is saved!");
+
+    try {
+        std::ofstream ofs(fileName.toStdString(), std::ios::binary);
+        if (!ofs) {
+            throw std::runtime_error("can't open file");
+        }
+
+        SaveLoadJson saver(_scene);
+        ofs << saver.to_json().dump(4);
+        ofs.close();
+        _mainWind.showSuccess(tr("The project is saved!"));
+    } catch (const std::exception& e) {
+        _mainWind.showError(tr("Save error: %1").arg(e.what()));
+    }
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onLoadFile(const QString& fileName) {
     SLOT_GUARD_MAINWIND_BEGIN
+    _scene.clearImage();
+
     try {
-        _scene.clearImage();
-        std::string File = fileName.toStdString();
-        //scene.loadFromFile(File.c_str());
+        std::ifstream ifs(fileName.toStdString(), std::ios::binary);
+        if (!ifs) {
+            throw std::runtime_error("can't open file");
+        }
+
+        nlohmann::json j;
+        ifs >> j;
+        SaveLoadJson loader(_scene);
+        loader.from_json(j);
+        loader.loadToScene();
 
         _scene.paint();
-        _scene.paint();
-        _mainWind.showSuccess("The project is loaded!");
-    } catch (std::exception& e) {
-        qWarning(e.what());
-        _mainWind.showError(e.what());
+        _mainWind.showSuccess(tr("The project is loaded!"));
+    }
+    catch (const std::exception& e) {
+        _mainWind.showError(tr("Load error: %1").arg(e.what()));
     }
     SLOT_GUARD_MAINWIND_END
 }

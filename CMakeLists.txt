@@ -19,6 +19,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Eigen)
 
+FetchContent_Declare(
+        json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
+
 include_directories(ourpaint
         headers
         headers/painters
@@ -261,6 +268,7 @@ target_link_libraries(ourpaint PRIVATE
         Eigen3::Eigen
         Qt6::Svg
         Math
+        nlohmann_json::nlohmann_json
 )
 
 if (OpenMP_CXX_FOUND)

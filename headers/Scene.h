@@ -74,7 +74,7 @@ public:
     //Scene& operator=(Scene&&);
     ~Scene();
 
-    ID addObject(const ObjectData&);
+    ID addObject(const ObjectData&, ID id = ID(0));
     bool deleteObject(ID objectID);
     bool deletePoint(ID pointID);
     bool deleteSection(ID sectionID);

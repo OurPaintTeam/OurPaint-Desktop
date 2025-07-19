@@ -1,6 +1,6 @@
 #include "SaveLoadJson.h"
 
-SaveLoadJson::SaveLoadJson(Scene &scene) : _scene(scene) {
+SaveLoadJson::SaveLoadJson(Scene& scene) : _scene(scene) {
     std::vector<ObjectData> obj = _scene.getObjects();
     std::vector<Requirement> req = _scene.getRequirements();
 
@@ -13,8 +13,8 @@ SaveLoadJson::SaveLoadJson(Scene &scene) : _scene(scene) {
     }
 }
 
-SaveLoadJson::SaveLoadJson(const std::vector<objectInJson> &objects, const std::vector<requirementInJson> &reqs)
-        : _objects(objects), _reqs(reqs), _scene(nullptr) {}
+//SaveLoadJson::SaveLoadJson(const std::vector<objectInJson> &objects, const std::vector<requirementInJson> &reqs)
+//        : _objects(objects), _reqs(reqs), _scene() {}
 
 nlohmann::json SaveLoadJson::to_json() const {
     nlohmann::json j;
