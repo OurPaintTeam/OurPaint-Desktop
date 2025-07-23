@@ -362,7 +362,7 @@ void MainWindController::onProjectSaved(const QString& fileName, QString format)
 
     if (format != ".ourp") {
         _scene.paint();
-        _painter.saveToImage(fileName, format);          // ← работало и раньше
+        _painter.saveToImage(fileName, format);
         _mainWind.showSuccess(tr("Image exported!"));
         return;
     }

@@ -74,23 +74,14 @@ Scene::~Scene() {
     _idToComponent.clear();
 }
 
-ID Scene::addObject(const ObjectData& objData, ID id) {
+ID Scene::addObject(const ObjectData& objData) {
     switch (objData.et) {
         case ObjType::ET_POINT: {
             if (objData.params.size() < 2) {
                 throw std::invalid_argument("Point requires 2 coordinates");
             }
 
-            ID newID;
-            if (id != ID(0)) {
-                newID = id;
-                if (_idGeometricObjectsGenerator.getLast().get() < id.get()) {
-                    _idGeometricObjectsGenerator.reset(id.get());
-                }
-            }
-            else {
-                newID = _idGeometricObjectsGenerator.generate();
-            }
+            ID newID = _idGeometricObjectsGenerator.generate();
 
             addPoint(objData, newID);
 
@@ -106,22 +97,9 @@ ID Scene::addObject(const ObjectData& objData, ID id) {
                 throw std::invalid_argument("Section requires 4 coordinates");
             }
 
-            ID pID1;
-            ID pID2;
-            ID newID;
-            if (id != ID(0)) {
-                newID = id;
-                if (_idGeometricObjectsGenerator.getLast().get() < id.get()) {
-                    _idGeometricObjectsGenerator.reset(id.get());
-                }
-                pID1 = ID(newID.get() - 1);
-                pID2 = ID(newID.get() - 2);
-            }
-            else {
-                pID1 = _idGeometricObjectsGenerator.generate();
-                pID2 = _idGeometricObjectsGenerator.generate();
-                newID = _idGeometricObjectsGenerator.generate();
-            }
+            ID pID1 = _idGeometricObjectsGenerator.generate();
+            ID pID2 = _idGeometricObjectsGenerator.generate();
+            ID newID = _idGeometricObjectsGenerator.generate();
 
             _objectSubObjects[newID].push_back(pID1);
             _objectSubObjects[newID].push_back(pID2);
@@ -140,19 +118,8 @@ ID Scene::addObject(const ObjectData& objData, ID id) {
                 throw std::invalid_argument("Circle requires center and radius");
             }
 
-            ID pID;
-            ID newID;
-            if (id != ID(0)) {
-                newID = id;
-                if (_idGeometricObjectsGenerator.getLast().get() < id.get()) {
-                    _idGeometricObjectsGenerator.reset(id.get());
-                }
-                pID = ID(newID.get() - 1);
-            }
-            else {
-                pID = _idGeometricObjectsGenerator.generate();
-                newID = _idGeometricObjectsGenerator.generate();
-            }
+            ID pID = _idGeometricObjectsGenerator.generate();
+            ID newID = _idGeometricObjectsGenerator.generate();
 
             _objectSubObjects[newID].push_back(pID);
 
@@ -171,25 +138,10 @@ ID Scene::addObject(const ObjectData& objData, ID id) {
             }
 
 
-            ID pID1;
-            ID pID2;
-            ID pID3;
-            ID newID;
-            if (id != ID(0)) {
-                newID = id;
-                if (_idGeometricObjectsGenerator.getLast().get() < id.get()) {
-                    _idGeometricObjectsGenerator.reset(id.get());
-                }
-                pID1 = ID(newID.get() - 1);
-                pID2 = ID(newID.get() - 2);
-                pID3 = ID(newID.get() - 3);
-            }
-            else {
-                pID1 = _idGeometricObjectsGenerator.generate();
-                pID2 = _idGeometricObjectsGenerator.generate();
-                pID3 = _idGeometricObjectsGenerator.generate();
-                newID = _idGeometricObjectsGenerator.generate();
-            }
+            ID pID1 = _idGeometricObjectsGenerator.generate();
+            ID pID2 = _idGeometricObjectsGenerator.generate();
+            ID pID3 = _idGeometricObjectsGenerator.generate();
+            ID newID = _idGeometricObjectsGenerator.generate();
 
             _objectSubObjects[newID].push_back(pID1);
             _objectSubObjects[newID].push_back(pID2);
@@ -1395,6 +1347,27 @@ bool Scene::isValid(const Requirement& req) const {
 
 void Scene::setObserver(ISceneObserver* o) {
     _observer = o;
+}
+
+void Scene::load(const std::vector<ObjectData>& objs, const std::vector<Requirement>& reqs) {
+    for (auto& obj : objs) {
+        if (obj.et == ObjType::ET_POINT) {
+            addPoint(obj, obj.id);
+        }
+        else if (obj.et == ObjType::ET_SECTION) {
+            addSection(obj, obj.subObjects[0], obj.subObjects[1], obj.id);
+        }
+        else if (obj.et == ObjType::ET_CIRCLE) {
+            addCircle(obj, obj.subObjects[0], obj.id);
+        }
+        else if (obj.et == ObjType::ET_ARC) {
+            addArc(obj, obj.subObjects[0], obj.subObjects[1], obj.subObjects[2], obj.id);
+        }
+    }
+
+    for (auto& req : reqs) {
+        addRequirement(req, req.id);
+    }
 }
 
 

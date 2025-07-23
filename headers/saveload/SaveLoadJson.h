@@ -12,7 +12,7 @@ class SaveLoadJson {
     Scene& _scene;
 public:
     SaveLoadJson(Scene& scene);
-    SaveLoadJson(const std::vector<objectInJson> &objects,const std::vector<requirementInJson> &reqs);
+    //SaveLoadJson(const std::vector<objectInJson> &objects,const std::vector<requirementInJson> &reqs);
     nlohmann::json to_json() const;
     void from_json(const nlohmann::json &obj);
     void loadToScene();

@@ -21,7 +21,7 @@ class Painter;
 class Component;
 class Variable;
 class Function;
-class ObjectData;
+struct ObjectData;
 
 class Scene {
 private:
@@ -74,7 +74,7 @@ public:
     //Scene& operator=(Scene&&);
     ~Scene();
 
-    ID addObject(const ObjectData&, ID id = ID(0));
+    ID addObject(const ObjectData&);
     bool deleteObject(ID objectID);
     bool deletePoint(ID pointID);
     bool deleteSection(ID sectionID);
@@ -132,6 +132,8 @@ public:
     bool tryRestoreRequirement(const Requirement&, ID id);
 
     void setObserver(ISceneObserver* o);
+
+    void load(const std::vector<ObjectData>&, const std::vector<Requirement>&);
 
 private:
     ISceneObserver* _observer = nullptr;
