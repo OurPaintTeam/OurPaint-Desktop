@@ -1,15 +1,15 @@
 #ifndef OURPAINT_HEADERS_SCENE_H_
 #define OURPAINT_HEADERS_SCENE_H_
 
-#include "InheritanceGraph.h"
-#include "ID.h"
-#include "BoundBox.h"
-#include "Enums.h"
-#include "Objects.h"
-
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
+
+#include "BoundBox.h"
+#include "Enums.h"
+#include "ID.h"
+#include "InheritanceGraph.h"
+#include "Objects.h"
 
 class ISceneObserver;
 class ID;
@@ -52,7 +52,7 @@ private:
     std::unordered_map<ID, std::size_t> _idToComponent;
     bool _isComponentsDirty;
 
-    //LMSparse _solver;
+    // LMSparse _solver;
 
     IDGenerator _idRequirementsGenerator;
 
@@ -70,8 +70,8 @@ public:
     Scene(Painter* p);
     Scene(const Scene&) = delete;
     Scene operator=(const Scene&) = delete;
-    //Scene(Scene&&);
-    //Scene& operator=(Scene&&);
+    // Scene(Scene&&);
+    // Scene& operator=(Scene&&);
     ~Scene();
 
     ID addObject(const ObjectData&);
@@ -146,4 +146,4 @@ private:
     void addRequirement(const Requirement& reqData, ID reqID);
 };
 
-#endif // ! OURPAINT_HEADERS_SCENE_H_
+#endif  // ! OURPAINT_HEADERS_SCENE_H_
