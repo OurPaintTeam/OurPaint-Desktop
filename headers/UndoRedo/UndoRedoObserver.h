@@ -1,0 +1,11 @@
+#ifndef OURPAINT_HEADERS_UNDOREDO_UNDOREDO_OBSERVER_H_
+#define OURPAINT_HEADERS_UNDOREDO_UNDOREDO_OBSERVER_H_
+
+// Port
+class IUndoRedoObserver {
+public:
+
+    ~IUndoRedoObserver() = default;
+};
+
+#endif // ! OURPAINT_HEADERS_UNDOREDO_UNDOREDO_OBSERVER_H_
