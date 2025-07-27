@@ -137,12 +137,14 @@ add_executable(ourpaint
         headers/UndoRedo/commands/CommandAddRequirement.h
         headers/UndoRedo/commands/CommandDeleteRequirement.h
         headers/UndoRedo/commands/CommandMove.h
+        headers/UndoRedo/commands/CommandSetGridState.h
 
         src/UndoRedo/commands/Add/CommandAddObject.cc
         src/UndoRedo/commands/Delete/CommandDeleteObject.cc
         src/UndoRedo/commands/CommandAddRequirement.cc
         src/UndoRedo/commands/CommandDeleteRequirement.cc
         src/UndoRedo/commands/CommandMove.cc
+        src/UndoRedo/commands/CommandSetGridState.cc
 
         ###########  GUI  ############
 

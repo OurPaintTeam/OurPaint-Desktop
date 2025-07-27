@@ -1,5 +1,14 @@
 #include "ConsoleManager.h"
 
+CommandManager::CommandManager() {}
+
+CommandManager::~CommandManager() {
+    for (auto& [s, f] : _factories) {
+        delete f;
+    }
+    _factories.clear();
+}
+
 void CommandManager::registerFactory(ICommandFactory* f) {
     _factories[f->id()] = std::move(f);
 }
@@ -52,5 +61,3 @@ CommandManager::ParsedInvocation CommandManager::parse(const std::string& raw) c
 
     return out;
 }
-
-

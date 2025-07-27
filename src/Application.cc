@@ -14,12 +14,12 @@
 #include "Server.h"
 #include "Client.h"
 #include "GUI_Logger.h"
+#include "GridStateQtAdapter.h"
 
 Application::Application(int& argc, char** argv)
         : scene(nullptr),
           undoRedo(nullptr),
           commandManager(nullptr),
-          sqa(nullptr),
           app(nullptr),
           mainWind(nullptr),
           painter(nullptr),
@@ -27,6 +27,8 @@ Application::Application(int& argc, char** argv)
           username(nullptr),
           server(nullptr),
           client(nullptr),
+          sqa(nullptr),
+          gsqa(nullptr),
           pc(nullptr),
           mwc(nullptr),
           lmc(nullptr)
@@ -60,6 +62,7 @@ void Application::initGUI(int& argc, char** argv) {
     mainWind = new MainWindow();
     sqa = new SceneQtAdapter(*scene);
     username = new QString(mainWind->getUserName());
+    mainWind->setUndoRedoManager(undoRedo);
 
     mainWind->setupConsoleCommands({
         "POINT ",
@@ -69,10 +72,15 @@ void Application::initGUI(int& argc, char** argv) {
         "DELETE ",
         "DELETE OBJ ",
         "DELETE REQ ",
-        "CLEAR ",
+        "CLEAR",
+        "EXIT",
         "REQ ",
         "UNDO ",
-        "REDO "
+        "REDO ",
+
+        "GRID "
+        "GRID ON",
+        "GRID OFF"
     });
 
     QApplication::setStyle("Fusion");

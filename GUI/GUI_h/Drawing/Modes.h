@@ -2,6 +2,7 @@
 #define OURPAINT_MODES_H
 
 #include <bitset>
+#include <QObject>
 
 // Enumerations for different modes
 enum class WorkModes {
@@ -32,7 +33,8 @@ enum class KeyMode {
     ReleasingShift,
 };
 
-class ModeManager {
+class ModeManager : public QObject {
+    Q_OBJECT
 private:
     // Static bitsets for modes
     static std::bitset<static_cast<size_t>(WorkModes::Editor) + 1> workModes;
@@ -46,6 +48,10 @@ private:
     static bool saveFileMode;
     static bool isServer;
     static bool isConnected;
+
+    ModeManager() = default;
+    ModeManager(const ModeManager&) = delete;
+    ModeManager& operator=(const ModeManager&) = delete;
 
 public:
     // Methods for working with modes
@@ -78,6 +84,11 @@ public:
 
     static void setFlagServer(bool flag);
     static bool getFlagServer();
+
+    static ModeManager* instance();
+
+signals:
+    void cellChanged(bool on);
 };
 
 #endif // OURPAINT_MODES_H

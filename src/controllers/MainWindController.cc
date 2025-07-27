@@ -319,37 +319,14 @@ void MainWindController::onTenRequirements() {
 
 void MainWindController::onEnterPressed(const QString& command) {
     SLOT_GUARD_MAINWIND_BEGIN
-    if (ModeManager::getConnection()) {
-        if (ModeManager::getFlagServer()) {
-            if (command == "Exit") {
-                QCoreApplication::quit();
-                return;
-            }
-            else {
-                UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
-                _urm.push(std::move(*txn));
-
-                // TODO update left menu
-
-                updateState();
-                //server.sendToClients(QString::fromStdString(scene.to_string()));
-            }
-        } else {
-            //client.sendCommandToServer(command);
-        }
-    } else {
-        if (command == "Exit") {
-            QCoreApplication::quit();
-            return;
-        }
-        else {
-            UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
-            _urm.push(std::move(*txn));
-
-            // TODO update left menu
-
-            updateState();
-        }
+    if (command == "Exit") {
+        QCoreApplication::quit();
+        return;
+    }
+    else {
+        UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
+        _urm.push(std::move(*txn));
+        updateState();
     }
     SLOT_GUARD_MAINWIND_END
 }

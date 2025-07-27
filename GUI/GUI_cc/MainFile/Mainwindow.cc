@@ -16,8 +16,8 @@ MainWindow::MainWindow(QWidget* parent)
           moving(false),
           dragStartPos(),
           originalGeometry(),
-          currentRegion(None){
-
+          currentRegion(None)
+{
     ui->setupUi(this);
     setMouseTracking(true);
     setAllMouseTracking(this); // Mouse Tracking
@@ -138,6 +138,7 @@ void MainWindow::initConnections() {
         ModeManager::setCell(checked);
         ui->workWindow->update();
     });
+
     connect(ui->componentAxis, &QCheckBox::toggled, [&](bool checked) {
         ModeManager::setAxis(checked);
         ui->workWindow->update();

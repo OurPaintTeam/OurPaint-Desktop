@@ -448,4 +448,35 @@ private:
     Scene& _scene;
 };
 
+class GridOnFactory : public ICommandFactory {
+public:
+    GridOnFactory();
+
+    std::string id() const override {
+        return "GRID";
+    }
+
+    std::string hint() const override {
+        return "GRID ON";
+    }
+
+    void createCommands(const std::vector<std::string>& rawArgs, UndoRedo::Transaction& txn) const override {
+        if (rawArgs.size() != 1) {
+            throw std::runtime_error("GRID: expected 1 argument, ON or OFF");
+        }
+
+        if (rawArgs[0] == "ON") {
+
+        }
+        else if (rawArgs[0] == "OFF") {
+
+        }
+    }
+
+    void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {}
+
+private:
+
+};
+
 #endif // ! OURPAINT_HEADERS_UNDOREDO_COMMAND_FACTORY_H_

@@ -79,7 +79,16 @@ bool ModeManager::getActiveMode(KeyMode mode) {
 }
 
 void ModeManager::setCell(bool flag) {
+    if (flag == getCell()) {
+        return;
+    }
     cellEnabled = flag;
+    emit instance()->cellChanged(flag);
+}
+
+ModeManager* ModeManager::instance() {
+    static ModeManager mgr;
+    return &mgr;
 }
 
 bool ModeManager::getCell() {

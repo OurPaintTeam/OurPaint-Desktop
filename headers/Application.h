@@ -34,8 +34,6 @@ private:
     UndoRedo::UndoRedoManager* undoRedo;
     CommandManager* commandManager;
 
-    SceneQtAdapter* sqa;
-
     QApplication* app;
     MainWindow* mainWind;
     QTPainter* painter;
@@ -44,6 +42,8 @@ private:
 
     Server* server;
     Client* client;
+
+    SceneQtAdapter* sqa;
 
     PainterController* pc;
     MainWindController* mwc;

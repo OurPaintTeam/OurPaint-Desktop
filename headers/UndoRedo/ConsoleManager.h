@@ -20,6 +20,9 @@ class CommandManager {
     };
 
 public:
+    CommandManager();
+    ~CommandManager();
+
     void registerFactory(ICommandFactory* f);
 
     UndoRedo::Transaction* invoke(const std::string &raw);
