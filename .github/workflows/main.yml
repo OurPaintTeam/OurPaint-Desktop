@@ -1,4 +1,4 @@
-name: withFlags
+name: withFlagsAndOptimizations
 
 on:
   pull_request:

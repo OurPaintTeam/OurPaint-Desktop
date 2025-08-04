@@ -14,7 +14,7 @@ jobs:
       - name: configure resources
         run: mkdir build && cp -r tests/testStructures build/
       - name: Configure
-        run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Debug -DTYPE_OF_COMPILING=0
+        run: cmake -B build -S tests -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DTYPE_OF_COMPILING=0 -DTYPE_OF_OPTIMIZATION=0
       - name: Build
         run: cmake --build build
       # ObjectsGTEST
@@ -60,6 +60,16 @@ jobs:
       - name: Run RequirementJsonTest - Valgrind
         working-directory: build
         run: valgrind --leak-check=full --error-exitcode=1 ./RequirementJsonTest
+      - name: Clang-Tidy
+        continue-on-error: true
+        run: |
+          echo -e "\033[31m=== Clang-Tidy Warnings ===\033[0m"
+          find src headers tests GUI -name '*.cpp' -o -name '*.hpp' -o -name '*.h' | \
+          xargs -I{} -P$(nproc) clang-tidy -p build {} 2>&1 | tee clang-tidy.log
+          echo "::warning::Clang-Tidy found issues (see log above)"       
+          echo "::group::📋 Clang-Tidy Full Log"
+          cat clang-tidy.log
+          echo "::endgroup::"
   RELEASE:
     runs-on: self-hosted
     steps:
@@ -71,7 +81,7 @@ jobs:
       - name: configure resources
         run: mkdir build && cp -r tests/testStructures build/
       - name: Configure
-        run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release -DTYPE_OF_COMPILING=0
+        run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release -DTYPE_OF_COMPILING=0 -DTYPE_OF_OPTIMIZATION=0
       - name: Build
         run: cmake --build build
       # ObjectsGTEST
