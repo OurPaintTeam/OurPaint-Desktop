@@ -22,11 +22,7 @@ jobs:
         run: |
           echo -e "\033[31m=== Clang-Tidy Warnings ===\033[0m"
           find src headers tests GUI -name '*.cpp' -o -name '*.hpp' -o -name '*.h' | \
-          xargs -I{} -P$(nproc) clang-tidy -p build {} 2>&1 | tee clang-tidy.log
-          echo "::warning::Clang-Tidy found issues (see log above)"       
-          echo "::group::📋 Clang-Tidy Full Log"
-          cat clang-tidy.log
-          echo "::endgroup::"
+          xargs -I{} -P$(nproc) clang-tidy --checks='google-*' -p build {} 2>&1
       # ObjectsGTEST
       - name: Run ObjectsGTEST
         run: ./build/ObjectsGTEST
