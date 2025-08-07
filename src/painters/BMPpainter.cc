@@ -12,7 +12,7 @@ BMPpainter& BMPpainter::operator=(const BMPpainter &other)
     return *this;
 }
 
-BMPpainter::BMPpainter(const BMPfile &file): c_file(file), v_height(file.getHeight()), v_weight(file.getWidth()){}
+BMPpainter::BMPpainter(const BMPfile &file): c_file(file), v_weight(file.getWidth()), v_height(file.getHeight()){}
 /*
 * // let's make some transformations so that the center of the CC is always in the middle of the sheet
 * x = v_height - y; y = v_weight + x
@@ -119,7 +119,7 @@ void BMPpainter::draw() {
 
 void BMPpainter::clear() {}
 
-void BMPpainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {}
+void BMPpainter::initArcCase(std::unordered_map<ID, Arc*>&) {}
 
 void BMPpainter::saveBMP(const char* filename) {
     c_file.saveBmp(filename);

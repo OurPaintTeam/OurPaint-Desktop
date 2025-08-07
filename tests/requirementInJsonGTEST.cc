@@ -4,11 +4,12 @@
 
 
 TEST(RequirementInJsonTest, SerializeDeserialize) {
-    RequirementData data;
-    data.req = ET_POINTSECTIONDIST;
+    Requirement data;
+    data.type = ReqType::ET_POINTSECTIONDIST;
     data.id = ID(42);
-    data.objects = { ID(1), ID(2) };
-    data.params = { 100.5 };
+    data.obj1 = ID(1);
+    data.obj2 = ID(2);
+    data.param = 100.5;
 
     std::string name = "ConstraintTest";
     requirementInJson r(data, name);
@@ -28,20 +29,19 @@ TEST(RequirementInJsonTest, SerializeDeserialize) {
 
     EXPECT_EQ(name2, name);
     EXPECT_EQ(data2.id.get(), 42);
-    EXPECT_EQ(data2.req, ET_POINTSECTIONDIST);
-    ASSERT_EQ(data2.objects.size(), 2);
-    EXPECT_EQ(data2.objects[0].get(), 1);
-    EXPECT_EQ(data2.objects[1].get(), 2);
-    ASSERT_EQ(data2.params.size(), 1);
-    EXPECT_DOUBLE_EQ(data2.params[0], 100.5);
+    EXPECT_EQ(data2.type, ReqType::ET_POINTSECTIONDIST);
+    EXPECT_EQ(data2.obj1.get(), 1);
+    EXPECT_EQ(data2.obj2.get(), 2);
+    EXPECT_DOUBLE_EQ(data2.param.value(), 100.5);
 }
 
 TEST(RequirementInJsonTest, CopyConstructorAndAssignment) {
-    RequirementData data;
-    data.req = ET_POINTSECTIONDIST;
+    Requirement data;
+    data.type = ReqType::ET_POINTSECTIONDIST;
     data.id = ID(1);
-    data.objects = { ID(10), ID(20) };
-    data.params = { 300.0 };
+    data.obj1 = ID(10);
+    data.obj2 = ID(20);
+    data.param = { 300.0 };
 
     std::string name = "CopyTest";
     requirementInJson orig(data, name);
@@ -55,11 +55,12 @@ TEST(RequirementInJsonTest, CopyConstructorAndAssignment) {
 }
 
 TEST(RequirementInJsonTest, MoveConstructorAndAssignment) {
-    RequirementData data;
-    data.req = ET_POINTSECTIONDIST;
+    Requirement data;
+    data.type = ReqType::ET_POINTSECTIONDIST;
     data.id = ID(5);
-    data.objects = { ID(100), ID(200) };
-    data.params = { 50.0 };
+    data.obj1 = ID(100);
+    data.obj2 = ID(200);
+    data.param = 50.0;
 
     std::string name = "MoveTest";
     requirementInJson orig(data, name);
@@ -70,5 +71,5 @@ TEST(RequirementInJsonTest, MoveConstructorAndAssignment) {
 
     requirementInJson another(data, "temp");
     another = std::move(moved);
-    EXPECT_EQ(another.to_pair().second.objects[0].get(), 100);
+    EXPECT_EQ(another.to_pair().second.obj1.get(), 100);
 }

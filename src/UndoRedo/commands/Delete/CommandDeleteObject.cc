@@ -15,13 +15,13 @@ namespace UndoRedo {
     bool CommandDeleteObject::Undo() {
         try {
             if (_scene.tryRestoreObject(_data, _data.id)) {
-                for (auto &rd: _reqData) {
+                for (auto& rd: _reqData) {
                     if (!_scene.tryRestoreRequirement(rd, rd.id)) {
                         return false;
                     }
                 }
             }
-            return true;
+            return false;
         } catch (...) {
             return false;
         }

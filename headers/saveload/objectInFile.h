@@ -4,7 +4,7 @@
 #include <string>
 
 #include "objects/GeometricObjects.h"
-
+/*
 class objectInFile {
     unsigned int id;
     IGeometricObject *s_obj;
@@ -20,5 +20,5 @@ public:
 
     std::string to_string() const;
 };
-
+*/
 #endif // ! OURPAINT_HEADERS_SAVELOAD_OBJECTINFILE_H_
