@@ -1,17 +1,19 @@
 #include "SaveLoadJson.h"
 
-SaveLoadJson::SaveLoadJson(Scene& scene) : _scene(scene) {
-    std::vector<ObjectData> obj = _scene.getObjects();
-    std::vector<Requirement> req = _scene.getRequirements();
-
-    // TODO get names from Timofey's classes
-    //for (const auto &o: obj) {
-    //    _objects.push_back(objectInJson(std::vector<std::string>(), o));
-    //}
-    //for (const auto &r: req) {
-    //    _reqs.push_back(requirementInJson(r, std::string()));
-    //}
-}
+SaveLoadJson::SaveLoadJson(Scene &scene): _scene(scene) {
+  std::vector<ObjectData> obj = _scene.getObjects();
+  std::vector<RequirementData> req = _scene.getRequirements();
+// TODO get names from Timofey's classes
+  for (const auto &o : obj) {
+    std::vector<std::string> names = {"TODO"};
+    for (const auto &_ : o.subObjects) {
+      names.push_back("TODO");
+    }
+    _objects.push_back(objectInJson("TODO",o));
+  }
+  for (const auto &r : req) {
+    _reqs.push_back(requirementInJson(r, "TODO"));
+  }
 
 //SaveLoadJson::SaveLoadJson(const std::vector<objectInJson> &objects, const std::vector<requirementInJson> &reqs)
 //        : _objects(objects), _reqs(reqs), _scene() {}
