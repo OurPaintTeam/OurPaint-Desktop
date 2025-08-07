@@ -83,7 +83,13 @@ nlohmann::json objectInJson::to_json() const {
     json["id"] = _obj.id.get();
     json["type"] = to_string(_obj.et);
     json["name"] = _name.at(0);
-
+    if (_obj.et == ObjType::ET_POINT) {
+        json["params"] = nlohmann::json::array();
+        for (const auto &p : _obj.params) {
+            nlohmann::json param;
+        }
+        return json;
+    }
     nlohmann::json points = nlohmann::json::array();
     for (std::size_t i = 0; i < _subObjects.size(); ++i) {
         const ObjectData &pt = _subObjects[i];
