@@ -633,17 +633,29 @@ std::size_t Scene::requirementsCount() const {
 
 std::vector<ObjectData> Scene::getObjects() const {
     std::vector<ObjectData> objs;
+    std::unordered_set<ID> alreadyPoints;
+    for (auto& [id, s]: _sections) {
+        ObjectData obj = getObjectData(id);
+        objs.push_back(obj);
+        alreadyPoints.insert(obj.subObjects.at(0));
+        alreadyPoints.insert(obj.subObjects.at(1));
+    }
+    for (auto& [id, c]: _circles) {
+        ObjectData obj = getObjectData(id);
+        objs.push_back(obj);
+        alreadyPoints.insert(obj.subObjects.at(0));
+    }
+    for (auto& [id, a]: _arcs) {
+        ObjectData obj = getObjectData(id);
+        objs.push_back(obj);
+        alreadyPoints.insert(obj.subObjects.at(0));
+        alreadyPoints.insert(obj.subObjects.at(1));
+        alreadyPoints.insert(obj.subObjects.at(2));
+    }
     for (auto& [id, _]: _points) {
-        objs.push_back(getObjectData(id));
-    }
-    for (auto& [id, _]: _sections) {
-        objs.push_back(getObjectData(id));
-    }
-    for (auto& [id, _]: _circles) {
-        objs.push_back(getObjectData(id));
-    }
-    for (auto& [id, _]: _arcs) {
-        objs.push_back(getObjectData(id));
+        if (!alreadyPoints.contains(id)) {
+            objs.push_back(getObjectData(id));
+        }
     }
     return objs;
 }
