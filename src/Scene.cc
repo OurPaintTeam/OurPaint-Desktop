@@ -1339,16 +1339,16 @@ bool Scene::isValid(const Requirement& req) const {
     using u8 = std::underlying_type_t<ReqType>;
     const auto& rule = ReqRules[static_cast<u8>(req.type)];
 
-    const bool aOK = exists(req.obj1, rule.first);
-    const bool bOK = exists(req.obj2, rule.second);
+    const bool aOK = exists(req.obj1, rule.types[0]);
+    const bool bOK = exists(req.obj2, rule.types[1]);
 
     if (aOK && bOK && (!rule.needsParam || req.param.has_value())) {
         return true;
     }
 
     if (rule.symmetric) {
-        const bool revA = exists(req.obj1, rule.second);
-        const bool revB = exists(req.obj2, rule.first);
+        const bool revA = exists(req.obj1, rule.types[1]);
+        const bool revB = exists(req.obj2, rule.types[0]);
         if (revA && revB && (!rule.needsParam || req.param.has_value())) {
             return true;
         }
