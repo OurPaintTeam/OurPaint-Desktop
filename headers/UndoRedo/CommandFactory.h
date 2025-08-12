@@ -20,6 +20,7 @@
 #include "CommandAddRequirement.h"
 #include "CommandDeleteRequirement.h"
 #include "CommandMove.h"
+#include "CommandClear.h"
 
 using namespace UndoRedo;
 
@@ -446,6 +447,30 @@ public:
 
 private:
     Scene& _scene;
+};
+
+class ClearFactory : public ICommandFactory {
+public:
+    ClearFactory(Scene*& sc) : _scene(sc) {}
+
+    std::string id() const override {
+        return "CLEAR";
+    }
+
+    std::string hint() const override {
+        return "CLEAR";
+    }
+
+    void createCommands(const std::vector<std::string>&, UndoRedo::Transaction& txn) const override {
+        txn.addCommand(new CommandClear(_scene));
+    }
+
+    void createCommands(const std::vector<double>&, UndoRedo::Transaction& txn) const override {
+        txn.addCommand(new CommandClear(_scene));
+    }
+
+private:
+    Scene*& _scene;
 };
 
 #endif // ! OURPAINT_HEADERS_UNDOREDO_COMMAND_FACTORY_H_
