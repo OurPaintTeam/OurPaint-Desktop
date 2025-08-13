@@ -56,6 +56,10 @@ CommandManager::ParsedInvocation CommandManager::parse(const std::string& raw) c
     out.id = std::move(token);
 
     while (iss >> token) {
+        std::transform(token.begin(), token.end(), token.begin(),
+                       [](unsigned char c) {
+                           return static_cast<char>(std::toupper(c));
+                       });
         out.args.emplace_back(std::move(token));
     }
 

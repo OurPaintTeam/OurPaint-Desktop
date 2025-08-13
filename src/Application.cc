@@ -14,7 +14,8 @@
 #include "Server.h"
 #include "Client.h"
 #include "GUI_Logger.h"
-#include "GridStateQtAdapter.h"
+#include "GridSnap.h"
+#include "GridSnapQtAdapter.h"
 
 Application::Application(int& argc, char** argv)
         : scene(nullptr),
@@ -48,6 +49,7 @@ void Application::initCore() {
     scene = new Scene(nullptr);
     undoRedo = new UndoRedo::UndoRedoManager(100);
     commandManager = new CommandManager();
+    gridSnap = new GridSnap(false, false, false);
 
     commandManager->registerFactory(new PointFactory(*scene));
     commandManager->registerFactory(new LineFactory(*scene));
@@ -55,14 +57,16 @@ void Application::initCore() {
     commandManager->registerFactory(new ArcFactory(*scene));
     commandManager->registerFactory(new ReqFactory(*scene));
     commandManager->registerFactory(new DelFactory(*scene));
+    commandManager->registerFactory(new GridFactory(*gridSnap));
+    commandManager->registerFactory(new SnapFactory(*gridSnap));
 }
 
 void Application::initGUI(int& argc, char** argv) {
     app = new QApplication(argc, argv);
     mainWind = new MainWindow();
     sqa = new SceneQtAdapter(*scene);
+    gsqa = new GridSnapQtAdapter(*gridSnap);
     username = new QString(mainWind->getUserName());
-    mainWind->setUndoRedoManager(undoRedo);
 
     mainWind->setupConsoleCommands({
         "POINT ",
@@ -75,12 +79,22 @@ void Application::initGUI(int& argc, char** argv) {
         "CLEAR",
         "EXIT",
         "REQ ",
-        "UNDO ",
-        "REDO ",
+        "UNDO",
+        "REDO",
 
-        "GRID "
+        "GRID ",
         "GRID ON",
-        "GRID OFF"
+        "GRID OFF",
+
+        "SNAP ",
+        "SNAP ON",
+        "SNAP OFF",
+        "SNAP GRID ",
+        "SNAP GRID ON",
+        "SNAP GRID OFF",
+        "SNAP OBJECTS ",
+        "SNAP OBJECTS ON",
+        "SNAP OBJECTS OFF"
     });
 
     QApplication::setStyle("Fusion");
@@ -100,11 +114,15 @@ void Application::initGUI(int& argc, char** argv) {
     scene->setPainter(painter);
     leftMenu = mainWind->getLeftMenuBar();
 
+    painter->setGridSnap(gridSnap);
+
     QObject::connect(sqa, &SceneQtAdapter::pointAddedQt, leftMenu, &LeftMenuBar::onPointAdded);
     QObject::connect(sqa, &SceneQtAdapter::sectionAddedQt, leftMenu, &LeftMenuBar::onSectionAdded);
     QObject::connect(sqa, &SceneQtAdapter::circleAddedQt, leftMenu, &LeftMenuBar::onCircleAdded);
     QObject::connect(sqa, &SceneQtAdapter::arcAddedQt, leftMenu, &LeftMenuBar::onArcAdded);
     QObject::connect(sqa, &SceneQtAdapter::reqAddedQt, leftMenu, &LeftMenuBar::onReqAdded);
+
+    QObject::connect(gsqa, &GridSnapQtAdapter::gridStateChangedQt, mainWind, &MainWindow::onGridToggled);
 
     mainWind->show();
 }
@@ -157,7 +175,7 @@ void Application::initControllers() {
     QObject::connect(painter, &QTPainter::EndMoving, pc, &PainterController::onEndMoving);
 
     mwc = new MainWindController(*painter, *scene, *mainWind, *leftMenu, *undoRedo, *commandManager, *server, *client,
-                                 *username);
+                                 *username, *gridSnap);
 
     QObject::connect(mainWind, &MainWindow::DELETE, mwc, &MainWindController::onDelete); // Deleting an element
     QObject::connect(mainWind, &MainWindow::COPY, mwc, &MainWindController::onCopy); // ctrl+c
@@ -185,6 +203,7 @@ void Application::initControllers() {
     QObject::connect(mainWind, &MainWindow::SigJoinServer, mwc, &MainWindController::onSigJoinServer);
     QObject::connect(mainWind, &MainWindow::EnterMessage, mwc, &MainWindController::onEnterMessage);
     QObject::connect(mainWind, &MainWindow::NameUsers, mwc, &MainWindController::onEnterMessage);
+    QObject::connect(mainWind, &MainWindow::gridToggled, mwc, &MainWindController::onGridToggled);
 
     lmc = new LeftMenuController(*mainWind, *scene, *painter);
 
@@ -213,6 +232,7 @@ Application::~Application() {
     delete scene;
     delete undoRedo;
     delete commandManager;
+    delete gridSnap;
 
     /* free gui */
     delete app;

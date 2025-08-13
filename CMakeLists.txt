@@ -65,66 +65,56 @@ add_executable(ourpaint
         src/Scene.cc
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
-
+        src/GridSnap.cc
+        src/GridSnapQtAdapter.cc
         src/painters/BMPpainter.cc
-
-        src/UndoRedo/Transaction.cc
-        src/UndoRedo/UndoRedoTemplate.cc
-        src/UndoRedo/UndoRedo.cc
-        src/UndoRedo/ConsoleManager.cc
-
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
         src/saveload/requirementInFile.cc
         src/saveload/requirementInJson.cc
         src/saveload/SaveLoadJson.cc
         src/saveload/objectInJson.cc
-
         src/Application.cc
         src/BMPfile.cc
         src/SceneQtAdapter.cc
-
         src/controllers/PainterController.cc
         src/controllers/MainWindController.cc
         src/controllers/LeftMenuController.cc
 
-
         headers/painters/Painter.h
         headers/painters/BMPpainter.h
-
         headers/saveload/FileOurP.h
         headers/saveload/requirementInFile.h
         headers/saveload/objectInFile.h
         headers/saveload/objectInJson.h
         headers/saveload/SaveLoadJson.h
         headers/saveload/requirementInJson.h
-
         headers/Application.h
         headers/BMPfile.h
         headers/SceneObserver.h
         headers/SceneQtAdapter.h
         headers/ExceptionGuard.h
-
-        headers/UndoRedo/Command.h
-        headers/UndoRedo/Transaction.h
-        headers/UndoRedo/UndoRedoTemplate.h
-        headers/UndoRedo/UndoRedo.h
-
         headers/objects/Enums.h
         headers/objects/Objects.h
         headers/objects/GeometricObjects.h
         headers/objects/Component.h
         headers/objects/ID.h
         headers/Scene.h
-        headers/UndoRedo/UndoRedoTemplate.h
         headers/objects/BoundBox.h
-
+        headers/GridSnap.h
+        headers/GridSnapObserver.h
+        headers/GridSnapQtAdapter.h
         headers/controllers/PainterController.h
         headers/controllers/MainWindController.h
         headers/controllers/LeftMenuController.h
 
         ########### UNDO/REDO ###########
 
+        headers/UndoRedo/Command.h
+        headers/UndoRedo/Transaction.h
+        headers/UndoRedo/UndoRedoTemplate.h
+        headers/UndoRedo/UndoRedo.h
+        headers/UndoRedo/UndoRedoTemplate.h
         headers/UndoRedo/commands/Add/CommandAddObject.h
         headers/UndoRedo/commands/Add/CommandAddPoint.h
         headers/UndoRedo/commands/Add/CommandAddSection.h
@@ -138,6 +128,7 @@ add_executable(ourpaint
         headers/UndoRedo/commands/CommandDeleteRequirement.h
         headers/UndoRedo/commands/CommandMove.h
         headers/UndoRedo/commands/CommandSetGridState.h
+        headers/UndoRedo/commands/CommandSetSnapState.h
 
         src/UndoRedo/commands/Add/CommandAddObject.cc
         src/UndoRedo/commands/Delete/CommandDeleteObject.cc
@@ -145,6 +136,11 @@ add_executable(ourpaint
         src/UndoRedo/commands/CommandDeleteRequirement.cc
         src/UndoRedo/commands/CommandMove.cc
         src/UndoRedo/commands/CommandSetGridState.cc
+        src/UndoRedo/commands/CommandSetSnapState.cc
+        src/UndoRedo/Transaction.cc
+        src/UndoRedo/UndoRedoTemplate.cc
+        src/UndoRedo/UndoRedo.cc
+        src/UndoRedo/ConsoleManager.cc
 
         ###########  GUI  ############
 

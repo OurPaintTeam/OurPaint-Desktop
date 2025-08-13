@@ -13,6 +13,8 @@
 // The cells create the effect of movement
 // The axes create the effect of infinity
 
+class GridSnap;
+
 class DrawBackground {
 public:
     explicit DrawBackground() = default;
@@ -22,7 +24,7 @@ public:
     static qreal Step(const qreal rawStep);
 
     // Background rendering
-    static void backgroundRender(QPainter& painter);
+    static void backgroundRender(QPainter& painter, GridSnap& gs);
 
     // Drawing the main coordinate axes
     static void mainBackgroundRender(QPainter& painter);

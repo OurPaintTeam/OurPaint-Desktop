@@ -132,10 +132,9 @@ void MainWindow::initConnections() {
         ui->nameUsers->setEnabled(true);
     });
 
-
     // Grid Settings
     connect(ui->componentGrid, &QCheckBox::toggled, [&](bool checked) {
-        ModeManager::setCell(checked);
+        emit gridToggled(checked);
         ui->workWindow->update();
     });
 
@@ -992,35 +991,39 @@ void MainWindow::tenthReq() {
 
 void MainWindow::onExportJPG() {
     saveProjectToFile(QString(".jpg"));
-};
+}
 
 void MainWindow::onExportJPEG() {
     saveProjectToFile(".jpeg");
-};
+}
 
 void MainWindow::onExportPNG() {
     saveProjectToFile(".png");
-};
+}
 
 void MainWindow::onExportBMP() {
     saveProjectToFile(".bmp");
-};
+}
 
 void MainWindow::onExportTIFF() {
     saveProjectToFile(".tiff");
-};
+}
 
 void MainWindow::onExportPDF() {
     saveProjectToFile(".pdf");
-};
+}
 
 void MainWindow::onExportOURP() {
     saveProjectToFile(".ourp");
-};
+}
 
 void MainWindow::onExportSVG() {
     saveProjectToFile(".svg");
-};
+}
+void MainWindow::onGridToggled(bool state) {
+    ui->componentGrid->setChecked(state);
+    ui->workWindow->update();
+}
 
 
 

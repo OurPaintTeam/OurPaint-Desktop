@@ -27,6 +27,7 @@
 #include "MouseDrawingManager.h"
 #include "DrawRectangleTool.h"
 
+class GridSnap;
 
 class QTPainter : public QFrame, public Painter {
 Q_OBJECT
@@ -36,7 +37,7 @@ private:
     std::unique_ptr<DrawRectangleTool> rectTool;
 
     // Selected objects
-    std::unordered_map<ID, Color>selectedIDPoint;
+    std::unordered_map<ID, Color> selectedIDPoint;
     std::unordered_map<ID, Color> selectedIDCircle;
     std::unordered_map<ID, Color> selectedIDSection;
     std::unordered_map<ID, Color> selectedIDArc;
@@ -51,6 +52,8 @@ private:
     bool leftClickFlag = true;
     bool drawing;
 
+    GridSnap* _gs = nullptr;
+
 public:
     QTPainter(QWidget* parent);
 
@@ -59,6 +62,8 @@ public:
     QVector<ID> getVecSelectedIDCircles();
     QVector<ID> getVecSelectedIDArcs();
     std::optional<QPair<ID, ID>> getPairSelectedID() const;
+
+    void setGridSnap(GridSnap* gs);
 
     void selectedClear();
     bool leftClickTimer();

@@ -20,6 +20,10 @@
 #include "CommandAddRequirement.h"
 #include "CommandDeleteRequirement.h"
 #include "CommandMove.h"
+#include "CommandSetGridState.h"
+#include "CommandSetSnapState.h"
+
+#include "GridSnap.h"
 
 using namespace UndoRedo;
 
@@ -448,9 +452,9 @@ private:
     Scene& _scene;
 };
 
-class GridOnFactory : public ICommandFactory {
+class GridFactory : public ICommandFactory {
 public:
-    GridOnFactory();
+    GridFactory(GridSnap& gridSnap) : _gridSnap(gridSnap) {};
 
     std::string id() const override {
         return "GRID";
@@ -466,17 +470,76 @@ public:
         }
 
         if (rawArgs[0] == "ON") {
-
+            txn.addCommand(new CommandSetGridState(_gridSnap, true));
         }
         else if (rawArgs[0] == "OFF") {
-
+            txn.addCommand(new CommandSetGridState(_gridSnap, false));
+        }
+        else {
+            throw std::logic_error("GRID: expected 1 argument, ON or OFF");
         }
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {}
 
 private:
+    GridSnap& _gridSnap;
+};
 
+class SnapFactory : public ICommandFactory {
+public:
+    SnapFactory(GridSnap& gridSnap) : _gridSnap(gridSnap) {};
+
+    std::string id() const override {
+        return "SNAP";
+    }
+
+    std::string hint() const override {
+        return "";
+    }
+
+    void createCommands(const std::vector<std::string>& rawArgs, UndoRedo::Transaction& txn) const override {
+        if (rawArgs.size() == 0) {
+            throw std::runtime_error("SNAP: expected argument");
+        }
+
+        if (rawArgs[0] == "ON") {
+            txn.addCommand(new CommandSetSnapState(_gridSnap, true, true));
+        }
+        else if (rawArgs[0] == "OFF") {
+            txn.addCommand(new CommandSetSnapState(_gridSnap, false, false));
+        }
+        else if (rawArgs[0] == "GRID" && rawArgs.size() > 1) {
+            if (rawArgs[0] == "ON") {
+                txn.addCommand(new CommandSetSnapState(_gridSnap, true, _gridSnap.getSnapObjectsState()));
+            }
+            else if (rawArgs[0] == "OFF") {
+                txn.addCommand(new CommandSetSnapState(_gridSnap, false, _gridSnap.getSnapObjectsState()));
+            }
+            else {
+                throw std::logic_error("SNAP: expected argument");
+            }
+        }
+        else if (rawArgs[0] == "OBJECTS" && rawArgs.size() > 1) {
+            if (rawArgs[0] == "ON") {
+                txn.addCommand(new CommandSetSnapState(_gridSnap, _gridSnap.getSnapGridState(), true));
+            }
+            else if (rawArgs[0] == "OFF") {
+                txn.addCommand(new CommandSetSnapState(_gridSnap, _gridSnap.getSnapGridState(), true));
+            }
+            else {
+                throw std::logic_error("SNAP: expected argument");
+            }
+        }
+        else {
+            throw std::logic_error("SNAP: expected argument");
+        }
+    }
+
+    void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {}
+
+private:
+    GridSnap& _gridSnap;
 };
 
 #endif // ! OURPAINT_HEADERS_UNDOREDO_COMMAND_FACTORY_H_

@@ -23,7 +23,8 @@ MainWindController::MainWindController(QTPainter& _painter,
                                        CommandManager& cm,
                                        Server& s,
                                        Client& c,
-                                       QString& username)
+                                       QString& username,
+                                       GridSnap& gs)
     : _painter(_painter),
       _scene(scene),
       _mainWind(mainWind),
@@ -32,7 +33,8 @@ MainWindController::MainWindController(QTPainter& _painter,
       _cm(cm),
       _s(s),
       _c(c),
-      _username(username)
+      _username(username),
+      _gs(gs)
       {
     vec_requirements = {
             "PointSectionDist",
@@ -614,3 +616,8 @@ void MainWindController::updateState() {
     SLOT_GUARD_MAINWIND_END
 }
 
+void MainWindController::onGridToggled(bool state) {
+    SLOT_GUARD_MAINWIND_BEGIN
+    _gs.setGridState(state);
+    SLOT_GUARD_MAINWIND_END
+}

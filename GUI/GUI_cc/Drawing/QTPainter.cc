@@ -622,7 +622,7 @@ void QTPainter::paintEvent(QPaintEvent* event) {
     // Moving to the center of the screen
     painter.translate((qint32) (width() / 2 + Scaling::getDeltaX()), (qint32) (height() / 2 + Scaling::getDeltaY()));
 
-    DrawBackground::backgroundRender(painter);
+    DrawBackground::backgroundRender(painter, *_gs);
 
     // If the cursor is in the area, then draw its values
     if (ModeManager::getCursor()) {
@@ -711,7 +711,9 @@ void QTPainter::initCircleCase(std::unordered_map<ID, Circle*>& circles) {
 void QTPainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {
     caseArcs = &arcs;
 }
-
+void QTPainter::setGridSnap(GridSnap* gs) {
+    _gs = gs;
+}
 
 void QTPainter::onWorkWindowResized() {
     // When changing the size of the parent window, we change the size

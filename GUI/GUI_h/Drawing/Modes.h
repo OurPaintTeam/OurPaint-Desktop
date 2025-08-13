@@ -2,7 +2,6 @@
 #define OURPAINT_MODES_H
 
 #include <bitset>
-#include <QObject>
 
 // Enumerations for different modes
 enum class WorkModes {
@@ -33,8 +32,7 @@ enum class KeyMode {
     ReleasingShift,
 };
 
-class ModeManager : public QObject {
-    Q_OBJECT
+class ModeManager {
 private:
     // Static bitsets for modes
     static std::bitset<static_cast<size_t>(WorkModes::Editor) + 1> workModes;
@@ -86,9 +84,6 @@ public:
     static bool getFlagServer();
 
     static ModeManager* instance();
-
-signals:
-    void cellChanged(bool on);
 };
 
 #endif // OURPAINT_MODES_H

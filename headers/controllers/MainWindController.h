@@ -13,6 +13,7 @@ namespace UndoRedo { class UndoRedoManager; }
 class CommandManager;
 class Server;
 class Client;
+class GridSnap;
 
 class MainWindController : public QObject {
 Q_OBJECT
@@ -30,6 +31,7 @@ private:
     std::vector<ObjectData> objectsBuffer;
     QString _username;
     const QString pathTxtFileCommands = "../CommandsFile.txt";
+    GridSnap& _gs;
 
 public:
     MainWindController(QTPainter& painter,
@@ -40,7 +42,8 @@ public:
                        CommandManager& cm,
                        Server& s,
                        Client& c,
-                       QString& username);
+                       QString& username,
+                       GridSnap& gs);
 
 public slots:
     void onDelete();
@@ -73,6 +76,8 @@ public slots:
 
     void onEnterMessage(const QString& text);
     void onNameUsers(const QString& text);
+
+    void onGridToggled(bool state);
 
 private:
     void deleteOwnPoints(QVector<ID>& vecPoints,

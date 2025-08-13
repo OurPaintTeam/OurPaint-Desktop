@@ -83,7 +83,6 @@ void ModeManager::setCell(bool flag) {
         return;
     }
     cellEnabled = flag;
-    emit instance()->cellChanged(flag);
 }
 
 ModeManager* ModeManager::instance() {

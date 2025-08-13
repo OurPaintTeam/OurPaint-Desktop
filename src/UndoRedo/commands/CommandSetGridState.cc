@@ -1,16 +1,14 @@
 #include "CommandSetGridState.h"
-#include "UndoRedoObserver.h"
+#include "GridSnap.h"
 
 bool UndoRedo::CommandSetGridState::Execute() {
-    _oldState = _grid;
-    _grid = _newState;
+    oldState = _gridSnap.getGridState();
+    _gridSnap.setGridState(newState);
     return true;
 }
 
 bool UndoRedo::CommandSetGridState::Undo() {
-    _grid = _oldState;
+    _gridSnap.setGridState(oldState);
     return true;
 }
-
-UndoRedo::CommandSetGridState::CommandSetGridState(bool& grid, bool state)
-    : _grid(grid), _newState(state), _oldState(grid) {}
+UndoRedo::CommandSetGridState::CommandSetGridState(GridSnap& gridSnap, bool state) : _gridSnap(gridSnap), newState(state) {}

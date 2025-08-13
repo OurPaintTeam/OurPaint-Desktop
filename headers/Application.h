@@ -15,6 +15,8 @@ class MainWindow;
 class QTPainter;
 class Scene;
 class QString;
+class GridSnap;
+class GridSnapQtAdapter;
 
 class Application {
 public:
@@ -33,6 +35,7 @@ private:
     Scene* scene;
     UndoRedo::UndoRedoManager* undoRedo;
     CommandManager* commandManager;
+    GridSnap* gridSnap;
 
     QApplication* app;
     MainWindow* mainWind;
@@ -44,6 +47,7 @@ private:
     Client* client;
 
     SceneQtAdapter* sqa;
+    GridSnapQtAdapter* gsqa;
 
     PainterController* pc;
     MainWindController* mwc;

@@ -1,4 +1,5 @@
 #include "DrawBackground.h"
+#include "GridSnap.h"
 
 qreal DrawBackground::Step(const qreal rawStep) {
     const qreal exp = qFloor(qLn(rawStep) / qLn(10.0));
@@ -16,7 +17,7 @@ qreal DrawBackground::Step(const qreal rawStep) {
 }
 
 
-void DrawBackground::backgroundRender(QPainter& painter) {
+void DrawBackground::backgroundRender(QPainter& painter, GridSnap& gs) {
 
     // To record coordinates for rendering
     QVector<QPointF> pointXR;
@@ -36,7 +37,7 @@ void DrawBackground::backgroundRender(QPainter& painter) {
     const QPen greyPen(Qt::lightGray, SIZE);
 
     // Rendering a checkered background
-    if (ModeManager::getCell()) {
+    if (gs.getGridState()) {
 
         const QPointF absDelta = {qAbs(delta.x()), qAbs(delta.y())};
 
@@ -101,7 +102,7 @@ void DrawBackground::backgroundRender(QPainter& painter) {
 
         // If the axis becomes invisible, we draw it on the border
         DrawBackground::mainBackgroundRender(painter);
-    } else if (ModeManager::getCell()) {
+    } else if (gs.getGridState()) {
         painter.setPen(greyPen);
 
         // Ox

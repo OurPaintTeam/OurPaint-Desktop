@@ -172,6 +172,8 @@ public slots:
     void onExportOURP();
     void onExportSVG();
 
+    void onGridToggled(bool state);
+
 signals:
 
     void EnterPressed(const QString& command);
@@ -202,6 +204,8 @@ signals:
     void PASTE();
     void COPY();
     void resize();
+
+    void gridToggled(bool state);
 
 };
 
