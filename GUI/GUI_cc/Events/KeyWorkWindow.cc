@@ -110,6 +110,10 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent* event) {
         emit ninthReq();
     } else if (event->key() == Qt::Key_0) {
         emit tenthReq();
+    } else if (event->key() == Qt::Key_Minus) {
+        emit eleventhReq();
+    } else if (event->key() == Qt::Key_Equal) {
+        emit twelfthReq();
     }
 
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {

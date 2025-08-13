@@ -20,6 +20,8 @@ enum class ReqType : uint8_t {
     ET_SECTIONSECTIONPERPENDICULAR,
     ET_SECTIONSECTIONANGLE,
     ET_ARCCENTERONPERPENDICULAR,
+    ET_HORIZONTAL,
+    ET_VERTICAL,
     COUNT
 };
 
@@ -41,7 +43,9 @@ static constexpr ReqRule ReqRules[static_cast<std::size_t>(ReqType::COUNT)] = {
      /* ET_SECTIONSECTIONPARALLEL      */ {ObjType::ET_SECTION, ObjType::ET_SECTION, true , false},
      /* ET_SECTIONSECTIONPERPENDICULAR */ {ObjType::ET_SECTION,ObjType::ET_SECTION, true , false},
      /* ET_SECTIONSECTIONANGLE         */ {ObjType::ET_SECTION, ObjType::ET_SECTION, false, true },
-     /* ET_ARCCENTERONPERPENDICULAR    */ {ObjType::ET_POINT,     ObjType::ET_POINT, true, false}
+     /* ET_ARCCENTERONPERPENDICULAR    */ {ObjType::ET_POINT,     ObjType::ET_POINT, true, false},
+     /* ET_HORIZONTAL                  */ {ObjType::ET_SECTION, ObjType::ET_SECTION, false, false},
+     /* ET_VERTICAL                    */ {ObjType::ET_SECTION, ObjType::ET_SECTION, false, false}
 };
 
 inline std::string to_string(ObjType el) {

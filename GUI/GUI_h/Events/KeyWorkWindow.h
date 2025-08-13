@@ -40,6 +40,8 @@ signals:
     void eighthReq();
     void ninthReq();
     void tenthReq();
+    void eleventhReq();
+    void twelfthReq();
 
 };
 

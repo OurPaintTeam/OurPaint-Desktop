@@ -59,6 +59,8 @@ public slots:
     void onEightRequirements();
     void onNineRequirements();
     void onTenRequirements();
+    void onElevenRequirements();
+    void onTwelveRequirements();
 
     void onEnterPressed(const QString& command);
     void onProjectSaved(const QString& fileName, QString format);

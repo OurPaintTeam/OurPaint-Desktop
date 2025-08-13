@@ -89,7 +89,8 @@ void MainWindow::initConnections() {
     connect(keyWW, &KeyWorkWindow::eighthReq, this, &MainWindow::eighthReq);
     connect(keyWW, &KeyWorkWindow::ninthReq, this, &MainWindow::ninthReq);
     connect(keyWW, &KeyWorkWindow::tenthReq, this, &MainWindow::tenthReq);
-
+    connect(keyWW, &KeyWorkWindow::eleventhReq, this, &MainWindow::eleventhReq);
+    connect(keyWW, &KeyWorkWindow::twelfthReq, this, &MainWindow::twelfthReq);
     // Save/import buttons
     connect(ui->actionJPG, &QToolButton::clicked, this, &MainWindow::onExportJPG);
     connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
@@ -987,6 +988,13 @@ void MainWindow::ninthReq() {
 
 void MainWindow::tenthReq() {
     emit tenRequirements();
+}
+
+void MainWindow::eleventhReq() {
+    emit elevenRequirements();
+}
+void MainWindow::twelfthReq() {
+    emit twelveRequirements();
 }
 
 void MainWindow::onExportJPG() {

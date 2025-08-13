@@ -275,6 +275,12 @@ public:
             case 10:
                 req.type = ReqType::ET_SECTIONSECTIONANGLE;
                 break;
+            case 11:
+                req.type = ReqType::ET_HORIZONTAL;
+                break;
+            case 12:
+                req.type = ReqType::ET_VERTICAL;
+                break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
                 break;
@@ -327,6 +333,12 @@ public:
                 break;
             case 10:
                 req.type = ReqType::ET_SECTIONSECTIONANGLE;
+                break;
+            case 11:
+                req.type = ReqType::ET_HORIZONTAL;
+                break;
+            case 12:
+                req.type = ReqType::ET_VERTICAL;
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");

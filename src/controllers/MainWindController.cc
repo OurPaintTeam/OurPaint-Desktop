@@ -316,6 +316,29 @@ void MainWindController::onTenRequirements() {
     }
     SLOT_GUARD_MAINWIND_END
 }
+void MainWindController::onElevenRequirements() {
+    SLOT_GUARD_MAINWIND_BEGIN
+    QVector<ID> vec_id = _painter.getVecSelectedIDSections();
+    if (vec_id.size() == 1) {
+        std::vector<double> vec = {11, static_cast<double>(vec_id[0].get()),static_cast<double>(vec_id[0].get())}; // 11 — горизонтальность
+        UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
+        _urm.push(std::move(*txn));
+        updateState();
+    }
+    SLOT_GUARD_MAINWIND_END
+}
+
+void MainWindController::onTwelveRequirements() {
+    SLOT_GUARD_MAINWIND_BEGIN
+    QVector<ID> vec_id = _painter.getVecSelectedIDSections();
+    if (vec_id.size() == 1) {
+        std::vector<double> vec = {12, static_cast<double>(vec_id[0].get())}; // 12 — вертикальность
+        UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
+        _urm.push(std::move(*txn));
+        updateState();
+    }
+    SLOT_GUARD_MAINWIND_END
+}
 
 void MainWindController::onEnterPressed(const QString& command) {
     SLOT_GUARD_MAINWIND_BEGIN

@@ -166,6 +166,8 @@ void Application::initControllers() {
     QObject::connect(mainWind, &MainWindow::eightRequirements, mwc, &MainWindController::onEightRequirements);
     QObject::connect(mainWind, &MainWindow::nineRequirements, mwc, &MainWindController::onNineRequirements);
     QObject::connect(mainWind, &MainWindow::tenRequirements, mwc, &MainWindController::onTenRequirements);
+    QObject::connect(mainWind, &MainWindow::elevenRequirements, mwc, &MainWindController::onElevenRequirements);
+    QObject::connect(mainWind, &MainWindow::twelveRequirements, mwc, &MainWindController::onTwelveRequirements);
     QObject::connect(mainWind, &MainWindow::EnterPressed, mwc, &MainWindController::onEnterPressed); // Console
     QObject::connect(mainWind, &MainWindow::projectSaved, mwc, &MainWindController::onProjectSaved); // Save
     QObject::connect(mainWind, &MainWindow::LoadFile, mwc, &MainWindController::onLoadFile); // Load

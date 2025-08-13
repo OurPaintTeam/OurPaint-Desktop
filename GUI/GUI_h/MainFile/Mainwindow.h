@@ -163,6 +163,9 @@ public slots:
     void eighthReq();
     void ninthReq();
     void tenthReq();
+    void eleventhReq();
+    void twelfthReq();
+
     void onExportJPG();
     void onExportJPEG();
     void onExportPNG();
@@ -194,7 +197,8 @@ signals:
     void eightRequirements();
     void nineRequirements();
     void tenRequirements();
-
+    void elevenRequirements();
+    void twelveRequirements();
     void REDO();
     void UNDO();
     void DELETE();

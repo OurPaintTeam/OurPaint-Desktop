@@ -1127,6 +1127,14 @@ Function* Scene::getFunction(const Requirement& req) {
             err = new ArcCenterOnPerpendicularError(getVariables(req));
             break;
         }
+        case ReqType::ET_HORIZONTAL: {
+            err = new HorizontalError(getVariables(req));
+            break;
+        }
+        case ReqType::ET_VERTICAL: {
+            err = new VerticalError(getVariables(req));
+            break;
+        }
         default: {
             throw std::invalid_argument("Unknown requirement type");
         }
@@ -1338,11 +1346,10 @@ bool Scene::exists(ID id, ObjType expected) const {
 bool Scene::isValid(const Requirement& req) const {
     using u8 = std::underlying_type_t<ReqType>;
     const auto& rule = ReqRules[static_cast<u8>(req.type)];
-
     const bool aOK = exists(req.obj1, rule.first);
     const bool bOK = exists(req.obj2, rule.second);
 
-    if (aOK && bOK && (!rule.needsParam || req.param.has_value())) {
+    if (aOK && bOK && (!rule.needsParam || req.param.has_value()) || (aOK && !bOK && (req.type == ReqType::ET_HORIZONTAL || req.type == ReqType::ET_VERTICAL))) {
         return true;
     }
 
