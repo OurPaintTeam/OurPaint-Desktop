@@ -84,10 +84,8 @@ nlohmann::json objectInJson::to_json() const {
     json["type"] = to_string(_obj.et);
     json["name"] = _name.at(0);
     if (_obj.et == ObjType::ET_POINT) {
-        json["params"] = nlohmann::json::array();
-        for (const auto &p : _obj.params) {
-            nlohmann::json param;
-        }
+        json["x"] = _obj.params.at(0);
+        json["y"] = _obj.params.at(1);
         return json;
     }
     nlohmann::json points = nlohmann::json::array();
@@ -117,7 +115,10 @@ objectInJson::objectInJson(const nlohmann::json &j) {
     _obj.params.clear();
     _obj.subObjects.clear();
     _subObjects.clear();
-
+    if (_obj.et == ObjType::ET_POINT) {
+        _obj.params.push_back(j.at("x").get<double>());
+        _obj.params.push_back(j.at("y").get<double>());
+    }
     const auto &points = j.at("points");
     for (const auto &ptJson: points) {
         ID ptId(ptJson.at("id").get<unsigned int>());
@@ -137,5 +138,8 @@ objectInJson::objectInJson(const nlohmann::json &j) {
         pt.subObjects = {ptId};
 
         _subObjects.push_back(pt);
+    }
+    if (_obj.et == ObjType::ET_CIRCLE) {
+        _obj.params.push_back(j.at("R").get<double>());
     }
 }

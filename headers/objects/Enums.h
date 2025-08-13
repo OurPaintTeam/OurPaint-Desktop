@@ -110,6 +110,7 @@ inline ReqType requirement_from_string(const std::string& s) {
     if (s == "sectionsectionparallel") return ReqType::ET_SECTIONSECTIONPARALLEL;
     if (s == "sectionsectionperpendicular") return ReqType::ET_SECTIONSECTIONPERPENDICULAR;
     if (s == "sectionsectionangle") return ReqType::ET_SECTIONSECTIONANGLE;
+    if (s == "arccenteronperpendicular") return ReqType::ET_ARCCENTERONPERPENDICULAR;
 }
 
 #endif  // ! OURPAINT_HEADERS_ENUMS_H_
