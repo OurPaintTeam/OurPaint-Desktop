@@ -86,6 +86,7 @@ nlohmann::json objectInJson::to_json() const {
     if (_obj.et == ObjType::ET_POINT) {
         json["x"] = _obj.params.at(0);
         json["y"] = _obj.params.at(1);
+        return json;
     }
     nlohmann::json points = nlohmann::json::array();
     for (std::size_t i = 0; i < _subObjects.size(); ++i) {

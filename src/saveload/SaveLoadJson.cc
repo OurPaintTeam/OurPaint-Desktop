@@ -3,7 +3,6 @@
 SaveLoadJson::SaveLoadJson(Scene &scene): _scene(scene) {
     std::vector<ObjectData> obj = _scene.getObjects();
     std::vector<Requirement> req = _scene.getRequirements();
-
     std::unordered_set<ID> childIds;
     for (const auto &o : obj) {
         for (const auto &sub : o.subObjects) {
@@ -25,7 +24,6 @@ SaveLoadJson::SaveLoadJson(Scene &scene): _scene(scene) {
         _reqs.push_back(requirementInJson(r, "TODO"));
     }
 }
-
 
 
 nlohmann::json SaveLoadJson::to_json() const {

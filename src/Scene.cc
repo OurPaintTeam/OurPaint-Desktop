@@ -633,17 +633,29 @@ std::size_t Scene::requirementsCount() const {
 
 std::vector<ObjectData> Scene::getObjects() const {
     std::vector<ObjectData> objs;
+    std::unordered_set<ID> alreadyPoints;
+    for (auto& [id, s]: _sections) {
+        ObjectData obj = getObjectData(id);
+        objs.push_back(obj);
+        alreadyPoints.insert(obj.subObjects.at(0));
+        alreadyPoints.insert(obj.subObjects.at(1));
+    }
+    for (auto& [id, c]: _circles) {
+        ObjectData obj = getObjectData(id);
+        objs.push_back(obj);
+        alreadyPoints.insert(obj.subObjects.at(0));
+    }
+    for (auto& [id, a]: _arcs) {
+        ObjectData obj = getObjectData(id);
+        objs.push_back(obj);
+        alreadyPoints.insert(obj.subObjects.at(0));
+        alreadyPoints.insert(obj.subObjects.at(1));
+        alreadyPoints.insert(obj.subObjects.at(2));
+    }
     for (auto& [id, _]: _points) {
-        objs.push_back(getObjectData(id));
-    }
-    for (auto& [id, _]: _sections) {
-        objs.push_back(getObjectData(id));
-    }
-    for (auto& [id, _]: _circles) {
-        objs.push_back(getObjectData(id));
-    }
-    for (auto& [id, _]: _arcs) {
-        objs.push_back(getObjectData(id));
+        if (!alreadyPoints.contains(id)) {
+            objs.push_back(getObjectData(id));
+        }
     }
     return objs;
 }
@@ -1327,16 +1339,16 @@ bool Scene::isValid(const Requirement& req) const {
     using u8 = std::underlying_type_t<ReqType>;
     const auto& rule = ReqRules[static_cast<u8>(req.type)];
 
-    const bool aOK = exists(req.obj1, rule.first);
-    const bool bOK = exists(req.obj2, rule.second);
+    const bool aOK = exists(req.obj1, rule.types[0]);
+    const bool bOK = exists(req.obj2, rule.types[1]);
 
     if (aOK && bOK && (!rule.needsParam || req.param.has_value())) {
         return true;
     }
 
     if (rule.symmetric) {
-        const bool revA = exists(req.obj1, rule.second);
-        const bool revB = exists(req.obj2, rule.first);
+        const bool revA = exists(req.obj1, rule.types[1]);
+        const bool revB = exists(req.obj2, rule.types[0]);
         if (revA && revB && (!rule.needsParam || req.param.has_value())) {
             return true;
         }

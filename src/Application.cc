@@ -53,6 +53,7 @@ void Application::initCore() {
     commandManager->registerFactory(new ArcFactory(*scene));
     commandManager->registerFactory(new ReqFactory(*scene));
     commandManager->registerFactory(new DelFactory(*scene));
+    commandManager->registerFactory(new ClearFactory(scene));
 }
 
 void Application::initGUI(int& argc, char** argv) {
@@ -69,10 +70,10 @@ void Application::initGUI(int& argc, char** argv) {
         "DELETE ",
         "DELETE OBJ ",
         "DELETE REQ ",
-        "CLEAR ",
+        "CLEAR",
         "REQ ",
-        "UNDO ",
-        "REDO "
+        "UNDO",
+        "REDO"
     });
 
     QApplication::setStyle("Fusion");
