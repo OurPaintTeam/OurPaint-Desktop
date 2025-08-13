@@ -138,4 +138,7 @@ objectInJson::objectInJson(const nlohmann::json &j) {
 
         _subObjects.push_back(pt);
     }
+    if (_obj.et == ObjType::ET_CIRCLE) {
+        _obj.params.push_back(j.at("R").get<double>());
+    }
 }
