@@ -17,15 +17,23 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Eigen)
 
+FetchContent_Declare(
+        json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
+
 include_directories(ourpaint
         headers
         headers/painters
         headers/saveload
         headers/UndoRedo
         headers/objects
-        headers/commands
-        headers/commands/Add
-        headers/commands/Delete
+        headers/UndoRedo/commands
+        headers/UndoRedo/commands/Add
+        headers/UndoRedo/commands/Delete
+        headers/controllers
 
         GUI/GUI_h
         GUI/GUI_h/Unnecessary
@@ -53,25 +61,26 @@ include_directories(ourpaint
 add_executable(ourpaint
         main.cc
         src/Scene.cc
-        src/Requirements.cc
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
-        src/objects/Component.cc
 
         src/painters/BMPpainter.cc
-
-        src/UndoRedo/Transaction.cc
-        src/UndoRedo/UndoRedoTemplate.cc
-        src/UndoRedo/UndoRedo.cc
 
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
         src/saveload/requirementInFile.cc
+        src/saveload/requirementInJson.cc
+        src/saveload/SaveLoadJson.cc
+        src/saveload/objectInJson.cc
 
         src/Application.cc
         src/BMPfile.cc
+        src/SceneQtAdapter.cc
 
-        headers/Requirements.h
+        src/controllers/PainterController.cc
+        src/controllers/MainWindController.cc
+        src/controllers/LeftMenuController.cc
+
 
         headers/painters/Painter.h
         headers/painters/BMPpainter.h
@@ -79,45 +88,59 @@ add_executable(ourpaint
         headers/saveload/FileOurP.h
         headers/saveload/requirementInFile.h
         headers/saveload/objectInFile.h
+        headers/saveload/objectInJson.h
+        headers/saveload/SaveLoadJson.h
+        headers/saveload/requirementInJson.h
 
         headers/Application.h
         headers/BMPfile.h
-
-        headers/UndoRedo/Command.h
-        headers/UndoRedo/Transaction.h
-        headers/UndoRedo/UndoRedoTemplate.h
-        headers/UndoRedo/UndoRedo.h
+        headers/SceneObserver.h
+        headers/SceneQtAdapter.h
+        headers/ExceptionGuard.h
 
         headers/objects/Enums.h
         headers/objects/Objects.h
         headers/objects/GeometricObjects.h
         headers/objects/Component.h
-        headers/Requirements.h
         headers/objects/ID.h
         headers/Scene.h
         headers/UndoRedo/UndoRedoTemplate.h
         headers/objects/BoundBox.h
 
+        headers/controllers/PainterController.h
+        headers/controllers/MainWindController.h
+        headers/controllers/LeftMenuController.h
+
         ########### UNDO/REDO ###########
 
-        headers/commands/Add/CommandAddObject.h
-        headers/commands/Add/CommandAddPoint.h
-        headers/commands/Add/CommandAddSection.h
-        headers/commands/Add/CommandAddCircle.h
-        headers/commands/Add/CommandAddArc.h
-        headers/commands/Delete/CommandDeletePoint.h
-        headers/commands/Delete/CommandDeleteSection.h
-        headers/commands/Delete/CommandDeleteCircle.h
-        headers/commands/Delete/CommandDeleteArc.h
-        headers/commands/CommandAddRequirement.h
-        headers/commands/CommandDeleteRequirement.h
-        headers/commands/CommandMove.h
+        headers/UndoRedo/Command.h
+        headers/UndoRedo/Transaction.h
+        headers/UndoRedo/UndoRedoTemplate.h
+        headers/UndoRedo/UndoRedo.h
+        headers/UndoRedo/commands/Add/CommandAddObject.h
+        headers/UndoRedo/commands/Add/CommandAddPoint.h
+        headers/UndoRedo/commands/Add/CommandAddSection.h
+        headers/UndoRedo/commands/Add/CommandAddCircle.h
+        headers/UndoRedo/commands/Add/CommandAddArc.h
+        headers/UndoRedo/commands/Delete/CommandDeletePoint.h
+        headers/UndoRedo/commands/Delete/CommandDeleteSection.h
+        headers/UndoRedo/commands/Delete/CommandDeleteCircle.h
+        headers/UndoRedo/commands/Delete/CommandDeleteArc.h
+        headers/UndoRedo/commands/CommandAddRequirement.h
+        headers/UndoRedo/commands/CommandDeleteRequirement.h
+        headers/UndoRedo/commands/CommandMove.h
+        headers/UndoRedo/commands/CommandClear.h
 
-        src/commands/Add/CommandAddObject.cc
-        src/commands/Delete/CommandDeleteObject.cc
-        src/commands/CommandAddRequirement.cc
-        src/commands/CommandDeleteRequirement.cc
-        src/commands/CommandMove.cc
+        src/UndoRedo/commands/Add/CommandAddObject.cc
+        src/UndoRedo/commands/Delete/CommandDeleteObject.cc
+        src/UndoRedo/commands/CommandAddRequirement.cc
+        src/UndoRedo/commands/CommandDeleteRequirement.cc
+        src/UndoRedo/commands/CommandMove.cc
+        src/UndoRedo/commands/CommandClear.cc
+        src/UndoRedo/Transaction.cc
+        src/UndoRedo/UndoRedoTemplate.cc
+        src/UndoRedo/UndoRedo.cc
+        src/UndoRedo/ConsoleManager.cc
 
         ###########  GUI  ############
 
@@ -243,6 +266,7 @@ target_link_libraries(ourpaint PRIVATE
         Eigen3::Eigen
         Qt6::Svg
         Math
+        nlohmann_json::nlohmann_json
 )
 
 if (OpenMP_CXX_FOUND)

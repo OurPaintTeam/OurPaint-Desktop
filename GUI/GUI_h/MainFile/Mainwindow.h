@@ -88,6 +88,7 @@ public:
     QTPainter* getQTPainter() const;
     LeftMenuBar* getLeftMenuBar() const;
     void initConnections();
+    void setupConsoleCommands(const QStringList& commandList );
     void setupLeftMenu();
     void selectLeftMenuElem(QModelIndex& index);
     void updateStyle();

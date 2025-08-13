@@ -1,6 +1,8 @@
 #include "LeftMenuBar.h"
+#include "ID.h"
+#include "Objects.h"
 
-LeftMenuBar::LeftMenuBar(QObject* parent) {
+LeftMenuBar::LeftMenuBar(QWidget* parent) {
     // Creating a model
     treeModel = new TreeModel(parent);
     rootNode = treeModel->getRootNode();
@@ -422,5 +424,83 @@ QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
     }
     return index;
 }
+
+void LeftMenuBar::onPointAdded(ID id, const double* x, const double* y) {
+    addPointInLeftMenu(
+            "Point",
+            id.get(),
+            {x, y});
+    updateLeftMenu();
+}
+
+void LeftMenuBar::onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2) {
+    addSectionInLeftMenu(
+            "Section",
+            "Point",
+            "Point",
+            id.get(),
+            id.get() - 1,
+            id.get() - 2,
+            {x1, y1},
+            {x2, y2});
+    updateLeftMenu();
+}
+
+void LeftMenuBar::onCircleAdded(ID id, const double* x, const double* y, const double* r) {
+    addCircleInLeftMenu(
+            "Circle",
+            "Point",
+            id.get(),
+            id.get() - 1,
+            {x, y},
+            *r);
+    updateLeftMenu();
+}
+
+void LeftMenuBar::onArcAdded(ID id,
+                             const double* beg_x,
+                             const double* beg_y,
+                             const double* end_x,
+                             const double* end_y,
+                             const double* center_x,
+                             const double* center_y) {
+    addArcInLeftMenu(
+            "Arc",
+            "Point",
+            "Point",
+            "Point",
+            id.get(),
+            id.get() - 1,
+            id.get() - 2,
+            id.get() - 3,
+            {beg_x, beg_y},
+            {end_x, end_y},
+            {center_x, center_y});
+    updateLeftMenu();
+}
+
+void LeftMenuBar::onReqAdded(const Requirement& req) {
+    if (req.param.has_value()) {
+        addRequirementElem(
+                reqTypes[static_cast<uint8_t>(req.type)],
+                reqTypes[static_cast<uint8_t>(req.type)],
+                static_cast<const int>(req.id.get()),
+                static_cast<const qlonglong>(req.obj1.get()),
+                static_cast<const qlonglong>(req.obj2.get()),
+                static_cast<const qreal>(req.param.value())
+        );
+    }
+    else {
+        addRequirementElem(
+                reqTypes[static_cast<uint8_t>(req.type)],
+                reqTypes[static_cast<uint8_t>(req.type)],
+                static_cast<const int>(req.id.get()),
+                static_cast<const qlonglong>(req.obj1.get()),
+                static_cast<const qlonglong>(req.obj2.get())
+        );
+    }
+    updateLeftMenu();
+}
+
 
 
