@@ -232,15 +232,17 @@ public:
     }
 
     void createCommands(const std::vector<std::string>& rawArgs, UndoRedo::Transaction& txn) const override {
-        if (rawArgs.size() < 3) {
+        if (rawArgs.size() < 2) {
             throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
         }
 
         Requirement req;
         req.obj1 = ID(std::stoi(rawArgs[1]));
-        req.obj2 = ID(std::stoi(rawArgs[2]));
+        if (rawArgs.size() > 2) {
+            req.obj2 = ID(std::stoi(rawArgs[2]));
+        }
 
-        if (rawArgs.size() >= 4) {
+        if (rawArgs.size() > 3) {
             req.param = std::stod(rawArgs[3]);
         }
 
@@ -284,7 +286,6 @@ public:
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
-                break;
         }
 
         txn.addCommand(new CommandAddRequirement(_scene, req));
@@ -343,7 +344,6 @@ public:
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
-                break;
         }
 
         txn.addCommand(new CommandAddRequirement(_scene, req));

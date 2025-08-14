@@ -999,10 +999,10 @@ void Scene::addRequirement(const Requirement& reqData, ID reqID) {
 
     Requirement req = reqData;
     req.id = reqID;
-    _graph.addEdge(reqData.obj1, reqData.obj2, reqID);
+    _graph.addEdge(reqData.obj1, reqData.obj1, reqID);
     _requirements[reqID] = req;
     _requirementToObjects[reqID].insert(reqData.obj1);
-    _requirementToObjects[reqID].insert(reqData.obj2);
+    _requirementToObjects[reqID].insert(reqData.obj1);
     if (reqData.obj3 != ID(0)) {
         _requirementToObjects[reqID].insert(reqData.obj3);
     }
@@ -1346,13 +1346,10 @@ bool Scene::exists(ID id, ObjType expected) const {
 bool Scene::isValid(const Requirement& req) const {
     using u8 = std::underlying_type_t<ReqType>;
     const auto& rule = ReqRules[static_cast<u8>(req.type)];
-    const bool aOK = exists(req.obj1, rule.first);
-    const bool bOK = exists(req.obj2, rule.second);
-
     const bool aOK = exists(req.obj1, rule.types[0]);
     const bool bOK = exists(req.obj2, rule.types[1]);
 
-    if (aOK && bOK && (!rule.needsParam || req.param.has_value()) || (aOK && !bOK && (req.type == ReqType::ET_HORIZONTAL || req.type == ReqType::ET_VERTICAL))) {
+    if ((aOK && bOK && (!rule.needsParam || req.param.has_value())) || (aOK && !bOK && (req.type == ReqType::ET_HORIZONTAL || req.type == ReqType::ET_VERTICAL))) {
         return true;
     }
 
