@@ -4,8 +4,6 @@ project(ourpaint)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
@@ -68,11 +66,6 @@ add_executable(ourpaint
 
         src/painters/BMPpainter.cc
 
-        src/UndoRedo/Transaction.cc
-        src/UndoRedo/UndoRedoTemplate.cc
-        src/UndoRedo/UndoRedo.cc
-        src/UndoRedo/ConsoleManager.cc
-
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
         src/saveload/requirementInFile.cc
@@ -105,11 +98,6 @@ add_executable(ourpaint
         headers/SceneQtAdapter.h
         headers/ExceptionGuard.h
 
-        headers/UndoRedo/Command.h
-        headers/UndoRedo/Transaction.h
-        headers/UndoRedo/UndoRedoTemplate.h
-        headers/UndoRedo/UndoRedo.h
-
         headers/objects/Enums.h
         headers/objects/Objects.h
         headers/objects/GeometricObjects.h
@@ -125,6 +113,10 @@ add_executable(ourpaint
 
         ########### UNDO/REDO ###########
 
+        headers/UndoRedo/Command.h
+        headers/UndoRedo/Transaction.h
+        headers/UndoRedo/UndoRedoTemplate.h
+        headers/UndoRedo/UndoRedo.h
         headers/UndoRedo/commands/Add/CommandAddObject.h
         headers/UndoRedo/commands/Add/CommandAddPoint.h
         headers/UndoRedo/commands/Add/CommandAddSection.h
@@ -137,12 +129,18 @@ add_executable(ourpaint
         headers/UndoRedo/commands/CommandAddRequirement.h
         headers/UndoRedo/commands/CommandDeleteRequirement.h
         headers/UndoRedo/commands/CommandMove.h
+        headers/UndoRedo/commands/CommandClear.h
 
         src/UndoRedo/commands/Add/CommandAddObject.cc
         src/UndoRedo/commands/Delete/CommandDeleteObject.cc
         src/UndoRedo/commands/CommandAddRequirement.cc
         src/UndoRedo/commands/CommandDeleteRequirement.cc
         src/UndoRedo/commands/CommandMove.cc
+        src/UndoRedo/commands/CommandClear.cc
+        src/UndoRedo/Transaction.cc
+        src/UndoRedo/UndoRedoTemplate.cc
+        src/UndoRedo/UndoRedo.cc
+        src/UndoRedo/ConsoleManager.cc
 
         ###########  GUI  ############
 
@@ -292,3 +290,11 @@ if (TYPE_OF_COMPILING)
     endif ()
 endif ()
 
+set(TYPE_OF_OPTIMIZATION BOOL 1)
+if (TYPE_OF_OPTIMIZATION)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
+    endif ()
+endif ()

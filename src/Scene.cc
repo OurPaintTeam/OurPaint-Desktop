@@ -1349,13 +1349,16 @@ bool Scene::isValid(const Requirement& req) const {
     const bool aOK = exists(req.obj1, rule.first);
     const bool bOK = exists(req.obj2, rule.second);
 
+    const bool aOK = exists(req.obj1, rule.types[0]);
+    const bool bOK = exists(req.obj2, rule.types[1]);
+
     if (aOK && bOK && (!rule.needsParam || req.param.has_value()) || (aOK && !bOK && (req.type == ReqType::ET_HORIZONTAL || req.type == ReqType::ET_VERTICAL))) {
         return true;
     }
 
     if (rule.symmetric) {
-        const bool revA = exists(req.obj1, rule.second);
-        const bool revB = exists(req.obj2, rule.first);
+        const bool revA = exists(req.obj1, rule.types[1]);
+        const bool revB = exists(req.obj2, rule.types[0]);
         if (revA && revB && (!rule.needsParam || req.param.has_value())) {
             return true;
         }

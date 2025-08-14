@@ -20,7 +20,7 @@
 #define SLOT_GUARD_MAINWIND_END \
     } catch (const std::exception& ex) { \
         qCritical() << "EXCEPTION: \"" << ex.what() << "\" in" << Q_FUNC_INFO; \
-        _mainWind.showError("Error pasted"); \
+        _mainWind.showError((QString("EXCEPTION: \"%1\" in %2").arg(ex.what())).arg(Q_FUNC_INFO)); \
     } catch (...) { \
         qCritical() << "UNKNOWN EXCEPTION in " << Q_FUNC_INFO; \
     }
