@@ -484,19 +484,19 @@ void LeftMenuBar::onReqAdded(const Requirement& req) {
         addRequirementElem(
                 reqTypes[static_cast<uint8_t>(req.type)],
                 reqTypes[static_cast<uint8_t>(req.type)],
-                static_cast<const int>(req.id.get()),
-                static_cast<const qlonglong>(req.obj1.get()),
-                static_cast<const qlonglong>(req.obj2.get()),
-                static_cast<const qreal>(req.param.value())
+                static_cast<int>(req.id.get()),
+                static_cast<qlonglong>(req.obj1.get()),
+                static_cast<qlonglong>(req.obj2.get()),
+                static_cast<qreal>(req.param.value())
         );
     }
     else {
         addRequirementElem(
                 reqTypes[static_cast<uint8_t>(req.type)],
                 reqTypes[static_cast<uint8_t>(req.type)],
-                static_cast<const int>(req.id.get()),
-                static_cast<const qlonglong>(req.obj1.get()),
-                static_cast<const qlonglong>(req.obj2.get())
+                static_cast<int>(req.id.get()),
+                static_cast<qlonglong>(req.obj1.get()),
+                static_cast<qlonglong>(req.obj2.get())
         );
     }
     updateLeftMenu();

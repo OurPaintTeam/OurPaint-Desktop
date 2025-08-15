@@ -872,7 +872,7 @@ void Scene::setCircle(ID circleID, double x, double y, double r, const bool upda
     }
 }
 
-void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r,
+void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double,
                    const bool updateRequirementFlag) {
     if (!_arcs.contains(arcID)) {
         throw std::out_of_range("There is no arc to change");
@@ -1331,6 +1331,7 @@ bool Scene::exists(ID id, ObjType expected) const {
         case ObjType::ET_SECTION: return _sections.contains(id);
         case ObjType::ET_CIRCLE:  return _circles.contains(id);
         case ObjType::ET_ARC:     return _arcs.contains(id);
+        case ObjType::ERROR:      return false;
     }
     return false;
 }

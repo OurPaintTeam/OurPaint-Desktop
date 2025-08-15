@@ -33,7 +33,7 @@ void CustomWindowSuccessful::updatePosition(QWidget* parent) {
 }
 
 
-void CustomWindowSuccessful::paintEvent(QPaintEvent* event) {
+void CustomWindowSuccessful::paintEvent(QPaintEvent*) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setBrush(QColor(50, 50, 50, 240));

@@ -14,9 +14,7 @@ SaveLoadJson::SaveLoadJson(Scene &scene): _scene(scene) {
             continue;
         }
         std::vector<std::string> names = {"TODO"};
-        for (const auto &_ : o.subObjects) {
-            names.push_back("TODO");
-        }
+        names.insert(names.end(), o.subObjects.size(), "TODO");
         _objects.push_back(objectInJson(names, o));
     }
 

@@ -48,6 +48,8 @@ objectInJson::objectInJson(const std::vector<std::string> &name, const ObjectDat
             p.subObjects.push_back(obj.subObjects[2]);
             _subObjects.push_back(p);
             break;
+        case ObjType::ERROR:
+            break;
     }
 }
 
