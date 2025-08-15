@@ -2,7 +2,7 @@ name: withFlags
 
 on:
   pull_request:
-    branches: [ dev, main ]
+    branches: [ dev ]
 
 jobs:
   RELEASE:
