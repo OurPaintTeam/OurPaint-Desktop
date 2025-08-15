@@ -176,7 +176,7 @@ target_link_libraries(RequirementJsonTest GTest::gtest_main nlohmann_json::nlohm
 set(TYPE_OF_COMPILING BOOL 1)
 if (TYPE_OF_COMPILING)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        add_compile_options(-Wall -Wextra -Wpedantic)
+        add_compile_options(-Wall -Wextra -Wpedantic -Werror)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         add_compile_options(/W4)
     endif ()

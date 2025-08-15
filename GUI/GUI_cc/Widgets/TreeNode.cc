@@ -2,8 +2,8 @@
 
 TreeNode::TreeNode(const QVariant& data, TreeNode* parent)
         : dataChild(data), _parent(parent),
-          editable(false), doubleClick(false), literal(false), number(false),
-          enabled(true), dropEnabled(false), selected(false) {}
+          editable(false), doubleClick(false), number(false), literal(false),
+          enabled(true), selected(false), dropEnabled(false) {}
 
 TreeNode::~TreeNode() {
     qDeleteAll(vec_child);

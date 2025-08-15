@@ -47,7 +47,7 @@ QString InputWindow::getText() const {
     return lineEdit->text();
 }
 
-void InputWindow::paintEvent(QPaintEvent* event) {
+void InputWindow::paintEvent(QPaintEvent*) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setBrush(QColor(50, 50, 50, 240));

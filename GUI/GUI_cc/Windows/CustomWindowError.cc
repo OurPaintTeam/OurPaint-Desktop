@@ -31,7 +31,7 @@ void CustomWindowError::updatePosition(QWidget* parent) {
     }
 }
 
-void CustomWindowError::paintEvent(QPaintEvent* event) {
+void CustomWindowError::paintEvent(QPaintEvent*) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setBrush(QColor(50, 50, 50, 240));
