@@ -1,0 +1,192 @@
+cmake_minimum_required(VERSION 3.20)
+project(ourpainttest)
+
+# GoogleTest requires at least C++14
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include(FetchContent)
+if (NOT TARGET gtest)
+    FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG 03597a01ee50ed33e9dfd640b249b4be3799d395
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
+
+enable_testing()
+FetchContent_Declare(
+        json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Math ${CMAKE_BINARY_DIR}/Math)
+
+
+
+#Test for objects
+add_executable(ObjectsGTEST  ObjectsGTEST.cc
+        ../src/objects/GeometricObjects.cc
+        ../src/objects/BoundBox.cc
+        ../Math/src/Function.cc
+        ../Math/src/ErrorFunctions.cc
+)
+target_include_directories(ObjectsGTEST PRIVATE ../headers/objects ../Math/headers)
+target_link_libraries(ObjectsGTEST GTest::gtest_main Math Eigen3::Eigen)
+
+
+
+# Test for Scene
+add_executable(SceneGTEST SceneGTEST.cc
+        ../src/Scene.cc
+        ../src/objects/GeometricObjects.cc
+        ../src/objects/BoundBox.cc
+        ../src/painters/BMPpainter.cc
+        ../src/BMPfile.cc
+        ../src/saveload/FileOurP.cc
+        ../src/saveload/objectInFile.cc
+        ../src/saveload/requirementInFile.cc
+
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+        ../Math/src/LevenbergMarquardtSolver.cc
+)
+target_include_directories(SceneGTEST PRIVATE
+        ../headers
+        ../headers/objects
+        ../headers/painters
+        ../headers/saveload
+
+        ../Math/headers/decomposition
+        ../Math/headers
+        ../Math/headers/graph
+        ../Math/headers/optimizers
+        ../Math/headers/optimizers/EigenOptimizers
+        ../Math/headers/optimizers/MatrixOptimizers
+        ../Math/headers/Tasks
+        ../Math/headers/Tasks/Eigen
+        ../Math/headers/Tasks/Matrix
+
+)
+target_link_libraries(SceneGTEST GTest::gtest_main Math Eigen3::Eigen)
+
+
+
+#Test for UndoRedo
+add_executable(UndoRedoGTEST UndoRedoTests.cc  ../src/UndoRedo/Transaction.cc  ../src/UndoRedo/UndoRedo.cc)
+target_include_directories(UndoRedoGTEST PRIVATE ../headers/UndoRedo)
+target_link_libraries(UndoRedoGTEST GTest::gtest_main)
+
+
+#Test for UndoRedoTemplate
+#add_executable(UndoRedoTemplateGTEST UndoRedoGTEST.cc ../src/UndoRedo/UndoRedoTemplate.cc)
+#target_include_directories(UndoRedoTemplateGTEST PRIVATE ../headers/UndoRedo)
+#target_link_libraries(UndoRedoTemplateGTEST GTest::gtest_main)
+
+
+
+# Test for move functionality
+add_executable(MoveGTEST MoveGTEST.cc
+        ../src/Scene.cc
+        ../src/objects/GeometricObjects.cc
+        ../src/objects/BoundBox.cc
+        ../src/painters/BMPpainter.cc
+        ../src/BMPfile.cc
+        ../src/saveload/FileOurP.cc
+        ../src/saveload/objectInFile.cc
+        ../src/saveload/requirementInFile.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+        ../Math/src/LevenbergMarquardtSolver.cc
+)
+target_include_directories(MoveGTEST PRIVATE
+        ../headers
+        ../headers/objects
+        ../headers/painters
+        ../headers/saveload
+        ../Math/headers/decomposition
+        ../Math/headers
+        ../Math/headers/graph
+        ../Math/headers/optimizers
+        ../Math/headers/optimizers/EigenOptimizers
+        ../Math/headers/optimizers/MatrixOptimizers
+        ../Math/headers/Tasks
+        ../Math/headers/Tasks/Eigen
+        ../Math/headers/Tasks/Matrix
+)
+target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
+
+# Test for objectInJson
+add_executable(ObjectInJsonTest
+        ObjectInJsonGTEST.cc
+        ../src/saveload/objectInJson.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+)
+
+target_include_directories(ObjectInJsonTest PRIVATE
+        ../headers/saveload
+        ../headers/objects
+        ../Math/headers
+)
+
+target_link_libraries(ObjectInJsonTest
+        GTest::gtest_main
+        nlohmann_json::nlohmann_json
+        Math)
+
+
+# Test for Component
+add_executable(ComponentTest ComponentTest.cc
+        ../src/objects/GeometricObjects.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+)
+target_include_directories(ComponentTest PRIVATE
+        ../headers/objects
+        ../Math/headers
+        ../Math/headers/graph
+        ../Math/headers/optimizers
+        ../Math/headers/optimizers/EigenOptimizers
+        ../Math/headers/optimizers/MatrixOptimizers
+        ../Math/headers/Tasks
+        ../Math/headers/Tasks/Eigen
+        ../Math/headers/Tasks/Matrix
+)
+target_link_libraries(ComponentTest GTest::gtest_main Math Eigen3::Eigen)
+
+# Test for requirementInJson
+add_executable(RequirementJsonTest requirementInJsonGTEST.cc
+        ../src/saveload/requirementInJson.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+)
+target_include_directories(RequirementJsonTest PRIVATE
+        ../headers
+        ../headers/saveload
+        ../headers/objects
+        ../Math/headers)
+
+target_link_libraries(RequirementJsonTest GTest::gtest_main nlohmann_json::nlohmann_json Math)
+
+
+set(TYPE_OF_COMPILING BOOL 1)
+if (TYPE_OF_COMPILING)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        add_compile_options(/W4)
+    endif ()
+endif ()
+
+set(TYPE_OF_OPTIMIZATION BOOL 1)
+if (TYPE_OF_OPTIMIZATION)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
+    endif ()
+endif ()
