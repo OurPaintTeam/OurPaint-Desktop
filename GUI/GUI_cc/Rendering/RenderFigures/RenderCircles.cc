@@ -70,6 +70,7 @@ namespace render::util{
         painter.drawEllipse(center, Radius, Radius);
     }
 
+
     void setupPen(QPainter& painter, const CircleStyle& style) {
         QPen pen = QPen(ColorToQColor(style.figure.object.color));
         const quint16 SIZE = style.figure.object.size;
@@ -102,7 +103,12 @@ namespace render {
                                       Scaling::scaleCoordinate(-circle->center->y));
 
 
-            const CircleStyle& style = circlePtr.second.style;
+            if (!circlePtr.second.style) {
+                qWarning() << "Circle" << circlePtr.first.get() << "has null style!";
+                continue;
+            }
+
+            const CircleStyle& style = *circlePtr.second.style;
             util::setupPen(painter, style);
 
             painter.drawEllipse(logicCenter, scaledRadius, scaledRadius);

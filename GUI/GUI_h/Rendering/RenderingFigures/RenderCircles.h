@@ -23,7 +23,7 @@ namespace render {
 
     struct circleShell {
         Circle* object;
-        CircleStyle style;
+        CircleStyle* style;
     };
 
      void drawFigures(QPainter& painter, const std::unordered_map<ID, circleShell>& circles);
