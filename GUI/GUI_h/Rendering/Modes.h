@@ -9,6 +9,7 @@ enum class WorkModes {
     Section,
     Circle,
     Arc,
+    ShowSize,
     Move,
     Selected,
     Editor,
@@ -53,6 +54,8 @@ public:
     static bool getActiveMode(WorkModes mode);
 
     static void setNotActiveMode(MouseMode mode);
+
+    [[maybe_unused]] static void setNotActiveMode(KeyMode mode);
     static void setActiveMode(MouseMode mode);
 
     static bool getActiveMode(MouseMode mode);
