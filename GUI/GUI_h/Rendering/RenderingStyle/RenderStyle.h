@@ -2,7 +2,12 @@
 #define OURPAINT_RENDERSTYLE_H
 
 #include <QPointF>
+#include <QPair>
+#include <QLineEdit>
+#include <QPointer>
+
 #include "Colors.h"
+#include "AngleLineEdit.h"
 
 /// --- Base components ---
 
@@ -10,32 +15,42 @@ struct GlowStyle {
     Color color = Color::Blue;
     quint16 size = 5;
     bool activity  = false;
-
-    static GlowStyle createDefault() { return {}; }
 };
+
+
+struct Position{
+    QPointF lt;
+    QPointF rt;
+    QPointF lb;
+    QPointF rb;
+};
+
 
 struct TextLabelStyle {
     QPointF offset = {0, 0};
     Color color = Color::Black;
     quint16 size = 1;
+    Position position;
+    QPointer<AngleLineEdit> textEdit = nullptr;
+    QRect prevRect;
 
-    static TextLabelStyle createDefault() { return {}; }
+    bool editing = false;
+    bool active = true;
 };
+
 
 struct IDLabelStyle {
     //QPointF position = {0, 0};
     TextLabelStyle label;
     bool activity = false;
-
-    static IDLabelStyle createDefault() { return {}; }
 };
+
 
 struct ObjectStyle {
     Color color = Color::Black;
     quint16 size = 1;
-
-    static ObjectStyle createDefault() { return {}; }
 };
+
 
 /// --- Figures ---
 
@@ -43,93 +58,77 @@ struct FigureStyle {
     ObjectStyle object;
     GlowStyle glow;
     IDLabelStyle id;
-
-    static FigureStyle createDefault() {
-        return {ObjectStyle::createDefault(), GlowStyle::createDefault(), IDLabelStyle::createDefault()};
-    }
 };
+
 
 struct PointStyle {
     FigureStyle figure;
     quint16 pointRadius = 1;
-
-    static PointStyle createDefault() {
-        return {FigureStyle::createDefault(), 1};
-    }
 };
+
 
 struct LineLengthLabel {
     TextLabelStyle label;
-
-    static LineLengthLabel createDefault() { return {}; }
 };
+
+
+struct ServiceLine{
+    FigureStyle lineStyle;
+    QLineF position;
+    bool active = false;
+    QPointF offset{0,0};
+};
+
 
 struct LineStyle {
     FigureStyle figure;
     LineLengthLabel lengthLabel;
+    ServiceLine serviceLine;
 
-    static LineStyle createDefault() {
-        return {FigureStyle::createDefault(), LineLengthLabel::createDefault()};
-    }
 };
+
 
 struct RadiusLabel {
     TextLabelStyle text;
-    Color lineColor = Color::LightGray;
-    bool activity = false;
+    [[maybe_unused]] Color lineColor = Color::LightGray;
+    [[maybe_unused]] bool activity = false;
 
-    static RadiusLabel createDefault() {
-        return {TextLabelStyle::createDefault(), Color::LightGray};
-    }
 };
+
 
 struct CircleStyle {
     FigureStyle figure;
     RadiusLabel radiusLabel;
-
-    static CircleStyle createDefault() {
-        return {FigureStyle::createDefault(), RadiusLabel::createDefault()};
-    }
 };
+
 
 struct ArcHeightLabel {
     TextLabelStyle heightText;
-    Color lineColor = Color::LightGray;
-
-    static ArcHeightLabel createDefault() {
-        return {TextLabelStyle::createDefault(), Color::LightGray};
-    }
+    [[maybe_unused]] Color lineColor = Color::LightGray;
 };
+
 
 struct ArcStyle {
     FigureStyle figure;
     RadiusLabel radiusLabel;
     ArcHeightLabel heightLabel;
-
-    static ArcStyle createDefault() {
-        return {FigureStyle::createDefault(), RadiusLabel::createDefault(), ArcHeightLabel::createDefault()};
-    }
 };
 
 /// --- Requirements ---
 
 enum class RequirementVisualType {
     None,
-    ArrowLine,
-    ArcArrow,
-    BoxMark
+    ArrowLine [[maybe_unused]],
+    ArcArrow [[maybe_unused]],
+    BoxMark [[maybe_unused]]
 };
 
-struct RequirementsStyle {
-    ObjectStyle object;
-    GlowStyle glow;
-    TextLabelStyle label;
-    RequirementVisualType visualType = RequirementVisualType::None;
 
-    static RequirementsStyle createDefault() {
-        return {ObjectStyle::createDefault(), GlowStyle::createDefault(),
-                TextLabelStyle::createDefault(), RequirementVisualType::None};
-    }
+struct [[maybe_unused]] RequirementsStyle {
+    ObjectStyle object;
+    [[maybe_unused]] GlowStyle glow;
+    TextLabelStyle label;
+    [[maybe_unused]] RequirementVisualType visualType = RequirementVisualType::None;
 };
 
 #endif // OURPAINT_RENDERSTYLE_H
