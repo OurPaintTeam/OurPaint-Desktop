@@ -12,6 +12,12 @@
 
 class DrawLineTool : public DrawTool {
 Q_OBJECT
+
+private:
+    QPointF closestStartPoint;
+    QPointF closestPointNext;
+    inline qreal snapAngle(qreal angle);
+
 public:
     ~DrawLineTool() = default;
     DrawLineTool(QObject* parent = nullptr) : DrawTool(parent) {};
@@ -27,12 +33,6 @@ public:
 
 signals:
     void SigSection(const QPointF& startPoint, const QPointF& endPoint);
-
-private:
-    QPointF closestStartPoint;
-    QPointF closestPointNext;
-    inline qreal snapAngle(qreal angle);
-
 
 };
 

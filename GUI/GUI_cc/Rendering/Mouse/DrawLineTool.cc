@@ -34,6 +34,7 @@ void DrawLineTool::drawPreview(QPainter& painter, const QPointF& start, const QP
 
     LineStyle style;
     style.figure.object.color = Color::LightGray;
+    style.lengthLabel.label.color = Color::LightGray;
     style.figure.object.size = 1;
 
      render::drawFigure(painter, start, end,style);
