@@ -8,7 +8,6 @@
 #include <QPainter>
 #include <QApplication>
 #include <QTimer>
-#include <QDebug>
 #include <QPropertyAnimation>
 #include <QMessageBox>
 
