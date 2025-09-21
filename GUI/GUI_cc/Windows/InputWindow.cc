@@ -1,5 +1,6 @@
 #include "InputWindow.h"
 
+
 InputWindow::InputWindow(const QString& message, QWidget* parent) : QDialog(parent) {
     setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -43,17 +44,25 @@ InputWindow::InputWindow(const QString& message, QWidget* parent) : QDialog(pare
     resize(250, 100);
 }
 
+
 QString InputWindow::getText() const {
     return lineEdit->text();
 }
 
-void InputWindow::paintEvent(QPaintEvent* event) {
+
+void InputWindow::setText(const QString& text){
+    lineEdit->setText(text);
+}
+
+
+void InputWindow::paintEvent(QPaintEvent*) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setBrush(QColor(50, 50, 50, 240));
     painter.setPen(Qt::NoPen);
     painter.drawRoundedRect(rect(), 10, 10);
 }
+
 
 bool InputWindow::eventFilter(QObject* enter, QEvent* event) {
     if (enter == lineEdit && event->type() == QEvent::KeyPress) {
@@ -66,10 +75,12 @@ bool InputWindow::eventFilter(QObject* enter, QEvent* event) {
     return QWidget::eventFilter(enter, event);
 }
 
+
 void InputWindow::OkClicked() {
     emit textEnter(getText());
     accept();
 }
+
 
 void InputWindow::CloseClicked() {
     reject();

@@ -22,25 +22,21 @@ private:
     QPushButton* okButton;
     QPushButton* closeButton;
 
-signals:
-
-    void textEnter(const QString& text);
-
-private slots:
-
-    void OkClicked();
-
-    void CloseClicked();
-
 public:
     InputWindow(const QString& message, QWidget* parent = nullptr);
-
     QString getText() const;
+    void setText(const QString& text);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
-
     bool eventFilter(QObject* enter, QEvent* event) override;
+
+signals:
+    void textEnter(const QString& text);
+
+private slots:
+    void OkClicked();
+    void CloseClicked();
 };
 
 #endif // ! OURPAINT_HEADERS_GUI_WINDOWS_WINDOWSERVER_H_
