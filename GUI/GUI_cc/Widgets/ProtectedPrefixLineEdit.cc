@@ -1,5 +1,6 @@
 #include "ProtectedPrefixLineEdit.h"
 
+
 ProtectedPrefixLineEdit::ProtectedPrefixLineEdit(const QString& prefix, QWidget* parent)
         : QLineEdit(parent), prefixLength(prefix.length()) {
     setText(prefix);                  // We put a prefix
@@ -7,9 +8,11 @@ ProtectedPrefixLineEdit::ProtectedPrefixLineEdit(const QString& prefix, QWidget*
     doubleNumber = false;
 }
 
+
 void ProtectedPrefixLineEdit::setDoubleNumber(bool flag) {
     doubleNumber = flag;
 }
+
 
 void ProtectedPrefixLineEdit::keyPressEvent(QKeyEvent* event) {
     const qint16 pos = cursorPosition();
@@ -54,13 +57,14 @@ void ProtectedPrefixLineEdit::keyPressEvent(QKeyEvent* event) {
         simulated += input;
         simulated += afterCursor;
 
-        if (!DRegex::parseDoubleNumber(simulated)) {
+        if (!QRegex::parseDoubleNumber(simulated)) {
             return;  // we forbid the input
         }
     }
 
     QLineEdit::keyPressEvent(event);
 }
+
 
 void ProtectedPrefixLineEdit::mousePressEvent(QMouseEvent* event) {
     QLineEdit::mousePressEvent(event);
