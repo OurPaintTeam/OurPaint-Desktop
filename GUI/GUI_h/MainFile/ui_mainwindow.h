@@ -29,17 +29,42 @@
 #include <QScrollArea>
 #include <QToolButton>
 #include <QWidgetAction>
+#include <QStackedWidget>
 
 #include "CustomConsole.h"
 #include "SmileRightClickFilter.h"
 #include "EmojiWidget.h"
+#include "QTPainter.h"
+#include "AnimationWidget.h"
+#include "Help.h"
 
 QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow {
 public:
+    // Custome windows
+    CustomWindowError* error = nullptr;
+    CustomWindowWarning* warning = nullptr;
+    CustomWindowSuccessful* success= nullptr;
+
+    // Start Window
+    QPushButton* createProjectButton;
+    QPushButton* loadProjectButton;
+    QWidget* openCreateWidget;
+    QVBoxLayout* mainLayoutINStartWindow;
+    QWidget* inputContainer;
+    QHBoxLayout* inputLayout;
+    QLineEdit* projectInput;
+    QWidget* scrollContent;
+    QVBoxLayout* projectsLayout;
+    AnimationWidget* animationPanel;
+    QVector<QPushButton*>* buttonArray = nullptr;
+    QScrollArea* scrollArea;
+    QFrame* line;
+
     // Actions
-    QToolButton* actionSave_project_to;
+    QToolButton* actionCreate_project_to;
+    QToolButton* actionOpen_project;
     QToolButton* actionJPG;
     QToolButton* actionJPEG;
     QToolButton* actionPNG;
@@ -48,10 +73,11 @@ public:
     QToolButton* actionPDF;
     QToolButton* actionSVG;
     QToolButton* actionOURP;
-    QToolButton* actionImport_project;
+    QToolButton* actionImport_file;
     QToolButton* actionScript;
 
-    QWidgetAction* saveAction;
+    QWidgetAction* createAction;
+    QWidgetAction* openAction;
     QWidgetAction* widgetJPG;
     QWidgetAction* widgetJPEG;
     QWidgetAction* widgetPNG;
@@ -60,7 +86,7 @@ public:
     QWidgetAction* widgetPDF;
     QWidgetAction* widgetOURP;
     QWidgetAction* widgetSVG;
-    QWidgetAction* widgetImport_project;
+    QWidgetAction* widgetImport_file;
     QWidgetAction* widgetScript;
 
     QToolButton* actionOpen_server;
@@ -76,16 +102,21 @@ public:
 
     // Main widgets
     QWidget* centralwindow;
-    QGridLayout* gridLayout_2;
     QGridLayout* gridLayout;
     CustomConsole* console;
-    QFrame* workWindow;
+    QMap<QPushButton*, QTPainter*>* painterMap = nullptr;
+    QTPainter* workWindow = nullptr;
     QWidget* topBar;
     QHBoxLayout* topBarLayout;
     QPushButton* enterConsole;
     QHBoxLayout* layoutConsole;
     QTreeView* leftMenuView;
+    QVBoxLayout* rightLayout;
+    QVBoxLayout* rightColumn;
 
+    //  workWindow console
+    QHBoxLayout* workAreaLayout;
+    QStackedWidget* stackedWorkWindows;
 
     // Menu
     QMenu* menuProject;
@@ -96,12 +127,19 @@ public:
     QPushButton* projectButton;
     QPushButton* collaborationButton;
     QPushButton* helpButton;
-    QPushButton* settings;
+    Help* helpWindow = nullptr;      // Help Window
+
+    // TabPanel
+    QWidget* tabBar;
+    QHBoxLayout* tabBarLayout;
+    QPushButton* activeTab = nullptr;
 
     // Window control buttons
     QPushButton* closeButton;
     QPushButton* minimizeButton;
     QPushButton* maximizeButton;
+    QPushButton* settings;
+    QPushButton* highShowTabBar;
 
     // Left menu
     QPushButton* leftMenuElements;
@@ -124,9 +162,10 @@ public:
 
     // Tools panel
     QWidget* toolPanel;
-    QPushButton* figureMoving;
+   // QPushButton* figureMoving;
     QPushButton* toolMoving;
     QPushButton* toolSelected;
+    QPushButton* toolShowSize;
 
     // Panel for requirements
     QWidget* reqPanel;
@@ -170,6 +209,7 @@ public:
     QCheckBox* componentAxis;
     QLineEdit* nameUsers;
 
+
     void setupUi(QMainWindow* MainWindow) {
 
         // Setting window flags
@@ -195,107 +235,348 @@ public:
         centralwindow->setStyleSheet(
                 "#centralwindow {"
                 "background-color: #978897;"
-                "border-radius: 10px;"
+                "border-radius: 5px;"
                 "color: #D8D8F6;"
                 "}"
 
         );
 
-        gridLayout_2 = new QGridLayout(centralwindow);
-        gridLayout_2->setObjectName("gridLayout_2");
-        gridLayout_2->setContentsMargins(0, 0, 0, 0);
-        gridLayout_2->setSpacing(0);
+        gridLayout = new QGridLayout(centralwindow);
+        gridLayout->setObjectName("gridLayout");
+        gridLayout->setContentsMargins(0, 0, 0, 0);
+        gridLayout->setSpacing(0);
 
         // Creating a top panel with a menu and window control buttons
         setupTopBar(MainWindow);
+        setupTabBar(MainWindow);
 
+        // topBar in all right
+        gridLayout->addWidget(topBar, 0, 0, 1, 2, Qt::AlignTop);
 
-        // Adding the top panel to the main layout
-        gridLayout_2->addWidget(topBar, 0, 0, 1, 1, Qt::AlignTop);
+        stackedWorkWindows = new QStackedWidget();
 
-        // Creating the main layout
-        gridLayout = new QGridLayout();
-        gridLayout->setObjectName("gridLayout");
-        gridLayout->setContentsMargins(0, 0, 0, 0);
-        gridLayout->setVerticalSpacing(0);
-
-        // Setting up the left menu
         setupLeftMenu();
-
-        // Setting up a chat
         setupMessage();
-
-        // Setting up the Editor
         setupButtonFigures();
         setupButtonTool();
         setupButtonReq();
-
-        // Setting up a collapsed panel
         setupCollapsedPanel();
 
-        // Setting up the working window
         setupWorkWindow();
-
-        // Configuring the Console
         setupConsole();
-
-        // Setting up the Settings Panel
         setupSettingsPanel();
-
-        // Setting up connections
         setupConnections();
 
-        // Creating the right vertical layout
-        QVBoxLayout * rightLayout = new QVBoxLayout();
-        rightLayout->setObjectName("rightLayout");
-        rightLayout->setContentsMargins(0, 15, 15, 0);
-        rightLayout->setSpacing(5); // Adding an indentation between console and workWindow
+        rightColumn = new QVBoxLayout();
+        rightColumn->setObjectName("rightColumn");
+        rightColumn->setContentsMargins(0, 0, 0, 0);
+        rightColumn->setSpacing(0);
+
+        // tabBar under topBar
+        rightColumn->addWidget(tabBar);
+
+        // ---       workWindow  console ---
+        workAreaLayout = new QHBoxLayout();
+        workAreaLayout->setContentsMargins(15, 0, 0, 0);
+        workAreaLayout->setSpacing(0);
+
+        //  (workWindow + console)
+        rightLayout = new QVBoxLayout();
+        rightLayout->setContentsMargins(0, 15, 15, 0); // верхний и правый отступ
+        rightLayout->setSpacing(5);
 
         // Adding the workWindow to the rightLayout
-        rightLayout->addWidget(workWindow);
+        rightLayout->addWidget(stackedWorkWindows, 1);
 
         // Adding console to rightLayout under workWindow
-        rightLayout->addWidget(console);
+        rightLayout->addWidget(console, 0);
 
         // Setting the stretching coefficients for the rightLayout
-        rightLayout->setStretch(0, 1); // The workWindow stretches in height
+        // The workWindow stretches in height
+        workAreaLayout->addLayout(rightLayout);
+        rightColumn->addLayout(workAreaLayout);
 
-        // Creating a horizontal spacer between leftMenu and workWindow
-        QSpacerItem* horizontalSpacer = new QSpacerItem(15, 0, QSizePolicy::Fixed, QSizePolicy::Minimum);
+        // main layout
+        gridLayout->addWidget(leftMenuContainer, 1, 0, 2, 1);
+        gridLayout->addWidget(messageContainer, 1, 0, 2, 1);
+        gridLayout->addWidget(collapsedPanel, 1, 0, 2, 1);
+        gridLayout->addLayout(rightColumn, 1, 1, 2, 1);
 
-        // Adding widgets and spacer to the main layout
-        gridLayout->addWidget(leftMenuContainer, 0, 0, 1, 1);
-        gridLayout->addWidget(messageContainer, 0, 0, 1, 1);
-        gridLayout->addWidget(collapsedPanel, 0, 0, 1, 1); // They are in the same position, but one of them is hidden
-        gridLayout->addItem(horizontalSpacer, 0, 1, 1, 1); // Spacer in the second column
-        gridLayout->addLayout(rightLayout, 0, 2, 1,
-                              1);    // Right-hand layout with a working window and a console in the third column
+        // --- screatch ---
+        gridLayout->setColumnStretch(0, 0); // fix left panel
+        gridLayout->setColumnStretch(1, 1); // screatch right panel
+        gridLayout->setRowStretch(2, 1);
 
-        // Setting the stretching coefficients
-        gridLayout->setColumnStretch(0, 0); // leftMenu does not stretch in width
-        gridLayout->setColumnStretch(1, 0);
-        gridLayout->setColumnStretch(2, 1); // the right Layout is stretched in width
-        gridLayout->setRowStretch(0, 1);
-
-        gridLayout_2->addLayout(gridLayout, 1, 0, 1, 1);
+        openCreateWindow();
 
         MainWindow->setCentralWidget(centralwindow);
 
         reTranslateUi(MainWindow);
-
         QMetaObject::connectSlotsByName(MainWindow);
+    }
+
+
+    void onStart() {
+        //  collaborationButton->hide();
+        if(settings) { settings->hide(); }
+        if(highShowTabBar) { highShowTabBar->hide(); }
+        if(tabBar) { tabBar->hide(); }
+        if(collapsedPanel) { collapsedPanel->hide(); }
+        if(workWindow) { workWindow->hide(); }
+        if(console) { console->hide(); }
+        if(openCreateWidget) { openCreateWidget->show(); }
+    }
+
+
+    void inProject() {
+        if(openCreateWidget) { openCreateWidget->hide(); }
+        if(animationPanel) { animationPanel->hide(); }
+        if(centralwindow) {
+            centralwindow->setStyleSheet(
+                    "#centralwindow {"
+                    "background-color: #978897;"
+                    "border-radius: 5px;"
+                    "color: #D8D8F6;"
+                    "}"
+            );
+        }
+        //  collaborationButton->show();
+        if(settings) { settings->show(); }
+        if(highShowTabBar) { highShowTabBar->show(); }
+        if(tabBar) { tabBar->show(); }
+        if(collapsedPanel) { collapsedPanel->show(); }
+        if(workWindow) { workWindow->show(); }
+        if(console) { console->show(); }
+    }
+
+
+    void openCreateWindow() {
+        centralwindow->setStyleSheet("background-color: #494850;"
+                                     "border-radius: 5px");
+
+
+        openCreateWidget = new QWidget(centralwindow);
+        openCreateWidget->setObjectName("openPanel");
+        openCreateWidget->setStyleSheet(
+                "#openPanel {"
+                "    background-color: #5f5e69;"
+                "    border: none;"
+                "    border-radius: 0px;"
+                "    border-bottom-left-radius: 5px;"
+                "    border-right: 1px solid #262222;"
+                "}"
+        );
+
+        gridLayout->addWidget(openCreateWidget, 1, 0, 2, 1);
+
+        openCreateWidget->setMinimumWidth(300);
+        openCreateWidget->setMaximumWidth(300);
+
+        gridLayout->setColumnStretch(0, 0);
+        gridLayout->setColumnStretch(1, 1);
+        gridLayout->setRowStretch(2, 1);
+
+        //  main layout
+        mainLayoutINStartWindow = new QVBoxLayout(openCreateWidget);
+        mainLayoutINStartWindow->setContentsMargins(15, 15, 15, 15);
+        mainLayoutINStartWindow->setSpacing(15);
+
+        // --- input/create/open ---
+        inputContainer = new QWidget(openCreateWidget);
+        inputLayout = new QHBoxLayout(inputContainer);
+        inputLayout->setContentsMargins(0, 0, 0, 0);
+        inputLayout->setSpacing(5); // distance between QLineEdit and buttons
+        inputContainer->setStyleSheet("QWidget {"
+                                      " background-color: #5f5e69;"
+                                      "}");
+
+        // --- line edit ---
+        projectInput = new QLineEdit(inputContainer);
+        projectInput->setPlaceholderText("Enter the project name...");
+        projectInput->setStyleSheet(
+                "QLineEdit {"
+                "   background-color: #D8D8F6;"
+                "   border: 1px solid #333333;"
+                "   border-radius: 5px;"
+                "   padding: 5px;"
+                "   color: black;"
+                "}"
+        );
+        projectInput->setMaximumHeight(30);
+        inputLayout->addWidget(projectInput, 1); // stretching it out QLineEdit
+
+        // --- create button ---
+        createProjectButton = new QPushButton(inputContainer);
+        createProjectButton->setObjectName("createProjectButton");
+        createProjectButton->setToolTip("Create Project");
+        createProjectButton->setFixedSize(30, 30); // квадратная
+        createProjectButton->setStyleSheet(
+                "QPushButton { background-color: #D8D8F6;  border: 1px solid #333333; border-radius: 5px; }"
+                "QPushButton:hover { background-color: #2f4557; }"
+        );
+        inputLayout->addWidget(createProjectButton);
+
+        // --- open button ---
+        loadProjectButton = new QPushButton(inputContainer);
+        loadProjectButton->setObjectName("loadProjectButton");
+        loadProjectButton->setToolTip("Load Project");
+        loadProjectButton->setFixedSize(30, 30);
+        loadProjectButton->setStyleSheet(
+                "QPushButton { background-color: #D8D8F6;border: 1px solid #333333; border-radius: 5px; }"
+                "QPushButton:hover { background-color: #2f4557; }"
+        );
+        inputLayout->addWidget(loadProjectButton);
+
+        mainLayoutINStartWindow->addWidget(inputContainer);
+
+        // --- line ---
+        line = new QFrame(openCreateWidget);
+        line->setFrameShape(QFrame::HLine);
+        line->setFrameShadow(QFrame::Plain);
+        line->setStyleSheet("background-color: #D8D8F6; margin-left: 0px; margin-right: 0px;");
+        mainLayoutINStartWindow->addWidget(line);
+
+        // --- scroll area ---
+        scrollArea = new QScrollArea(openCreateWidget);
+        scrollArea->setWidgetResizable(true);
+        scrollArea->setStyleSheet(
+                "QScrollArea {"
+                "    border: none;"
+                "    background-color: transparent;"   /* scrollArea */
+                "    border-radius: 4px;"
+                "}"
+                "QScrollBar:vertical {"
+                "    background-color: #D8D8F6;"   /* scroll bar */
+                "    width: 8px;"
+                "    border-radius: 4px;"
+                "}"
+                "QScrollBar::handle:vertical {"
+                "    background-color: #929ea8;"
+                "    min-height: 20px;"
+                "    border-radius: 4px;"
+                "}"
+                "QScrollBar::add-line, QScrollBar::sub-line {"
+                "    background: none;"
+                "}"
+                "QScrollBar::add-page, QScrollBar::sub-page {"
+                "    background: none;"
+                "}"
+        );
+
+        scrollContent = new QWidget(scrollArea);
+        scrollContent->setStyleSheet(
+                "QWidget { "
+                "border: none; "
+                "background-color: #5f5e69; "
+                "}"
+        );
+        projectsLayout = new QVBoxLayout(scrollContent);
+        projectsLayout->setSpacing(0);
+        projectsLayout->setContentsMargins(0, 0, 0, 0);
+        scrollContent->setLayout(projectsLayout);
+
+        projectsLayout->addStretch();
+
+        scrollArea->setWidget(scrollContent);
+        mainLayoutINStartWindow->addWidget(scrollArea);
+
+
+        // Animations
+        animationPanel = new AnimationWidget(centralwindow);
+        animationPanel->setObjectName("animationPanel");
+
+        gridLayout->addWidget(animationPanel, 1, 1, 2, 1);
+    }
+
+
+    void addProjectInButton(const QString& name, const QString& path) {
+        QPushButton* button = new QPushButton(scrollContent);
+        button->setObjectName(name);
+        button->setCursor(Qt::PointingHandCursor);
+        button->setFixedHeight(50);
+        button->setStyleSheet(
+                "QPushButton {"
+                "    background-color: transparent;"
+                "    border: none;"
+                "    border-radius: 5px;"
+                "    text-align: left;"
+                "}"
+                "QPushButton:hover {"
+                "    background-color: #2f4557;"
+                "}"
+        );
+
+        // --- vertical layout in button ---
+        QVBoxLayout * layout = new QVBoxLayout(button);
+        layout->setContentsMargins(5, 5, 5, 5);
+        layout->setSpacing(2);
+
+        QLabel* nameText = new QLabel(name, button);
+        nameText->setObjectName("nameText");
+        nameText->setStyleSheet(
+                " background-color: transparent; color: #D8D8F6; font-weight: bold; font-size: 12px;");
+        layout->addWidget(nameText);
+
+        QLabel* pathLabel = new QLabel(path, button);
+        pathLabel->setObjectName("pathLabel");
+        pathLabel->setStyleSheet(" background-color: transparent; color: #D8D8F6; font-size: 10px;");
+        layout->addWidget(pathLabel);
+        
+        if (!buttonArray) {
+            buttonArray = new QVector<QPushButton*>();
+        }
+
+        projectsLayout->insertWidget(0, button);
+
+        buttonArray->push_back(button);
+
+        button->setToolTip(pathLabel->text());
+    }
+
+
+    void initStartWindow(const QVector<QPair<QString, QString>>& projects) {
+        for (auto& it: projects) {
+            addProjectInButton(it.first, it.second);
+        }
     }
 
 
     void setupWorkWindow() {
         // Creating and configuring a work window
-        workWindow = new QFrame(centralwindow);
+        workWindow = new QTPainter(centralwindow);
         workWindow->setObjectName("workWindow");
         workWindow->setFrameShape(QFrame::Shape::NoFrame);
         workWindow->setFrameShadow(QFrame::Shadow::Plain);
         workWindow->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        workWindow->resize(674, 460);
+        stackedWorkWindows->addWidget(workWindow);
+        stackedWorkWindows->setCurrentWidget(workWindow);
+
+        if (!painterMap) {
+            painterMap = new QMap<QPushButton*, QTPainter*>();
+        }
+
+        // workWindow->resize(674, 460);
     }
+
+
+    void setupWorkWindow(QPushButton* btn) {
+        QTPainter* tempPainter = new QTPainter(centralwindow);
+        tempPainter->setObjectName(btn->objectName());
+        tempPainter->setFrameShape(QFrame::Shape::NoFrame);
+        tempPainter->setFrameShadow(QFrame::Shadow::Plain);
+        tempPainter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+        if (!painterMap) {
+            painterMap = new QMap<QPushButton*, QTPainter*>();
+        }
+
+        painterMap->insert(btn, tempPainter);
+        stackedWorkWindows->addWidget(tempPainter);
+
+        workWindow = tempPainter;
+        stackedWorkWindows->setCurrentWidget(workWindow);
+    }
+
 
     void setupConsole() {
         // Creating and configuring the console
@@ -311,8 +592,8 @@ public:
         background-color: #3e3d3d;
         color: #D8D8F6;
         border: 1px solid black;
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
         border-bottom-left-radius: 0px;
         border-bottom-right-radius: 0px;
     )");
@@ -352,6 +633,112 @@ public:
     }
 
 
+    void setupTabBar(QMainWindow* MainWindow) {
+        // create tab bar panel
+        tabBar = new QWidget(MainWindow);
+        tabBar->setObjectName("tabBar");
+        tabBar->setStyleSheet(
+                "#tabBar { "
+                "    background-color: #494850; "
+                "    border: none; "
+                "    border-bottom: 1px solid #262222; "
+                "}"
+        );
+        tabBar->setFixedHeight(25);
+
+        // main layout
+        tabBarLayout = new QHBoxLayout(tabBar);
+        tabBarLayout->setContentsMargins(0, 0, 0, 0);
+        tabBarLayout->setSpacing(3);
+
+        tabBarLayout->addStretch();
+    }
+
+
+    void addTabBarButtons(const QString& name) {
+
+        if (activeTab) {
+            activeTab->setStyleSheet(
+                    "QPushButton { "
+                    "background-color: #615760; "
+                    "color: #D8D8F6; "
+                    "border: none; "
+                    "border-top-left-radius: 5px; "
+                    "border-top-right-radius: 5px; "
+                    "padding: 0px 5px; "
+                    "font-size: 9pt; "
+                    "} "
+                    "QPushButton:hover { "
+                    "background-color: rgba(255, 255, 255, 0.2); "
+                    "}"
+            );
+        }
+
+        // create active button
+        QPushButton* tabButton = new QPushButton(name, tabBar);
+        tabButton->setObjectName(name);
+        tabButton->setFixedHeight(25);
+        tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        tabButton->setStyleSheet(
+                "QPushButton { "
+                "background-color: #978897; "
+                "color: #D8D8F6; "
+                "border: none; "
+                "border-top-left-radius: 5px; "
+                "border-top-right-radius: 5px; "
+                "border-bottom: 2px solid #978897;"
+                "margin-bottom: -1px;"
+                "padding: 0px 5px; "
+                "font-size: 9pt; "
+                "} "
+        );
+        tabButton->setFixedHeight(25);
+        tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        tabBarLayout->insertWidget(tabBarLayout->count() - 1, tabButton);
+
+
+        QObject::connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
+            if (activeTab && activeTab != tabButton) {
+                activeTab->setStyleSheet(
+                        "QPushButton { "
+                        "background-color: #615760; "
+                        "color: #D8D8F6; "
+                        "border: none; "
+                        "border-top-left-radius: 5px; "
+                        "border-top-right-radius: 5px; "
+                        "padding: 0px 5px; "
+                        "font-size: 9pt; "
+                        "} "
+                        "QPushButton:hover { "
+                        "background-color: rgba(255, 255, 255, 0.2); "
+                        "}"
+                );
+            }
+
+            tabButton->setStyleSheet(
+                    "QPushButton { "
+                    "background-color: #978897; "
+                    "color: #D8D8F6; "
+                    "border: none; "
+                    "border-top-left-radius: 5px; "
+                    "border-top-right-radius: 5px; "
+                    "border-bottom: 2px solid #978897;"
+                    "margin-bottom: -1px;"
+                    "padding: 0px 5px; "
+                    "font-size: 9pt; "
+                    "} "
+            );
+            activeTab = tabButton;
+
+            workWindow = painterMap->value(tabButton, nullptr);
+            stackedWorkWindows->setCurrentWidget(workWindow);
+        });
+
+        setupWorkWindow(tabButton);
+        activeTab = tabButton;
+    }
+
+
     void setupTopBar(QMainWindow* MainWindow) {
         // Creating the top panel
         topBar = new QWidget(MainWindow);
@@ -359,8 +746,8 @@ public:
         topBar->setStyleSheet("QWidget#topBar { "
                               "background-color: #494850; "
                               "color: #D8D8F6; "
-                              "border-top-left-radius: 10px; "
-                              "border-top-right-radius: 10px; "
+                              "border-top-left-radius: 5px; "
+                              "border-top-right-radius: 5px; "
                               "border-bottom-left-radius: 0px; "
                               "border-bottom-right-radius: 0px; "
                               "border: none; "
@@ -391,15 +778,18 @@ public:
 
         // Adding window control buttons to the top panel
         topBarLayout->addStretch();
+        topBarLayout->addWidget(highShowTabBar);
         topBarLayout->addWidget(settings);
         topBarLayout->addWidget(minimizeButton);
         topBarLayout->addWidget(maximizeButton);
         topBarLayout->addWidget(closeButton);
     }
 
+
     void setupActionsSaveLoad(QMainWindow* MainWindow) {
-        saveAction = new QWidgetAction(menuProject);
-        widgetImport_project = new QWidgetAction(menuProject);
+        createAction = new QWidgetAction(menuProject);
+        openAction = new QWidgetAction(menuProject);
+        widgetImport_file = new QWidgetAction(menuProject);
         widgetScript = new QWidgetAction(menuProject);
         widgetPDF = new QWidgetAction(formatMenu);
         widgetSVG = new QWidgetAction(formatMenu);
@@ -417,12 +807,17 @@ public:
         QIcon fileIn("../Static/icons/filein.ico");
         QIcon fileOn("../Static/icons/fileon.ico");
 
-        actionSave_project_to = new QToolButton(MainWindow);
-        actionSave_project_to->setObjectName("actionSave_project_to");
+        actionCreate_project_to = new QToolButton(MainWindow);
+        actionCreate_project_to->setObjectName("actionCreate_project_to");
+        createAction->setDefaultWidget(actionCreate_project_to);
+        createAction->setObjectName("createAction");
 
 
-        saveAction->setDefaultWidget(actionSave_project_to);
-        saveAction->setObjectName("saveAction");
+        actionOpen_project = new QToolButton(MainWindow);
+        actionOpen_project->setObjectName("actionOpen_project");
+        openAction->setDefaultWidget(actionOpen_project);
+        openAction->setObjectName("openAction");
+
 
         // Creating actions for each format
         actionJPG = new QToolButton(MainWindow);
@@ -619,14 +1014,14 @@ public:
         widgetOURP->setDefaultWidget(actionOURP);
         widgetOURP->setObjectName("widgetOURP");
 
-        actionSave_project_to->setIcon(fileIn);
-        actionSave_project_to->setFont(font);
-        actionSave_project_to->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        actionSave_project_to->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        actionCreate_project_to->setIcon(fileIn);
+        actionCreate_project_to->setFont(font);
+        actionCreate_project_to->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        actionCreate_project_to->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
         // Use the style to position the icon on the right and the text on the left
-        actionSave_project_to->setStyleSheet(
-                "QToolButton#actionSave_project_to {"
+        actionCreate_project_to->setStyleSheet(
+                "QToolButton#actionCreate_project_to {"
                 "   background-color: transparent;"  // Transparent button
                 "   border: none;"
                 "   font-size: 9pt;"
@@ -636,30 +1031,59 @@ public:
                 "   text-align: left;"
                 " qproperty-iconSize: 16px;" // Icon size
                 "}"
-                "QToolButton#actionSave_project_to::icon {"
+                "QToolButton#actionCreate_project_to::icon {"
                 " margin-left: 10px;" // Indentation between text and icon
                 " width: 16px; height: 16px;" // Icon size
                 "}"
-                "QToolButton#actionSave_project_to:hover {"
+                "QToolButton#actionCreate_project_to:hover {"
                 " background-color: rgba(255, 255, 255, 0.2);" // Illumination when pointing
                 "   border-radius: 4px;"
                 "}"
         );
 
 
-        actionImport_project = new QToolButton(MainWindow);
 
-        widgetImport_project->setDefaultWidget(actionImport_project);
-        widgetImport_project->setObjectName("widgetImport_project");
+        actionOpen_project->setIcon(fileIn);
+        actionOpen_project->setFont(font);
+        actionOpen_project->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        actionOpen_project->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-        actionImport_project->setFont(font);
-        actionImport_project->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        actionImport_project->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        actionImport_project->setObjectName("actionImport_project");
-        actionImport_project->setIcon(fileOn);
+        // Use the style to position the icon on the right and the text on the left
+        actionOpen_project->setStyleSheet(
+                "QToolButton#actionOpen_project {"
+                "   background-color: transparent;"  // Transparent button
+                "   border: none;"
+                "   font-size: 9pt;"
+                "   color: #D8D8F6;"
+                "   padding: 5px;"
+                " padding-left: 10px;" // Text indentation from the left edge
+                "   text-align: left;"
+                " qproperty-iconSize: 16px;" // Icon size
+                "}"
+                "QToolButton#actionOpen_project::icon {"
+                " margin-left: 10px;" // Indentation between text and icon
+                " width: 16px; height: 16px;" // Icon size
+                "}"
+                "QToolButton#actionOpen_project:hover {"
+                " background-color: rgba(255, 255, 255, 0.2);" // Illumination when pointing
+                "   border-radius: 4px;"
+                "}"
+        );
 
-        actionImport_project->setStyleSheet(
-                "QToolButton#actionImport_project {"
+
+        actionImport_file = new QToolButton(MainWindow);
+
+        widgetImport_file->setDefaultWidget(actionImport_file);
+        widgetImport_file->setObjectName("widgetImport_file");
+
+        actionImport_file->setFont(font);
+        actionImport_file->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        actionImport_file->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        actionImport_file->setObjectName("actionImport_file");
+        actionImport_file->setIcon(fileOn);
+
+        actionImport_file->setStyleSheet(
+                "QToolButton#actionImport_file {"
                 " background-color: transparent;" // Transparent button
                 "   border: none;"
                 "   font-size: 9pt;"
@@ -669,11 +1093,11 @@ public:
                 "   text-align: left;"
                 " qproperty-iconSize: 16px;" // Icon size
                 "}"
-                "QToolButton#actionImport_project::icon {"
+                "QToolButton#actionImport_file::icon {"
                 " margin-left: 10px;" // Indentation between text and icon
                 " width: 16px; height: 16px;" // Icon size
                 "}"
-                "QToolButton#actionImport_project:hover {"
+                "QToolButton#actionImport_file:hover {"
                 " background-color: rgba(255, 255, 255, 0.2);" // Illumination when pointing
                 "   border-radius: 4px;"
                 "}"
@@ -703,6 +1127,7 @@ public:
         );
 
     }
+
 
     void setupServerActions(QMainWindow* MainWindow) {
         widgetOpen_server = new QWidgetAction(menuCollaboration);
@@ -801,11 +1226,12 @@ public:
         action_help->setObjectName("action_help");
     }
 
+
     void setupMenus(QMainWindow* MainWindow) {
         QFont font;
         font.setPointSize(9);
 
-        // Меню "Project"
+        // Menu "Project"
         menuProject = new QMenu(MainWindow);
         menuProject->setObjectName("menuProject");
         menuProject->setStyleSheet(
@@ -820,9 +1246,7 @@ public:
         menuProject->setFont(font);
 
 
-
-
-        // Меню "Format"
+        // Menu "Format"
         formatMenu = new QMenu(MainWindow);
         formatMenu->setObjectName("formatMenu");
         formatMenu->setStyleSheet(
@@ -837,8 +1261,9 @@ public:
         setupActionsSaveLoad(MainWindow);
 
 
-        menuProject->addAction(saveAction);
-        menuProject->addAction(widgetImport_project);
+        menuProject->addAction(createAction);
+        menuProject->addAction(openAction);
+        menuProject->addAction(widgetImport_file);
         menuProject->addAction(widgetScript);
 
         formatMenu->addAction(widgetOURP);
@@ -851,7 +1276,7 @@ public:
         formatMenu->addAction(widgetSVG);
 
 
-        // Меню "Collaboration"
+        // Menu "Collaboration"
         menuCollaboration = new QMenu(MainWindow);
         menuCollaboration->setObjectName("menuCollaboration");
         menuCollaboration->setStyleSheet(
@@ -873,8 +1298,9 @@ public:
 
     }
 
+
     void setupMenuButtons() {
-        // Создание кнопки "Project"
+        //  "Project"
         projectButton = new QPushButton("Project", topBar);
         projectButton->setObjectName("projectButton");
         projectButton->setToolTip("Project");
@@ -898,7 +1324,7 @@ public:
         projectButton->setLayoutDirection(Qt::RightToLeft);
         projectButton->setMenu(menuProject);
 
-        // Создание кнопки "Collaboration"
+        // "Collaboration"
         collaborationButton = new QPushButton("Collaboration", topBar);
         collaborationButton->setObjectName("collaborationButton");
         collaborationButton->setToolTip("Collaboration");
@@ -922,7 +1348,7 @@ public:
         collaborationButton->setLayoutDirection(Qt::RightToLeft);
         collaborationButton->setMenu(menuCollaboration);
 
-        // Создание кнопки "Help"
+        //  "Help"
         helpButton = new QPushButton("Help", topBar);
         helpButton->setObjectName("helpButton");
         helpButton->setToolTip("Help");
@@ -943,8 +1369,9 @@ public:
         helpButton->setLayoutDirection(Qt::RightToLeft);
     }
 
+
     void setupWindowControlButtons(QMainWindow* MainWindow) {
-        // Кнопка "Закрыть"
+        //  "close"
         closeButton = new QPushButton("", topBar);
         closeButton->setObjectName("closeButton");
         closeButton->setFixedSize(25, 25);
@@ -954,7 +1381,7 @@ public:
                                    "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Illumination when pointing
         QObject::connect(closeButton, &QPushButton::clicked, MainWindow, &QMainWindow::close);
 
-        // Кнопка "Свернуть"
+        //  "minimize"
         minimizeButton = new QPushButton("", topBar);
         minimizeButton->setObjectName("minimizeButton");
         minimizeButton->setToolTip("Roll");
@@ -965,7 +1392,7 @@ public:
                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }");// Illumination when pointing
         QObject::connect(minimizeButton, &QPushButton::clicked, MainWindow, &QMainWindow::showMinimized);
 
-        // Кнопка "Развернуть"
+        //  "maximize"
         maximizeButton = new QPushButton("", topBar);
         maximizeButton->setObjectName("maximizeButton");
         maximizeButton->setFixedSize(25, 25);
@@ -991,7 +1418,34 @@ public:
         settings->setIcon(QIcon("../Static/icons/topRight/Settings.png"));
         settings->setStyleSheet("QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
                                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Illumination when pointing
+
+
+
+        highShowTabBar = new QPushButton("", topBar);
+        highShowTabBar->setObjectName("highShowTabBar");
+        highShowTabBar->setFixedSize(25, 25);
+        highShowTabBar->setToolTip("Hide Tab");
+        highShowTabBar->setIcon(QIcon("../Static/icons/topRight/Up.png"));
+        highShowTabBar->setStyleSheet(
+                "QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
+                "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Illumination when pointing
+        QObject::connect(highShowTabBar, &QPushButton::clicked, [=, this]() {
+            if (tabBar->isVisible()) {
+
+                tabBar->hide();
+
+                highShowTabBar->setToolTip("Show Tab");
+                highShowTabBar->setIcon(QIcon("../Static/icons/topRight/ChevronDown.ico"));
+            } else {
+                tabBar->show();
+                highShowTabBar->setToolTip("Hide Tab");
+                highShowTabBar->setIcon(QIcon("../Static/icons/topRight/Up.png"));
+            }
+
+
+        });
     }
+
 
     void setupSettingsPanel() {
         // Creating a Settings panel
@@ -1051,7 +1505,7 @@ public:
             background-color: #494850;
             color: #D8D8F6;
             border: none;
-            border-bottom-left-radius: 10px;
+            border-bottom-left-radius: 5px;
             border-bottom-right-radius: 0px;
         }
     )");
@@ -1093,7 +1547,7 @@ public:
         collapsedPanel->setFocusPolicy(Qt::NoFocus);
         collapsedPanel->setObjectName("collapsedPanel");
         collapsedPanel->setFixedWidth(40);
-        collapsedPanel->setStyleSheet("background-color: #494850; border-bottom-left-radius: 10px;\n"
+        collapsedPanel->setStyleSheet("background-color: #494850; border-bottom-left-radius: 5px;\n"
                                       "border-bottom-right-radius: 0px;");
 
         // Creating a vertical layout with top alignment
@@ -1171,8 +1625,9 @@ public:
         collapsedPanelLayout->addWidget(Req);
     }
 
+
     void setupMessage() {
-        // Создание и настройка message
+        //  message
         message = new QFrame();
         message->setObjectName("message");
 
@@ -1181,14 +1636,14 @@ public:
             background-color: #494850;
             color: #D8D8F6;
             border: none;
-            border-bottom-left-radius: 10px;
+            border-bottom-left-radius: 5px;
             border-bottom-right-radius: 0px;
         }
     )");
 
         message->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-        // Создание консоли для ввода внутри message
+        // console message
         messageConsole = new QLineEdit();
         messageConsole->setObjectName("messageConsole");
 
@@ -1247,7 +1702,7 @@ public:
         background-color: #3e3d3d;
         color: #D8D8F6;
         border: 1px solid black;
-        border-bottom-left-radius: 10px;
+        border-bottom-left-radius: 5px;
         border-bottom-right-radius: 0px;
     )");
 
@@ -1262,16 +1717,13 @@ public:
                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }"
         );
 
-        // Создание макета для message
         messageLayout = new QGridLayout();
         messageLayout->setObjectName("messageLayout");
         messageLayout->setContentsMargins(0, 0, 0, 0);
         messageLayout->setSpacing(0);
 
-        // Установка макета для message
         message->setLayout(messageLayout);
 
-        // Создание контейнера для message
         messageContainer = new QWidget();
         messageContainer->setObjectName("messageContainer");
         messageContainerLayout = new QGridLayout();
@@ -1307,6 +1759,7 @@ public:
         // // Initially hiding the messageContainer
         messageContainer->hide();
     }
+
 
     void setupButtonFigures() {
         // Creating a panel for shape buttons
@@ -1384,6 +1837,7 @@ public:
         figuresPanel->setMaximumWidth(0);
     }
 
+
     void setupButtonTool() {
         // Creating a toolbar for the tool buttons
         toolPanel = new QWidget(nullptr, Qt::Popup);
@@ -1401,14 +1855,14 @@ public:
                               "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }";
 
         // Simple
-        figureMoving = new QPushButton("", toolPanel);
+       /* figureMoving = new QPushButton("", toolPanel);
         figureMoving->setToolTip("Mouse");
         figureMoving->setObjectName("Mouse");
         QIcon IcoMoving("../Static/icons/cursorTool.png");
         figureMoving->setIcon(IcoMoving);
         figureMoving->setFixedSize(40, 40);
         figureMoving->setStyleSheet(buttonStyle);
-        toolsLayout->addWidget(figureMoving);
+        toolsLayout->addWidget(figureMoving);*/
 
         // MOVING
         toolMoving = new QPushButton("", toolPanel);
@@ -1451,6 +1905,17 @@ public:
         toolSelected->setStyleSheet(buttonStyle);
         toolsLayout->addWidget(toolSelected);
 
+
+        // SHOW SIZE
+        toolShowSize = new QPushButton("", toolPanel);
+        toolShowSize->setToolTip("Show size");
+        toolShowSize->setObjectName("Resize");
+        QIcon IcoShow("../Static/icons/SelectionTool.png");
+        toolShowSize->setIcon(IcoShow);
+        toolShowSize->setFixedSize(40, 40);
+        toolShowSize->setStyleSheet(buttonStyle);
+        toolsLayout->addWidget(toolShowSize);
+
         toolsPanelAnimation = new QPropertyAnimation(toolPanel, "maximumWidth");
         toolsPanelAnimation->setObjectName("toolsPanelAnimation");
         toolsPanelAnimation->setDuration(200);
@@ -1459,6 +1924,7 @@ public:
 
         toolPanel->setMaximumWidth(0);
     }
+
 
     void setupButtonReq() {
         // Creating a panel for the requirements buttons
@@ -1497,7 +1963,7 @@ public:
         sevenReq->setToolTip("Request 7");
         eightReq->setToolTip("Request 8");
         nineReq->setToolTip("Request 9");
-        tenReq->setToolTip("Request 9");
+        tenReq->setToolTip("Request 10");
 
         oneReq->setObjectName("Request 1");
         twoReq->setObjectName("Request 2");
@@ -1529,8 +1995,8 @@ public:
 
 
     void setupConnections() {
-        QObject::connect(actionSave_project_to, &QPushButton::clicked, [this]() {
-            QPoint pos = actionSave_project_to->mapToGlobal(QPoint(actionSave_project_to->width(), 0));
+        QObject::connect(actionImport_file, &QPushButton::clicked, [this]() {
+            QPoint pos = actionImport_file->mapToGlobal(QPoint(actionImport_file->width(), 0));
             formatMenu->popup(pos);
         });
 
@@ -1546,7 +2012,15 @@ public:
             }
         });
 
-        QObject::connect(helpButton, &QPushButton::clicked, action_help, &QAction::trigger);
+        QObject::connect(helpButton, &QPushButton::clicked, [&]{
+            if (!helpWindow) {
+                helpWindow = new Help(centralwindow);
+            }
+
+            helpWindow->show();
+            helpWindow->raise();
+            helpWindow->activateWindow();
+        });
 
 
         // Left Menu
@@ -1729,14 +2203,14 @@ public:
             }
         });
 
-        QObject::connect(figureMoving, &QPushButton::clicked, [&]() {
+       /* QObject::connect(figureMoving, &QPushButton::clicked, [&]() {
             if (toolPanel->isVisible()) {
                 toolsPanelAnimation->stop();
                 toolsPanelAnimation->setStartValue(toolPanel->maximumWidth());
                 toolsPanelAnimation->setEndValue(0);
                 toolsPanelAnimation->start();
             }
-        });
+        });*/
 
         QObject::connect(toolMoving, &QPushButton::clicked, [&]() {
             if (toolPanel->isVisible()) {
@@ -1766,6 +2240,15 @@ public:
         });*/
 
         QObject::connect(toolSelected, &QPushButton::clicked, [&]() {
+            if (toolPanel->isVisible()) {
+                toolsPanelAnimation->stop();
+                toolsPanelAnimation->setStartValue(toolPanel->maximumWidth());
+                toolsPanelAnimation->setEndValue(0);
+                toolsPanelAnimation->start();
+            }
+        });
+
+        QObject::connect(toolShowSize, &QPushButton::clicked, [&]() {
             if (toolPanel->isVisible()) {
                 toolsPanelAnimation->stop();
                 toolsPanelAnimation->setStartValue(toolPanel->maximumWidth());
@@ -1851,12 +2334,162 @@ public:
 
     }
 
+
+    void updateStyle(const bool isMaximized, const bool isFullScreen) {
+        if (!isMaximized && !isFullScreen) {
+            if (topBar->isVisible())
+                topBar->setStyleSheet("QWidget#topBar { "
+                                          "background-color: #494850; "
+                                          "color: #D8D8F6; "
+                                          "border-top-left-radius: 5px; "
+                                          "border-top-right-radius: 5px; "
+                                          "border: none; "
+                                          "border-bottom: 1px solid #262222; }");
+            if (collapsedPanel->isVisible())
+                collapsedPanel->setStyleSheet("QWidget#collapsedPanel { "
+                                                  "background-color: #494850;"
+                                                  "color: #D8D8F6;"
+                                                  "border-bottom-left-radius: 5px;"
+                                                  "}");
+            if (centralwindow->isVisible())
+                centralwindow->setStyleSheet("QWidget#centralwindow { "
+                                                 "background-color: #978897;"
+                                                 "color: #D8D8F6;"
+                                                 "border-top-left-radius: 5px; "
+                                                 "border-top-right-radius: 5px; "
+                                                 "border-bottom-left-radius: 5px; "
+                                                 "border-bottom-right-radius: 5px; "
+                                                 "border: none; }");
+            if (messageConsole->isVisible())
+                messageConsole->setStyleSheet(R"(
+        background-color: #3e3d3d;
+        color: #D8D8F6;
+        border: 1px solid black;
+        border-bottom-left-radius: 5px;
+        border-bottom-right-radius: 0px;
+    )");
+            leftMenuView->setStyleSheet(R"(
+        QTreeView {
+            background-color: #494850;
+            color: #D8D8F6;
+            border: none;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 0px;
+        }
+    )");
+
+        } else {
+            if (topBar->isVisible())
+                topBar->setStyleSheet("QWidget#topBar { "
+                                          "background-color: #494850; "
+                                          "color: #D8D8F6; "
+                                          "border-top-left-radius: 0px; "
+                                          "border-top-right-radius: 0px; "
+                                          "border: none; "
+                                          "border-bottom: 1px solid #262222; }");
+            if (collapsedPanel->isVisible())
+                collapsedPanel->setStyleSheet("QWidget#collapsedPanel { "
+                                                  "background-color: #494850;"
+                                                  "color: #D8D8F6;"
+                                                  "border-bottom-left-radius: 0px;"
+                                                  "}");
+            if (centralwindow->isVisible())
+                centralwindow->setStyleSheet("QWidget#centralwindow { "
+                                                 "background-color: #978897;"
+                                                 "color: #D8D8F6;"
+                                                 "border-top-left-radius: 0px; "
+                                                 "border-top-right-radius: 0px; "
+                                                 "border: none; }");
+            if (messageConsole->isVisible())
+                messageConsole->setStyleSheet(R"(
+        background-color: #3e3d3d;
+        color: #D8D8F6;
+        border: 1px solid black;
+        border-bottom-left-radius: 0px;
+        border-bottom-right-radius: 0px;
+    )");
+            if (leftMenuView->isVisible())
+                leftMenuView->setStyleSheet(R"(
+        QTreeView {
+            background-color: #494850;
+            color: #D8D8F6;
+            border: none;
+            border-bottom-left-radius: 0px;
+            border-bottom-right-radius: 0px;
+        }
+    )");
+        }
+    }
+
+    void updateExitServerStyle(bool connect) {
+        if (!connect) {
+            actionExit_from_session->setStyleSheet(
+                    "QToolButton#actionExit_from_session {"
+                    "   background-color: transparent;"
+                    "   border: none;"
+                    "   font-size: 9pt;"
+                    "   color: #8888A0;"
+                    "   padding: 5px;"
+                    "}"
+            );
+        } else {
+            actionExit_from_session->setStyleSheet(
+                    "QToolButton#actionExit_from_session {"
+                    "   background-color: transparent;"
+                    "   border: none;"
+                    "   font-size: 9pt;"
+                    "   color: #D8D8F6;"
+                    "   padding: 5px;"
+                    "}"
+                    "QToolButton#actionExit_from_session:hover {"
+                    "   background-color: rgba(255, 255, 255, 0.2);"
+                    "   border-radius: 4px;"
+                    "}"
+            );
+        }
+    }
+
+
+    void showError(const QString& text) {
+        delete error;
+        error = new CustomWindowError(text, centralwindow);
+        qint32 x = centralwindow->width() - error->width() - 100;
+        qint32 y = centralwindow->height() - error->height() - 50;
+        QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
+        error->move(pos);
+        error->show();
+    }
+
+
+    void showWarning(const QString& text) {
+        delete warning;
+        warning = new CustomWindowWarning(text, centralwindow);
+        qint32 x = centralwindow->width() - warning->width() - 100;
+        qint32 y = centralwindow->height() - warning->height() - 50;
+        QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
+        warning->move(pos);
+        warning->show();
+    }
+
+
+    void showSuccess(const QString& text) {
+        delete success;
+        success = new CustomWindowSuccessful(text, centralwindow);
+        qint32 x = centralwindow->width() - success->width() - 150;
+        qint32 y = centralwindow->height() - success->height() - 50;
+        QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
+        success->move(pos);
+        success->show();
+    }
+
+
     void reTranslateUi(QMainWindow* MainWindow) const {
         // Setting text for interface elements
         MainWindow->setWindowTitle(QCoreApplication::translate("OurPaint", "OurPaint", nullptr));
 
-        actionSave_project_to->setText(QCoreApplication::translate("MainWindow", "Save project to...", nullptr));
-        actionImport_project->setText(QCoreApplication::translate("MainWindow", "Import project", nullptr));
+        actionCreate_project_to->setText(QCoreApplication::translate("MainWindow", "Create project", nullptr));
+        actionOpen_project->setText(QCoreApplication::translate("MainWindow", "Open project", nullptr));
+        actionImport_file->setText(QCoreApplication::translate("MainWindow", "Import file to...", nullptr));
         actionScript->setText(QCoreApplication::translate("MainWindow", "Script                        ", nullptr));
 
         actionOpen_server->setText(QCoreApplication::translate("MainWindow", "Open server           ", nullptr));
