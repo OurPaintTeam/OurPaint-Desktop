@@ -23,22 +23,22 @@ class LeftMenuBar: public QWidget  {
 private:
     TreeModel *treeModel = nullptr;
     TreeNode *rootNode = nullptr;
+    TreeNode *projectsNode = nullptr;
     TreeNode *figuresNode = nullptr;
     TreeNode *requirementsNode = nullptr;
     TreeNode *nothing = nullptr;
     QIcon elem;
     QIcon paraam;
-
     QFont font;
 
 public:
+
+    TreeNode* getProjectsNode(){return projectsNode;};
     void refreshAllLinkedParams();
-
     void refreshLinkedParams(TreeNode* node);
-
     explicit LeftMenuBar(QObject *parent);
-
     TreeModel *getTreeModel();
+    void addFileToProject(const QString& file);
 
     void addPointInLeftMenu(const QString &namePoint,const qlonglong pID,
                               const std::pair<const qreal*,const qreal *> &params);
@@ -87,16 +87,17 @@ public:
     // Clearing one element by ID
     void removeFigureById(const qlonglong id);
 
-    QModelIndex selectFigureById(const qlonglong id);
+    [[maybe_unused]] [[maybe_unused]] QModelIndex selectFigureById(const qlonglong id);
 
     QVector<QPair<qlonglong, QString>> collectAllIDs(TreeNode* node) const;
 
     QVector<QPair<qlonglong, QString>> getAllFigureIDs() const;
 
-    QVector<QPair<qlonglong, QString>> getAllReqIDs() const;
+    [[maybe_unused]] QVector<QPair<qlonglong, QString>> getAllReqIDs() const;
 
 public slots:
     void doubleClickID(const QModelIndex& index);
+
 private slots:
     void paramChanged(TreeNode* node);
 
@@ -104,8 +105,6 @@ signals:
     void figureParamsChanged(const qlonglong id,const std::string &type, const std::vector<qreal> &parameters);
     void reqParamChanged(const qlonglong id, const qreal &parameter);
     void doubleClickLeftMenu(const qlonglong id,const std::string &type);
-
-
 
 };
 

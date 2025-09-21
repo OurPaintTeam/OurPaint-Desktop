@@ -1,5 +1,6 @@
 #include "LeftMenuBar.h"
 
+
 LeftMenuBar::LeftMenuBar(QObject* parent) {
     // Creating a model
     treeModel = new TreeModel(parent);
@@ -8,16 +9,19 @@ LeftMenuBar::LeftMenuBar(QObject* parent) {
     // Creating nodes
     nothing = new TreeNode("", rootNode); // to indent from the top
     nothing->setEnable(false);
+    projectsNode = new TreeNode("Projects", rootNode);
     figuresNode = new TreeNode("Figures", rootNode);
     requirementsNode = new TreeNode("Requirements", rootNode);
 
     rootNode->addChild(nothing);
+    rootNode->addChild(projectsNode);
     rootNode->addChild(figuresNode);
     rootNode->addChild(requirementsNode);
 
     // Font
     QFont fontCategory;
     fontCategory.setPointSize(12);
+    projectsNode->setFont(fontCategory);
     figuresNode->setFont(fontCategory);
     requirementsNode->setFont(fontCategory);
 
@@ -29,13 +33,19 @@ LeftMenuBar::LeftMenuBar(QObject* parent) {
 
 }
 
+
 void LeftMenuBar::refreshAllLinkedParams() {
-    if (!figuresNode) return;
+    if (!figuresNode) {
+        return;
+    }
     refreshLinkedParams(figuresNode);
 }
 
+
 void LeftMenuBar::refreshLinkedParams(TreeNode* node) {
-    if (!node) return;
+    if (!node) {
+        return;
+    }
 
     if (node->isLinkedNumber()) {
         node->updateTextFromLinkedValue();
@@ -90,17 +100,17 @@ void LeftMenuBar::paramChanged(TreeNode* node) {
     }
 }
 
+
 void LeftMenuBar::doubleClickID(const QModelIndex& index) {
     QString text = index.data(Qt::DisplayRole).toString();
 
-    qlonglong id = 0;
     std::string type;
 
     if (!text.startsWith("ID: ")) {
         return;
     }
 
-    id = text.section(": ", 1).toULongLong();
+    qlonglong id = text.section(": ", 1).toULongLong();
 
     QModelIndex parentIndex = index.parent();
     qint16 row = index.row();
@@ -121,6 +131,7 @@ TreeModel* LeftMenuBar::getTreeModel() {
     return treeModel;
 }
 
+
 TreeNode* LeftMenuBar::createParamNode(const QString& name, const QVariant& value, TreeNode* parent,
                                        bool editable = false, bool isNumber = false, bool doubleClickable = false) {
 
@@ -139,6 +150,7 @@ TreeNode* LeftMenuBar::createParamNode(const QString& name, const QVariant& valu
     parent->addChild(node);
     return node;
 }
+
 
 TreeNode* LeftMenuBar::createParamNode(const QString& name, const qreal* ptr, TreeNode* parent) {
 
@@ -171,13 +183,33 @@ TreeNode* LeftMenuBar::createPointNode(const QString& name, qlonglong id,
     return pointNode;
 }
 
+
+void LeftMenuBar::addFileToProject(const QString& file) {
+
+    if (!projectsNode) { return; }
+    font.setPointSize(9);
+
+    TreeNode* projectNode = new TreeNode(file, projectsNode);
+    projectNode->setEditable(true);
+    projectNode->setSelected(true);
+    projectNode->setLiteral(true);
+    projectNode->setDropEnabled(true);
+    projectNode->setIcon(elem);
+    projectsNode->addChild(projectNode);
+
+}
+
+
 void LeftMenuBar::addPointInLeftMenu(const QString& namePoint, const qlonglong pID,
                                      const std::pair<const qreal*, const qreal*>& params) {
 
-    if (!figuresNode || pID <= 0) return;
+    if (!figuresNode || pID <= 0) {
+        return;
+    }
     font.setPointSize(9);
     createPointNode(namePoint, pID, params, figuresNode);
 }
+
 
 void LeftMenuBar::addSectionInLeftMenu(const QString& nameSection, const QString& namePoint1, const QString& namePoint2,
                                        const qlonglong secID, const qlonglong pID1, const qlonglong pID2,
@@ -205,6 +237,7 @@ void LeftMenuBar::addSectionInLeftMenu(const QString& nameSection, const QString
     createPointNode(namePoint1, pID1, firstParams, sectionNode);
     createPointNode(namePoint2, pID2, secondParams, sectionNode);
 }
+
 
 void LeftMenuBar::addArcInLeftMenu(const QString& nameArc,
                                    const QString& namePoint1, const QString& namePoint2, const QString& namePoint3,
@@ -261,6 +294,7 @@ void LeftMenuBar::addCircleInLeftMenu(const QString& nameCircle, const QString& 
 
     createPointNode(namePoint, pID, params, circleNode);
 }
+
 
 // Adding requirements
 void LeftMenuBar::addRequirementElem(const QString& name, const QString& type, const qint32 ReqID,
@@ -351,10 +385,12 @@ void LeftMenuBar::addRequirementElem(const QString& type, const QString& name, c
     elemNode->addChild(ElemID2Node);
 }
 
+
 void LeftMenuBar::updateLeftMenu() {
     refreshAllLinkedParams();
     treeModel->layoutChanged();
 }
+
 
 // Clearing all the elements
 void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
@@ -371,7 +407,9 @@ void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
 
 // Clearing all the elements
 void LeftMenuBar::clearAllFigures() {
-    if (!figuresNode || !treeModel) { return; }
+    if (!figuresNode || !treeModel) {
+        return;
+    }
 
     // Deleting all children of the node
     figuresNode->deleteAll();
@@ -397,7 +435,8 @@ void LeftMenuBar::removeFigureById(qlonglong id) {
     }
 }
 
-QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
+
+[[maybe_unused]] QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
     if (!figuresNode || !treeModel) {
         throw std::runtime_error("Don't init node or model");
     }
@@ -451,6 +490,7 @@ QVector<QPair<qlonglong, QString>> LeftMenuBar::collectAllIDs(TreeNode* node) co
     return result;
 }
 
+
 QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllFigureIDs() const {
     QVector<QPair<qlonglong, QString>> all;
 
@@ -459,12 +499,11 @@ QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllFigureIDs() const {
         all.append(figs);
     }
 
-
-
     return all;
 }
 
-QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllReqIDs() const {
+
+[[maybe_unused]] QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllReqIDs() const {
     QVector<QPair<qlonglong, QString>> all;
 
 
