@@ -13,7 +13,7 @@ namespace render::util {
     }
 
 
-    inline void setGradientColor(QRadialGradient& radialGradient, const Color& color) {
+    [[maybe_unused]] inline void setGradientColor(QRadialGradient& radialGradient, const Color& color) {
         QColor baseColor = colorToGlow(color);
         baseColor.setAlpha(120);
         radialGradient.setColorAt(0.0, baseColor);
@@ -24,6 +24,7 @@ namespace render::util {
         baseColor.setAlpha(0);
         radialGradient.setColorAt(1.0, baseColor);
     }
+
 
     QRadialGradient createGlowGradient(const QPointF& point, const GlowStyle& glowStyle) {
         QRadialGradient gradient(point, glowStyle.size, point);
@@ -98,11 +99,13 @@ namespace render::util {
 
 namespace render {
 
+
     void drawFigure(QPainter& painter, const QPointF& point, const PointStyle& style) {
         const QPointF logicPoint = util::scaleLogicPoint(point);
         util::setupPenAndBrush(painter, style);
         painter.drawEllipse(logicPoint, style.pointRadius, style.pointRadius);
     }
+
 
     void drawFigures(QPainter& painter, const std::unordered_map<ID, pointShell>& points) {
         if (points.empty()) {
@@ -112,7 +115,12 @@ namespace render {
         for (const auto& [id, pointPtr]: points) {
             const QPointF logicPoint = util::scaleLogicPoint(pointPtr.object);
 
-            const PointStyle& style = pointPtr.style;
+            if (!pointPtr.style) {
+                qWarning() << "Point" << id.get() << "has null style!";
+                continue;
+            }
+
+            const PointStyle& style = *pointPtr.style;
 
             util::setupPenAndBrush(painter, style);
             painter.drawEllipse(logicPoint, style.pointRadius, style.pointRadius);

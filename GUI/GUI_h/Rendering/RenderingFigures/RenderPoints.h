@@ -17,7 +17,7 @@ namespace render::util {
 
     void drawGlow(QPainter& painter, const QPointF& point, const GlowStyle& glowStyle);
 
-    inline void setGradientColor(QRadialGradient& radialGradient, const Color& color);
+    [[maybe_unused]] inline void setGradientColor(QRadialGradient& radialGradient, const Color& color);
 
     struct IDTextData;
 
@@ -30,12 +30,12 @@ namespace render {
 
     struct pointShell {
         Point* object;
-        PointStyle style;
+        PointStyle* style;
     };
 
     void drawFigures(QPainter& painter, const std::unordered_map<ID, pointShell>& points);
 
      void drawFigure(QPainter& painter, const QPointF& point, const PointStyle& style);
-};
+}
 
 #endif //OURPAINT_DRAWINGPOINT_H
