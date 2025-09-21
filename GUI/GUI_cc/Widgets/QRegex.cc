@@ -1,6 +1,7 @@
-#include "DRegex.h"
+#include "QRegex.h"
 
-bool DRegex::parseDoubleNumber(const QString& text) {
+
+bool QRegex::parseDoubleNumber(const QString& text) {
     if (text.isEmpty()) {
         return true; // An empty input is acceptable for now
     }
@@ -32,8 +33,8 @@ bool DRegex::parseDoubleNumber(const QString& text) {
 
     // If only "-" or "-." is entered, we will allow it for now (intermediate input)
     if (!hasDigit) {
-        if (trimmedText == "-" || trimmedText == "+") return true;
-        if (trimmedText == "-." || trimmedText == "+.") return true;
+        if (trimmedText == "-" || trimmedText == "+") { return true; }
+        if (trimmedText == "-." || trimmedText == "+.") { return true; }
         return false;
     }
 
