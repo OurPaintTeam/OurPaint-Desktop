@@ -3,6 +3,8 @@
 #include <QVector>
 #include <QPointF>
 #include <QSize>
+#include <QRectF>
+#include <QLineF>
 
 class Scaling {
 private:
@@ -14,7 +16,7 @@ private:
     static QPoint Delta; // Movement along the X,Y axis
     static QPoint LastMousePos;
     static QPoint Cursor;
-    static QSize StartMonitorSize;
+    [[maybe_unused]] static QSize StartMonitorSize;
     static QSize ActualMonitorSize;
     static QSizeF CenteredCoordinates;
 
@@ -27,6 +29,8 @@ public:
     static void setStartMonitorSize(const QSize &size);
     static void setActualMonitorSize(const QSize &size);
 
+    [[maybe_unused]] static QRectF scaleCoordinate(QRectF X);
+    static QPointF scaleCoordinate(QPointF X);
     static qreal scaleCoordinate(qreal X);
     static qreal scaleCoordinateX(qreal X);
     static qreal scaleCoordinateY(qreal Y);
@@ -35,7 +39,7 @@ public:
     static void setZoomMinus();
     static void setZoomZero();
 
-    static void setZoom(qreal z);
+    [[maybe_unused]] static void setZoom(qreal z);
 
     static qint16 getUserUnitSize();
     static qreal getZoom();
@@ -53,11 +57,14 @@ public:
 
     static void setCursor(const QPoint& cursor);
 
-    static QPoint getCursor();
+    [[maybe_unused]] static QPoint getCursor();
     static qint32 getCursorX();
     static qint32 getCursorY();
 
     static qreal logic(qreal X);
+    static QRectF logic(QRectF X);
+    static QLineF logic(QPointF& p1,QPointF& p2);
+    static QLineF logic(QLineF& p);
     static QPointF logic(QPointF X);
     static QPointF logic(QPoint X);
     static qreal logicCursorX();
