@@ -8,6 +8,10 @@ void CustomConsole::setCommands(const QStringList& commands) {
     _commands = commands;
 }
 
+void CustomConsole::pushBack(const QString& text){
+    commandsArray.push_back(text);
+}
+
 bool CustomConsole::focusNextPrevChild(bool) {
     return false; // To prevent TAB from switching between widgets
 }
@@ -37,7 +41,14 @@ void CustomConsole::keyPressEvent(QKeyEvent* event) {
         _currentCommands.clear();
         event->accept();
         return;
+    }else if (event->key() == Qt::Key_Up && !commandsArray.isEmpty()) {
+        Index = (Index - 1 + commandsArray.size()) % commandsArray.size();
+        setText(commandsArray[Index]);
+    } else if (event->key() == Qt::Key_Down && !commandsArray.isEmpty()) {
+        Index = (Index + 1) % commandsArray.size();
+        setText(commandsArray[Index]);
     }
+
     QLineEdit::keyPressEvent(event);
 }
 
