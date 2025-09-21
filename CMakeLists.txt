@@ -38,6 +38,7 @@ include_directories(ourpaint
         GUI/GUI_h/Rendering/Mouse
         GUI/GUI_h/Rendering/RenderingStyle
         GUI/GUI_h/Rendering/RenderingFigures
+        GUI/GUI_h/Rendering/RenderRequirements
         GUI/GUI_h/MainFile
         GUI/GUI_h/Widgets
         GUI/GUI_h/Logger
@@ -156,7 +157,9 @@ add_executable(ourpaint
         GUI/GUI_cc/Widgets/TreeModel.cc
         GUI/GUI_cc/Widgets/ParameterDelegate.cc
         GUI/GUI_cc/Widgets/ProtectedPrefixLineEdit.cc
-        GUI/GUI_cc/Widgets/DRegex.cc
+        GUI/GUI_cc/Widgets/QRegex.cc
+        GUI/GUI_cc/Widgets/AnimationWidget.cc
+        GUI/GUI_cc/Widgets/AngleLineEdit.cc
 
         GUI/GUI_cc/client_server/Server.cc
         GUI/GUI_cc/client_server/Client.cc
@@ -177,6 +180,14 @@ add_executable(ourpaint
         GUI/GUI_cc/Logger/GUI_Logger.cc
 
         GUI/GUI_cc/Settings/Settings.cc
+
+        GUI/GUI_cc/Rendering/RenderFigures/RenderCircles.cc
+        GUI/GUI_cc/Rendering/RenderFigures/RenderPoints.cc
+        GUI/GUI_cc/Rendering/RenderFigures/RenderArcs.cc
+        GUI/GUI_cc/Rendering/RenderFigures/RenderLines.cc
+
+        GUI/GUI_cc/Rendering/RenderRequirements/RenderDistance.cc
+
 
         GUI/GUI_h/client_server/Client.h
         GUI/GUI_h/client_server/LocalScanner.h
@@ -206,7 +217,9 @@ add_executable(ourpaint
         GUI/GUI_h/Widgets/TreeModel.h
         GUI/GUI_h/Widgets/ParameterDelegate.h
         GUI/GUI_h/Widgets/ProtectedPrefixLineEdit.h
-        GUI/GUI_h/Widgets/DRegex.h
+        GUI/GUI_h/Widgets/QRegex.h
+        GUI/GUI_h/Widgets/AnimationWidget.h
+        GUI/GUI_h/Widgets/AngleLineEdit.h
 
         GUI/GUI_h/Rendering/Scaling.h
         GUI/GUI_h/Rendering/QTPainter.h
@@ -237,11 +250,7 @@ add_executable(ourpaint
         GUI/GUI_h/Rendering/RenderingFigures/RenderPoints.h
         GUI/GUI_h/Rendering/RenderingFigures/RenderArcs.h
         GUI/GUI_h/Rendering/RenderingFigures/RenderLines.h
-
-        GUI/GUI_cc/Rendering/RenderFigures/RenderCircles.cc
-        GUI/GUI_cc/Rendering/RenderFigures/RenderPoints.cc
-        GUI/GUI_cc/Rendering/RenderFigures/RenderArcs.cc
-        GUI/GUI_cc/Rendering/RenderFigures/RenderLines.cc
+        GUI/GUI_h/Rendering/RenderRequirements/RenderDistance.h
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
