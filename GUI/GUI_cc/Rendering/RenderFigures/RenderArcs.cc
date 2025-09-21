@@ -1,9 +1,13 @@
 #include "RenderArcs.h"
 
+
 namespace render::util {
+
+
     qreal angleBetween(const QPointF& center, const QPointF& point) {
         return QLineF(center, point).angle();
     }
+
 
     void drawGlow(QPainter& painter, const QRectF& rect, const qint32 qtStart, const qint32 qtSpan,
                   const GlowStyle& style) {
@@ -110,6 +114,7 @@ namespace render::util {
         radialGradient.setColorAt(1.0, baseColor);
     }
 
+
     void setupPen(QPainter& painter, const ArcStyle& style) {
         QPen pen(ColorToQColor(style.figure.object.color));
         const quint16 SIZE_PEN = style.figure.object.size;
@@ -120,7 +125,10 @@ namespace render::util {
 
 }
 
+
 namespace render{
+
+
     void drawFigure(QPainter& painter, const QPointF startPoint, const QPointF endPoint, const QPointF centerPoint,
                     const ArcStyle& style) {
 
@@ -160,7 +168,12 @@ namespace render{
 
             const Arc* arc = elem.second.object;
 
-            const ArcStyle& style = elem.second.style;
+            if (!elem.second.style) {
+                qWarning() << "Arc" << elem.first.get() << "has null style!";
+                continue;
+            }
+
+            const ArcStyle& style = *elem.second.style;
             util::setupPen(painter, style);
 
             const QPointF center(Scaling::scaleCoordinate(arc->center->x),

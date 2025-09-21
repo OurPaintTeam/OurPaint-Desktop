@@ -1,12 +1,11 @@
 #ifndef OURPAINT_DRAWINGARC_H
 #define OURPAINT_DRAWINGARC_H
 
-#include "RenderBaseFigures.h"
-
 #include <QPainter>
 #include <QPointF>
 #include <QPainterPath>
 
+#include "RenderBaseFigures.h"
 #include "ID.h"
 #include "RenderStyle.h"
 #include "GeometricObjects.h"
@@ -28,7 +27,6 @@ namespace render::util{
 
     void drawGlow(QPainter& painter, const QRectF& rect, const qint32 qtStart, const qint32 qtSpan, const GlowStyle& color);
 
-
     qreal angleBetween(const QPointF& center, const QPointF& point);
 
     void setupPen(QPainter& painter, const ArcStyle& style);
@@ -38,7 +36,7 @@ namespace render {
 
     struct arcShell {
         Arc* object;
-        ArcStyle style;
+        ArcStyle* style;
     };
 
 
