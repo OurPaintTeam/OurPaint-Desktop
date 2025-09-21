@@ -77,8 +77,9 @@ inline const QColor& ColorToQColor(Color color) {
 inline QColor colorToGlow(Color color) {
     switch (color) {
         case Color::Blue:   return QColor(30, 120, 200);
-        case Color::Purple: return QColor(128, 0, 128);
+        case Color::Purple: return QColor(166, 0, 166);
         case Color::Cyan:   return QColor(0, 255, 255);
+        case Color::Yellow: return QColor(255, 220, 0);
         default:            return QColor(0, 0, 0, 0);
     }
 }
