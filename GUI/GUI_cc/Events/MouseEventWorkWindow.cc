@@ -19,6 +19,7 @@ MouseWorkWindow::MouseWorkWindow(QWidget* parent)
     });
 }
 
+
 void MouseWorkWindow::setMouseTrackingRecursively(QWidget* widget, bool enable) {
     if (!widget) {
         return;
@@ -72,7 +73,9 @@ bool MouseWorkWindow::eventFilter(QObject* obj, QEvent* event) {
 
             return false;
         }
+
     }
+
     return QObject::eventFilter(obj, event);
 }
 
