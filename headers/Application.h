@@ -39,8 +39,10 @@ class Application : public QObject {
 Q_OBJECT
 private:
     QApplication app;
+
     MainWindow mainWind;
-    Scene scene;
+    QMap<const QTPainter*,Scene*> arrayScene;
+    Scene* scene;
     QTPainter *painter;
     LeftMenuBar* leftMenu;
 
@@ -81,6 +83,14 @@ private:
 
 public:
     Application(int &argc, char **argv);
+    ~Application() {
+        delete scene;
+        delete painter;
+        delete leftMenu;
+
+        qDeleteAll(arrayScene);
+        arrayScene.clear();
+    }
     int exec();
 };
 
