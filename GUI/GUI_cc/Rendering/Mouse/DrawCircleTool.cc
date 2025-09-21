@@ -21,6 +21,7 @@ void DrawCircleTool::draw(QPainter& painter, const QPointF& nowCursor) {
     }
 }
 
+
 void DrawCircleTool::drawPreview(QPainter& painter, const QPointF& startCoordinates, const QPointF& cursor) {
     const QPointF center = (startCoordinates + cursor) / 2.0;
     const qreal radius = qHypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
@@ -39,6 +40,7 @@ void DrawCircleTool::drawPreview(QPainter& painter, const QPointF& startCoordina
 
     LineStyle LStyle;
     LStyle.figure.object.color = Color::LightGray;
+    LStyle.lengthLabel.label.color= Color::LightGray;
     LStyle.figure.object.size = 1;
 
     render::drawFigure(painter, center, cursor,LStyle);
