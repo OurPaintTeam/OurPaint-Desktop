@@ -66,7 +66,7 @@ void AngleLineEdit::paintEvent(QPaintEvent*) {
     qint32 textOffsetY = height() / 2 + fm.ascent() / 2;
 
     if (number) {
-        if (!DRegex::parseDoubleNumber(text)) {
+        if (!QRegex::parseDoubleNumber(text)) {
             text.remove(--cursorPos, 1);
         }
     }

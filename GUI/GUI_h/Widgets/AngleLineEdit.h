@@ -9,7 +9,7 @@
 #include <QPainter>
 #include <QKeyEvent>
 
-#include "DRegex.h"
+#include "QRegex.h"
 
 // This class is for editing text at a given angle.
 // There is a flag for tracking only numbers.
