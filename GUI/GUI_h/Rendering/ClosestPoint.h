@@ -25,6 +25,8 @@ public:
     // Checking for entry into a rectangle
     static QPolygonF rectToPolygon(const QRectF& rect);
     static bool pointInRect(const Point* pt, const QRectF& rect);
+    static bool pointInRect(const QPointF& pt, const QRectF& rect);
+    static bool pointInRect(const QPointF& pt, const QPointF& lt, const QPointF& rt, const QPointF& lb, const QPointF& rb);
     static bool circleInRect(const Circle* circle, const QRectF& rect);
     static bool sectionInRect(const Section* section, const QRectF& rect);
     static bool arcInRect(const Arc* arc, const QRectF& rect);
@@ -38,6 +40,7 @@ public:
     static bool checkFigure(const QPointF point, const QPointF cursor, const qreal zoom);
     static bool checkFigure(const QPointF center,const qreal radius, const QPointF cursor, const qreal zoom);
     static bool checkFigure(const QPointF startPoint, const QPointF endPoint, const QPointF cursor, const qreal zoom);
+    static bool checkFigure(const QLineF line, const QPointF cursor, const qreal zoom);
     static bool
     checkFigure(const QPointF startPoint, const QPointF endPoint, const QPointF centerPoint, const QPointF cursor,
                 const qreal zoom);

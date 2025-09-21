@@ -32,6 +32,28 @@ bool ClosestPoint::pointInRect(const Point* pt, const QRectF& rect) {
 }
 
 
+bool ClosestPoint::pointInRect(const QPointF& pt, const QRectF& rect) {
+    return rect.contains(QPointF(pt.x(), pt.y()));
+}
+
+
+bool ClosestPoint::pointInRect(const QPointF& pt, const QPointF& lt, const QPointF& rt, const QPointF& lb, const QPointF& rb) {
+
+    QPointF AB = rt - lt;
+    QPointF AD = lb - lt;
+    QPointF AP = pt - lt;
+
+    qreal dotAB = QPointF::dotProduct(AP, AB);
+    qreal dotABAB = QPointF::dotProduct(AB, AB);
+
+    qreal dotAD = QPointF::dotProduct(AP, AD);
+    qreal dotADAD = QPointF::dotProduct(AD, AD);
+
+    return (dotAB >= 0 && dotAB <= dotABAB) &&
+           (dotAD >= 0 && dotAD <= dotADAD);
+}
+
+
 bool ClosestPoint::circleInRect(const Circle* circle, const QRectF& rect) {
     const QPointF center(circle->center->x, circle->center->y);
     const qreal r = circle->r;
@@ -153,6 +175,12 @@ bool ClosestPoint::checkFigure(const QPointF point, const QPointF cursor, const 
 bool ClosestPoint::checkFigure(const QPointF center,const qreal radius, const QPointF cursor, const qreal zoom) {
     const qreal distance = distanceBetweenPoints(center, cursor);
     return qAbs(distance - radius) <= roundRange(zoom,3.0);
+}
+
+
+bool
+ClosestPoint::checkFigure(const QLineF line, const QPointF cursor, const qreal zoom) {
+    return distancePointToSection(cursor, line.p1(), line.p2()) <= roundRange(zoom, 5.0);
 }
 
 
