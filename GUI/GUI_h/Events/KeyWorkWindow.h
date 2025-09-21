@@ -12,6 +12,10 @@ class KeyWorkWindow : public QObject {
 Q_OBJECT
 private:
     QWidget* m_parent;
+    bool upPressed = false;
+    bool leftPressed = false;
+    bool rightPressed = false;
+    bool downPressed = false;
 
 public:
     explicit KeyWorkWindow(QWidget* parent);
