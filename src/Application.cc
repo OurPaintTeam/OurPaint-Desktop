@@ -592,12 +592,12 @@ void Application::setupServerConnections() {
 
     // Chat
     QObject::connect(&client, &Client::newChatMessageReceived, [&](const QString& msg, const QString& name) {
-        mainWind.setMessage(name.toStdString(), msg.toStdString());
+        mainWind.setMessage(name, msg);
         updateState();
     });
 
     QObject::connect(&server, &Server::newMessageReceived, [&](const QString& msg, const QString& name) {
-        mainWind.setMessage(name.toStdString(), msg.toStdString());
+        mainWind.setMessage(name, msg);
         updateState();
     });
 
@@ -608,7 +608,7 @@ void Application::setupServerConnections() {
     QObject::connect(&mainWind, &MainWindow::EnterMessage, [this](const QString& text) {
         if (ModeManager::getConnection()) {
             if (ModeManager::getFlagServer()) {
-                mainWind.setMessage(username.toStdString(), text.toStdString());
+                mainWind.setMessage(username, text);
                 server.sendChatToClients(text, username);
             } else {
                 if (!text.isEmpty()) {

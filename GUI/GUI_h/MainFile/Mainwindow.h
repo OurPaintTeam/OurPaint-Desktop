@@ -70,6 +70,15 @@ private:
     QRect originalGeometry;
     ResizeRegion currentRegion = None;
 
+private:
+    void openProject(const QString& name);
+    void setupStartWindow();
+    void readFile();
+
+    void initConnections();
+    void setupLeftMenu();
+    void updateShapeCursor(const QPoint& pos);
+
 public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
@@ -77,17 +86,9 @@ public:
     QTPainter* getQTPainter() const;
     LeftMenuBar* getLeftMenuBar() const;
 
-    void openProject(const QString& name);
-    void setupStartWindow();
-    void readFile();
-
-    void initConnections();
-    void setupLeftMenu();
     [[maybe_unused]] void selectLeftMenuElem(QModelIndex& index);
-
     void updateExitServerStyle(bool);
-    void updateShapeCursor(const QPoint& pos);
-    void setMessage(const std::string& name, const std::string& message);
+    void setMessage(const QString& name, const QString& message);
 
     /***    Custom windows      ***/
     void showError(const QString& text);
@@ -109,8 +110,8 @@ public:
     QPushButton* getEighthBut();
     QPushButton* getNinthBut();
     QPushButton* getTenthBut();
-protected:
 
+protected:
     void closeEvent(QCloseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
@@ -122,7 +123,6 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 public slots:
-
     void loadProjectFile();
     void saveProjectToFile(const QString& format);
     void buttonScript();
@@ -157,7 +157,6 @@ public slots:
     void commandsInConsole();
 
 signals:
-
     void EnterPressed(const QString& command);
     void EnterMessage(const QString& text);
     void NameUsers(const QString& text);

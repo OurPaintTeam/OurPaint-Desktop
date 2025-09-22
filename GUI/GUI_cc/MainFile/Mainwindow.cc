@@ -24,8 +24,6 @@ MainWindow::~MainWindow() {
 }
 
 
-
-
 QTPainter* MainWindow::getQTPainter() const {
     return ui->workWindow;
 }
@@ -35,6 +33,9 @@ LeftMenuBar* MainWindow::getLeftMenuBar() const {
     return leftMenuBar;
 }
 
+
+
+/// **** PRIVATE:
 
 
 
@@ -138,7 +139,6 @@ void MainWindow::readFile() {
 }
 
 
-
 void MainWindow::initConnections() {
 
     // Mode buttons
@@ -206,28 +206,6 @@ void MainWindow::setupLeftMenu() {
 }
 
 
-[[maybe_unused]] void MainWindow::selectLeftMenuElem(QModelIndex& index) {
-    ui->leftMenuView->setCurrentIndex(index);    // selection
-    ui->leftMenuView->scrollTo(index);           // scrolling
-    QModelIndex parent = index.parent();
-    while (parent.isValid()) {
-        ui->leftMenuView->expand(parent);
-        parent = parent.parent();
-    }
-    ui->leftMenuView->expand(index);
-    ui->leftMenuView->update();
-    leftMenuBar->update();
-}
-
-
-
-
-
-void MainWindow::updateExitServerStyle(bool connect) {
-    ui->updateExitServerStyle(connect);
-}
-
-
 void MainWindow::updateShapeCursor(const QPoint& pos) {
     qint32 x = pos.x();
     qint32 y = pos.y();
@@ -271,8 +249,32 @@ void MainWindow::updateShapeCursor(const QPoint& pos) {
 }
 
 
-void MainWindow::setMessage(const std::string& name, const std::string& message) {
-    QString messageText = QString::fromStdString(name) + ": " + QString::fromStdString(message);
+
+/// **** PUBLIC:
+
+
+
+[[maybe_unused]] void MainWindow::selectLeftMenuElem(QModelIndex& index) {
+    ui->leftMenuView->setCurrentIndex(index);    // selection
+    ui->leftMenuView->scrollTo(index);           // scrolling
+    QModelIndex parent = index.parent();
+    while (parent.isValid()) {
+        ui->leftMenuView->expand(parent);
+        parent = parent.parent();
+    }
+    ui->leftMenuView->expand(index);
+    ui->leftMenuView->update();
+    leftMenuBar->update();
+}
+
+
+void MainWindow::updateExitServerStyle(bool connect) {
+    ui->updateExitServerStyle(connect);
+}
+
+
+void MainWindow::setMessage(const QString& name, const QString& message) {
+    QString messageText = name + ": " + message;
 
     QLabel* messageLabel = new QLabel(messageText);
     messageLabel->setStyleSheet("color: #D8D8F6;");
