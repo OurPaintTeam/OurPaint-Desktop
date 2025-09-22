@@ -1,51 +1,244 @@
 #include "QTPainter.h"
 
-QTPainter::QTPainter(QWidget* parent) : QFrame(parent),
-                                        mouseManager(std::make_unique<MouseDrawingManager>()),
-                                        rectTool(std::make_unique<DrawRectangleTool>()),
-                                        leftClickFlag(true), drawing(false){
 
-    if (parent) {
-        // We take the size from the father
-        resize(parentWidget()->size());
-        connect(parent->window(), SIGNAL(resize()), this, SLOT(onWorkWindowResized()));
-
-
-    }
-
-    connect(mouseManager.get(), &MouseDrawingManager::SigPoint, this, &QTPainter::onSigPoint);
-    connect(mouseManager.get(), &MouseDrawingManager::SigSection, this, &QTPainter::onSigSection);
-    connect(mouseManager.get(), &MouseDrawingManager::SigCircle, this, &QTPainter::onSigCircle);
-    connect(mouseManager.get(), &MouseDrawingManager::SigArc, this, &QTPainter::onSigArc);
-
-
+QTPainter::QTPainter(QWidget* parent) : QFrame(parent) {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setStyleSheet("background: \"#ffffff\"");
-    setAttribute(Qt::WA_AcceptTouchEvents);
 
     Scaling::updateScaling();
-    Scaling::setStartMonitorSize(size());
+    Scaling::setStartMonitorSize(this->size());
+    Scaling::setStartMonitorSize(this->size());
+}
+
+
+MouseDrawingManager* QTPainter::getMouseManager() {
+    return mouseManager.get();
+}
+
+
+KeyWorkWindow* QTPainter::getKeyWW() {
+    return keyWW.get();
+}
+
+
+void QTPainter::createNormalPointStyle(PointStyle* style) {
+    style->figure.object.size = 1;
+    style->pointRadius = 1;
+    style->figure.glow.activity = false;
+    style->figure.id.activity = false;
+}
+
+
+void QTPainter::createNormalCircleStyle(CircleStyle* style) {
+    style->figure.object.size = 1;
+    style->figure.glow.activity = false;
+    style->figure.id.activity = false;
+}
+
+
+void QTPainter::createNormalLineStyle(LineStyle* style) {
+    style->figure.object.size = 1;
+    style->figure.glow.activity = false;
+    style->figure.id.activity = false;
+}
+
+
+void QTPainter::createNormalArcStyle(ArcStyle* style) {
+    style->figure.object.size = 1;
+    style->figure.glow.activity = false;
+    style->figure.id.activity = false;
+}
+
+
+void QTPainter::createSelectedPointStyle(PointStyle* style) {
+    style->figure.object.color = Color::Black;
+    style->figure.object.size = 1;
+    style->pointRadius = 2;
+    style->figure.glow.color = Color::Blue;
+    style->figure.glow.size = 5;
+    style->figure.glow.activity = true;
+    style->figure.id.activity = true;
+}
+
+
+void QTPainter::createSelectedLineStyle(LineStyle* style) {
+    style->figure.object.color = Color::Black;
+    style->figure.object.size = 2;
+    style->figure.glow.color = Color::Blue;
+    style->figure.glow.size = 5;
+    style->figure.glow.activity = true;
+    style->figure.id.activity = true;
+}
+
+
+void QTPainter::createSelectedCircleStyle(CircleStyle* style) {
+    style->figure.object.color = Color::Black;
+    style->figure.object.size = 2;
+    style->figure.glow.color = Color::Blue;
+    style->figure.glow.size = 5;
+    style->figure.glow.activity = true;
+    style->figure.id.activity = true;
+}
+
+
+void QTPainter::createSelectedArcStyle(ArcStyle* style) {
+    style->figure.object.color = Color::Black;
+    style->figure.object.size = 2;
+    style->figure.glow.color = Color::Blue;
+    style->figure.glow.size = 5;
+    style->figure.glow.activity = true;
+    style->figure.id.activity = true;
+}
+
+
+void QTPainter::inArea() {
+    QSize size = Scaling::getActualMonitorSize();
+    QRectF visibleRect(QPointF(0, 0), size);
+
+    visiblePoints.clear();
+    visibleLines.clear();
+    visibleCircles.clear();
+    visibleArcs.clear();
+
+    // Points
+    for (const auto& [id, point]: *casePoints) {
+        QPointF screenPos(
+                Scaling::scaleCoordinate(point->x) + Scaling::getDelta().x() +
+                Scaling::getCenteredCoordinates().width(),
+                Scaling::scaleCoordinate(point->y) + Scaling::getDelta().y() +
+                Scaling::getCenteredCoordinates().height()
+        );
+
+        if (visibleRect.contains(screenPos)) {
+            if (bufferPointStyle.contains(id)) {
+                PointStyle* style = &bufferPointStyle[id];
+                visiblePoints.emplace(id, render::pointShell{point, style});
+            } else {
+                PointStyle style;
+                createNormalPointStyle(&style);
+                auto [it, inserted] = bufferPointStyle.emplace(id, style);
+                PointStyle* stylePtr = &it->second;
+                visiblePoints.emplace(id, render::pointShell{point, stylePtr});
+            }
+
+        }
+    }
+
+    // Lines
+    for (const auto& [id, line]: *caseSections) {
+        QPointF p1(
+                Scaling::scaleCoordinate(line->beg->x) + Scaling::getDelta().x() +
+                Scaling::getCenteredCoordinates().width(),
+                Scaling::scaleCoordinate(line->beg->y) + Scaling::getDelta().y() +
+                Scaling::getCenteredCoordinates().height()
+        );
+        QPointF p2(
+                Scaling::scaleCoordinate(line->end->x) + Scaling::getDelta().x() +
+                Scaling::getCenteredCoordinates().width(),
+                Scaling::scaleCoordinate(line->end->y) + Scaling::getDelta().y() +
+                Scaling::getCenteredCoordinates().height()
+        );
+
+        QRectF lineBounding = QRectF(p1, p2).normalized();
+        if (visibleRect.contains(p1) || visibleRect.contains(p2) || visibleRect.intersects(lineBounding)) {
+
+            if (bufferLineStyle.contains(id)) {
+                LineStyle* style = &bufferLineStyle[id];
+                visibleLines.emplace(id, render::lineShell{line, style});
+            } else {
+                LineStyle style;
+                createNormalLineStyle(&style);
+                auto [it, inserted] = bufferLineStyle.emplace(id, style);
+                LineStyle* stylePtr = &it->second;
+                visibleLines.emplace(id, render::lineShell{line, stylePtr});
+            }
+
+
+        }
+    }
+
+    // Circles
+    for (const auto& [id, circle]: *caseCircles) {
+        QPointF center(
+                Scaling::scaleCoordinate(circle->center->x) + Scaling::getDelta().x() +
+                Scaling::getCenteredCoordinates().width(),
+                Scaling::scaleCoordinate(circle->center->y) + Scaling::getDelta().y() +
+                Scaling::getCenteredCoordinates().height()
+        );
+        qreal r = circle->r * Scaling::getZoom();
+
+        QRectF bounding(center - QPointF(r, r), QSizeF(2 * r, 2 * r));
+        if (visibleRect.intersects(bounding)) {
+
+            if (bufferCircleStyle.contains(id)) {
+                CircleStyle* style = &bufferCircleStyle[id];
+                visibleCircles.emplace(id, render::circleShell{circle, style});
+            } else {
+                CircleStyle style;
+                createNormalCircleStyle(&style);
+                auto [it, inserted] = bufferCircleStyle.emplace(id, style);
+                CircleStyle* stylePtr = &it->second;
+                visibleCircles.emplace(id, render::circleShell{circle, stylePtr});
+            }
+
+        }
+    }
+
+    // Arcs
+    for (const auto& [id, arc]: *caseArcs) {
+        QPointF center(
+                Scaling::scaleCoordinate(arc->center->x) + Scaling::getDelta().x() +
+                Scaling::getCenteredCoordinates().width(),
+                Scaling::scaleCoordinate(arc->center->y) + Scaling::getDelta().y() +
+                Scaling::getCenteredCoordinates().height()
+        );
+        qreal r = arc->r * Scaling::getZoom();
+
+        QRectF bounding(center - QPointF(r, r), QSizeF(2 * r, 2 * r));
+        if (visibleRect.intersects(bounding)) {
+
+            if (bufferArcStyle.contains(id)) {
+                ArcStyle* style = &bufferArcStyle[id];
+                visibleArcs.emplace(id, render::arcShell{arc, style});
+            } else {
+                ArcStyle style;
+                createNormalArcStyle(&style);
+                auto [it, inserted] = bufferArcStyle.emplace(id, style);
+                ArcStyle* stylePtr = &it->second;
+                visibleArcs.emplace(id, render::arcShell{arc, stylePtr});
+            }
+
+        }
+    }
 }
 
 
 QVector<ID> QTPainter::getVecSelectedIDPoints() {
     QVector<ID> vec_id;
-    vec_id.reserve(selectedIDPoint.size());
+    vec_id.reserve(visiblePoints.size());
 
-    for (const auto& id: selectedIDPoint) {
-        vec_id.push_back(id);
+    for (const auto& elem: visiblePoints) {
+        const PointStyle* style = elem.second.style;
+        if (style->figure.glow.activity) {
+            const ID id = elem.first;
+            vec_id.push_back(id);
+        }
     }
 
     return vec_id;
 }
 
 
-QVector<ID> QTPainter::getVecSelectedIDSections() {
+QVector<ID> QTPainter::getVecSelectedIDLines() {
     QVector<ID> vec_id;
-    vec_id.reserve(selectedIDSection.size());
+    vec_id.reserve(visibleLines.size());
 
-    for (const auto& id: selectedIDSection) {
-        vec_id.push_back(id);
+    for (const auto& elem: visibleLines) {
+        const LineStyle* style = elem.second.style;
+        if (style->figure.glow.activity) {
+            const ID id = elem.first;
+            vec_id.push_back(id);
+        }
     }
 
     return vec_id;
@@ -54,10 +247,14 @@ QVector<ID> QTPainter::getVecSelectedIDSections() {
 
 QVector<ID> QTPainter::getVecSelectedIDCircles() {
     QVector<ID> vec_id;
-    vec_id.reserve(selectedIDCircle.size());
+    vec_id.reserve(visibleCircles.size());
 
-    for (const auto& id: selectedIDCircle) {
-        vec_id.push_back(id);
+    for (const auto& elem: visibleCircles) {
+        const CircleStyle* style = elem.second.style;
+        if (style->figure.glow.activity) {
+            const ID id = elem.first;
+            vec_id.push_back(id);
+        }
     }
 
     return vec_id;
@@ -66,17 +263,21 @@ QVector<ID> QTPainter::getVecSelectedIDCircles() {
 
 QVector<ID> QTPainter::getVecSelectedIDArcs() {
     QVector<ID> vec_id;
-    vec_id.reserve(selectedIDArc.size());
+    vec_id.reserve(visibleArcs.size());
 
-    for (const auto& id: selectedIDArc) {
-        vec_id.push_back(id);
+    for (const auto& elem: visibleArcs) {
+        const ArcStyle* style = elem.second.style;
+        if (style->figure.glow.activity) {
+            const ID id = elem.first;
+            vec_id.push_back(id);
+        }
     }
 
     return vec_id;
 }
 
 
-std::optional<QPair<ID, ID>> QTPainter::getPairSelectedID() const {
+std::optional<QPair<ID, ID>> QTPainter::getPairSelectedID() {
     QVector<ID> IDs;
 
     auto collectIDs = [&](const auto& container) -> bool {
@@ -89,10 +290,10 @@ std::optional<QPair<ID, ID>> QTPainter::getPairSelectedID() const {
         return true;
     };
 
-    if (!collectIDs(selectedIDPoint)) { return std::nullopt; }
-    if (!collectIDs(selectedIDSection)) { return std::nullopt; }
-    if (!collectIDs(selectedIDCircle)) { return std::nullopt; }
-    if (!collectIDs(selectedIDArc)) { return std::nullopt; }
+    if (!collectIDs(getVecSelectedIDPoints())) { return std::nullopt; }
+    if (!collectIDs(getVecSelectedIDLines())) { return std::nullopt; }
+    if (!collectIDs(getVecSelectedIDCircles())) { return std::nullopt; }
+    if (!collectIDs(getVecSelectedIDArcs())) { return std::nullopt; }
 
     return (IDs.size() == 2)
            ? std::optional<QPair<ID, ID>>(QPair<ID, ID>(IDs[0], IDs[1]))
@@ -100,37 +301,25 @@ std::optional<QPair<ID, ID>> QTPainter::getPairSelectedID() const {
 }
 
 
-
-void QTPainter::draw() {
-    inArea();
-    update();
-}
-
-
-void QTPainter::clear() {
-    selectedClear();
-    Scaling::setZoomZero();
-    mouseManager->clear();
-}
-
-
 void QTPainter::selectedClear() {
+    QVector<ID> selectedIDPoint = getVecSelectedIDPoints();
+    QVector<ID> selectedIDLine = getVecSelectedIDLines();
+    QVector<ID> selectedIDCircle = getVecSelectedIDCircles();
+    QVector<ID> selectedIDArc = getVecSelectedIDArcs();
+
     for (const ID& id: selectedIDPoint) {
-        visiblePoints[id].style = createNormalPointStyle();
+        createNormalPointStyle(visiblePoints[id].style);
     }
     for (const ID& id: selectedIDCircle) {
-        visibleCircles[id].style = createNormalCircleStyle();
+        createNormalCircleStyle(visibleCircles[id].style);
     }
-    for (const ID& id: selectedIDSection) {
-        visibleLines[id].style = createNormalLineStyle();
+    for (const ID& id: selectedIDLine) {
+        createNormalLineStyle(visibleLines[id].style);
     }
     for (const ID& id: selectedIDArc) {
-        visibleArcs[id].style = createNormalArcStyle();
+        createNormalArcStyle(visibleArcs[id].style);
     }
-    selectedIDPoint.clear();
-    selectedIDSection.clear();
-    selectedIDCircle.clear();
-    selectedIDArc.clear();
+
     rectTool->clear();
 }
 
@@ -162,15 +351,17 @@ bool QTPainter::findClosestObject() {
             if (ClosestPoint::checkFigure(pos, Scaling::logicCursor(), Scaling::getZoom())) {
                 const ID& id = it->first;
 
-                if (selectedIDPoint.contains(id)) {
-                    selectedIDPoint.removeOne(id);
-                    visiblePoints[id].style=createNormalPointStyle();
+                if (!visiblePoints.contains(id)) {
+                    break;
+                }
+
+                if (visiblePoints[id].style->figure.glow.activity) {
+                    createNormalPointStyle(visiblePoints[id].style);
                 } else {
                     if (!shiftPress) {
                         selectedClear();
                     }
-                    visiblePoints[id].style=createSelectedPointStyle();
-                    selectedIDPoint.append(id);
+                    createSelectedPointStyle(visiblePoints[id].style);
                 }
 
                 return true;
@@ -183,21 +374,42 @@ bool QTPainter::findClosestObject() {
             const Section* section = it->second;
             const QPointF startPoint(section->beg->x, section->beg->y);
             const QPointF endPoint(section->end->x, section->end->y);
+            const ID& id = it->first;
 
             if (ClosestPoint::checkFigure(startPoint, endPoint, Scaling::logicCursor(), Scaling::getZoom())) {
-                const ID& id = it->first;
 
-                if (selectedIDSection.contains(id)) {
-                    selectedIDSection.removeOne(id);
-                    visibleLines[id].style=createNormalLineStyle();
+                if (!visibleLines.contains(id)) {
+                    break;
+                }
+
+
+                if (ModeManager::getActiveMode(WorkModes::ShowSize)) {
+                    if (visibleLines[id].style->serviceLine.active) {
+                        visibleLines[id].style->serviceLine.active = false;
+                    } else {
+                        visibleLines[id].style->serviceLine.active = true;
+                    }
+
+                    if (!visibleLines[id].style->figure.glow.activity) {
+                        createSelectedLineStyle(visibleLines[id].style);
+                    }
+                    return true;
+                }
+
+                if (visibleLines[id].style->figure.glow.activity) {
+                    createNormalLineStyle(visibleLines[id].style);
                 } else {
                     if (!shiftPress) {
                         selectedClear();
                     }
-                    visibleLines[id].style=createSelectedLineStyle();
-                    selectedIDSection.append(id);
+                    createSelectedLineStyle(visibleLines[id].style);
                 }
 
+
+                return true;
+            } else if (ClosestPoint::checkFigure(visibleLines[id].style->serviceLine.position,
+                                                 Scaling::logicCursor(), Scaling::getZoom())) {
+                selectedIDLengthLine.push_back(id);
                 return true;
             }
         }
@@ -211,15 +423,16 @@ bool QTPainter::findClosestObject() {
                                           Scaling::logicCursor(), Scaling::getZoom())) {
                 const ID& id = it->first;
 
-                if (selectedIDCircle.contains(id)) {
-                    selectedIDCircle.removeOne(id);
-                    visibleCircles[id].style=createNormalCircleStyle();
+                if (visibleCircles.contains(id)) {
+                    break;
+                }
+                if (visibleCircles[id].style->figure.glow.activity) {
+                    createNormalCircleStyle(visibleCircles[id].style);
                 } else {
                     if (!shiftPress) {
                         selectedClear();
                     }
-                    visibleCircles[id].style=createSelectedCircleStyle();
-                    selectedIDCircle.append(id);
+                    createSelectedCircleStyle(visibleCircles[id].style);
                 }
 
                 return true;
@@ -238,15 +451,16 @@ bool QTPainter::findClosestObject() {
                                           Scaling::logicCursor(), Scaling::getZoom())) {
                 const ID& id = it->first;
 
-                if (selectedIDArc.contains(id)) {
-                    selectedIDArc.removeOne(id);
-                    visibleArcs[id].style=createNormalArcStyle();
+                if (visibleArcs.contains(id)) {
+                    break;
+                }
+                if (visibleArcs[id].style->figure.glow.activity) {
+                    createNormalArcStyle(visibleArcs[id].style);
                 } else {
                     if (!shiftPress) {
                         selectedClear();
                     }
-                    visibleArcs[id].style=createSelectedArcStyle();
-                    selectedIDArc.append(id);
+                    createSelectedArcStyle(visibleArcs[id].style);
                 }
 
                 return true;
@@ -276,52 +490,50 @@ void QTPainter::drawingFigures(QPainter& painter) {
     if (caseArcs != nullptr && !caseArcs->empty()) {
         render::drawFigures(painter, visibleArcs);
     }
+
 }
 
 
 void QTPainter::drawGostFrame(QPainter* painter, const QSize& size) {
 
-  //painter->save();
- // painter->restore();
-  constexpr qint32 margin = 20;
-  const qint32 frameWidth = size.width() - 2 * margin;
-  const qint32 frameHeight = size.height() - 2 * margin ;
+    constexpr qint32 margin = 20;
+    const qint32 frameWidth = size.width() - 2 * margin;
+    const qint32 frameHeight = size.height() - 2 * margin;
 
 
-  QRect frameRect(margin, margin, frameWidth, frameHeight);
-  painter->setPen(QPen(Qt::black, 1));
-  painter->drawRect(frameRect);
+    QRect frameRect(margin, margin, frameWidth, frameHeight);
+    painter->setPen(QPen(Qt::black, 1));
+    painter->drawRect(frameRect);
 
-  constexpr qint32 stampHeight = 60;
-  constexpr qint32 stampWidth = 180;
+    constexpr qint32 stampHeight = 60;
+    constexpr qint32 stampWidth = 180;
 
 
-  qint32 stampTopY = frameRect.bottom() - stampHeight;
-  painter->drawLine(frameRect.left(), stampTopY, frameRect.right(), stampTopY);
+    qint32 stampTopY = frameRect.bottom() - stampHeight;
+    painter->drawLine(frameRect.left(), stampTopY, frameRect.right(), stampTopY);
 
-  QRect stampRect(frameRect.right() - stampWidth, stampTopY, stampWidth, stampHeight);
-  painter->drawRect(stampRect);
+    QRect stampRect(frameRect.right() - stampWidth, stampTopY, stampWidth, stampHeight);
+    painter->drawRect(stampRect);
 
-  const qint32 rows = 4;
-  const qint32 cols = 4;
-  qint32 cellWidth = stampWidth / cols;
-  qint32 cellHeight = stampHeight / rows;
+    const qint32 rows = 4;
+    const qint32 cols = 4;
+    qint32 cellWidth = stampWidth / cols;
+    qint32 cellHeight = stampHeight / rows;
 
-  for (qint32 i = 1; i < rows; ++i) {
-    qint32 y = stampRect.top() + i * cellHeight;
-    painter->drawLine(stampRect.left(), y, stampRect.right(), y);
-  }
+    for (qint32 i = 1; i < rows; ++i) {
+        qint32 y = stampRect.top() + i * cellHeight;
+        painter->drawLine(stampRect.left(), y, stampRect.right(), y);
+    }
 
-  for (qint32 j = 1; j < cols; ++j) {
-    qint32 x = stampRect.left() + j * cellWidth;
-    painter->drawLine(x, stampRect.top(), x, stampRect.bottom());
-  }
-  painter->setFont(QFont("Arial", 8));
-  painter->drawText(stampRect.adjusted(4, 4, -4, -4),
-                    Qt::AlignLeft | Qt::AlignTop,
-                    "Назв.\nАвтор\nДата");
+    for (qint32 j = 1; j < cols; ++j) {
+        qint32 x = stampRect.left() + j * cellWidth;
+        painter->drawLine(x, stampRect.top(), x, stampRect.bottom());
+    }
+    painter->setFont(QFont("Arial", 8));
+    painter->drawText(stampRect.adjusted(4, 4, -4, -4),
+                      Qt::AlignLeft | Qt::AlignTop,
+                      "Назв.\nАвтор\nДата");
 }
-
 
 
 void QTPainter::saveToImage(const QString& fileName, QString& format) {
@@ -355,8 +567,8 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
         filePath += "." + originalFormat;
     }
 
-    size_t width = rectangle->width() > 500 ? rectangle->width(): 500;
-    size_t height = rectangle->height() > 500 ? rectangle->height(): 500 ;
+    size_t width = rectangle->width() > 500 ? rectangle->width() : 500;
+    size_t height = rectangle->height() > 500 ? rectangle->height() : 500;
 
     if (chosenFormat == "SVG") {
         QSvgGenerator generator;
@@ -367,7 +579,7 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
         generator.setDescription("Generated by QTPainter");
         QPainter painter(&generator);
         drawGostFrame(&painter, QSize(width, rectangle->height()));
-        painter.translate((qint32) (width/ 2), (qint32) (height / 2));
+        painter.translate((qint32) (width / 2), (qint32) (height / 2));
         this->drawingFigures(painter);
         painter.end();
     } else if (chosenFormat == "PDF") {
@@ -402,7 +614,7 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
         QPainter painter(&pixmapCopy);
         drawGostFrame(&painter, QSize(width + 40, height + 40));
 
-        painter.translate((qint32) (width/ 2) + 20, (qint32) (height / 2 + 20));
+        painter.translate((qint32) (width / 2) + 20, (qint32) (height / 2 + 20));
         drawingFigures(painter);
         painter.end();
         if (!pixmapCopy.save(filePath, chosenFormat.toUtf8().constData())) {
@@ -414,21 +626,17 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
 
 void QTPainter::selectedElemByID(ID id, const std::string& type) {
     if (type == "Point") {
-        selectedIDPoint.push_back(id);
-        visiblePoints[id].style=createSelectedPointStyle();
-        visiblePoints[id].style.figure.glow.color = Color::Purple;
+        createSelectedPointStyle(visiblePoints[id].style);
+        visiblePoints[id].style->figure.glow.color = Color::Purple;
     } else if (type == "Circle") {
-        selectedIDCircle.push_back(id);
-        visibleCircles[id].style=createSelectedCircleStyle();
-        visibleCircles[id].style.figure.glow.color = Color::Purple;
+        createSelectedCircleStyle(visibleCircles[id].style);
+        visibleCircles[id].style->figure.glow.color = Color::Purple;
     } else if (type == "Section") {
-        selectedIDSection.push_back(id);
-        visibleLines[id].style=createSelectedLineStyle();
-        visibleLines[id].style.figure.glow.color = Color::Purple;
+        createSelectedLineStyle(visibleLines[id].style);
+        visibleLines[id].style->figure.glow.color = Color::Purple;
     } else if (type == "Arc") {
-        selectedIDArc.push_back(id);
-        visibleArcs[id].style=createSelectedArcStyle();
-        visibleArcs[id].style.figure.glow.color = Color::Purple;
+        createSelectedArcStyle(visibleArcs[id].style);
+        visibleArcs[id].style->figure.glow.color = Color::Purple;
     }
 }
 
@@ -445,16 +653,32 @@ void QTPainter::managerMoving() {
             if (findClosestObject()) {
                 drawing = true;
                 poseMovingFigures();
-
             }
         } else {
             selectedClear();
         }
     } else {
         if (!ModeManager::getActiveMode(MouseMode::ReleasingLeft)) {
-            emitMoveFigures();
+            if (!selectedIDLengthLine.empty()) {
+                const ID id = *selectedIDLengthLine.begin();
+
+                if (visibleLines.contains(id)) {
+                    QPointF off = Scaling::logic(Scaling::getCursorDelta());
+                    visibleLines[id].style->serviceLine.offset += QPointF{off.x(), off.y()};
+                }
+            } else {
+                emitMoveFigures();
+            }
         } else {
-            emit EndMoving();
+            if (!selectedIDLengthLine.empty()) {
+                const ID id = *selectedIDLengthLine.begin();
+                visibleLines[id].style->serviceLine.lineStyle.glow.activity = false;
+                selectedIDLengthLine.clear();
+
+            } else {
+                emit EndMoving();
+            }
+
             drawing = false;
         }
     }
@@ -462,13 +686,18 @@ void QTPainter::managerMoving() {
 
 
 void QTPainter::doubleClickEvent() {
-    constexpr qint16 SIZE = 1;
-    if (selectedIDSection.size() == SIZE) {
-        auto it = selectedIDSection.begin();
+    constexpr qint8 SIZE = 1;
+    QVector<ID> selectedIDPoint = getVecSelectedIDPoints();
+    QVector<ID> selectedIDLine = getVecSelectedIDLines();
+    QVector<ID> selectedIDCircle = getVecSelectedIDCircles();
+    QVector<ID> selectedIDArc = getVecSelectedIDArcs();
+
+    if (selectedIDPoint.size() == SIZE) {
+        auto it = selectedIDPoint.begin();
         ID key = *it;
         emit DoubleClickOnObject(key);
-    } else if (selectedIDPoint.size() == SIZE) {
-        auto it = selectedIDPoint.begin();
+    } else if (selectedIDLine.size() == SIZE) {
+        auto it = selectedIDLine.begin();
         ID key = *it;
         emit DoubleClickOnObject(key);
     } else if (selectedIDCircle.size() == SIZE) {
@@ -479,31 +708,74 @@ void QTPainter::doubleClickEvent() {
         auto it = selectedIDArc.begin();
         ID key = *it;
         emit DoubleClickOnObject(key);
+    } else {
+        bool flag = false;
+
+        for (auto it = visibleLines.cbegin(); it != visibleLines.cend(); ++it) {
+            const ID id = it->first;
+            if (visibleLines[id].style->serviceLine.active) {
+
+                LineStyle* style = it->second.style;
+                const QPointF cursor = Scaling::logicCursor();
+                const QPointF lt{style->lengthLabel.label.position.lt.x(), -style->lengthLabel.label.position.lt.y()};
+                const QPointF rt{style->lengthLabel.label.position.rt.x(), -style->lengthLabel.label.position.rt.y()};
+                const QPointF lb{style->lengthLabel.label.position.lb.x(), -style->lengthLabel.label.position.lb.y()};
+                const QPointF rb{style->lengthLabel.label.position.rb.x(), -style->lengthLabel.label.position.rb.y()};
+
+                QPolygonF poly;
+                poly << (lt) << (rt)
+                     << (rb) << (lb);
+                QRectF rect = poly.boundingRect();
+
+                //p.fillRect(Scaling::scaleCoordinate(rect), Qt::red);
+                //qDebug()<<rect<<cursor;
+                if (ClosestPoint::pointInRect(cursor, rect)) {
+                    style->lengthLabel.label.active = false;
+                    style->lengthLabel.label.editing = true;
+                    flag = true;
+                }
+
+                if (flag) {
+                    return;
+                }
+
+            }
+        }
+
     }
+
+
 }
 
 
 void QTPainter::emitMoveFigures() {
-    if (!selectedIDSection.empty()) {
-        emit MovingSection(getVecSelectedIDSections(), pressLineVecBeg, pressLineVecEnd);
+    QVector<ID> selectedIDLine = getVecSelectedIDLines();
+    QVector<ID> selectedIDPoint = getVecSelectedIDPoints();
+    QVector<ID> selectedIDCircle = getVecSelectedIDCircles();
+    QVector<ID> selectedIDArc = getVecSelectedIDArcs();
+
+    if (!selectedIDLine.empty()) {
+        emit MovingSection(selectedIDLine, pressLineVecBeg, pressLineVecEnd);
     }
     if (!selectedIDPoint.empty()) {
-        emit MovingPoint(getVecSelectedIDPoints());
+        emit MovingPoint(selectedIDPoint);
     }
     if (!selectedIDCircle.empty()) {
-        emit MovingCircle(getVecSelectedIDCircles(), pressPointCircle);
+        emit MovingCircle(selectedIDCircle, pressPointCircle);
     }
     if (!selectedIDArc.empty()) {
-        emit MovingArc(getVecSelectedIDArcs());
+        emit MovingArc(selectedIDArc);
     }
 }
 
 
 void QTPainter::poseMovingFigures() {
     const QPointF cursorPressPos = Scaling::logicCursor();
+    QVector<ID> selectedIdLines = getVecSelectedIDLines();
+    QVector<ID> selectedIDCircle = getVecSelectedIDCircles();
 
-    if (!selectedIDSection.empty()) {
-        const ID id = *selectedIDSection.begin();
+    if (!selectedIdLines.empty()) {
+        const ID id = *selectedIdLines.begin();
 
         if (caseSections->contains(id)) {
             const Section* s = (*caseSections)[id];
@@ -525,45 +797,25 @@ void QTPainter::poseMovingFigures() {
 
 
 void QTPainter::drawRectangle(QPainter& painter) {
-    const bool leftClick=ModeManager::getActiveMode(MouseMode::LeftClick);
-    const bool releasingClick=ModeManager::getActiveMode(MouseMode::ReleasingLeft);
+    const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
+    const bool releasingClick = ModeManager::getActiveMode(MouseMode::ReleasingLeft);
     const QPointF cursor = Scaling::logicCursor();
 
-    if(leftClick){
+    if (leftClick) {
         rectTool->pressButton(cursor);
     }
 
-    if(releasingClick){
+    if (releasingClick) {
         rectTool->releasingButton();
     }
 
-    rectTool->draw(painter,cursor);
+    rectTool->draw(painter, cursor);
 
-    QRectF rect =  rectTool->getRect();
+    QRectF rect = rectTool->getRect();
     pointInRect(rect);
-    sectionInRect(rect);
+    lineInRect(rect);
     circleInRect(rect);
     arcsInRect(rect);
-}
-
-
-void QTPainter::onSigPoint(const QPointF& point) {
-    emit SigPoint(point);
-}
-
-
-void QTPainter::onSigCircle(const QPointF& center, qreal radius) {
-    emit SigCircle(center, radius);
-}
-
-
-void QTPainter::onSigSection(const QPointF& startPoint, const QPointF& endPoint) {
-    emit SigSection(startPoint, endPoint);
-}
-
-
-void QTPainter::onSigArc(const QPointF& startPoint, const QPointF& endPoint, const QPointF& center) {
-    emit SigArc(startPoint, endPoint, center);
 }
 
 
@@ -572,30 +824,34 @@ void QTPainter::pointInRect(QRectF& rect) {
         return;
     }
 
+    QVector<ID> selectedIDPoint = getVecSelectedIDPoints();
+
     QVector<ID> vecPointID = ClosestPoint::enteringInRect(*casePoints, rect);
     for (const ID& id: selectedIDPoint) {
-        visiblePoints[id].style=createNormalPointStyle();
+        createNormalPointStyle(visiblePoints[id].style);
     }
 
     selectedIDPoint.clear();
     for (const ID& id: vecPointID) {
-        visiblePoints[id].style = createSelectedPointStyle();
+        createSelectedPointStyle(visiblePoints[id].style);
     }
 }
 
 
-void QTPainter::sectionInRect(QRectF& rect) {
+void QTPainter::lineInRect(QRectF& rect) {
     if (caseSections == nullptr) {
         return;
     }
 
+    QVector<ID> selectedIDLine = getVecSelectedIDLines();
+
     QVector<ID> vecSectionID = ClosestPoint::enteringInRect(*caseSections, rect);
-    for (const ID& id: selectedIDSection) {
-        visibleLines[id].style = createNormalLineStyle();
+    for (const ID& id: selectedIDLine) {
+        createNormalLineStyle(visibleLines[id].style);
     }
-    selectedIDSection.clear();
+    selectedIDLine.clear();
     for (const ID& id: vecSectionID) {
-        visibleLines[id].style = createSelectedLineStyle();
+        createSelectedLineStyle(visibleLines[id].style);
     }
 }
 
@@ -605,14 +861,16 @@ void QTPainter::circleInRect(QRectF& rect) {
         return;
     }
 
+    QVector<ID> selectedIDCircle = getVecSelectedIDCircles();
+
     QVector<ID> pressPointCircleID = ClosestPoint::enteringInRect(*caseCircles, rect);
     for (const ID& id: selectedIDCircle) {
-        visibleCircles[id].style = createNormalCircleStyle();
+        createNormalCircleStyle(visibleCircles[id].style);
     }
     selectedIDCircle.clear();
 
     for (const ID& id: pressPointCircleID) {
-        visibleCircles[id].style = createSelectedCircleStyle();
+        createSelectedCircleStyle(visibleCircles[id].style);
     }
 }
 
@@ -622,20 +880,21 @@ void QTPainter::arcsInRect(QRectF& rect) {
         return;
     }
 
+    QVector<ID> selectedIDArc = getVecSelectedIDArcs();
+
     QVector<ID> vecArcID = ClosestPoint::enteringInRect(*caseArcs, rect);
     for (const ID& id: selectedIDArc) {
-        visibleArcs[id].style = createNormalArcStyle();
+        createNormalArcStyle(visibleArcs[id].style);
     }
     selectedIDArc.clear();
     for (const ID& id: vecArcID) {
-        visibleArcs[id].style = createSelectedArcStyle();
+        createSelectedArcStyle(visibleArcs[id].style);
     }
 }
 
 
-[[maybe_unused]] void QTPainter::resizeEvent(QResizeEvent* event) {
-    QFrame::resizeEvent(event);
-    Scaling::setActualMonitorSize(size());
+[[maybe_unused]] void QTPainter::resizeEvent(QResizeEvent*) {
+    Scaling::setActualMonitorSize(this->size());
     update();
 }
 
@@ -659,6 +918,7 @@ void QTPainter::paintEvent(QPaintEvent* event) {
     if (ModeManager::getCursor()) {
         DrawAdditionalInf::drawCursor(painter);
     }
+
 
 
     /*************** Drawing shapes with the mouse ********************/
@@ -687,7 +947,10 @@ void QTPainter::paintEvent(QPaintEvent* event) {
                 findClosestObject();
             }
         } else if (ModeManager::getActiveMode(MouseMode::DoubleClickLeft)) {
-            if (leftClickFlag && findClosestObject()) {
+//            if (leftClickFlag && findClosestObject()) {
+//                doubleClickEvent();
+//            }
+            if (leftClickFlag) {
                 doubleClickEvent();
             }
         }
@@ -695,11 +958,19 @@ void QTPainter::paintEvent(QPaintEvent* event) {
         drawRectangle(painter);
     } else if (ModeManager::getActiveMode(WorkModes::Move)) {
         managerMoving();
+    } else if (ModeManager::getActiveMode(WorkModes::ShowSize)) {
+        if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
+            if (leftClickFlag) {
+                findClosestObject();
+            }
+        }
     }
+
 
     if (ModeManager::getActiveMode(MouseMode::LeftClick)) {
         leftClickFlag = leftClickTimer();
     }
+
 
     drawingFigures(painter);
 
@@ -716,6 +987,19 @@ unsigned long long QTPainter::getWeight() {
 unsigned long long QTPainter::getHeight() {
     const QSize size = Scaling::getActualMonitorSize();
     return size.height();
+}
+
+
+void QTPainter::draw() {
+    inArea();
+    update();
+}
+
+
+void QTPainter::clear() {
+    selectedClear();
+    Scaling::setZoomZero();
+    mouseManager->clear();
 }
 
 
@@ -744,8 +1028,4 @@ void QTPainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {
 }
 
 
-void QTPainter::onWorkWindowResized() {
-    // When changing the size of the parent window, we change the size
-    Scaling::setActualMonitorSize(size());
-    resize(parentWidget()->size());
-}
+
