@@ -1401,12 +1401,13 @@ public:
         maximizeButton->setStyleSheet(
                 "QPushButton { background: none; border: none; color: white; border-radius: 5px; }"
                 "QPushButton:hover { background-color: rgba(255, 255, 255, 0.3); }"); // Illumination when pointing
-        QObject::connect(maximizeButton, &QPushButton::clicked, [=]() {
+        QObject::connect(maximizeButton, &QPushButton::clicked, [=, this]() {
             if (MainWindow->isMaximized() || MainWindow->isFullScreen()) {
                 MainWindow->showNormal(); // Returning to the normal size
+                updateStyle(false,true);
             } else {
                 MainWindow->showMaximized(); // Expand the window
-                MainWindow->update();        // Update the style
+                updateStyle(true,false);        // Update the style
             }
         });
 
