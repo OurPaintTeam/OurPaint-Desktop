@@ -228,10 +228,10 @@ namespace render::util {
         const QPointF lb1 = style.label.position.lb;
         const QPointF rb1 = style.label.position.rb;
 
-        QPolygonF poly;
-        poly << (lt1) << (rt1)
-             << (rb1) << (lb1);
-        QRectF rect1 = poly.boundingRect();
+//        QPolygonF poly;
+//        poly << (lt1) << (rt1)
+//             << (rb1) << (lb1);
+//        QRectF rect1 = poly.boundingRect();
 
         //   qDebug()<<rect1;
 
