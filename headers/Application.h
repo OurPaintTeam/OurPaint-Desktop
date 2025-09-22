@@ -43,7 +43,7 @@ private:
     MainWindow mainWind;
     QMap<const QTPainter*,Scene*> arrayScene;
     Scene* scene;
-    QTPainter *painter;
+    QTPainter *painter = nullptr;
     LeftMenuBar* leftMenu;
 
     std::vector<std::function<void()>> vecCalls;
@@ -54,6 +54,17 @@ private:
     Client client;
 
     UndoRedo::UndoRedoManager undoRedo;
+
+    void firstReq();
+    void secondReq();
+    void thirdReq();
+    void fourthReq();
+    void fifthReq();
+    void sixthReq();
+    void seventhReq();
+    void eighthReq();
+    void ninthReq();
+    void tenthReq();
 
     void initialize();
     void initLogger();

@@ -61,7 +61,6 @@ void Application::initialize() {
     app.setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
 
     mainWind.show();
-    mainWind.resize();
 
     if (mainWind.getQTPainter() == nullptr) {
         mainWind.showWarning("Can't opened QTPainter");
@@ -238,7 +237,7 @@ void Application::setupQTPainterConnections() {
 
 
         // Drawing a point
-        QObject::connect(painter, &QTPainter::SigPoint,
+        QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigPoint,
                          [this](const QPointF& point) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
@@ -255,7 +254,7 @@ void Application::setupQTPainterConnections() {
                          });
 
         // Drawing a line
-        QObject::connect(painter, &QTPainter::SigSection,
+        QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigSection,
                          [this](const QPointF& startPoint, const QPointF& endPoint) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
@@ -275,7 +274,7 @@ void Application::setupQTPainterConnections() {
 
 
         // Drawing a circle
-        QObject::connect(painter, &QTPainter::SigCircle,
+        QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigCircle,
                          [this](const QPointF& center, const double radius) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
@@ -294,7 +293,7 @@ void Application::setupQTPainterConnections() {
 
 
         // Drawing an arcs
-        QObject::connect(painter, &QTPainter::SigArc,
+        QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigArc,
                          [this](const QPointF& startPoint, const QPointF& endPoint, const QPointF& centerPoint) {
                              if (ModeManager::getConnection()) {
                                  if (ModeManager::getFlagServer()) {
@@ -316,7 +315,8 @@ void Application::setupQTPainterConnections() {
                              updateState();
                          });
 
-        QObject::connect(painter, &QTPainter::lineLengthUpdate,
+
+        QObject::connect(render::util::RenderLinesEmitter::instance(), &render::util::RenderLinesEmitter::linesUpdated,
                          [this](ID id,const qreal length) {
             RequirementData data;
             data.objects.push_back(ID(id.get()-1));
@@ -330,7 +330,7 @@ void Application::setupQTPainterConnections() {
 
 
     // Deleting an element
-    QObject::connect(painter, &QTPainter::DELETE, [this]() {
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::DELETE, [this]() {
         try {
             QVector<ID> vecPoint = painter->getVecSelectedIDPoints();
             QVector<ID> vecLine = painter->getVecSelectedIDLines();
@@ -349,7 +349,7 @@ void Application::setupQTPainterConnections() {
     });
 
     // ctrl+c
-    QObject::connect(painter, &QTPainter::COPY, [this]() {
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::COPY, [this]() {
         objectsBuffer.clear();
         fillSelectedIDBuffer();
         painter->selectedClear();
@@ -357,7 +357,7 @@ void Application::setupQTPainterConnections() {
     });
 
     // ctrl+v
-    QObject::connect(painter, &QTPainter::PASTE, [this]() {
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::PASTE, [this]() {
         try {
             for (auto& obj: objectsBuffer) {
                 ID id = scene->addObject(obj);
@@ -397,7 +397,7 @@ void Application::setupQTPainterConnections() {
     });
 
     // ctrl+x
-    QObject::connect(painter, &QTPainter::CUT, [this]() {
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::CUT, [this]() {
         objectsBuffer.clear();
         fillSelectedIDBuffer();
 
@@ -413,10 +413,6 @@ void Application::setupQTPainterConnections() {
         updateState();
     });
 
-    // Changing the size
-    QObject::connect(&mainWind, &MainWindow::resize, [this]() {
-        painter->update();
-    });
 }
 
 
@@ -626,130 +622,220 @@ void Application::setupServerConnections() {
     });
 }
 
+void Application::firstReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        InputWindow window("Enter parameters: ", &mainWind);
+        if (window.exec() == QDialog::Accepted) {
+            bool ok = false;
+            double parameters = window.getText().toDouble(&ok);
+            if (!ok) { return; }
+            addRequirement(ET_POINTSECTIONDIST, pairSelectedID->first, pairSelectedID->second, parameters);
+            updateState();
+        }
+    }
+}
+
+void Application::secondReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        RequirementData reqData;
+        addRequirement(ET_POINTONSECTION, pairSelectedID->first, pairSelectedID->second);
+        updateState();
+    }
+}
+
+void Application::thirdReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        InputWindow window("Enter parameters: ", &mainWind);
+        if (window.exec() == QDialog::Accepted) {
+            RequirementData reqData;
+            bool ok = false;
+            double parameters = window.getText().toDouble(&ok);
+            if (!ok) { return; }
+            addRequirement(ET_POINTPOINTDIST, pairSelectedID->first, pairSelectedID->second, parameters);
+            updateState();
+        }
+    } else {
+        QVector<ID> vec_id = painter->getVecSelectedIDLines();
+        if (vec_id.size() == 1) {
+            InputWindow window("Enter parameters: ", &mainWind);
+            if (window.exec() == QDialog::Accepted) {
+                RequirementData reqData;
+                bool ok = false;
+                double parameters = window.getText().toDouble(&ok);
+                if (!ok) {
+                    return;
+                }
+                addRequirement(ET_POINTPOINTDIST, ID(vec_id[0].get() - 1), ID(vec_id[0].get() - 2), parameters);
+                updateState();
+            }
+        }
+    }
+}
+
+void Application::fourthReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        addRequirement(ET_POINTONPOINT, pairSelectedID->first, pairSelectedID->second);
+        updateState();
+    }
+}
+
+void Application::fifthReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        InputWindow window("Enter parameters: ", &mainWind);
+        if (window.exec() == QDialog::Accepted) {
+            RequirementData reqData;
+            bool ok = false;
+            double parameters = window.getText().toDouble(&ok);
+            if (!ok) { return; }
+            addRequirement(ET_SECTIONCIRCLEDIST, pairSelectedID->first, pairSelectedID->second, parameters);
+            updateState();
+        }
+    }
+}
+
+void Application::sixthReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        addRequirement(ET_SECTIONONCIRCLE, pairSelectedID->first, pairSelectedID->second);
+        updateState();
+    }
+}
+
+void Application::seventhReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        addRequirement(ET_SECTIONINCIRCLE, pairSelectedID->first, pairSelectedID->second);
+        updateState();
+    }
+}
+
+void Application::eighthReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        addRequirement(ET_SECTIONSECTIONPARALLEL, pairSelectedID->first, pairSelectedID->second);
+        updateState();
+    }
+}
+
+void Application::ninthReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        addRequirement(ET_SECTIONSECTIONPERPENDICULAR, pairSelectedID->first, pairSelectedID->second);
+        updateState();
+    }
+}
+
+void Application::tenthReq(){
+    auto pairSelectedID = painter->getPairSelectedID();
+    if (pairSelectedID) {
+        InputWindow window("Enter parameters: ", &mainWind);
+        if (window.exec() == QDialog::Accepted) {
+            bool ok = false;
+            double parameters = window.getText().toDouble(&ok);
+            if (!ok) { return; }
+            addRequirement(ET_SECTIONSECTIONANGLE, pairSelectedID->first, pairSelectedID->second, parameters);
+            updateState();
+        }
+    }
+}
 
 void Application::setupRequirementsConnections() {
+    if(!painter){
+        qWarning()<<"Don't initialize painter!";
+        return;
+    }
     try {
-        QObject::connect(&mainWind, &MainWindow::oneRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                InputWindow window("Enter parameters: ", &mainWind);
-                if (window.exec() == QDialog::Accepted) {
-                    bool ok = false;
-                    double parameters = window.getText().toDouble(&ok);
-                    if (!ok) { return; }
-                    addRequirement(ET_POINTSECTIONDIST, pairSelectedID->first, pairSelectedID->second, parameters);
-                    updateState();
-                }
-            }
+        QObject::connect(mainWind.getFirstBut(), &QPushButton::clicked, [this]() {
+           firstReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::firstReq, [this]() {
+            firstReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::twoRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                RequirementData reqData;
-                addRequirement(ET_POINTONSECTION, pairSelectedID->first, pairSelectedID->second);
-                updateState();
-            }
+        QObject::connect(mainWind.getSecondBut(), &QPushButton::clicked, [this]() {
+        secondReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::secondReq, [this]() {
+            secondReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::threeRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                InputWindow window("Enter parameters: ", &mainWind);
-                if (window.exec() == QDialog::Accepted) {
-                    RequirementData reqData;
-                    bool ok = false;
-                    double parameters = window.getText().toDouble(&ok);
-                    if (!ok) { return; }
-                    addRequirement(ET_POINTPOINTDIST, pairSelectedID->first, pairSelectedID->second, parameters);
-                    updateState();
-                }
-            } else {
-                QVector<ID> vec_id = painter->getVecSelectedIDLines();
-                if (vec_id.size() == 1) {
-                    InputWindow window("Enter parameters: ", &mainWind);
-                    if (window.exec() == QDialog::Accepted) {
-                        RequirementData reqData;
-                        bool ok = false;
-                        double parameters = window.getText().toDouble(&ok);
-                        if (!ok) {
-                            return;
-                        }
-                        addRequirement(ET_POINTPOINTDIST, ID(vec_id[0].get() - 1), ID(vec_id[0].get() - 2), parameters);
-                        updateState();
-                    }
-                }
-            }
+        QObject::connect(mainWind.getThirdBut(), &QPushButton::clicked, [this]() {
+           thirdReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::thirdReq, [this]() {
+            thirdReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::fourRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                addRequirement(ET_POINTONPOINT, pairSelectedID->first, pairSelectedID->second);
-                updateState();
-            }
+        QObject::connect(mainWind.getFourthBut(), &QPushButton::clicked, [this]() {
+            fourthReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::fourthReq, [this]() {
+            fourthReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::fiveRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                InputWindow window("Enter parameters: ", &mainWind);
-                if (window.exec() == QDialog::Accepted) {
-                    RequirementData reqData;
-                    bool ok = false;
-                    double parameters = window.getText().toDouble(&ok);
-                    if (!ok) { return; }
-                    addRequirement(ET_SECTIONCIRCLEDIST, pairSelectedID->first, pairSelectedID->second, parameters);
-                    updateState();
-                }
-            }
+        QObject::connect(mainWind.getFifthBut(), &QPushButton::clicked, [this]() {
+           fifthReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::fifthReq, [this]() {
+            fifthReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::sixRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                addRequirement(ET_SECTIONONCIRCLE, pairSelectedID->first, pairSelectedID->second);
-                updateState();
-            }
+        QObject::connect(mainWind.getSixthBut(), &QPushButton::clicked, [this]() {
+          sixthReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::sixthReq, [this]() {
+            sixthReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::sevenRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                addRequirement(ET_SECTIONINCIRCLE, pairSelectedID->first, pairSelectedID->second);
-                updateState();
-            }
+        QObject::connect(mainWind.getSeventhBut(), &QPushButton::clicked, [this]() {
+           seventhReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::seventhReq, [this]() {
+            seventhReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::eightRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                addRequirement(ET_SECTIONSECTIONPARALLEL, pairSelectedID->first, pairSelectedID->second);
-                updateState();
-            }
-
+        QObject::connect(mainWind.getEighthBut(), &QPushButton::clicked, [this]() {
+            eighthReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::eighthReq, [this]() {
+            eighthReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::nineRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                addRequirement(ET_SECTIONSECTIONPERPENDICULAR, pairSelectedID->first, pairSelectedID->second);
-                updateState();
-            }
+        QObject::connect(mainWind.getNinthBut(), &QPushButton::clicked, [this]() {
+           ninthReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::ninthReq, [this]() {
+            ninthReq();
         });
 
-        QObject::connect(&mainWind, &MainWindow::tenRequirements, [this]() {
-            auto pairSelectedID = painter->getPairSelectedID();
-            if (pairSelectedID) {
-                InputWindow window("Enter parameters: ", &mainWind);
-                if (window.exec() == QDialog::Accepted) {
-                    bool ok = false;
-                    double parameters = window.getText().toDouble(&ok);
-                    if (!ok) { return; }
-                    addRequirement(ET_SECTIONSECTIONANGLE, pairSelectedID->first, pairSelectedID->second, parameters);
-                    updateState();
-                }
+        QObject::connect(mainWind.getTenthBut(), &QPushButton::clicked, [this]() {
+           tenthReq();
+        });
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::tenthReq, [this]() {
+            tenthReq();
+        });
+
+        // UNDO
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::UNDO, [this]() {
+            bool b = undoRedo.undo();
+            if (!b) {
+                mainWind.showError("Undo failed");
             }
+            leftMenu->updateLeftMenu();
+        });
+
+        // REDO
+        QObject::connect(painter->getKeyWW(), &KeyWorkWindow::REDO, [this]() {
+            bool b = undoRedo.redo();
+            if (!b) {
+                mainWind.showError("Redo failed");
+            }
+            leftMenu->updateLeftMenu();
         });
     } catch (std::exception& e) {
         mainWind.showError(e.what());
@@ -907,23 +993,6 @@ void Application::setupAddingCommandsConnections() {
         scene->paint();
     });
 
-    // UNDO
-    QObject::connect(painter, &QTPainter::UNDO, [this]() {
-        bool b = undoRedo.undo();
-        if (!b) {
-            mainWind.showError("Undo failed");
-        }
-        leftMenu->updateLeftMenu();
-    });
-
-    // REDO
-    QObject::connect(painter, &QTPainter::REDO, [this]() {
-        bool b = undoRedo.redo();
-        if (!b) {
-            mainWind.showError("Redo failed");
-        }
-        leftMenu->updateLeftMenu();
-    });
 }
 
 void Application::updateState() {
