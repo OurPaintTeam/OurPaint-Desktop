@@ -17,6 +17,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QGestureEvent>
+#include <QDirIterator>
 #include <QStandardPaths>
 
 #include "Help.h"
@@ -30,8 +31,6 @@
 #include "ui_mainwindow.h"
 #include "QTPainter.h"
 #include "Modes.h"
-#include "MouseEventWorkWindow.h"
-#include "KeyWorkWindow.h"
 #include "LeftMenuBar.h"
 #include "Settings.h"
 #include "ParameterDelegate.h"
@@ -46,25 +45,16 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 private:
-    Ui::MainWindow* ui;
+    Ui::MainWindow* ui=new Ui::MainWindow;
 
-    QTPainter* painter;
-    MouseWorkWindow* mouseWW;            // For processing mouse events
-    KeyWorkWindow* keyWW;                // For handling key events
-    LeftMenuBar* leftMenuBar;             // A class for managing the left menu
-    Settings* settings;                   // Saving Settings
-    Help* helpWindow;                     // Help Window
+    const QString documentsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    const QString projectsPath = QDir::cleanPath(documentsPath + "/OurPaint/projects");
+    const QString settingsPath = QDir::cleanPath(documentsPath + "/OurPaint/settings/settings.set");
+    const QString filePath = QDir::cleanPath(documentsPath + "/OurPaint/settings/projects.set");
 
-    CustomWindowError* error;
-    CustomWindowWarning* warning;
-    CustomWindowSuccessful* success;
 
-    QString documentsPath;
-    QString projectsPath;
-    QString settingsPath;
-
-    std::vector<QString> commands;  // Command buffer for the console
-    int Index;                      // Index for navigating commands
+    LeftMenuBar* leftMenuBar= new LeftMenuBar(this);             // A class for managing the left menu
+    Settings* settings = new Settings(settingsPath);                   // Saving Settings
 
     enum ResizeRegion {
         None,
@@ -72,34 +62,34 @@ private:
         TopLeft, TopRight, BottomLeft, BottomRight
     };
 
-    const qint16 edgeMargin=8;
+    const qint8 edgeMargin = 8;
 
-    bool resizing;
-    bool moving;
-    QPoint dragStartPos;
+    bool resizing = false;
+    bool moving = false;
+    QPoint dragStartPos{0,0};
     QRect originalGeometry;
     ResizeRegion currentRegion = None;
+
 public:
-
     MainWindow(QWidget* parent = nullptr);
-
     ~MainWindow();
 
     QTPainter* getQTPainter() const;
     LeftMenuBar* getLeftMenuBar() const;
+
+    void openProject(const QString& name);
+    void setupStartWindow();
+    void readFile();
+
     void initConnections();
     void setupLeftMenu();
-    void selectLeftMenuElem(QModelIndex& index);
-    void updateStyle();
+    [[maybe_unused]] void selectLeftMenuElem(QModelIndex& index);
+
     void updateExitServerStyle(bool);
     void updateShapeCursor(const QPoint& pos);
     void setMessage(const std::string& name, const std::string& message);
 
-    // Mouse Tracking
-    void setAllMouseTracking(QWidget* widget);
-
     /***    Custom windows      ***/
-    void showHelp();
     void showError(const QString& text);
     void showSuccess(const QString& text);
     void showWarning(const QString& text);
@@ -109,10 +99,19 @@ public:
     void saveSettings();
     void loadSettings();
 
+    QPushButton* getFirstBut();
+    QPushButton* getSecondBut();
+    QPushButton* getThirdBut();
+    QPushButton* getFourthBut();
+    QPushButton* getFifthBut();
+    QPushButton* getSixthBut();
+    QPushButton* getSeventhBut();
+    QPushButton* getEighthBut();
+    QPushButton* getNinthBut();
+    QPushButton* getTenthBut();
 protected:
 
     void closeEvent(QCloseEvent* event) override;
-    void resizeEvent(QResizeEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -122,19 +121,10 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
 
-
 public slots:
-
-    void redo();
-    void undo();
-    void deleteButton();
-    void cut();
-    void paste();
-    void copy();
 
     void loadProjectFile();
     void saveProjectToFile(const QString& format);
-
     void buttonScript();
     void openServer();
     void joinServer();
@@ -146,22 +136,10 @@ public slots:
     void Section();
     void Circle();
     void Arc();
-
-    void FigMoving();
     void ToolMoving();
     void ToolSelected();
-    void onWorkWindowResized();
+    void ToolShowSize();
 
-    void firstReq();
-    void secondReq();
-    void thirdReq();
-    void fourthReq();
-    void fifthReq();
-    void sixthReq();
-    void seventhReq();
-    void eighthReq();
-    void ninthReq();
-    void tenthReq();
     void onExportJPG();
     void onExportJPEG();
     void onExportPNG();
@@ -170,6 +148,13 @@ public slots:
     void onExportPDF();
     void onExportOURP();
     void onExportSVG();
+    void onCreateProject();
+
+    void onLeftMenuRightClick(const QPoint& pos);
+    void setNameUsers();
+    void updateGrid(const bool checked);
+    void updateAxis(const bool checked);
+    void commandsInConsole();
 
 signals:
 
@@ -182,26 +167,8 @@ signals:
     void projectSaved(const QString& fileName, QString format);
     void LoadFile(const QString& fileName);
     void EmitScript(const QString& fileName);
-
-    void oneRequirements();
-    void twoRequirements();
-    void threeRequirements();
-    void fourRequirements();
-    void fiveRequirements();
-    void sixRequirements();
-    void sevenRequirements();
-    void eightRequirements();
-    void nineRequirements();
-    void tenRequirements();
-
-    void REDO();
-    void UNDO();
-    void DELETE();
-    void CUT();
-    void PASTE();
-    void COPY();
     void resize();
-
+    void switchTab();
 };
 
 #endif // MAINWINDOW_H
