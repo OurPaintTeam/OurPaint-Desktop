@@ -1,5 +1,5 @@
-#ifndef OURPAINT_SELECTEDRECTANGLE_H
-#define OURPAINT_SELECTEDRECTANGLE_H
+#ifndef UNNECESSARY
+#define UNNECESSARY
 
 #include <QPointF>
 #include <QRectF>
@@ -9,7 +9,7 @@
 #include "Scaling.h"
 #include "DrawFigures.h"
 
-class SelectedRectangle {
+class [[maybe_unused]] SelectedRectangle {
 private:
     QPointF startMouse;
     QPointF endMouse;
@@ -22,4 +22,4 @@ public:
     void clear();
 };
 
-#endif //OURPAINT_SELECTEDRECTANGLE_H
+#endif UNNECESSARY
