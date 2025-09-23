@@ -80,7 +80,6 @@ void Application::initGUI(int& argc, char** argv) {
     app->setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
 
     mainWind->show();
-    mainWind->resize();
 
     if (mainWind->getQTPainter() == nullptr) {
         mainWind->showWarning("Can't opened QTPainter");
@@ -168,6 +167,17 @@ void Application::initControllers() {
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::eighthReq, mwc, &MainWindController::onEightRequirements);
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::ninthReq, mwc, &MainWindController::onNineRequirements);
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::tenthReq, mwc, &MainWindController::onTenRequirements);
+
+    QObject::connect(mainWind->getFirstBut(), &QPushButton::clicked, mwc, &MainWindController::onOneRequirements);
+    QObject::connect(mainWind->getSecondBut(), &QPushButton::clicked, mwc, &MainWindController::onTwoRequirements);
+    QObject::connect(mainWind->getThirdBut(), &QPushButton::clicked, mwc, &MainWindController::onThreeRequirements);
+    QObject::connect(mainWind->getFourthBut(), &QPushButton::clicked, mwc, &MainWindController::onFourRequirements);
+    QObject::connect(mainWind->getFifthBut(), &QPushButton::clicked, mwc, &MainWindController::onFiveRequirements);
+    QObject::connect(mainWind->getSixthBut(), &QPushButton::clicked, mwc, &MainWindController::onSixRequirements);
+    QObject::connect(mainWind->getSeventhBut(), &QPushButton::clicked, mwc, &MainWindController::onSevenRequirements);
+    QObject::connect(mainWind->getEighthBut(),&QPushButton::clicked, mwc, &MainWindController::onEightRequirements);
+    QObject::connect(mainWind->getNinthBut(), &QPushButton::clicked, mwc, &MainWindController::onNineRequirements);
+    QObject::connect(mainWind->getTenthBut(),&QPushButton::clicked, mwc, &MainWindController::onTenRequirements);
 
     QObject::connect(mainWind, &MainWindow::EnterPressed, mwc, &MainWindController::onEnterPressed); // Console
     QObject::connect(mainWind, &MainWindow::projectSaved, mwc, &MainWindController::onProjectSaved); // Save
