@@ -36,7 +36,6 @@ include_directories(ourpaint
         headers/controllers
 
         GUI/GUI_h
-        GUI/GUI_h/Unnecessary
         GUI/GUI_h/client_server
         GUI/GUI_h/Windows
         GUI/GUI_h/Events
@@ -156,7 +155,6 @@ add_executable(ourpaint
         GUI/GUI_cc/Rendering/DrawFigures.cc
         GUI/GUI_cc/Rendering/Modes.cc
         GUI/GUI_cc/Rendering/QTPainter.cc
-        GUI/GUI_cc/Unnecessary/SelectedRectangle.cc
 
 
         GUI/GUI_cc/Rendering/Mouse/DrawTool.cc
@@ -195,8 +193,6 @@ add_executable(ourpaint
         GUI/GUI_cc/Windows/InputWindow.cc
         GUI/GUI_cc/Windows/SaveDialog.cc
 
-        GUI/GUI_cc/Unnecessary/FrameOverlay.cc
-        GUI/GUI_cc/Unnecessary/DrawMouse.cc
 
         GUI/GUI_cc/Logger/GUI_Logger.cc
 
@@ -244,7 +240,6 @@ add_executable(ourpaint
 
         GUI/GUI_h/Rendering/Scaling.h
         GUI/GUI_h/Rendering/QTPainter.h
-        GUI/GUI_h/Unnecessary/SelectedRectangle.h
         GUI/GUI_h/Rendering/Colors.h
 
         GUI/GUI_h/Rendering/Mouse/DrawTool.h
@@ -259,8 +254,6 @@ add_executable(ourpaint
         GUI/GUI_h/MainFile/Mainwindow.h
         GUI/GUI_h/MainFile/ui_mainwindow.h
 
-        GUI/GUI_h/Unnecessary/FrameOverlay.h
-        GUI/GUI_h/Unnecessary/DrawMouse.h
 
         GUI/GUI_h/Logger/GUI_Logger.h
 
