@@ -47,7 +47,6 @@ public slots:
     void onCopy();
     void onPaste();
     void onCut();
-    void onResize();
 
     void onOneRequirements();
     void onTwoRequirements();

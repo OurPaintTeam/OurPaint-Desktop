@@ -136,11 +136,6 @@ void MainWindController::onCut() {
     SLOT_GUARD_MAINWIND_END
 }
 
-void MainWindController::onResize() {
-    SLOT_GUARD_MAINWIND_BEGIN
-    _painter.update();
-    SLOT_GUARD_MAINWIND_END
-}
 
 void MainWindController::onOneRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
