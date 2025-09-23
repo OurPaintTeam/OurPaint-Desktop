@@ -192,7 +192,9 @@ void QTPainter::inArea() {
                 Scaling::scaleCoordinate(arc->center->y) + Scaling::getDelta().y() +
                 Scaling::getCenteredCoordinates().height()
         );
-        qreal r = arc->r * Scaling::getZoom();
+
+        qreal dist = QLineF({arc->beg->x,arc->beg->y}, {arc->center->x,arc->center->y}).length();
+        qreal r = dist * Scaling::getZoom();
 
         QRectF bounding(center - QPointF(r, r), QSizeF(2 * r, 2 * r));
         if (visibleRect.intersects(bounding)) {
