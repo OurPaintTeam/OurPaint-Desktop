@@ -27,7 +27,8 @@ public:
     static QPolygonF rectToPolygon(const QRectF& rect);
     static bool pointInRect(const Point* pt, const QRectF& rect);
     static bool pointInRect(const QPointF& pt, const QRectF& rect);
-    static bool pointInRect(const QPointF& pt, const QPointF& lt, const QPointF& rt, const QPointF& lb, const QPointF& rb);
+
+    [[maybe_unused]] static bool pointInRect(const QPointF& pt, const QPointF& lt, const QPointF& rt, const QPointF& lb, const QPointF& rb);
     static bool circleInRect(const Circle* circle, const QRectF& rect);
     static bool sectionInRect(const Section* section, const QRectF& rect);
     static bool arcInRect(const Arc* arc, const QRectF& rect);
@@ -47,7 +48,7 @@ public:
                 const qreal zoom);
 
     // Auxiliary function for checking cursor and line
-    static double distancePointToSection(const QPointF cursor, const QPointF startPoint, const QPointF endPoint);
+    static qreal distancePointToSection(const QPointF cursor, const QPointF startPoint, const QPointF endPoint);
     static qreal distanceBetweenPoints(const QPointF& a, const QPointF& b);
     static qreal roundRange(const qreal zoom,const qreal range);
 };

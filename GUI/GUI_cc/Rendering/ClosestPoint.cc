@@ -37,7 +37,7 @@ bool ClosestPoint::pointInRect(const QPointF& pt, const QRectF& rect) {
 }
 
 
-bool ClosestPoint::pointInRect(const QPointF& pt, const QPointF& lt, const QPointF& rt, const QPointF& lb, const QPointF& rb) {
+[[maybe_unused]] bool ClosestPoint::pointInRect(const QPointF& pt, const QPointF& lt, const QPointF& rt, const QPointF& lb, const QPointF&) {
 
     QPointF AB = rt - lt;
     QPointF AD = lb - lt;
