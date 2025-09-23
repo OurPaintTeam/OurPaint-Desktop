@@ -127,10 +127,10 @@ namespace render::util {
         style.label.position.lb = Scaling::logic(lb);
         style.label.position.rb = Scaling::logic(rb);
 
-        const QPointF lt1 = style.label.position.lt;
-        const QPointF rt1 = style.label.position.rt;
-        const QPointF lb1 = style.label.position.lb;
-        const QPointF rb1 = style.label.position.rb;
+//        const QPointF lt1 = style.label.position.lt;
+//        const QPointF rt1 = style.label.position.rt;
+//        const QPointF lb1 = style.label.position.lb;
+//        const QPointF rb1 = style.label.position.rb;
 
        /* QPolygonF poly;
         poly << (lt1) << (rt1)
@@ -223,10 +223,10 @@ namespace render::util {
         style.label.position.lb = Scaling::logic(lb);
         style.label.position.rb = Scaling::logic(rb);
 
-        const QPointF lt1 = style.label.position.lt;
-        const QPointF rt1 = style.label.position.rt;
-        const QPointF lb1 = style.label.position.lb;
-        const QPointF rb1 = style.label.position.rb;
+//        const QPointF lt1 = style.label.position.lt;
+//        const QPointF rt1 = style.label.position.rt;
+//        const QPointF lb1 = style.label.position.lb;
+//        const QPointF rb1 = style.label.position.rb;
 
 //        QPolygonF poly;
 //        poly << (lt1) << (rt1)
