@@ -139,10 +139,10 @@ void Application::initLogger() {
 void Application::initControllers() {
     pc = new PainterController(*scene, *commandManager, *undoRedo, *mainWind);
 
-    QObject::connect(painter, &QTPainter::SigPoint, pc, &PainterController::onSigPoint);
-    QObject::connect(painter, &QTPainter::SigSection, pc, &PainterController::onSigSection);
-    QObject::connect(painter, &QTPainter::SigCircle, pc, &PainterController::onSigCircle);
-    QObject::connect(painter, &QTPainter::SigArc, pc, &PainterController::onSigArc);
+    QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigPoint, pc, &PainterController::onSigPoint);
+    QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigSection, pc, &PainterController::onSigSection);
+    QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigCircle, pc, &PainterController::onSigCircle);
+    QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigArc, pc, &PainterController::onSigArc);
     QObject::connect(painter, &QTPainter::MovingPoint, pc, &PainterController::onMovingPoint);
     QObject::connect(painter, &QTPainter::MovingSection, pc, &PainterController::onMovingSection);
     QObject::connect(painter, &QTPainter::MovingCircle, pc, &PainterController::onMovingCircle);
@@ -152,27 +152,27 @@ void Application::initControllers() {
     mwc = new MainWindController(*painter, *scene, *mainWind, *leftMenu, *undoRedo, *commandManager, *server, *client,
                                  *username);
 
-    QObject::connect(mainWind, &MainWindow::DELETE, mwc, &MainWindController::onDelete); // Deleting an element
-    QObject::connect(mainWind, &MainWindow::COPY, mwc, &MainWindController::onCopy); // ctrl+c
-    QObject::connect(mainWind, &MainWindow::PASTE, mwc, &MainWindController::onPaste); // ctrl+v
-    QObject::connect(mainWind, &MainWindow::CUT, mwc, &MainWindController::onCut); // ctrl+x
-    QObject::connect(mainWind, &MainWindow::resize, mwc, &MainWindController::onResize); // Changing the size
-    QObject::connect(mainWind, &MainWindow::oneRequirements, mwc, &MainWindController::onOneRequirements);
-    QObject::connect(mainWind, &MainWindow::twoRequirements, mwc, &MainWindController::onTwoRequirements);
-    QObject::connect(mainWind, &MainWindow::threeRequirements, mwc, &MainWindController::onThreeRequirements);
-    QObject::connect(mainWind, &MainWindow::fourRequirements, mwc, &MainWindController::onFourRequirements);
-    QObject::connect(mainWind, &MainWindow::fiveRequirements, mwc, &MainWindController::onFiveRequirements);
-    QObject::connect(mainWind, &MainWindow::sixRequirements, mwc, &MainWindController::onSixRequirements);
-    QObject::connect(mainWind, &MainWindow::sevenRequirements, mwc, &MainWindController::onSevenRequirements);
-    QObject::connect(mainWind, &MainWindow::eightRequirements, mwc, &MainWindController::onEightRequirements);
-    QObject::connect(mainWind, &MainWindow::nineRequirements, mwc, &MainWindController::onNineRequirements);
-    QObject::connect(mainWind, &MainWindow::tenRequirements, mwc, &MainWindController::onTenRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::DELETE, mwc, &MainWindController::onDelete); // Deleting an element
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::COPY, mwc, &MainWindController::onCopy); // ctrl+c
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::PASTE, mwc, &MainWindController::onPaste); // ctrl+v
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::CUT, mwc, &MainWindController::onCut); // ctrl+x
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::UNDO, mwc, &MainWindController::onUNDO); // UNDO
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::REDO, mwc, &MainWindController::onREDO); // REDO
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::firstReq, mwc, &MainWindController::onOneRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::secondReq, mwc, &MainWindController::onTwoRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::thirdReq, mwc, &MainWindController::onThreeRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::fourthReq, mwc, &MainWindController::onFourRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::fifthReq, mwc, &MainWindController::onFiveRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::sixthReq, mwc, &MainWindController::onSixRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::seventhReq, mwc, &MainWindController::onSevenRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::eighthReq, mwc, &MainWindController::onEightRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::ninthReq, mwc, &MainWindController::onNineRequirements);
+    QObject::connect(painter->getKeyWW(), &KeyWorkWindow::tenthReq, mwc, &MainWindController::onTenRequirements);
+
     QObject::connect(mainWind, &MainWindow::EnterPressed, mwc, &MainWindController::onEnterPressed); // Console
     QObject::connect(mainWind, &MainWindow::projectSaved, mwc, &MainWindController::onProjectSaved); // Save
     QObject::connect(mainWind, &MainWindow::LoadFile, mwc, &MainWindController::onLoadFile); // Load
     QObject::connect(mainWind, &MainWindow::EmitScript, mwc, &MainWindController::onEmitScript); // Script
-    QObject::connect(mainWind, &MainWindow::UNDO, mwc, &MainWindController::onUNDO); // UNDO
-    QObject::connect(mainWind, &MainWindow::REDO, mwc, &MainWindController::onREDO); // REDO
     QObject::connect(mainWind, &MainWindow::SigExitSession, mwc, &MainWindController::onSigExitSession);
     QObject::connect(mainWind, &MainWindow::SigOpenServer, mwc, &MainWindController::onSigOpenServer);
     QObject::connect(mainWind, &MainWindow::SigJoinServer, mwc, &MainWindController::onSigJoinServer);
