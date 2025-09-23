@@ -2,21 +2,20 @@
 #define OURPAINT_HEADERS_SAVELOAD_REQUIREMENTINFILE_H_
 
 #include <string>
-
-#include "Requirements.h"
+#include "Objects.h"
 
 class requirementInFile {
     unsigned int id;
-    RequirementData s_req;
+    Requirement s_req;
     public:
-    explicit requirementInFile(const std::pair<unsigned int, RequirementData> &obj);
+    explicit requirementInFile(const std::pair<unsigned int, Requirement> &obj);
 
     requirementInFile(const requirementInFile &other);
     requirementInFile(requirementInFile &&other) noexcept;
     requirementInFile &operator=(const requirementInFile &other);
     requirementInFile &operator=(requirementInFile &&other) noexcept;
 
-    std::pair<unsigned int, RequirementData> to_pair() const;
+    std::pair<unsigned int, Requirement> to_pair() const;
     std::string to_string() const;
 };
 

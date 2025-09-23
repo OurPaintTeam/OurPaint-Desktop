@@ -87,6 +87,7 @@ public:
     LeftMenuBar* getLeftMenuBar() const;
 
     [[maybe_unused]] void selectLeftMenuElem(QModelIndex& index);
+    void setupConsoleCommands(const QStringList& commandList);
     void updateExitServerStyle(bool);
     void setMessage(const QString& name, const QString& message);
 

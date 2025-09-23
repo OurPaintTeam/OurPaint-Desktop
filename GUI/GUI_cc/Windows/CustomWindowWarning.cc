@@ -33,7 +33,7 @@ void CustomWindowWarning::updatePosition(QWidget* parent) {
 }
 
 
-void CustomWindowWarning::paintEvent(QPaintEvent* event) {
+void CustomWindowWarning::paintEvent(QPaintEvent*) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setBrush(QColor(50, 50, 50, 240));

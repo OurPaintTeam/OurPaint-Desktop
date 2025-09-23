@@ -185,7 +185,12 @@ void MainWindow::initConnections() {
     // Console input processing
     connect(ui->console, &QLineEdit::returnPressed, this, &MainWindow::commandsInConsole);
     connect(ui->enterConsole, &QPushButton::clicked, this, &MainWindow::commandsInConsole);
-    ui->console->setCommands({ "circle ", "exit", "addReq ", "delReq", "section ", "arc ", "point ", "clear", "delObj"});
+  //  ui->console->setCommands({ "circle ", "exit", "addReq ", "delReq", "section ", "arc ", "point ", "clear", "delObj"});
+}
+
+
+void MainWindow::setupConsoleCommands(const QStringList& commandList ) {
+    ui->console->setCommands(commandList);
 }
 
 

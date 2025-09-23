@@ -34,7 +34,7 @@ SaveDialog::SaveDialog(QWidget* parent) : QDialog(parent) {
     });
 }
 
-void SaveDialog::paintEvent(QPaintEvent* event) {
+void SaveDialog::paintEvent(QPaintEvent*) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setBrush(QColor(50, 50, 50, 240));

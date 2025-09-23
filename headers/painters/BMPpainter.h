@@ -13,7 +13,7 @@ class BMPpainter : public Painter{
     unsigned int v_weight;
     unsigned int v_height;
 public:
-    BMPpainter(unsigned int weight = 1000, unsigned int height = 1000): c_file(weight, height), v_height(height), v_weight(weight){}
+    BMPpainter(unsigned int weight = 1000, unsigned int height = 1000): c_file(weight, height), v_weight(weight), v_height(height){}
     BMPpainter(const BMPfile &file);
     BMPpainter(const BMPpainter &other);
     BMPpainter &operator=(const BMPpainter &other);

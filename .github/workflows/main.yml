@@ -1,0 +1,64 @@
+name: withFlagsAndOptimizations
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  RELEASE:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: configure resources
+        run: mkdir build && cp -r tests/testStructures build/
+      - name: Configure
+        run: cmake -B build -S tests -DCMAKE_BUILD_TYPE=Release -DTYPE_OF_COMPILING=1 -DTYPE_OF_OPTIMIZATION=1
+      - name: Build
+        run: cmake --build build
+      # ObjectsGTEST
+      - name: Run ObjectsGTEST
+        run: ./build/ObjectsGTEST
+      - name: Run ObjectsGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/ObjectsGTEST
+      # SceneGTEST
+      - name: Run SceneGTEST
+        run: ./build/SceneGTEST
+      - name: Run SceneGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/SceneGTEST
+      # UndoRedoGTEST
+      - name: Run UndoRedoGTEST
+        run: ./build/UndoRedoGTEST
+      - name: Run UndoRedoGTEST - Valgrind
+        run: valgrind --leak-check=full --error-exitcode=1 ./build/UndoRedoGTEST
+      # MoveGTEST
+      - name: Run MoveGTEST
+        working-directory: build
+        run: ./MoveGTEST
+      - name: Run MoveGTEST - Valgrind
+        working-directory: build
+        run: valgrind --leak-check=full --error-exitcode=1 ./MoveGTEST
+      # ObjectInJsonTest
+      - name: Run ObjectInJsonTest
+        working-directory: build
+        run: ./ObjectInJsonTest
+      - name: Run ObjectInJsonTest - Valgrind
+        working-directory: build
+        run: valgrind --leak-check=full --error-exitcode=1 ./ObjectInJsonTest
+      # ComponentTest
+      - name: Run ComponentTest
+        working-directory: build
+        run: ./ComponentTest
+      - name: Run ComponentTest - Valgrind
+        working-directory: build
+        run: valgrind --leak-check=full --error-exitcode=1 ./ComponentTest
+      # RequirementJsonTest
+      - name: Run RequirementJsonTest
+        working-directory: build
+        run: ./RequirementJsonTest
+      - name: Run RequirementJsonTest - Valgrind
+        working-directory: build
+        run: valgrind --leak-check=full --error-exitcode=1 ./RequirementJsonTest

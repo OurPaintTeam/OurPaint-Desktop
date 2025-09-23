@@ -12,7 +12,7 @@ namespace UndoRedo {
     class CommandDeleteRequirement : public Command {
     protected:
         Scene &_scene;
-        RequirementData _reqData;
+        Requirement _reqData;
         ID _reqID;
 
         bool Execute() override;

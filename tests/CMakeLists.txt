@@ -17,7 +17,12 @@ if (NOT TARGET gtest)
 endif()
 
 enable_testing()
-
+FetchContent_Declare(
+        json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+)
+FetchContent_MakeAvailable(json)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Math ${CMAKE_BINARY_DIR}/Math)
 
 
@@ -34,15 +39,13 @@ target_link_libraries(ObjectsGTEST GTest::gtest_main Math Eigen3::Eigen)
 
 
 
-#Test for Scene
+# Test for Scene
 add_executable(SceneGTEST SceneGTEST.cc
         ../src/Scene.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
-        ../src/objects/Component.cc
         ../src/painters/BMPpainter.cc
         ../src/BMPfile.cc
-        ../src/Requirements.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/requirementInFile.cc
@@ -85,15 +88,13 @@ target_link_libraries(UndoRedoGTEST GTest::gtest_main)
 
 
 
-#Test for move functionality
+# Test for move functionality
 add_executable(MoveGTEST MoveGTEST.cc
         ../src/Scene.cc
-        ../src/objects/Component.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
         ../src/painters/BMPpainter.cc
         ../src/BMPfile.cc
-        ../src/Requirements.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/requirementInFile.cc
@@ -118,11 +119,28 @@ target_include_directories(MoveGTEST PRIVATE
 )
 target_link_libraries(MoveGTEST GTest::gtest_main Math Eigen3::Eigen)
 
+# Test for objectInJson
+add_executable(ObjectInJsonTest
+        ObjectInJsonGTEST.cc
+        ../src/saveload/objectInJson.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+)
+
+target_include_directories(ObjectInJsonTest PRIVATE
+        ../headers/saveload
+        ../headers/objects
+        ../Math/headers
+)
+
+target_link_libraries(ObjectInJsonTest
+        GTest::gtest_main
+        nlohmann_json::nlohmann_json
+        Math)
 
 
 # Test for Component
 add_executable(ComponentTest ComponentTest.cc
-        ../src/objects/Component.cc
         ../src/objects/GeometricObjects.cc
         ../Math/src/ErrorFunctions.cc
         ../Math/src/Function.cc
@@ -140,12 +158,35 @@ target_include_directories(ComponentTest PRIVATE
 )
 target_link_libraries(ComponentTest GTest::gtest_main Math Eigen3::Eigen)
 
+# Test for requirementInJson
+add_executable(RequirementJsonTest requirementInJsonGTEST.cc
+        ../src/saveload/requirementInJson.cc
+        ../Math/src/ErrorFunctions.cc
+        ../Math/src/Function.cc
+)
+target_include_directories(RequirementJsonTest PRIVATE
+        ../headers
+        ../headers/saveload
+        ../headers/objects
+        ../Math/headers)
+
+target_link_libraries(RequirementJsonTest GTest::gtest_main nlohmann_json::nlohmann_json Math)
+
 
 set(TYPE_OF_COMPILING BOOL 1)
 if (TYPE_OF_COMPILING)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        add_compile_options(-Wall -Wextra -Wpedantic)
+        add_compile_options(-Wall -Wextra -Wpedantic -Werror)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        #add_compile_options(/W4)
+        add_compile_options(/W4)
+    endif ()
+endif ()
+
+set(TYPE_OF_OPTIMIZATION BOOL 1)
+if (TYPE_OF_OPTIMIZATION)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
     endif ()
 endif ()

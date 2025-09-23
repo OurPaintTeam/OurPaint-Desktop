@@ -1,7 +1,7 @@
 #include "LeftMenuBar.h"
 
 
-LeftMenuBar::LeftMenuBar(QObject* parent) {
+LeftMenuBar::LeftMenuBar(QWidget* parent) {
     // Creating a model
     treeModel = new TreeModel(parent);
     rootNode = treeModel->getRootNode();
@@ -104,7 +104,7 @@ void LeftMenuBar::paramChanged(TreeNode* node) {
 void LeftMenuBar::doubleClickID(const QModelIndex& index) {
     QString text = index.data(Qt::DisplayRole).toString();
 
-    std::string type;
+    QString type;
 
     if (!text.startsWith("ID: ")) {
         return;
@@ -119,11 +119,11 @@ void LeftMenuBar::doubleClickID(const QModelIndex& index) {
         QModelIndex typeIndex = index.model()->index(row - 1, 0, parentIndex);
         QString typeText = typeIndex.data(Qt::DisplayRole).toString();
         if (typeText.startsWith("Type: ")) {
-            type = typeText.section(": ", 1).toStdString();
+            type = typeText.section(": ", 1);
         }
     }
 
-    emit doubleClickLeftMenu(id, type);
+    emit doubleClickLeftMenu(id, type.toStdString());
 }
 
 
@@ -276,9 +276,9 @@ void LeftMenuBar::addCircleInLeftMenu(const QString& nameCircle, const QString& 
                                       const std::pair<const qreal*, const qreal*>& params, qreal R) {
     if (!figuresNode || cID <= 0 || pID <= 0){
         return;
-    } 
-    
-    constexpr quint16 SIZE=9;
+    }
+
+    constexpr quint16 SIZE = 9;
     font.setPointSize(SIZE);
 
     TreeNode* circleNode = new TreeNode(nameCircle, figuresNode);
@@ -349,8 +349,8 @@ void LeftMenuBar::addRequirementElem(const QString& name, const QString& type, c
 // Adding requirements
 void LeftMenuBar::addRequirementElem(const QString& type, const QString& name, const qint32 ReqID,
                                      const qlonglong ElemID1, const qlonglong ElemID2) {
-    if (!requirementsNode) { 
-        return; 
+    if (!requirementsNode) {
+        return;
     }
 
     constexpr quint16 SIZE = 9;
@@ -394,7 +394,7 @@ void LeftMenuBar::updateLeftMenu() {
 
 // Clearing all the elements
 void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
-    if (!requirementsNode || !treeModel) { 
+    if (!requirementsNode || !treeModel) {
         return;
     }
 
@@ -463,12 +463,94 @@ void LeftMenuBar::removeFigureById(qlonglong id) {
 }
 
 
+void LeftMenuBar::onPointAdded(ID id, const double* x, const double* y) {
+    addPointInLeftMenu(
+            "Point",
+            id.get(),
+            {x, y});
+    updateLeftMenu();
+}
+
+
+void LeftMenuBar::onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2) {
+    addSectionInLeftMenu(
+            "Section",
+            "Point",
+            "Point",
+            id.get(),
+            id.get() - 1,
+            id.get() - 2,
+            {x1, y1},
+            {x2, y2});
+    updateLeftMenu();
+}
+
+
+void LeftMenuBar::onCircleAdded(ID id, const double* x, const double* y, const double* r) {
+    addCircleInLeftMenu(
+            "Circle",
+            "Point",
+            id.get(),
+            id.get() - 1,
+            {x, y},
+            *r);
+    updateLeftMenu();
+}
+
+
+void LeftMenuBar::onArcAdded(ID id,
+                             const double* beg_x,
+                             const double* beg_y,
+                             const double* end_x,
+                             const double* end_y,
+                             const double* center_x,
+                             const double* center_y) {
+    addArcInLeftMenu(
+            "Arc",
+            "Point",
+            "Point",
+            "Point",
+            id.get(),
+            id.get() - 1,
+            id.get() - 2,
+            id.get() - 3,
+            {beg_x, beg_y},
+            {end_x, end_y},
+            {center_x, center_y});
+    updateLeftMenu();
+}
+
+
+void LeftMenuBar::onReqAdded(const Requirement& req) {
+    if (req.param.has_value()) {
+        addRequirementElem(
+                reqTypes[static_cast<uint8_t>(req.type)],
+                reqTypes[static_cast<uint8_t>(req.type)],
+                static_cast<int>(req.id.get()),
+                static_cast<qlonglong>(req.obj1.get()),
+                static_cast<qlonglong>(req.obj2.get()),
+                static_cast<qreal>(req.param.value())
+        );
+    }
+    else {
+        addRequirementElem(
+                reqTypes[static_cast<uint8_t>(req.type)],
+                reqTypes[static_cast<uint8_t>(req.type)],
+                static_cast<int>(req.id.get()),
+                static_cast<qlonglong>(req.obj1.get()),
+                static_cast<qlonglong>(req.obj2.get())
+        );
+    }
+    updateLeftMenu();
+}
+
+
 QVector<QPair<qlonglong, QString>> LeftMenuBar::collectAllIDs(TreeNode* node) const {
     QVector<QPair<qlonglong, QString>> result;
 
-    if (!node) return result;
+    if (!node) { return result; }
 
-    // Проверяем детей текущего узла
+    // Check child
     for (qsizetype i = 0; i < node->childCount(); ++i) {
         TreeNode* child = node->child(i);
 
@@ -482,7 +564,6 @@ QVector<QPair<qlonglong, QString>> LeftMenuBar::collectAllIDs(TreeNode* node) co
             }
         }
 
-        // Рекурсивный вызов для подузла
         auto childResult = collectAllIDs(child);
         result.append(childResult);
     }

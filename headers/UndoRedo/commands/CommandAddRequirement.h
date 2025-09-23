@@ -12,7 +12,7 @@ namespace UndoRedo {
     class CommandAddRequirement : public Command {
     protected:
         Scene &_scene;
-        RequirementData _reqData;
+        Requirement _reqData;
         ID _reqID;
 
         bool Execute() override;
@@ -22,7 +22,7 @@ namespace UndoRedo {
         bool Redo() override;
 
     public:
-        CommandAddRequirement(Scene &scene, RequirementData data) : _scene(scene), _reqData(data) {}
+        CommandAddRequirement(Scene &scene, Requirement data) : _scene(scene), _reqData(data) {}
 
         ID getReqID() const {
             return _reqID;

@@ -128,7 +128,7 @@ Qt::ItemFlags TreeModel::flags(const QModelIndex& index) const {
     return flags;
 }
 
-QVariant TreeModel::headerData(qint32 section, Qt::Orientation orientation, qint32 role) const {
+QVariant TreeModel::headerData(qint32, Qt::Orientation orientation, qint32 role) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
         return QString("Title");
     }

@@ -1,5 +1,5 @@
 #include "FileOurP.h"
-
+/*
 void FileOurP::parseFile(std::istream &file) {
     std::vector<objectInFile> objects;
     std::vector<requirementInFile> requirements;
@@ -190,4 +190,4 @@ FileOurP::FileOurP(const std::vector<objectInFile> &obj, std::vector<requirement
 
 void FileOurP::addRequirement(std::pair<unsigned int, RequirementData> &req) {
     m_requirements.emplace_back(req);
-}
+}*/

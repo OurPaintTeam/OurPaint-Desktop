@@ -12,6 +12,7 @@
 #include <QtMath>
 
 #include "GeometricObjects.h"
+#include "ID.h"
 #include "Scaling.h"
 
 // A class for searching for the closest points to the cursor

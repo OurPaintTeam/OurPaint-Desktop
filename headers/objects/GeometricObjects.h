@@ -2,65 +2,56 @@
 #define OURPAINT_HEADERS_GEOMETRICOBJECTS_H_
 
 #include <fstream>
-
-#include "Enums.h"
-#include "ID.h"
-#include "Objects.h"
 #include "BoundBox.h"
 
-struct IGeometricObject {
-    virtual ~IGeometricObject() = default;
-
-    virtual BoundBox2D getBox() const = 0;
-    virtual inline Element getType() const = 0;
-};
-
-struct Point : public IGeometricObject {
+struct Point {
     double x;
     double y;
-
-    Point();
-    Point(double x, double y);
-
-    BoundBox2D getBox() const override;
-    inline Element getType() const override;
 };
 
-std::ifstream &operator>>(std::ifstream &in, Point &x);
-
-struct Section : public IGeometricObject {
-    Point *beg;
-    Point *end;
-
-    Section();
-    Section(Point* p1, Point* p2);
-
-    BoundBox2D getBox() const override;
-    inline Element getType() const override;
+struct Section {
+    Point* beg;
+    Point* end;
 };
 
-struct Circle : public IGeometricObject {
-    Point *center;
+struct Circle {
+    Point* center;
     double r;
-
-    Circle();
-    Circle(Point* p, double r);
-
-    BoundBox2D getBox() const override;
-    inline Element getType() const override;
 };
 
-struct Arc : public IGeometricObject {
-    Point *beg;
-    Point *end;
-    Point *center;
-    double r;
-
-    Arc();
-    Arc(Point* p1, Point* p2, Point* c, double r);
-
-    BoundBox2D getBox() const override;
-    inline Element getType() const override;
+struct Arc {
+    Point* beg;
+    Point* end;
+    Point* center;
 };
+
+inline std::ifstream& operator>>(std::ifstream& in, Point& x) {
+    in >> x.x;
+    in >> x.y;
+    return in;
+}
+
+inline BoundBox2D getBox(const Point& p) {
+    return {p.x, p.x, p.y, p.y};
+}
+
+inline BoundBox2D getBox(const Section& s) {
+    double x1 = s.beg->x, y1 = s.beg->y;
+    double x2 = s.end->x, y2 = s.end->y;
+    BoundBox2D bb;
+    bb.min_x = std::min(x1, x2);
+    bb.max_x = std::max(x1, x2);
+    bb.min_y = std::min(y1, y2);
+    bb.max_y = std::max(y1, y2);
+    return bb;
+}
+
+inline BoundBox2D getBox(const Circle& c) {
+    return {c.center->x - c.r, c.center->x + c.r, c.center->y - c.r, c.center->y + c.r};
+}
+
+inline BoundBox2D getBox(const Arc&) {
+    return BoundBox2D{}; // TODO
+}
 
 #endif // ! OURPAINT_HEADERS_GEOMETRICOBJECTS_H_
