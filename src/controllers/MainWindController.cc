@@ -52,7 +52,7 @@ void MainWindController::onDelete() {
     SLOT_GUARD_MAINWIND_BEGIN
     try {
         QVector<ID> vecPoint = _painter.getVecSelectedIDPoints();
-        QVector<ID> vecSection = _painter.getVecSelectedIDSections();
+        QVector<ID> vecSection = _painter.getVecSelectedIDLines();
         QVector<ID> vecCircle = _painter.getVecSelectedIDCircles();
         QVector<ID> vecArcs = _painter.getVecSelectedIDArcs();
 
@@ -187,7 +187,7 @@ void MainWindController::onThreeRequirements() {
             updateState();
         }
     } else {
-        QVector<ID> vec_id = _painter.getVecSelectedIDSections();
+        QVector<ID> vec_id = _painter.getVecSelectedIDLines();
         if (vec_id.size() == 1) {
             InputWindow window("Enter parameters: ", &_mainWind);
             if (window.exec() == QDialog::Accepted) {
@@ -508,7 +508,7 @@ void MainWindController::onEnterMessage(const QString& text) {
     SLOT_GUARD_MAINWIND_BEGIN
     if (ModeManager::getConnection()) {
         if (ModeManager::getFlagServer()) {
-            _mainWind.setMessage(_username.toStdString(), text.toStdString());
+            _mainWind.setMessage(_username, text);
             _s.sendChatToClients(text, _username);
         } else {
             if (!text.isEmpty()) {
@@ -594,7 +594,7 @@ void MainWindController::deleteObjects(QVector<ID>& vecPoints, QVector<ID>& vecS
 void MainWindController::fillSelectedIDBuffer() {
     SLOT_GUARD_MAINWIND_BEGIN
     QVector<ID> bufferSelectedIDPoints = _painter.getVecSelectedIDPoints();
-    QVector<ID> bufferSelectedIDSections = _painter.getVecSelectedIDSections();
+    QVector<ID> bufferSelectedIDSections = _painter.getVecSelectedIDLines();
     QVector<ID> bufferSelectedIDCircles = _painter.getVecSelectedIDCircles();
     QVector<ID> bufferSelectedIDArcs = _painter.getVecSelectedIDArcs();
 
