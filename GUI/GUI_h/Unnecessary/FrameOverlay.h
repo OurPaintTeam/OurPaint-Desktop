@@ -7,8 +7,8 @@
 */
 
 
-#ifndef OURPAINT_HEADERS_GUI_FRAMEOVERLAY_H_
-#define OURPAINT_HEADERS_GUI_FRAMEOVERLAY_H_
+#ifndef UNNECESSARY
+#define UNNECESSARY
 
 #include <QWidget>
 #include <QRect>
@@ -34,4 +34,4 @@ private:
     void updateFrameColor(); // Updates the frame color based on the background
 };
 
-#endif // ! OURPAINT_HEADERS_GUI_FRAMEOVERLAY_H_
+#endif // UNNECESSARY

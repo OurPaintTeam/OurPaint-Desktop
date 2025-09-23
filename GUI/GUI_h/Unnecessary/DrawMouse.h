@@ -1,5 +1,5 @@
-#ifndef OURPAINT_DRAWMOUSE_H
-#define OURPAINT_DRAWMOUSE_H
+#ifndef UNNECESSARY
+#define UNNECESSARY
 
 #include <QObject>
 #include <QPointF>
@@ -10,7 +10,7 @@
 #include "DrawAdditionalInf.h"
 #include "DrawFigures.h"
 
-class DrawMouse : public QObject {
+class [[maybe_unused]] DrawMouse : public QObject {
 Q_OBJECT
 
 // Class for drawing with the mouse
@@ -61,4 +61,4 @@ signals:
     void SigArc(const QPointF& startPoint,const QPointF& endPoint,const QPointF& centerPoint);
 };
 
-#endif // OURPAINT_DRAWMOUSE_H
+#endif // UNNECESSARY
