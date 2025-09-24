@@ -45,7 +45,7 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 private:
-    Ui::MainWindow* ui=new Ui::MainWindow;
+    Ui::MainWindow* ui = new Ui::MainWindow;
 
     const QString documentsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     const QString projectsPath = QDir::cleanPath(documentsPath + "/OurPaint/projects");
@@ -72,8 +72,7 @@ private:
 
 private:
     void openProject(const QString& name);
-    void setupStartWindow();
-    void readFile();
+    void parseProjectsFilePath();
 
     void initConnections();
     void setupLeftMenu();
@@ -83,7 +82,6 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-    QTPainter* getQTPainter() const;
     LeftMenuBar* getLeftMenuBar() const;
 
     [[maybe_unused]] void selectLeftMenuElem(QModelIndex& index);
@@ -165,10 +163,9 @@ signals:
     void SigJoinServer(const QString& text);
     void SigExitSession();
     void projectSaved(const QString& fileName, QString format);
-    void LoadFile(const QString& fileName);
+    void LoadFile(const QString& fileName, const QTPainter* painter);
+    void createFile(const QTPainter* painter);
     void EmitScript(const QString& fileName);
-    void resize();
-    void switchTab();
 };
 
 #endif // MAINWINDOW_H

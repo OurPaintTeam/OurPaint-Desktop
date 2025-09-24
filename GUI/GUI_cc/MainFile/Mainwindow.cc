@@ -14,18 +14,12 @@ MainWindow::MainWindow(QWidget* parent)
     loadSettings();
     initConnections(); // Initialization of signals
     setupLeftMenu();
-    readFile();
-    setupStartWindow();
+    parseProjectsFilePath();
 }
 
 
 MainWindow::~MainWindow() {
     delete ui;
-}
-
-
-QTPainter* MainWindow::getQTPainter() const {
-    return ui->workWindow;
 }
 
 
@@ -53,38 +47,17 @@ void MainWindow::openProject(const QString& dirPath) {
         QString fileP = it.next();
         QString name = QFileInfo(fileP).fileName();
         if(name.contains(".ourp")) {
-            ui->addTabBarButtons(name);
-            emit switchTab();
+            const QTPainter* newQTP = ui->newTab(name);
+            emit LoadFile(filePath,newQTP);
         }
-        emit LoadFile(filePath);
-    }
 
-    for (auto itr = ui->painterMap->begin(); itr != ui->painterMap->end(); ++itr) {
-        QPushButton* tab = itr.key();
-        QObject::connect(tab, &QPushButton::clicked, [this]() {
-            emit switchTab();
-        });
     }
 
     ui->inProject();
 }
 
 
-void MainWindow::setupStartWindow() {
-    if(ui->buttonArray) {
-        for (auto* btn: *ui->buttonArray) {
-            QObject::connect(btn, &QPushButton::clicked, [btn, this]() {
-                openProject( btn->findChild<QLabel*>("pathLabel")->text());
-            });
-
-        }
-    }
-    ui->onStart();
-}
-
-
-void MainWindow::readFile() {
-    QVector<QPair<QString, QString>> projects;
+void MainWindow::parseProjectsFilePath() {
     QStringList linesToKeep;
     QFile file(filePath);
 
@@ -111,7 +84,13 @@ void MainWindow::readFile() {
 
                 QString projectDir = QFileInfo(path).absolutePath();
                 if (!name.isEmpty() && !path.isEmpty() && QDir(projectDir).exists()) {
-                    projects.append(qMakePair(name, path));
+
+                    QPushButton* button = ui->addProjectInButton(name,path);
+
+                    QObject::connect(button, &QPushButton::clicked, [button, this]() {
+                        openProject( button->text());
+                    });
+
                     linesToKeep.append(line);
                 } else {
                     qDebug() << "Error:" << name << path;
@@ -135,7 +114,6 @@ void MainWindow::readFile() {
         }
     }
 
-    ui->initStartWindow(projects);
 }
 
 
@@ -185,7 +163,6 @@ void MainWindow::initConnections() {
     // Console input processing
     connect(ui->console, &QLineEdit::returnPressed, this, &MainWindow::commandsInConsole);
     connect(ui->enterConsole, &QPushButton::clicked, this, &MainWindow::commandsInConsole);
-  //  ui->console->setCommands({ "circle ", "exit", "addReq ", "delReq", "section ", "arc ", "point ", "clear", "delObj"});
 }
 
 
@@ -698,7 +675,7 @@ void MainWindow::loadProjectFile() {
                                                     tr("Project Files (*.ourp);;All Files (*)"));
 
     if (!fileName.isEmpty()) {
-        emit LoadFile(fileName);
+        openProject(fileName);
     }
 }
 
@@ -979,7 +956,9 @@ void MainWindow::onCreateProject() {
             }
 
 
-            ui->addTabBarButtons(name + ".ourp");
+            QString newText = name + ".ourp";
+            const QTPainter* painter = ui->newTab(newText);
+            emit createFile(painter);
             ui->inProject();
         } else {
             showError("Ошибка создания файла: " + file.errorString());
@@ -1011,7 +990,9 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
             wind->show();
 
             QObject::connect(wind,&InputWindow::textEnter, [this](const QString& text) {
-                ui->addTabBarButtons(text+".ourp");
+                QString newText= text + ".ourp";
+                const QTPainter* painter = ui->newTab(newText);
+                emit createFile(painter);
             });
 
         }
