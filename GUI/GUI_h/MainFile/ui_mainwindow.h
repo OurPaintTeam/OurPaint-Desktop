@@ -489,7 +489,7 @@ public:
     }
 
 
-    void addProjectInButton(const QString& name, const QString& path) {
+    QPushButton* addProjectInButton(const QString& name, const QString& path) {
         QPushButton* button = new QPushButton(scrollContent);
         button->setObjectName(name);
         button->setCursor(Qt::PointingHandCursor);
@@ -531,13 +531,7 @@ public:
         buttonArray->push_back(button);
 
         button->setToolTip(pathLabel->text());
-    }
-
-
-    void initStartWindow(const QVector<QPair<QString, QString>>& projects) {
-        for (auto& it: projects) {
-            addProjectInButton(it.first, it.second);
-        }
+        return button;
     }
 
 
@@ -559,7 +553,7 @@ public:
     }
 
 
-    void setupWorkWindow(QPushButton* btn) {
+    const QTPainter* setupWorkWindow(QPushButton* btn) {
         QTPainter* tempPainter = new QTPainter(centralwindow);
         tempPainter->setObjectName(btn->objectName());
         tempPainter->setFrameShape(QFrame::Shape::NoFrame);
@@ -575,6 +569,7 @@ public:
 
         workWindow = tempPainter;
         stackedWorkWindows->setCurrentWidget(workWindow);
+        return tempPainter;
     }
 
 
@@ -655,7 +650,13 @@ public:
     }
 
 
-    void addTabBarButtons(const QString& name) {
+    const QTPainter* newTab(QString& name){
+        QPushButton* tabButton = addTabBarButtons(name);
+        return setupWorkWindow(tabButton);
+    }
+
+
+    QPushButton* addTabBarButtons(const QString& name) {
 
         if (activeTab) {
             activeTab->setStyleSheet(
@@ -734,8 +735,8 @@ public:
             stackedWorkWindows->setCurrentWidget(workWindow);
         });
 
-        setupWorkWindow(tabButton);
         activeTab = tabButton;
+        return tabButton;
     }
 
 
