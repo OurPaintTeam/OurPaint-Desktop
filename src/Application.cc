@@ -81,14 +81,11 @@ void Application::initGUI(int& argc, char** argv) {
 
     mainWind->show();
 
-    if (mainWind->getQTPainter() == nullptr) {
-        mainWind->showWarning("Can't opened QTPainter");
-    }
     if (mainWind->getLeftMenuBar() == nullptr) {
         mainWind->showWarning("Can't opened LeftMenu");
     }
 
-    painter = mainWind->getQTPainter();
+    painter = new QTPainter(mainWind);
     scene->setPainter(painter);
     leftMenu = mainWind->getLeftMenuBar();
 
