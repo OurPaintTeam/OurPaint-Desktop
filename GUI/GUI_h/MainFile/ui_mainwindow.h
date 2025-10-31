@@ -302,9 +302,9 @@ public:
         gridLayout->addWidget(collapsedPanel, 1, 0, 2, 1);
         gridLayout->addLayout(rightColumn, 1, 1, 2, 1);
 
-        // --- screatch ---
+        // --- stretch ---
         gridLayout->setColumnStretch(0, 0); // fix left panel
-        gridLayout->setColumnStretch(1, 1); // screatch right panel
+        gridLayout->setColumnStretch(1, 1); // stretch right panel
         gridLayout->setRowStretch(2, 1);
 
         openCreateWindow();
