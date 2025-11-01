@@ -28,6 +28,11 @@ LeftMenuBar* MainWindow::getLeftMenuBar() const {
 }
 
 
+QTPainter* MainWindow::getQTPainter() const{
+    return ui->workWindow;
+}
+
+
 
 /// **** PRIVATE:
 
