@@ -3,7 +3,6 @@
 
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
-#include <QtWidgets/QApplication>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QFrame>
@@ -11,20 +10,13 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLineEdit>
-#include <QtWidgets/QMenu>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QTreeWidget>
 #include <QtWidgets/QPushButton>
-#include <QtWidgets/QVBoxLayout>
-#include <QTextBrowser>
-#include <QRegion>
-#include <QPainterPath>
-#include <QBitmap>
 #include <QPainter>
 #include <QIcon>
 #include <QCheckBox>
 #include <QPropertyAnimation>
-#include <QTextEdit>
 #include <QLabel>
 #include <QScrollArea>
 #include <QToolButton>
@@ -42,7 +34,7 @@ QT_BEGIN_NAMESPACE
 
 class Ui_MainWindow {
 public:
-    // Custome windows
+    // Custom windows
     CustomWindowError* error = nullptr;
     CustomWindowWarning* warning = nullptr;
     CustomWindowSuccessful* success= nullptr;
