@@ -85,7 +85,10 @@ void Application::initGUI(int& argc, char** argv) {
         mainWind->showWarning("Can't opened LeftMenu");
     }
 
-    painter = new QTPainter(mainWind);
+    if (mainWind->getQTPainter() == nullptr) {
+        mainWind->showWarning("Can't opened QTPainter");
+    }
+    painter = new QTPainter(mainWind->getQTPainter());
     scene->setPainter(painter);
     leftMenu = mainWind->getLeftMenuBar();
 
@@ -123,9 +126,9 @@ void Application::initLogger() {
             throw std::runtime_error(errorMsg.toStdString());
         }
 
-#if TIM_GUI_LOGGER
+
         qInstallMessageHandler(guiLogger);
-#endif
+
 
     } catch (const std::runtime_error& error) {
         mainWind->showWarning("Can't open or create log file!");
