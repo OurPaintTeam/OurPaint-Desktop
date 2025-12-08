@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget* parent)
     loadSettings();
     initConnections(); // Initialization of signals
     setupLeftMenu();
-    parseProjectsFilePath();
+    initListProjectStartWindow();
 }
 
 
@@ -28,7 +28,7 @@ LeftMenuBar* MainWindow::getLeftMenuBar() const {
 }
 
 
-QTPainter* MainWindow::getQTPainter() const{
+QTPainter* MainWindow::getQTPainter() const {
     return ui->workWindow;
 }
 
@@ -52,8 +52,14 @@ void MainWindow::openProject(const QString& dirPath) {
         QString fileP = it.next();
         QString name = QFileInfo(fileP).fileName();
         if(name.contains(".ourp")) {
-            const QTPainter* newQTP = ui->newTab(name);
-            emit LoadFile(filePath,newQTP);
+            QPair<QPushButton*, QTPainter*> result = ui->createTabProject(name);
+            QPushButton* tabButton = result.first;
+            QTPainter* painter = result.second;
+
+            connect(tabButton, &QPushButton::clicked, [this, painter]() {
+                emit changeTabs(painter);
+            });
+            emit LoadFile(filePath, painter);
         }
 
     }
@@ -62,7 +68,7 @@ void MainWindow::openProject(const QString& dirPath) {
 }
 
 
-void MainWindow::parseProjectsFilePath() {
+void MainWindow::initListProjectStartWindow() {
     QStringList linesToKeep;
     QFile file(filePath);
 
@@ -90,9 +96,9 @@ void MainWindow::parseProjectsFilePath() {
                 QString projectDir = QFileInfo(path).absolutePath();
                 if (!name.isEmpty() && !path.isEmpty() && QDir(projectDir).exists()) {
 
-                    QPushButton* button = ui->addProjectInButton(name,path);
+                    QPushButton* button = ui->addProjectInListStartWindow(name,path);
 
-                    QObject::connect(button, &QPushButton::clicked, [button, this]() {
+                    connect(button, &QPushButton::clicked, [button, this]() {
                         openProject( button->text());
                     });
 
@@ -902,7 +908,7 @@ void MainWindow::onCreateProject() {
     inputWindow->setText(projectsPath + "/name");
     inputWindow->show();
 
-    QObject::connect(inputWindow, &InputWindow::textEnter, this, [this](const QString& text) {
+    connect(inputWindow, &InputWindow::textEnter, this, [this](const QString& text) {
 
         if (text.contains('.')) {
             showError("Ошибка: имя проекта не должно содержать '.'");
@@ -962,7 +968,15 @@ void MainWindow::onCreateProject() {
 
 
             QString newText = name + ".ourp";
-            const QTPainter* painter = ui->newTab(newText);
+
+            QPair<QPushButton*, QTPainter*> result = ui->createTabProject(name);
+            QPushButton* tabButton = result.first;
+            QTPainter* painter = result.second;
+
+            connect(tabButton, &QPushButton::clicked, [this, painter]() {
+                emit changeTabs(painter);
+            });
+
             emit createFile(painter);
             ui->inProject();
         } else {
@@ -994,9 +1008,15 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
             InputWindow* wind = new InputWindow("Name:",this);
             wind->show();
 
-            QObject::connect(wind,&InputWindow::textEnter, [this](const QString& text) {
+            connect(wind,&InputWindow::textEnter, [this](const QString& text) {
                 QString newText= text + ".ourp";
-                const QTPainter* painter = ui->newTab(newText);
+                QPair<QPushButton*, QTPainter*> result = ui->createTabProject(newText);
+                QPushButton* tabButton = result.first;
+                QTPainter* painter = result.second;
+
+                connect(tabButton, &QPushButton::clicked, [this, painter]() {
+                    emit changeTabs(painter);
+                });
                 emit createFile(painter);
             });
 
