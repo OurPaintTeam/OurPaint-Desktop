@@ -22,6 +22,7 @@
 #include <QToolButton>
 #include <QWidgetAction>
 #include <QStackedWidget>
+#include <QPair>
 
 #include "CustomConsole.h"
 #include "SmileRightClickFilter.h"
@@ -42,7 +43,7 @@ public:
     // Start Window
     QPushButton* createProjectButton;
     QPushButton* loadProjectButton;
-    QWidget* openCreateWidget;
+    QWidget* openCreateProjectsWidget;
     QVBoxLayout* mainLayoutINStartWindow;
     QWidget* inputContainer;
     QHBoxLayout* inputLayout;
@@ -50,7 +51,6 @@ public:
     QWidget* scrollContent;
     QVBoxLayout* projectsLayout;
     AnimationWidget* animationPanel;
-    QVector<QPushButton*>* buttonArray = nullptr;
     QScrollArea* scrollArea;
     QFrame* line;
 
@@ -96,7 +96,6 @@ public:
     QWidget* centralwindow;
     QGridLayout* gridLayout;
     CustomConsole* console;
-    QMap<QPushButton*, QTPainter*>* painterMap = nullptr;
     QTPainter* workWindow = nullptr;
     QWidget* topBar;
     QHBoxLayout* topBarLayout;
@@ -124,7 +123,7 @@ public:
     // TabPanel
     QWidget* tabBar;
     QHBoxLayout* tabBarLayout;
-    QPushButton* activeTab = nullptr;
+    QPushButton* activeTab;
 
     // Window control buttons
     QPushButton* closeButton;
@@ -254,7 +253,6 @@ public:
         setupButtonReq();
         setupCollapsedPanel();
 
-        setupWorkWindow();
         setupConsole();
         setupSettingsPanel();
         setupConnections();
@@ -299,7 +297,7 @@ public:
         gridLayout->setColumnStretch(1, 1); // stretch right panel
         gridLayout->setRowStretch(2, 1);
 
-        openCreateWindow();
+        startWindow();
 
         MainWindow->setCentralWidget(centralwindow);
 
@@ -316,12 +314,12 @@ public:
         if(collapsedPanel) { collapsedPanel->hide(); }
         if(workWindow) { workWindow->hide(); }
         if(console) { console->hide(); }
-        if(openCreateWidget) { openCreateWidget->show(); }
+        if(openCreateProjectsWidget) { openCreateProjectsWidget->show(); }
     }
 
 
     void inProject() {
-        if(openCreateWidget) { openCreateWidget->hide(); }
+        if(openCreateProjectsWidget) { openCreateProjectsWidget->hide(); }
         if(animationPanel) { animationPanel->hide(); }
         if(centralwindow) {
             centralwindow->setStyleSheet(
@@ -342,14 +340,14 @@ public:
     }
 
 
-    void openCreateWindow() {
+    void startWindow() {
         centralwindow->setStyleSheet("background-color: #494850;"
                                      "border-radius: 5px");
 
 
-        openCreateWidget = new QWidget(centralwindow);
-        openCreateWidget->setObjectName("openPanel");
-        openCreateWidget->setStyleSheet(
+        openCreateProjectsWidget = new QWidget(centralwindow);
+        openCreateProjectsWidget->setObjectName("openPanel");
+        openCreateProjectsWidget->setStyleSheet(
                 "#openPanel {"
                 "    background-color: #5f5e69;"
                 "    border: none;"
@@ -359,22 +357,22 @@ public:
                 "}"
         );
 
-        gridLayout->addWidget(openCreateWidget, 1, 0, 2, 1);
+        gridLayout->addWidget(openCreateProjectsWidget, 1, 0, 2, 1);
 
-        openCreateWidget->setMinimumWidth(300);
-        openCreateWidget->setMaximumWidth(300);
+        openCreateProjectsWidget->setMinimumWidth(300);
+        openCreateProjectsWidget->setMaximumWidth(300);
 
         gridLayout->setColumnStretch(0, 0);
         gridLayout->setColumnStretch(1, 1);
         gridLayout->setRowStretch(2, 1);
 
         //  main layout
-        mainLayoutINStartWindow = new QVBoxLayout(openCreateWidget);
+        mainLayoutINStartWindow = new QVBoxLayout(openCreateProjectsWidget);
         mainLayoutINStartWindow->setContentsMargins(15, 15, 15, 15);
         mainLayoutINStartWindow->setSpacing(15);
 
         // --- input/create/open ---
-        inputContainer = new QWidget(openCreateWidget);
+        inputContainer = new QWidget(openCreateProjectsWidget);
         inputLayout = new QHBoxLayout(inputContainer);
         inputLayout->setContentsMargins(0, 0, 0, 0);
         inputLayout->setSpacing(5); // distance between QLineEdit and buttons
@@ -422,14 +420,14 @@ public:
         mainLayoutINStartWindow->addWidget(inputContainer);
 
         // --- line ---
-        line = new QFrame(openCreateWidget);
+        line = new QFrame(openCreateProjectsWidget);
         line->setFrameShape(QFrame::HLine);
         line->setFrameShadow(QFrame::Plain);
         line->setStyleSheet("background-color: #D8D8F6; margin-left: 0px; margin-right: 0px;");
         mainLayoutINStartWindow->addWidget(line);
 
         // --- scroll area ---
-        scrollArea = new QScrollArea(openCreateWidget);
+        scrollArea = new QScrollArea(openCreateProjectsWidget);
         scrollArea->setWidgetResizable(true);
         scrollArea->setStyleSheet(
                 "QScrollArea {"
@@ -481,7 +479,7 @@ public:
     }
 
 
-    QPushButton* addProjectInButton(const QString& name, const QString& path) {
+    QPushButton* addProjectInListStartWindow(const QString& name, const QString& path) {
         QPushButton* button = new QPushButton(scrollContent);
         button->setObjectName(name);
         button->setCursor(Qt::PointingHandCursor);
@@ -513,55 +511,135 @@ public:
         pathLabel->setObjectName("pathLabel");
         pathLabel->setStyleSheet(" background-color: transparent; color: #D8D8F6; font-size: 10px;");
         layout->addWidget(pathLabel);
-        
-        if (!buttonArray) {
-            buttonArray = new QVector<QPushButton*>();
-        }
+
 
         projectsLayout->insertWidget(0, button);
-
-        buttonArray->push_back(button);
 
         button->setToolTip(pathLabel->text());
         return button;
     }
+    
 
-
-    void setupWorkWindow() {
-        // Creating and configuring a work window
-        workWindow = new QTPainter(centralwindow);
-        workWindow->setObjectName("workWindow");
-        workWindow->setFrameShape(QFrame::Shape::NoFrame);
-        workWindow->setFrameShadow(QFrame::Shadow::Plain);
-        workWindow->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        stackedWorkWindows->addWidget(workWindow);
-        stackedWorkWindows->setCurrentWidget(workWindow);
-
-        if (!painterMap) {
-            painterMap = new QMap<QPushButton*, QTPainter*>();
-        }
-
-        // workWindow->resize(674, 460);
-    }
-
-
-    const QTPainter* setupWorkWindow(QPushButton* btn) {
+    QTPainter* setupWorkWindow(QPushButton* btn) {
         QTPainter* tempPainter = new QTPainter(centralwindow);
         tempPainter->setObjectName(btn->objectName());
         tempPainter->setFrameShape(QFrame::Shape::NoFrame);
         tempPainter->setFrameShadow(QFrame::Shadow::Plain);
         tempPainter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-        if (!painterMap) {
-            painterMap = new QMap<QPushButton*, QTPainter*>();
+        stackedWorkWindows->addWidget(tempPainter);
+        workWindow = tempPainter;
+
+        stackedWorkWindows->setCurrentWidget(workWindow);
+        
+        return tempPainter;
+    }
+
+
+    void setupTabBar(QMainWindow* MainWindow) {
+        // create tab bar panel
+        tabBar = new QWidget(MainWindow);
+        tabBar->setObjectName("tabBar");
+        tabBar->setStyleSheet(
+                "#tabBar { "
+                "    background-color: #494850; "
+                "    border: none; "
+                "    border-bottom: 1px solid #262222; "
+                "}"
+        );
+        tabBar->setFixedHeight(25);
+
+        // main layout
+        tabBarLayout = new QHBoxLayout(tabBar);
+        tabBarLayout->setContentsMargins(0, 0, 0, 0);
+        tabBarLayout->setSpacing(3);
+
+        tabBarLayout->addStretch();
+    }
+
+
+    QPair<QPushButton*, QTPainter*> createTabProject(const QString& name) {
+
+        if (activeTab) {
+            activeTab->setStyleSheet(
+                    "QPushButton { "
+                    "background-color: #615760; "
+                    "color: #D8D8F6; "
+                    "border: none; "
+                    "border-top-left-radius: 5px; "
+                    "border-top-right-radius: 5px; "
+                    "padding: 0px 5px; "
+                    "font-size: 9pt; "
+                    "} "
+                    "QPushButton:hover { "
+                    "background-color: rgba(255, 255, 255, 0.2); "
+                    "}"
+            );
         }
 
-        painterMap->insert(btn, tempPainter);
-        stackedWorkWindows->addWidget(tempPainter);
+        // create active button
+        QPushButton* tabButton = new QPushButton(name, tabBar);
+        tabButton->setObjectName(name);
+        tabButton->setFixedHeight(25);
+        tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        tabButton->setStyleSheet(
+                "QPushButton { "
+                "background-color: #978897; "
+                "color: #D8D8F6; "
+                "border: none; "
+                "border-top-left-radius: 5px; "
+                "border-top-right-radius: 5px; "
+                "border-bottom: 2px solid #978897;"
+                "margin-bottom: -1px;"
+                "padding: 0px 5px; "
+                "font-size: 9pt; "
+                "} "
+        );
+        tabButton->setFixedHeight(25);
+        tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        tabBarLayout->insertWidget(tabBarLayout->count() - 1, tabButton);
 
-        workWindow = tempPainter;
-        stackedWorkWindows->setCurrentWidget(workWindow);
-        return tempPainter;
+        QTPainter* painter = setupWorkWindow(tabButton);
+
+        QObject::connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
+            if (activeTab && activeTab != tabButton) {
+                activeTab->setStyleSheet(
+                        "QPushButton { "
+                        "background-color: #615760; "
+                        "color: #D8D8F6; "
+                        "border: none; "
+                        "border-top-left-radius: 5px; "
+                        "border-top-right-radius: 5px; "
+                        "padding: 0px 5px; "
+                        "font-size: 9pt; "
+                        "} "
+                        "QPushButton:hover { "
+                        "background-color: rgba(255, 255, 255, 0.2); "
+                        "}"
+                );
+            }
+
+
+            tabButton->setStyleSheet(
+                    "QPushButton { "
+                    "background-color: #978897; "
+                    "color: #D8D8F6; "
+                    "border: none; "
+                    "border-top-left-radius: 5px; "
+                    "border-top-right-radius: 5px; "
+                    "border-bottom: 2px solid #978897;"
+                    "margin-bottom: -1px;"
+                    "padding: 0px 5px; "
+                    "font-size: 9pt; "
+                    "} "
+            );
+            activeTab = tabButton;
+
+
+            stackedWorkWindows->setCurrentWidget(workWindow);
+        });
+
+        return qMakePair(tabButton, painter);
     }
 
 
@@ -619,119 +697,7 @@ public:
         console->setLayout(layoutConsole);
     }
 
-
-    void setupTabBar(QMainWindow* MainWindow) {
-        // create tab bar panel
-        tabBar = new QWidget(MainWindow);
-        tabBar->setObjectName("tabBar");
-        tabBar->setStyleSheet(
-                "#tabBar { "
-                "    background-color: #494850; "
-                "    border: none; "
-                "    border-bottom: 1px solid #262222; "
-                "}"
-        );
-        tabBar->setFixedHeight(25);
-
-        // main layout
-        tabBarLayout = new QHBoxLayout(tabBar);
-        tabBarLayout->setContentsMargins(0, 0, 0, 0);
-        tabBarLayout->setSpacing(3);
-
-        tabBarLayout->addStretch();
-    }
-
-
-    const QTPainter* newTab(QString& name){
-        QPushButton* tabButton = addTabBarButtons(name);
-        return setupWorkWindow(tabButton);
-    }
-
-
-    QPushButton* addTabBarButtons(const QString& name) {
-
-        if (activeTab) {
-            activeTab->setStyleSheet(
-                    "QPushButton { "
-                    "background-color: #615760; "
-                    "color: #D8D8F6; "
-                    "border: none; "
-                    "border-top-left-radius: 5px; "
-                    "border-top-right-radius: 5px; "
-                    "padding: 0px 5px; "
-                    "font-size: 9pt; "
-                    "} "
-                    "QPushButton:hover { "
-                    "background-color: rgba(255, 255, 255, 0.2); "
-                    "}"
-            );
-        }
-
-        // create active button
-        QPushButton* tabButton = new QPushButton(name, tabBar);
-        tabButton->setObjectName(name);
-        tabButton->setFixedHeight(25);
-        tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        tabButton->setStyleSheet(
-                "QPushButton { "
-                "background-color: #978897; "
-                "color: #D8D8F6; "
-                "border: none; "
-                "border-top-left-radius: 5px; "
-                "border-top-right-radius: 5px; "
-                "border-bottom: 2px solid #978897;"
-                "margin-bottom: -1px;"
-                "padding: 0px 5px; "
-                "font-size: 9pt; "
-                "} "
-        );
-        tabButton->setFixedHeight(25);
-        tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        tabBarLayout->insertWidget(tabBarLayout->count() - 1, tabButton);
-
-
-        QObject::connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
-            if (activeTab && activeTab != tabButton) {
-                activeTab->setStyleSheet(
-                        "QPushButton { "
-                        "background-color: #615760; "
-                        "color: #D8D8F6; "
-                        "border: none; "
-                        "border-top-left-radius: 5px; "
-                        "border-top-right-radius: 5px; "
-                        "padding: 0px 5px; "
-                        "font-size: 9pt; "
-                        "} "
-                        "QPushButton:hover { "
-                        "background-color: rgba(255, 255, 255, 0.2); "
-                        "}"
-                );
-            }
-
-            tabButton->setStyleSheet(
-                    "QPushButton { "
-                    "background-color: #978897; "
-                    "color: #D8D8F6; "
-                    "border: none; "
-                    "border-top-left-radius: 5px; "
-                    "border-top-right-radius: 5px; "
-                    "border-bottom: 2px solid #978897;"
-                    "margin-bottom: -1px;"
-                    "padding: 0px 5px; "
-                    "font-size: 9pt; "
-                    "} "
-            );
-            activeTab = tabButton;
-
-            workWindow = painterMap->value(tabButton, nullptr);
-            stackedWorkWindows->setCurrentWidget(workWindow);
-        });
-
-        activeTab = tabButton;
-        return tabButton;
-    }
-
-
+    
     void setupTopBar(QMainWindow* MainWindow) {
         // Creating the top panel
         topBar = new QWidget(MainWindow);
