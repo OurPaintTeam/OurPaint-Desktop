@@ -72,7 +72,7 @@ private:
 
 private:
     void openProject(const QString& name);
-    void parseProjectsFilePath();
+    void initListProjectStartWindow();
 
     void initConnections();
     void setupLeftMenu();
@@ -83,6 +83,7 @@ public:
     ~MainWindow();
 
     LeftMenuBar* getLeftMenuBar() const;
+    QTPainter* getQTPainter() const;
 
     [[maybe_unused]] void selectLeftMenuElem(QModelIndex& index);
     void setupConsoleCommands(const QStringList& commandList);
@@ -165,6 +166,7 @@ signals:
     void projectSaved(const QString& fileName, QString format);
     void LoadFile(const QString& fileName, const QTPainter* painter);
     void createFile(const QTPainter* painter);
+    void changeTabs(const QTPainter* painter);
     void EmitScript(const QString& fileName);
 };
 
