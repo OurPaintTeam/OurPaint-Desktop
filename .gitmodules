@@ -1,4 +1,3 @@
-[submodule "Math-MinimizerOptimizer-Module"]
-	path = Math
+[submodule "Math"]
+	path = src/Math
 	url = https://github.com/OurPaintTeam/Math-MinimizerOptimizer-Module.git
-	branch = main
