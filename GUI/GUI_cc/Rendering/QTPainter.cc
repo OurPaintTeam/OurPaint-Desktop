@@ -425,7 +425,7 @@ bool QTPainter::findClosestObject() {
                                           Scaling::logicCursor(), Scaling::getZoom())) {
                 const ID& id = it->first;
 
-                if (visibleCircles.contains(id)) {
+                if (!visibleCircles.contains(id)) {
                     break;
                 }
                 if (visibleCircles[id].style->figure.glow.activity) {
@@ -453,7 +453,7 @@ bool QTPainter::findClosestObject() {
                                           Scaling::logicCursor(), Scaling::getZoom())) {
                 const ID& id = it->first;
 
-                if (visibleArcs.contains(id)) {
+                if (!visibleArcs.contains(id)) {
                     break;
                 }
                 if (visibleArcs[id].style->figure.glow.activity) {
