@@ -61,6 +61,7 @@ void MainWindController::onDelete() {
 
         _painter.selectedClear();
         updateState();
+        _scene.paint();
     } catch (std::exception& e) {
         _mainWind.showError(e.what());
     }
@@ -114,6 +115,7 @@ void MainWindController::onPaste() {
         _mainWind.showError("Error pasted");
     }
     updateState();
+    _scene.paint();
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -132,6 +134,7 @@ void MainWindController::onCut() {
 
     _painter.selectedClear();
     updateState();
+    _scene.paint();
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -150,6 +153,7 @@ void MainWindController::onOneRequirements() {
             UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
             _urm.push(std::move(*txn));
             updateState();
+            _scene.paint();
         }
     }
     SLOT_GUARD_MAINWIND_END
@@ -165,6 +169,7 @@ void MainWindController::onTwoRequirements() {
         UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
         _urm.push(std::move(*txn));
         updateState();
+        _scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
@@ -184,6 +189,7 @@ void MainWindController::onThreeRequirements() {
             UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
             _urm.push(std::move(*txn));
             updateState();
+            _scene.paint();
         }
     } else {
         QVector<ID> vec_id = _painter.getVecSelectedIDLines();
@@ -201,6 +207,7 @@ void MainWindController::onThreeRequirements() {
                 UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
                 _urm.push(std::move(*txn));
                 updateState();
+                _scene.paint();
             }
         }
     }
@@ -216,6 +223,7 @@ void MainWindController::onFourRequirements() {
         UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
         _urm.push(std::move(*txn));
         updateState();
+        _scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
@@ -235,6 +243,7 @@ void MainWindController::onFiveRequirements() {
             UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
             _urm.push(std::move(*txn));
             updateState();
+            _scene.paint();
         }
     }
     SLOT_GUARD_MAINWIND_END
@@ -249,6 +258,7 @@ void MainWindController::onSixRequirements() {
         UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
         _urm.push(std::move(*txn));
         updateState();
+        _scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
@@ -262,6 +272,7 @@ void MainWindController::onSevenRequirements() {
         UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
         _urm.push(std::move(*txn));
         updateState();
+        _scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
@@ -275,6 +286,7 @@ void MainWindController::onEightRequirements() {
         UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
         _urm.push(std::move(*txn));
         updateState();
+        _scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
@@ -288,6 +300,7 @@ void MainWindController::onNineRequirements() {
         UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
         _urm.push(std::move(*txn));
         updateState();
+        _scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
@@ -306,6 +319,7 @@ void MainWindController::onTenRequirements() {
             UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
             _urm.push(std::move(*txn));
             updateState();
+            _scene.paint();
         }
     }
     SLOT_GUARD_MAINWIND_END
@@ -323,7 +337,6 @@ void MainWindController::onEnterPressed(const QString& command) {
                 UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
                 _urm.push(std::move(*txn));
 
-                // TODO update left menu
 
                 updateState();
                 //server.sendToClients(QString::fromStdString(scene.to_string()));
@@ -340,7 +353,6 @@ void MainWindController::onEnterPressed(const QString& command) {
             UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
             _urm.push(std::move(*txn));
 
-            // TODO update left menu
 
             updateState();
         }
@@ -618,7 +630,6 @@ void MainWindController::fillSelectedIDBuffer() {
 
 void MainWindController::updateState() {
     SLOT_GUARD_MAINWIND_BEGIN
-    _scene.paint();
 
     for (auto& call: vecCalls) {
         call();
