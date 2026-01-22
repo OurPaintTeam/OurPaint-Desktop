@@ -107,7 +107,6 @@ public:
 
     //  workWindow console
     QHBoxLayout* workAreaLayout;
-    QStackedWidget* stackedWorkWindows;
 
     // Menu
     QMenu* menuProject;
@@ -123,7 +122,7 @@ public:
     // TabPanel
     QWidget* tabBar;
     QHBoxLayout* tabBarLayout;
-    QPushButton* activeTab;
+    QPushButton* activeTab = nullptr;
 
     // Window control buttons
     QPushButton* closeButton;
@@ -244,14 +243,13 @@ public:
         // topBar in all right
         gridLayout->addWidget(topBar, 0, 0, 1, 2, Qt::AlignTop);
 
-        stackedWorkWindows = new QStackedWidget();
-
         setupLeftMenu();
         setupMessage();
         setupButtonFigures();
         setupButtonTool();
         setupButtonReq();
         setupCollapsedPanel();
+        setupWorkWindow();
 
         setupConsole();
         setupSettingsPanel();
@@ -276,7 +274,7 @@ public:
         rightLayout->setSpacing(5);
 
         // Adding the workWindow to the rightLayout
-        rightLayout->addWidget(stackedWorkWindows, 1);
+        rightLayout->addWidget(workWindow, 1);
 
         // Adding console to rightLayout under workWindow
         rightLayout->addWidget(console, 0);
@@ -520,19 +518,16 @@ public:
     }
     
 
-    QTPainter* setupWorkWindow(QPushButton* btn) {
-        QTPainter* tempPainter = new QTPainter(centralwindow);
-        tempPainter->setObjectName(btn->objectName());
-        tempPainter->setFrameShape(QFrame::Shape::NoFrame);
-        tempPainter->setFrameShadow(QFrame::Shadow::Plain);
-        tempPainter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    QTPainter* setupWorkWindow() {
+        QTPainter* painter = new QTPainter(centralwindow);
+        painter->setObjectName("QTPainter name");
+        painter->setFrameShape(QFrame::Shape::NoFrame);
+        painter->setFrameShadow(QFrame::Shadow::Plain);
+        painter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-        stackedWorkWindows->addWidget(tempPainter);
-        workWindow = tempPainter;
-
-        stackedWorkWindows->setCurrentWidget(workWindow);
+        workWindow = painter;
         
-        return tempPainter;
+        return painter;
     }
 
 
@@ -558,9 +553,9 @@ public:
     }
 
 
-    QPair<QPushButton*, QTPainter*> createTabProject(const QString& name) {
+    QPushButton* createTabProject(const QString& name) {
 
-        if (activeTab) {
+        if (activeTab != nullptr) {
             activeTab->setStyleSheet(
                     "QPushButton { "
                     "background-color: #615760; "
@@ -599,10 +594,8 @@ public:
         tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         tabBarLayout->insertWidget(tabBarLayout->count() - 1, tabButton);
 
-        QTPainter* painter = setupWorkWindow(tabButton);
-
         QObject::connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
-            if (activeTab && activeTab != tabButton) {
+            if (activeTab != nullptr && activeTab != tabButton) {
                 activeTab->setStyleSheet(
                         "QPushButton { "
                         "background-color: #615760; "
@@ -635,11 +628,11 @@ public:
             );
             activeTab = tabButton;
 
-
-            stackedWorkWindows->setCurrentWidget(workWindow);
         });
 
-        return qMakePair(tabButton, painter);
+        activeTab = tabButton;
+
+        return tabButton;
     }
 
 
