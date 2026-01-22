@@ -132,7 +132,7 @@ void Application::initLogger() {
 }
 
 void Application::initControllers() {
-    pc = new PainterController(*scene, *commandManager, *undoRedo, *mainWind);
+    pc = new PainterController(*scene, *commandManager, *undoRedo, *mainWind, *leftMenu);
 
     QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigPoint, pc, &PainterController::onSigPoint);
     QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigSection, pc, &PainterController::onSigSection);
