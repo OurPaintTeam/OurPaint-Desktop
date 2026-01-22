@@ -1,7 +1,4 @@
-#include <QPixmap>
-#include <QApplication>
 #include <QtConcurrent/QtConcurrent>
-#include <QIcon>
 #include "Application.h"
 #include "PainterController.h"
 #include "MainWindController.h"
@@ -79,8 +76,6 @@ void Application::initGUI(int& argc, char** argv) {
     QApplication::setStyle("Fusion");
     app->setWindowIcon(QIcon(R"(..\Static\logo\logo2.ico)"));
 
-    mainWind->show();
-
     if (mainWind->getLeftMenuBar() == nullptr) {
         mainWind->showWarning("Can't opened LeftMenu");
     }
@@ -88,6 +83,7 @@ void Application::initGUI(int& argc, char** argv) {
     if (mainWind->getQTPainter() == nullptr) {
         mainWind->showWarning("Can't opened QTPainter");
     }
+
     painter = new QTPainter(mainWind->getQTPainter());
     scene->setPainter(painter);
     leftMenu = mainWind->getLeftMenuBar();
@@ -180,7 +176,7 @@ void Application::initControllers() {
     QObject::connect(mainWind->getTenthBut(),&QPushButton::clicked, mwc, &MainWindController::onTenRequirements);
 
     QObject::connect(mainWind, &MainWindow::EnterPressed, mwc, &MainWindController::onEnterPressed); // Console
-    QObject::connect(mainWind, &MainWindow::projectSaved, mwc, &MainWindController::onProjectSaved); // Save
+    QObject::connect(mainWind, &MainWindow::ProjectSaved, mwc, &MainWindController::onProjectSaved); // Save
     QObject::connect(mainWind, &MainWindow::LoadFile, mwc, &MainWindController::onLoadFile); // Load
     QObject::connect(mainWind, &MainWindow::EmitScript, mwc, &MainWindController::onEmitScript); // Script
     QObject::connect(mainWind, &MainWindow::SigExitSession, mwc, &MainWindController::onSigExitSession);
