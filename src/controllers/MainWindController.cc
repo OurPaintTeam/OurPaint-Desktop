@@ -60,7 +60,6 @@ void MainWindController::onDelete() {
         deleteObjects(vecPoint, vecSection, vecCircle, vecArcs);
 
         _painter.selectedClear();
-        _scene.paint();
         updateState();
     } catch (std::exception& e) {
         _mainWind.showError(e.what());
@@ -419,7 +418,6 @@ void MainWindController::onEmitScript(const QString& fileName) {
     }
 
     updateState();
-    _scene.paint();
     SLOT_GUARD_MAINWIND_END
 }
 
