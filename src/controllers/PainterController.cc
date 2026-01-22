@@ -8,11 +8,12 @@
 #include "ExceptionGuard.h"
 #include "Component.h"
 
-PainterController::PainterController(Scene& scene, CommandManager& commandManager, UndoRedoManager& undoRedo, MainWindow& mainWind)
+PainterController::PainterController(Scene& scene, CommandManager& commandManager, UndoRedoManager& undoRedo, MainWindow& mainWind, LeftMenuBar& lmb)
         : _scene(scene),
           _commandManager(commandManager),
           _undoRedo(undoRedo),
           _mainWind(mainWind),
+          _lmb(lmb),
           _isStartMoving(true),
           _pre_move_object_states() {}
 
@@ -61,20 +62,20 @@ void PainterController::onMovingPoint(const QVector<ID>& vec_id) {
     try {
         if (vec_id.size() == 1) {
             _scene.setPoint(vec_id[0], cursorNow.x(), cursorNow.y());
-            //updateState();
+            _lmb.updateLeftMenu();
             return;
         }
 
         for (qsizetype i = 0; i < vec_id.size(); ++i) {
             _scene.movePoint(vec_id[i], delta.x(), delta.y());
         }
-        //updateState();
-        // leftMenu->updateLeftMenu();
+
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
 
     _scene.paint();
+    _lmb.updateLeftMenu();
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -94,17 +95,17 @@ void PainterController::onMovingSection(const QVector<ID>& vec_id, const QPointF
         if (vec_id.size() == 1) {
             _scene.setSection(vec_id[0], cursorNow.x() + p1.x(), cursorNow.y() + p1.y(),
                              cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
-            //updateState();
+            _lmb.updateLeftMenu();
             return;
         }
         for (qsizetype i = 0; i < vec_id.size(); ++i) {
             _scene.moveSection(vec_id[i], delta.x(), delta.y());
         }
-        //updateState();
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
     _scene.paint();
+    _lmb.updateLeftMenu();
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -128,17 +129,18 @@ void PainterController::onMovingCircle(const QVector<ID>& vec_id, const QPointF&
 
             double radius = obj.params[2];
             _scene.setCircle(vec_id[0], newCenter.x(), newCenter.y(), radius);
-            //updateState();
+            _lmb.updateLeftMenu();
             return;
         }
         for (qsizetype i = 0; i < vec_id.size(); ++i) {
             _scene.moveCircle(vec_id[i], delta.x(), delta.y());
         }
-        //updateState();
+
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
     _scene.paint();
+    _lmb.updateLeftMenu();
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -159,11 +161,12 @@ void PainterController::onMovingArc(const QVector<ID>& vec_id) {
         for (qsizetype i = 0; i < vec_id.size(); ++i) {
             _scene.moveArc(ID(vec_id[i]), delta.x(), delta.y());
         }
-        //updateState();
+
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
     _scene.paint();
+    _lmb.updateLeftMenu();
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -175,5 +178,6 @@ void PainterController::onEndMoving() {
     _undoRedo.push(std::move(txn));
     _isStartMoving = true;
     _scene.paint();
+    _lmb.updateLeftMenu();
     SLOT_GUARD_END
 }
