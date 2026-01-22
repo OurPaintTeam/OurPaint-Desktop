@@ -90,6 +90,8 @@ ID Scene::addObject(const ObjectData& objData) {
                 _observer->pointAdded(newID, vec[0], vec[1]);
             }
 
+            paint();
+
             return newID;
         }
         case ObjType::ET_SECTION: {
@@ -111,6 +113,8 @@ ID Scene::addObject(const ObjectData& objData) {
                 _observer->sectionAdded(newID, vec[0], vec[1], vec[2], vec[3]);
             }
 
+            paint();
+
             return newID;
         }
         case ObjType::ET_CIRCLE: {
@@ -129,6 +133,8 @@ ID Scene::addObject(const ObjectData& objData) {
             if (_observer) {
                 _observer->circleAdded(newID, vec[0], vec[1], vec[2]);
             }
+
+            paint();
 
             return newID;
         }
@@ -153,6 +159,8 @@ ID Scene::addObject(const ObjectData& objData) {
             if (_observer) {
                 _observer->arcAdded(newID, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
             }
+
+            paint();
 
             return newID;
         }
