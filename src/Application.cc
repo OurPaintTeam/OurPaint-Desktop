@@ -84,7 +84,7 @@ void Application::initGUI(int& argc, char** argv) {
         mainWind->showWarning("Can't opened QTPainter");
     }
 
-    painter = new QTPainter(mainWind->getQTPainter());
+    painter =  mainWind->getQTPainter();
     scene->setPainter(painter);
     leftMenu = mainWind->getLeftMenuBar();
 
