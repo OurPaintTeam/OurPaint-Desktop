@@ -301,10 +301,12 @@ public:
 
         reTranslateUi(MainWindow);
         QMetaObject::connectSlotsByName(MainWindow);
+
+        onStart();
     }
 
 
-    void onStart() {
+    void onStart() const {
         //  collaborationButton->hide();
         if(settings) { settings->hide(); }
         if(highShowTabBar) { highShowTabBar->hide(); }
@@ -313,10 +315,11 @@ public:
         if(workWindow) { workWindow->hide(); }
         if(console) { console->hide(); }
         if(openCreateProjectsWidget) { openCreateProjectsWidget->show(); }
+        if(animationPanel) { animationPanel->show(); }
     }
 
 
-    void inProject() {
+    void inProject() const {
         if(openCreateProjectsWidget) { openCreateProjectsWidget->hide(); }
         if(animationPanel) { animationPanel->hide(); }
         if(centralwindow) {
@@ -396,10 +399,11 @@ public:
         // --- create button ---
         createProjectButton = new QPushButton(inputContainer);
         createProjectButton->setObjectName("createProjectButton");
+        createProjectButton->setText("+");
         createProjectButton->setToolTip("Create Project");
-        createProjectButton->setFixedSize(30, 30); // квадратная
+        createProjectButton->setFixedSize(30, 30);
         createProjectButton->setStyleSheet(
-                "QPushButton { background-color: #D8D8F6;  border: 1px solid #333333; border-radius: 5px; }"
+                "QPushButton { color: black; background-color: #D8D8F6;  border: 1px solid #333333; border-radius: 5px; }"
                 "QPushButton:hover { background-color: #2f4557; }"
         );
         inputLayout->addWidget(createProjectButton);
@@ -407,10 +411,11 @@ public:
         // --- open button ---
         loadProjectButton = new QPushButton(inputContainer);
         loadProjectButton->setObjectName("loadProjectButton");
+        loadProjectButton->setText("o");
         loadProjectButton->setToolTip("Load Project");
         loadProjectButton->setFixedSize(30, 30);
         loadProjectButton->setStyleSheet(
-                "QPushButton { background-color: #D8D8F6;border: 1px solid #333333; border-radius: 5px; }"
+                "QPushButton { color: black; background-color: #D8D8F6;border: 1px solid #333333; border-radius: 5px; }"
                 "QPushButton:hover { background-color: #2f4557; }"
         );
         inputLayout->addWidget(loadProjectButton);
@@ -518,16 +523,12 @@ public:
     }
     
 
-    QTPainter* setupWorkWindow() {
-        QTPainter* painter = new QTPainter(centralwindow);
-        painter->setObjectName("QTPainter name");
-        painter->setFrameShape(QFrame::Shape::NoFrame);
-        painter->setFrameShadow(QFrame::Shadow::Plain);
-        painter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-        workWindow = painter;
-        
-        return painter;
+    void setupWorkWindow() {
+        workWindow = new QTPainter(centralwindow);
+        workWindow->setObjectName("QTPainter name");
+        workWindow->setFrameShape(QFrame::Shape::NoFrame);
+        workWindow->setFrameShadow(QFrame::Shadow::Plain);
+        workWindow->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     }
 
 
