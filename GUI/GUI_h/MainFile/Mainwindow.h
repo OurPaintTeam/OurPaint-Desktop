@@ -51,6 +51,7 @@ private:
     const QString projectsPath = QDir::cleanPath(documentsPath + "/OurPaint/projects");
     const QString settingsPath = QDir::cleanPath(documentsPath + "/OurPaint/settings/settings.set");
     const QString filePath = QDir::cleanPath(documentsPath + "/OurPaint/settings/projects.set");
+    QString userProjectPath;
 
 
     LeftMenuBar* leftMenuBar= new LeftMenuBar(this);             // A class for managing the left menu
@@ -163,10 +164,10 @@ signals:
     void SigOpenServer(const QString& text);
     void SigJoinServer(const QString& text);
     void SigExitSession();
-    void projectSaved(const QString& fileName, QString format);
-    void LoadFile(const QString& fileName, const QTPainter* painter);
-    void createFile(const QTPainter* painter);
-    void changeTabs(const QTPainter* painter);
+    void ProjectSaved(const QString& fileName, QString format);
+    void LoadFile(const QString& fileName, const QString tabName);
+    void CreateFile(const QString& fileName, const QString tabName);
+    void ChangeTabs(const QString tabName);
     void EmitScript(const QString& fileName);
 };
 
