@@ -13,11 +13,13 @@ KeyWorkWindow::KeyWorkWindow(QWidget* parent)
 bool KeyWorkWindow::eventFilter(QObject* obj, QEvent* event) {
     if (obj->isWidgetType()) {
         if (event->type() == QEvent::KeyPress) {
-            QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+            const auto keyEvent = static_cast<QKeyEvent*>(event);
             handleKeyPress(keyEvent);
             return true;
-        } else if (event->type() == QEvent::KeyRelease) {
-            QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+        }
+
+        if (event->type() == QEvent::KeyRelease) {
+            const auto keyEvent = static_cast<QKeyEvent*>(event);
             handleKeyRelease(keyEvent);
             return true;
         }
@@ -131,6 +133,7 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent* event) {
                 m_parent->update();
                 event->accept();  // Accept the Tab event to prevent its further processing
                 return;
+            default: break;
         }
 
     }
@@ -182,13 +185,14 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent* event) {
                case Qt::Key_4:
                    ModeManager::setActiveMode(WorkModes::Arc);
                    break;
+               default: break;
            }
        }
     }
 
     if (event->modifiers() & Qt::ShiftModifier) {
 
-        switch (event->key()) {
+        switch(event->key()) {
             case Qt::Key_Exclam:
                 ModeManager::setActiveMode(WorkModes::Editor);
                 break;
@@ -201,7 +205,7 @@ void KeyWorkWindow::handleKeyPress(QKeyEvent* event) {
             case Qt::Key_Dollar:
                 ModeManager::setActiveMode(WorkModes::ShowSize);
                 break;
-
+            default: break;
         }
     }
 
