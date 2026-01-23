@@ -5,15 +5,19 @@
 #include <memory>
 #include <unordered_map>
 #include <QElapsedTimer>
+#include <QPoint>
+#include <ranges>
 
-#include "DrawTool.h"
-#include "DrawPointTool.h"
-#include "DrawLineTool.h"
-#include "DrawArcTool.h"
-#include "DrawCircleTool.h"
-#include "Modes.h"
+enum class WorkModes;
+class QPainter;
+class DrawTool;
+class DrawPointTool;
+class DrawLineTool;
+class DrawArcTool;
+class DrawCircleTool;
+class Modes;
 
-class MouseDrawingManager : public QObject {
+class MouseDrawingManager final : public QObject {
 Q_OBJECT
 private:
     std::unordered_map<WorkModes, std::unique_ptr<DrawTool>> tools;
@@ -21,7 +25,7 @@ private:
     DrawTool* currentTool();
 
     template<typename ToolType, typename Signal, typename Slot>
-    void connectTool(WorkModes mode, Signal signal, Slot slot) {
+    void connectTool(const WorkModes mode, Signal signal, Slot slot) {
         if (auto* tool = dynamic_cast<ToolType*>(tools[mode].get())) {
             connect(tool, signal, this, slot);
         }
@@ -40,7 +44,6 @@ signals:
     void SigCircle(const QPointF& center, qreal radius);
     void SigSection(const QPointF& startPoint, const QPointF& endPoint);
     void SigArc(const QPointF& startPoint, const QPointF& endPoint, const QPointF& centerPoint);
-
 
 };
 

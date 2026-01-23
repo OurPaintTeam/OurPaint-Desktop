@@ -1,5 +1,6 @@
 #include "MouseEventWorkWindow.h"
-
+#include  "Scaling.h"
+#include  "Modes.h"
 
 MouseWorkWindow::MouseWorkWindow(QWidget* parent)
         : QObject(parent), m_parent(parent) {
@@ -20,14 +21,14 @@ MouseWorkWindow::MouseWorkWindow(QWidget* parent)
 }
 
 
-void MouseWorkWindow::setMouseTrackingRecursively(QWidget* widget, bool enable) {
+void MouseWorkWindow::setMouseTrackingRecursively(QWidget* widget, const bool enable) {
     if (!widget) {
         return;
     }
 
     widget->setMouseTracking(enable);
 
-    for (auto child: widget->findChildren<QWidget*>()) {
+    for (const auto child: widget->findChildren<QWidget*>()) {
         setMouseTrackingRecursively(child, enable);
     }
 }
@@ -37,37 +38,47 @@ bool MouseWorkWindow::eventFilter(QObject* obj, QEvent* event) {
 
     if (obj == m_parent) {
         if (event->type() == QEvent::MouseButtonPress) {
-            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            const auto mouseEvent = static_cast<QMouseEvent*>(event);
             mousePressEvent(mouseEvent);
             m_parent->update();
 
             return true; // Event processed
-        } else if (event->type() == QEvent::MouseMove) {
-            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        }
+
+         if (event->type() == QEvent::MouseMove) {
+            const auto mouseEvent = static_cast<QMouseEvent*>(event);
             mouseMoveEvent(mouseEvent);
             m_parent->update();
 
             return false;
-        } else if (event->type() == QEvent::MouseButtonRelease) {
-            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        }
+
+         if (event->type() == QEvent::MouseButtonRelease) {
+            const auto  mouseEvent = static_cast<QMouseEvent*>(event);
             mouseReleaseEvent(mouseEvent);
             m_parent->update();
 
             return true;
-        } else if (event->type() == QEvent::MouseButtonDblClick) {
-            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        }
+
+        if (event->type() == QEvent::MouseButtonDblClick) {
+            const auto  mouseEvent = static_cast<QMouseEvent*>(event);
             mouseDoubleClickEvent(mouseEvent);
             m_parent->update();
 
             return true;
-        } else if (event->type() == QEvent::Enter) {
-            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        }
+
+        if (event->type() == QEvent::Enter) {
+            const auto  mouseEvent = static_cast<QMouseEvent*>(event);
             mouseMoveEvent(mouseEvent); // Event handling when the mouse enters the object area
             ModeManager::setCursor(true);
             m_parent->update();
 
             return true;
-        } else if (event->type() == QEvent::Leave) {
+        }
+
+        if (event->type() == QEvent::Leave) {
             ModeManager::setCursor(false);
             m_parent->update();
 
@@ -80,7 +91,7 @@ bool MouseWorkWindow::eventFilter(QObject* obj, QEvent* event) {
 }
 
 
-void MouseWorkWindow::mousePressEvent(QMouseEvent* event) {
+void MouseWorkWindow::mousePressEvent(const QMouseEvent* event) const {
 
     if (event->button() == Qt::RightButton) {
         ModeManager::setActiveMode(MouseMode::RightClick);
@@ -95,7 +106,7 @@ void MouseWorkWindow::mousePressEvent(QMouseEvent* event) {
 }
 
 
-void MouseWorkWindow::mouseMoveEvent(QMouseEvent* event) {
+void MouseWorkWindow::mouseMoveEvent(const QMouseEvent* event) {
 
     ModeManager::setActiveMode(MouseMode::MouseMove);
 
@@ -112,7 +123,7 @@ void MouseWorkWindow::mouseMoveEvent(QMouseEvent* event) {
 }
 
 
-void MouseWorkWindow::mouseReleaseEvent(QMouseEvent* event) {
+void MouseWorkWindow::mouseReleaseEvent(const QMouseEvent* event) const {
     if (event->button() == Qt::RightButton) {
         ModeManager::setActiveMode(MouseMode::ReleasingRight);
         m_parent->update();
@@ -126,7 +137,7 @@ void MouseWorkWindow::mouseReleaseEvent(QMouseEvent* event) {
 }
 
 
-void MouseWorkWindow::mouseDoubleClickEvent(QMouseEvent* event) {
+void MouseWorkWindow::mouseDoubleClickEvent(const QMouseEvent* event) const {
     if (event->button() == Qt::LeftButton) {
         ModeManager::setActiveMode(MouseMode::DoubleClickLeft);
         m_parent->update();
