@@ -16,35 +16,40 @@
 #include <QPixmap>
 #include <QLineEdit>
 
-#include "Painter.h"
-#include "Scaling.h"
-#include "DrawFigures.h"
-#include "ClosestPoint.h"
-#include "DrawBackground.h"
-#include "GeometricObjects.h"
-#include "ID.h"
-#include "BoundBox.h"
-#include "Colors.h"
-#include "MouseDrawingManager.h"
 #include "DrawRectangleTool.h"
-#include "RenderStyle.h"
-#include "RenderPoints.h"
-#include "RenderLines.h"
-#include "RenderCircles.h"
-#include "RenderArcs.h"
-#include "RenderDistance.h"
-#include "MouseEventWorkWindow.h"
 #include "KeyWorkWindow.h"
+#include "MouseDrawingManager.h"
+#include "MouseEventWorkWindow.h"
+#include "Painter.h"
+#include "RenderPoints.h"
+#include "RenderCircles.h"
+#include "RenderLines.h"
+#include "RenderArcs.h"
 
-class QTPainter : public QFrame, public Painter {
-Q_OBJECT
-private:
+class Painter;
+class Scaling;
+class DrawFigures;
+class ClosestPoint;
+class BoundBox;
+class DrawBackground;
+class GeometricObjects;
+class ID;
+class Colors;
+class MouseDrawingManager;
+class DrawRectangleTool;
+class RenderStyle;
+struct RenderPoints;
+struct RenderLines;
+struct RenderCircles;
+struct RenderArcs;
+class RenderDistance;
+class MouseEventWorkWindow;
+class KeyWorkWindow;
 
+struct Container {
     // Work objects
     std::unique_ptr<MouseDrawingManager> mouseManager = std::make_unique<MouseDrawingManager>();
     std::unique_ptr<DrawRectangleTool> rectTool = std::make_unique<DrawRectangleTool>();
-    std::unique_ptr<MouseWorkWindow> mouseWW = std::make_unique<MouseWorkWindow>(this);          // For processing mouse events
-    std::unique_ptr< KeyWorkWindow> keyWW =  std::make_unique<KeyWorkWindow>(this);               // For handling key events
 
     std::unordered_map<ID, render::pointShell> visiblePoints;
     std::unordered_map<ID, render::circleShell> visibleCircles;
@@ -65,51 +70,77 @@ private:
 
     // To avoid having to process multiple clicks
     QElapsedTimer lastClickTime;
-    bool leftClickFlag = true;
-    bool drawing = false;
+    bool leftClickFlag;
+    bool drawing;
+
+    Container() : pressLineVecBeg(0, 0),
+      pressLineVecEnd(0, 0),
+      pressPointCircle(0, 0),
+      leftClickFlag(true),
+      drawing(false)
+    {
+        lastClickTime.start();
+    }
+};
+
+class QTPainter final : public QFrame, public Painter {
+Q_OBJECT
 
 private:
-    void createNormalPointStyle(PointStyle* style);
-    void createNormalCircleStyle(CircleStyle* style);
-    void createNormalLineStyle(LineStyle* style);
-    void createNormalArcStyle(ArcStyle* style);
-    void createSelectedPointStyle(PointStyle* style);
-    void createSelectedLineStyle(LineStyle* style);
-    void createSelectedCircleStyle(CircleStyle* style);
-    void createSelectedArcStyle(ArcStyle* style);
+    std::unique_ptr<MouseWorkWindow> mouseWW = std::make_unique<MouseWorkWindow>(this);          // For processing mouse events
+    std::unique_ptr<KeyWorkWindow> keyWW =  std::make_unique<KeyWorkWindow>(this);               // For handling key events
+
+    Container* activeContainer = nullptr;
+    std::unordered_map<QString, std::unique_ptr<Container>> namedContainers;
+
+private:
+    static void createNormalPointStyle(PointStyle* style);
+    static void createNormalCircleStyle(CircleStyle* style);
+    static void createNormalLineStyle(LineStyle* style);
+    static void createNormalArcStyle(ArcStyle* style);
+    static void createSelectedPointStyle(PointStyle* style);
+    static void createSelectedLineStyle(LineStyle* style);
+    static void createSelectedCircleStyle(CircleStyle* style);
+    static void createSelectedArcStyle(ArcStyle* style);
     void inArea();
 
-    bool leftClickTimer();
-    bool findClosestObject();
-    void drawingFigures(QPainter& painter);
+    bool leftClickTimer() const;
+    bool findClosestObject() const;
+    void drawingFigures(QPainter& painter) const;
 
     void managerMoving();
     void doubleClickEvent();
     void emitMoveFigures();
-    void poseMovingFigures();
+    void poseMovingFigures() const;
 
-    void drawRectangle(QPainter& painter);
-    void pointInRect(QRectF& rect);
-    void lineInRect(QRectF& rect);
-    void circleInRect(QRectF& rect);
-    void arcsInRect(QRectF& rect);
+    void drawRectangle(QPainter& painter) const;
+    void pointInRect(const QRectF& rect) const;
+    void lineInRect(const QRectF& rect) const;
+    void circleInRect(const QRectF& rect) const;
+    void arcsInRect(const QRectF& rect) const;
+
 public:
-    QTPainter(QWidget* parent);
+    explicit QTPainter(QWidget* parent);
 
-    MouseDrawingManager* getMouseManager();
-    KeyWorkWindow* getKeyWW();
+    bool createNewContainer(const QString& name);
+    bool setActiveContainer(const QString& name);
+    bool deleteContainer(const QString& name);
 
-    QVector<ID> getVecSelectedIDPoints();
-    QVector<ID> getVecSelectedIDLines();
-    QVector<ID> getVecSelectedIDCircles();
-    QVector<ID> getVecSelectedIDArcs();
+    MouseDrawingManager* getMouseManager() const;
+    KeyWorkWindow* getKeyWW() const;
+
+    QVector<ID> getVecSelectedIDPoints() const;
+    QVector<ID> getVecSelectedIDLines() const;
+    QVector<ID> getVecSelectedIDCircles() const;
+    QVector<ID> getVecSelectedIDArcs() const;
     std::optional<QPair<ID, ID>> getPairSelectedID();
 
-    void selectedClear();
+    void selectedClear() const;
     void saveToImage(const QString& fileName, QString& format);
-    void selectedElemByID(ID id, const std::string& type);
+    void selectedElemByID(ID id, const std::string& type) const;
 
-    void drawGostFrame(QPainter* painter, const QSize& size);
+    static void drawGostFrame(QPainter* painter, const QSize& size);
+
 protected:
     [[maybe_unused]] void resizeEvent(QResizeEvent*) override;
     void paintEvent(QPaintEvent* event) override;
