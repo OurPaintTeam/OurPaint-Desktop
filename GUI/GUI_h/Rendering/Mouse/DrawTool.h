@@ -9,7 +9,7 @@
 class DrawTool : public QObject {
     Q_OBJECT
 public:
-    virtual ~DrawTool() = default;
+    ~DrawTool() override = default;
     explicit DrawTool(QObject* parent = nullptr);
     virtual void draw(QPainter& painter, const QPointF& cursor) = 0;
     virtual void drawPreview(QPainter& painter, const QPointF& point, const QPointF& end) = 0;
