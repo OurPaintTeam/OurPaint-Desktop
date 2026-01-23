@@ -43,6 +43,24 @@ bool ModeManager::isConnected = false;
 bool ModeManager::isServer = false;
 
 
+bool ModeState::operator==(const ModeState& other) const {
+    return workModes == other.workModes &&
+           mouseModes == other.mouseModes &&
+           keyModes == other.keyModes &&
+           cellEnabled == other.cellEnabled &&
+           axisEnabled == other.axisEnabled &&
+           cursorInArea == other.cursorInArea &&
+           saveFileMode == other.saveFileMode &&
+           isConnected == other.isConnected &&
+           isServer == other.isServer;
+}
+
+
+bool ModeState::operator!=(const ModeState& other) const {
+    return !(*this == other);
+}
+
+
 void ModeManager::setActiveMode(WorkModes mode) {
     workModes.reset();
     workModes.set(static_cast<size_t>(mode));
@@ -153,4 +171,36 @@ void ModeManager::setFlagServer(bool flag) {
 
 bool ModeManager::getFlagServer() {
     return isServer;
+}
+
+
+ModeState ModeManager::copyModes() {
+    ModeState state;
+
+    state.workModes = workModes;
+    state.mouseModes = mouseModes;
+    state.keyModes = keyModes;
+
+    state.cellEnabled = cellEnabled;
+    state.axisEnabled = axisEnabled;
+    state.cursorInArea = cursorInArea;
+    state.saveFileMode = saveFileMode;
+    state.isConnected = isConnected;
+    state.isServer = isServer;
+
+    return state;
+}
+
+
+void ModeManager::initModes(const ModeState& modes) {
+    workModes = modes.workModes;
+    mouseModes = modes.mouseModes;
+    keyModes = modes.keyModes;
+
+    cellEnabled = modes.cellEnabled;
+    axisEnabled = modes.axisEnabled;
+    cursorInArea = modes.cursorInArea;
+    saveFileMode = modes.saveFileMode;
+    isConnected = modes.isConnected;
+    isServer = modes.isServer;
 }
