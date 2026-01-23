@@ -6,27 +6,27 @@
 #include <QMouseEvent>
 #include <QTimer>
 
-#include "Modes.h"
-#include "Scaling.h"
+class Modes;
+class Scaling;
 
-class MouseWorkWindow : public QObject {
+class MouseWorkWindow final : public QObject {
 private:
     QWidget* m_parent;
     QTimer m_mouseIdleTimer;
     QPoint m_lastMousePos;
 
-    void mousePressEvent(QMouseEvent* event);
-    void mouseMoveEvent(QMouseEvent* event);
-    void mouseReleaseEvent(QMouseEvent* event);
-    void mouseDoubleClickEvent(QMouseEvent* event);
-    void setMouseTrackingRecursively(QWidget* widget, bool enable);
+    void mousePressEvent(const QMouseEvent* event) const;
+    void mouseMoveEvent(const QMouseEvent* event);
+    void mouseReleaseEvent(const QMouseEvent* event) const;
+    void mouseDoubleClickEvent(const QMouseEvent* event) const;
+
+    static void setMouseTrackingRecursively(QWidget* widget, bool enable);
 
 public:
     explicit MouseWorkWindow(QWidget* parent);
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
-
 
 };
 

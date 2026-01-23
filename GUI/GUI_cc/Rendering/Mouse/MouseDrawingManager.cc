@@ -1,5 +1,12 @@
 #include "MouseDrawingManager.h"
 
+#include "DrawTool.h"
+#include "DrawPointTool.h"
+#include "DrawLineTool.h"
+#include "DrawArcTool.h"
+#include "DrawCircleTool.h"
+#include "Modes.h"
+
 
 DrawTool* MouseDrawingManager::currentTool() {
     for (const auto& [mode, tool]: tools) {
@@ -30,7 +37,7 @@ void MouseDrawingManager::setClosestPoint(const QPointF& point) {
 
 
 void MouseDrawingManager::clear() {
-    for (auto& [_, tool]: tools) {
+    for (const auto &tool: tools | std::views::values) {
         tool->clear();
     }
 }
@@ -40,9 +47,8 @@ void MouseDrawingManager::managerMouseDrawing(QPainter& painter) {
     const QPointF cursor = Scaling::logicCursor();
     const bool leftClick = ModeManager::getActiveMode(MouseMode::LeftClick);
     const bool rightClick = ModeManager::getActiveMode(MouseMode::RightClick);
-    const bool move = ModeManager::getActiveMode(MouseMode::MouseMove);
 
-    if (move && leftClick) {
+    if (const bool move = ModeManager::getActiveMode(MouseMode::MouseMove); move && leftClick) {
         return;
     }
 
