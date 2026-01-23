@@ -1,5 +1,7 @@
 #include "DrawRectangleTool.h"
 
+#include "DrawFigures.h"
+
 void DrawRectangleTool::draw(QPainter& painter, const QPointF& nowCursor) {
     const QPointF cursor = roundCursor(nowCursor);
     switch (state) {
@@ -40,7 +42,7 @@ void DrawRectangleTool::pressButton( const QPointF& cursor){
 }
 
 
-QRectF DrawRectangleTool::getRect() {
+QRectF DrawRectangleTool::getRect() const {
     return rect;
 }
 
