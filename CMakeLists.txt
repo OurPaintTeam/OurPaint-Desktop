@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOUIC OFF)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Svg)
 
@@ -189,6 +189,7 @@ add_executable(ourpaint
 
 
         GUI/GUI_cc/Logger/GUI_Logger.cc
+        GUI/GUI_cc/FileSystem/CreateOpenSaveProject.cc
 
 
         GUI/GUI_cc/Rendering/RenderFigures/RenderCircles.cc
@@ -243,6 +244,7 @@ add_executable(ourpaint
 
 
         GUI/GUI_h/Logger/GUI_Logger.h
+        GUI/GUI_h/FileSystem/CreateOpenSaveProject.h
 
 
         GUI/GUI_h/Rendering/RenderingStyle/RenderStyle.h
