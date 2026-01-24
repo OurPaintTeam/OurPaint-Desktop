@@ -36,7 +36,6 @@ include_directories(ourpaint
         headers/controllers
 
         GUI/GUI_h
-        GUI/GUI_h/client_server
         GUI/GUI_h/Windows
         GUI/GUI_h/Events
         GUI/GUI_h/Rendering
@@ -47,7 +46,7 @@ include_directories(ourpaint
         GUI/GUI_h/MainFile
         GUI/GUI_h/Widgets
         GUI/GUI_h/Logger
-        GUI/GUI_h/Settings
+        GUI/GUI_h/FileSystem
 
         Math/headers
         Math/headers/decomposition
@@ -180,11 +179,6 @@ add_executable(ourpaint
         GUI/GUI_cc/Widgets/AnimationWidget.cc
         GUI/GUI_cc/Widgets/AngleLineEdit.cc
 
-        GUI/GUI_cc/client_server/Server.cc
-        GUI/GUI_cc/client_server/Client.cc
-        GUI/GUI_cc/client_server/LocalScanner.cc
-        GUI/GUI_cc/client_server/PortCheckTask.cc
-
         GUI/GUI_cc/Windows/Help.cc
         GUI/GUI_cc/Windows/CustomWindowError.cc
         GUI/GUI_cc/Windows/CustomWindowSuccessful.cc
@@ -196,7 +190,6 @@ add_executable(ourpaint
 
         GUI/GUI_cc/Logger/GUI_Logger.cc
 
-        GUI/GUI_cc/Settings/Settings.cc
 
         GUI/GUI_cc/Rendering/RenderFigures/RenderCircles.cc
         GUI/GUI_cc/Rendering/RenderFigures/RenderPoints.cc
@@ -204,12 +197,6 @@ add_executable(ourpaint
         GUI/GUI_cc/Rendering/RenderFigures/RenderLines.cc
 
         GUI/GUI_cc/Rendering/RenderRequirements/RenderDistance.cc
-
-
-        GUI/GUI_h/client_server/Client.h
-        GUI/GUI_h/client_server/LocalScanner.h
-        GUI/GUI_h/client_server/PortCheckTask.h
-        GUI/GUI_h/client_server/Server.h
 
         GUI/GUI_h/Windows/CustomWindowError.h
         GUI/GUI_h/Windows/CustomWindowWarning.h
@@ -257,7 +244,6 @@ add_executable(ourpaint
 
         GUI/GUI_h/Logger/GUI_Logger.h
 
-        GUI/GUI_h/Settings/Settings.h
 
         GUI/GUI_h/Rendering/RenderingStyle/RenderStyle.h
         GUI/GUI_h/Rendering/RenderingFigures/RenderCircles.h
