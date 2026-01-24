@@ -2,8 +2,6 @@
 #define APPLICATION_H
 
 class QApplication;
-class Server;
-class Client;
 class PainterController;
 class MainWindController;
 class LeftMenuController;
@@ -25,7 +23,6 @@ public:
 private:
     void initCore();
     void initGUI(int& argc, char** argv);
-    void initNetwork();
     void initLogger();
     void initControllers();
 
@@ -40,10 +37,7 @@ private:
     MainWindow* mainWind;
     QTPainter* painter;
     LeftMenuBar* leftMenu;
-    QString* username;
 
-    Server* server;
-    Client* client;
 
     PainterController* pc;
     MainWindController* mwc;

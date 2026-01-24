@@ -8,8 +8,6 @@
 #include "UndoRedo.h"
 #include "ConsoleManager.h"
 #include "Mainwindow.h"
-#include "Server.h"
-#include "Client.h"
 #include "GUI_Logger.h"
 
 Application::Application(int& argc, char** argv)
@@ -21,9 +19,6 @@ Application::Application(int& argc, char** argv)
           mainWind(nullptr),
           painter(nullptr),
           leftMenu(nullptr),
-          username(nullptr),
-          server(nullptr),
-          client(nullptr),
           pc(nullptr),
           mwc(nullptr),
           lmc(nullptr)
@@ -31,7 +26,6 @@ Application::Application(int& argc, char** argv)
     try {
         initCore();
         initGUI(argc, argv);
-        initNetwork();
         initLogger();
         initControllers();
     } catch (std::exception& e) {
@@ -57,7 +51,6 @@ void Application::initGUI(int& argc, char** argv) {
     app = new QApplication(argc, argv);
     mainWind = new MainWindow();
     sqa = new SceneQtAdapter(*scene);
-    username = new QString(mainWind->getUserName());
 
     mainWind->setupConsoleCommands({
         "POINT ",
@@ -97,10 +90,6 @@ void Application::initGUI(int& argc, char** argv) {
     mainWind->show();
 }
 
-void Application::initNetwork() {
-    server = new Server(*username);
-    client = new Client(*username);
-}
 
 void Application::initLogger() {
     try {
@@ -144,8 +133,7 @@ void Application::initControllers() {
     QObject::connect(painter, &QTPainter::MovingArc, pc, &PainterController::onMovingArc);
     QObject::connect(painter, &QTPainter::EndMoving, pc, &PainterController::onEndMoving);
 
-    mwc = new MainWindController(*painter, *scene, *mainWind, *leftMenu, *undoRedo, *commandManager, *server, *client,
-                                 *username);
+    mwc = new MainWindController(*painter, *scene, *mainWind, *leftMenu, *undoRedo, *commandManager);
 
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::DELETE, mwc, &MainWindController::onDelete); // Deleting an element
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::COPY, mwc, &MainWindController::onCopy); // ctrl+c
@@ -175,15 +163,11 @@ void Application::initControllers() {
     QObject::connect(mainWind->getNinthBut(), &QPushButton::clicked, mwc, &MainWindController::onNineRequirements);
     QObject::connect(mainWind->getTenthBut(),&QPushButton::clicked, mwc, &MainWindController::onTenRequirements);
 
-    QObject::connect(mainWind, &MainWindow::EnterPressed, mwc, &MainWindController::onEnterPressed); // Console
-    QObject::connect(mainWind, &MainWindow::ProjectSaved, mwc, &MainWindController::onProjectSaved); // Save
-    QObject::connect(mainWind, &MainWindow::LoadFile, mwc, &MainWindController::onLoadFile); // Load
+    QObject::connect(mainWind, &MainWindow::EnterCommand, mwc, &MainWindController::onEnterCommand); // Console
+    QObject::connect(mainWind, &MainWindow::SaveProject, mwc, &MainWindController::onProjectSaved); // Save
+    QObject::connect(mainWind, &MainWindow::OpenProject, mwc, &MainWindController::onLoadFile); // Load
     QObject::connect(mainWind, &MainWindow::EmitScript, mwc, &MainWindController::onEmitScript); // Script
-    QObject::connect(mainWind, &MainWindow::SigExitSession, mwc, &MainWindController::onSigExitSession);
-    QObject::connect(mainWind, &MainWindow::SigOpenServer, mwc, &MainWindController::onSigOpenServer);
-    QObject::connect(mainWind, &MainWindow::SigJoinServer, mwc, &MainWindController::onSigJoinServer);
     QObject::connect(mainWind, &MainWindow::EnterMessage, mwc, &MainWindController::onEnterMessage);
-    QObject::connect(mainWind, &MainWindow::NameUsers, mwc, &MainWindController::onEnterMessage);
 
     lmc = new LeftMenuController(*mainWind, *scene, *painter);
 
@@ -204,9 +188,6 @@ Application::~Application() {
     delete mwc;
     delete lmc;
 
-    /* free network*/
-    delete server;
-    delete client;
 
     /* free core */
     delete scene;
@@ -215,7 +196,6 @@ Application::~Application() {
 
     /* free gui */
     delete app;
-    delete mainWind;
     delete leftMenu;
 }
 
