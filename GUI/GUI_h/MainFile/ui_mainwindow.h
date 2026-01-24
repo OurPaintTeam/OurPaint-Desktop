@@ -9,22 +9,19 @@
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
-#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QTreeWidget>
 #include <QtWidgets/QPushButton>
-#include <QPainter>
 #include <QIcon>
 #include <QCheckBox>
-#include <QPropertyAnimation>
 #include <QLabel>
-#include <QScrollArea>
 #include <QToolButton>
 #include <QWidgetAction>
-#include <QStackedWidget>
-#include <QPair>
 
 #include "CustomConsole.h"
+#include "CustomWindowError.h"
+#include "CustomWindowWarning.h"
+#include "CustomWindowSuccessful.h"
 #include "SmileRightClickFilter.h"
 #include "EmojiWidget.h"
 #include "QTPainter.h"
@@ -123,6 +120,7 @@ public:
     QWidget* tabBar;
     QHBoxLayout* tabBarLayout;
     QPushButton* activeTab = nullptr;
+    QPushButton* lastActiveTab = nullptr;
 
     // Window control buttons
     QPushButton* closeButton;
@@ -152,7 +150,7 @@ public:
 
     // Tools panel
     QWidget* toolPanel;
-   // QPushButton* figureMoving;
+   // const auto figureMoving;
     QPushButton* toolMoving;
     QPushButton* toolSelected;
     QPushButton* toolShowSize;
@@ -482,8 +480,8 @@ public:
     }
 
 
-    QPushButton* addProjectInListStartWindow(const QString& name, const QString& path) {
-        QPushButton* button = new QPushButton(scrollContent);
+    QPushButton* addProjectInListStartWindow(const QString& name, const QString& path) const {
+        const auto button = new QPushButton(scrollContent);
         button->setObjectName(name);
         button->setCursor(Qt::PointingHandCursor);
         button->setFixedHeight(50);
@@ -500,17 +498,17 @@ public:
         );
 
         // --- vertical layout in button ---
-        QVBoxLayout * layout = new QVBoxLayout(button);
+        const auto layout = new QVBoxLayout(button);
         layout->setContentsMargins(5, 5, 5, 5);
         layout->setSpacing(2);
 
-        QLabel* nameText = new QLabel(name, button);
+        const auto nameText = new QLabel(name, button);
         nameText->setObjectName("nameText");
         nameText->setStyleSheet(
                 " background-color: transparent; color: #D8D8F6; font-weight: bold; font-size: 12px;");
         layout->addWidget(nameText);
 
-        QLabel* pathLabel = new QLabel(path, button);
+        const auto pathLabel = new QLabel(path, button);
         pathLabel->setObjectName("pathLabel");
         pathLabel->setStyleSheet(" background-color: transparent; color: #D8D8F6; font-size: 10px;");
         layout->addWidget(pathLabel);
@@ -574,7 +572,7 @@ public:
         }
 
         // create active button
-        QPushButton* tabButton = new QPushButton(name, tabBar);
+        const auto tabButton = new QPushButton(name, tabBar);
         tabButton->setObjectName(name);
         tabButton->setFixedHeight(25);
         tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -631,6 +629,7 @@ public:
 
         });
 
+        lastActiveTab = activeTab;
         activeTab = tabButton;
 
         return tabButton;
@@ -669,7 +668,7 @@ public:
         enterConsole->setToolTip("Message");
 
 
-        QIcon fileIn("../Static/icons/enter.ico");
+        const QIcon fileIn("../Static/icons/enter.ico");
         enterConsole->setIcon(fileIn);
         enterConsole->setIconSize(QSize(20, 20));
 
@@ -757,8 +756,8 @@ public:
         QFont font;
         font.setPointSize(9);
 
-        QIcon fileIn("../Static/icons/filein.ico");
-        QIcon fileOn("../Static/icons/fileon.ico");
+        const QIcon fileIn("../Static/icons/filein.ico");
+        const QIcon fileOn("../Static/icons/fileon.ico");
 
         actionCreate_project_to = new QToolButton(MainWindow);
         actionCreate_project_to->setObjectName("actionCreate_project_to");
@@ -1529,7 +1528,7 @@ public:
         leftMenuMessage->setObjectName("mes");
         leftMenuMessage->setToolTip("Message");
         leftMenuMessage->setFixedSize(40, 40);
-        QIcon IcoMes("../Static/icons/leftBar/Message.png");
+        const QIcon IcoMes("../Static/icons/leftBar/Message.png");
         leftMenuMessage->setIcon(IcoMes);
         leftMenuMessage->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -1543,7 +1542,7 @@ public:
         Figures->setFocusPolicy(Qt::NoFocus);
         Figures->setToolTip("Primitives");
         Figures->setFixedSize(40, 40);
-        QIcon IcoM("../Static/icons/leftBar/Primitives.png");
+        const QIcon IcoM("../Static/icons/leftBar/Primitives.png");
         Figures->setIcon(IcoM);
         Figures->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -1557,7 +1556,7 @@ public:
         // Tools->setFocusPolicy(Qt::NoFocus);
         Tools->setToolTip("Tools");
         Tools->setFixedSize(40, 40);
-        QIcon IcoT("../Static/icons/leftBar/Pointer.png");
+        const QIcon IcoT("../Static/icons/leftBar/Pointer.png");
         Tools->setIcon(IcoT);
         Tools->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -1570,7 +1569,7 @@ public:
         Req->setObjectName("req");
         Req->setToolTip("Requirements");
         Req->setFixedSize(40, 40);
-        QIcon IcoR("../Static/icons/leftBar/Req.png");
+        const QIcon IcoR("../Static/icons/leftBar/Req.png");
         Req->setIcon(IcoR);
         Req->setStyleSheet(
                 "QPushButton { background: none; border: none; color: #D8D8F6; border-radius: 0; }"
@@ -1723,7 +1722,7 @@ public:
         figuresPanel->setStyleSheet("background-color: #494850; border: none;");
         figuresPanel->hide();
 
-        QHBoxLayout * figuresLayout = new QHBoxLayout(figuresPanel);
+        const auto figuresLayout = new QHBoxLayout(figuresPanel);
         figuresLayout->setObjectName("figuresLayout");
         figuresLayout->setContentsMargins(0, 0, 0, 0);
         figuresLayout->setSpacing(0);
@@ -1749,11 +1748,11 @@ public:
         figureArc->setToolTip("Arc");
         figureArc->setObjectName("Arc");
 
-        QIcon IcoCircle("../Static/icons/LeftBar/Primitives/Circle.png");
-        QIcon IcoPoint("../Static/icons/LeftBar/Primitives/Point.png");
-        QIcon IcoLine("../Static/icons/LeftBar/Primitives/Line.png");
+        const QIcon IcoCircle("../Static/icons/LeftBar/Primitives/Circle.png");
+        const QIcon IcoPoint("../Static/icons/LeftBar/Primitives/Point.png");
+        const QIcon IcoLine("../Static/icons/LeftBar/Primitives/Line.png");
         //   QIcon IcoSector("../Static/icons/LeftBar/Primitives/Line.png");
-        QIcon IcoArc("../Static/icons/LeftBar/Primitives/Arc.png");
+        const QIcon IcoArc("../Static/icons/LeftBar/Primitives/Arc.png");
         //  TODO  add ico
 
         figurePoint->setIcon(IcoPoint);
@@ -1768,7 +1767,7 @@ public:
         //  figureSector->setFixedSize(40, 40);
         figureArc->setFixedSize(40, 40);
 
-        QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
+        const QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
                               "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }";
 
         figurePoint->setStyleSheet(buttonStyle);
@@ -1800,12 +1799,12 @@ public:
         toolPanel->setStyleSheet("background-color: #494850; border: none;");
         toolPanel->hide();
 
-        QHBoxLayout * toolsLayout = new QHBoxLayout(toolPanel);
+        const auto toolsLayout = new QHBoxLayout(toolPanel);
         toolsLayout->setObjectName("toolsLayout");
         toolsLayout->setContentsMargins(0, 0, 0, 0);
         toolsLayout->setSpacing(0);
 
-        QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
+        const QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
                               "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }";
 
         // Simple
@@ -1822,7 +1821,7 @@ public:
         toolMoving = new QPushButton("", toolPanel);
         toolMoving->setToolTip("Moving");
         toolMoving->setObjectName("Moving");
-        QIcon IcoMove("../Static/icons/MoveTool.png");
+        const QIcon IcoMove("../Static/icons/MoveTool.png");
         toolMoving->setIcon(IcoMove);
         toolMoving->setFixedSize(40, 40);
         toolMoving->setStyleSheet(buttonStyle);
@@ -1836,24 +1835,15 @@ public:
          toolRotation->setIcon(IcoR);
          toolRotation->setFixedSize(40, 40);
          toolRotation->setStyleSheet(buttonStyle);
-         toolsLayout->addWidget(toolRotation);
+         toolsLayout->addWidget(toolRotation);*/
 
-         // RESIZE
-         toolResize = new QPushButton("", toolPanel);
-         toolResize->setToolTip("Resize");
-         toolResize->setObjectName("Resize");
-         QIcon IcoRes("../Static/icons/icoResize.ico");
-         toolResize->setIcon(IcoRes);
-         toolResize->setFixedSize(40, 40);
-         toolResize->setStyleSheet(buttonStyle);
-         toolsLayout->addWidget(toolResize);*/
 
         // TODO add ico!!!
         // SELECTED
         toolSelected = new QPushButton("", toolPanel);
         toolSelected->setToolTip("Selected");
         toolSelected->setObjectName("Resize");
-        QIcon IcoSel("../Static/icons/SelectionTool.png");
+        const QIcon IcoSel("../Static/icons/SelectionTool.png");
         toolSelected->setIcon(IcoSel);
         toolSelected->setFixedSize(40, 40);
         toolSelected->setStyleSheet(buttonStyle);
@@ -1864,7 +1854,7 @@ public:
         toolShowSize = new QPushButton("", toolPanel);
         toolShowSize->setToolTip("Show size");
         toolShowSize->setObjectName("Resize");
-        QIcon IcoShow("../Static/icons/SelectionTool.png");
+        const QIcon IcoShow("../Static/icons/SelectionTool.png");
         toolShowSize->setIcon(IcoShow);
         toolShowSize->setFixedSize(40, 40);
         toolShowSize->setStyleSheet(buttonStyle);
@@ -1888,12 +1878,12 @@ public:
         reqPanel->setStyleSheet("background-color: #494850; border: none;");
         reqPanel->hide();
 
-        QHBoxLayout * reqLayout = new QHBoxLayout(reqPanel);
+        const auto reqLayout = new QHBoxLayout(reqPanel);
         reqLayout->setObjectName("reqLayout");
         reqLayout->setContentsMargins(0, 0, 0, 0);
         reqLayout->setSpacing(0);
 
-        QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
+        const QString buttonStyle = "QPushButton { background: none; color: #D8D8F6;border: none; }"
                               "QPushButton:hover { background-color: rgba(255, 255, 255, 0.1); }";
 
         // Creating Requirements buttons
@@ -1950,7 +1940,7 @@ public:
 
     void setupConnections() {
         QObject::connect(actionImport_file, &QPushButton::clicked, [this]() {
-            QPoint pos = actionImport_file->mapToGlobal(QPoint(actionImport_file->width(), 0));
+            const QPoint pos = actionImport_file->mapToGlobal(QPoint(actionImport_file->width(), 0));
             formatMenu->popup(pos);
         });
 
@@ -1958,8 +1948,8 @@ public:
             if (settingsPanel->isVisible()) {
                 settingsPanel->hide();  // Hide panel
             } else {
-                QPoint buttonPos = settings->mapToGlobal(QPoint(0, 0));
-                QPoint pos = QPoint(buttonPos.x() - settingsPanel->width(), buttonPos.y() + settings->height());
+                const QPoint buttonPos = settings->mapToGlobal(QPoint(0, 0));
+                const auto pos = QPoint(buttonPos.x() - settingsPanel->width(), buttonPos.y() + settings->height());
                 settingsPanel->move(pos);
                 settingsPanel->adjustSize();
                 settingsPanel->show();
@@ -1983,7 +1973,7 @@ public:
         smile->installEventFilter(rightClickFilter);
         enterMes->installEventFilter(rightClickFilter);
 
-        QObject::connect(rightClickFilter, &SmileRightClickFilter::rightClicked, [=, this](QObject* obj) {
+        QObject::connect(rightClickFilter, &SmileRightClickFilter::rightClicked, [=, this](const QObject* obj) {
             if (obj == smile) {
                 enterMes->setVisible(true);
                 smile->setVisible(false);
@@ -2007,7 +1997,7 @@ public:
             if (emojiWidget->isVisible()) {
                 emojiWidget->hide();
             } else {
-                QPoint buttonPos = smile->mapToGlobal(QPoint(0, -2));
+                const QPoint buttonPos = smile->mapToGlobal(QPoint(0, -2));
                 emojiWidget->adjustSize();
                 emojiWidget->move(buttonPos.x(), buttonPos.y() - emojiWidget->height());
                 emojiWidget->show();
@@ -2056,7 +2046,7 @@ public:
                 reqPanelAnimation->setEndValue(0);
                 reqPanelAnimation->start();
             } else {
-                QPoint globalPos = Figures->mapToGlobal(QPoint(0, 0));
+                const QPoint globalPos = Figures->mapToGlobal(QPoint(0, 0));
                 figuresPanel->move(globalPos.x() + Figures->width(), globalPos.y());
 
                 figuresPanel->show();
@@ -2064,7 +2054,7 @@ public:
 
                 figuresPanelAnimation->stop();
                 figuresPanelAnimation->setStartValue(0);
-                const qint16 SIZE = 4;
+                constexpr qint16 SIZE = 4;
                 figuresPanelAnimation->setEndValue(SIZE * 40); // 3 buttons of 40 pixels each
                 figuresPanelAnimation->start();
             }
@@ -2143,7 +2133,7 @@ public:
                 reqPanelAnimation->setEndValue(0);
                 reqPanelAnimation->start();
             } else {
-                QPoint globalPos = Tools->mapToGlobal(QPoint(0, 0));
+                const QPoint globalPos = Tools->mapToGlobal(QPoint(0, 0));
                 toolPanel->move(globalPos.x() + Tools->width(), globalPos.y());
 
                 toolPanel->show();
@@ -2151,7 +2141,7 @@ public:
 
                 toolsPanelAnimation->stop();
                 toolsPanelAnimation->setStartValue(0);
-                const qint16 TOOL_SIZE = 3;
+                constexpr qint16 TOOL_SIZE = 3;
                 toolsPanelAnimation->setEndValue(TOOL_SIZE * 40);// 4 buttons of 40 pixels each
                 toolsPanelAnimation->start();
             }
@@ -2239,7 +2229,7 @@ public:
                 figuresPanelAnimation->setEndValue(0);
                 figuresPanelAnimation->start();
             } else {
-                QPoint globalPos = Req->mapToGlobal(QPoint(0, 0));
+                const QPoint globalPos = Req->mapToGlobal(QPoint(0, 0));
                 reqPanel->move(globalPos.x() + Req->width(), globalPos.y());
 
                 reqPanel->show();
@@ -2247,7 +2237,7 @@ public:
 
                 reqPanelAnimation->stop();
                 reqPanelAnimation->setStartValue(0);
-                const qint16 SIZE = 10;
+                constexpr qint16 SIZE = 10;
                 reqPanelAnimation->setEndValue(SIZE * 40); // 10 buttons of 40 pixels each
                 reqPanelAnimation->start();
             }
@@ -2255,7 +2245,7 @@ public:
 
         QPushButton* reqButtons[] = {oneReq, twoReq, threeReq, fourReq, fiveReq, sixReq, sevenReq, eightReq, nineReq,
                                      tenReq};
-        for (QPushButton* button: reqButtons) {
+        for (const auto button: reqButtons) {
             QObject::connect(button, &QPushButton::clicked, [&]() {
                 if (reqPanel->isVisible()) {
                     reqPanelAnimation->stop();
@@ -2289,7 +2279,7 @@ public:
     }
 
 
-    void updateStyle(const bool isMaximized, const bool isFullScreen) {
+    void updateStyle(const bool isMaximized, const bool isFullScreen) const {
         if (!isMaximized && !isFullScreen) {
             if (topBar->isVisible())
                 topBar->setStyleSheet("QWidget#topBar { "
@@ -2375,7 +2365,8 @@ public:
         }
     }
 
-    void updateExitServerStyle(bool connect) {
+
+    void updateExitServerStyle(const bool connect) const {
         if (!connect) {
             actionExit_from_session->setStyleSheet(
                     "QToolButton#actionExit_from_session {"
@@ -2407,9 +2398,9 @@ public:
     void showError(const QString& text) {
         delete error;
         error = new CustomWindowError(text, centralwindow);
-        qint32 x = centralwindow->width() - error->width() - 100;
-        qint32 y = centralwindow->height() - error->height() - 50;
-        QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
+        const qint32 x = centralwindow->width() - error->width() - 100;
+        const qint32 y = centralwindow->height() - error->height() - 50;
+        const QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
         error->move(pos);
         error->show();
     }
@@ -2418,9 +2409,9 @@ public:
     void showWarning(const QString& text) {
         delete warning;
         warning = new CustomWindowWarning(text, centralwindow);
-        qint32 x = centralwindow->width() - warning->width() - 100;
-        qint32 y = centralwindow->height() - warning->height() - 50;
-        QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
+        const qint32 x = centralwindow->width() - warning->width() - 100;
+        const qint32 y = centralwindow->height() - warning->height() - 50;
+        const QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
         warning->move(pos);
         warning->show();
     }
@@ -2429,9 +2420,9 @@ public:
     void showSuccess(const QString& text) {
         delete success;
         success = new CustomWindowSuccessful(text, centralwindow);
-        qint32 x = centralwindow->width() - success->width() - 150;
-        qint32 y = centralwindow->height() - success->height() - 50;
-        QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
+        const qint32 x = centralwindow->width() - success->width() - 150;
+        const qint32 y = centralwindow->height() - success->height() - 50;
+        const QPoint pos = centralwindow->mapToGlobal(QPoint(x, y));
         success->move(pos);
         success->show();
     }
