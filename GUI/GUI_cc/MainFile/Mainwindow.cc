@@ -1,5 +1,21 @@
 #include "Mainwindow.h"
 
+#include "CreateOpenSaveProject.h"
+#include "LeftMenuBar.h"
+#include "ui_mainwindow.h"
+#include "Help.h"
+#include "CustomWindowError.h"
+#include "CustomWindowSuccessful.h"
+#include "CustomWindowWarning.h"
+#include "CustomIpListWindow.h"
+#include "SaveDialog.h"
+#include "InputWindow.h"
+#include "ui_mainwindow.h"
+#include "QTPainter.h"
+#include "Modes.h"
+#include "LeftMenuBar.h"
+#include "ParameterDelegate.h"
+
 
 MainWindow::MainWindow(QWidget* parent)
                         : QMainWindow(parent){
@@ -11,15 +27,9 @@ MainWindow::MainWindow(QWidget* parent)
     this->installEventFilter(this);
     this->setFocus();
 
-    loadSettings();
     initConnections(); // Initialization of signals
     setupLeftMenu();
-    initListProjectStartWindow();
-}
-
-
-MainWindow::~MainWindow() {
-    delete ui;
+   // saveLoadProject->initListProjectStartWindow();
 }
 
 
@@ -33,99 +43,14 @@ QTPainter* MainWindow::getQTPainter() const {
 }
 
 
+QString MainWindow::getProjectPath() const {
+    return saveLoadProject->getProjectPath();
+}
+
+
 
 /// **** PRIVATE:
 
-
-
-void MainWindow::openProject(const QString& dirPath) {
-    QDir dir(dirPath);
-
-    if (!dir.exists()) {
-        showError("Директория не существует:" + dirPath);
-        qDebug() << "Директория не существует:" << dirPath;
-        return;
-    }
-
-    userProjectPath = dirPath;
-
-    QDirIterator it(dirPath, QDir::Files, QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        QString fileP = it.next();
-        QString name = QFileInfo(fileP).fileName();
-        if(name.contains(".ourp")) {
-            QPushButton* tabButton = ui->createTabProject(name);
-
-            connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
-                emit ChangeTabs(tabButton->objectName());
-            });
-            emit LoadFile(filePath,tabButton->objectName());
-        }
-
-    }
-
-    ui->inProject();
-}
-
-
-void MainWindow::initListProjectStartWindow() {
-    QStringList linesToKeep;
-    QFile file(filePath);
-
-    if (!file.exists()) {
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qDebug() << "Не удалось создать файл:" << filePath;
-            return;
-        }
-        file.close();
-    }
-
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&file);
-        while (!in.atEnd()) {
-            QString line = in.readLine().trimmed();
-            if (line.isEmpty()) {
-                continue;
-            }
-
-            qint32 sepIndex = line.indexOf(" - ");
-            if (sepIndex != -1) {
-                QString name = line.left(sepIndex).trimmed();
-                QString path = line.mid(sepIndex + 3).trimmed();
-
-                QString projectDir = QFileInfo(path).absolutePath();
-                if (!name.isEmpty() && !path.isEmpty() && QDir(projectDir).exists()) {
-
-                    QPushButton* button = ui->addProjectInListStartWindow(name,path);
-
-                    connect(button, &QPushButton::clicked, [button, this]() {
-                        openProject( button->text());
-                    });
-
-                    linesToKeep.append(line);
-                } else {
-                    qDebug() << "Error:" << name << path;
-                }
-            }
-        }
-        file.close();
-    } else {
-        qDebug() << "Не удалось открыть файл:" << filePath;
-    }
-
-    if (!linesToKeep.isEmpty()) {
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-            QTextStream out(&file);
-            for (const QString &line : linesToKeep) {
-                out << line << "\n";
-            }
-            file.close();
-        } else {
-            qDebug() << "Не удалось перезаписать файл:" << filePath;
-        }
-    }
-
-}
 
 
 void MainWindow::initConnections() {
@@ -140,10 +65,15 @@ void MainWindow::initConnections() {
     connect(ui->toolShowSize, &QPushButton::clicked, this, &MainWindow::ToolShowSize);
 
     // Save/import buttons
-    connect(ui->createProjectButton, &QPushButton::clicked, this, &MainWindow::onCreateProject);
-    connect(ui->actionCreate_project_to, &QPushButton::clicked, this, &MainWindow::onCreateProject);
-    connect(ui->actionOpen_project, &QPushButton::clicked, this, &MainWindow::loadProjectFile);
-    connect(ui->loadProjectButton, &QPushButton::clicked, this, &MainWindow::loadProjectFile);
+    connect(ui->createProjectButton, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::createProject);
+    connect(ui->actionCreate_project_to, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::createProject);
+    connect(ui->actionOpen_project, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::slotOpenProject);
+    connect(ui->loadProjectButton, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::slotOpenProject);
+
+    connect(saveLoadProject, &CreateOpenSaveProject::ChangeTabs, this, &MainWindow::slotChangeTabs);
+    connect(saveLoadProject, &CreateOpenSaveProject::OpenProject, this, &MainWindow::slotOpenProject);
+    connect(saveLoadProject, &CreateOpenSaveProject::SaveProject, this, &MainWindow::slotSaveProject);
+
     connect(ui->actionJPG, &QToolButton::clicked, this, &MainWindow::onExportJPG);
     connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
     connect(ui->actionPNG, &QToolButton::clicked, this, &MainWindow::onExportPNG);
@@ -155,17 +85,15 @@ void MainWindow::initConnections() {
     connect(ui->actionScript, &QToolButton::clicked, this, &MainWindow::buttonScript);
 
     // Server buttons
-    connect(ui->actionOpen_server, &QToolButton::clicked, this, &MainWindow::openServer);
-    connect(ui->actionJoin_server, &QToolButton::clicked, this, &MainWindow::joinServer);
-    connect(ui->actionJoin_local_server, &QToolButton::clicked, this, &MainWindow::joinLocalServer);
-    connect(ui->actionExit_from_session, &QToolButton::clicked, this, &MainWindow::exitSession);
+  //  connect(ui->actionOpen_server, &QToolButton::clicked, this, &MainWindow::openServer);
+   // connect(ui->actionJoin_server, &QToolButton::clicked, this, &MainWindow::joinServer);
+   // connect(ui->actionJoin_local_server, &QToolButton::clicked, this, &MainWindow::joinLocalServer);
+   // connect(ui->actionExit_from_session, &QToolButton::clicked, this, &MainWindow::exitSession);
 
     // Processing input to the chat console
     connect(ui->messageConsole, &QLineEdit::returnPressed, this, &MainWindow::Message);
     connect(ui->enterMes, &QPushButton::clicked, this, &MainWindow::Message);
 
-    // Settings name
-    connect(ui->nameUsers, &QLineEdit::returnPressed, this, &MainWindow::setNameUsers);
 
     // Grid Settings
     connect(ui->componentGrid, &QCheckBox::toggled,this,&MainWindow::updateGrid);
@@ -177,7 +105,7 @@ void MainWindow::initConnections() {
 }
 
 
-void MainWindow::setupConsoleCommands(const QStringList& commandList ) {
+void MainWindow::setupConsoleCommands(const QStringList& commandList ) const {
     ui->console->setCommands(commandList);
 }
 
@@ -200,10 +128,10 @@ void MainWindow::setupLeftMenu() {
 
 
 void MainWindow::updateShapeCursor(const QPoint& pos) {
-    qint32 x = pos.x();
-    qint32 y = pos.y();
-    qint32 w = width();
-    qint32 h = height();
+    const qint32 x = pos.x();
+    const qint32 y = pos.y();
+    const qint32 w = width();
+    const qint32 h = height();
 
     ResizeRegion region = None;
 
@@ -247,7 +175,7 @@ void MainWindow::updateShapeCursor(const QPoint& pos) {
 
 
 
-[[maybe_unused]] void MainWindow::selectLeftMenuElem(QModelIndex& index) {
+void MainWindow::selectLeftMenuElem(const QModelIndex& index) const {
     ui->leftMenuView->setCurrentIndex(index);    // selection
     ui->leftMenuView->scrollTo(index);           // scrolling
     QModelIndex parent = index.parent();
@@ -261,15 +189,15 @@ void MainWindow::updateShapeCursor(const QPoint& pos) {
 }
 
 
-void MainWindow::updateExitServerStyle(bool connect) {
+void MainWindow::updateExitServerStyle(const bool connect) const {
     ui->updateExitServerStyle(connect);
 }
 
 
-void MainWindow::setMessage(const QString& name, const QString& message) {
-    QString messageText = name + ": " + message;
+void MainWindow::setMessage(const QString& name, const QString& message) const {
+    const QString messageText = name + ": " + message;
 
-    QLabel* messageLabel = new QLabel(messageText);
+    const auto messageLabel = new QLabel(messageText);
     messageLabel->setStyleSheet("color: #D8D8F6;");
     messageLabel->setWordWrap(true);
     messageLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
@@ -278,142 +206,121 @@ void MainWindow::setMessage(const QString& name, const QString& message) {
 }
 
 
+
 /***    Custom windows      ***/
 
 
-void MainWindow::showError(const QString& text) {
+
+void MainWindow::showError(const QString& text) const {
    ui->showError(text);
 }
 
 
-void MainWindow::showWarning(const QString& text) {
+void MainWindow::showWarning(const QString& text) const {
     ui->showWarning(text);
 }
 
 
-void MainWindow::showSuccess(const QString& text) {
+void MainWindow::showSuccess(const QString& text) const {
     ui->showSuccess(text);
 }
+
 
 
 /***     Save/import settings       ***/
 
 
+
 QString MainWindow::getUserName() {
-    return ui->nameUsers->text();
+    return "DEFAULT";
 }
 
 
-void MainWindow::saveSettings() {
-    settings->saveSettings(
-            ui->componentGrid->isChecked(),
-            ui->componentAxis->isChecked(),
-            ui->nameUsers->text()
-    );
-}
+void MainWindow::closeProgram() {
+    if (!ModeManager::getSave()) {
+        SaveDialog dialog(this);
+        dialog.setModal(true);
 
+        if (const qint32 result = dialog.exec(); result == QMessageBox::Yes) {
 
-void MainWindow::loadSettings() {
-    bool gridChecked = false;
-    bool axisChecked = false;
+            saveLoadProject->saveProject();
 
-    QString userName;
+            if (ModeManager::getSave()) {
+                close();
+            }
 
-    settings->loadSettings(gridChecked, axisChecked, userName);
+        }else {
+            saveLoadProject->deleteAllProject();
+            close();
+        }
+    }
 
-    ui->componentGrid->setChecked(gridChecked);
-    ui->componentAxis->setChecked(axisChecked);
-    ui->nameUsers->setText(userName);
-
-    ModeManager::setCell(gridChecked);
-    ModeManager::setAxis(axisChecked);
 }
 
 
 
+///   BUTTONS:
 
-QPushButton* MainWindow::getFirstBut() {
+
+
+QPushButton* MainWindow::getFirstBut() const {
     return ui->oneReq;
 }
 
 
-QPushButton* MainWindow::getSecondBut() {
+QPushButton* MainWindow::getSecondBut() const {
     return ui->twoReq;
 }
 
 
-QPushButton* MainWindow::getThirdBut() {
+QPushButton* MainWindow::getThirdBut() const {
     return ui->threeReq;
 }
 
 
-QPushButton* MainWindow::getFourthBut() {
+QPushButton* MainWindow::getFourthBut() const {
     return ui->fourReq;
 }
 
 
-QPushButton* MainWindow::getFifthBut() {
+QPushButton* MainWindow::getFifthBut() const {
     return ui->fiveReq;
 }
 
 
-QPushButton* MainWindow::getSixthBut() {
+QPushButton* MainWindow::getSixthBut() const {
     return ui->sixReq;
 }
 
 
-QPushButton* MainWindow::getSeventhBut() {
+QPushButton* MainWindow::getSeventhBut() const {
     return ui->sevenReq;
 }
 
 
-QPushButton* MainWindow::getEighthBut() {
+QPushButton* MainWindow::getEighthBut() const {
     return ui->eightReq;
 }
 
 
-QPushButton* MainWindow::getNinthBut() {
+QPushButton* MainWindow::getNinthBut() const {
     return ui->nineReq;
 }
 
 
-QPushButton* MainWindow::getTenthBut() {
+QPushButton* MainWindow::getTenthBut() const {
    return ui->tenReq;
 }
+
 
 
 /// ***** PROTECTED:
 
 
+
 void MainWindow::closeEvent(QCloseEvent* event) {
-
-    if (!ModeManager::getSave()) {
-        SaveDialog dialog(this);
-        dialog.setModal(true);
-        qint32 result = dialog.exec();  // Show the window
-
-        if (result == QMessageBox::Yes) {
-            saveProjectToFile(".ourp");
-            if (ModeManager::getSave()) {
-                saveSettings();
-                event->accept();
-                close();
-            } else {
-                event->ignore();
-            }
-        } else if (result == QMessageBox::No) {
-            saveSettings();
-            event->accept();
-            close();
-        } else {
-            event->ignore();
-        }
-
-    } else {
-        saveSettings();
-        event->accept();
-        close();
-    }
+    closeProgram();
+    event->accept();
 }
 
 
@@ -434,11 +341,11 @@ void MainWindow::mousePressEvent(QMouseEvent* event) {
 
 
 void MainWindow::mouseMoveEvent(QMouseEvent* event) {
-    QPoint globalPos = event->globalPosition().toPoint();
+    const QPoint globalPos = event->globalPosition().toPoint();
 
     if (resizing) {
         QRect geom = originalGeometry;
-        QPoint delta = globalPos - dragStartPos;
+        const QPoint delta = globalPos - dragStartPos;
 
         switch (currentRegion) {
             case Top:
@@ -525,10 +432,11 @@ void MainWindow::wheelEvent(QWheelEvent* event) {
 bool MainWindow::event(QEvent* event) {
 
     if (event->type() == QEvent::Gesture) {
-        QGestureEvent* gestureEvent = static_cast<QGestureEvent*>(event);
+        const QGestureEvent* gestureEvent = static_cast<QGestureEvent*>(event);
         if (QGesture* pinch = gestureEvent->gesture(Qt::PinchGesture)) {
-            QPinchGesture* pinchGesture = static_cast<QPinchGesture*>(pinch);
-            if (pinchGesture->changeFlags() & QPinchGesture::ScaleFactorChanged) {
+            if (const auto pinchGesture = static_cast<QPinchGesture*>(pinch); pinchGesture->changeFlags() &
+                QPinchGesture::ScaleFactorChanged) {
+
                 if (pinchGesture->scaleFactor() > 1.0) {
                     Scaling::setZoomPlus();
                 } else {
@@ -546,9 +454,9 @@ bool MainWindow::event(QEvent* event) {
 bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
 
     if (event->type() == QEvent::KeyPress) {
-        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
-        if (keyEvent->key() == Qt::Key_Tab) {
+        if (const auto keyEvent = static_cast<QKeyEvent*>(event); keyEvent->key() == Qt::Key_Tab) {
+
             event->accept();
         } else if (!ui->console->isActiveWindow() &&
                    keyEvent->key() != Qt::ControlModifier &&
@@ -569,13 +477,13 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
 
     // Processing ctrl + arrow keys -> moves the window to different positions
     if (event->modifiers() & Qt::ControlModifier) {
-        QRect screenGeometry = QApplication::primaryScreen()->availableGeometry();
+        const QRect screenGeometry = QApplication::primaryScreen()->availableGeometry();
         if (event->key() == Qt::Key_Left) {
-            bool isRightDownHalf = this->geometry() == QRect(screenGeometry.left() + screenGeometry.width() / 2,
+            const bool isRightDownHalf = this->geometry() == QRect(screenGeometry.left() + screenGeometry.width() / 2,
                                                              screenGeometry.height() / 2,
                                                              screenGeometry.width() / 2,
                                                              screenGeometry.height() / 2);
-            bool isRightTop = this->geometry() ==
+            const bool isRightTop = this->geometry() ==
                               QRect(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
                                     screenGeometry.width() / 2, screenGeometry.height() / 2);
             if (isRightTop) {
@@ -589,11 +497,11 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
                                   screenGeometry.width() / 2, screenGeometry.height());
             }
         } else if (event->key() == Qt::Key_Right) {
-            bool isLeftDownHalf = this->geometry() ==
+            const bool isLeftDownHalf = this->geometry() ==
                                   QRect(screenGeometry.left(), screenGeometry.height() / 2,
                                         screenGeometry.width() / 2,
                                         screenGeometry.height() / 2);
-            bool isLeftUpHalf = this->geometry() ==
+            const bool isLeftUpHalf = this->geometry() ==
                                 QRect(screenGeometry.left(), screenGeometry.height() / 2,
                                       screenGeometry.width() / 2,
                                       screenGeometry.height() / 2);
@@ -608,18 +516,18 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
                                   screenGeometry.width() / 2, screenGeometry.height());
             }
         } else if (event->key() == Qt::Key_Up) {
-            bool isLeftDownHalf = this->geometry() ==
+            const bool isLeftDownHalf = this->geometry() ==
                                   QRect(screenGeometry.left(), screenGeometry.height() / 2,
                                         screenGeometry.width() / 2,
                                         screenGeometry.height() / 2);
-            bool isRightDownHalf = this->geometry() == QRect(screenGeometry.left() + screenGeometry.width() / 2,
+            const bool isRightDownHalf = this->geometry() == QRect(screenGeometry.left() + screenGeometry.width() / 2,
                                                              screenGeometry.height() / 2,
                                                              screenGeometry.width() / 2,
                                                              screenGeometry.height() / 2);
-            bool isLeft = this->geometry() ==
+            const bool isLeft = this->geometry() ==
                           QRect(screenGeometry.left(), screenGeometry.top(), screenGeometry.width() / 2,
                                 screenGeometry.height());
-            bool isRight = this->geometry() ==
+            const bool isRight = this->geometry() ==
                            QRect(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
                                  screenGeometry.width() / 2, screenGeometry.height());
             if (isLeft || isLeftDownHalf) {
@@ -632,17 +540,17 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
                 this->showMaximized();
             }
         } else if (event->key() == Qt::Key_Down) {
-            bool isOnRight =
+            const bool isOnRight =
                     this->geometry() ==
                     QRect(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
                           screenGeometry.width() / 2, screenGeometry.height());
-            bool isOnLeft = this->geometry() ==
+            const bool isOnLeft = this->geometry() ==
                             QRect(screenGeometry.left(), screenGeometry.top(), screenGeometry.width() / 2,
                                   screenGeometry.height());
-            bool isRightTop = this->geometry() ==
+            const bool isRightTop = this->geometry() ==
                               QRect(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
                                     screenGeometry.width() / 2, screenGeometry.height() / 2);
-            bool isLeftTop = this->geometry() ==
+            const bool isLeftTop = this->geometry() ==
                              QRect(screenGeometry.left(), screenGeometry.top(), screenGeometry.width() / 2,
                                    screenGeometry.height() / 2);
             if (this->isMaximized()) {
@@ -666,115 +574,29 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
 }
 
 
+
 /// ***** SLOTS:
 
 
-void MainWindow::loadProjectFile() {
-    if (!ModeManager::getSave()) {
-        SaveDialog dialog(this);
-        qint32 result = dialog.exec();
 
-        if (result == QMessageBox::Yes) {
-            saveProjectToFile("ourp");
-        } else if (result == QMessageBox::Cancel) {
-            return;
-        }
-    }
-
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
-                                                    projectsPath,
-                                                    tr("Project Files (*.ourp);;All Files (*)"));
-
-    if (!fileName.isEmpty()) {
-        openProject(fileName);
-    }
+void MainWindow::slotSaveProject(const QString& fileName) {
+    emit OpenProject(fileName);
 }
 
 
-void MainWindow::saveProjectToFile(const QString& format) {
-    QString extension = format.startsWith('.') ? format : "." + format;
-    QString defaultName = "project";
+void MainWindow::slotOpenProject(const QString& fileName) {
+    emit OpenProject(fileName);
+}
 
-    QDir baseDir(projectsPath);
-    if (!baseDir.exists()) {
-        QDir().mkpath(projectsPath);
-    }
 
-    QString defaultPath = QDir(projectsPath).filePath(defaultName + extension);
-    QString selectedPath;
-
-    while (true) {
-        selectedPath = QFileDialog::getSaveFileName(
-                this,
-                tr("Save Project As"),
-                defaultPath,
-                tr("Project Files (*.ourp *.jpg *.jpeg *.png *.bmp *.svg *.tiff *.pdf);;All Files (*)"));
-
-        if (selectedPath.isEmpty()) {
-            ModeManager::setSave(false);
-            return;
-        }
-
-        QFileInfo fileInfo(selectedPath);
-        QString projectName = fileInfo.completeBaseName();
-        QString selectedDir = fileInfo.absolutePath();
-        QString mainFilePath;
-
-        if (extension == ".ourp") {
-            QString projectFolder = QDir(selectedDir).filePath(projectName);
-            QDir dir(projectFolder);
-
-            if (dir.exists()) {
-                QMessageBox::StandardButton reply = QMessageBox::question(
-                        this,
-                        tr("Folder Exists"),
-                        tr("The project folder already exists:\n%1\nDo you want to overwrite it?")
-                                .arg(projectFolder),
-                        QMessageBox::Yes | QMessageBox::No);
-
-                if (reply != QMessageBox::Yes) {
-                    continue;
-                }
-
-                if (!dir.removeRecursively()) {
-                    QMessageBox::critical(this, tr("Error"),
-                                          tr("Failed to remove existing project folder:\n%1").arg(projectFolder));
-                    ModeManager::setSave(false);
-                    return;
-                }
-            }
-
-            if (!QDir().mkpath(projectFolder)) {
-                QMessageBox::critical(this, tr("Error"),
-                                      tr("Failed to create project folder:\n%1").arg(projectFolder));
-                ModeManager::setSave(false);
-                return;
-            }
-
-            mainFilePath = QDir(projectFolder).filePath(projectName + extension);
-
-            QFile file(mainFilePath);
-            if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                QMessageBox::critical(this, tr("Error"), tr("Failed to create file:\n%1").arg(mainFilePath));
-                ModeManager::setSave(false);
-                return;
-            }
-            file.close();
-
-        } else {
-            mainFilePath = fileInfo.absoluteFilePath();
-        }
-
-        ModeManager::setSave(true);
-        emit ProjectSaved(mainFilePath, extension);
-        return;
-    }
+void MainWindow::slotChangeTabs(const QString& tabName) {
+    emit ChangeTabs(tabName);
 }
 
 
 void MainWindow::buttonScript() {
     // Opening the project file selection dialog
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
+    const QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
                                                     QDir::homePath(),
                                                     tr("Project Files (*.txt);;All Files (*)"));
 
@@ -784,44 +606,9 @@ void MainWindow::buttonScript() {
 }
 
 
-void MainWindow::openServer() {
-    InputWindow* windowServer = new InputWindow("Enter port: ", this);
-    QObject::connect(windowServer, &InputWindow::textEnter, [this](const QString& text) {
-        emit SigOpenServer(text);
-    });
-    windowServer->show();
-}
-
-
-void MainWindow::joinServer() {
-    InputWindow* windowServer = new InputWindow("Enter IP: ", this);
-    QObject::connect(windowServer, &InputWindow::textEnter, [this](const QString& text) {
-        emit SigJoinServer(text);
-    });
-    windowServer->show();
-}
-
-
-void MainWindow::joinLocalServer() {
-    QStringList IPs = PortScanner().scanNetwork();
-    CustomIPListWindow* windowServer = new CustomIPListWindow(IPs, this);
-    QObject::connect(windowServer, &CustomIPListWindow::onConnectButtonClicked, [this](const QString& text) {
-        emit SigJoinServer(text + ":2005");
-    });
-    windowServer->show();
-}
-
-
-void MainWindow::exitSession() {
-    if (ModeManager::getConnection()) {
-        emit SigExitSession();
-    }
-}
-
 
 void MainWindow::Message() {
-    QString input = ui->messageConsole->text();
-    if (!input.isEmpty()) {
+    if (const QString input = ui->messageConsole->text(); !input.isEmpty()) {
         ui->messageConsole->clear();
         emit EnterMessage(input);
     }
@@ -864,158 +651,73 @@ void MainWindow::ToolShowSize() {
 
 
 void MainWindow::onExportJPG() {
-    saveProjectToFile(QString(".jpg"));
+  emit SaveProjectInFormat("DEFAULT",".jpg");
 }
 
 
 void MainWindow::onExportJPEG() {
-    saveProjectToFile(".jpeg");
+  emit SaveProjectInFormat("DEFAULT",".jpeg");
 }
 
 
 void MainWindow::onExportPNG() {
-    saveProjectToFile(".png");
+  emit SaveProjectInFormat("DEFAULT",".png");
 }
 
 
 void MainWindow::onExportBMP() {
-    saveProjectToFile(".bmp");
+  emit SaveProjectInFormat("DEFAULT",".bmp");
 }
 
 
 void MainWindow::onExportTIFF() {
-    saveProjectToFile(".tiff");
+  emit SaveProjectInFormat("DEFAULT",".tiff");
 }
 
 
 void MainWindow::onExportPDF() {
-    saveProjectToFile(".pdf");
+  emit SaveProjectInFormat("DEFAULT",".pdf");
 }
 
 
 void MainWindow::onExportOURP() {
-    saveProjectToFile(".ourp");
+  emit SaveProjectInFormat("DEFAULT",".ourp");
 }
 
 
 void MainWindow::onExportSVG() {
-    saveProjectToFile(".svg");
-}
-
-
-void MainWindow::onCreateProject() {
-    InputWindow* inputWindow = new InputWindow("Path: ", this);
-    inputWindow->setText(projectsPath + "/name");
-    inputWindow->show();
-
-    connect(inputWindow, &InputWindow::textEnter, this, [this](const QString& text) {
-
-        if (text.contains('.')) {
-            showError("Ошибка: имя проекта не должно содержать '.'");
-            qDebug() << "Ошибка: имя проекта не должно содержать '.'";
-            return;
-        }
-
-        if (text.isEmpty()) {
-            showError("Отсутствие пути.");
-            qDebug() << "Отсутствие пути.";
-            return;
-        }
-
-        if (text.endsWith('/') || text.endsWith('\\')) {
-            showError( "Ошибка: имя проекта не должно заканчиваться на '/' или '\\'");
-            qDebug() << "Ошибка: имя проекта не должно заканчиваться на '/' или '\\'";
-            return;
-        }
-
-
-        QDir dir(text);
-        if (!dir.exists()) {
-            if (!dir.mkpath(".")) {
-                showError("Не удалось создать директорию: " + text);
-                qDebug() << "Не удалось создать директорию:" << text;
-                return;
-            } else {
-                qDebug() << "Директория создана:" << text;
-            }
-        } else {
-            showError("Директория уже существует: " + text);
-            qDebug() << "Директория уже существует:" << text;
-            return;
-        }
-
-        QString name = QFileInfo(text).fileName();
-
-        QString fileP = dir.filePath(name  + ".ourp");
-        QFile file(fileP);
-
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            file.close();
-            qDebug() << "Файл создан:" << fileP;
-
-
-            QString projectsFilePath = QDir::cleanPath(documentsPath + "/OurPaint/settings/projects.set");
-            QFile fileSet(projectsFilePath);
-
-            if (fileSet.open(QIODevice::Append | QIODevice::Text)) {
-                QTextStream out(&fileSet);
-                out << name << " - " << text << "\n";
-                fileSet.close();
-                qDebug() << "Проект записан в файл:" << projectsFilePath;
-            } else {
-                qDebug() << "Не удалось открыть файл для записи:" << projectsFilePath;
-            }
-
-
-            QString newName = name + ".ourp";
-
-            QPushButton* tabButton = ui->createTabProject(newName);
-
-            connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
-                emit ChangeTabs(tabButton->objectName());
-            });
-
-            emit CreateFile(projectsFilePath,tabButton->objectName());
-            ui->inProject();
-        } else {
-            showError("Ошибка создания файла: " + file.errorString());
-            qDebug() << "Ошибка создания файла:" << file.errorString();
-        }
-    });
-
+    emit SaveProjectInFormat("DEFAULT",".svg");
 }
 
 
 void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
-    QModelIndex index = ui->leftMenuView->indexAt(pos);
+    const QModelIndex index = ui->leftMenuView->indexAt(pos);
     if (!index.isValid()) {
         return;
     }
 
-    TreeNode* node = static_cast<TreeNode*>(index.internalPointer());
+    const auto node = static_cast<TreeNode*>(index.internalPointer());
     if (!node) {
         return;
     }
 
     if (node == leftMenuBar->getProjectsNode()) {
         QMenu menu;
-        QAction* createTab = menu.addAction("Create tab");
+        const auto createTab = menu.addAction("Create tab");
 
-        QAction* chosen = menu.exec(ui->leftMenuView->viewport()->mapToGlobal(pos));
-        if (chosen == createTab) {
-            InputWindow* wind = new InputWindow("Name:",this);
+        if (const auto chosen = menu.exec(ui->leftMenuView->viewport()->mapToGlobal(pos)); chosen == createTab) {
+            const auto wind = new InputWindow("Name:",this);
             wind->show();
 
             connect(wind,&InputWindow::textEnter, [this](const QString& text) {
-                const QString newText= text + ".ourp";
-                QPushButton* tabButton = ui->createTabProject(newText);
+                const QString projectName= text + ".ourp";
+                QPushButton* tabButton = ui->createTabProject(projectName);
 
                 connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
                     emit ChangeTabs(tabButton->objectName());
                 });
 
-                QString path = userProjectPath + '/' + tabButton->objectName();
-                emit CreateFile(path,tabButton->objectName());
+                saveLoadProject->createFile(tabButton->objectName());
             });
 
         }
@@ -1023,41 +725,27 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
 }
 
 
-void MainWindow::setNameUsers(){
-    QString input = ui->nameUsers->text();
-    if (!input.isEmpty()) {
-        ui->nameUsers->setEnabled(false);
-        emit NameUsers(input);
-    }
-    ui->nameUsers->setEnabled(true);
-}
+
+///           ANOTHER:
 
 
-void MainWindow::updateGrid(const bool checked){
+
+void MainWindow::updateGrid(const bool checked) const {
     ModeManager::setCell(checked);
     ui->workWindow->update();
 }
 
 
-void MainWindow::updateAxis(const bool checked){
+void MainWindow::updateAxis(const bool checked) const {
     ModeManager::setAxis(checked);
     ui->workWindow->update();
 }
 
 
 void MainWindow::commandsInConsole(){
-    QString input = ui->console->text();
-    if (!input.isEmpty()) {
+    if (const QString input = ui->console->text(); !input.isEmpty()) {
         ui->console->pushBack(input);
-        emit EnterPressed(input);
+        emit EnterCommand(input);
         ui->console->clear();
     }
 }
-
-
-
-
-
-
-
-

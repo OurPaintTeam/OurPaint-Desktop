@@ -20,20 +20,25 @@
 #include <QDirIterator>
 #include <QStandardPaths>
 
-#include "Help.h"
-#include "CustomWindowError.h"
-#include "CustomWindowSuccessful.h"
-#include "CustomWindowWarning.h"
-#include "CustomIpListWindow.h"
-#include "LocalScanner.h"
-#include "SaveDialog.h"
-#include "InputWindow.h"
+#include "CreateOpenSaveProject.h"
 #include "ui_mainwindow.h"
-#include "QTPainter.h"
-#include "Modes.h"
 #include "LeftMenuBar.h"
-#include "Settings.h"
-#include "ParameterDelegate.h"
+
+class CreateOpenSaveProject;
+class LeftMenuBar;
+class ui_mainwindow;
+class Help;
+class CustomWindowError;
+class CustomWindowSuccessful;
+class CustomWindowWarning;
+class CustomIpListWindow;
+class SaveDialog;
+class InputWindow;
+class QTPainter;
+class Modes;
+class LeftMenuBar;
+class ParameterDelegate;
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -41,21 +46,15 @@ namespace Ui {
 }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow {
+class MainWindow final : public QMainWindow {
 Q_OBJECT
 
 private:
     Ui::MainWindow* ui = new Ui::MainWindow;
-
-    const QString documentsPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    const QString projectsPath = QDir::cleanPath(documentsPath + "/OurPaint/projects");
-    const QString settingsPath = QDir::cleanPath(documentsPath + "/OurPaint/settings/settings.set");
-    const QString filePath = QDir::cleanPath(documentsPath + "/OurPaint/settings/projects.set");
-    QString userProjectPath;
-
-
     LeftMenuBar* leftMenuBar= new LeftMenuBar(this);             // A class for managing the left menu
-    Settings* settings = new Settings(settingsPath);                   // Saving Settings
+
+    CreateOpenSaveProject* saveLoadProject = new CreateOpenSaveProject(this);
+    friend class CreateOpenSaveProject;
 
     enum ResizeRegion {
         None,
@@ -72,45 +71,41 @@ private:
     ResizeRegion currentRegion = None;
 
 private:
-    void openProject(const QString& name);
-    void initListProjectStartWindow();
-
     void initConnections();
     void setupLeftMenu();
     void updateShapeCursor(const QPoint& pos);
 
 public:
-    MainWindow(QWidget* parent = nullptr);
-    ~MainWindow();
+    explicit MainWindow(QWidget* parent = nullptr);
 
     LeftMenuBar* getLeftMenuBar() const;
     QTPainter* getQTPainter() const;
+    QString getProjectPath() const;
 
-    [[maybe_unused]] void selectLeftMenuElem(QModelIndex& index);
-    void setupConsoleCommands(const QStringList& commandList);
-    void updateExitServerStyle(bool);
-    void setMessage(const QString& name, const QString& message);
+    void selectLeftMenuElem(const QModelIndex& index) const;
+    void setupConsoleCommands(const QStringList& commandList) const;
+    void updateExitServerStyle(bool) const;
+    void setMessage(const QString& name, const QString& message) const;
 
     /***    Custom windows      ***/
-    void showError(const QString& text);
-    void showSuccess(const QString& text);
-    void showWarning(const QString& text);
+    void showError(const QString& text) const;
+    void showSuccess(const QString& text) const;
+    void showWarning(const QString& text) const;
 
     /***     Save/import settings       ***/
     QString getUserName();
-    void saveSettings();
-    void loadSettings();
+    void closeProgram();
 
-    QPushButton* getFirstBut();
-    QPushButton* getSecondBut();
-    QPushButton* getThirdBut();
-    QPushButton* getFourthBut();
-    QPushButton* getFifthBut();
-    QPushButton* getSixthBut();
-    QPushButton* getSeventhBut();
-    QPushButton* getEighthBut();
-    QPushButton* getNinthBut();
-    QPushButton* getTenthBut();
+    QPushButton* getFirstBut() const;
+    QPushButton* getSecondBut() const;
+    QPushButton* getThirdBut() const;
+    QPushButton* getFourthBut() const;
+    QPushButton* getFifthBut() const;
+    QPushButton* getSixthBut() const;
+    QPushButton* getSeventhBut() const;
+    QPushButton* getEighthBut() const;
+    QPushButton* getNinthBut() const;
+    QPushButton* getTenthBut() const;
 
 protected:
     void closeEvent(QCloseEvent* event) override;
@@ -124,22 +119,20 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 public slots:
-    void loadProjectFile();
-    void saveProjectToFile(const QString& format);
+    void slotSaveProject(const QString& fileName);
+    void slotOpenProject(const QString& fileName);
+    void slotChangeTabs(const QString& tabName);
+
     void buttonScript();
-    void openServer();
-    void joinServer();
-    void joinLocalServer();
-    void exitSession();
     void Message();
 
-    void Point();
-    void Section();
-    void Circle();
-    void Arc();
-    void ToolMoving();
-    void ToolSelected();
-    void ToolShowSize();
+    static void Point();
+    static void Section();
+    static void Circle();
+    static void Arc();
+    static void ToolMoving();
+    static void ToolSelected();
+    static void ToolShowSize();
 
     void onExportJPG();
     void onExportJPEG();
@@ -149,26 +142,22 @@ public slots:
     void onExportPDF();
     void onExportOURP();
     void onExportSVG();
-    void onCreateProject();
 
     void onLeftMenuRightClick(const QPoint& pos);
-    void setNameUsers();
-    void updateGrid(const bool checked);
-    void updateAxis(const bool checked);
+    void updateGrid(const bool checked) const;
+    void updateAxis(const bool checked) const;
     void commandsInConsole();
 
 signals:
-    void EnterPressed(const QString& command);
+    void EnterCommand(const QString& command);
     void EnterMessage(const QString& text);
-    void NameUsers(const QString& text);
-    void SigOpenServer(const QString& text);
-    void SigJoinServer(const QString& text);
-    void SigExitSession();
-    void ProjectSaved(const QString& fileName, QString format);
-    void LoadFile(const QString& fileName, const QString tabName);
-    void CreateFile(const QString& fileName, const QString tabName);
-    void ChangeTabs(const QString tabName);
     void EmitScript(const QString& fileName);
+
+    void SaveProject(const QString& fileName);
+    void OpenProject(const QString& tabName);
+    void ChangeTabs(const QString& tabName);
+
+    void SaveProjectInFormat(const QString& fileName,const QString& format);
 };
 
 #endif // MAINWINDOW_H
