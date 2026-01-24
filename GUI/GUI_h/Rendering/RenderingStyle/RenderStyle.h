@@ -64,6 +64,24 @@ struct FigureStyle {
 struct PointStyle {
     FigureStyle figure;
     quint16 pointRadius = 1;
+
+     void createNormalPointStyle() {
+        figure.object.size = 1;
+        pointRadius = 1;
+        figure.glow.activity = false;
+        figure.id.activity = false;
+    }
+
+    void createSelectedPointStyle() {
+         figure.object.size = 1;
+         figure.object.color = Color::Black;
+         pointRadius = 2;
+         figure.glow.color = Color::Blue;
+         figure.glow.size = 5;
+         figure.glow.activity = true;
+         figure.id.activity = true;
+     }
+
 };
 
 
@@ -85,6 +103,20 @@ struct LineStyle {
     LineLengthLabel lengthLabel;
     ServiceLine serviceLine;
 
+    void createNormalLineStyle() {
+        figure.object.size = 1;
+        figure.glow.activity = false;
+        figure.id.activity = false;
+    }
+
+    void createSelectedLineStyle() {
+        figure.object.color = Color::Black;
+        figure.object.size = 2;
+        figure.glow.color = Color::Blue;
+        figure.glow.size = 5;
+        figure.glow.activity = true;
+        figure.id.activity = true;
+    }
 };
 
 
@@ -99,6 +131,22 @@ struct RadiusLabel {
 struct CircleStyle {
     FigureStyle figure;
     RadiusLabel radiusLabel;
+
+    void createNormalCircleStyle() {
+        figure.object.size = 1;
+        figure.glow.activity = false;
+        figure.id.activity = false;
+    }
+
+    void createSelectedCircleStyle() {
+        figure.object.color = Color::Black;
+        figure.object.size = 2;
+        figure.glow.color = Color::Blue;
+        figure.glow.size = 5;
+        figure.glow.activity = true;
+        figure.id.activity = true;
+    }
+
 };
 
 
@@ -112,6 +160,21 @@ struct ArcStyle {
     FigureStyle figure;
     RadiusLabel radiusLabel;
     ArcHeightLabel heightLabel;
+
+    void createNormalArcStyle() {
+        figure.object.size = 1;
+        figure.glow.activity = false;
+        figure.id.activity = false;
+    }
+
+    void createSelectedArcStyle() {
+        figure.object.color = Color::Black;
+        figure.object.size = 2;
+        figure.glow.color = Color::Blue;
+        figure.glow.size = 5;
+        figure.glow.activity = true;
+        figure.id.activity = true;
+    }
 };
 
 /// --- Requirements ---

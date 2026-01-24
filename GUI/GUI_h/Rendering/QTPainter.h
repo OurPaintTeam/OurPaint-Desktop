@@ -94,14 +94,6 @@ private:
     std::unordered_map<QString, std::unique_ptr<Container>> namedContainers;
 
 private:
-    static void createNormalPointStyle(PointStyle* style);
-    static void createNormalCircleStyle(CircleStyle* style);
-    static void createNormalLineStyle(LineStyle* style);
-    static void createNormalArcStyle(ArcStyle* style);
-    static void createSelectedPointStyle(PointStyle* style);
-    static void createSelectedLineStyle(LineStyle* style);
-    static void createSelectedCircleStyle(CircleStyle* style);
-    static void createSelectedArcStyle(ArcStyle* style);
     void inArea();
 
     bool leftClickTimer() const;
