@@ -11,10 +11,9 @@ class MainWindow;
 class LeftMenuBar;
 namespace UndoRedo { class UndoRedoManager; }
 class CommandManager;
-class Server;
-class Client;
+class InputWindow;
 
-class MainWindController : public QObject {
+class MainWindController final : public QObject {
 Q_OBJECT
 private:
     QTPainter& _painter;
@@ -23,13 +22,10 @@ private:
     LeftMenuBar& _lmb;
     UndoRedo::UndoRedoManager& _urm;
     CommandManager& _cm;
-    Server& _s;
-    Client& _c;
-    std::vector<std::function<void()>> vecCalls;
-    std::vector<QString> vec_requirements;
-    std::vector<ObjectData> objectsBuffer;
-    QString _username;
-    const QString pathTxtFileCommands = "../CommandsFile.txt";
+    QVector<std::function<void()>> vecCalls;
+    QVector<QString> vec_requirements;
+    QVector<ObjectData> objectsBuffer;
+    QString pathTxtFileCommands;
 
 public:
     MainWindController(QTPainter& painter,
@@ -37,10 +33,7 @@ public:
                        MainWindow& mainWind,
                        LeftMenuBar& lmb,
                        UndoRedo::UndoRedoManager& urm,
-                       CommandManager& cm,
-                       Server& s,
-                       Client& c,
-                       QString& username);
+                       CommandManager& cm);
 
 public slots:
     void onDelete();
@@ -59,19 +52,14 @@ public slots:
     void onNineRequirements();
     void onTenRequirements();
 
-    void onEnterPressed(const QString& command);
-    void onProjectSaved(const QString& fileName, QString format);
+    void onEnterCommand(const QString& command);
+    void onProjectSaved(const QString& fileName);
     void onLoadFile(const QString& fileName);
     void onEmitScript(const QString& fileName);
     void onUNDO();
     void onREDO();
 
-    void onSigExitSession();
-    void onSigOpenServer(const QString& text);
-    void onSigJoinServer(const QString& text);
-
     void onEnterMessage(const QString& text);
-    void onNameUsers(const QString& text);
 
 private:
     void deleteOwnPoints(QVector<ID>& vecPoints,

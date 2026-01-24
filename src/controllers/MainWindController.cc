@@ -10,9 +10,8 @@
 #include "CommandDeleteCircle.h"
 #include "LeftMenuBar.h"
 #include "ConsoleManager.h"
-#include "Server.h"
-#include "Client.h"
 #include "ExceptionGuard.h"
+#include "InputWindow.h"
 #include "ID.h"
 
 MainWindController::MainWindController(QTPainter& _painter,
@@ -20,19 +19,13 @@ MainWindController::MainWindController(QTPainter& _painter,
                                        MainWindow& mainWind,
                                        LeftMenuBar& lmb,
                                        UndoRedo::UndoRedoManager& urm,
-                                       CommandManager& cm,
-                                       Server& s,
-                                       Client& c,
-                                       QString& username)
+                                       CommandManager& cm)
     : _painter(_painter),
       _scene(scene),
       _mainWind(mainWind),
       _lmb(lmb),
       _urm(urm),
-      _cm(cm),
-      _s(s),
-      _c(c),
-      _username(username)
+      _cm(cm)
       {
     vec_requirements = {
             "PointSectionDist",
@@ -46,6 +39,8 @@ MainWindController::MainWindController(QTPainter& _painter,
             "SectionSectionPerpendicular",
             "SectionSectionAngle"
     };
+
+    pathTxtFileCommands = mainWind.getProjectPath() + "/CommandsFile.txt";
 }
 
 void MainWindController::onDelete() {
@@ -166,7 +161,7 @@ void MainWindController::onTwoRequirements() {
         //RequirementData reqData;
         //addRequirement(Requirement::ET_POINTONSECTION, pairSelectedID.first, pairSelectedID.second);
         std::vector<double> vec = {2, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()) };
-        UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
+        Transaction* txn = _cm.invoke("REQ", { vec });
         _urm.push(std::move(*txn));
         updateState();
         _scene.paint();
@@ -309,10 +304,9 @@ void MainWindController::onTenRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
-        InputWindow window("Enter parameters: ", &_mainWind);
-        if (window.exec() == QDialog::Accepted) {
+        if (InputWindow window("Enter parameters: ", &_mainWind); window.exec() == QDialog::Accepted) {
             bool ok = false;
-            double parameters = window.getText().toDouble(&ok);
+            const double parameters = window.getText().toDouble(&ok);
             if (!ok) { return; }
             //addRequirement(Requirement::ET_SECTIONSECTIONANGLE, pairSelectedID.first, pairSelectedID.second, parameters);
             std::vector<double> vec = {10, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()), parameters};
@@ -325,34 +319,28 @@ void MainWindController::onTenRequirements() {
     SLOT_GUARD_MAINWIND_END
 }
 
-void MainWindController::onEnterPressed(const QString& command) {
+void MainWindController::onEnterCommand(const QString& command) {
     SLOT_GUARD_MAINWIND_BEGIN
     if (ModeManager::getConnection()) {
         if (ModeManager::getFlagServer()) {
             if (command == "Exit") {
+                _mainWind.closeProgram();
                 QCoreApplication::quit();
-                return;
             }
             else {
                 UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
                 _urm.push(std::move(*txn));
-
-
                 updateState();
-                //server.sendToClients(QString::fromStdString(scene.to_string()));
             }
         } else {
-            //client.sendCommandToServer(command);
         }
     } else {
         if (command == "Exit") {
+            _mainWind.closeProgram();
             QCoreApplication::quit();
-            return;
-        }
-        else {
+
             UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
             _urm.push(std::move(*txn));
-
 
             updateState();
         }
@@ -363,26 +351,38 @@ void MainWindController::onEnterPressed(const QString& command) {
 #include <fstream>
 #include "SaveLoadJson.h"
 
-void MainWindController::onProjectSaved(const QString& fileName, QString format) {
+void MainWindController::onProjectSaved(const QString& absolutPath) {
     SLOT_GUARD_MAINWIND_BEGIN
 
-    if (format != ".ourp") {
-        _scene.paint();
-        _painter.saveToImage(fileName, format);
-        _mainWind.showSuccess(tr("Image exported!"));
-        return;
-    }
-
     try {
-        std::ofstream ofs(fileName.toStdString(), std::ios::binary);
-        if (!ofs) {
-            throw std::runtime_error("can't open file");
+        if (const QDir dir(absolutPath); !dir.exists()) {
+            qDebug("Каталог проекта не существует");
+            _mainWind.showError("Каталог проекта не существует");
+            return;
         }
 
-        SaveLoadJson saver(_scene);
-        ofs << saver.to_json().dump(4);
-        ofs.close();
-        _mainWind.showSuccess(tr("The project is saved!"));
+        QDirIterator it(
+            absolutPath,
+            QStringList() << "*.ourp",
+            QDir::Files,
+            QDirIterator::Subdirectories
+        );
+
+        while (it.hasNext()) {
+            const QString projectFilePath = it.next();
+
+            std::ofstream ofs(projectFilePath.toStdString(), std::ios::binary);
+            if (!ofs) {
+                qDebug("Can't open file");
+                _mainWind.showError("Can't open file");
+                return;
+            }
+
+            SaveLoadJson saver(_scene);
+            ofs << saver.to_json().dump(4);
+            ofs.close();
+            _mainWind.showSuccess(tr("The project is saved!"));
+        }
     } catch (const std::exception& e) {
         _mainWind.showError(tr("Save error: %1").arg(e.what()));
     }
@@ -453,76 +453,14 @@ void MainWindController::onREDO() {
     SLOT_GUARD_MAINWIND_END
 }
 
-void MainWindController::onSigExitSession() {
-    SLOT_GUARD_MAINWIND_BEGIN
-    if (ModeManager::getConnection()) {
-        if (ModeManager::getFlagServer()) {
-            _s.stopServer();
-            ModeManager::setConnection(false);
-            ModeManager::setFlagServer(false);
-            _mainWind.updateExitServerStyle(false);
-            _mainWind.showSuccess("Successfully stopped!");
-        } else {
-            _c.disconnectFromServer();
-            ModeManager::setConnection(false);
-            _mainWind.updateExitServerStyle(false);
-            _mainWind.showSuccess("Successfully disconnected!");
-        }
-    } else {
-        _mainWind.showError("Firstly connect to server!");
-    }
-    SLOT_GUARD_MAINWIND_END
-}
-
-void MainWindController::onSigOpenServer(const QString& text) {
-    SLOT_GUARD_MAINWIND_BEGIN
-    if (ModeManager::getConnection() || ModeManager::getFlagServer()) {
-        _mainWind.showError("Firstly disconnect!");
-        _mainWind.updateExitServerStyle(false);
-        return;
-    }
-    bool ok = false;
-    text.toUShort(&ok);
-    if (!ok) {
-        _mainWind.showError("Error! This is not valid port!");
-        return;
-    }
-    _s.startServer(text.toUShort(&ok));
-    ModeManager::setConnection(true);
-    ModeManager::setFlagServer(true);
-    _mainWind.updateExitServerStyle(true);
-    _mainWind.showSuccess("Successfully connected to server!");
-    SLOT_GUARD_MAINWIND_END
-}
-
-void MainWindController::onSigJoinServer(const QString& text) {
-    SLOT_GUARD_MAINWIND_BEGIN
-    if (ModeManager::getConnection() || ModeManager::getFlagServer()) {
-        _mainWind.showError("Firstly disconnect!");
-        return;
-    }
-    bool ok = false;
-    QStringList texts = text.split(':');
-    texts[1].toUShort(&ok);
-    if (!ok) {
-        _mainWind.showError("Error! This is not valid port!");
-        return;
-    }
-    _c.connectToServer(texts[0], texts[1].toUShort(&ok));
-    ModeManager::setConnection(true);
-    _mainWind.showSuccess("Successfully connected to server!");
-    SLOT_GUARD_MAINWIND_END
-}
-
 void MainWindController::onEnterMessage(const QString& text) {
     SLOT_GUARD_MAINWIND_BEGIN
     if (ModeManager::getConnection()) {
         if (ModeManager::getFlagServer()) {
-            _mainWind.setMessage(_username, text);
-            _s.sendChatToClients(text, _username);
+            _mainWind.setMessage("DEFAULT", text);
         } else {
             if (!text.isEmpty()) {
-                _c.sendChatMessage(text);
+
             }
         }
     } else {
@@ -532,15 +470,6 @@ void MainWindController::onEnterMessage(const QString& text) {
     SLOT_GUARD_MAINWIND_END
 }
 
-void MainWindController::onNameUsers(const QString& text) {
-    SLOT_GUARD_MAINWIND_BEGIN
-    _username = text;
-    if (!ModeManager::getConnection()) {
-        _s.setName(_username);
-        _c.setName(_username);
-    }
-    SLOT_GUARD_MAINWIND_END
-}
 
 void MainWindController::deleteOwnPoints(QVector<ID>& vecPoints, const QVector<ID>& vecSections, const QVector<ID>& vecCircles,
                                   const QVector<ID>&) {
