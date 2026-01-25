@@ -20,11 +20,11 @@
 #include <QDirIterator>
 #include <QStandardPaths>
 
-#include "CreateOpenSaveProject.h"
+#include "FileSystems.h"
 #include "ui_mainwindow.h"
 #include "LeftMenuBar.h"
 
-class CreateOpenSaveProject;
+class FileSystems;
 class LeftMenuBar;
 class ui_mainwindow;
 class Help;
@@ -53,8 +53,8 @@ private:
     Ui::MainWindow* ui = new Ui::MainWindow;
     LeftMenuBar* leftMenuBar= new LeftMenuBar(this);             // A class for managing the left menu
 
-    CreateOpenSaveProject* saveLoadProject = new CreateOpenSaveProject(this);
-    friend class CreateOpenSaveProject;
+    FileSystems* fileSystems = new FileSystems(this);
+    friend class FileSystems;
 
     enum ResizeRegion {
         None,

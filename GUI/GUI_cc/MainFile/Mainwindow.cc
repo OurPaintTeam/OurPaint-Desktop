@@ -1,6 +1,6 @@
 #include "Mainwindow.h"
 
-#include "CreateOpenSaveProject.h"
+#include "FileSystems.h"
 #include "LeftMenuBar.h"
 #include "ui_mainwindow.h"
 #include "Help.h"
@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     initConnections(); // Initialization of signals
     setupLeftMenu();
-    saveLoadProject->scanAndLoadProjects();
+    fileSystems->scanAndLoadProjects();
 }
 
 
@@ -44,7 +44,7 @@ QTPainter* MainWindow::getQTPainter() const {
 
 
 QString MainWindow::getProjectPath() const {
-    return saveLoadProject->getProjectPath();
+    return fileSystems->getProjectPath();
 }
 
 
@@ -75,13 +75,13 @@ void MainWindow::initConnections() {
     connect(ui->toolShowSize, &QPushButton::clicked, this, &MainWindow::ToolShowSize);
 
     // Save/import buttons
-    connect(ui->openFolderForOpenProject, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::openOrCreateProject);
-    connect(ui->actionCreate_project_to, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::openOrCreateProject);
-    connect(ui->actionOpen_project, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::openOrCreateProject);
+    connect(ui->openFolderForOpenProject, &QPushButton::clicked, fileSystems, &FileSystems::openOrCreateProject);
+    connect(ui->actionCreate_project_to, &QPushButton::clicked, fileSystems, &FileSystems::openOrCreateProject);
+    connect(ui->actionOpen_project, &QPushButton::clicked, fileSystems, &FileSystems::openOrCreateProject);
 
-    connect(saveLoadProject, &CreateOpenSaveProject::ChangeTabs, this, &MainWindow::slotChangeTabs);
-    connect(saveLoadProject, &CreateOpenSaveProject::OpenProject, this, &MainWindow::slotOpenProject);
-    connect(saveLoadProject, &CreateOpenSaveProject::SaveProject, this, &MainWindow::slotSaveProject);
+    connect(fileSystems, &FileSystems::ChangeTabs, this, &MainWindow::slotChangeTabs);
+    connect(fileSystems, &FileSystems::OpenProject, this, &MainWindow::slotOpenProject);
+    connect(fileSystems, &FileSystems::SaveProject, this, &MainWindow::slotSaveProject);
 
     connect(ui->actionJPG, &QToolButton::clicked, this, &MainWindow::onExportJPG);
     connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
@@ -251,7 +251,7 @@ bool MainWindow::closeProgram() {
         const auto result = dialog.exec();
 
         if (result == QMessageBox::Yes) {
-            saveLoadProject->saveProject();
+            fileSystems->saveProject();
             return ModeManager::getSave();
         }
 
@@ -729,7 +729,7 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
             connect(wind,&InputWindow::textEnter, [this](const QString& text) {
                 const QString projectName= text + ".ourp";
 
-                saveLoadProject->createNewFile(projectName);
+                fileSystems->createNewFile(projectName);
             });
 
         }
