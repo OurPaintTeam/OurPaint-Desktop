@@ -3,35 +3,35 @@
 
 // Initialization of static variables
 std::bitset<static_cast<size_t>(WorkModes::Editor) + 1> ModeManager::workModes{
-        (1 << static_cast<size_t>(WorkModes::Editor)) |
-        (0 << static_cast<size_t>(WorkModes::Move)) |
-        (0 << static_cast<size_t>(WorkModes::ShowSize)) |
-        (0 << static_cast<size_t>(WorkModes::Section)) |
-        (0 << static_cast<size_t>(WorkModes::Point)) |
-        (0 << static_cast<size_t>(WorkModes::Circle)) |
-        (0 << static_cast<size_t>(WorkModes::Section)) |
-        (0 << static_cast<size_t>(WorkModes::Arc)) |
-        (0 << static_cast<size_t>(WorkModes::Selected))
-        // Editor only = true (lowest bit)
+    (1 << static_cast<size_t>(WorkModes::Editor)) |
+    (0 << static_cast<size_t>(WorkModes::Move)) |
+    (0 << static_cast<size_t>(WorkModes::ShowSize)) |
+    (0 << static_cast<size_t>(WorkModes::Section)) |
+    (0 << static_cast<size_t>(WorkModes::Point)) |
+    (0 << static_cast<size_t>(WorkModes::Circle)) |
+    (0 << static_cast<size_t>(WorkModes::Section)) |
+    (0 << static_cast<size_t>(WorkModes::Arc)) |
+    (0 << static_cast<size_t>(WorkModes::Selected))
+    // Editor only = true (lowest bit)
 };
 
 
 std::bitset<static_cast<size_t>(MouseMode::DoubleClickLeft) + 1> ModeManager::mouseModes{
-        // We only set ReleasingLeft and ReleasingRight
-        (0 << static_cast<size_t>(MouseMode::MouseMove)) |
-        (0 << static_cast<size_t>(MouseMode::DoubleClickLeft)) |
-        (0 << static_cast<size_t>(MouseMode::LeftClick)) |
-        (0 << static_cast<size_t>(MouseMode::RightClick)) |
-        (1 << static_cast<size_t>(MouseMode::ReleasingLeft)) |
-        (1 << static_cast<size_t>(MouseMode::ReleasingRight))
+    // We only set ReleasingLeft and ReleasingRight
+    (0 << static_cast<size_t>(MouseMode::MouseMove)) |
+    (0 << static_cast<size_t>(MouseMode::DoubleClickLeft)) |
+    (0 << static_cast<size_t>(MouseMode::LeftClick)) |
+    (0 << static_cast<size_t>(MouseMode::RightClick)) |
+    (1 << static_cast<size_t>(MouseMode::ReleasingLeft)) |
+    (1 << static_cast<size_t>(MouseMode::ReleasingRight))
 };
 
 
 std::bitset<static_cast<size_t>(KeyMode::ReleasingShift) + 1> ModeManager::keyModes{
-        // We only set ReleasingTab and ReleasingShift
-        (1 << static_cast<size_t>(KeyMode::ReleasingTab)) |
-        (1 << static_cast<size_t>(KeyMode::ReleasingEnter)) |
-        (1 << static_cast<size_t>(KeyMode::ReleasingShift))
+    // We only set ReleasingTab and ReleasingShift
+    (1 << static_cast<size_t>(KeyMode::ReleasingTab)) |
+    (1 << static_cast<size_t>(KeyMode::ReleasingEnter)) |
+    (1 << static_cast<size_t>(KeyMode::ReleasingShift))
 };
 
 
@@ -39,26 +39,9 @@ bool ModeManager::cellEnabled = true;
 bool ModeManager::axisEnabled = true;
 bool ModeManager::cursorInArea = true;
 bool ModeManager::saveFileMode = true;
-bool ModeManager::isConnected = false;
 bool ModeManager::isServer = false;
-
-
-bool ModeState::operator==(const ModeState& other) const {
-    return workModes == other.workModes &&
-           mouseModes == other.mouseModes &&
-           keyModes == other.keyModes &&
-           cellEnabled == other.cellEnabled &&
-           axisEnabled == other.axisEnabled &&
-           cursorInArea == other.cursorInArea &&
-           saveFileMode == other.saveFileMode &&
-           isConnected == other.isConnected &&
-           isServer == other.isServer;
-}
-
-
-bool ModeState::operator!=(const ModeState& other) const {
-    return !(*this == other);
-}
+bool ModeManager::isConnected = false;
+bool ModeManager::inProject = false;
 
 
 void ModeManager::setActiveMode(WorkModes mode) {
@@ -114,7 +97,7 @@ bool ModeManager::getActiveMode(KeyMode mode) {
 }
 
 
-void ModeManager::setCell(bool flag) {
+void ModeManager::setCell(const bool flag) {
     cellEnabled = flag;
 }
 
@@ -124,7 +107,7 @@ bool ModeManager::getCell() {
 }
 
 
-void ModeManager::setAxis(bool flag) {
+void ModeManager::setAxis(const bool flag) {
     axisEnabled = flag;
 }
 
@@ -144,7 +127,7 @@ bool ModeManager::getCursor() {
 }
 
 
-void ModeManager::setSave(bool flag) {
+void ModeManager::setSave(const bool flag) {
     saveFileMode = flag;
 }
 
@@ -154,7 +137,17 @@ bool ModeManager::getSave() {
 }
 
 
-void ModeManager::setConnection(bool flag) {
+void ModeManager::setProject(const bool flag) {
+    inProject = flag;
+}
+
+
+bool ModeManager::getProject() {
+    return inProject;
+}
+
+
+void ModeManager::setConnection(const bool flag) {
     isConnected = flag;
 }
 
@@ -164,7 +157,7 @@ bool ModeManager::getConnection() {
 }
 
 
-void ModeManager::setFlagServer(bool flag) {
+void ModeManager::setFlagServer(const bool flag) {
     isServer = flag;
 }
 
@@ -183,10 +176,7 @@ ModeState ModeManager::copyModes() {
 
     state.cellEnabled = cellEnabled;
     state.axisEnabled = axisEnabled;
-    state.cursorInArea = cursorInArea;
-    state.saveFileMode = saveFileMode;
-    state.isConnected = isConnected;
-    state.isServer = isServer;
+    state.inProject = inProject;
 
     return state;
 }
@@ -199,8 +189,5 @@ void ModeManager::initModes(const ModeState& modes) {
 
     cellEnabled = modes.cellEnabled;
     axisEnabled = modes.axisEnabled;
-    cursorInArea = modes.cursorInArea;
-    saveFileMode = modes.saveFileMode;
-    isConnected = modes.isConnected;
-    isServer = modes.isServer;
+    inProject = modes.inProject;
 }

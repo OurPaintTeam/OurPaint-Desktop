@@ -41,13 +41,7 @@ struct ModeState {
 
     bool cellEnabled;
     bool axisEnabled;
-    bool cursorInArea;
-    bool saveFileMode;
-    bool isServer;
-    bool isConnected;
-
-    bool operator==(const ModeState& other) const;
-    bool operator!=(const ModeState& other) const;
+    bool inProject;
 };
 
 class ModeManager {
@@ -64,6 +58,7 @@ private:
     static bool saveFileMode;
     static bool isServer;
     static bool isConnected;
+    static bool inProject;
 
 public:
 
@@ -85,22 +80,25 @@ public:
     static bool getActiveMode(KeyMode mode);
 
     // Methods for working with status flags
-    static void setCell(bool flag);
+    static void setCell(const bool flag);
     static bool getCell();
 
-    static void setAxis(bool flag);
+    static void setAxis(const bool flag);
     static bool getAxis();
 
-    static void setCursor(bool flag);
+    static void setCursor(const bool flag);
     static bool getCursor();
 
-    static void setSave(bool flag);
+    static void setSave(const bool flag);
     static bool getSave();
 
-    static void setConnection(bool flag);
+    static void setProject(const bool flag);
+    static bool getProject();
+
+    static void setConnection(const bool flag);
     static bool getConnection();
 
-    static void setFlagServer(bool flag);
+    static void setFlagServer(const bool flag);
     static bool getFlagServer();
 
     static ModeState copyModes();
