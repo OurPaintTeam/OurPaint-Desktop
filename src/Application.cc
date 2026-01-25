@@ -5,15 +5,13 @@
 #include "LeftMenuController.h"
 #include "Transaction.h"
 #include "CommandFactory.h"
-#include "UndoRedo.h"
 #include "ConsoleManager.h"
 #include "Mainwindow.h"
 #include "GUI_Logger.h"
+#include "DocumentManager.h"
 
 Application::Application(int& argc, char** argv)
-        : scene(nullptr),
-          undoRedo(nullptr),
-          commandManager(nullptr),
+        : documentManager(nullptr),
           sqa(nullptr),
           app(nullptr),
           mainWind(nullptr),
@@ -34,23 +32,14 @@ Application::Application(int& argc, char** argv)
 }
 
 void Application::initCore() {
-    scene = new Scene(nullptr);
-    undoRedo = new UndoRedo::UndoRedoManager(100);
-    commandManager = new CommandManager();
-
-    commandManager->registerFactory(new PointFactory(*scene));
-    commandManager->registerFactory(new LineFactory(*scene));
-    commandManager->registerFactory(new CircleFactory(*scene));
-    commandManager->registerFactory(new ArcFactory(*scene));
-    commandManager->registerFactory(new ReqFactory(*scene));
-    commandManager->registerFactory(new DelFactory(*scene));
-    commandManager->registerFactory(new ClearFactory(scene));
+    documentManager = new DocumentManager();
 }
 
 void Application::initGUI(int& argc, char** argv) {
     app = new QApplication(argc, argv);
     mainWind = new MainWindow();
-    sqa = new SceneQtAdapter(*scene);
+    //sqa = new SceneQtAdapter(*scene);
+    //username = new QString(mainWind->getUserName()); // TODO оно не тут
 
     mainWind->setupConsoleCommands({
         "POINT ",
@@ -78,7 +67,7 @@ void Application::initGUI(int& argc, char** argv) {
     }
 
     painter =  mainWind->getQTPainter();
-    scene->setPainter(painter);
+    //scene->setPainter(painter);
     leftMenu = mainWind->getLeftMenuBar();
 
     QObject::connect(sqa, &SceneQtAdapter::pointAddedQt, leftMenu, &LeftMenuBar::onPointAdded);
@@ -121,7 +110,7 @@ void Application::initLogger() {
 }
 
 void Application::initControllers() {
-    pc = new PainterController(*scene, *commandManager, *undoRedo, *mainWind, *leftMenu);
+    pc = new PainterController(*documentManager, *mainWind);
 
     QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigPoint, pc, &PainterController::onSigPoint);
     QObject::connect(painter->getMouseManager(), &MouseDrawingManager::SigSection, pc, &PainterController::onSigSection);
@@ -133,7 +122,7 @@ void Application::initControllers() {
     QObject::connect(painter, &QTPainter::MovingArc, pc, &PainterController::onMovingArc);
     QObject::connect(painter, &QTPainter::EndMoving, pc, &PainterController::onEndMoving);
 
-    mwc = new MainWindController(*painter, *scene, *mainWind, *leftMenu, *undoRedo, *commandManager);
+    mwc = new MainWindController(*painter, *documentManager, *mainWind, *leftMenu);
 
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::DELETE, mwc, &MainWindController::onDelete); // Deleting an element
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::COPY, mwc, &MainWindController::onCopy); // ctrl+c
@@ -163,13 +152,18 @@ void Application::initControllers() {
     QObject::connect(mainWind->getNinthBut(), &QPushButton::clicked, mwc, &MainWindController::onNineRequirements);
     QObject::connect(mainWind->getTenthBut(),&QPushButton::clicked, mwc, &MainWindController::onTenRequirements);
 
+    //QObject::connect(mainWind, &MainWindow::CreateFile, mwc, &MainWindController::onCreateFile); // Create
+
     QObject::connect(mainWind, &MainWindow::EnterCommand, mwc, &MainWindController::onEnterCommand); // Console
+    QObject::connect(mainWind, &MainWindow::EnterMessage, mwc, &MainWindController::onEnterMessage);
+    QObject::connect(mainWind, &MainWindow::EmitScript, mwc, &MainWindController::onEmitScript); // Script
+
     QObject::connect(mainWind, &MainWindow::SaveProject, mwc, &MainWindController::onProjectSaved); // Save
     QObject::connect(mainWind, &MainWindow::OpenProject, mwc, &MainWindController::onLoadFile); // Load
-    QObject::connect(mainWind, &MainWindow::EmitScript, mwc, &MainWindController::onEmitScript); // Script
-    QObject::connect(mainWind, &MainWindow::EnterMessage, mwc, &MainWindController::onEnterMessage);
+    QObject::connect(mainWind, &MainWindow::ChangeTabs, mwc, &MainWindController::onChangeTab); // Change tab
 
-    lmc = new LeftMenuController(*mainWind, *scene, *painter);
+
+    lmc = new LeftMenuController(*mainWind, *documentManager, *painter);
 
     QObject::connect(leftMenu, &LeftMenuBar::figureParamsChanged, lmc,
                      &LeftMenuController::onFigureParamsChanged); // Changing the settings in the left menu
@@ -190,9 +184,7 @@ Application::~Application() {
 
 
     /* free core */
-    delete scene;
-    delete undoRedo;
-    delete commandManager;
+    delete documentManager;
 
     /* free gui */
     delete app;

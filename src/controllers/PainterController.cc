@@ -1,26 +1,29 @@
 #include "PainterController.h"
+
+#include <QPointF>
+
+#include "Component.h"
+#include "ConsoleManager.h"
+#include "Document.h"
+#include "DocumentManager.h"
+#include "ExceptionGuard.h"
+#include "Mainwindow.h"
+#include "Scaling.h"
 #include "Transaction.h"
 #include "UndoRedo.h"
-#include "ConsoleManager.h"
-#include <QPointF>
-#include "Scaling.h"
-#include "Mainwindow.h"
-#include "ExceptionGuard.h"
-#include "Component.h"
 
-PainterController::PainterController(Scene& scene, CommandManager& commandManager, UndoRedoManager& undoRedo, MainWindow& mainWind, LeftMenuBar& lmb)
-        : _scene(scene),
-          _commandManager(commandManager),
-          _undoRedo(undoRedo),
+PainterController::PainterController(DocumentManager& documentManager, MainWindow& mainWind)
+        :
+          _documentManager(documentManager),
           _mainWind(mainWind),
-          _lmb(lmb),
           _isStartMoving(true),
           _pre_move_object_states() {}
 
 void PainterController::onSigPoint(const QPointF& point) {
     SLOT_GUARD_MAINWIND_BEGIN
-    UndoRedo::Transaction* txn = _commandManager.invoke("POINT", { point.x(), point.y() });
-    _undoRedo.push(std::move(*txn));
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::Transaction* txn = document->commandManager().invoke("POINT", { point.x(), point.y() });
+    document->undoRedoManager().push(std::move(*txn));
 
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
@@ -28,8 +31,9 @@ void PainterController::onSigPoint(const QPointF& point) {
 
 void PainterController::onSigSection(const QPointF& startPoint, const QPointF& endPoint) {
     SLOT_GUARD_MAINWIND_BEGIN
-    UndoRedo::Transaction* txn = _commandManager.invoke("LINE", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y() });
-    _undoRedo.push(std::move(*txn));
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::Transaction* txn = document->commandManager().invoke("LINE", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y() });
+    document->undoRedoManager().push(std::move(*txn));
 
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
@@ -37,8 +41,9 @@ void PainterController::onSigSection(const QPointF& startPoint, const QPointF& e
 
 void PainterController::onSigCircle(const QPointF& center, const double radius) {
     SLOT_GUARD_MAINWIND_BEGIN
-    UndoRedo::Transaction* txn = _commandManager.invoke("CIRCLE", { center.x(), center.y(), radius });
-    _undoRedo.push(std::move(*txn));
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::Transaction* txn = document->commandManager().invoke("CIRCLE", { center.x(), center.y(), radius });
+    document->undoRedoManager().push(std::move(*txn));
 
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
@@ -46,8 +51,9 @@ void PainterController::onSigCircle(const QPointF& center, const double radius) 
 
 void PainterController::onSigArc(const QPointF& startPoint, const QPointF& endPoint, const QPointF& centerPoint) {
     SLOT_GUARD_MAINWIND_BEGIN
-    UndoRedo::Transaction* txn = _commandManager.invoke("ARC", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), centerPoint.x(), centerPoint.y() });
-    _undoRedo.push(std::move(*txn));
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::Transaction* txn = document->commandManager().invoke("ARC", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), centerPoint.x(), centerPoint.y() });
+    document->undoRedoManager().push(std::move(*txn));
 
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
@@ -55,11 +61,13 @@ void PainterController::onSigArc(const QPointF& startPoint, const QPointF& endPo
 
 void PainterController::onMovingPoint(const QVector<ID>& vec_id) {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     if (_isStartMoving) {
         // I'm afraid. It's really dangerous.
-        Component& c = _scene.findComponentByID(vec_id[0]);
+        Component& c = scene.findComponentByID(vec_id[0]);
         for (auto& id : c._objectIDs) {
-            _pre_move_object_states.push_back(_scene.getObjectData(id));
+            _pre_move_object_states.push_back(scene.getObjectData(id));
         }
         _isStartMoving = false;
     }
@@ -69,31 +77,31 @@ void PainterController::onMovingPoint(const QVector<ID>& vec_id) {
 
     try {
         if (vec_id.size() == 1) {
-            _scene.setPoint(vec_id[0], cursorNow.x(), cursorNow.y());
-            _lmb.updateLeftMenu();
+            scene.setPoint(vec_id[0], cursorNow.x(), cursorNow.y());
+            //updateState();
             return;
         }
 
         for (qsizetype i = 0; i < vec_id.size(); ++i) {
-            _scene.movePoint(vec_id[i], delta.x(), delta.y());
+            scene.movePoint(vec_id[i], delta.x(), delta.y());
         }
-
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
 
-    _scene.paint();
-    _lmb.updateLeftMenu();
+    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onMovingSection(const QVector<ID>& vec_id, const QPointF& p1, const QPointF& p2) {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     if (_isStartMoving) {
-        Component& c = _scene.findComponentByID(vec_id[0]);
+        Component& c = scene.findComponentByID(vec_id[0]);
         for (auto& id : c._objectIDs) {
-            _pre_move_object_states.push_back(_scene.getObjectData(id));
+            _pre_move_object_states.push_back(scene.getObjectData(id));
         }
         _isStartMoving = false;
     }
@@ -102,29 +110,30 @@ void PainterController::onMovingSection(const QVector<ID>& vec_id, const QPointF
 
     try {
         if (vec_id.size() == 1) {
-            _scene.setSection(vec_id[0], cursorNow.x() + p1.x(), cursorNow.y() + p1.y(),
+            scene.setSection(vec_id[0], cursorNow.x() + p1.x(), cursorNow.y() + p1.y(),
                              cursorNow.x() + p2.x(), cursorNow.y() + p2.y());
-            _lmb.updateLeftMenu();
+            //updateState();
             return;
         }
         for (qsizetype i = 0; i < vec_id.size(); ++i) {
-            _scene.moveSection(vec_id[i], delta.x(), delta.y());
+            scene.moveSection(vec_id[i], delta.x(), delta.y());
         }
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
-    _scene.paint();
-    _lmb.updateLeftMenu();
+    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onMovingCircle(const QVector<ID>& vec_id, const QPointF& offset) {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     if (_isStartMoving) {
-        Component& c = _scene.findComponentByID(vec_id[0]);
+        Component& c = scene.findComponentByID(vec_id[0]);
         for (auto& id : c._objectIDs) {
-            _pre_move_object_states.push_back(_scene.getObjectData(id));
+            _pre_move_object_states.push_back(scene.getObjectData(id));
         }
         _isStartMoving = false;
     }
@@ -134,33 +143,34 @@ void PainterController::onMovingCircle(const QVector<ID>& vec_id, const QPointF&
 
     try {
         if (vec_id.size() == 1) {
-            ObjectData obj = _scene.getObjectData(vec_id[0]);
+            ObjectData obj = scene.getObjectData(vec_id[0]);
             QPointF newCenter = cursorNow + offset;
 
             double radius = obj.params[2];
-            _scene.setCircle(vec_id[0], newCenter.x(), newCenter.y(), radius);
-            _lmb.updateLeftMenu();
+            scene.setCircle(vec_id[0], newCenter.x(), newCenter.y(), radius);
+            //updateState();
             return;
         }
         for (qsizetype i = 0; i < vec_id.size(); ++i) {
-            _scene.moveCircle(vec_id[i], delta.x(), delta.y());
+            scene.moveCircle(vec_id[i], delta.x(), delta.y());
         }
-
+        //updateState();
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
-    _scene.paint();
-    _lmb.updateLeftMenu();
+    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onMovingArc(const QVector<ID>& vec_id) {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     if (_isStartMoving) {
-        Component& c = _scene.findComponentByID(vec_id[0]);
+        Component& c = scene.findComponentByID(vec_id[0]);
         for (auto& id : c._objectIDs) {
-            _pre_move_object_states.push_back(_scene.getObjectData(id));
+            _pre_move_object_states.push_back(scene.getObjectData(id));
         }
         _isStartMoving = false;
     }
@@ -170,27 +180,28 @@ void PainterController::onMovingArc(const QVector<ID>& vec_id) {
 
     try {
         for (qsizetype i = 0; i < vec_id.size(); ++i) {
-            _scene.moveArc(ID(vec_id[i]), delta.x(), delta.y());
+            scene.moveArc(ID(vec_id[i]), delta.x(), delta.y());
         }
 
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
-    _scene.paint();
-    _lmb.updateLeftMenu();
+    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
 void PainterController::onEndMoving() {
     SLOT_GUARD_BEGIN
-    UndoRedo::CommandMove* cmd = new UndoRedo::CommandMove(_scene, _pre_move_object_states);
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
+    UndoRedo::UndoRedoManager& undoRedo = document->undoRedoManager();
+    UndoRedo::CommandMove* cmd = new UndoRedo::CommandMove(scene, _pre_move_object_states);
     UndoRedo::Transaction txn(cmd->description());
     txn.addCommand(cmd);
-    _undoRedo.push(std::move(txn));
+    undoRedo.push(std::move(txn));
     _isStartMoving = true;
-    _scene.paint();
-    _lmb.updateLeftMenu();
+    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_END
 }

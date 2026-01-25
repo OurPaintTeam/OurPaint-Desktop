@@ -1,18 +1,16 @@
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#ifndef APPLICATION_H_
+#define APPLICATION_H_
 
 class QApplication;
 class PainterController;
 class MainWindController;
 class LeftMenuController;
-namespace UndoRedo { class UndoRedoManager; }
-class CommandManager;
 class SceneQtAdapter;
 class LeftMenuBar;
 class MainWindow;
 class QTPainter;
-class Scene;
 class QString;
+class DocumentManager;
 
 class Application {
 public:
@@ -27,9 +25,7 @@ private:
     void initControllers();
 
 private:
-    Scene* scene;
-    UndoRedo::UndoRedoManager* undoRedo;
-    CommandManager* commandManager;
+    DocumentManager* documentManager;
 
     SceneQtAdapter* sqa;
 
@@ -38,11 +34,10 @@ private:
     QTPainter* painter;
     LeftMenuBar* leftMenu;
 
-
     PainterController* pc;
     MainWindController* mwc;
     LeftMenuController* lmc;
 };
 
-#endif // APPLICATION_H
+#endif // APPLICATION_H_
 

@@ -4,18 +4,18 @@
 #include <QObject>
 
 class MainWindow;
-class Scene;
 class QTPainter;
+class DocumentManager;
 
 class LeftMenuController : public QObject {
 Q_OBJECT
 private:
     MainWindow& _mainWind;
-    Scene& _scene;
+    DocumentManager& _documentManager;
     QTPainter& _painter;
 
 public:
-    LeftMenuController(MainWindow& mainWind, Scene& scene, QTPainter& painter);
+    LeftMenuController(MainWindow& mainWind, DocumentManager& documentManager, QTPainter& painter);
 
 public slots:
     void onFigureParamsChanged(long long id, const std::string& type, const std::vector<double>& parameters);

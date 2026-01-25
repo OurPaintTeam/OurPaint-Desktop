@@ -8,25 +8,21 @@
 class Scene;
 class CommandManager;
 class Transaction;
-namespace UndoRedo { class UndoRedoManager; };
 class ID;
 class ObjectData;
 class MainWindow;
-class LeftMenuBar;
+class DocumentManager;
 
 class PainterController : public QObject {
     Q_OBJECT
 private:
-    Scene& _scene;
-    CommandManager& _commandManager;
-    UndoRedo::UndoRedoManager& _undoRedo;
+    DocumentManager& _documentManager;
     MainWindow& _mainWind;
-    LeftMenuBar& _lmb;
     bool _isStartMoving;
     std::vector<ObjectData> _pre_move_object_states;
 
 public:
-    PainterController(Scene& scene, CommandManager& commandManager, UndoRedo::UndoRedoManager& undoRedo, MainWindow& mainWind, LeftMenuBar& lmb);
+    PainterController(DocumentManager& documentManager, MainWindow& mainWind);
 
 public slots:
     void onSigPoint(const QPointF& point);
