@@ -38,8 +38,8 @@ public:
     CustomWindowSuccessful* success= nullptr;
 
     // Start Window
-    QPushButton* createProjectButton;
-    QPushButton* loadProjectButton;
+    QPushButton* openFolderForOpenProject;
+    // QPushButton* loadProjectButton;
     QWidget* openCreateProjectsWidget;
     QVBoxLayout* mainLayoutINStartWindow;
     QWidget* inputContainer;
@@ -395,19 +395,19 @@ public:
         inputLayout->addWidget(projectInput, 1); // stretching it out QLineEdit
 
         // --- create button ---
-        createProjectButton = new QPushButton(inputContainer);
-        createProjectButton->setObjectName("createProjectButton");
-        createProjectButton->setText("+");
-        createProjectButton->setToolTip("Create Project");
-        createProjectButton->setFixedSize(30, 30);
-        createProjectButton->setStyleSheet(
+        openFolderForOpenProject = new QPushButton(inputContainer);
+        openFolderForOpenProject->setObjectName("openFolderForOpenProject");
+        openFolderForOpenProject->setText("+");
+        openFolderForOpenProject->setToolTip("Create Project");
+        openFolderForOpenProject->setFixedSize(30, 30);
+        openFolderForOpenProject->setStyleSheet(
                 "QPushButton { color: black; background-color: #D8D8F6;  border: 1px solid #333333; border-radius: 5px; }"
                 "QPushButton:hover { background-color: #2f4557; }"
         );
-        inputLayout->addWidget(createProjectButton);
+        inputLayout->addWidget(openFolderForOpenProject);
 
         // --- open button ---
-        loadProjectButton = new QPushButton(inputContainer);
+       /* loadProjectButton = new QPushButton(inputContainer);
         loadProjectButton->setObjectName("loadProjectButton");
         loadProjectButton->setText("o");
         loadProjectButton->setToolTip("Load Project");
@@ -416,7 +416,7 @@ public:
                 "QPushButton { color: black; background-color: #D8D8F6;border: 1px solid #333333; border-radius: 5px; }"
                 "QPushButton:hover { background-color: #2f4557; }"
         );
-        inputLayout->addWidget(loadProjectButton);
+        inputLayout->addWidget(loadProjectButton);*/
 
         mainLayoutINStartWindow->addWidget(inputContainer);
 
