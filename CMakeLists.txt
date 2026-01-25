@@ -164,6 +164,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Rendering/Mouse/MouseDrawingManager.cc
         GUI/GUI_cc/Rendering/Mouse/DrawRectangleTool.cc
 
+        GUI/GUI_cc/Events/MainWindowController.cc
         GUI/GUI_cc/Events/SmileRightClickFilter.cc
         GUI/GUI_cc/Events/KeyWorkWindow.cc
         GUI/GUI_cc/Events/MouseEventWorkWindow.cc
@@ -208,6 +209,7 @@ add_executable(ourpaint
         GUI/GUI_h/Windows/SaveDialog.h
         GUI/GUI_h/Windows/ui_help.h
 
+        GUI/GUI_h/Events/MainWindowController.h
         GUI/GUI_h/Events/KeyEventToolPanel.h
         GUI/GUI_h/Events/GlobalEventFilter.h
         GUI/GUI_h/Events/KeyEventCollapsedPanel.h

@@ -23,6 +23,7 @@
 #include "FileSystems.h"
 #include "ui_mainwindow.h"
 #include "LeftMenuBar.h"
+#include "MainWindowController.h"
 
 class FileSystems;
 class LeftMenuBar;
@@ -38,6 +39,7 @@ class QTPainter;
 class Modes;
 class LeftMenuBar;
 class ParameterDelegate;
+class  MainWindowController;
 
 
 QT_BEGIN_NAMESPACE
@@ -52,28 +54,14 @@ Q_OBJECT
 private:
     Ui::MainWindow* ui = new Ui::MainWindow;
     LeftMenuBar* leftMenuBar= new LeftMenuBar(this);             // A class for managing the left menu
+    MainWindowController* windowController = new MainWindowController(this);
 
     FileSystems* fileSystems = new FileSystems(this);
     friend class FileSystems;
 
-    enum ResizeRegion {
-        None,
-        Top, Bottom, Left, Right,
-        TopLeft, TopRight, BottomLeft, BottomRight
-    };
-
-    const qint8 edgeMargin = 8;
-
-    bool resizing = false;
-    bool moving = false;
-    QPoint dragStartPos{0,0};
-    QRect originalGeometry;
-    ResizeRegion currentRegion = None;
-
 private:
     void initConnections();
     void setupLeftMenu();
-    void updateShapeCursor(const QPoint& pos);
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
@@ -97,7 +85,6 @@ public:
 
     /***     Save/import settings       ***/
     QString getUserName();
-    bool closeProgram();
 
     QPushButton* getFirstBut() const;
     QPushButton* getSecondBut() const;
@@ -109,6 +96,8 @@ public:
     QPushButton* getEighthBut() const;
     QPushButton* getNinthBut() const;
     QPushButton* getTenthBut() const;
+
+    bool closeProgram();
 
 protected:
     void closeEvent(QCloseEvent* event) override;
@@ -122,9 +111,10 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 public slots:
-    void slotSaveProject(const QString& fileName);
-    void slotOpenProject(const QString& fileName);
+    void slotSaveProject(const QString& workDir);
+    void slotOpenProject(const QString& workDir);
     void slotChangeTabs(const QString& tabName);
+    void slotCreateNewTab(const QString& tabName);
 
     void buttonScript();
     void Message();
@@ -156,9 +146,10 @@ signals:
     void EnterMessage(const QString& text);
     void EmitScript(const QString& fileName);
 
-    void SaveProject(const QString& fileName);
-    void OpenProject(const QString& tabName);
+    void SaveProject(const QString& workDir);
+    void OpenProject(const QString& workDir);
     void ChangeTabs(const QString& tabName);
+    void CreateNewTab(const QString& tabName);
 
     void SaveProjectInFormat(const QString& fileName,const QString& format);
 };
