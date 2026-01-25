@@ -21,6 +21,8 @@ void PainterController::onSigPoint(const QPointF& point) {
     SLOT_GUARD_MAINWIND_BEGIN
     UndoRedo::Transaction* txn = _commandManager.invoke("POINT", { point.x(), point.y() });
     _undoRedo.push(std::move(*txn));
+
+    ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -28,6 +30,8 @@ void PainterController::onSigSection(const QPointF& startPoint, const QPointF& e
     SLOT_GUARD_MAINWIND_BEGIN
     UndoRedo::Transaction* txn = _commandManager.invoke("LINE", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y() });
     _undoRedo.push(std::move(*txn));
+
+    ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -35,6 +39,8 @@ void PainterController::onSigCircle(const QPointF& center, const double radius) 
     SLOT_GUARD_MAINWIND_BEGIN
     UndoRedo::Transaction* txn = _commandManager.invoke("CIRCLE", { center.x(), center.y(), radius });
     _undoRedo.push(std::move(*txn));
+
+    ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -42,6 +48,8 @@ void PainterController::onSigArc(const QPointF& startPoint, const QPointF& endPo
     SLOT_GUARD_MAINWIND_BEGIN
     UndoRedo::Transaction* txn = _commandManager.invoke("ARC", { startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), centerPoint.x(), centerPoint.y() });
     _undoRedo.push(std::move(*txn));
+
+    ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -76,6 +84,7 @@ void PainterController::onMovingPoint(const QVector<ID>& vec_id) {
 
     _scene.paint();
     _lmb.updateLeftMenu();
+    ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -106,6 +115,7 @@ void PainterController::onMovingSection(const QVector<ID>& vec_id, const QPointF
     }
     _scene.paint();
     _lmb.updateLeftMenu();
+    ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -141,6 +151,7 @@ void PainterController::onMovingCircle(const QVector<ID>& vec_id, const QPointF&
     }
     _scene.paint();
     _lmb.updateLeftMenu();
+    ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -167,6 +178,7 @@ void PainterController::onMovingArc(const QVector<ID>& vec_id) {
     }
     _scene.paint();
     _lmb.updateLeftMenu();
+    ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -179,5 +191,6 @@ void PainterController::onEndMoving() {
     _isStartMoving = true;
     _scene.paint();
     _lmb.updateLeftMenu();
+    ModeManager::setSave(false);
     SLOT_GUARD_END
 }
