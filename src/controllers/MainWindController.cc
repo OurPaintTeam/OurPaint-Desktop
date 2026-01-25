@@ -13,6 +13,7 @@
 #include "ExceptionGuard.h"
 #include "InputWindow.h"
 #include "ID.h"
+#include "SaveLoadJson.h"
 
 MainWindController::MainWindController(QTPainter& _painter,
                                        Scene& scene,
@@ -321,44 +322,30 @@ void MainWindController::onTenRequirements() {
 
 void MainWindController::onEnterCommand(const QString& command) {
     SLOT_GUARD_MAINWIND_BEGIN
-    if (ModeManager::getConnection()) {
-        if (ModeManager::getFlagServer()) {
-            if (command == "Exit") {
-                _mainWind.closeProgram();
-                QCoreApplication::quit();
-            }
-            else {
-                UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
-                _urm.push(std::move(*txn));
-                updateState();
-            }
-        } else {
-        }
-    } else {
         if (command == "Exit") {
             _mainWind.closeProgram();
             QCoreApplication::quit();
-
-            UndoRedo::Transaction* txn = _cm.invoke(command.toStdString());
+        }else{
+            Transaction* txn = _cm.invoke(command.toStdString());
             _urm.push(std::move(*txn));
 
             updateState();
+            _scene.paint();
+            ModeManager::setSave(false);
         }
-    }
     SLOT_GUARD_MAINWIND_END
 }
 
-#include <fstream>
-#include "SaveLoadJson.h"
 
 void MainWindController::onProjectSaved(const QString& absolutPath) {
     SLOT_GUARD_MAINWIND_BEGIN
 
     try {
-        if (const QDir dir(absolutPath); !dir.exists()) {
-            qDebug("Каталог проекта не существует");
-            _mainWind.showError("Каталог проекта не существует");
-            return;
+        QDir dir(absolutPath);
+        if (!dir.exists()) {
+            QString msg = tr("Каталог проекта не существует: %1").arg(absolutPath);
+            qDebug() << "SAVE ERROR:" << msg;
+            throw std::runtime_error(msg.toStdString());
         }
 
         QDirIterator it(
@@ -368,24 +355,43 @@ void MainWindController::onProjectSaved(const QString& absolutPath) {
             QDirIterator::Subdirectories
         );
 
+
         while (it.hasNext()) {
             const QString projectFilePath = it.next();
+            QFile file(projectFilePath);
 
-            std::ofstream ofs(projectFilePath.toStdString(), std::ios::binary);
-            if (!ofs) {
-                qDebug("Can't open file");
-                _mainWind.showError("Can't open file");
-                return;
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+                const QString msg = tr("Не удалось открыть файл для записи: %1").arg(projectFilePath);
+                qDebug() << "SAVE ERROR:" << msg;
+                throw std::runtime_error(msg.toStdString());
             }
 
             SaveLoadJson saver(_scene);
-            ofs << saver.to_json().dump(4);
-            ofs.close();
-            _mainWind.showSuccess(tr("The project is saved!"));
+            QByteArray data = QString::fromStdString(saver.to_json().dump(4)).toUtf8();
+
+            const qint64 bytesWritten = file.write(data);
+            file.close();
+
+            if (bytesWritten != data.size()) {
+                const QString msg = tr("Ошибка при записи файла: %1").arg(projectFilePath);
+                qDebug() << "SAVE ERROR:" << msg;
+                throw std::runtime_error(msg.toStdString());
+            }
+
+            ModeManager::setSave(true);
+
+            qDebug() << "SAVE OK:" << projectFilePath
+                     << "(" << bytesWritten << "байт)";
         }
+
+        qDebug() << "SAVE WARNING: файлов для сохранения не найдено в" << absolutPath;
+        _mainWind.showWarning(tr("Файлы проекта не найдены для сохранения."));
+
     } catch (const std::exception& e) {
-        _mainWind.showError(tr("Save error: %1").arg(e.what()));
+        qDebug() << "SAVE EXCEPTION:" << e.what();
+        _mainWind.showError(tr("Ошибка при сохранении проекта: %1").arg(e.what()));
     }
+
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -394,23 +400,48 @@ void MainWindController::onLoadFile(const QString& fileName) {
     _scene.clearImage();
 
     try {
-        std::ifstream ifs(fileName.toStdString(), std::ios::binary);
-        if (!ifs) {
-            throw std::runtime_error("can't open file");
+        QFile file(fileName);
+        if (!file.open(QIODevice::ReadOnly)) {
+            const QString msg = tr("Невозможно открыть файл: %1").arg(fileName);
+            qDebug() << "LOAD ERROR:" << msg;
+            _mainWind.showError(msg);
+            throw std::runtime_error(msg.toStdString());
         }
 
-        nlohmann::json j;
-        ifs >> j;
+        const QByteArray data = file.readAll();
+        file.close();
+
+        const nlohmann::json j = nlohmann::json::parse(data.constData(), nullptr, false);
+        if (j.is_discarded()) {
+            const QString msg = tr("Файл повреждён или не является JSON: %1").arg(fileName);
+            qDebug() << "LOAD ERROR:" << msg;
+            _mainWind.showError(msg);
+            throw std::runtime_error(msg.toStdString());
+        }
+
         SaveLoadJson loader(_scene);
         loader.from_json(j);
         loader.loadToScene();
 
+        _mainWind.inProjectWindow();
         _scene.paint();
-        _mainWind.showSuccess(tr("The project is loaded!"));
+
+        const QString justName = QFileInfo(fileName).fileName();
+        _lmb.addFileToProject(justName);
+        _lmb.updateLeftMenu();
+
+        qDebug() << "LOAD OK:" << fileName << "(" << data.size() << "байт)";
+        _mainWind.showSuccess(tr("Проект успешно загружен!"));
+
+        ModeManager::setProject(true);
+
+    } catch (const std::exception& e) {
+        ModeManager::setProject(false);
+        _mainWind.inStartWindow();
+        qDebug() << "LOAD EXCEPTION:" << e.what();
+        _mainWind.showError(tr("Ошибка при загрузке проекта: %1").arg(e.what()));
     }
-    catch (const std::exception& e) {
-        _mainWind.showError(tr("Load error: %1").arg(e.what()));
-    }
+
     SLOT_GUARD_MAINWIND_END
 }
 
