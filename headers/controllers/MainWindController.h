@@ -7,11 +7,11 @@
 
 class QTPainter;
 class ID;
-class Scene;
 class MainWindow;
 class LeftMenuBar;
-namespace UndoRedo { class UndoRedoManager; }
-class CommandManager;
+class Server;
+class Client;
+class DocumentManager;
 class InputWindow;
 class SaveLoadJson;
 
@@ -19,23 +19,19 @@ class MainWindController final : public QObject {
 Q_OBJECT
 private:
     QTPainter& _painter;
-    Scene& _scene;
     MainWindow& _mainWind;
     LeftMenuBar& _lmb;
-    UndoRedo::UndoRedoManager& _urm;
-    CommandManager& _cm;
-    QVector<std::function<void()>> vecCalls;
-    QVector<QString> vec_requirements;
-    QVector<ObjectData> objectsBuffer;
-    QString pathTxtFileCommands;
+    DocumentManager& _documentManager;
+    std::vector<std::function<void()>> vecCalls;
+    std::vector<QString> vec_requirements;
+    std::vector<ObjectData> objectsBuffer;
+    QString pathTxtFileCommands = "../CommandsFile.txt";
 
 public:
     MainWindController(QTPainter& painter,
-                       Scene& scene,
+                       DocumentManager& documentManager,
                        MainWindow& mainWind,
-                       LeftMenuBar& lmb,
-                       UndoRedo::UndoRedoManager& urm,
-                       CommandManager& cm);
+                       LeftMenuBar& lmb);
 
 public slots:
     void onDelete();
@@ -57,7 +53,10 @@ public slots:
     void onEnterCommand(const QString& command);
     void onProjectSaved(const QString& fileName);
     void onLoadFile(const QString& fileName);
+    void onCreateFile(const QString& path, const QString& tabName);
+    void onChangeTab(const QString& tabName);
     void onEmitScript(const QString& fileName);
+
     void onUNDO();
     void onREDO();
 

@@ -37,7 +37,6 @@ class SaveDialog;
 class InputWindow;
 class QTPainter;
 class Modes;
-class LeftMenuBar;
 class ParameterDelegate;
 class  MainWindowController;
 

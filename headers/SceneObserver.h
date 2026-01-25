@@ -4,7 +4,6 @@
 class ID;
 struct Requirement;
 
-// Port
 class ISceneObserver {
 public:
     virtual void pointAdded(ID id, const double* x, const double* y) = 0;

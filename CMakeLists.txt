@@ -82,6 +82,14 @@ add_executable(ourpaint
         src/controllers/MainWindController.cc
         src/controllers/LeftMenuController.cc
 
+        src/Document.cc
+        src/DocumentManager.cc
+        src/saveload/DocumentSaveLoad.cc
+
+
+        headers/Document.h
+        headers/DocumentManager.h
+        headers/UndoRedo/DocumentSaveLoad.h
 
         headers/painters/Painter.h
         headers/painters/BMPpainter.h

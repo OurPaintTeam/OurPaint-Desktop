@@ -1,32 +1,31 @@
 #include "MainWindController.h"
-#include "QTPainter.h"
-#include "Objects.h"
-#include "Scene.h"
-#include "Mainwindow.h"
-#include "UndoRedo.h"
-#include "Transaction.h"
+#include "CommandDeleteCircle.h"
 #include "CommandDeletePoint.h"
 #include "CommandDeleteSection.h"
-#include "CommandDeleteCircle.h"
-#include "LeftMenuBar.h"
 #include "ConsoleManager.h"
+#include "Document.h"
+#include "DocumentManager.h"
 #include "ExceptionGuard.h"
 #include "InputWindow.h"
 #include "ID.h"
+#include "LeftMenuBar.h"
+#include "Mainwindow.h"
+#include "Objects.h"
+#include "QTPainter.h"
+#include "Scene.h"
+#include "Transaction.h"
+#include "UndoRedo.h"
 #include "SaveLoadJson.h"
 
-MainWindController::MainWindController(QTPainter& _painter,
-                                       Scene& scene,
+
+MainWindController::MainWindController(QTPainter& painter,
+                                       DocumentManager& documentManager,
                                        MainWindow& mainWind,
-                                       LeftMenuBar& lmb,
-                                       UndoRedo::UndoRedoManager& urm,
-                                       CommandManager& cm)
-    : _painter(_painter),
-      _scene(scene),
+                                       LeftMenuBar& lmb)
+    : _painter(painter),
       _mainWind(mainWind),
       _lmb(lmb),
-      _urm(urm),
-      _cm(cm)
+      _documentManager(documentManager)
       {
     vec_requirements = {
             "PointSectionDist",
@@ -46,6 +45,8 @@ MainWindController::MainWindController(QTPainter& _painter,
 
 void MainWindController::onDelete() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     try {
         QVector<ID> vecPoint = _painter.getVecSelectedIDPoints();
         QVector<ID> vecSection = _painter.getVecSelectedIDLines();
@@ -56,8 +57,9 @@ void MainWindController::onDelete() {
         deleteObjects(vecPoint, vecSection, vecCircle, vecArcs);
 
         _painter.selectedClear();
+        scene.paint();
         updateState();
-        _scene.paint();
+        scene.paint();
     } catch (std::exception& e) {
         _mainWind.showError(e.what());
     }
@@ -66,39 +68,43 @@ void MainWindController::onDelete() {
 
 void MainWindController::onCopy() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     objectsBuffer.clear();
     fillSelectedIDBuffer();
     _painter.selectedClear();
-    _scene.paint();
+    scene.paint();
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onPaste() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     try {
         for (auto& obj: objectsBuffer) {
-            ID id = _scene.addObject(obj);
+            ID id = scene.addObject(obj);
             if (obj.et == ObjType::ET_POINT) {
-                std::vector<const double*> param = _scene.getPointParams(id);
+                std::vector<const double*> param = scene.getPointParams(id);
                 vecCalls.push_back([=, this]() {
                     _lmb.addPointInLeftMenu("Point", id.get(), {param[0], param[1]});
                 });
             } else if (obj.et == ObjType::ET_SECTION) {
-                std::vector<const double*> param = _scene.getSectionParams(id);
+                std::vector<const double*> param = scene.getSectionParams(id);
                 vecCalls.push_back([=, this]() {
                     _lmb.addSectionInLeftMenu("Section", "Point", "Point",
                                                    id.get(), id.get() - 1, id.get() - 2,
                                                    {param[0], param[1]}, {param[2], param[3]});
                 });
             } else if (obj.et == ObjType::ET_CIRCLE) {
-                std::vector<const double*> param = _scene.getCircleParams(id);
+                std::vector<const double*> param = scene.getCircleParams(id);
                 vecCalls.push_back([=, this]() {
                     _lmb.addCircleInLeftMenu("Circle", "Center",
                                                   id.get(), id.get() - 1,
                                                   {param[0], param[1]}, *param[2]);
                 });
             } else if (obj.et == ObjType::ET_ARC) {
-                std::vector<const double*> param = _scene.getArcParams(id);
+                std::vector<const double*> param = scene.getArcParams(id);
                 vecCalls.push_back([=, this]() {
                     _lmb.addArcInLeftMenu("Arc", "Point", "Point", "Center",
                                                id.get(), id.get() - 1, id.get() - 2, id.get() - 3,
@@ -111,12 +117,14 @@ void MainWindController::onPaste() {
         _mainWind.showError("Error pasted");
     }
     updateState();
-    _scene.paint();
+    scene.paint();
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onCut() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     objectsBuffer.clear();
     fillSelectedIDBuffer();
 
@@ -125,18 +133,22 @@ void MainWindController::onCut() {
         vecCalls.push_back([=, this]() {
             _lmb.removeFigureById(obj.id.get());
         });
-        _scene.deleteObject(obj.id);
+        scene.deleteObject(obj.id);
     }
 
     _painter.selectedClear();
     updateState();
-    _scene.paint();
+    scene.paint();
     SLOT_GUARD_MAINWIND_END
 }
 
 
 void MainWindController::onOneRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         InputWindow window("Enter parameters: ", &_mainWind);
@@ -146,10 +158,10 @@ void MainWindController::onOneRequirements() {
             if (!ok) { return; }
             //addRequirement(Requirement::ET_POINTSECTIONDIST, pairSelectedID.first, pairSelectedID.second, parameters);
             std::vector<double> vec = {1, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()), parameters};
-            UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-            _urm.push(std::move(*txn));
+            UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+            urm.push(std::move(*txn));
             updateState();
-            _scene.paint();
+            scene.paint();
         }
     }
     SLOT_GUARD_MAINWIND_END
@@ -157,21 +169,27 @@ void MainWindController::onOneRequirements() {
 
 void MainWindController::onTwoRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
-        //RequirementData reqData;
-        //addRequirement(Requirement::ET_POINTONSECTION, pairSelectedID.first, pairSelectedID.second);
         std::vector<double> vec = {2, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()) };
-        Transaction* txn = _cm.invoke("REQ", { vec });
-        _urm.push(std::move(*txn));
+        Transaction* txn = cm.invoke("REQ", { vec });
+        urm.push(std::move(*txn));
         updateState();
-        _scene.paint();
+        scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onThreeRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         InputWindow window("Enter parameters: ", &_mainWind);
@@ -182,10 +200,10 @@ void MainWindController::onThreeRequirements() {
             if (!ok) { return; }
             //addRequirement(Requirement::ET_POINTPOINTDIST, pairSelectedID.first, pairSelectedID.second, parameters);
             std::vector<double> vec = {3, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()), parameters};
-            UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-            _urm.push(std::move(*txn));
+            UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+            urm.push(std::move(*txn));
             updateState();
-            _scene.paint();
+            scene.paint();
         }
     } else {
         QVector<ID> vec_id = _painter.getVecSelectedIDLines();
@@ -200,10 +218,10 @@ void MainWindController::onThreeRequirements() {
                 }
                 //addRequirement(Requirement::ET_POINTPOINTDIST, ID(vec_id[0].get() - 1), ID(vec_id[0].get() - 2), parameters);
                 std::vector<double> vec = {3, static_cast<double>(ID(vec_id[0].get() - 1).get()), static_cast<double>(ID(vec_id[0].get() - 2).get()), parameters};
-                UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-                _urm.push(std::move(*txn));
+                UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+                urm.push(std::move(*txn));
                 updateState();
-                _scene.paint();
+                scene.paint();
             }
         }
     }
@@ -212,20 +230,28 @@ void MainWindController::onThreeRequirements() {
 
 void MainWindController::onFourRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         //addRequirement(Requirement::ET_POINTONPOINT, pairSelectedID.first, pairSelectedID.second);
         std::vector<double> vec = {4, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()) };
-        UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-        _urm.push(std::move(*txn));
+        UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+        urm.push(std::move(*txn));
         updateState();
-        _scene.paint();
+        scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onFiveRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         InputWindow window("Enter parameters: ", &_mainWind);
@@ -236,10 +262,10 @@ void MainWindController::onFiveRequirements() {
             if (!ok) { return; }
             //addRequirement(Requirement::ET_SECTIONCIRCLEDIST, pairSelectedID.first, pairSelectedID.second, parameters);
             std::vector<double> vec = {5, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()), parameters};
-            UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-            _urm.push(std::move(*txn));
+            UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+            urm.push(std::move(*txn));
             updateState();
-            _scene.paint();
+            scene.paint();
         }
     }
     SLOT_GUARD_MAINWIND_END
@@ -247,62 +273,82 @@ void MainWindController::onFiveRequirements() {
 
 void MainWindController::onSixRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         //addRequirement(Requirement::ET_SECTIONONCIRCLE, pairSelectedID.first, pairSelectedID.second);
         std::vector<double> vec = {6, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()) };
-        UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-        _urm.push(std::move(*txn));
+        UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+        urm.push(std::move(*txn));
         updateState();
-        _scene.paint();
+        scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onSevenRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         //addRequirement(Requirement::ET_SECTIONINCIRCLE, pairSelectedID.first, pairSelectedID.second);
         std::vector<double> vec = {7, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()) };
-        UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-        _urm.push(std::move(*txn));
+        UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+        urm.push(std::move(*txn));
         updateState();
-        _scene.paint();
+        scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onEightRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         //addRequirement(Requirement::ET_SECTIONSECTIONPARALLEL, pairSelectedID->first, pairSelectedID->second);
         std::vector<double> vec = {8, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()) };
-        UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-        _urm.push(std::move(*txn));
+        UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+        urm.push(std::move(*txn));
         updateState();
-        _scene.paint();
+        scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onNineRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         //addRequirement(Requirement::ET_SECTIONSECTIONPERPENDICULAR, pairSelectedID.first, pairSelectedID.second);
         std::vector<double> vec = {9, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()) };
-        UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-        _urm.push(std::move(*txn));
+        UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+        urm.push(std::move(*txn));
         updateState();
-        _scene.paint();
+        scene.paint();
     }
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onTenRequirements() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
     auto pairSelectedID = _painter.getPairSelectedID();
     if (pairSelectedID) {
         if (InputWindow window("Enter parameters: ", &_mainWind); window.exec() == QDialog::Accepted) {
@@ -311,10 +357,10 @@ void MainWindController::onTenRequirements() {
             if (!ok) { return; }
             //addRequirement(Requirement::ET_SECTIONSECTIONANGLE, pairSelectedID.first, pairSelectedID.second, parameters);
             std::vector<double> vec = {10, static_cast<double>(pairSelectedID->first.get()), static_cast<double>(pairSelectedID->second.get()), parameters};
-            UndoRedo::Transaction* txn = _cm.invoke("REQ", { vec });
-            _urm.push(std::move(*txn));
+            UndoRedo::Transaction* txn = cm.invoke("REQ", { vec });
+            urm.push(std::move(*txn));
             updateState();
-            _scene.paint();
+            scene.paint();
         }
     }
     SLOT_GUARD_MAINWIND_END
@@ -322,24 +368,31 @@ void MainWindController::onTenRequirements() {
 
 void MainWindController::onEnterCommand(const QString& command) {
     SLOT_GUARD_MAINWIND_BEGIN
-        if (command == "Exit") {
-            _mainWind.closeProgram();
-            QCoreApplication::quit();
-        }else{
-            Transaction* txn = _cm.invoke(command.toStdString());
-            _urm.push(std::move(*txn));
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
+    if (command == "Exit") {
+        _mainWind.closeProgram();
+        QCoreApplication::quit();
+    }
+    else {
+        Transaction* txn = cm.invoke(command.toStdString());
+        urm.push(std::move(*txn));
 
-            updateState();
-            _scene.paint();
-            ModeManager::setSave(false);
-        }
+        updateState();
+        scene.paint();
+        ModeManager::setSave(false);
+    }
+
     SLOT_GUARD_MAINWIND_END
 }
 
 
 void MainWindController::onProjectSaved(const QString& absolutPath) {
     SLOT_GUARD_MAINWIND_BEGIN
-
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
     try {
         QDir dir(absolutPath);
         if (!dir.exists()) {
@@ -366,7 +419,7 @@ void MainWindController::onProjectSaved(const QString& absolutPath) {
                 throw std::runtime_error(msg.toStdString());
             }
 
-            SaveLoadJson saver(_scene);
+            SaveLoadJson saver(scene);
             QByteArray data = QString::fromStdString(saver.to_json().dump(4)).toUtf8();
 
             const qint64 bytesWritten = file.write(data);
@@ -397,7 +450,10 @@ void MainWindController::onProjectSaved(const QString& absolutPath) {
 
 void MainWindController::onLoadFile(const QString& fileName) {
     SLOT_GUARD_MAINWIND_BEGIN
-    _scene.clearImage();
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
+
+    scene.clearImage();
 
     try {
         QFile file(fileName);
@@ -419,12 +475,12 @@ void MainWindController::onLoadFile(const QString& fileName) {
             throw std::runtime_error(msg.toStdString());
         }
 
-        SaveLoadJson loader(_scene);
+        SaveLoadJson loader(scene);
         loader.from_json(j);
         loader.loadToScene();
 
         _mainWind.inProjectWindow();
-        _scene.paint();
+        scene.paint();
 
         const QString justName = QFileInfo(fileName).fileName();
         _lmb.addFileToProject(justName);
@@ -445,8 +501,29 @@ void MainWindController::onLoadFile(const QString& fileName) {
     SLOT_GUARD_MAINWIND_END
 }
 
+void MainWindController::onCreateFile(const QString& path, const QString& tabName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+    _documentManager.createNewDocument(tabName.toStdString());
+    Document* document = _documentManager.getActiveDocument();
+    document->path() = path.toStdString();
+    SLOT_GUARD_MAINWIND_END
+}
+
+void MainWindController::onChangeTab(const QString& tabName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+    if (_documentManager.setActiveDocument(tabName.toStdString()) == false) {
+        throw std::runtime_error("can't change tab");
+    }
+    SLOT_GUARD_MAINWIND_END
+}
+
 void MainWindController::onEmitScript(const QString& fileName) {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    CommandManager& cm = document->commandManager();
+    Scene& scene = document->scene();
+
     std::string File = fileName.toStdString();
     std::ifstream Script(File);
 
@@ -456,17 +533,21 @@ void MainWindController::onEmitScript(const QString& fileName) {
 
     std::string command;
     while (std::getline(Script, command)) {
-        Transaction* txn = _cm.invoke(command);
-        _urm.push(std::move(*txn));
+        Transaction* txn = cm.invoke(command);
+        urm.push(std::move(*txn));
     }
 
     updateState();
+    scene.paint();
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::onUNDO() {
     SLOT_GUARD_MAINWIND_BEGIN
-    bool b = _urm.undo();
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+
+    bool b = urm.undo();
     if (!b) {
         _mainWind.showError("Undo failed");
     }
@@ -476,7 +557,10 @@ void MainWindController::onUNDO() {
 
 void MainWindController::onREDO() {
     SLOT_GUARD_MAINWIND_BEGIN
-    bool b = _urm.redo();
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+
+    bool b = urm.redo();
     if (!b) {
         _mainWind.showError("Redo failed");
     }
@@ -505,8 +589,11 @@ void MainWindController::onEnterMessage(const QString& text) {
 void MainWindController::deleteOwnPoints(QVector<ID>& vecPoints, const QVector<ID>& vecSections, const QVector<ID>& vecCircles,
                                   const QVector<ID>&) {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
+
     for (const auto& sectionID: vecSections) {
-        ObjectData obj = _scene.getObjectData(sectionID);
+        ObjectData obj = scene.getObjectData(sectionID);
         const std::vector<ID>& points = obj.subObjects;
 
         for (const auto& p: points) {
@@ -518,7 +605,7 @@ void MainWindController::deleteOwnPoints(QVector<ID>& vecPoints, const QVector<I
     }
 
     for (auto& circleID: vecCircles) {
-        ObjectData obj = _scene.getObjectData(circleID);
+        ObjectData obj = scene.getObjectData(circleID);
         std::vector<ID> points = obj.subObjects;
 
         for (auto& p: points) {
@@ -534,35 +621,42 @@ void MainWindController::deleteOwnPoints(QVector<ID>& vecPoints, const QVector<I
 void MainWindController::deleteObjects(QVector<ID>& vecPoints, QVector<ID>& vecSections, QVector<ID>& vecCircles,
                                 QVector<ID>&) {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    Scene& scene = document->scene();
+
     UndoRedo::Transaction txn("Delete objects");
 
     for (qsizetype i = 0; i < vecPoints.size(); ++i) {
-        UndoRedo::CommandDeletePoint* cmd = new UndoRedo::CommandDeletePoint(_scene, vecPoints[i]);
+        UndoRedo::CommandDeletePoint* cmd = new UndoRedo::CommandDeletePoint(scene, vecPoints[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
             _lmb.removeFigureById(vecPoints[i].get());
         });
     }
     for (qsizetype i = 0; i < vecSections.size(); ++i) {
-        UndoRedo::CommandDeleteSection* cmd = new UndoRedo::CommandDeleteSection(_scene, vecSections[i]);
+        UndoRedo::CommandDeleteSection* cmd = new UndoRedo::CommandDeleteSection(scene, vecSections[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
             _lmb.removeFigureById(vecSections[i].get());
         });
     }
     for (qsizetype i = 0; i < vecCircles.size(); ++i) {
-        UndoRedo::CommandDeleteCircle* cmd = new UndoRedo::CommandDeleteCircle(_scene, vecCircles[i]);
+        UndoRedo::CommandDeleteCircle* cmd = new UndoRedo::CommandDeleteCircle(scene, vecCircles[i]);
         txn.addCommand(cmd);
         vecCalls.push_back([=, this]() {
             _lmb.removeFigureById(vecCircles[i].get());
         });
     }
-    _urm.push(std::move(txn));
+    urm.push(std::move(txn));
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::fillSelectedIDBuffer() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
+
     QVector<ID> bufferSelectedIDPoints = _painter.getVecSelectedIDPoints();
     QVector<ID> bufferSelectedIDSections = _painter.getVecSelectedIDLines();
     QVector<ID> bufferSelectedIDCircles = _painter.getVecSelectedIDCircles();
@@ -571,25 +665,28 @@ void MainWindController::fillSelectedIDBuffer() {
     deleteOwnPoints(bufferSelectedIDPoints, bufferSelectedIDSections, bufferSelectedIDCircles, bufferSelectedIDArcs);
 
     for (auto& id: bufferSelectedIDPoints) {
-        objectsBuffer.push_back(_scene.getObjectData(id));
+        objectsBuffer.push_back(scene.getObjectData(id));
     }
 
     for (auto& id: bufferSelectedIDSections) {
-        objectsBuffer.push_back(_scene.getObjectData(id));
+        objectsBuffer.push_back(scene.getObjectData(id));
     }
 
     for (auto& id: bufferSelectedIDCircles) {
-        objectsBuffer.push_back(_scene.getObjectData(id));
+        objectsBuffer.push_back(scene.getObjectData(id));
     }
 
     for (auto& id: bufferSelectedIDArcs) {
-        objectsBuffer.push_back(_scene.getObjectData(id));
+        objectsBuffer.push_back(scene.getObjectData(id));
     }
     SLOT_GUARD_MAINWIND_END
 }
 
 void MainWindController::updateState() {
     SLOT_GUARD_MAINWIND_BEGIN
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
+    scene.paint();
 
     for (auto& call: vecCalls) {
         call();
