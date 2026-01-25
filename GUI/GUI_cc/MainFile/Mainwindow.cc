@@ -82,6 +82,7 @@ void MainWindow::initConnections() {
     connect(fileSystems, &FileSystems::ChangeTabs, this, &MainWindow::slotChangeTabs);
     connect(fileSystems, &FileSystems::OpenProject, this, &MainWindow::slotOpenProject);
     connect(fileSystems, &FileSystems::SaveProject, this, &MainWindow::slotSaveProject);
+    connect(fileSystems, &FileSystems::CreateNewTab, this, &MainWindow::slotCreateNewTab);
 
     connect(ui->actionJPG, &QToolButton::clicked, this, &MainWindow::onExportJPG);
     connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
@@ -133,49 +134,6 @@ void MainWindow::setupLeftMenu() {
 
     connect(ui->leftMenuView, &QTreeView::customContextMenuRequested,
             this, &MainWindow::onLeftMenuRightClick);
-}
-
-
-void MainWindow::updateShapeCursor(const QPoint& pos) {
-    const qint32 x = pos.x();
-    const qint32 y = pos.y();
-    const qint32 w = width();
-    const qint32 h = height();
-
-    ResizeRegion region = None;
-
-    if (x < edgeMargin && y < edgeMargin) { region = TopLeft; }
-    else if (x > w - edgeMargin && y < edgeMargin) { region = TopRight; }
-    else if (x < edgeMargin && y > h - edgeMargin) { region = BottomLeft; }
-    else if (x > w - edgeMargin && y > h - edgeMargin) { region = BottomRight; }
-    else if (x < edgeMargin) { region = Left; }
-    else if (x > w - edgeMargin) { region = Right; }
-    else if (y < edgeMargin) { region = Top; }
-    else if (y > h - edgeMargin) { region = Bottom; }
-
-    currentRegion = region;
-
-    switch (region) {
-        case TopLeft:
-        case BottomRight:
-            setCursor(Qt::SizeFDiagCursor);
-            break;
-        case TopRight:
-        case BottomLeft:
-            setCursor(Qt::SizeBDiagCursor);
-            break;
-        case Left:
-        case Right:
-            setCursor(Qt::SizeHorCursor);
-            break;
-        case Top:
-        case Bottom:
-            setCursor(Qt::SizeVerCursor);
-            break;
-        default:
-            setCursor(Qt::ArrowCursor);
-            break;
-    }
 }
 
 
@@ -245,26 +203,6 @@ QString MainWindow::getUserName() {
 }
 
 
-bool MainWindow::closeProgram() {
-    if (!ModeManager::getSave()) {
-        SaveDialog dialog(this);
-        const auto result = dialog.exec();
-
-        if (result == QMessageBox::Yes) {
-            fileSystems->saveProject();
-            return ModeManager::getSave();
-        }
-
-        if (result == QMessageBox::No) {
-            return true;
-        }
-
-        // Cancel
-        return false;
-    }
-
-    return true;
-}
 
 
 
@@ -325,288 +263,94 @@ QPushButton* MainWindow::getTenthBut() const {
 
 /// ***** PROTECTED:
 
+bool MainWindow::closeProgram() {
+    if (!ModeManager::getSave()) {
+        SaveDialog dialog(this);
+        const auto result = dialog.exec();
+
+        if (result == QMessageBox::Yes) {
+            fileSystems->saveProject();
+            return ModeManager::getSave();
+        }
+
+        if (result == QMessageBox::No)
+            return true;
+
+        return false; // Cancel
+    }
+    return true;
+}
 
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-
-    qDebug()<<ModeManager::getProject()<<ModeManager::getSave()<<closeProgram();
-    if (!ModeManager::getProject()) {
-        event->accept();
-        return;
-    }
-
-    if (closeProgram()) {
-        event->accept();
-    } else {
-        event->ignore();
-    }
+    windowController->handleCloseEvent(event);
 }
 
 
 void MainWindow::mousePressEvent(QMouseEvent* event) {
-    dragStartPos = event->globalPosition().toPoint();
-    originalGeometry = geometry();
-
-    if (event->button() == Qt::LeftButton) {
-        if (currentRegion != None) {
-            resizing = true;
-        } else {
-            moving = true;
-        }
-    }
-
+    windowController->mousePress(event);
     QMainWindow::mousePressEvent(event);
 }
 
-
 void MainWindow::mouseMoveEvent(QMouseEvent* event) {
-    const QPoint globalPos = event->globalPosition().toPoint();
-
-    if (resizing) {
-        QRect geom = originalGeometry;
-        const QPoint delta = globalPos - dragStartPos;
-
-        switch (currentRegion) {
-            case Top:
-                geom.setTop(geom.top() + delta.y());
-                break;
-            case Bottom:
-                geom.setBottom(geom.bottom() + delta.y());
-                break;
-            case Left:
-                geom.setLeft(geom.left() + delta.x());
-                break;
-            case Right:
-                geom.setRight(geom.right() + delta.x());
-                break;
-            case TopLeft:
-                geom.setTop(geom.top() + delta.y());
-                geom.setLeft(geom.left() + delta.x());
-                break;
-            case TopRight:
-                geom.setTop(geom.top() + delta.y());
-                geom.setRight(geom.right() + delta.x());
-                break;
-            case BottomLeft:
-                geom.setBottom(geom.bottom() + delta.y());
-                geom.setLeft(geom.left() + delta.x());
-                break;
-            case BottomRight:
-                geom.setBottom(geom.bottom() + delta.y());
-                geom.setRight(geom.right() + delta.x());
-                break;
-            default:
-                break;
-        }
-
-        setGeometry(geom);
-    } else if (moving) {
-        move(pos() + globalPos - dragStartPos);
-        dragStartPos = globalPos;
-    } else {
-        updateShapeCursor(event->pos());
-    }
-
+    windowController->mouseMove(event);
     QMainWindow::mouseMoveEvent(event);
 }
 
-
 void MainWindow::mouseReleaseEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton) {
-        setCursor(Qt::ArrowCursor);
-        resizing = false;
-        moving = false;
-        event->accept();
-    } else {
-        QMainWindow::mouseReleaseEvent(event);
-    }
+    windowController->mouseRelease(event);
+    QMainWindow::mouseReleaseEvent(event);
 }
 
-
 void MainWindow::mouseDoubleClickEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton) {
-        moving = true;
-        dragStartPos = event->globalPosition().toPoint();
-    }
-
+    windowController->mouseDoubleClick(event);
     QMainWindow::mouseDoubleClickEvent(event);
 }
 
-
 void MainWindow::wheelEvent(QWheelEvent* event) {
-    if (ui->workWindow && ui->workWindow->underMouse()) {
-        if (event->angleDelta().y() > 0) {
-            Scaling::setZoomPlus();
-        } else {
-            Scaling::setZoomMinus();
-        }
-        ui->workWindow->update();
-        event->accept();
-    } else {
-        QMainWindow::wheelEvent(event);
-    }
+    windowController->wheel(event);
 }
 
-
 bool MainWindow::event(QEvent* event) {
-
-    if (event->type() == QEvent::Gesture) {
-        const QGestureEvent* gestureEvent = static_cast<QGestureEvent*>(event);
-        if (QGesture* pinch = gestureEvent->gesture(Qt::PinchGesture)) {
-            if (const auto pinchGesture = static_cast<QPinchGesture*>(pinch); pinchGesture->changeFlags() &
-                QPinchGesture::ScaleFactorChanged) {
-
-                if (pinchGesture->scaleFactor() > 1.0) {
-                    Scaling::setZoomPlus();
-                } else {
-                    Scaling::setZoomMinus();
-                }
-            }
-            return true;
-        }
+    if (windowController->handleEvent(event)) {
+        return true;
     }
-
     return QMainWindow::event(event);
 }
 
-
 bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
-
-    if (event->type() == QEvent::KeyPress) {
-
-        if (const auto keyEvent = static_cast<QKeyEvent*>(event); keyEvent->key() == Qt::Key_Tab) {
-
-            event->accept();
-        } else if (!ui->console->isActiveWindow() &&
-                   keyEvent->key() != Qt::ControlModifier &&
-                   (keyEvent->key() == Qt::Key_Up ||
-                    keyEvent->key() == Qt::Key_Down ||
-                    keyEvent->key() == Qt::Key_Right ||
-                    keyEvent->key() == Qt::Key_Left)) {
-        }
-
+    if (windowController->handleEventFilter(obj, event)) {
         return true;
     }
-
-    return QObject::eventFilter(obj, event);
+    return QMainWindow::eventFilter(obj, event);
 }
-
 
 void MainWindow::keyPressEvent(QKeyEvent* event) {
-
-    // Processing ctrl + arrow keys -> moves the window to different positions
-    if (event->modifiers() & Qt::ControlModifier) {
-        const QRect screenGeometry = QApplication::primaryScreen()->availableGeometry();
-        if (event->key() == Qt::Key_Left) {
-            const bool isRightDownHalf = this->geometry() == QRect(screenGeometry.left() + screenGeometry.width() / 2,
-                                                             screenGeometry.height() / 2,
-                                                             screenGeometry.width() / 2,
-                                                             screenGeometry.height() / 2);
-            const bool isRightTop = this->geometry() ==
-                              QRect(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
-                                    screenGeometry.width() / 2, screenGeometry.height() / 2);
-            if (isRightTop) {
-                this->setGeometry(screenGeometry.left(), screenGeometry.top(),
-                                  screenGeometry.width() / 2, screenGeometry.height() / 2);
-            } else if (isRightDownHalf) {
-                this->setGeometry(screenGeometry.left(), screenGeometry.height() / 2,
-                                  screenGeometry.width() / 2, screenGeometry.height() / 2);
-            } else {
-                this->setGeometry(screenGeometry.left(), screenGeometry.top(),
-                                  screenGeometry.width() / 2, screenGeometry.height());
-            }
-        } else if (event->key() == Qt::Key_Right) {
-            const bool isLeftDownHalf = this->geometry() ==
-                                  QRect(screenGeometry.left(), screenGeometry.height() / 2,
-                                        screenGeometry.width() / 2,
-                                        screenGeometry.height() / 2);
-            const bool isLeftUpHalf = this->geometry() ==
-                                QRect(screenGeometry.left(), screenGeometry.height() / 2,
-                                      screenGeometry.width() / 2,
-                                      screenGeometry.height() / 2);
-            if (isLeftUpHalf) {
-                this->setGeometry(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
-                                  screenGeometry.width() / 2, screenGeometry.height() / 2);
-            } else if (isLeftDownHalf) {
-                this->setGeometry(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.height() / 2,
-                                  screenGeometry.width() / 2, screenGeometry.height() / 2);
-            } else {
-                this->setGeometry(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
-                                  screenGeometry.width() / 2, screenGeometry.height());
-            }
-        } else if (event->key() == Qt::Key_Up) {
-            const bool isLeftDownHalf = this->geometry() ==
-                                  QRect(screenGeometry.left(), screenGeometry.height() / 2,
-                                        screenGeometry.width() / 2,
-                                        screenGeometry.height() / 2);
-            const bool isRightDownHalf = this->geometry() == QRect(screenGeometry.left() + screenGeometry.width() / 2,
-                                                             screenGeometry.height() / 2,
-                                                             screenGeometry.width() / 2,
-                                                             screenGeometry.height() / 2);
-            const bool isLeft = this->geometry() ==
-                          QRect(screenGeometry.left(), screenGeometry.top(), screenGeometry.width() / 2,
-                                screenGeometry.height());
-            const bool isRight = this->geometry() ==
-                           QRect(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
-                                 screenGeometry.width() / 2, screenGeometry.height());
-            if (isLeft || isLeftDownHalf) {
-                this->setGeometry(screenGeometry.left(), screenGeometry.top(), screenGeometry.width() / 2,
-                                  screenGeometry.height() / 2);
-            } else if (isRight || isRightDownHalf) {
-                this->setGeometry(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
-                                  screenGeometry.width() / 2, screenGeometry.height() / 2);
-            } else {
-                this->showMaximized();
-            }
-        } else if (event->key() == Qt::Key_Down) {
-            const bool isOnRight =
-                    this->geometry() ==
-                    QRect(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
-                          screenGeometry.width() / 2, screenGeometry.height());
-            const bool isOnLeft = this->geometry() ==
-                            QRect(screenGeometry.left(), screenGeometry.top(), screenGeometry.width() / 2,
-                                  screenGeometry.height());
-            const bool isRightTop = this->geometry() ==
-                              QRect(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.top(),
-                                    screenGeometry.width() / 2, screenGeometry.height() / 2);
-            const bool isLeftTop = this->geometry() ==
-                             QRect(screenGeometry.left(), screenGeometry.top(), screenGeometry.width() / 2,
-                                   screenGeometry.height() / 2);
-            if (this->isMaximized()) {
-                this->showNormal();
-            } else if (isOnRight || isRightTop) {
-                this->setGeometry(screenGeometry.left() + screenGeometry.width() / 2, screenGeometry.height() / 2,
-                                  screenGeometry.width() / 2, screenGeometry.height() / 2);
-            } else if (isOnLeft || isLeftTop) {
-                this->setGeometry(screenGeometry.left(), screenGeometry.height() / 2, screenGeometry.width() / 2,
-                                  screenGeometry.height() / 2);
-            } else {
-                this->showMinimized();
-            }
-
-        }
-    }
-
-    QWidget::keyPressEvent(event);
+    windowController->keyPress(event);
+    QMainWindow::keyPressEvent(event);
 }
-
 
 
 /// ***** SLOTS:
 
 
 
-void MainWindow::slotSaveProject(const QString& fileName) {
-    emit SaveProject(fileName);
+void MainWindow::slotSaveProject(const QString& workDir) {
+    emit SaveProject(workDir);
 }
 
 
-void MainWindow::slotOpenProject(const QString& fileName) {
-    emit OpenProject(fileName);
+void MainWindow::slotOpenProject(const QString& workDir) {
+    emit OpenProject(workDir);
 }
 
 
 void MainWindow::slotChangeTabs(const QString& tabName) {
+    emit ChangeTabs(tabName);
+}
+
+
+void MainWindow::slotCreateNewTab(const QString& tabName) {
     emit ChangeTabs(tabName);
 }
 
@@ -728,7 +472,6 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
 
             connect(wind,&InputWindow::textEnter, [this](const QString& text) {
                 const QString projectName= text + ".ourp";
-
                 fileSystems->createNewFile(projectName);
             });
 
