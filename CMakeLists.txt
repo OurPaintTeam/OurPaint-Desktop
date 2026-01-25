@@ -189,7 +189,7 @@ add_executable(ourpaint
 
 
         GUI/GUI_cc/Logger/GUI_Logger.cc
-        GUI/GUI_cc/FileSystem/CreateOpenSaveProject.cc
+        GUI/GUI_cc/FileSystem/FileSystems.cc
 
 
         GUI/GUI_cc/Rendering/RenderFigures/RenderCircles.cc
@@ -244,7 +244,7 @@ add_executable(ourpaint
 
 
         GUI/GUI_h/Logger/GUI_Logger.h
-        GUI/GUI_h/FileSystem/CreateOpenSaveProject.h
+        GUI/GUI_h/FileSystem/FileSystems.h
 
 
         GUI/GUI_h/Rendering/RenderingStyle/RenderStyle.h
