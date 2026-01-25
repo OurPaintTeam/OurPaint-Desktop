@@ -82,6 +82,9 @@ public:
     QTPainter* getQTPainter() const;
     QString getProjectPath() const;
 
+    void inStartWindow() const;
+    void inProjectWindow() const;
+
     void selectLeftMenuElem(const QModelIndex& index) const;
     void setupConsoleCommands(const QStringList& commandList) const;
     void updateExitServerStyle(bool) const;
@@ -94,7 +97,7 @@ public:
 
     /***     Save/import settings       ***/
     QString getUserName();
-    void closeProgram();
+    bool closeProgram();
 
     QPushButton* getFirstBut() const;
     QPushButton* getSecondBut() const;

@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     initConnections(); // Initialization of signals
     setupLeftMenu();
-   // saveLoadProject->initListProjectStartWindow();
+    saveLoadProject->scanAndLoadProjects();
 }
 
 
@@ -45,6 +45,16 @@ QTPainter* MainWindow::getQTPainter() const {
 
 QString MainWindow::getProjectPath() const {
     return saveLoadProject->getProjectPath();
+}
+
+
+void  MainWindow::inStartWindow() const {
+    ui->startWindow();
+}
+
+
+void MainWindow::inProjectWindow() const {
+    ui->inProject();
 }
 
 
@@ -65,10 +75,9 @@ void MainWindow::initConnections() {
     connect(ui->toolShowSize, &QPushButton::clicked, this, &MainWindow::ToolShowSize);
 
     // Save/import buttons
-    connect(ui->createProjectButton, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::createProject);
-    connect(ui->actionCreate_project_to, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::createProject);
-    connect(ui->actionOpen_project, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::slotOpenProject);
-    connect(ui->loadProjectButton, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::slotOpenProject);
+    connect(ui->openFolderForOpenProject, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::openOrCreateProject);
+    connect(ui->actionCreate_project_to, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::openOrCreateProject);
+    connect(ui->actionOpen_project, &QPushButton::clicked, saveLoadProject, &CreateOpenSaveProject::openOrCreateProject);
 
     connect(saveLoadProject, &CreateOpenSaveProject::ChangeTabs, this, &MainWindow::slotChangeTabs);
     connect(saveLoadProject, &CreateOpenSaveProject::OpenProject, this, &MainWindow::slotOpenProject);
@@ -236,25 +245,25 @@ QString MainWindow::getUserName() {
 }
 
 
-void MainWindow::closeProgram() {
+bool MainWindow::closeProgram() {
     if (!ModeManager::getSave()) {
         SaveDialog dialog(this);
-        dialog.setModal(true);
+        const auto result = dialog.exec();
 
-        if (const qint32 result = dialog.exec(); result == QMessageBox::Yes) {
-
+        if (result == QMessageBox::Yes) {
             saveLoadProject->saveProject();
-
-            if (ModeManager::getSave()) {
-                close();
-            }
-
-        }else {
-            saveLoadProject->deleteAllProject();
-            close();
+            return ModeManager::getSave();
         }
+
+        if (result == QMessageBox::No) {
+            return true;
+        }
+
+        // Cancel
+        return false;
     }
 
+    return true;
 }
 
 
@@ -319,8 +328,18 @@ QPushButton* MainWindow::getTenthBut() const {
 
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    closeProgram();
-    event->accept();
+
+    qDebug()<<ModeManager::getProject()<<ModeManager::getSave()<<closeProgram();
+    if (!ModeManager::getProject()) {
+        event->accept();
+        return;
+    }
+
+    if (closeProgram()) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
 }
 
 
@@ -568,8 +587,6 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
         }
     }
 
-
-
     QWidget::keyPressEvent(event);
 }
 
@@ -580,7 +597,7 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
 
 
 void MainWindow::slotSaveProject(const QString& fileName) {
-    emit OpenProject(fileName);
+    emit SaveProject(fileName);
 }
 
 
@@ -711,13 +728,8 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
 
             connect(wind,&InputWindow::textEnter, [this](const QString& text) {
                 const QString projectName= text + ".ourp";
-                QPushButton* tabButton = ui->createTabProject(projectName);
 
-                connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
-                    emit ChangeTabs(tabButton->objectName());
-                });
-
-                saveLoadProject->createFile(tabButton->objectName());
+                saveLoadProject->createNewFile(projectName);
             });
 
         }
