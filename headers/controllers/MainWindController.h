@@ -51,11 +51,15 @@ public slots:
     void onTenRequirements();
 
     void onEnterCommand(const QString& command);
-    void onProjectSaved(const QString& fileName);
-    void onLoadFile(const QString& fileName);
-    void onCreateFile(const QString& path, const QString& tabName);
-    void onChangeTab(const QString& tabName);
     void onEmitScript(const QString& fileName);
+
+    // Project level
+    void onSaveProject(const QString& workDir);
+    void onOpenProject(const QString& workDir);
+
+    // Document level
+    void onCreateTab(const QString& tabName);
+    void onChangeTab(const QString& tabName);
 
     void onUNDO();
     void onREDO();

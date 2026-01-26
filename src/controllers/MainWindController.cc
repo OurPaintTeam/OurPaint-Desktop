@@ -389,20 +389,20 @@ void MainWindController::onEnterCommand(const QString& command) {
 }
 
 
-void MainWindController::onProjectSaved(const QString& absolutPath) {
+void MainWindController::onSaveProject(const QString& workDir) {
     SLOT_GUARD_MAINWIND_BEGIN
     Document* document = _documentManager.getActiveDocument();
     Scene& scene = document->scene();
     try {
-        QDir dir(absolutPath);
+        QDir dir(workDir);
         if (!dir.exists()) {
-            QString msg = tr("Каталог проекта не существует: %1").arg(absolutPath);
+            QString msg = tr("Каталог проекта не существует: %1").arg(workDir);
             qDebug() << "SAVE ERROR:" << msg;
             throw std::runtime_error(msg.toStdString());
         }
 
         QDirIterator it(
-            absolutPath,
+            workDir,
             QStringList() << "*.ourp",
             QDir::Files,
             QDirIterator::Subdirectories
@@ -437,7 +437,7 @@ void MainWindController::onProjectSaved(const QString& absolutPath) {
                      << "(" << bytesWritten << "байт)";
         }
 
-        qDebug() << "SAVE WARNING: файлов для сохранения не найдено в" << absolutPath;
+        qDebug() << "SAVE WARNING: файлов для сохранения не найдено в" << workDir;
         _mainWind.showWarning(tr("Файлы проекта не найдены для сохранения."));
 
     } catch (const std::exception& e) {
@@ -448,7 +448,7 @@ void MainWindController::onProjectSaved(const QString& absolutPath) {
     SLOT_GUARD_MAINWIND_END
 }
 
-void MainWindController::onLoadFile(const QString& fileName) {
+void MainWindController::onOpenProject(const QString& workDir) {
     SLOT_GUARD_MAINWIND_BEGIN
     Document* document = _documentManager.getActiveDocument();
     Scene& scene = document->scene();
@@ -456,9 +456,9 @@ void MainWindController::onLoadFile(const QString& fileName) {
     scene.clearImage();
 
     try {
-        QFile file(fileName);
+        QFile file(workDir);
         if (!file.open(QIODevice::ReadOnly)) {
-            const QString msg = tr("Невозможно открыть файл: %1").arg(fileName);
+            const QString msg = tr("Невозможно открыть файл: %1").arg(workDir);
             qDebug() << "LOAD ERROR:" << msg;
             _mainWind.showError(msg);
             throw std::runtime_error(msg.toStdString());
@@ -469,7 +469,7 @@ void MainWindController::onLoadFile(const QString& fileName) {
 
         const nlohmann::json j = nlohmann::json::parse(data.constData(), nullptr, false);
         if (j.is_discarded()) {
-            const QString msg = tr("Файл повреждён или не является JSON: %1").arg(fileName);
+            const QString msg = tr("Файл повреждён или не является JSON: %1").arg(workDir);
             qDebug() << "LOAD ERROR:" << msg;
             _mainWind.showError(msg);
             throw std::runtime_error(msg.toStdString());
@@ -482,11 +482,11 @@ void MainWindController::onLoadFile(const QString& fileName) {
         _mainWind.inProjectWindow();
         scene.paint();
 
-        const QString justName = QFileInfo(fileName).fileName();
+        const QString justName = QFileInfo(workDir).fileName();
         _lmb.addFileToProject(justName);
         _lmb.updateLeftMenu();
 
-        qDebug() << "LOAD OK:" << fileName << "(" << data.size() << "байт)";
+        qDebug() << "LOAD OK:" << workDir << "(" << data.size() << "байт)";
         _mainWind.showSuccess(tr("Проект успешно загружен!"));
 
         ModeManager::setProject(true);
@@ -501,11 +501,9 @@ void MainWindController::onLoadFile(const QString& fileName) {
     SLOT_GUARD_MAINWIND_END
 }
 
-void MainWindController::onCreateFile(const QString& path, const QString& tabName) {
+void MainWindController::onCreateTab(const QString& tabName) {
     SLOT_GUARD_MAINWIND_BEGIN
     _documentManager.createNewDocument(tabName.toStdString());
-    Document* document = _documentManager.getActiveDocument();
-    document->path() = path.toStdString();
     SLOT_GUARD_MAINWIND_END
 }
 
