@@ -112,6 +112,7 @@ void FileSystems::createTab(const QString& ourpFileName) { // name.ourp
         LOG_INFO("Переключение на вкладку:" << ourpFileName);
         emit ChangeTabs(ourpFileName); // name.ourp
     });
+    emit CreateNewTab(ourpFileName);
 }
 
 
