@@ -38,8 +38,7 @@ void Application::initCore() {
 void Application::initGUI(int& argc, char** argv) {
     app = new QApplication(argc, argv);
     mainWind = new MainWindow();
-    //sqa = new SceneQtAdapter(*scene);
-    //username = new QString(mainWind->getUserName()); // TODO оно не тут
+    sqa = new SceneQtAdapter();
 
     mainWind->setupConsoleCommands({
         "POINT ",
@@ -67,7 +66,6 @@ void Application::initGUI(int& argc, char** argv) {
     }
 
     painter =  mainWind->getQTPainter();
-    //scene->setPainter(painter);
     leftMenu = mainWind->getLeftMenuBar();
 
     QObject::connect(sqa, &SceneQtAdapter::pointAddedQt, leftMenu, &LeftMenuBar::onPointAdded);
@@ -122,7 +120,7 @@ void Application::initControllers() {
     QObject::connect(painter, &QTPainter::MovingArc, pc, &PainterController::onMovingArc);
     QObject::connect(painter, &QTPainter::EndMoving, pc, &PainterController::onEndMoving);
 
-    mwc = new MainWindController(*painter, *documentManager, *mainWind, *leftMenu);
+    mwc = new MainWindController(*painter, *documentManager, *mainWind, *leftMenu, *sqa);
 
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::DELETE, mwc, &MainWindController::onDelete); // Deleting an element
     QObject::connect(painter->getKeyWW(), &KeyWorkWindow::COPY, mwc, &MainWindController::onCopy); // ctrl+c
@@ -181,7 +179,6 @@ Application::~Application() {
     delete pc;
     delete mwc;
     delete lmc;
-
 
     /* free core */
     delete documentManager;

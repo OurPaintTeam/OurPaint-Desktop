@@ -32,10 +32,10 @@ bool DocumentManager::setActiveDocument(const std::string& name) {
     for (int i = 0; i < count(); i++) {
         if (documents[i]->name() == name) {
             activeDocumentIndex = i;
-            break;
+            return true;
         }
     }
-    return true;
+    return false;
 }
 
 int DocumentManager::getActiveIndex() const {

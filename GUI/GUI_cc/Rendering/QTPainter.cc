@@ -355,7 +355,7 @@ bool QTPainter::findClosestObject() const {
         return false;
     }
 
-    if (objectContainer->casePoints != nullptr) {
+    if (objectContainer && objectContainer->casePoints != nullptr) {
         for (auto it = objectContainer->casePoints->cbegin(); it != objectContainer->casePoints->cend(); ++it) {
             const Point* point = it->second;
             const QPointF pos(point->x, point->y);
@@ -381,7 +381,7 @@ bool QTPainter::findClosestObject() const {
         }
     }
 
-    if (objectContainer->caseSections != nullptr) {
+    if (objectContainer && objectContainer->caseSections != nullptr) {
         for (auto it = objectContainer->caseSections->cbegin(); it != objectContainer->caseSections->cend(); ++it) {
             const Section* section = it->second;
             const QPointF startPoint(section->beg->x, section->beg->y);
@@ -429,7 +429,7 @@ bool QTPainter::findClosestObject() const {
         }
     }
 
-    if (objectContainer->caseCircles != nullptr) {
+    if (objectContainer && objectContainer->caseCircles != nullptr) {
         for (auto it = objectContainer->caseCircles->cbegin(); it != objectContainer->caseCircles->cend(); ++it) {
             const Circle* circle = it->second;
             const QPointF center(circle->center->x, circle->center->y);
@@ -454,7 +454,7 @@ bool QTPainter::findClosestObject() const {
         }
     }
 
-    if (objectContainer->caseArcs != nullptr) {
+    if (objectContainer && objectContainer->caseArcs != nullptr) {
         for (auto it = objectContainer->caseArcs->cbegin(); it != objectContainer->caseArcs->cend(); ++it) {
             const Arc* arc = it->second;
             const QPointF startPoint(arc->beg->x, arc->beg->y);
@@ -489,19 +489,19 @@ bool QTPainter::findClosestObject() const {
 
 void QTPainter::drawingFigures(QPainter& painter) const {
 
-    if (objectContainer->casePoints != nullptr && !objectContainer->casePoints->empty()) {
+    if (objectContainer && objectContainer->casePoints != nullptr && !objectContainer->casePoints->empty()) {
         render::drawFigures(painter, activeContainer->visiblePoints);
     }
 
-    if (objectContainer->caseSections != nullptr && !objectContainer->caseSections->empty()) {
+    if (objectContainer && objectContainer->caseSections != nullptr && !objectContainer->caseSections->empty()) {
         render::drawFigures(painter, activeContainer->visibleLines);
     }
 
-    if (objectContainer->caseCircles != nullptr && !objectContainer->caseCircles->empty()) {
+    if (objectContainer && objectContainer->caseCircles != nullptr && !objectContainer->caseCircles->empty()) {
         render::drawFigures(painter, activeContainer->visibleCircles);
     }
 
-    if (objectContainer->caseArcs != nullptr && !objectContainer->caseArcs->empty()) {
+    if (objectContainer && objectContainer->caseArcs != nullptr && !objectContainer->caseArcs->empty()) {
         render::drawFigures(painter, activeContainer->visibleArcs);
     }
 
@@ -942,7 +942,7 @@ void QTPainter::paintEvent(QPaintEvent* event) {
             ModeManager::getActiveMode(WorkModes::Circle) ||
             ModeManager::getActiveMode(WorkModes::Arc))
             if (ModeManager::getActiveMode(WorkModes::Section)) {
-                if (objectContainer->casePoints != nullptr) {
+                if (objectContainer && objectContainer->casePoints != nullptr) {
                     const QPointF cursor = Scaling::logicCursor();
                     const QPointF closest = ClosestPoint::findClosestPoint(*objectContainer->casePoints,
                                                                      cursor); // Finding the closest points

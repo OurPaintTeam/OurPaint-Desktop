@@ -1,11 +1,9 @@
 #include "SceneQtAdapter.h"
+#include "Document.h"
 #include "Scene.h"
 
-SceneQtAdapter::SceneQtAdapter(Scene& scene)
-        : QObject(nullptr)
-{
-    scene.setObserver(this);
-}
+SceneQtAdapter::SceneQtAdapter()
+        : QObject(nullptr) {}
 
 void SceneQtAdapter::pointAdded(ID id, const double* x, const double* y) {
     emit pointAddedQt(id, x, y);

@@ -21,11 +21,13 @@
 MainWindController::MainWindController(QTPainter& painter,
                                        DocumentManager& documentManager,
                                        MainWindow& mainWind,
-                                       LeftMenuBar& lmb)
+                                       LeftMenuBar& lmb,
+                                       SceneQtAdapter& sceneQtAdapter)
     : _painter(painter),
       _mainWind(mainWind),
       _lmb(lmb),
-      _documentManager(documentManager)
+      _documentManager(documentManager),
+      _sceneQtAdapter(sceneQtAdapter)
       {
     vec_requirements = {
             "PointSectionDist",
@@ -504,6 +506,9 @@ void MainWindController::onOpenProject(const QString& workDir) {
 void MainWindController::onCreateTab(const QString& tabName) {
     SLOT_GUARD_MAINWIND_BEGIN
     _documentManager.createNewDocument(tabName.toStdString());
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
+    scene.setObserver(&_sceneQtAdapter);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -522,7 +527,7 @@ void MainWindController::onChangeTab(const QString& tabName) {
 void MainWindController::onEmitScript(const QString& fileName) {
     SLOT_GUARD_MAINWIND_BEGIN
     Document* document = _documentManager.getActiveDocument();
-    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+    UndoRedoManager& urm = document->undoRedoManager();
     CommandManager& cm = document->commandManager();
     Scene& scene = document->scene();
 

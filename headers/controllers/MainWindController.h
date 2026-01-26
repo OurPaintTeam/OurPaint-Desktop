@@ -14,6 +14,7 @@ class Client;
 class DocumentManager;
 class InputWindow;
 class SaveLoadJson;
+class SceneQtAdapter;
 
 class MainWindController final : public QObject {
 Q_OBJECT
@@ -22,6 +23,7 @@ private:
     MainWindow& _mainWind;
     LeftMenuBar& _lmb;
     DocumentManager& _documentManager;
+    SceneQtAdapter& _sceneQtAdapter;
     std::vector<std::function<void()>> vecCalls;
     std::vector<QString> vec_requirements;
     std::vector<ObjectData> objectsBuffer;
@@ -31,7 +33,8 @@ public:
     MainWindController(QTPainter& painter,
                        DocumentManager& documentManager,
                        MainWindow& mainWind,
-                       LeftMenuBar& lmb);
+                       LeftMenuBar& lmb,
+                       SceneQtAdapter& sceneQtAdapter);
 
 public slots:
     void onDelete();
