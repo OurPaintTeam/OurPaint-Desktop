@@ -2,7 +2,6 @@
 #include "Scene.h"
 #include "SceneObserver.h"
 #include "Enums.h"
-#include "Painter.h"
 #include "Objects.h"
 #include "LMWithSparse.h"
 #include "Component.h"
@@ -30,12 +29,10 @@ Scene::Scene(Painter* p) :
     _circles.reserve(std::size_t(1024));
     _arcs.reserve(std::size_t(1024));
     _requirements.reserve(std::size_t(512));
-    if (p) {
-        p->initPointCase(_points);
-        p->initSectionCase(_sections);
-        p->initCircleCase(_circles);
-        p->initArcCase(_arcs);
-    }
+    _objectContainer.casePoints = &_points;
+    _objectContainer.caseSections = &_sections;
+    _objectContainer.caseCircles =  &_circles;
+    _objectContainer.caseArcs = &_arcs;
 }
 
 //Scene::Scene(Scene &&) {
@@ -507,12 +504,9 @@ void Scene::updateBoundingBox() const {
 
 void Scene::paint() const {
     updateBoundingBox();
-    _painter->getBoundBox(_allFiguresRectangle);
-    _painter->draw();
 }
 
 void Scene::clearImage() const {
-    _painter->clear();
 }
 
 ObjectData Scene::getObjectData(ID id) const {
@@ -731,12 +725,7 @@ std::vector<Requirement> Scene::getObjectRequirementsWithConnectedObjects(ID obj
     return {objectRequirements.begin(), objectRequirements.end()};
 }
 
-void Scene::setPainter(Painter* p) {
-    _painter = p;
-    _painter->initPointCase(_points);
-    _painter->initSectionCase(_sections);
-    _painter->initCircleCase(_circles);
-    _painter->initArcCase(_arcs);
+void Scene::setPainter(Painter*) {
 }
 
 void Scene::moveObject(ID id, double dx, double dy) {
@@ -1389,6 +1378,10 @@ void Scene::load(const std::vector<ObjectData>& objs, const std::vector<Requirem
     for (auto& req : reqs) {
         addRequirement(req, req.id);
     }
+}
+
+ObjectContainer& Scene::getObjectContainer() {
+    return _objectContainer;
 }
 
 

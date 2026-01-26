@@ -152,15 +152,15 @@ void Application::initControllers() {
     QObject::connect(mainWind->getNinthBut(), &QPushButton::clicked, mwc, &MainWindController::onNineRequirements);
     QObject::connect(mainWind->getTenthBut(),&QPushButton::clicked, mwc, &MainWindController::onTenRequirements);
 
-    //QObject::connect(mainWind, &MainWindow::CreateFile, mwc, &MainWindController::onCreateFile); // Create
-
     QObject::connect(mainWind, &MainWindow::EnterCommand, mwc, &MainWindController::onEnterCommand); // Console
     QObject::connect(mainWind, &MainWindow::EnterMessage, mwc, &MainWindController::onEnterMessage);
     QObject::connect(mainWind, &MainWindow::EmitScript, mwc, &MainWindController::onEmitScript); // Script
 
-    QObject::connect(mainWind, &MainWindow::SaveProject, mwc, &MainWindController::onProjectSaved); // Save
-    QObject::connect(mainWind, &MainWindow::OpenProject, mwc, &MainWindController::onLoadFile); // Load
+    QObject::connect(mainWind, &MainWindow::SaveProject, mwc, &MainWindController::onSaveProject); // Save project
+    QObject::connect(mainWind, &MainWindow::OpenProject, mwc, &MainWindController::onOpenProject); // Open project
+    QObject::connect(mainWind, &MainWindow::CreateNewTab, mwc, &MainWindController::onCreateTab); // Create tab
     QObject::connect(mainWind, &MainWindow::ChangeTabs, mwc, &MainWindController::onChangeTab); // Change tab
+
 
 
     lmc = new LeftMenuController(*mainWind, *documentManager, *painter);

@@ -144,11 +144,11 @@ protected:
     void resizeEvent(QResizeEvent*) override;
     void paintEvent(QPaintEvent* event) override;
 
-    void clear() override;
-    void draw() override;
+    void clear();
+    void draw();
 
-    unsigned long long getWeight() override;
-    unsigned long long getHeight() override;
+    unsigned long long getWeight();
+    unsigned long long getHeight();
 
 
 

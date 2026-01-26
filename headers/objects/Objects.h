@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <optional>
+#include <unordered_map>
 #include "ID.h"
 #include "Enums.h"
 #include "GeometricObjects.h"
