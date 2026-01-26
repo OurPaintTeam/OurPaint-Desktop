@@ -90,6 +90,7 @@ private:
     std::unique_ptr<KeyWorkWindow> keyWW =  std::make_unique<KeyWorkWindow>(this);               // For handling key events
 
     Container* activeContainer = nullptr;
+    ObjectContainer* objectContainer = nullptr;
     std::unordered_map<QString, std::unique_ptr<Container>> namedContainers;
 
 private:
@@ -119,7 +120,7 @@ private:
 public:
     explicit QTPainter(QWidget* parent);
 
-    void initObjectContainer(const ObjectContainer& container);
+    void initObjectContainer(ObjectContainer& container);
 
     bool createNewContainer(const QString& name);
     bool setActiveContainer(const QString& name);

@@ -113,7 +113,7 @@ void QTPainter::inArea() {
     activeContainer->visibleArcs.clear();
 
     // Points
-    for (const auto& [id, point]: *casePoints) {
+    for (const auto& [id, point]: *objectContainer->casePoints) {
         QPointF screenPos(
                 Scaling::scaleCoordinate(point->x) + Scaling::getDelta().x() +
                 Scaling::getCenteredCoordinates().width(),
@@ -137,7 +137,7 @@ void QTPainter::inArea() {
     }
 
     // Lines
-    for (const auto& [id, line]: *caseSections) {
+    for (const auto& [id, line]: *objectContainer->caseSections) {
         QPointF p1(
                 Scaling::scaleCoordinate(line->beg->x) + Scaling::getDelta().x() +
                 Scaling::getCenteredCoordinates().width(),
@@ -169,7 +169,7 @@ void QTPainter::inArea() {
     }
 
     // Circles
-    for (const auto& [id, circle]: *caseCircles) {
+    for (const auto& [id, circle]: *objectContainer->caseCircles) {
         QPointF center(
                 Scaling::scaleCoordinate(circle->center->x) + Scaling::getDelta().x() +
                 Scaling::getCenteredCoordinates().width(),
@@ -195,7 +195,7 @@ void QTPainter::inArea() {
     }
 
     // Arcs
-    for (const auto& [id, arc]: *caseArcs) {
+    for (const auto& [id, arc]: *objectContainer->caseArcs) {
         QPointF center(
                 Scaling::scaleCoordinate(arc->center->x) + Scaling::getDelta().x() +
                 Scaling::getCenteredCoordinates().width(),
@@ -355,8 +355,8 @@ bool QTPainter::findClosestObject() const {
         return false;
     }
 
-    if (casePoints != nullptr) {
-        for (auto it = casePoints->cbegin(); it != casePoints->cend(); ++it) {
+    if (objectContainer->casePoints != nullptr) {
+        for (auto it = objectContainer->casePoints->cbegin(); it != objectContainer->casePoints->cend(); ++it) {
             const Point* point = it->second;
             const QPointF pos(point->x, point->y);
 
@@ -381,8 +381,8 @@ bool QTPainter::findClosestObject() const {
         }
     }
 
-    if (caseSections != nullptr) {
-        for (auto it = caseSections->cbegin(); it != caseSections->cend(); ++it) {
+    if (objectContainer->caseSections != nullptr) {
+        for (auto it = objectContainer->caseSections->cbegin(); it != objectContainer->caseSections->cend(); ++it) {
             const Section* section = it->second;
             const QPointF startPoint(section->beg->x, section->beg->y);
             const QPointF endPoint(section->end->x, section->end->y);
@@ -429,8 +429,8 @@ bool QTPainter::findClosestObject() const {
         }
     }
 
-    if (caseCircles != nullptr) {
-        for (auto it = caseCircles->cbegin(); it != caseCircles->cend(); ++it) {
+    if (objectContainer->caseCircles != nullptr) {
+        for (auto it = objectContainer->caseCircles->cbegin(); it != objectContainer->caseCircles->cend(); ++it) {
             const Circle* circle = it->second;
             const QPointF center(circle->center->x, circle->center->y);
             if (ClosestPoint::checkFigure(center, circle->r,
@@ -454,8 +454,8 @@ bool QTPainter::findClosestObject() const {
         }
     }
 
-    if (caseArcs != nullptr) {
-        for (auto it = caseArcs->cbegin(); it != caseArcs->cend(); ++it) {
+    if (objectContainer->caseArcs != nullptr) {
+        for (auto it = objectContainer->caseArcs->cbegin(); it != objectContainer->caseArcs->cend(); ++it) {
             const Arc* arc = it->second;
             const QPointF startPoint(arc->beg->x, arc->beg->y);
             const QPointF endPoint(arc->end->x, arc->end->y);
@@ -489,19 +489,19 @@ bool QTPainter::findClosestObject() const {
 
 void QTPainter::drawingFigures(QPainter& painter) const {
 
-    if (casePoints != nullptr && !casePoints->empty()) {
+    if (objectContainer->casePoints != nullptr && !objectContainer->casePoints->empty()) {
         render::drawFigures(painter, activeContainer->visiblePoints);
     }
 
-    if (caseSections != nullptr && !caseSections->empty()) {
+    if (objectContainer->caseSections != nullptr && !objectContainer->caseSections->empty()) {
         render::drawFigures(painter, activeContainer->visibleLines);
     }
 
-    if (caseCircles != nullptr && !caseCircles->empty()) {
+    if (objectContainer->caseCircles != nullptr && !objectContainer->caseCircles->empty()) {
         render::drawFigures(painter, activeContainer->visibleCircles);
     }
 
-    if (caseArcs != nullptr && !caseArcs->empty()) {
+    if (objectContainer->caseArcs != nullptr && !objectContainer->caseArcs->empty()) {
         render::drawFigures(painter, activeContainer->visibleArcs);
     }
 
@@ -581,18 +581,18 @@ void QTPainter::saveToImage(const QString& fileName, QString& format) {
         filePath += "." + originalFormat;
     }
 
-    size_t width = rectangle->width() > 500 ? rectangle->width() : 500;
-    size_t height = rectangle->height() > 500 ? rectangle->height() : 500;
+    size_t width = objectContainer->rectangle->width() > 500 ? objectContainer->rectangle->width() : 500;
+    size_t height = objectContainer->rectangle->height() > 500 ? objectContainer->rectangle->height() : 500;
 
     if (chosenFormat == "SVG") {
         QSvgGenerator generator;
         generator.setFileName(filePath);
-        generator.setSize(QSize(width, rectangle->height()));
-        generator.setViewBox(QRect(0, 0, width, rectangle->height()));
+        generator.setSize(QSize(width, objectContainer->rectangle->height()));
+        generator.setViewBox(QRect(0, 0, width, objectContainer->rectangle->height()));
         generator.setTitle("Exported SVG");
         generator.setDescription("Generated by QTPainter");
         QPainter painter(&generator);
-        drawGostFrame(&painter, QSize(width, rectangle->height()));
+        drawGostFrame(&painter, QSize(width, objectContainer->rectangle->height()));
         painter.translate(static_cast<qint32>(width / 2), static_cast<qint32>(height / 2));
         this->drawingFigures(painter);
         painter.end();
@@ -791,8 +791,8 @@ void QTPainter::poseMovingFigures() const {
     if (!selectedIdLines.empty()) {
         const ID id = *selectedIdLines.begin();
 
-        if (caseSections->contains(id)) {
-            const Section* s = (*caseSections)[id];
+        if (objectContainer->caseSections->contains(id)) {
+            const Section* s = (*objectContainer->caseSections)[id];
             activeContainer->pressLineVecBeg = QPointF(s->beg->x, s->beg->y) - cursorPressPos;
             activeContainer->pressLineVecEnd = QPointF(s->end->x, s->end->y) - cursorPressPos;
         }
@@ -801,8 +801,8 @@ void QTPainter::poseMovingFigures() const {
     if (!selectedIDCircle.empty()) {
         const ID id = *selectedIDCircle.begin();
 
-        if (caseCircles->contains(id)) {
-            const Circle* c = (*caseCircles)[id];
+        if (objectContainer->caseCircles->contains(id)) {
+            const Circle* c = (*objectContainer->caseCircles)[id];
             const QPointF center(c->center->x, c->center->y);
             activeContainer->pressPointCircle = center - cursorPressPos;
         }
@@ -834,13 +834,13 @@ void QTPainter::drawRectangle(QPainter& painter) const {
 
 
 void QTPainter::pointInRect(const QRectF& rect) const {
-    if (casePoints == nullptr) {
+    if (objectContainer->casePoints == nullptr) {
         return;
     }
 
     QVector<ID> selectedIDPoint = getVecSelectedIDPoints();
 
-    QVector<ID> vecPointID = ClosestPoint::enteringInRect(*casePoints, rect);
+    QVector<ID> vecPointID = ClosestPoint::enteringInRect(*objectContainer->casePoints, rect);
     for (const ID& id: selectedIDPoint) {
         activeContainer->visiblePoints[id].style->createNormalPointStyle();
     }
@@ -853,13 +853,13 @@ void QTPainter::pointInRect(const QRectF& rect) const {
 
 
 void QTPainter::lineInRect(const QRectF& rect) const {
-    if (caseSections == nullptr) {
+    if (objectContainer->caseSections == nullptr) {
         return;
     }
 
     QVector<ID> selectedIDLine = getVecSelectedIDLines();
 
-    QVector<ID> vecSectionID = ClosestPoint::enteringInRect(*caseSections, rect);
+    QVector<ID> vecSectionID = ClosestPoint::enteringInRect(*objectContainer->caseSections, rect);
     for (const ID& id: selectedIDLine) {
         activeContainer->visibleLines[id].style->createNormalLineStyle();
     }
@@ -871,13 +871,13 @@ void QTPainter::lineInRect(const QRectF& rect) const {
 
 
 void QTPainter::circleInRect(const QRectF& rect) const {
-    if (caseCircles == nullptr) {
+    if (objectContainer->caseCircles == nullptr) {
         return;
     }
 
     QVector<ID> selectedIDCircle = getVecSelectedIDCircles();
 
-    QVector<ID> pressPointCircleID = ClosestPoint::enteringInRect(*caseCircles, rect);
+    QVector<ID> pressPointCircleID = ClosestPoint::enteringInRect(*objectContainer->caseCircles, rect);
     for (const ID& id: selectedIDCircle) {
         activeContainer->visibleCircles[id].style->createNormalCircleStyle();
     }
@@ -890,13 +890,13 @@ void QTPainter::circleInRect(const QRectF& rect) const {
 
 
 void QTPainter::arcsInRect(const QRectF& rect) const {
-    if (caseArcs == nullptr) {
+    if (objectContainer->caseArcs == nullptr) {
         return;
     }
 
     QVector<ID> selectedIDArc = getVecSelectedIDArcs();
 
-    QVector<ID> vecArcID = ClosestPoint::enteringInRect(*caseArcs, rect);
+    QVector<ID> vecArcID = ClosestPoint::enteringInRect(*objectContainer->caseArcs, rect);
     for (const ID& id: selectedIDArc) {
         activeContainer->visibleArcs[id].style->createNormalArcStyle();
     }
@@ -942,9 +942,9 @@ void QTPainter::paintEvent(QPaintEvent* event) {
             ModeManager::getActiveMode(WorkModes::Circle) ||
             ModeManager::getActiveMode(WorkModes::Arc))
             if (ModeManager::getActiveMode(WorkModes::Section)) {
-                if (casePoints != nullptr) {
+                if (objectContainer->casePoints != nullptr) {
                     const QPointF cursor = Scaling::logicCursor();
-                    const QPointF closest = ClosestPoint::findClosestPoint(*casePoints,
+                    const QPointF closest = ClosestPoint::findClosestPoint(*objectContainer->casePoints,
                                                                      cursor); // Finding the closest points
                     activeContainer->mouseManager->setClosestPoint(closest);
                 }
@@ -1016,37 +1016,8 @@ void QTPainter::clear() {
     activeContainer->mouseManager->clear();
 }
 
-
-void QTPainter::getBoundBox(const BoundBox2D& allObjects) {
-    rectangle = &allObjects;
-}
-
-
-void QTPainter::initPointCase(std::unordered_map<ID, Point*>& points) {
-    casePoints = &points;
-}
-
-
-void QTPainter::initLineCase(std::unordered_map<ID, Section*>& sections) {
-    caseSections = &sections;
-}
-
-
-void QTPainter::initCircleCase(std::unordered_map<ID, Circle*>& circles) {
-    caseCircles = &circles;
-}
-
-
-void QTPainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {
-    caseArcs = &arcs;
-}
-
-void QTPainter::initObjectContainer(const ObjectContainer& container) {
-    initArcCase(*container.caseArcs);
-    initCircleCase(*container.caseCircles);
-    initLineCase(*container.caseSections);
-    initPointCase(*container.casePoints);
-    getBoundBox(*container.rectangle);
+void QTPainter::initObjectContainer(ObjectContainer& container) {
+    objectContainer = &container;
 }
 
 
