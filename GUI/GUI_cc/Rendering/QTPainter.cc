@@ -31,7 +31,6 @@ QTPainter::QTPainter(QWidget* parent) : QFrame(parent) {
     createNewContainer("Default");
 }
 
-
 bool QTPainter::createNewContainer(const QString& name) {
     if (name.isEmpty()) {
         qWarning() << "Container name cannot be empty";
@@ -488,20 +487,24 @@ bool QTPainter::findClosestObject() const {
 
 
 void QTPainter::drawingFigures(QPainter& painter) const {
+    if (!objectContainer) {
+        qCritical() << "ObjectContainer is null";
+        return;
+    }
 
-    if (objectContainer && objectContainer->casePoints != nullptr && !objectContainer->casePoints->empty()) {
+    if (objectContainer->casePoints != nullptr && !objectContainer->casePoints->empty()) {
         render::drawFigures(painter, activeContainer->visiblePoints);
     }
 
-    if (objectContainer && objectContainer->caseSections != nullptr && !objectContainer->caseSections->empty()) {
+    if (objectContainer->caseSections != nullptr && !objectContainer->caseSections->empty()) {
         render::drawFigures(painter, activeContainer->visibleLines);
     }
 
-    if (objectContainer && objectContainer->caseCircles != nullptr && !objectContainer->caseCircles->empty()) {
+    if (objectContainer->caseCircles != nullptr && !objectContainer->caseCircles->empty()) {
         render::drawFigures(painter, activeContainer->visibleCircles);
     }
 
-    if (objectContainer && objectContainer->caseArcs != nullptr && !objectContainer->caseArcs->empty()) {
+    if (objectContainer->caseArcs != nullptr && !objectContainer->caseArcs->empty()) {
         render::drawFigures(painter, activeContainer->visibleArcs);
     }
 
