@@ -1027,7 +1027,7 @@ void QTPainter::initPointCase(std::unordered_map<ID, Point*>& points) {
 }
 
 
-void QTPainter::initSectionCase(std::unordered_map<ID, Section*>& sections) {
+void QTPainter::initLineCase(std::unordered_map<ID, Section*>& sections) {
     caseSections = &sections;
 }
 
@@ -1039,6 +1039,14 @@ void QTPainter::initCircleCase(std::unordered_map<ID, Circle*>& circles) {
 
 void QTPainter::initArcCase(std::unordered_map<ID, Arc*>& arcs) {
     caseArcs = &arcs;
+}
+
+void QTPainter::initObjectContainer(const ObjectContainer& container) {
+    initArcCase(*container.caseArcs);
+    initCircleCase(*container.caseCircles);
+    initLineCase(*container.caseSections);
+    initPointCase(*container.casePoints);
+    getBoundBox(*container.rectangle);
 }
 
 

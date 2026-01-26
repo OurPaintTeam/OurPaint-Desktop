@@ -24,6 +24,7 @@
 #include "RenderCircles.h"
 #include "RenderLines.h"
 #include "RenderArcs.h"
+#include "Objects.h"
 
 class Scaling;
 class DrawFigures;
@@ -109,8 +110,16 @@ private:
     void circleInRect(const QRectF& rect) const;
     void arcsInRect(const QRectF& rect) const;
 
+    void initArcCase(std::unordered_map<ID, Arc*>& arcs);
+    void initPointCase(std::unordered_map<ID, Point*>& points);
+    void initCircleCase(std::unordered_map<ID, Circle*>& circles);
+    void initLineCase(std::unordered_map<ID, Section*>& sections);
+    void getBoundBox(const BoundBox2D& allObjects);
+
 public:
     explicit QTPainter(QWidget* parent);
+
+    void initObjectContainer(const ObjectContainer& container);
 
     bool createNewContainer(const QString& name);
     bool setActiveContainer(const QString& name);
@@ -141,11 +150,8 @@ protected:
     unsigned long long getWeight();
     unsigned long long getHeight();
 
-    void getBoundBox(const BoundBox2D& allObjects);
-    void initArcCase(std::unordered_map<ID, Arc*>& arcs);
-    void initPointCase(std::unordered_map<ID, Point*>& points);
-    void initCircleCase(std::unordered_map<ID, Circle*>& circles);
-    void initSectionCase(std::unordered_map<ID, Section*>& sections);
+
+
 
 signals:
     // Mouse rendering
