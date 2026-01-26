@@ -1,6 +1,5 @@
 #include "QTPainter.h"
 
-#include "Painter.h"
 #include "Scaling.h"
 #include "DrawFigures.h"
 #include "ClosestPoint.h"

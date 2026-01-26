@@ -20,13 +20,11 @@
 #include "KeyWorkWindow.h"
 #include "MouseDrawingManager.h"
 #include "MouseEventWorkWindow.h"
-#include "Painter.h"
 #include "RenderPoints.h"
 #include "RenderCircles.h"
 #include "RenderLines.h"
 #include "RenderArcs.h"
 
-class Painter;
 class Scaling;
 class DrawFigures;
 class ClosestPoint;
@@ -83,7 +81,7 @@ struct Container {
     }
 };
 
-class QTPainter final : public QFrame, public Painter {
+class QTPainter final : public QFrame {
 Q_OBJECT
 
 private:
@@ -134,7 +132,7 @@ public:
     static void drawGostFrame(QPainter* painter, const QSize& size);
 
 protected:
-    [[maybe_unused]] void resizeEvent(QResizeEvent*) override;
+    void resizeEvent(QResizeEvent*) override;
     void paintEvent(QPaintEvent* event) override;
 
     void clear() override;
