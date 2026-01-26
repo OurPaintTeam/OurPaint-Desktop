@@ -135,17 +135,17 @@ protected:
     void resizeEvent(QResizeEvent*) override;
     void paintEvent(QPaintEvent* event) override;
 
-    void clear() override;
-    void draw() override;
+    void clear();
+    void draw();
 
-    unsigned long long getWeight() override;
-    unsigned long long getHeight() override;
+    unsigned long long getWeight();
+    unsigned long long getHeight();
 
-    void getBoundBox(const BoundBox2D& allObjects) override;
-    void initArcCase(std::unordered_map<ID, Arc*>& arcs) override;
-    void initPointCase(std::unordered_map<ID, Point*>& points) override;
-    void initCircleCase(std::unordered_map<ID, Circle*>& circles) override;
-    void initSectionCase(std::unordered_map<ID, Section*>& sections) override;
+    void getBoundBox(const BoundBox2D& allObjects);
+    void initArcCase(std::unordered_map<ID, Arc*>& arcs);
+    void initPointCase(std::unordered_map<ID, Point*>& points);
+    void initCircleCase(std::unordered_map<ID, Circle*>& circles);
+    void initSectionCase(std::unordered_map<ID, Section*>& sections);
 
 signals:
     // Mouse rendering

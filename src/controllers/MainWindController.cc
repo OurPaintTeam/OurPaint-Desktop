@@ -514,7 +514,8 @@ void MainWindController::onChangeTab(const QString& tabName) {
     }
     Document* document = _documentManager.getActiveDocument();
     Scene& scene = document->scene();
-  //  _painter->ini
+    ObjectContainer& container = scene.getObjectContainer();
+    _painter.initObjectContainer(container);
     SLOT_GUARD_MAINWIND_END
 }
 

@@ -135,7 +135,10 @@ public:
 
     void load(const std::vector<ObjectData>&, const std::vector<Requirement>&);
 
+    ObjectContainer& getObjectContainer();
+
 private:
+    ObjectContainer _objectContainer;
     ISceneObserver* _observer = nullptr;
 
     void addPoint(ObjectData data, ID id);

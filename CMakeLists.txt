@@ -26,7 +26,6 @@ FetchContent_MakeAvailable(json)
 
 include_directories(ourpaint
         headers
-        headers/painters
         headers/saveload
         headers/UndoRedo
         headers/objects
@@ -65,8 +64,6 @@ add_executable(ourpaint
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
 
-        src/painters/BMPpainter.cc
-
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
         src/saveload/requirementInFile.cc
@@ -75,7 +72,6 @@ add_executable(ourpaint
         src/saveload/objectInJson.cc
 
         src/Application.cc
-        src/BMPfile.cc
         src/SceneQtAdapter.cc
 
         src/controllers/PainterController.cc
@@ -91,9 +87,6 @@ add_executable(ourpaint
         headers/DocumentManager.h
         headers/UndoRedo/DocumentSaveLoad.h
 
-        headers/painters/Painter.h
-        headers/painters/BMPpainter.h
-
         headers/saveload/FileOurP.h
         headers/saveload/requirementInFile.h
         headers/saveload/objectInFile.h
@@ -102,7 +95,6 @@ add_executable(ourpaint
         headers/saveload/requirementInJson.h
 
         headers/Application.h
-        headers/BMPfile.h
         headers/SceneObserver.h
         headers/SceneQtAdapter.h
         headers/ExceptionGuard.h
