@@ -351,7 +351,7 @@ void MainWindow::slotChangeTabs(const QString& tabName) {
 
 
 void MainWindow::slotCreateNewTab(const QString& tabName) {
-    emit ChangeTabs(tabName);
+    emit CreateNewTab(tabName);
 }
 
 

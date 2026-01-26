@@ -101,9 +101,6 @@ void FileSystems::createNewFile(const QString& ourpFileName) { // name.ourp
     }
 
     createTab(ourpFileName);
-
-    emit CreateNewTab(ourpFileName);
-
 }
 
 void FileSystems::createTab(const QString& ourpFileName) { // name.ourp
