@@ -514,6 +514,9 @@ void MainWindController::onChangeTab(const QString& tabName) {
     if (_documentManager.setActiveDocument(tabName.toStdString()) == false) {
         throw std::runtime_error("can't change tab");
     }
+    Document* document = _documentManager.getActiveDocument();
+    Scene& scene = document->scene();
+  //  _painter->ini
     SLOT_GUARD_MAINWIND_END
 }
 
