@@ -120,6 +120,9 @@ private:
 public:
     explicit QTPainter(QWidget* parent);
 
+    void clear();
+    void draw();
+
     void initObjectContainer(ObjectContainer& container);
 
     bool createNewContainer(const QString& name);
@@ -144,9 +147,6 @@ public:
 protected:
     void resizeEvent(QResizeEvent*) override;
     void paintEvent(QPaintEvent* event) override;
-
-    void clear();
-    void draw();
 
     unsigned long long getWeight();
     unsigned long long getHeight();
