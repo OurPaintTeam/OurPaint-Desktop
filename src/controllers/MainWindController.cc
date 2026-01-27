@@ -384,6 +384,7 @@ void MainWindController::onEnterCommand(const QString& command) {
 
         updateState();
         scene.paint();
+        _painter.draw();
         ModeManager::setSave(false);
     }
 
