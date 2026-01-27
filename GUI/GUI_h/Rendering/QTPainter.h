@@ -47,7 +47,6 @@ class KeyWorkWindow;
 
 struct Container {
     // Work objects
-    std::unique_ptr<MouseDrawingManager> mouseManager = std::make_unique<MouseDrawingManager>();
     std::unique_ptr<DrawRectangleTool> rectTool = std::make_unique<DrawRectangleTool>();
 
     std::unordered_map<ID, render::pointShell> visiblePoints;
@@ -88,6 +87,7 @@ Q_OBJECT
 private:
     std::unique_ptr<MouseWorkWindow> mouseWW = std::make_unique<MouseWorkWindow>(this);          // For processing mouse events
     std::unique_ptr<KeyWorkWindow> keyWW =  std::make_unique<KeyWorkWindow>(this);               // For handling key events
+    std::unique_ptr<MouseDrawingManager> mouseManager = std::make_unique<MouseDrawingManager>();
 
     Container* activeContainer = nullptr;
     ObjectContainer* objectContainer = nullptr;

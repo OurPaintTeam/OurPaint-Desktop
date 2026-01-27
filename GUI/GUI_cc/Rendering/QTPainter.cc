@@ -27,8 +27,6 @@ QTPainter::QTPainter(QWidget* parent) : QFrame(parent) {
     Scaling::updateScaling();
     Scaling::setStartMonitorSize(this->size());
     Scaling::setStartMonitorSize(this->size());
-
-    createNewContainer("Default");
 }
 
 bool QTPainter::createNewContainer(const QString& name) {
@@ -37,7 +35,7 @@ bool QTPainter::createNewContainer(const QString& name) {
         return false;
     }
 
-    if (namedContainers.find(name) != namedContainers.end()) {
+    if (namedContainers.contains(name)) {
         qWarning() << "Container with name" << name << "already exists";
         return false;
     }
@@ -93,7 +91,7 @@ bool QTPainter::deleteContainer(const QString& name) {
 
 
 MouseDrawingManager* QTPainter::getMouseManager() const {
-    return activeContainer->mouseManager.get();
+    return mouseManager.get();
 }
 
 
@@ -487,8 +485,8 @@ bool QTPainter::findClosestObject() const {
 
 
 void QTPainter::drawingFigures(QPainter& painter) const {
-    if (!objectContainer) {
-        qCritical() << "ObjectContainer is null";
+    if (!(objectContainer && activeContainer)) {
+        qCritical() << "ObjectContainer is null or activeContainer is null";
         return;
     }
 
@@ -936,7 +934,10 @@ void QTPainter::paintEvent(QPaintEvent* event) {
         DrawAdditionalInf::drawCursor(painter);
     }
 
-
+    if (!(objectContainer && activeContainer)) {
+        QFrame::paintEvent(event);
+        return;
+    }
 
     /*************** Drawing shapes with the mouse ********************/
     if (ModeManager::getCursor()) {
@@ -949,11 +950,11 @@ void QTPainter::paintEvent(QPaintEvent* event) {
                     const QPointF cursor = Scaling::logicCursor();
                     const QPointF closest = ClosestPoint::findClosestPoint(*objectContainer->casePoints,
                                                                      cursor); // Finding the closest points
-                    activeContainer->mouseManager->setClosestPoint(closest);
+                    mouseManager->setClosestPoint(closest);
                 }
             }
 
-        activeContainer->mouseManager->managerMouseDrawing(painter);
+        mouseManager->managerMouseDrawing(painter);
     }
 
 
@@ -1016,7 +1017,7 @@ void QTPainter::draw() {
 void QTPainter::clear() {
     selectedClear();
     Scaling::setZoomZero();
-    activeContainer->mouseManager->clear();
+    mouseManager->clear();
 }
 
 void QTPainter::initObjectContainer(ObjectContainer& container) {
