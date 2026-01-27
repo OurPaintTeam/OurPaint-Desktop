@@ -512,6 +512,7 @@ void MainWindController::onCreateTab(const QString& tabName) {
     scene.setObserver(&_sceneQtAdapter);
     ObjectContainer& container = scene.getObjectContainer();
     _painter.initObjectContainer(container);
+    _painter.createNewContainer(tabName);
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -524,6 +525,7 @@ void MainWindController::onChangeTab(const QString& tabName) {
     Scene& scene = document->scene();
     ObjectContainer& container = scene.getObjectContainer();
     _painter.initObjectContainer(container);
+    _painter.setActiveContainer(tabName);
     SLOT_GUARD_MAINWIND_END
 }
 
