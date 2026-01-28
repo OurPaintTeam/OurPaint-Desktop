@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     initConnections(); // Initialization of signals
     setupLeftMenu();
-    fileSystems->scanAndLoadProjects();
+    fileSystems->loadProjectsToUI();
 }
 
 
@@ -75,14 +75,18 @@ void MainWindow::initConnections() {
     connect(ui->toolShowSize, &QPushButton::clicked, this, &MainWindow::ToolShowSize);
 
     // Save/import buttons
-    connect(ui->openFolderForOpenProject, &QPushButton::clicked, fileSystems, &FileSystems::openOrCreateProject);
-    connect(ui->actionCreate_project_to, &QPushButton::clicked, fileSystems, &FileSystems::openOrCreateProject);
-    connect(ui->actionOpen_project, &QPushButton::clicked, fileSystems, &FileSystems::openOrCreateProject);
+    connect(ui->openFolderForOpenProject, &QPushButton::clicked, fileSystems, &FileSystems::slotOpenProject);
+    connect(ui->openFolderForCreateProject, &QPushButton::clicked, fileSystems, &FileSystems::slotCreateNewProject);
+    connect(ui->actionCreate_project_to, &QPushButton::clicked, fileSystems, &FileSystems::slotCreateNewProject);
+    connect(ui->actionOpen_project, &QPushButton::clicked, fileSystems, &FileSystems::slotOpenProject);
 
     connect(fileSystems, &FileSystems::ChangeTabs, this, &MainWindow::slotChangeTabs);
     connect(fileSystems, &FileSystems::OpenProject, this, &MainWindow::slotOpenProject);
+    connect(fileSystems, &FileSystems::CreateNewProject, this, &MainWindow::slotCreateNewProject);
     connect(fileSystems, &FileSystems::SaveProject, this, &MainWindow::slotSaveProject);
     connect(fileSystems, &FileSystems::CreateNewTab, this, &MainWindow::slotCreateNewTab);
+    connect(fileSystems, &FileSystems::RenameTab, this, &MainWindow::slotRenameTab);
+    connect(fileSystems, &FileSystems::DeleteTab, this, &MainWindow::slotDeleteTab);
 
     connect(ui->actionJPG, &QToolButton::clicked, this, &MainWindow::onExportJPG);
     connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
@@ -269,7 +273,7 @@ bool MainWindow::closeProgram() {
         const auto result = dialog.exec();
 
         if (result == QMessageBox::Yes) {
-            fileSystems->saveProject();
+            fileSystems->slotSaveProject();
             return ModeManager::getSave();
         }
 
@@ -333,12 +337,25 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
 
 /// ***** SLOTS:
 
-
-
-void MainWindow::slotSaveProject(const QString& workDir) {
-    emit SaveProject(workDir);
+void MainWindow::slotOpenFile(const QString& fileName) {
+    emit OpenFile(fileName);
 }
 
+void MainWindow::slotDeleteTab(const QString& tabName) {
+    emit DeleteTab(tabName);
+}
+
+void MainWindow::slotRenameTab(const QString& oldName,const QString& newName) {
+    emit RenameTab(oldName,newName);
+}
+
+void MainWindow::slotSaveProject() {
+    emit SaveProject();
+}
+
+void MainWindow::slotCreateNewProject(const QString& workDir) {
+    emit OpenProject(workDir);
+}
 
 void MainWindow::slotOpenProject(const QString& workDir) {
     emit OpenProject(workDir);
@@ -470,9 +487,8 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
             const auto wind = new InputWindow("Name:",this);
             wind->show();
 
-            connect(wind,&InputWindow::textEnter, [this](const QString& text) {
-                const QString projectName= text + ".ourp";
-                fileSystems->createNewFile(projectName);
+            connect(wind,&InputWindow::textEnter, [this](const QString& name) {
+                fileSystems->slotCreateNewFile(name);
             });
 
         }

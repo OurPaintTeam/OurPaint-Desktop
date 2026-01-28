@@ -110,7 +110,11 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 public slots:
-    void slotSaveProject(const QString& workDir);
+    void slotSaveProject();
+    void slotRenameTab(const QString& oldName,const QString& newName);
+    void slotDeleteTab(const QString& tabName);
+    void slotOpenFile(const QString& fileName);
+    void slotCreateNewProject(const QString& workDir);
     void slotOpenProject(const QString& workDir);
     void slotChangeTabs(const QString& tabName);
     void slotCreateNewTab(const QString& tabName);
@@ -145,10 +149,14 @@ signals:
     void EnterMessage(const QString& text);
     void EmitScript(const QString& fileName);
 
-    void SaveProject(const QString& workDir);
+    void SaveProject();
+    void CreateNewProject(const QString& workDir);
     void OpenProject(const QString& workDir);
+    void OpenFile(const QString& fileName);
     void ChangeTabs(const QString& tabName);
     void CreateNewTab(const QString& tabName);
+    void DeleteTab(const QString& tabName);
+    void RenameTab(const QString& oldName,const QString& newName);
 
     void SaveProjectInFormat(const QString& fileName,const QString& format);
 };
