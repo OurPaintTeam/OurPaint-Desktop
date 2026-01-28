@@ -31,6 +31,9 @@ LeftMenuBar::LeftMenuBar(QWidget* parent) {
     connect(treeModel, &TreeModel::treeModelChanged,
             this, &LeftMenuBar::paramChanged);
 
+    connect(treeModel, &TreeModel::treeModelRenameNode,
+        this, &LeftMenuBar::renameNode);
+
 }
 
 
@@ -100,6 +103,31 @@ void LeftMenuBar::paramChanged(TreeNode* node) {
     }
 }
 
+
+void LeftMenuBar::renameNode(TreeNode* node,const QString& oldName,const QString& newName) {
+    if (!node) {
+        return;
+    }
+
+    if (node->parent() != projectsNode) {
+        return;
+    }
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+
+        TreeNode* child = projectsNode->child(i);
+
+        if (child == node)
+            continue;
+
+        if (child->getName() == newName) {
+            node->setName(oldName);
+            return;
+        }
+    }
+
+    emit renameTab(oldName+".ourp", newName+".ourp");
+}
 
 void LeftMenuBar::doubleClickID(const QModelIndex& index) {
     QString text = index.data(Qt::DisplayRole).toString();
@@ -184,19 +212,29 @@ TreeNode* LeftMenuBar::createPointNode(const QString& name, qlonglong id,
 }
 
 
-void LeftMenuBar::addFileToProject(const QString& file) {
+void LeftMenuBar::addFileToProject(const QString& fileName) {
 
-    if (!projectsNode) { return; }
+    if (!projectsNode) {
+        return;
+    }
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+        TreeNode* child = projectsNode->child(i);
+
+        if (child->getName().compare(fileName, Qt::CaseInsensitive) == 0) {
+            return;
+        }
+    }
+
     font.setPointSize(9);
 
-    TreeNode* projectNode = new TreeNode(file, projectsNode);
+    TreeNode* projectNode = new TreeNode(fileName, projectsNode);
     projectNode->setEditable(true);
     projectNode->setSelected(true);
     projectNode->setLiteral(true);
     projectNode->setDropEnabled(true);
     projectNode->setIcon(elem);
     projectsNode->addChild(projectNode);
-
 }
 
 
