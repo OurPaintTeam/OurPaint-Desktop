@@ -50,8 +50,8 @@ public:
     TreeNode* getRootNode() const;
 
 signals:
-
     void treeModelChanged(TreeNode* node);
+    void treeModelRenameNode(TreeNode* node, const QString& oldName, const QString& newName);
 
 
 };

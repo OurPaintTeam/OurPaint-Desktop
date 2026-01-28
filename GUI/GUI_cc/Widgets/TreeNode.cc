@@ -72,8 +72,9 @@ QVariant TreeNode::data(qint32 column) const {
 }
 
 void TreeNode::setData(qint32 column, const QVariant& value) {
-    if (column == 0)
+    if (column == 0) {
         dataChild = value;
+    }
 }
 
 QString TreeNode::getNameOnly() const {
