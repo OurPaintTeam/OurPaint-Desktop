@@ -346,7 +346,11 @@ void MainWindow::slotDeleteTab(const QString& tabName) {
 }
 
 void MainWindow::slotRenameTab(const QString& oldName,const QString& newName) {
-    emit RenameTab(oldName,newName);
+    if (ui->renameTab(oldName,newName)) {
+        emit RenameTab(oldName,newName);
+    }else {
+        showError("Такой файл уже существует!");
+    }
 }
 
 void MainWindow::slotSaveProject() {
@@ -488,7 +492,11 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
             wind->show();
 
             connect(wind,&InputWindow::textEnter, [this](const QString& name) {
-                fileSystems->slotCreateNewFile(name);
+                if (!ui->isButtonNameExists(name)) {
+                    fileSystems->slotCreateNewFile(name);
+                }else {
+                    showError("Файл с таким именем уже существует!");
+                }
             });
 
         }

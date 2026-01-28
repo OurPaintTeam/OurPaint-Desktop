@@ -132,11 +132,13 @@ public slots:
 
 private slots:
     void paramChanged(TreeNode* node);
+    void renameNode(TreeNode* node,const QString& oldName,const QString& newName);
 
 signals:
     void figureParamsChanged(const qlonglong id,const std::string &type, const std::vector<qreal> &parameters);
     void reqParamChanged(const qlonglong id, const qreal &parameter);
     void doubleClickLeftMenu(const qlonglong id,const std::string &type);
+    void renameTab(const QString& oldName,const QString& newName);
 
 };
 
