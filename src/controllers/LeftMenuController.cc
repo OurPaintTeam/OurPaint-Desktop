@@ -69,3 +69,8 @@ void LeftMenuController::onDoubleClickLeftMenu(long long int id, const std::stri
     SLOT_GUARD_MAINWIND_END
 }
 
+void LeftMenuController::onRenameTab(const QString& oldName,const QString& newName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+    _mainWind.slotRenameTab(oldName,newName);
+    SLOT_GUARD_MAINWIND_END
+}

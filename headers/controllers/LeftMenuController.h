@@ -21,6 +21,7 @@ public slots:
     void onFigureParamsChanged(long long id, const std::string& type, const std::vector<double>& parameters);
     void onReqParamChanged(long long, const double&);
     void onDoubleClickLeftMenu(long long id, const std::string& type);
+    void onRenameTab(const QString& oldName,const QString& newName);
 
 };
 
