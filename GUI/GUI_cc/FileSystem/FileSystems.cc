@@ -1,16 +1,7 @@
 #include "FileSystems.h"
+
 #include "MainWindow.h"
 #include "Modes.h"
-
-#include <QDebug>
-#include <QTextStream>
-#include <QFileInfo>
-#include <QDirIterator>
-#include <QFileDialog>
-
-#define LOG_INFO(x)  qDebug()    << "[PROJECT]" << x
-#define LOG_WARN(x)  qWarning()  << "[PROJECT WARNING]" << x
-#define LOG_ERROR(x) qCritical() << "[PROJECT ERROR]" << x
 
 
 FileSystems::FileSystems(MainWindow* mw)
@@ -33,19 +24,43 @@ QString FileSystems::selectProjectDirectory() const {
     }
 
     LOG_INFO("Выбрана директория проекта:" << dirPath);
+    if (projectExistsInConfig(dirPath)) {
+        mainWindow->showError("Проект уже сущетсвует !");
+        LOG_INFO("Проект уже существует:" << dirPath);
+        return "";
+    }
+
     return dirPath;
 }
 
 
-void FileSystems::openOrCreateProject() {
+void FileSystems::slotOpenProject() {
+    if (ModeManager::getProject()) {
+        LOG_ERROR("Вы в проекте:" << projectPath);
+        mainWindow->showError("Выйдите из проекта!");
+        return;
+    }
+
     const QString dirPath = selectProjectDirectory();
+
     if (dirPath.isEmpty()) {
         return;
     }
 
-    const QDir projectDir(dirPath);
+    openProjectWithDirPath(dirPath);
+}
+
+
+void FileSystems::openProjectWithDirPath(const QString& pPath) {
+    if (ModeManager::getProject()) {
+        LOG_ERROR("Вы в проекте:" << projectPath);
+        mainWindow->showError("Выйдите из проекта!");
+        return;
+    }
+
+    const QDir projectDir(pPath);
     if (!projectDir.exists()) {
-        LOG_ERROR("Директория не существует:" << dirPath);
+        LOG_ERROR("Директория не существует:" << pPath);
         mainWindow->showError("Директория проекта не существует");
         return;
     }
@@ -53,97 +68,127 @@ void FileSystems::openOrCreateProject() {
     projectPath = projectDir.absolutePath();
     LOG_INFO("Рабочая директория:" << projectPath);
 
-    const QStringList ourpFiles = projectDir.entryList({ "*.ourp" }, QDir::Files);
-    if (ourpFiles.isEmpty()) {
-        LOG_INFO("Нет .ourp файлов → создаём новый проект");
-        createNewProject();
-    } else {
-        LOG_INFO("Найдены .ourp файлы → открываем проект");
-        openExistingProject();
-    }
+    emit OpenProject(projectPath);
 
+    ModeManager::setSave(true);
     ModeManager::setProject(true);
     mainWindow->ui->inProject();
+
+    openOurpFiles();
 }
 
 
-void FileSystems::createNewProject() {
-    if (projectPath.isEmpty()) {return;}
-
-    const QDir projectDir(projectPath);
-    const QString projectName = projectDir.dirName();
-
-    if (projectName.isEmpty() || projectName.contains('.')) {
-        LOG_ERROR("Неверное имя проекта:" << projectName);
-        mainWindow->showError("Имя проекта не должно быть пустым и содержать '.'");
-        return;
-    }
-
-    const QString ourpFileName = projectName + ".ourp";
-    LOG_INFO("Создание нового проекта:" << projectName);
-
-    createTab(ourpFileName);
-
-    ModeManager::setSave(false);
-}
-
-
-void FileSystems::createNewFile(const QString& ourpFileName) { // name.ourp
+void FileSystems::openOurpFiles() {
     if (projectPath.isEmpty()) {
         return;
     }
 
-    const QString ourpFilePath = projectPath + '/' + ourpFileName;
+    QDirIterator it(
+    projectPath,
+    { "*.ourp" },
+    QDir::Files,
+    QDirIterator::Subdirectories
+);
 
-    if (QFile::exists(ourpFilePath)) {
-        LOG_WARN("Файл проекта уже существует:" << ourpFilePath);
+    while (it.hasNext()) {
+        it.next();
+
+        const QString name = it.fileName();
+        const QString nameOnly = QFileInfo(name).completeBaseName();
+
+        createTabButtons(name);
+        emit OpenFile(nameOnly);
+    }
+}
+
+
+void FileSystems::slotCreateNewProject() {
+    if (ModeManager::getProject()) {
+        LOG_ERROR("Вы в проекте:" << projectPath);
+        mainWindow->showError("Выйдите из проекта!");
         return;
     }
 
-    createTab(ourpFileName);
+    const QString dirPath = selectProjectDirectory();
+    if (dirPath.isEmpty()) {
+        return;
+    }
+
+    emit CreateNewProject(dirPath);
+
+    projectPath = dirPath;
+    LOG_INFO("Рабочая директория:" << projectPath);
+
+    mainWindow->ui->inProject();
+
+    ModeManager::setProject(true);
+    ModeManager::setSave(false);
+
+    const QDir projectDir(dirPath);
+    const QString ourpFileName = projectDir.dirName();
+
+    slotCreateNewFile(ourpFileName);
 }
 
-void FileSystems::createTab(const QString& ourpFileName) { // name.ourp
-    const auto* tabButton = mainWindow->ui->createTabProject(ourpFileName);
-    connect(tabButton, &QPushButton::clicked, [this, ourpFileName]() {
-        LOG_INFO("Переключение на вкладку:" << ourpFileName);
-        emit ChangeTabs(ourpFileName); // name.ourp
-    });
+
+void FileSystems::slotCreateNewFile(const QString& ourpFileName) { // name.ourp
+    if (projectPath.isEmpty()) {
+        return;
+    }
+
+    createTabButtons(ourpFileName);
+
     emit CreateNewTab(ourpFileName);
 }
 
 
-void FileSystems::openExistingProject() {
-    if (projectPath.isEmpty()) {
+void FileSystems::createTabButtons(const QString& ourpFileName) {
+
+    if (ourpFileName.isEmpty()) {
+        LOG_ERROR("Неверное имя проекта:" << ourpFileName);
+        mainWindow->showError("Имя проекта не должно быть пустым");
         return;
     }
 
-    const QDir projectDir(projectPath);
-    const QStringList ourpFiles = projectDir.entryList({ "*.ourp" }, QDir::Files);
-    if (ourpFiles.isEmpty()){ return;}
-
-    for (const QString& fileName : ourpFiles) {
-        createTab(fileName); // name.ourp
+    if (ourpFileName.contains('.')) {
+        LOG_ERROR("Неверное имя проекта:" << ourpFileName);
+        mainWindow->showError("Имя проекта не должно содержать '.'");
+        return;
     }
 
-    emit OpenProject(projectPath);
+    const QString ourpName = ourpFileName + ".ourp";
 
-    ModeManager::setSave(true);
+    if (mainWindow->ui->isButtonNameExists(ourpName)) {
+        LOG_INFO("Такой файл существует :" << ourpName);
+        mainWindow->showError("Файл с таким именем существует.");
+        return;
+    }
+
+    const auto* tabButton = mainWindow->ui->createTabProject(ourpName);
+
+    connect(tabButton, &QPushButton::clicked, [this, ourpName]() {
+        LOG_INFO("Переключение на вкладку:" << ourpName);
+        emit ChangeTabs(ourpName); // name.ourp
+    });
+
+    LOG_INFO("Создание нового файла:" << ourpFileName);
 }
 
 
-void FileSystems::saveProject() {
+void FileSystems::slotSaveProject() {
     if (projectPath.isEmpty()) {
         LOG_WARN("Нет проекта для сохранения");
         return;
     }
 
-    emit SaveProject(projectPath);
-
-    if (!ModeManager::getSave()) {
+    if (ModeManager::getSave()) {
         LOG_INFO("Сохранение не требуется");
         return;
     }
+
+    saveProjectToXML();
+
+    emit SaveProject();
 }
 
 
@@ -152,49 +197,153 @@ QString FileSystems::getProjectPath() const {
 }
 
 
-void FileSystems::scanAndLoadProjects() {
-    const QDir projectsDir(defaultProjectsPath);
-
-    if (!projectsDir.exists()) {
-        LOG_WARN("Директория проектов не найдена:" << defaultProjectsPath);
+void FileSystems::loadProjectsToUI() {
+    QFile file(configPath);
+    if (!file.open(QIODevice::ReadOnly)) {
         return;
     }
 
-    QFileInfoList dirs = projectsDir.entryInfoList(
-        QDir::Dirs | QDir::NoDotAndDotDot
-    );
+    QXmlStreamReader xml(&file);
+    QVector<QPair<QString, QString>> validProjects;
+    bool removed = false;
 
-    for (const QFileInfo& dirInfo : dirs) {
-        const QDir projectDir(dirInfo.absoluteFilePath());
-        const QString projectName = projectDir.dirName();
+    while (!xml.atEnd()) {
+        xml.readNext();
 
-        QStringList projectFiles = projectDir.entryList(
-            QStringList() << "*.ourp",
-            QDir::Files | QDir::NoSymLinks
-        );
-
-        if (projectFiles.isEmpty()) {
-            LOG_WARN("В каталоге нет .ourp файлов, пропускаем:" << projectDir.absolutePath());
+        if (!xml.isStartElement() || xml.name() != "project") {
             continue;
         }
 
-        const QString firstOurp = projectFiles.first();
-        const QString fullPath = projectDir.filePath(firstOurp);
+        const QString name = xml.attributes().value("name").toString();
+        const QString path = xml.attributes().value("path").toString();
 
-        const auto button = mainWindow->ui->addProjectInListStartWindow(projectName, projectDir.absolutePath());
+        if (QDir dir(path); !dir.exists()) {
+            removed = true;
+            continue;
+        }
 
-        connect(button, &QPushButton::clicked, [this, fullPath]() {
-            if (fullPath.isEmpty()) {
-                LOG_ERROR("Empty project path при открытии");
-                mainWindow->showError("Путь проекта пустой");
-                return;
+        validProjects.push_back({name, path});
+
+        const auto button =
+            mainWindow->ui->addProjectInListStartWindow(name, path);
+
+        connect(button, &QPushButton::clicked, mainWindow,
+                [this, path]() {
+                    openProjectWithDirPath(path);
+                });
+    }
+    file.close();
+
+    if (removed) {
+        QFile out(configPath);
+        if (out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            QXmlStreamWriter writer(&out);
+            writer.setAutoFormatting(true);
+            writer.writeStartDocument();
+            writer.writeStartElement("projects");
+
+            for (const auto& p : validProjects) {
+                writer.writeStartElement("project");
+                writer.writeAttribute("name", p.first);
+                writer.writeAttribute("path", p.second);
+                writer.writeEndElement();
             }
-            projectPath = fullPath;
-            openExistingProject();
-        });
 
-        LOG_INFO("Проект загружен в UI:" << projectName << "->" << fullPath);
+            writer.writeEndElement();
+            writer.writeEndDocument();
+        }
     }
 
     LOG_INFO("Сканирование проектов завершено");
+}
+
+
+void FileSystems::saveProjectToXML() const {
+    const QDir dir(projectPath);
+    if (!dir.exists()) {
+        return;
+    }
+
+    const QString projectName =
+        QFileInfo(dir.absolutePath()).fileName();
+
+    QFile file(configPath);
+    QVector<QPair<QString, QString>> existing;
+
+    if (file.open(QIODevice::ReadOnly)) {
+        QXmlStreamReader xml(&file);
+
+        while (!xml.atEnd()) {
+            xml.readNext();
+            if (xml.isStartElement() && xml.name() == "project") {
+                const QString path =
+                    xml.attributes().value("path").toString();
+                const QString name =
+                    xml.attributes().value("name").toString();
+
+                if (path == projectPath) {
+                    return;
+                }
+
+                existing.append({ name, path });
+            }
+        }
+        file.close();
+    }
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return;
+    }
+
+    QXmlStreamWriter xml(&file);
+    xml.setAutoFormatting(true);
+
+    xml.writeStartDocument();
+    xml.writeStartElement("projects");
+
+    for (const auto& p : existing) {
+        xml.writeStartElement("project");
+        xml.writeAttribute("name", p.first);
+        xml.writeAttribute("path", p.second);
+        xml.writeEndElement();
+    }
+
+    xml.writeStartElement("project");
+    xml.writeAttribute("name", projectName);
+    xml.writeAttribute("path", projectPath);
+    xml.writeEndElement();
+
+    xml.writeEndElement();
+    xml.writeEndDocument();
+}
+
+
+bool FileSystems::projectExistsInConfig(const QString& absoluteProjectPath) const
+{
+    if (absoluteProjectPath.isEmpty()) {
+        return false;
+    }
+
+    QFile file(configPath);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    QXmlStreamReader xml(&file);
+
+    while (!xml.atEnd()) {
+        xml.readNext();
+
+        if (!xml.isStartElement() || xml.name() != "project")
+            continue;
+
+        const QString path =
+            xml.attributes().value("path").toString();
+
+        if (QDir::cleanPath(path) ==
+            QDir::cleanPath(absoluteProjectPath)) {
+            return true;
+            }
+    }
+
+    return false;
 }

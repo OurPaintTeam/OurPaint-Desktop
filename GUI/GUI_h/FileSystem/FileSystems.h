@@ -9,6 +9,11 @@
 #include <QFileDialog>
 #include <QSet>
 #include <QStandardPaths>
+#include <qxmlstream.h>
+
+#define LOG_INFO(x)  qDebug()    << "[PROJECT]" << x
+#define LOG_WARN(x)  qWarning()  << "[PROJECT WARNING]" << x
+#define LOG_ERROR(x) qCritical() << "[PROJECT ERROR]" << x
 
 class MainWindow;
 
@@ -16,22 +21,25 @@ class FileSystems final : public QObject {
     Q_OBJECT
 public:
     explicit FileSystems(MainWindow* mw);
-
     QString getProjectPath() const;
-    void scanAndLoadProjects();
+    void loadProjectsToUI();
 
 public slots:
-    void openOrCreateProject();
-    void saveProject();
-    void createNewFile(const QString& ourpFileName);
+    void slotOpenProject();
+    void slotCreateNewProject();
+    void slotSaveProject();
+    void slotCreateNewFile(const QString& ourpFileName);
 
     //  Documents/OurPaint/projects/nameProject/ name.ourp , name2.ourp
     signals:
     void DeleteTab(const QString& tabName); // name.ourp
+    void RenameTab(const QString& oldName,const QString& newName); // name.ourp
     void CreateNewTab(const QString& tabName); // name.ourp
+    void CreateNewProject(const QString& workDir); // path/project
     void OpenProject(const QString& workDir); // path/project
     void ChangeTabs(const QString& tabName); // name.ourp
-    void SaveProject(const QString& workDir); // path/project
+    void OpenFile(const QString& fileName); // name.ourp
+    void SaveProject();
 
 private:
     MainWindow* mainWindow = nullptr;
@@ -41,11 +49,15 @@ private:
         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     const QString defaultProjectsPath =
         QDir::cleanPath(documentsPath + "/OurPaint/projects");
+    const QString configPath =
+    QDir::cleanPath(documentsPath + "/OurPaint/config/config.xml");
 
     QString selectProjectDirectory() const;
 
-    void createNewProject();
-    void createTab(const QString& ourpFileName);
-    void openExistingProject();
+    void openProjectWithDirPath(const QString& workDir);
+    void openOurpFiles();
+    void createTabButtons(const QString& ourpFileName);
+    void saveProjectToXML() const;
+    bool projectExistsInConfig(const QString &absoluteProjectPath) const;
 };
 #endif //OURPAINT_FILESYSTEMS_H
