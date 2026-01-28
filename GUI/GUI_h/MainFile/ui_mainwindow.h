@@ -562,6 +562,21 @@ public:
     }
 
 
+    bool renameTab(const QString& oldName,const QString& newName) {
+        if(!isButtonNameExists(newName)) {
+            for (auto* button : tabButtons) {
+                if (button->text() == oldName) {
+                    button->setText(newName);
+                    qDebug()<<"UI: change tab name:"<<oldName<<"->"<<newName;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
     QPushButton* createTabProject(const QString& name) {
 
         if (activeTab != nullptr) {
