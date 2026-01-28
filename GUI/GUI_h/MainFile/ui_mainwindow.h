@@ -39,7 +39,7 @@ public:
 
     // Start Window
     QPushButton* openFolderForOpenProject;
-    // QPushButton* loadProjectButton;
+    QPushButton* openFolderForCreateProject;
     QWidget* openCreateProjectsWidget;
     QVBoxLayout* mainLayoutINStartWindow;
     QWidget* inputContainer;
@@ -120,7 +120,7 @@ public:
     QWidget* tabBar;
     QHBoxLayout* tabBarLayout;
     QPushButton* activeTab = nullptr;
-    QPushButton* lastActiveTab = nullptr;
+    QVector<QPushButton*> tabButtons;
 
     // Window control buttons
     QPushButton* closeButton;
@@ -309,7 +309,10 @@ public:
         if(settings) { settings->hide(); }
         if(highShowTabBar) { highShowTabBar->hide(); }
         if(tabBar) { tabBar->hide(); }
-        if(collapsedPanel) { collapsedPanel->hide(); }
+        if(collapsedPanel) { collapsedPanel->hide();}
+        if (Figures){Figures->hide();}
+        if (Req){Req->hide();}
+        if (Tools){Tools->hide();}
         if(workWindow) { workWindow->hide(); }
         if(console) { console->hide(); }
         if(openCreateProjectsWidget) { openCreateProjectsWidget->show(); }
@@ -332,10 +335,7 @@ public:
         //  collaborationButton->show();
         if(settings) { settings->show(); }
         if(highShowTabBar) { highShowTabBar->show(); }
-        if(tabBar) { tabBar->show(); }
         if(collapsedPanel) { collapsedPanel->show(); }
-        if(workWindow) { workWindow->show(); }
-        if(console) { console->show(); }
     }
 
 
@@ -395,28 +395,28 @@ public:
         inputLayout->addWidget(projectInput, 1); // stretching it out QLineEdit
 
         // --- create button ---
+        openFolderForCreateProject = new QPushButton(inputContainer);
+        openFolderForCreateProject->setObjectName("openFolderForCreateProject");
+        openFolderForCreateProject->setText("+");
+        openFolderForCreateProject->setToolTip("Create Project");
+        openFolderForCreateProject->setFixedSize(30, 30);
+        openFolderForCreateProject->setStyleSheet(
+                "QPushButton { color: black; background-color: #D8D8F6;border: 1px solid #333333; border-radius: 5px; }"
+                "QPushButton:hover { background-color: #2f4557; }"
+        );
+        inputLayout->addWidget(openFolderForCreateProject);
+
+        // --- open button ---
         openFolderForOpenProject = new QPushButton(inputContainer);
         openFolderForOpenProject->setObjectName("openFolderForOpenProject");
-        openFolderForOpenProject->setText("+");
-        openFolderForOpenProject->setToolTip("Create Project");
+        openFolderForOpenProject->setText("o");
+        openFolderForOpenProject->setToolTip("Load Project");
         openFolderForOpenProject->setFixedSize(30, 30);
         openFolderForOpenProject->setStyleSheet(
                 "QPushButton { color: black; background-color: #D8D8F6;  border: 1px solid #333333; border-radius: 5px; }"
                 "QPushButton:hover { background-color: #2f4557; }"
         );
         inputLayout->addWidget(openFolderForOpenProject);
-
-        // --- open button ---
-       /* loadProjectButton = new QPushButton(inputContainer);
-        loadProjectButton->setObjectName("loadProjectButton");
-        loadProjectButton->setText("o");
-        loadProjectButton->setToolTip("Load Project");
-        loadProjectButton->setFixedSize(30, 30);
-        loadProjectButton->setStyleSheet(
-                "QPushButton { color: black; background-color: #D8D8F6;border: 1px solid #333333; border-radius: 5px; }"
-                "QPushButton:hover { background-color: #2f4557; }"
-        );
-        inputLayout->addWidget(loadProjectButton);*/
 
         mainLayoutINStartWindow->addWidget(inputContainer);
 
@@ -470,7 +470,6 @@ public:
 
         scrollArea->setWidget(scrollContent);
         mainLayoutINStartWindow->addWidget(scrollArea);
-
 
         // Animations
         animationPanel = new AnimationWidget(centralwindow);
@@ -552,6 +551,17 @@ public:
     }
 
 
+    bool isButtonNameExists(const QString& name)
+    {
+        for (const auto* button : tabButtons) {
+            if (button->text() == name) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     QPushButton* createTabProject(const QString& name) {
 
         if (activeTab != nullptr) {
@@ -573,6 +583,7 @@ public:
 
         // create active button
         const auto tabButton = new QPushButton(name, tabBar);
+        tabButtons.push_back(tabButton);
         tabButton->setObjectName(name);
         tabButton->setFixedHeight(25);
         tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -629,8 +640,19 @@ public:
 
         });
 
-        lastActiveTab = activeTab;
+        if (activeTab == nullptr) {
+            if(workWindow) {workWindow->show();}
+            if(tabBar) {tabBar->show();}
+            if(console) {console->show();}
+            if (Figures){Figures->show();}
+            if (Req){Req->show();}
+            if (Tools){Tools->show();}
+
+        }
+
         activeTab = tabButton;
+
+
 
         return tabButton;
     }
@@ -1263,6 +1285,7 @@ public:
                 "border: none; "
                 "border-radius: 5px; "
                 "padding: 5px 10px; "
+                "font-weight: bold;"
                 "}"
                 "QPushButton#projectButton::menu-indicator { "
                 "image: none; "
@@ -1287,6 +1310,7 @@ public:
                 "border: none; "
                 "border-radius: 5px; "
                 "padding: 5px 10px; "
+                "font-weight: bold;"
                 "}"
                 "QPushButton#collaborationButton::menu-indicator { "
                 "image: none; "
@@ -1311,6 +1335,7 @@ public:
                 "border: none; "
                 "border-radius: 5px; "
                 "padding: 5px 10px; "
+                "font-weight: bold;"
                 "}"
                 "QPushButton#helpButton:hover { "
                 "background-color: rgba(255, 255, 255, 0.3); "
