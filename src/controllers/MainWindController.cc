@@ -392,10 +392,15 @@ void MainWindController::onEnterCommand(const QString& command) {
 }
 
 
-void MainWindController::onSaveProject(const QString& workDir) {
+void MainWindController::onSaveProject() {
     SLOT_GUARD_MAINWIND_BEGIN
-    Document* document = _documentManager.getActiveDocument();
-    Scene& scene = document->scene();
+
+    // TODO В документе будет workDir отталкиваемся от нее
+
+     Document* document = _documentManager.getActiveDocument();
+     Scene& scene = document->scene();
+
+    const QString workDir;
     try {
         QDir dir(workDir);
         if (!dir.exists()) {
@@ -404,16 +409,13 @@ void MainWindController::onSaveProject(const QString& workDir) {
             throw std::runtime_error(msg.toStdString());
         }
 
-        QDirIterator it(
-            workDir,
-            QStringList() << "*.ourp",
-            QDir::Files,
-            QDirIterator::Subdirectories
-        );
+             // TODO Тут нужно брать имена из document и циклом сохранять
 
 
-        while (it.hasNext()) {
-            const QString projectFilePath = it.next();
+        const QString fileName;
+
+        while (true) {
+            const QString projectFilePath = workDir + fileName;
             QFile file(projectFilePath);
 
             if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
@@ -451,17 +453,40 @@ void MainWindController::onSaveProject(const QString& workDir) {
     SLOT_GUARD_MAINWIND_END
 }
 
+void MainWindController::onCreateProject(const QString& workDir) {
+    SLOT_GUARD_MAINWIND_BEGIN
+
+     // TODO  инициализация и set workDir
+
+    qDebug()<<"CreateProject()"<<workDir;
+    SLOT_GUARD_MAINWIND_END
+}
+
 void MainWindController::onOpenProject(const QString& workDir) {
     SLOT_GUARD_MAINWIND_BEGIN
+
+    qDebug()<<"Open project:"<<workDir;
+
+         // TODO set workDir
+
+    SLOT_GUARD_MAINWIND_END
+}
+
+void MainWindController::onOpenFile(const QString& fileName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+
+         // TODO нужно создать сцену и документ
+         // TODO нужна рабочая директория из document manager
+
     Document* document = _documentManager.getActiveDocument();
     Scene& scene = document->scene();
 
-    scene.clearImage();
-
     try {
-        QFile file(workDir);
+        // TODO filePath
+        const QString filePath = /*workDir + */ fileName;
+        QFile file(filePath);
         if (!file.open(QIODevice::ReadOnly)) {
-            const QString msg = tr("Невозможно открыть файл: %1").arg(workDir);
+            const QString msg = tr("Невозможно открыть файл: %1").arg(filePath);
             qDebug() << "LOAD ERROR:" << msg;
             _mainWind.showError(msg);
             throw std::runtime_error(msg.toStdString());
@@ -472,7 +497,7 @@ void MainWindController::onOpenProject(const QString& workDir) {
 
         const nlohmann::json j = nlohmann::json::parse(data.constData(), nullptr, false);
         if (j.is_discarded()) {
-            const QString msg = tr("Файл повреждён или не является JSON: %1").arg(workDir);
+            const QString msg = tr("Файл повреждён или не является JSON: %1").arg(filePath);
             qDebug() << "LOAD ERROR:" << msg;
             _mainWind.showError(msg);
             throw std::runtime_error(msg.toStdString());
@@ -485,11 +510,11 @@ void MainWindController::onOpenProject(const QString& workDir) {
         _mainWind.inProjectWindow();
         scene.paint();
 
-        const QString justName = QFileInfo(workDir).fileName();
+        const QString justName = QFileInfo(filePath).fileName();
         _lmb.addFileToProject(justName);
         _lmb.updateLeftMenu();
 
-        qDebug() << "LOAD OK:" << workDir << "(" << data.size() << "байт)";
+        qDebug() << "LOAD OK:" << filePath << "(" << data.size() << "байт)";
         _mainWind.showSuccess(tr("Проект успешно загружен!"));
 
         ModeManager::setProject(true);
@@ -501,6 +526,7 @@ void MainWindController::onOpenProject(const QString& workDir) {
         _mainWind.showError(tr("Ошибка при загрузке проекта: %1").arg(e.what()));
     }
 
+    qDebug()<<"OpenFile:"<<fileName;
     SLOT_GUARD_MAINWIND_END
 }
 
@@ -513,6 +539,26 @@ void MainWindController::onCreateTab(const QString& tabName) {
     ObjectContainer& container = scene.getObjectContainer();
     _painter.initObjectContainer(container);
     _painter.createNewContainer(tabName);
+    _lmb.addFileToProject(tabName);
+    _lmb.updateLeftMenu();
+    SLOT_GUARD_MAINWIND_END
+}
+
+void MainWindController::onDeleteTab(const QString& tabName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+
+    // TODO
+
+    qDebug()<<"DeleteTab:"<<tabName;
+    SLOT_GUARD_MAINWIND_END
+}
+
+void MainWindController::onRenameTab(const QString& oldName, const QString& newName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+
+    // TODO
+
+    qDebug()<<"RenameTab:"<<oldName << ":"<<newName;
     SLOT_GUARD_MAINWIND_END
 }
 

@@ -57,12 +57,16 @@ public slots:
     void onEmitScript(const QString& fileName);
 
     // Project level
-    void onSaveProject(const QString& workDir);
+    void onSaveProject();
     void onOpenProject(const QString& workDir);
+    void onCreateProject(const QString& workDir);
 
     // Document level
     void onCreateTab(const QString& tabName);
     void onChangeTab(const QString& tabName);
+    void onRenameTab(const QString& oldName, const QString& newName);
+    void onDeleteTab(const QString& tabName);
+    void onOpenFile(const QString& fileName);
 
     void onUNDO();
     void onREDO();
