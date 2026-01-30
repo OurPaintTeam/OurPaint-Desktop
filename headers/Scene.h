@@ -30,8 +30,6 @@ private:
     std::unordered_map<ID, Circle*> _circles;
     std::unordered_map<ID, Arc*> _arcs;
 
-    mutable Painter* _painter;
-
     mutable bool _isRectangleDirty;
     mutable BoundBox2D _allFiguresRectangle;
 
@@ -67,7 +65,7 @@ public:
     static const ID _connectionEdgeID;
 
 public:
-    Scene(Painter* p);
+    Scene();
     Scene(const Scene&) = delete;
     Scene operator=(const Scene&) = delete;
     // Scene(Scene&&);
@@ -88,9 +86,6 @@ public:
     void rebuildComponents();
     Component& findComponentByID(ID id);
 
-    void paint() const;
-    void clearImage() const;
-
     ObjectData getObjectData(ID objectID) const;
     ObjectData getRootObjectData(ID objectID) const;
     Requirement getRequirementData(ID object1, ID object2) const;
@@ -103,8 +98,6 @@ public:
 
     bool hasObject(ID id) const;
     bool hasRequirement(ID id) const;
-
-    void setPainter(Painter*);
 
     void moveObject(ID objectID, double dx, double dy);
     void movePoint(ID pointID, double dx, double dy);
@@ -139,7 +132,7 @@ public:
 
 private:
     ObjectContainer _objectContainer;
-    ISceneObserver* _observer = nullptr;
+    std::vector<ISceneObserver*> _observers;
 
     void addPoint(ObjectData data, ID id);
     void addSection(ObjectData data, ID pointID1, ID pointID2, ID sectionID);

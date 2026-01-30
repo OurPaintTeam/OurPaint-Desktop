@@ -39,6 +39,7 @@ signals:
                     const double* center_x,
                     const double* center_y);
     void reqAddedQt(const Requirement& req);
+    void sceneChanged();
 };
 
 #endif // ! OURPAINT_HEADERS_SCENE_QT_ADAPTER_H_

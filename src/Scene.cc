@@ -10,12 +10,11 @@
 const ID Scene::_errorID(-1);
 const ID Scene::_connectionEdgeID(-2);
 
-Scene::Scene(Painter* p) :
+Scene::Scene() :
         _points(),
         _sections(),
         _circles(),
         _arcs(),
-        _painter(p),
         _isRectangleDirty(false),
         _allFiguresRectangle(),
         _graph(),
@@ -83,11 +82,10 @@ ID Scene::addObject(const ObjectData& objData) {
             addPoint(objData, newID);
 
             std::vector<const double*> vec = getPointParams(newID);
-            if (_observer) {
-                _observer->pointAdded(newID, vec[0], vec[1]);
-            }
 
-            paint();
+            for (auto& observer : _observers) {
+                observer->pointAdded(newID, vec[0], vec[1]);
+            }
 
             return newID;
         }
@@ -106,11 +104,9 @@ ID Scene::addObject(const ObjectData& objData) {
             addSection(objData, pID1, pID2, newID);
 
             std::vector<const double*> vec = getSectionParams(newID);
-            if (_observer) {
-                _observer->sectionAdded(newID, vec[0], vec[1], vec[2], vec[3]);
+            for (auto& observer : _observers) {
+                observer->sectionAdded(newID, vec[0], vec[1], vec[2], vec[3]);
             }
-
-            paint();
 
             return newID;
         }
@@ -127,11 +123,9 @@ ID Scene::addObject(const ObjectData& objData) {
             addCircle(objData, pID, newID);
 
             std::vector<const double*> vec = getCircleParams(newID);
-            if (_observer) {
-                _observer->circleAdded(newID, vec[0], vec[1], vec[2]);
+            for (auto& observer : _observers) {
+                observer->circleAdded(newID, vec[0], vec[1], vec[2]);
             }
-
-            paint();
 
             return newID;
         }
@@ -153,11 +147,9 @@ ID Scene::addObject(const ObjectData& objData) {
             addArc(objData, pID1, pID2, pID3, newID);
 
             std::vector<const double*> vec = getArcParams(newID);
-            if (_observer) {
-                _observer->arcAdded(newID, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            for (auto& observer : _observers) {
+                observer->arcAdded(newID, vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
             }
-
-            paint();
 
             return newID;
         }
@@ -502,13 +494,6 @@ void Scene::updateBoundingBox() const {
     _isRectangleDirty = false;
 }
 
-void Scene::paint() const {
-    updateBoundingBox();
-}
-
-void Scene::clearImage() const {
-}
-
 ObjectData Scene::getObjectData(ID id) const {
     ObjectData obj;
     if (auto it = _points.find(id); it != _points.end()) {
@@ -725,9 +710,6 @@ std::vector<Requirement> Scene::getObjectRequirementsWithConnectedObjects(ID obj
     return {objectRequirements.begin(), objectRequirements.end()};
 }
 
-void Scene::setPainter(Painter*) {
-}
-
 void Scene::moveObject(ID id, double dx, double dy) {
     if (_points.contains(id)) {
         Point* p = _points[id];
@@ -931,8 +913,9 @@ ID Scene::addRequirement(const Requirement& reqData, const bool updateRequiremen
         updateRequirements(reqData.obj1);
     }
 
-    if (_observer) {
+    for (auto& observer : _observers) {
         // TODO
+        (void)observer;
         //_observer->reqAdded(reqData);
     }
 
@@ -1356,7 +1339,7 @@ bool Scene::isValid(const Requirement& req) const {
 }
 
 void Scene::setObserver(ISceneObserver* o) {
-    _observer = o;
+    _observers.push_back(o);
 }
 
 void Scene::load(const std::vector<ObjectData>& objs, const std::vector<Requirement>& reqs) {

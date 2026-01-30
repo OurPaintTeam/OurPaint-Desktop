@@ -7,14 +7,17 @@ SceneQtAdapter::SceneQtAdapter()
 
 void SceneQtAdapter::pointAdded(ID id, const double* x, const double* y) {
     emit pointAddedQt(id, x, y);
+    emit sceneChanged();
 }
 
 void SceneQtAdapter::sectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2) {
     emit sectionAddedQt(id, x1, y1, x2, y2);
+    emit sceneChanged();
 }
 
 void SceneQtAdapter::circleAdded(ID id, const double* x, const double* y, const double* r) {
     emit circleAddedQt(id, x, y, r);
+    emit sceneChanged();
 }
 
 void SceneQtAdapter::arcAdded(ID id,
@@ -25,10 +28,12 @@ void SceneQtAdapter::arcAdded(ID id,
                                 const double* center_x,
                                 const double* center_y) {
     emit arcAddedQt(id, beg_x, beg_y, end_x, end_y, center_x, center_y);
+    emit sceneChanged();
 }
 
 void SceneQtAdapter::reqAdded(const Requirement& req) {
     emit reqAddedQt(req);
+    emit sceneChanged();
 }
 
 #include "moc_SceneQtAdapter.cpp"

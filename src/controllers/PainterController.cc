@@ -89,7 +89,6 @@ void PainterController::onMovingPoint(const QVector<ID>& vec_id) {
         _mainWind.showError(a.what());
     }
 
-    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
@@ -121,7 +120,6 @@ void PainterController::onMovingSection(const QVector<ID>& vec_id, const QPointF
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
-    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
@@ -158,7 +156,6 @@ void PainterController::onMovingCircle(const QVector<ID>& vec_id, const QPointF&
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
-    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
@@ -186,7 +183,6 @@ void PainterController::onMovingArc(const QVector<ID>& vec_id) {
     } catch (const std::exception& a) {
         _mainWind.showError(a.what());
     }
-    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_MAINWIND_END
 }
@@ -201,7 +197,6 @@ void PainterController::onEndMoving() {
     txn.addCommand(cmd);
     undoRedo.push(std::move(txn));
     _isStartMoving = true;
-    scene.paint();
     ModeManager::setSave(false);
     SLOT_GUARD_END
 }

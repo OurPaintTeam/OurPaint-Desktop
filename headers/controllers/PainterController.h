@@ -9,7 +9,6 @@ class Scene;
 class CommandManager;
 class Transaction;
 class ID;
-class ObjectData;
 class MainWindow;
 class DocumentManager;
 
