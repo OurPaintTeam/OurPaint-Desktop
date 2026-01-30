@@ -74,6 +74,8 @@ void Application::initGUI(int& argc, char** argv) {
     QObject::connect(sqa, &SceneQtAdapter::arcAddedQt, leftMenu, &LeftMenuBar::onArcAdded);
     QObject::connect(sqa, &SceneQtAdapter::reqAddedQt, leftMenu, &LeftMenuBar::onReqAdded);
 
+    QObject::connect(sqa, &SceneQtAdapter::sceneChanged, painter, &QTPainter::draw);
+
     mainWind->show();
 }
 

@@ -5,7 +5,7 @@
 
 Document::Document(const std::string& documentName) {
     _documentName = documentName;
-    _scene = new Scene(nullptr);
+    _scene = new Scene();
     _undoRedo = new UndoRedo::UndoRedoManager(100);
     _commandManager = new CommandManager();
 

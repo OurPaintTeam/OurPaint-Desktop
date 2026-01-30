@@ -137,8 +137,6 @@ void FileSystems::slotCreateNewFile(const QString& ourpFileName) { // name.ourp
     }
 
     createTabButtons(ourpFileName);
-
-    emit CreateNewTab(ourpFileName);
 }
 
 
@@ -172,6 +170,8 @@ void FileSystems::createTabButtons(const QString& ourpFileName) {
     });
 
     LOG_INFO("Создание нового файла:" << ourpFileName);
+
+    emit CreateNewTab(ourpName);
 }
 
 

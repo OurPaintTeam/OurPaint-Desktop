@@ -25,14 +25,12 @@ void LeftMenuController::onFigureParamsChanged(long long int id, const std::stri
     if (type == "Point" && parameters.size() == 2) {
         try {
             scene.setPoint(ID(id), parameters[0], parameters[1]);
-            scene.paint();
         } catch (const std::exception& a) {
             _mainWind.showError(a.what());
         }
     } else if (type == "Circle" && parameters.size() == 3) {
         try {
             scene.setCircle(ID(id), parameters[0], parameters[1], parameters[2]);
-            scene.paint();
         } catch (const std::exception& a) {
             _mainWind.showError(a.what());
         }
@@ -40,7 +38,6 @@ void LeftMenuController::onFigureParamsChanged(long long int id, const std::stri
         try {
             scene.setSection(ID(id), parameters[0], parameters[1], parameters[2],
                              parameters[3]);
-            scene.paint();
         } catch (const std::exception& a) {
             _mainWind.showError(a.what());
         }
@@ -48,7 +45,6 @@ void LeftMenuController::onFigureParamsChanged(long long int id, const std::stri
         try {
             // TODO The arch does not store the radius!
             // scene.setArc(ID(id), parameters[0], parameters[1], parameters[2], parameters[3], parameters[4], parameters[5]);
-            scene.paint();
         } catch (const std::exception& a) {
             _mainWind.showError(a.what());
         }
@@ -62,10 +58,7 @@ void LeftMenuController::onReqParamChanged(long long int, const double&) {}
 
 void LeftMenuController::onDoubleClickLeftMenu(long long int id, const std::string& type) {
     SLOT_GUARD_MAINWIND_BEGIN
-    Document* document = _documentManager.getActiveDocument();
-    Scene& scene = document->scene();
     _painter.selectedElemByID(ID(id), type);
-    scene.paint();
     SLOT_GUARD_MAINWIND_END
 }
 
