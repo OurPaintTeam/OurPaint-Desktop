@@ -135,6 +135,11 @@ void MainWindow::setupLeftMenu() {
             leftMenuBar,
             &LeftMenuBar::doubleClickID);
 
+    connect(static_cast<ParameterDelegate*>(ui->leftMenuView->itemDelegate()),
+        &ParameterDelegate::deleteClicked,
+        leftMenuBar,
+        &LeftMenuBar::deleteTabNode);
+
 
     connect(ui->leftMenuView, &QTreeView::customContextMenuRequested,
             this, &MainWindow::onLeftMenuRightClick);
@@ -342,7 +347,24 @@ void MainWindow::slotOpenFile(const QString& fileName) {
 }
 
 void MainWindow::slotDeleteTab(const QString& tabName) {
-    emit DeleteTab(tabName);
+    const bool deletingActiveTab = ui->checkActiveTab(tabName);
+    const bool wasLastTab = (ui->getTabCount() == 1);
+    QString tabToSwitch;
+
+    if (deletingActiveTab && !wasLastTab) {
+        tabToSwitch = ui->getTabToSwitchAfterDeletion(tabName);
+    }
+
+    if (ui->deleteTab(tabName)) {
+        emit DeleteTab(tabName);
+
+        if (deletingActiveTab && !tabToSwitch.isEmpty()) {
+            slotChangeTabs(tabToSwitch);
+            ui->setActiveTab(tabToSwitch);
+        } else if (wasLastTab) {
+            ui->hideAllPanels();
+        }
+    }
 }
 
 void MainWindow::slotRenameTab(const QString& oldName,const QString& newName) {
