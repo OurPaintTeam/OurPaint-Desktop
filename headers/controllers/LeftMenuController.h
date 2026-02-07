@@ -22,6 +22,7 @@ public slots:
     void onReqParamChanged(long long, const double&);
     void onDoubleClickLeftMenu(long long id, const std::string& type);
     void onRenameTab(const QString& oldName,const QString& newName);
+    void onDeleteTab(const QString& fileName);
 
 };
 

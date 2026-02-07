@@ -67,3 +67,9 @@ void LeftMenuController::onRenameTab(const QString& oldName,const QString& newNa
     _mainWind.slotRenameTab(oldName,newName);
     SLOT_GUARD_MAINWIND_END
 }
+
+void LeftMenuController::onDeleteTab(const QString& fileName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+    _mainWind.slotDeleteTab(fileName);
+    SLOT_GUARD_MAINWIND_END
+}
