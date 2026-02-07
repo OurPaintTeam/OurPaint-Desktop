@@ -9,6 +9,7 @@ LeftMenuBar::LeftMenuBar(QWidget* parent) {
     // Creating nodes
     nothing = new TreeNode("", rootNode); // to indent from the top
     nothing->setEnable(false);
+
     projectsNode = new TreeNode("Projects", rootNode);
     figuresNode = new TreeNode("Figures", rootNode);
     requirementsNode = new TreeNode("Requirements", rootNode);
@@ -104,6 +105,19 @@ void LeftMenuBar::paramChanged(TreeNode* node) {
 }
 
 
+void LeftMenuBar::deleteTabNode(TreeNode* node) {
+    if (!node || node->parent() != projectsNode || !treeModel) {
+        return;
+    }
+
+    const QString fileName = node->getName();
+
+    treeModel->removeNode(projectsNode, node);
+
+    emit deleteTab(fileName);
+}
+
+
 void LeftMenuBar::renameNode(TreeNode* node,const QString& oldName,const QString& newName) {
     if (!node) {
         return;
@@ -115,7 +129,7 @@ void LeftMenuBar::renameNode(TreeNode* node,const QString& oldName,const QString
 
     for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
 
-        TreeNode* child = projectsNode->child(i);
+        const TreeNode* child = projectsNode->child(i);
 
         if (child == node)
             continue;
@@ -219,16 +233,15 @@ void LeftMenuBar::addFileToProject(const QString& fileName) {
     }
 
     for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
-        TreeNode* child = projectsNode->child(i);
-
-        if (child->getName().compare(fileName, Qt::CaseInsensitive) == 0) {
+        if (const TreeNode* child = projectsNode->child(i);
+            child->getName().compare(fileName, Qt::CaseInsensitive) == 0) {
             return;
         }
     }
 
     font.setPointSize(9);
 
-    TreeNode* projectNode = new TreeNode(fileName, projectsNode);
+    const auto projectNode = new TreeNode(fileName, projectsNode);
     projectNode->setEditable(true);
     projectNode->setSelected(true);
     projectNode->setLiteral(true);
@@ -395,7 +408,7 @@ void LeftMenuBar::addRequirementElem(const QString& type, const QString& name, c
     font.setPointSize(SIZE);
 
     // Creating the main node of the element
-    TreeNode* elemNode = new TreeNode(name, requirementsNode);
+    const auto elemNode = new TreeNode(name, requirementsNode);
     elemNode->setIcon(elem);
     elemNode->setEditable(true);
     elemNode->setSelected(true);
@@ -431,7 +444,7 @@ void LeftMenuBar::updateLeftMenu() {
 
 
 // Clearing all the elements
-void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
+void LeftMenuBar::LeftMenuBar::clearAllRequirements() const {
     if (!requirementsNode || !treeModel) {
         return;
     }
@@ -444,7 +457,7 @@ void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
 }
 
 // Clearing all the elements
-void LeftMenuBar::clearAllFigures() {
+void LeftMenuBar::clearAllFigures() const {
     if (!figuresNode || !treeModel) {
         return;
     }
@@ -459,7 +472,9 @@ void LeftMenuBar::clearAllFigures() {
 
 // Clearing one element by ID
 void LeftMenuBar::removeFigureById(qlonglong id) {
-    if (!figuresNode || !treeModel) { return; }
+    if (!figuresNode || !treeModel) {
+        return;
+    }
 
     for (qsizetype i = 0; i < figuresNode->childCount(); ++i) {
         TreeNode* elemNode = figuresNode->child(i);
@@ -474,7 +489,7 @@ void LeftMenuBar::removeFigureById(qlonglong id) {
 }
 
 
-[[maybe_unused]] QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
+QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
     if (!figuresNode || !treeModel) {
         throw std::runtime_error("Don't init node or model");
     }
@@ -622,7 +637,7 @@ QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllFigureIDs() const {
 }
 
 
-[[maybe_unused]] QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllReqIDs() const {
+QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllReqIDs() const {
     QVector<QPair<qlonglong, QString>> all;
 
 

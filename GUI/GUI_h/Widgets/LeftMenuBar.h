@@ -50,7 +50,10 @@ private:
 
 public:
 
-    TreeNode* getProjectsNode(){return projectsNode;};
+    TreeNode* getProjectsNode() const {
+        return projectsNode;
+    };
+
     void refreshAllLinkedParams();
     void refreshLinkedParams(TreeNode* node);
 
@@ -97,17 +100,17 @@ public:
 
 
     // Clearing all the elements
-    void clearAllFigures();
+    void clearAllFigures() const;
 
     // // Clearing all the requirements
-    void clearAllRequirements();
+    void clearAllRequirements() const;
 
     void updateLeftMenu();
 
     // Clearing one element by ID
     void removeFigureById(const qlonglong id);
 
-    [[maybe_unused]] [[maybe_unused]] QModelIndex selectFigureById(const qlonglong id);
+    QModelIndex selectFigureById(const qlonglong id);
 
     QVector<QPair<qlonglong, QString>> collectAllIDs(TreeNode* node) const;
 
@@ -129,6 +132,7 @@ public slots:
                     const double* center_x,
                     const double* center_y);
     void onReqAdded(const Requirement& req);
+    void deleteTabNode(TreeNode* node);
 
 private slots:
     void paramChanged(TreeNode* node);
@@ -139,6 +143,7 @@ signals:
     void reqParamChanged(const qlonglong id, const qreal &parameter);
     void doubleClickLeftMenu(const qlonglong id,const std::string &type);
     void renameTab(const QString& oldName,const QString& newName);
+    void deleteTab(const QString& fileName);
 
 };
 
