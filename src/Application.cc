@@ -176,6 +176,8 @@ void Application::initControllers() {
                      &LeftMenuController::onDoubleClickLeftMenu); // Double-tap the left menu
     QObject::connect(leftMenu, &LeftMenuBar::renameTab, lmc,
                  &LeftMenuController::onRenameTab);
+    QObject::connect(leftMenu, &LeftMenuBar::deleteTab, lmc,
+             &LeftMenuController::onDeleteTab);
 }
 
 int Application::exec() {
