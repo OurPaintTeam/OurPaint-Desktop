@@ -11,6 +11,7 @@
 #include <QPainter>
 #include <QApplication>
 #include "ProtectedPrefixLineEdit.h"
+#include "TreeNode.h"
 
 // A class for changing data in the left menu
 
@@ -27,8 +28,12 @@ public:
     editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
                 const QModelIndex& index) override;
 
-signals:
+    void paint(QPainter* painter,
+                              const QStyleOptionViewItem& option,
+                              const QModelIndex& index) const override;
 
+signals:
+    void deleteClicked(TreeNode* node);
     void doubleClickOnID(const QModelIndex& index);
 };
 
