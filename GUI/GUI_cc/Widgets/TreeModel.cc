@@ -110,7 +110,9 @@ bool TreeModel::setData(const QModelIndex& index, const QVariant& value, qint32 
         if (node->isNumber()) {
             emit treeModelChanged(node->parent());
         }else if (node->isLiteral() && !str.isEmpty()) {
-            emit treeModelRenameNode(node,oldText,str);
+            if (oldText!=str) {
+                emit treeModelRenameNode(node,oldText,str);
+            }
         }
     }
 
