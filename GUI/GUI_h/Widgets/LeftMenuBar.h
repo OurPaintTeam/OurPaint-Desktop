@@ -118,8 +118,6 @@ public:
 
     QVector<QPair<qlonglong, QString>> getAllReqIDs() const;
 
-    bool deleteTabNodeOnName(const QString& fileName) const;
-
 public slots:
     void doubleClickID(const QModelIndex& index);
 

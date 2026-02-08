@@ -104,21 +104,6 @@ void LeftMenuBar::paramChanged(TreeNode* node) {
     }
 }
 
-bool LeftMenuBar::deleteTabNodeOnName(const QString& fileName) const {
-    if (!projectsNode || !treeModel) {
-        return false;
-    }
-
-    for (int i = 0; i < projectsNode->childCount(); ++i) {
-        if (TreeNode* child = projectsNode->child(i);
-            child->getName() == fileName) {
-            treeModel->removeNode(projectsNode, child);
-            return true;
-        }
-    }
-
-    return false;
-}
 
 void LeftMenuBar::deleteTabNode(TreeNode* node) {
     if (!node || node->parent() != projectsNode || !treeModel) {
