@@ -34,6 +34,7 @@ public:
 
 signals:
     void deleteClicked(TreeNode* node);
+    void doubleClickOnProject(TreeNode* node);
     void doubleClickOnID(const QModelIndex& index);
 };
 

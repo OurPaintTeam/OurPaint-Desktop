@@ -75,6 +75,19 @@ bool ParameterDelegate::editorEvent(QEvent* event,
                                     const QModelIndex& index) {
 
     if (event->type() == QEvent::MouseButtonDblClick) {
+
+        TreeNode* node = static_cast<TreeNode*>(index.internalPointer());
+        if (!node) {
+            return QStyledItemDelegate::editorEvent(event, model, option, index);
+        }
+
+        if (node->parent()) {
+             if ((node->parent()->getName() == "Projects")) {
+                 emit doubleClickOnProject(node);
+                 return true;
+             }
+        }
+
         const QString text = index.data(Qt::DisplayRole).toString();
         if (text.startsWith("ID: ")) {
             emit doubleClickOnID(index);
