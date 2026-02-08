@@ -164,6 +164,7 @@ void Application::initControllers() {
     QObject::connect(mainWind, &MainWindow::RenameTab, mwc, &MainWindController::onRenameTab); // Rename tab
     QObject::connect(mainWind, &MainWindow::DeleteTab, mwc, &MainWindController::onDeleteTab); // Delete tab
     QObject::connect(mainWind, &MainWindow::OpenFile, mwc, &MainWindController::onOpenFile); // Open file
+    QObject::connect(mainWind, &MainWindow::CloseProject, mwc, &MainWindController::onCloseProject); // Open file
 
 
 
