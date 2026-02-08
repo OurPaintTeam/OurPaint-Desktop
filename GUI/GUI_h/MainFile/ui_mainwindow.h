@@ -126,6 +126,7 @@ public:
         QPushButton *nameButton;
         QToolButton *closeButton;
         QString name;
+        qint32 lastLayoutIndex;
     };
 
     QVector<TabWidget *> tabs;
@@ -694,7 +695,6 @@ public:
 
             closeTabs.erase(closeIt);
 
-            // Удаляем объект
             delete tabToDelete;
 
             return true;
@@ -717,15 +717,21 @@ public:
             TabWidget *tabToClose = *it;
 
             if (activeTab == tabToClose) {
-                activeTab = nullptr;
+                if (TabWidget *newActive = getTabToSwitchAfterDeletion(tabToClose)) {
+                    setActiveTab(newActive);
+                } else {
+                    activeTab = nullptr;
+                    hideAllPanels();
+                }
             }
 
             if (tabToClose->container) {
+                tabToClose->lastLayoutIndex = tabBarLayout->indexOf(tabToClose->container);
+
                 tabToClose->container->setVisible(false);
             }
 
             closeTabs.push_back(tabToClose);
-
             tabs.erase(it);
 
             return true;
@@ -746,19 +752,30 @@ public:
             if (tabToRestore->container) {
                 tabToRestore->container->setVisible(true);
 
-                const qint32 currentIndex = tabBarLayout->indexOf(tabToRestore->container);
+                if (const qint32 currentIndex = tabBarLayout->indexOf(tabToRestore->container);
+                    currentIndex == -1) {
+                    const qint32 insertIndex = (tabToRestore->lastLayoutIndex >= 0)
+                                                   ? qMin(tabToRestore->lastLayoutIndex, tabBarLayout->count())
+                                                   : tabBarLayout->indexOf(plusButton);
 
-                if (const qint32 plusIndex = tabBarLayout->indexOf(plusButton);
-                    currentIndex != -1 && plusIndex != -1 && currentIndex != plusIndex - 1) {
-                    tabBarLayout->removeWidget(tabToRestore->container);
-                    tabBarLayout->insertWidget(plusIndex, tabToRestore->container);
+                    if (insertIndex >= 0) {
+                        tabBarLayout->insertWidget(insertIndex, tabToRestore->container);
+                    } else {
+                        tabBarLayout->addWidget(tabToRestore->container);
+                    }
+                } else {
+                    if (const qint32 plusIndex = tabBarLayout->indexOf(plusButton);
+                        plusIndex != -1 && currentIndex >= plusIndex) {
+                        tabBarLayout->removeWidget(tabToRestore->container);
+                        tabBarLayout->insertWidget(plusIndex, tabToRestore->container);
+                    }
                 }
+
+                setTabInactiveStyle(tabToRestore->container);
             }
 
             tabs.push_back(tabToRestore);
-
             closeTabs.erase(closeIt);
-
             setActiveTab(tabToRestore);
 
             return true;
@@ -930,7 +947,9 @@ public:
         const qint32 plusIndex = tabBarLayout->indexOf(plusButton);
         tabBarLayout->insertWidget(plusIndex, tabContainer);
 
-        const auto newTab = new TabWidget{tabContainer, nameButton, closeButtonTab, name};
+        const auto newTab = new TabWidget{tabContainer, nameButton, closeButtonTab, name,
+            tabBarLayout->indexOf(tabContainer)};
+
         tabs.push_back(newTab);
 
         TabWidget *tabPtr = tabs.back();
