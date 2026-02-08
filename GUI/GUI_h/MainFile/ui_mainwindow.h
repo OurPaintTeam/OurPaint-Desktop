@@ -119,9 +119,17 @@ public:
     // TabPanel
     QWidget *tabBar;
     QHBoxLayout *tabBarLayout;
-    QPushButton *activeTab = nullptr;
-    QVector<QPushButton *> tabButtons;
-    QPushButton* plusButton = nullptr;
+    QPushButton *plusButton = nullptr;
+
+    struct TabWidget {
+        QWidget *container;
+        QPushButton *nameButton;
+        QToolButton *closeButton;
+        QString name;
+    };
+
+    QVector<TabWidget*> tabs;
+    TabWidget *activeTab = nullptr;
 
     // Window control buttons
     QPushButton *closeButton;
@@ -280,7 +288,8 @@ public:
         // Setting the stretching coefficients for the rightLayout
         // The workWindow stretches in height
         workAreaLayout->addLayout(rightLayout);
-        rightColumn->addLayout(workAreaLayout);
+        rightColumn->addLayout(workAreaLayout, 1);
+        rightColumn->addStretch();
 
         // main layout
         gridLayout->addWidget(leftMenuContainer, 1, 0, 2, 1);
@@ -401,7 +410,7 @@ public:
         openFolderForCreateProject->setToolTip("Create Project");
         openFolderForCreateProject->setFixedSize(30, 30);
         openFolderForCreateProject->setStyleSheet(
-            "QPushButton { color: black; background-color: #D8D8F6;border: 1px solid #333333; border-radius: 5px; }"
+            "QPushButton { color: #5f5e69; background-color: #D8D8F6;border: 1px solid #333333; border-radius: 5px; }"
             "QPushButton:hover { background-color: #2f4557; }"
         );
         inputLayout->addWidget(openFolderForCreateProject);
@@ -413,7 +422,7 @@ public:
         openFolderForOpenProject->setToolTip("Load Project");
         openFolderForOpenProject->setFixedSize(30, 30);
         openFolderForOpenProject->setStyleSheet(
-            "QPushButton { color: black; background-color: #D8D8F6;  border: 1px solid #333333; border-radius: 5px; }"
+            "QPushButton { color: #5f5e69; background-color: #D8D8F6;  border: 1px solid #333333; border-radius: 5px; }"
             "QPushButton:hover { background-color: #2f4557; }"
         );
         inputLayout->addWidget(openFolderForOpenProject);
@@ -562,88 +571,169 @@ public:
     }
 
 
-    qsizetype getTabCount() const {
-        return tabButtons.size();
+    TabWidget* getTabToSwitchAfterDeletion(const TabWidget* tabToDelete) {
+        if (tabs.size() <= 1) {
+            return nullptr;
+        }
+
+        if (!activeTab || activeTab != tabToDelete) {
+            return nullptr;
+        }
+
+        const auto it = std::ranges::find_if(tabs,
+                                       [tabToDelete](const TabWidget* tab) {
+                                           return tab == tabToDelete;
+                                       });
+
+        if (it == tabs.end()) {
+            return nullptr;
+        }
+
+        const auto index = std::distance(tabs.begin(), it);
+
+        if (index + 1 < static_cast<ptrdiff_t>(tabs.size())) {
+            return tabs[index + 1];
+        }
+
+        if (index > 0) {
+            return tabs[index - 1];
+        }
+
+        return nullptr;
     }
 
 
-    QString getTabToSwitchAfterDeletion(const QString &tabToDelete) const {
-        if (tabButtons.empty() || tabButtons.size() == 1) {
-            return QString();
-        }
-        if (activeTab && activeTab->text() != tabToDelete) {
-            return QString();
+    TabWidget *getTabToSwitchAfterDeletion(const QString &tabToDelete) {
+        if (tabs.size() <= 1) {
+            return nullptr;
         }
 
-        qsizetype deleteIndex = -1;
-        for (qsizetype i = 0; i < tabButtons.size(); ++i) {
-            if (tabButtons[i]->text() == tabToDelete) {
-                deleteIndex = i;
-                break;
-            }
-        }
-        if (deleteIndex == -1) {
-            return QString();
+        if (!activeTab || activeTab->name != tabToDelete) {
+            return nullptr;
         }
 
-        if (deleteIndex + 1 < tabButtons.size()) {
-            return tabButtons[deleteIndex + 1]->text();
-        }
-        if (deleteIndex > 0) {
-            return tabButtons[deleteIndex - 1]->text();
+        const auto it = std::ranges::find_if(tabs,
+                                             [tabToDelete](const TabWidget* tab) {
+                                                 return tab->name == tabToDelete;
+                                             });
+
+        if (it == tabs.end()) {
+            return nullptr;
         }
 
-        return QString();
+        const auto index = std::distance(tabs.begin(), it);
+
+        if (index + 1 < tabs.size()) {
+            return tabs[index + 1];
+        }
+
+        if (index > 0) {
+            return tabs[index - 1];
+        }
+
+        return nullptr;
     }
+
+
 
 
     void hideAllPanels() {
         if (workWindow) {
             workWindow->hide();
         }
-        if (tabBar) {tabBar->hide();}
-        if (console) {console->hide();}
-        if (Figures){ Figures->hide();}
-        if (Req) {Req->hide();}
-        if (Tools) {Tools->hide();}
+        if (console) { console->hide(); }
+        if (Figures) { Figures->hide(); }
+        if (Req) { Req->hide(); }
+        if (Tools) { Tools->hide(); }
 
         activeTab = nullptr;
     }
 
 
-    bool deleteTab(const QString &tabName) {
-        const auto it = std::ranges::find_if(tabButtons,
-                                       [&tabName](const QPushButton *button) {
-                                           return button->text() == tabName;
-                                       });
+    bool checkActiveTab(const TabWidget* tab) const {
+        return activeTab == tab;
+    }
 
-        if (it != tabButtons.end()) {
-            QPushButton *button = *it;
-            if (activeTab == button) activeTab = nullptr;
-            tabButtons.erase(it);
-            button->deleteLater();
-            qDebug() << "UI: delete tab:" << tabName;
+
+
+    bool deleteTab(const QString &tabName) {
+        const auto it = std::ranges::find_if(tabs, [&tabName](const TabWidget* t) {
+            return t->name == tabName;
+        });
+
+        if (it != tabs.end()) {
+            TabWidget* tabToDelete = *it;
+
+            if (activeTab == tabToDelete) {
+                activeTab = nullptr;
+            }
+
+            if (tabToDelete->container) {
+                tabToDelete->container->deleteLater();
+            }
+
+            delete tabToDelete;
+
+            tabs.erase(it);
             return true;
         }
         return false;
     }
 
-    bool checkActiveTab(const QString &tabName) const {
-        return activeTab && activeTab->text() == tabName;
+    bool deleteTab(const TabWidget *tab) {
+        if (!tab) {
+            return false;
+        }
+
+        const auto it = std::ranges::find_if(tabs,
+                                             [tab](const TabWidget* t) {
+                                                 return t == tab;
+                                             });
+
+        if (it != tabs.end()) {
+            const TabWidget* tabToDelete = *it;
+
+            if (activeTab == tabToDelete) {
+                activeTab = nullptr;
+            }
+
+            if (tabToDelete->container) {
+                tabToDelete->container->deleteLater();
+            }
+
+            delete tabToDelete;
+
+            tabs.erase(it);
+            return true;
+        }
+
+        return false;
     }
 
-    bool isButtonNameExists(const QString &name) const {
-        return std::ranges::any_of(tabButtons,
-                                   [&name](const QPushButton *button) {
-                                       return button->text() == name;
+
+    bool checkActiveTab(const QString &tabName) const {
+        return activeTab && activeTab->name == tabName;
+    }
+
+    bool isTabNameExists(const QString &name) const {
+        return std::ranges::any_of(tabs,
+                                   [&name](const TabWidget* tab) {
+                                       return tab->name == name;
                                    });
     }
 
 
-    static void setTabInactiveStyle(QPushButton *tab) {
-        if (!tab) return;
+    qsizetype getTabCount() const {
+        return tabs.size();
+    }
+
+
+    static void setTabInactiveStyle(QWidget *tab) {
+        if (!tab) {
+            return;
+        }
         tab->setStyleSheet(
-            "QPushButton { "
+            "QWidget { "
             "background-color: #615760; "
             "color: #D8D8F6; "
             "border: none; "
@@ -652,17 +742,18 @@ public:
             "padding: 0px 5px; "
             "font-size: 9pt; "
             "} "
-            "QPushButton:hover { "
-            "background-color: rgba(255, 255, 255, 0.2); "
-            "}"
+            "QPushButton { color: #D8D8F6; }"
+            "QPushButton:hover { color: #FFFFFF; }"
         );
     }
 
 
-    static void setTabActiveStyle(QPushButton *tab) {
-        if (!tab) return;
+    static void setTabActiveStyle(QWidget *tab) {
+        if (!tab) {
+            return;
+        }
         tab->setStyleSheet(
-            "QPushButton { "
+            "QWidget { "
             "background-color: #978897; "
             "color: #D8D8F6; "
             "border: none; "
@@ -677,25 +768,16 @@ public:
     }
 
 
-    bool setActiveTab(const QString &tabName) {
-        const auto it = std::ranges::find_if(tabButtons,
-                                       [&tabName](const QPushButton *button) { return button->text() == tabName; });
-
-        if (it == tabButtons.end()) {
-            qDebug() << "UI: Tab not found:" << tabName;
+    bool setActiveTab(TabWidget *tab) {
+        if (!tab || activeTab == tab) {
             return false;
         }
 
-        QPushButton *targetButton = *it;
-        if (activeTab == targetButton) {
-            return true;
-        }
-
         if (activeTab) {
-            setTabInactiveStyle(activeTab);
+            setTabInactiveStyle(activeTab->container);
         }
-        setTabActiveStyle(targetButton);
-        activeTab = targetButton;
+        setTabActiveStyle(tab->container);
+        activeTab = tab;
 
         showAllPanels();
         return true;
@@ -703,60 +785,84 @@ public:
 
 
     void showAllPanels() const {
-        if (workWindow) workWindow->show();
-        if (tabBar) tabBar->show();
-        if (console) console->show();
-        if (Figures) Figures->show();
-        if (Req) Req->show();
-        if (Tools) Tools->show();
+        if (workWindow) {workWindow->show();}
+        if (console){ console->show();}
+        if (Figures) {Figures->show();}
+        if (Req) {Req->show();}
+        if (Tools) {Tools->show();}
+        if (tabBar) {tabBar->show();}
     }
 
 
     bool renameTab(const QString &oldName, const QString &newName) {
-        if (isButtonNameExists(newName)) {
+        if (oldName == newName) {
+            return true;
+        }
+
+        if (std::ranges::any_of(tabs, [&newName](const TabWidget* t) {
+            return t && t->name == newName;
+        })) {
             return false;
         }
 
-        const auto it = std::ranges::find_if(tabButtons,
-                                       [&oldName](const QPushButton *button) {
-                                           return button->text() == oldName;
-                                       });
+        const auto it = std::ranges::find_if(tabs, [&oldName](const TabWidget* t) {
+            return t && t->name == oldName;
+        });
 
-        if (it != tabButtons.end()) {
-            (*it)->setText(newName);
-            qDebug() << "UI: change tab name:" << oldName << "->" << newName;
+        if (it != tabs.end() && *it) {
+            TabWidget* tab = *it;
+            tab->name = newName;
+
+            if (tab->nameButton) {
+                tab->nameButton->setText(newName);
+            }
+
             return true;
         }
+
         return false;
     }
 
 
-    QPushButton* createTabProject(const QString &name) {
+    TabWidget *createTabProject(const QString &name) {
         if (activeTab) {
-            setTabInactiveStyle(activeTab);
+            setTabInactiveStyle(activeTab->container);
         }
 
-        auto tabButton = new QPushButton(name, tabBar);
-        tabButtons.push_back(tabButton);
-        tabButton->setObjectName(name);
-        tabButton->setFixedHeight(25);
-        tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        const auto tabContainer = new QWidget(tabBar);
+        tabContainer->setFixedHeight(25);
+        const auto layout = new QHBoxLayout(tabContainer);
+        layout->setContentsMargins(8, 0, 4, 0);
+        layout->setSpacing(4);
 
-        setTabActiveStyle(tabButton);
+        const auto nameButton = new QPushButton(name, tabContainer);
+        nameButton->setFlat(true);
+
+        const auto closeButtonTab = new QToolButton(tabContainer);
+        closeButtonTab->setText("✕");
+        closeButtonTab->setFixedSize(14, 14);
+        closeButtonTab->setCursor(Qt::PointingHandCursor);
+        closeButtonTab->setAutoRaise(true);
+
+        layout->addWidget(nameButton);
+        layout->addWidget(closeButtonTab);
 
         const qint32 plusIndex = tabBarLayout->indexOf(plusButton);
-        tabBarLayout->insertWidget(plusIndex, tabButton);
+        tabBarLayout->insertWidget(plusIndex, tabContainer);
 
-        QObject::connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
-            setActiveTab(tabButton->text());
+        const auto newTab = new TabWidget{tabContainer, nameButton, closeButtonTab, name};
+        tabs.push_back(newTab);
+
+        TabWidget *tabPtr = tabs.back();
+
+        QObject::connect(nameButton, &QPushButton::clicked, [this, tabPtr]() {
+            setActiveTab(tabPtr);
         });
 
-        if (!activeTab) {
-            showAllPanels();
-        }
-        activeTab = tabButton;
+        setActiveTab(tabPtr);
+        showAllPanels();
 
-        return tabButton;
+        return tabPtr;
     }
 
 
