@@ -104,6 +104,15 @@ void LeftMenuBar::paramChanged(TreeNode* node) {
     }
 }
 
+void  LeftMenuBar::slotOpenTab(TreeNode* node) {
+    if (!node || node->parent() != projectsNode || !treeModel) {
+        return;
+    }
+
+    const QString fileName = node->getName();
+
+    emit openTab(fileName);
+}
 
 void LeftMenuBar::deleteTabNode(TreeNode* node) {
     if (!node || node->parent() != projectsNode || !treeModel) {

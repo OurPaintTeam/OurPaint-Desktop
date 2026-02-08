@@ -120,6 +120,8 @@ public:
 
 public slots:
     void doubleClickID(const QModelIndex& index);
+    void deleteTabNode(TreeNode* node);
+    void slotOpenTab(TreeNode* node);
 
     void onPointAdded(ID id, const double* x, const double* y);
     void onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2);
@@ -132,7 +134,6 @@ public slots:
                     const double* center_x,
                     const double* center_y);
     void onReqAdded(const Requirement& req);
-    void deleteTabNode(TreeNode* node);
 
 private slots:
     void paramChanged(TreeNode* node);
@@ -144,6 +145,7 @@ signals:
     void doubleClickLeftMenu(const qlonglong id,const std::string &type);
     void renameTab(const QString& oldName,const QString& newName);
     void deleteTab(const QString& fileName);
+    void openTab(const QString& fileName);
 
 };
 
