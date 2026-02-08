@@ -73,3 +73,9 @@ void LeftMenuController::onDeleteTab(const QString& fileName) {
     _mainWind.slotDeleteTab(fileName);
     SLOT_GUARD_MAINWIND_END
 }
+
+void LeftMenuController::onOpenTab(const QString& fileName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+    _mainWind.slotOpenTab(fileName);
+    SLOT_GUARD_MAINWIND_END
+}
