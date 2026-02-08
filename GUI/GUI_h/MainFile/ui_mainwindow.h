@@ -121,6 +121,7 @@ public:
     QHBoxLayout *tabBarLayout;
     QPushButton *activeTab = nullptr;
     QVector<QPushButton *> tabButtons;
+    QPushButton* plusButton = nullptr;
 
     // Window control buttons
     QPushButton *closeButton;
@@ -543,7 +544,21 @@ public:
         tabBarLayout = new QHBoxLayout(tabBar);
         tabBarLayout->setContentsMargins(0, 0, 0, 0);
         tabBarLayout->setSpacing(3);
+
+        createButtonCreateTabProject();
+
         tabBarLayout->addStretch();
+    }
+
+
+    void createButtonCreateTabProject() {
+        plusButton = new QPushButton("+", tabBar);
+        plusButton->setObjectName("button create project");
+        plusButton->setFixedHeight(25);
+        plusButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+        setTabInactiveStyle(plusButton);
+        tabBarLayout->addWidget(plusButton);
     }
 
 
@@ -728,7 +743,9 @@ public:
         tabButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
         setTabActiveStyle(tabButton);
-        tabBarLayout->insertWidget(tabBarLayout->count() - 1, tabButton);
+
+        const qint32 plusIndex = tabBarLayout->indexOf(plusButton);
+        tabBarLayout->insertWidget(plusIndex, tabButton);
 
         QObject::connect(tabButton, &QPushButton::clicked, [this, tabButton]() {
             setActiveTab(tabButton->text());
