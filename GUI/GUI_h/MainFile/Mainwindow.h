@@ -118,6 +118,7 @@ public slots:
     void slotOpenProject(const QString& workDir);
     void slotChangeTabs(const QString& tabName);
     void slotCreateNewTab(const QString& tabName);
+    void slotCreateNewFile();
 
     void buttonScript();
     void Message();

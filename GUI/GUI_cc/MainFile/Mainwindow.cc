@@ -79,6 +79,7 @@ void MainWindow::initConnections() {
     connect(ui->openFolderForCreateProject, &QPushButton::clicked, fileSystems, &FileSystems::slotCreateNewProject);
     connect(ui->actionCreate_project_to, &QPushButton::clicked, fileSystems, &FileSystems::slotCreateNewProject);
     connect(ui->actionOpen_project, &QPushButton::clicked, fileSystems, &FileSystems::slotOpenProject);
+    connect(ui->plusButton,&QPushButton::clicked,this,&MainWindow::slotCreateNewFile);
 
     connect(fileSystems, &FileSystems::ChangeTabs, this, &MainWindow::slotChangeTabs);
     connect(fileSystems, &FileSystems::OpenProject, this, &MainWindow::slotOpenProject);
@@ -510,22 +511,24 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
         const auto createTab = menu.addAction("Create tab");
 
         if (const auto chosen = menu.exec(ui->leftMenuView->viewport()->mapToGlobal(pos)); chosen == createTab) {
-            const auto wind = new InputWindow("Name:",this);
-            wind->show();
-
-            connect(wind,&InputWindow::textEnter, [this](const QString& name) {
-                if (!ui->isButtonNameExists(name)) {
-                    fileSystems->slotCreateNewFile(name);
-                }else {
-                    showError("Файл с таким именем уже существует!");
-                }
-            });
+            slotCreateNewFile();
 
         }
     }
 }
 
 
+void MainWindow::slotCreateNewFile() {
+    const auto wind = new InputWindow("Name:",this);
+    wind->show();
+    connect(wind,&InputWindow::textEnter, [this](const QString& name) {
+    if (!ui->isButtonNameExists(name)) {
+        fileSystems->slotCreateNewFile(name);
+    }else {
+        showError("Файл с таким именем уже существует!");
+    }
+});
+}
 
 ///           ANOTHER:
 
