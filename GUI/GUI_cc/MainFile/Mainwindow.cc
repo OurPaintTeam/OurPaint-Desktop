@@ -142,6 +142,11 @@ void MainWindow::setupLeftMenu() {
         leftMenuBar,
         &LeftMenuBar::deleteTabNode);
 
+    connect(static_cast<ParameterDelegate*>(ui->leftMenuView->itemDelegate()),
+    &ParameterDelegate::doubleClickOnProject,
+    leftMenuBar,
+    &LeftMenuBar::slotOpenTab);
+
 
     connect(ui->leftMenuView, &QTreeView::customContextMenuRequested,
             this, &MainWindow::onLeftMenuRightClick);
@@ -390,6 +395,12 @@ void MainWindow::slotDeleteTab(const QString& tabName) {
         } else if (wasLastTab) {
             ui->hideAllPanels();
         }
+    }
+}
+
+void MainWindow::slotOpenTab(const QString& tabName) const {
+    if (ui->openTab(tabName)) {
+        qDebug() <<"Открытие вкладки"<<tabName;
     }
 }
 

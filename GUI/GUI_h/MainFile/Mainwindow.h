@@ -113,6 +113,7 @@ public slots:
     void slotSaveProject();
     void slotRenameTab(const QString& oldName,const QString& newName);
     void slotDeleteTab(const QString& tabName);
+    void slotOpenTab(const QString& tabName) const;
     void slotCloseTab(const Ui_MainWindow::TabWidget* tabWidget);
     void slotOpenFile(const QString& fileName);
     void slotCreateNewProject(const QString& workDir);
