@@ -35,7 +35,7 @@ public slots:
     //  Documents/OurPaint/projects/nameProject/ name.ourp , name2.ourp
     signals:
     void DeleteTab(const QString& tabName); // name.ourp
-    void DeleteTabRef(const Ui_MainWindow::TabWidget* tabWidget);
+    void CloseTab(const Ui_MainWindow::TabWidget* tabWidget);
     void RenameTab(const QString& oldName,const QString& newName); // name.ourp
     void CreateNewTab(const QString& tabName); // name.ourp
     void CreateNewProject(const QString& workDir); // path/project

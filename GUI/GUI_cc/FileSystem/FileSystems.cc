@@ -173,7 +173,7 @@ void FileSystems::createTabButtons(const QString& ourpFileName) {
 
     connect(tabWidget->closeButton, &QToolButton::clicked, [this, tabWidget]() {
         LOG_INFO("Закрытие вкладки: " << tabWidget->name);
-        emit DeleteTabRef(tabWidget);
+        emit CloseTab(tabWidget);
     });
 
     LOG_INFO("Создание нового файла:" << ourpFileName);
