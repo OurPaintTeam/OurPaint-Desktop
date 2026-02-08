@@ -187,6 +187,7 @@ add_executable(ourpaint
         GUI/GUI_cc/Windows/CustomIpListWindow.cc
         GUI/GUI_cc/Windows/InputWindow.cc
         GUI/GUI_cc/Windows/SaveDialog.cc
+        GUI/GUI_cc/Windows/CloseDialog.cc
 
 
         GUI/GUI_cc/Logger/GUI_Logger.cc
@@ -207,6 +208,7 @@ add_executable(ourpaint
         GUI/GUI_h/Windows/CustomIpListWindow.h
         GUI/GUI_h/Windows/InputWindow.h
         GUI/GUI_h/Windows/SaveDialog.h
+        GUI/GUI_h/Windows/CloseDialog.h
         GUI/GUI_h/Windows/ui_help.h
 
         GUI/GUI_h/Events/MainWindowController.h
