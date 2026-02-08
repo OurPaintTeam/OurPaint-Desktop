@@ -11,6 +11,8 @@
 #include <QStandardPaths>
 #include <qxmlstream.h>
 
+#include "ui_mainwindow.h"
+
 #define LOG_INFO(x)  qDebug()    << "[PROJECT]" << x
 #define LOG_WARN(x)  qWarning()  << "[PROJECT WARNING]" << x
 #define LOG_ERROR(x) qCritical() << "[PROJECT ERROR]" << x
@@ -33,6 +35,7 @@ public slots:
     //  Documents/OurPaint/projects/nameProject/ name.ourp , name2.ourp
     signals:
     void DeleteTab(const QString& tabName); // name.ourp
+    void DeleteTabRef(const Ui_MainWindow::TabWidget* tabWidget);
     void RenameTab(const QString& oldName,const QString& newName); // name.ourp
     void CreateNewTab(const QString& tabName); // name.ourp
     void CreateNewProject(const QString& workDir); // path/project

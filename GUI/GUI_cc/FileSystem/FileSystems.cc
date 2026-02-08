@@ -156,17 +156,24 @@ void FileSystems::createTabButtons(const QString& ourpFileName) {
 
     const QString ourpName = ourpFileName + ".ourp";
 
-    if (mainWindow->ui->isButtonNameExists(ourpName)) {
+    if (mainWindow->ui->isTabNameExists(ourpName)) {
         LOG_INFO("Такой файл существует :" << ourpName);
         mainWindow->showError("Файл с таким именем существует.");
         return;
     }
 
-    const auto* tabButton = mainWindow->ui->createTabProject(ourpName);
+    const Ui_MainWindow::TabWidget* tabWidget = nullptr;
 
-    connect(tabButton, &QPushButton::clicked, [this, ourpName]() {
+    tabWidget = mainWindow->ui->createTabProject(ourpName);
+
+    connect(tabWidget->nameButton, &QPushButton::clicked, [this, ourpName]() {
         LOG_INFO("Переключение на вкладку:" << ourpName);
         emit ChangeTabs(ourpName); // name.ourp
+    });
+
+    connect(tabWidget->closeButton, &QToolButton::clicked, [this, tabWidget]() {
+        LOG_INFO("Закрытие вкладки: " << tabWidget->name);
+        emit DeleteTabRef(tabWidget);
     });
 
     LOG_INFO("Создание нового файла:" << ourpFileName);
