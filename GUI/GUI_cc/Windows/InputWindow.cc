@@ -39,6 +39,8 @@ InputWindow::InputWindow(const QString& message, QWidget* parent) : QDialog(pare
     layout->addWidget(okButton);
 
     lineEdit->installEventFilter(this);
+    lineEdit->setFocus();
+    lineEdit->selectAll();
 
     setLayout(layout);
     resize(250, 100);
