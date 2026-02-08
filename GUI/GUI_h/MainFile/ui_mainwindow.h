@@ -315,7 +315,7 @@ public:
     }
 
 
-    void onStart() const {
+    void onStart() {
         //  collaborationButton->hide();
         if (settings) { settings->hide(); }
         if (highShowTabBar) { highShowTabBar->hide(); }
@@ -328,8 +328,36 @@ public:
         if (console) { console->hide(); }
         if (openCreateProjectsWidget) { openCreateProjectsWidget->show(); }
         if (animationPanel) { animationPanel->show(); }
+
+        resetTabs();
     }
 
+    void resetTabs() {
+
+        for (const auto* tab : tabs) {
+            if (tab) {
+                if (tab->container) {
+                    tabBarLayout->removeWidget(tab->container);
+                    tab->container->deleteLater();
+                }
+                delete tab;
+            }
+        }
+        tabs.clear();
+
+        for (const auto* tab : closeTabs) {
+            if (tab) {
+                if (tab->container) {
+                    tab->container->deleteLater();
+                }
+                delete tab;
+            }
+        }
+        closeTabs.clear();
+
+
+        activeTab = nullptr;
+    }
 
     void inProject() const {
         if (openCreateProjectsWidget) { openCreateProjectsWidget->hide(); }
@@ -776,8 +804,19 @@ public:
 
             tabs.push_back(tabToRestore);
             closeTabs.erase(closeIt);
+
             setActiveTab(tabToRestore);
 
+            return true;
+        }
+
+        const auto openIt = std::ranges::find_if(tabs,
+                                                 [&tabName](const TabWidget *tab) {
+                                                     return tab && tab->name == tabName;
+                                                 });
+
+        if (openIt != tabs.end()) {
+            setActiveTab(*openIt);
             return true;
         }
 
@@ -940,6 +979,7 @@ public:
         closeButtonTab->setFixedSize(14, 14);
         closeButtonTab->setCursor(Qt::PointingHandCursor);
         closeButtonTab->setAutoRaise(true);
+        closeButtonTab->setToolTip("Закрыть вкладку");
 
         layout->addWidget(nameButton);
         layout->addWidget(closeButtonTab);
@@ -947,8 +987,10 @@ public:
         const qint32 plusIndex = tabBarLayout->indexOf(plusButton);
         tabBarLayout->insertWidget(plusIndex, tabContainer);
 
-        const auto newTab = new TabWidget{tabContainer, nameButton, closeButtonTab, name,
-            tabBarLayout->indexOf(tabContainer)};
+        const auto newTab = new TabWidget{
+            tabContainer, nameButton, closeButtonTab, name,
+            tabBarLayout->indexOf(tabContainer)
+        };
 
         tabs.push_back(newTab);
 
