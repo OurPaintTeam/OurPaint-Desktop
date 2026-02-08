@@ -178,6 +178,8 @@ void Application::initControllers() {
                  &LeftMenuController::onRenameTab);
     QObject::connect(leftMenu, &LeftMenuBar::deleteTab, lmc,
              &LeftMenuController::onDeleteTab);
+    QObject::connect(leftMenu, &LeftMenuBar::openTab, lmc,
+         &LeftMenuController::onOpenTab);
 }
 
 int Application::exec() {
