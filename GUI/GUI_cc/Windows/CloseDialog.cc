@@ -8,7 +8,7 @@ CloseDialog::CloseDialog(QWidget* parent) : QDialog(parent) {
 
     QVBoxLayout * layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 10, 10, 10);
-    QLabel* label = new QLabel("Close the program?", this);
+    QLabel* label = new QLabel("Close the application?", this);
     layout->addWidget(label);
 
     QHBoxLayout * buttonLayout = new QHBoxLayout();
