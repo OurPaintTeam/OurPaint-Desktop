@@ -71,6 +71,7 @@ public:
 
     void inStartWindow() const;
     void inProjectWindow() const;
+    void renameTabWithInputWindow(const QString& oldName);
 
     void selectLeftMenuElem(const QModelIndex& index) const;
     void setupConsoleCommands(const QStringList& commandList) const;

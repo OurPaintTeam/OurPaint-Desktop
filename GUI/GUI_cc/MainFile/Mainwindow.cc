@@ -17,9 +17,8 @@
 #include "ParameterDelegate.h"
 
 
-MainWindow::MainWindow(QWidget* parent)
-                        : QMainWindow(parent){
-
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent) {
     ui->setupUi(this);
     setMouseTracking(true);
 
@@ -33,12 +32,12 @@ MainWindow::MainWindow(QWidget* parent)
 }
 
 
-LeftMenuBar* MainWindow::getLeftMenuBar() const {
+LeftMenuBar *MainWindow::getLeftMenuBar() const {
     return leftMenuBar;
 }
 
 
-QTPainter* MainWindow::getQTPainter() const {
+QTPainter *MainWindow::getQTPainter() const {
     return ui->workWindow;
 }
 
@@ -48,7 +47,7 @@ QString MainWindow::getProjectPath() const {
 }
 
 
-void  MainWindow::inStartWindow() const {
+void MainWindow::inStartWindow() const {
     ui->startWindow();
 }
 
@@ -58,13 +57,10 @@ void MainWindow::inProjectWindow() const {
 }
 
 
-
 /// **** PRIVATE:
 
 
-
 void MainWindow::initConnections() {
-
     // Mode buttons
     connect(ui->figurePoint, &QPushButton::clicked, this, &MainWindow::Point);
     connect(ui->figureCircle, &QPushButton::clicked, this, &MainWindow::Circle);
@@ -79,7 +75,7 @@ void MainWindow::initConnections() {
     connect(ui->openFolderForCreateProject, &QPushButton::clicked, fileSystems, &FileSystems::slotCreateNewProject);
     connect(ui->actionCreate_project_to, &QPushButton::clicked, fileSystems, &FileSystems::slotCreateNewProject);
     connect(ui->actionOpen_project, &QPushButton::clicked, fileSystems, &FileSystems::slotOpenProject);
-    connect(ui->plusButton,&QPushButton::clicked,this,&MainWindow::slotCreateNewFile);
+    connect(ui->plusButton, &QPushButton::clicked, this, &MainWindow::slotCreateNewFile);
 
     connect(fileSystems, &FileSystems::ChangeTabs, this, &MainWindow::slotChangeTabs);
     connect(fileSystems, &FileSystems::OpenProject, this, &MainWindow::slotOpenProject);
@@ -101,10 +97,10 @@ void MainWindow::initConnections() {
     connect(ui->actionScript, &QToolButton::clicked, this, &MainWindow::buttonScript);
 
     // Server buttons
-  //  connect(ui->actionOpen_server, &QToolButton::clicked, this, &MainWindow::openServer);
-   // connect(ui->actionJoin_server, &QToolButton::clicked, this, &MainWindow::joinServer);
-   // connect(ui->actionJoin_local_server, &QToolButton::clicked, this, &MainWindow::joinLocalServer);
-   // connect(ui->actionExit_from_session, &QToolButton::clicked, this, &MainWindow::exitSession);
+    //  connect(ui->actionOpen_server, &QToolButton::clicked, this, &MainWindow::openServer);
+    // connect(ui->actionJoin_server, &QToolButton::clicked, this, &MainWindow::joinServer);
+    // connect(ui->actionJoin_local_server, &QToolButton::clicked, this, &MainWindow::joinLocalServer);
+    // connect(ui->actionExit_from_session, &QToolButton::clicked, this, &MainWindow::exitSession);
 
     // Processing input to the chat console
     connect(ui->messageConsole, &QLineEdit::returnPressed, this, &MainWindow::Message);
@@ -112,8 +108,8 @@ void MainWindow::initConnections() {
 
 
     // Grid Settings
-    connect(ui->componentGrid, &QCheckBox::toggled,this,&MainWindow::updateGrid);
-    connect(ui->componentAxis, &QCheckBox::toggled, this,&MainWindow::updateAxis);
+    connect(ui->componentGrid, &QCheckBox::toggled, this, &MainWindow::updateGrid);
+    connect(ui->componentAxis, &QCheckBox::toggled, this, &MainWindow::updateAxis);
 
     // Console input processing
     connect(ui->console, &QLineEdit::returnPressed, this, &MainWindow::commandsInConsole);
@@ -121,7 +117,7 @@ void MainWindow::initConnections() {
 }
 
 
-void MainWindow::setupConsoleCommands(const QStringList& commandList ) const {
+void MainWindow::setupConsoleCommands(const QStringList &commandList) const {
     ui->console->setCommands(commandList);
 }
 
@@ -132,20 +128,34 @@ void MainWindow::setupLeftMenu() {
     ui->leftMenuView->setContextMenuPolicy(Qt::CustomContextMenu);
     ui->leftMenuView->setItemDelegate(new ParameterDelegate(leftMenuBar));
 
-    connect(static_cast<ParameterDelegate*>(ui->leftMenuView->itemDelegate()),
+    const auto *delegate = static_cast<ParameterDelegate *>(ui->leftMenuView->itemDelegate());
+
+    connect(delegate,
             &ParameterDelegate::doubleClickOnID,
             leftMenuBar,
             &LeftMenuBar::doubleClickID);
 
-    connect(static_cast<ParameterDelegate*>(ui->leftMenuView->itemDelegate()),
-        &ParameterDelegate::deleteClicked,
-        leftMenuBar,
-        &LeftMenuBar::deleteTabNode);
+    connect(delegate,
+            &ParameterDelegate::deleteClicked,
+            leftMenuBar,
+            &LeftMenuBar::deleteTabNode);
 
-    connect(static_cast<ParameterDelegate*>(ui->leftMenuView->itemDelegate()),
-    &ParameterDelegate::doubleClickOnProject,
-    leftMenuBar,
-    &LeftMenuBar::slotOpenTab);
+    connect(delegate,
+            &ParameterDelegate::doubleClickOnProject,
+            leftMenuBar,
+            &LeftMenuBar::slotOpenTab);
+
+    connect(delegate,
+            &ParameterDelegate::renameRequested,
+            ui->leftMenuView,
+            [this](const QModelIndex &index) {
+                if (!index.isValid()) {
+                    return;
+                }
+
+                ui->leftMenuView->setCurrentIndex(index);
+                ui->leftMenuView->edit(index);
+            });
 
 
     connect(ui->leftMenuView, &QTreeView::customContextMenuRequested,
@@ -153,14 +163,12 @@ void MainWindow::setupLeftMenu() {
 }
 
 
-
 /// **** PUBLIC:
 
 
-
-void MainWindow::selectLeftMenuElem(const QModelIndex& index) const {
-    ui->leftMenuView->setCurrentIndex(index);    // selection
-    ui->leftMenuView->scrollTo(index);           // scrolling
+void MainWindow::selectLeftMenuElem(const QModelIndex &index) const {
+    ui->leftMenuView->setCurrentIndex(index); // selection
+    ui->leftMenuView->scrollTo(index); // scrolling
     QModelIndex parent = index.parent();
     while (parent.isValid()) {
         ui->leftMenuView->expand(parent);
@@ -177,7 +185,7 @@ void MainWindow::updateExitServerStyle(const bool connect) const {
 }
 
 
-void MainWindow::setMessage(const QString& name, const QString& message) const {
+void MainWindow::setMessage(const QString &name, const QString &message) const {
     const QString messageText = name + ": " + message;
 
     const auto messageLabel = new QLabel(messageText);
@@ -189,29 +197,25 @@ void MainWindow::setMessage(const QString& name, const QString& message) const {
 }
 
 
-
 /***    Custom windows      ***/
 
 
-
-void MainWindow::showError(const QString& text) const {
-   ui->showError(text);
+void MainWindow::showError(const QString &text) const {
+    ui->showError(text);
 }
 
 
-void MainWindow::showWarning(const QString& text) const {
+void MainWindow::showWarning(const QString &text) const {
     ui->showWarning(text);
 }
 
 
-void MainWindow::showSuccess(const QString& text) const {
+void MainWindow::showSuccess(const QString &text) const {
     ui->showSuccess(text);
 }
 
 
-
 /***     Save/import settings       ***/
-
 
 
 QString MainWindow::getUserName() {
@@ -219,62 +223,57 @@ QString MainWindow::getUserName() {
 }
 
 
-
-
-
 ///   BUTTONS:
 
 
-
-QPushButton* MainWindow::getFirstBut() const {
+QPushButton *MainWindow::getFirstBut() const {
     return ui->oneReq;
 }
 
 
-QPushButton* MainWindow::getSecondBut() const {
+QPushButton *MainWindow::getSecondBut() const {
     return ui->twoReq;
 }
 
 
-QPushButton* MainWindow::getThirdBut() const {
+QPushButton *MainWindow::getThirdBut() const {
     return ui->threeReq;
 }
 
 
-QPushButton* MainWindow::getFourthBut() const {
+QPushButton *MainWindow::getFourthBut() const {
     return ui->fourReq;
 }
 
 
-QPushButton* MainWindow::getFifthBut() const {
+QPushButton *MainWindow::getFifthBut() const {
     return ui->fiveReq;
 }
 
 
-QPushButton* MainWindow::getSixthBut() const {
+QPushButton *MainWindow::getSixthBut() const {
     return ui->sixReq;
 }
 
 
-QPushButton* MainWindow::getSeventhBut() const {
+QPushButton *MainWindow::getSeventhBut() const {
     return ui->sevenReq;
 }
 
 
-QPushButton* MainWindow::getEighthBut() const {
+QPushButton *MainWindow::getEighthBut() const {
     return ui->eightReq;
 }
 
 
-QPushButton* MainWindow::getNinthBut() const {
+QPushButton *MainWindow::getNinthBut() const {
     return ui->nineReq;
 }
 
 
-QPushButton* MainWindow::getTenthBut() const {
-   return ui->tenReq;
+QPushButton *MainWindow::getTenthBut() const {
+    return ui->tenReq;
 }
-
 
 
 /// ***** PROTECTED:
@@ -298,50 +297,50 @@ bool MainWindow::closeProgram() {
 }
 
 
-void MainWindow::closeEvent(QCloseEvent* event) {
+void MainWindow::closeEvent(QCloseEvent *event) {
     windowController->handleCloseEvent(event);
 }
 
 
-void MainWindow::mousePressEvent(QMouseEvent* event) {
+void MainWindow::mousePressEvent(QMouseEvent *event) {
     windowController->mousePress(event);
     QMainWindow::mousePressEvent(event);
 }
 
-void MainWindow::mouseMoveEvent(QMouseEvent* event) {
+void MainWindow::mouseMoveEvent(QMouseEvent *event) {
     windowController->mouseMove(event);
     QMainWindow::mouseMoveEvent(event);
 }
 
-void MainWindow::mouseReleaseEvent(QMouseEvent* event) {
+void MainWindow::mouseReleaseEvent(QMouseEvent *event) {
     windowController->mouseRelease(event);
     QMainWindow::mouseReleaseEvent(event);
 }
 
-void MainWindow::mouseDoubleClickEvent(QMouseEvent* event) {
+void MainWindow::mouseDoubleClickEvent(QMouseEvent *event) {
     windowController->mouseDoubleClick(event);
     QMainWindow::mouseDoubleClickEvent(event);
 }
 
-void MainWindow::wheelEvent(QWheelEvent* event) {
+void MainWindow::wheelEvent(QWheelEvent *event) {
     windowController->wheel(event);
 }
 
-bool MainWindow::event(QEvent* event) {
+bool MainWindow::event(QEvent *event) {
     if (windowController->handleEvent(event)) {
         return true;
     }
     return QMainWindow::event(event);
 }
 
-bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
+bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     if (windowController->handleEventFilter(obj, event)) {
         return true;
     }
     return QMainWindow::eventFilter(obj, event);
 }
 
-void MainWindow::keyPressEvent(QKeyEvent* event) {
+void MainWindow::keyPressEvent(QKeyEvent *event) {
     windowController->keyPress(event);
     QMainWindow::keyPressEvent(event);
 }
@@ -349,11 +348,11 @@ void MainWindow::keyPressEvent(QKeyEvent* event) {
 
 /// ***** SLOTS:
 
-void MainWindow::slotOpenFile(const QString& fileName) {
+void MainWindow::slotOpenFile(const QString &fileName) {
     emit OpenFile(fileName);
 }
 
-void MainWindow::slotCloseTab(const Ui_MainWindow::TabWidget* tabWidget) {
+void MainWindow::slotCloseTab(const Ui_MainWindow::TabWidget *tabWidget) {
     if (!tabWidget) {
         return;
     }
@@ -361,13 +360,12 @@ void MainWindow::slotCloseTab(const Ui_MainWindow::TabWidget* tabWidget) {
     const bool deletingActiveTab = ui->checkActiveTab(tabWidget);
     const bool wasLastTab = (ui->getTabCount() == 1);
 
-    Ui_MainWindow::TabWidget* tabToSwitch = nullptr;
+    Ui_MainWindow::TabWidget *tabToSwitch = nullptr;
     if (deletingActiveTab && !wasLastTab) {
         tabToSwitch = ui->getTabToSwitchAfterDeletion(tabWidget);
     }
 
     if (ui->closeTab(tabWidget)) {
-
         if (deletingActiveTab && tabToSwitch && !tabToSwitch->name.isEmpty()) {
             slotChangeTabs(tabToSwitch->name);
             ui->setActiveTab(tabToSwitch);
@@ -377,11 +375,11 @@ void MainWindow::slotCloseTab(const Ui_MainWindow::TabWidget* tabWidget) {
     }
 }
 
-void MainWindow::slotDeleteTab(const QString& tabName) {
+void MainWindow::slotDeleteTab(const QString &tabName) {
     const bool deletingActiveTab = ui->checkActiveTab(tabName);
     const bool wasLastTab = (ui->getTabCount() == 1);
 
-    Ui_MainWindow::TabWidget* tabToSwitch = nullptr;
+    Ui_MainWindow::TabWidget *tabToSwitch = nullptr;
     if (deletingActiveTab && !wasLastTab) {
         tabToSwitch = ui->getTabToSwitchAfterDeletion(tabName);
     }
@@ -398,16 +396,42 @@ void MainWindow::slotDeleteTab(const QString& tabName) {
     }
 }
 
-void MainWindow::slotOpenTab(const QString& tabName) const {
+void MainWindow::slotOpenTab(const QString &tabName) const {
     if (ui->openTab(tabName)) {
-        qDebug() <<"Открытие вкладки"<<tabName;
+        qDebug() << "Открытие вкладки" << tabName;
     }
 }
 
-void MainWindow::slotRenameTab(const QString& oldName,const QString& newName) {
-    if (ui->renameTab(oldName,newName)) {
-        emit RenameTab(oldName,newName);
-    }else {
+void MainWindow::renameTabWithInputWindow(const QString& oldName)
+{
+    auto* wind = new InputWindow("New name:", this);
+    wind->show();
+
+    connect(wind, &InputWindow::textEnter,
+            this, [this, oldName, wind](const QString& newName) {
+
+        if (newName.trimmed().isEmpty()) {
+            showError("Имя не должно быть пустым");
+            wind->close();
+            return;
+        }
+
+                QString fixedName = newName;
+        if (!fixedName.endsWith(".ourp", Qt::CaseInsensitive)) {
+            fixedName += ".ourp";
+        }
+
+                leftMenuBar->renameTabName(oldName, fixedName);
+                slotRenameTab(oldName, fixedName);
+        wind->close();
+        wind->deleteLater();
+    });
+}
+
+void MainWindow::slotRenameTab(const QString &oldName, const QString &newName) {
+    if (ui->renameTab(oldName, newName)) {
+        emit RenameTab(oldName, newName);
+    } else {
         showError("Такой файл уже существует!");
     }
 }
@@ -416,21 +440,21 @@ void MainWindow::slotSaveProject() {
     emit SaveProject();
 }
 
-void MainWindow::slotCreateNewProject(const QString& workDir) {
+void MainWindow::slotCreateNewProject(const QString &workDir) {
     emit OpenProject(workDir);
 }
 
-void MainWindow::slotOpenProject(const QString& workDir) {
+void MainWindow::slotOpenProject(const QString &workDir) {
     emit OpenProject(workDir);
 }
 
 
-void MainWindow::slotChangeTabs(const QString& tabName) {
+void MainWindow::slotChangeTabs(const QString &tabName) {
     emit ChangeTabs(tabName);
 }
 
 
-void MainWindow::slotCreateNewTab(const QString& tabName) {
+void MainWindow::slotCreateNewTab(const QString &tabName) {
     emit CreateNewTab(tabName);
 }
 
@@ -438,14 +462,13 @@ void MainWindow::slotCreateNewTab(const QString& tabName) {
 void MainWindow::buttonScript() {
     // Opening the project file selection dialog
     const QString fileName = QFileDialog::getOpenFileName(this, tr("Open Project"),
-                                                    QDir::homePath(),
-                                                    tr("Project Files (*.txt);;All Files (*)"));
+                                                          QDir::homePath(),
+                                                          tr("Project Files (*.txt);;All Files (*)"));
 
     if (!fileName.isEmpty()) {
         emit EmitScript(fileName);
     }
 }
-
 
 
 void MainWindow::Message() {
@@ -492,42 +515,42 @@ void MainWindow::ToolShowSize() {
 
 
 void MainWindow::onExportJPG() {
-  emit SaveProjectInFormat("DEFAULT",".jpg");
+    emit SaveProjectInFormat("DEFAULT", ".jpg");
 }
 
 
 void MainWindow::onExportJPEG() {
-  emit SaveProjectInFormat("DEFAULT",".jpeg");
+    emit SaveProjectInFormat("DEFAULT", ".jpeg");
 }
 
 
 void MainWindow::onExportPNG() {
-  emit SaveProjectInFormat("DEFAULT",".png");
+    emit SaveProjectInFormat("DEFAULT", ".png");
 }
 
 
 void MainWindow::onExportBMP() {
-  emit SaveProjectInFormat("DEFAULT",".bmp");
+    emit SaveProjectInFormat("DEFAULT", ".bmp");
 }
 
 
 void MainWindow::onExportTIFF() {
-  emit SaveProjectInFormat("DEFAULT",".tiff");
+    emit SaveProjectInFormat("DEFAULT", ".tiff");
 }
 
 
 void MainWindow::onExportPDF() {
-  emit SaveProjectInFormat("DEFAULT",".pdf");
+    emit SaveProjectInFormat("DEFAULT", ".pdf");
 }
 
 
 void MainWindow::onExportOURP() {
-  emit SaveProjectInFormat("DEFAULT",".ourp");
+    emit SaveProjectInFormat("DEFAULT", ".ourp");
 }
 
 
 void MainWindow::onExportSVG() {
-    emit SaveProjectInFormat("DEFAULT",".svg");
+    emit SaveProjectInFormat("DEFAULT", ".svg");
 }
 
 
@@ -537,7 +560,7 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
         return;
     }
 
-    const auto node = static_cast<TreeNode*>(index.internalPointer());
+    const auto node = static_cast<TreeNode *>(index.internalPointer());
     if (!node) {
         return;
     }
@@ -548,26 +571,24 @@ void MainWindow::onLeftMenuRightClick(const QPoint &pos) {
 
         if (const auto chosen = menu.exec(ui->leftMenuView->viewport()->mapToGlobal(pos)); chosen == createTab) {
             slotCreateNewFile();
-
         }
     }
 }
 
 
 void MainWindow::slotCreateNewFile() {
-    const auto wind = new InputWindow("Name:",this);
+    const auto wind = new InputWindow("Name:", this);
     wind->show();
-    connect(wind,&InputWindow::textEnter, [this](const QString& name) {
-    if (!ui->isTabNameExists(name)) {
-        fileSystems->slotCreateNewFile(name);
-    }else {
-        showError("Файл с таким именем уже существует!");
-    }
-});
+    connect(wind, &InputWindow::textEnter, [this](const QString &name) {
+        if (!ui->isTabNameExists(name)) {
+            fileSystems->slotCreateNewFile(name);
+        } else {
+            showError("Файл с таким именем уже существует!");
+        }
+    });
 }
 
 ///           ANOTHER:
-
 
 
 void MainWindow::updateGrid(const bool checked) const {
@@ -582,7 +603,7 @@ void MainWindow::updateAxis(const bool checked) const {
 }
 
 
-void MainWindow::commandsInConsole(){
+void MainWindow::commandsInConsole() {
     if (const QString input = ui->console->text(); !input.isEmpty()) {
         ui->console->pushBack(input);
         emit EnterCommand(input);
