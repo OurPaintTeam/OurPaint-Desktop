@@ -20,7 +20,6 @@
 
 class SaveDialog : public QDialog {
 private:
-    QString file;
     bool mousePressed;
     QPoint mousePos;
 public:
