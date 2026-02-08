@@ -88,6 +88,7 @@ void MainWindow::initConnections() {
     connect(fileSystems, &FileSystems::CreateNewTab, this, &MainWindow::slotCreateNewTab);
     connect(fileSystems, &FileSystems::RenameTab, this, &MainWindow::slotRenameTab);
     connect(fileSystems, &FileSystems::DeleteTab, this, &MainWindow::slotDeleteTab);
+    connect(fileSystems, &FileSystems::DeleteTabRef, this, &MainWindow::slotDeleteTabRef);
 
     connect(ui->actionJPG, &QToolButton::clicked, this, &MainWindow::onExportJPG);
     connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
@@ -347,11 +348,37 @@ void MainWindow::slotOpenFile(const QString& fileName) {
     emit OpenFile(fileName);
 }
 
+void MainWindow::slotDeleteTabRef(const Ui_MainWindow::TabWidget* tabWidget) {
+    if (!tabWidget) {
+        return;
+    }
+
+    const QString tabName = tabWidget->name;
+    const bool deletingActiveTab = ui->checkActiveTab(tabWidget);
+    const bool wasLastTab = (ui->getTabCount() == 1);
+
+    Ui_MainWindow::TabWidget* tabToSwitch = nullptr;
+    if (deletingActiveTab && !wasLastTab) {
+        tabToSwitch = ui->getTabToSwitchAfterDeletion(tabWidget);
+    }
+
+    if (ui->deleteTab(tabWidget)) {
+        emit DeleteTabLeftMenu(tabName);
+
+        if (deletingActiveTab && tabToSwitch && !tabToSwitch->name.isEmpty()) {
+            slotChangeTabs(tabToSwitch->name);
+            ui->setActiveTab(tabToSwitch);
+        } else if (wasLastTab) {
+            ui->hideAllPanels();
+        }
+    }
+}
+
 void MainWindow::slotDeleteTab(const QString& tabName) {
     const bool deletingActiveTab = ui->checkActiveTab(tabName);
     const bool wasLastTab = (ui->getTabCount() == 1);
-    QString tabToSwitch;
 
+    Ui_MainWindow::TabWidget* tabToSwitch = nullptr;
     if (deletingActiveTab && !wasLastTab) {
         tabToSwitch = ui->getTabToSwitchAfterDeletion(tabName);
     }
@@ -359,8 +386,8 @@ void MainWindow::slotDeleteTab(const QString& tabName) {
     if (ui->deleteTab(tabName)) {
         emit DeleteTab(tabName);
 
-        if (deletingActiveTab && !tabToSwitch.isEmpty()) {
-            slotChangeTabs(tabToSwitch);
+        if (deletingActiveTab && tabToSwitch && !tabToSwitch->name.isEmpty()) {
+            slotChangeTabs(tabToSwitch->name);
             ui->setActiveTab(tabToSwitch);
         } else if (wasLastTab) {
             ui->hideAllPanels();
@@ -522,7 +549,7 @@ void MainWindow::slotCreateNewFile() {
     const auto wind = new InputWindow("Name:",this);
     wind->show();
     connect(wind,&InputWindow::textEnter, [this](const QString& name) {
-    if (!ui->isButtonNameExists(name)) {
+    if (!ui->isTabNameExists(name)) {
         fileSystems->slotCreateNewFile(name);
     }else {
         showError("Файл с таким именем уже существует!");
