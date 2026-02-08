@@ -114,7 +114,7 @@ public slots:
     void slotSaveProject();
     void slotRenameTab(const QString& oldName,const QString& newName);
     void slotDeleteTab(const QString& tabName);
-    void slotOpenTab(const QString& tabName) const;
+    void slotOpenTab(const QString& tabName);
     void slotCloseTab(const Ui_MainWindow::TabWidget* tabWidget);
     void slotOpenFile(const QString& fileName);
     void slotCreateNewProject(const QString& workDir);
@@ -154,6 +154,7 @@ signals:
     void EmitScript(const QString& fileName);
 
     void SaveProject();
+    void CloseProject();
     void CreateNewProject(const QString& workDir);
     void OpenProject(const QString& workDir);
     void OpenFile(const QString& fileName);

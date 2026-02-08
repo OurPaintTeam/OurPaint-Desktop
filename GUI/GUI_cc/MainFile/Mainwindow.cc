@@ -1,5 +1,6 @@
 #include "Mainwindow.h"
 
+#include "CloseDialog.h"
 #include "FileSystems.h"
 #include "LeftMenuBar.h"
 #include "ui_mainwindow.h"
@@ -278,21 +279,38 @@ QPushButton *MainWindow::getTenthBut() const {
 
 /// ***** PROTECTED:
 
+
 bool MainWindow::closeProgram() {
     if (!ModeManager::getSave()) {
-        SaveDialog dialog(this);
-        const auto result = dialog.exec();
+        SaveDialog saveDialog(this);
+        const auto saveResult = saveDialog.exec();
 
-        if (result == QMessageBox::Yes) {
-            fileSystems->slotSaveProject();
-            return ModeManager::getSave();
+        if (saveResult == QMessageBox::Cancel) {
+            return false;
         }
 
-        if (result == QMessageBox::No)
-            return true;
+        if (saveResult == QMessageBox::Yes) {
+            fileSystems->slotSaveProject();
+        }
 
-        return false; // Cancel
+        CloseDialog closeDialog(this);
+        const auto closeResult = closeDialog.exec();
+
+        switch (closeResult) {
+            case QMessageBox::Yes:
+                emit CloseProject();
+                return true;
+
+            case QMessageBox::No:
+                ui->onStart();
+                emit CloseProject();
+                return false;
+
+            default:
+                return false;
+        }
     }
+
     return true;
 }
 
@@ -396,8 +414,9 @@ void MainWindow::slotDeleteTab(const QString &tabName) {
     }
 }
 
-void MainWindow::slotOpenTab(const QString &tabName) const {
+void MainWindow::slotOpenTab(const QString &tabName) {
     if (ui->openTab(tabName)) {
+        emit ChangeTabs(tabName);
         qDebug() << "Открытие вкладки" << tabName;
     }
 }
