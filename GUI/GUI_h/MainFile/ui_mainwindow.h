@@ -128,7 +128,8 @@ public:
         QString name;
     };
 
-    QVector<TabWidget*> tabs;
+    QVector<TabWidget *> tabs;
+    QVector<TabWidget *> closeTabs;
     TabWidget *activeTab = nullptr;
 
     // Window control buttons
@@ -571,7 +572,7 @@ public:
     }
 
 
-    TabWidget* getTabToSwitchAfterDeletion(const TabWidget* tabToDelete) {
+    TabWidget *getTabToSwitchAfterDeletion(const TabWidget *tabToDelete) {
         if (tabs.size() <= 1) {
             return nullptr;
         }
@@ -581,9 +582,9 @@ public:
         }
 
         const auto it = std::ranges::find_if(tabs,
-                                       [tabToDelete](const TabWidget* tab) {
-                                           return tab == tabToDelete;
-                                       });
+                                             [tabToDelete](const TabWidget *tab) {
+                                                 return tab == tabToDelete;
+                                             });
 
         if (it == tabs.end()) {
             return nullptr;
@@ -613,7 +614,7 @@ public:
         }
 
         const auto it = std::ranges::find_if(tabs,
-                                             [tabToDelete](const TabWidget* tab) {
+                                             [tabToDelete](const TabWidget *tab) {
                                                  return tab->name == tabToDelete;
                                              });
 
@@ -635,8 +636,6 @@ public:
     }
 
 
-
-
     void hideAllPanels() {
         if (workWindow) {
             workWindow->hide();
@@ -650,60 +649,118 @@ public:
     }
 
 
-    bool checkActiveTab(const TabWidget* tab) const {
+    bool checkActiveTab(const TabWidget *tab) const {
         return activeTab == tab;
     }
 
 
-
     bool deleteTab(const QString &tabName) {
-        const auto it = std::ranges::find_if(tabs, [&tabName](const TabWidget* t) {
-            return t->name == tabName;
+        const auto activeIt = std::ranges::find_if(tabs, [&tabName](const TabWidget *t) {
+            return t && t->name == tabName;
         });
 
-        if (it != tabs.end()) {
-            TabWidget* tabToDelete = *it;
+        if (activeIt != tabs.end()) {
+            TabWidget *tabToDelete = *activeIt;
 
             if (activeTab == tabToDelete) {
                 activeTab = nullptr;
             }
 
+            tabs.erase(activeIt);
+
+            const auto closeIt = std::ranges::find_if(closeTabs,
+                                                      [tabToDelete](const TabWidget *it) {
+                                                          return it == tabToDelete;
+                                                      });
+            if (closeIt != closeTabs.end()) {
+                closeTabs.erase(closeIt);
+            }
+
             if (tabToDelete->container) {
                 tabToDelete->container->deleteLater();
             }
-
             delete tabToDelete;
 
-            tabs.erase(it);
             return true;
         }
+
+        const auto closeIt = std::ranges::find_if(closeTabs,
+                                                  [&tabName](const TabWidget *it) {
+                                                      return it && it->name == tabName;
+                                                  });
+
+        if (closeIt != closeTabs.end()) {
+            const TabWidget *tabToDelete = (*closeIt);
+
+            closeTabs.erase(closeIt);
+
+            // Удаляем объект
+            delete tabToDelete;
+
+            return true;
+        }
+
         return false;
     }
 
-    bool deleteTab(const TabWidget *tab) {
+    bool closeTab(const TabWidget *tab) {
         if (!tab) {
             return false;
         }
 
         const auto it = std::ranges::find_if(tabs,
-                                             [tab](const TabWidget* t) {
+                                             [tab](const TabWidget *t) {
                                                  return t == tab;
                                              });
 
         if (it != tabs.end()) {
-            const TabWidget* tabToDelete = *it;
+            TabWidget *tabToClose = *it;
 
-            if (activeTab == tabToDelete) {
+            if (activeTab == tabToClose) {
                 activeTab = nullptr;
             }
 
-            if (tabToDelete->container) {
-                tabToDelete->container->deleteLater();
+            if (tabToClose->container) {
+                tabToClose->container->setVisible(false);
             }
 
-            delete tabToDelete;
+            closeTabs.push_back(tabToClose);
 
             tabs.erase(it);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    bool openTab(const QString &tabName) {
+        const auto closeIt = std::ranges::find_if(closeTabs,
+                                                  [&tabName](const TabWidget *tab) {
+                                                      return tab && tab->name == tabName;
+                                                  });
+
+        if (closeIt != closeTabs.end()) {
+            TabWidget *tabToRestore = *closeIt;
+
+            if (tabToRestore->container) {
+                tabToRestore->container->setVisible(true);
+
+                const qint32 currentIndex = tabBarLayout->indexOf(tabToRestore->container);
+
+                if (const qint32 plusIndex = tabBarLayout->indexOf(plusButton);
+                    currentIndex != -1 && plusIndex != -1 && currentIndex != plusIndex - 1) {
+                    tabBarLayout->removeWidget(tabToRestore->container);
+                    tabBarLayout->insertWidget(plusIndex, tabToRestore->container);
+                }
+            }
+
+            tabs.push_back(tabToRestore);
+
+            closeTabs.erase(closeIt);
+
+            setActiveTab(tabToRestore);
+
             return true;
         }
 
@@ -716,10 +773,17 @@ public:
     }
 
     bool isTabNameExists(const QString &name) const {
-        return std::ranges::any_of(tabs,
-                                   [&name](const TabWidget* tab) {
-                                       return tab->name == name;
-                                   });
+        const bool inActiveTabs = std::ranges::any_of(tabs,
+                                                      [&name](const TabWidget *tab) {
+                                                          return tab && tab->name == name;
+                                                      });
+
+        const bool inClosedTabs = std::ranges::any_of(closeTabs,
+                                                      [&name](const TabWidget *tab) {
+                                                          return tab && tab->name == name;
+                                                      });
+
+        return inActiveTabs || inClosedTabs;
     }
 
 
@@ -785,12 +849,12 @@ public:
 
 
     void showAllPanels() const {
-        if (workWindow) {workWindow->show();}
-        if (console){ console->show();}
-        if (Figures) {Figures->show();}
-        if (Req) {Req->show();}
-        if (Tools) {Tools->show();}
-        if (tabBar) {tabBar->show();}
+        if (workWindow) { workWindow->show(); }
+        if (console) { console->show(); }
+        if (Figures) { Figures->show(); }
+        if (Req) { Req->show(); }
+        if (Tools) { Tools->show(); }
+        if (tabBar) { tabBar->show(); }
     }
 
 
@@ -799,24 +863,40 @@ public:
             return true;
         }
 
-        if (std::ranges::any_of(tabs, [&newName](const TabWidget* t) {
-            return t && t->name == newName;
-        })) {
+        const bool nameExists = std::ranges::any_of(tabs, [&newName](const TabWidget *t) {
+                                    return t && t->name == newName;
+                                }) ||
+                                std::ranges::any_of(closeTabs, [&newName](const TabWidget *it) {
+                                    return it && (it)->name == newName;
+                                });
+
+        if (nameExists) {
             return false;
         }
 
-        const auto it = std::ranges::find_if(tabs, [&oldName](const TabWidget* t) {
+        const auto activeIt = std::ranges::find_if(tabs, [&oldName](const TabWidget *t) {
             return t && t->name == oldName;
         });
 
-        if (it != tabs.end() && *it) {
-            TabWidget* tab = *it;
+        if (activeIt != tabs.end() && *activeIt) {
+            TabWidget *tab = *activeIt;
             tab->name = newName;
 
             if (tab->nameButton) {
                 tab->nameButton->setText(newName);
             }
 
+            return true;
+        }
+
+        const auto closeIt = std::ranges::find_if(closeTabs,
+                                                  [&oldName](const TabWidget *it) {
+                                                      return it && (it)->name == oldName;
+                                                  });
+
+        if (closeIt != closeTabs.end() && (*closeIt)) {
+            TabWidget *tab = (*closeIt);
+            tab->name = newName;
             return true;
         }
 
