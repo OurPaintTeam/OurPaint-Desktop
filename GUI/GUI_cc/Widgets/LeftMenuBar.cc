@@ -104,6 +104,21 @@ void LeftMenuBar::paramChanged(TreeNode* node) {
     }
 }
 
+bool LeftMenuBar::deleteTabNodeOnName(const QString& fileName) const {
+    if (!projectsNode || !treeModel) {
+        return false;
+    }
+
+    for (int i = 0; i < projectsNode->childCount(); ++i) {
+        if (TreeNode* child = projectsNode->child(i);
+            child->getName() == fileName) {
+            treeModel->removeNode(projectsNode, child);
+            return true;
+        }
+    }
+
+    return false;
+}
 
 void LeftMenuBar::deleteTabNode(TreeNode* node) {
     if (!node || node->parent() != projectsNode || !treeModel) {
@@ -111,7 +126,6 @@ void LeftMenuBar::deleteTabNode(TreeNode* node) {
     }
 
     const QString fileName = node->getName();
-
     treeModel->removeNode(projectsNode, node);
 
     emit deleteTab(fileName);
@@ -140,7 +154,7 @@ void LeftMenuBar::renameNode(TreeNode* node,const QString& oldName,const QString
         }
     }
 
-    emit renameTab(oldName+".ourp", newName+".ourp");
+    emit renameTab(oldName, newName);
 }
 
 void LeftMenuBar::doubleClickID(const QModelIndex& index) {
