@@ -165,6 +165,7 @@ void FileSystems::createTabButtons(const QString& ourpFileName) {
     const Ui_MainWindow::TabWidget* tabWidget = nullptr;
 
     tabWidget = mainWindow->ui->createTabProject(ourpName);
+    tabWidget->nameButton->setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(tabWidget->nameButton, &QPushButton::clicked, [this, ourpName]() {
         LOG_INFO("Переключение на вкладку:" << ourpName);
@@ -175,6 +176,28 @@ void FileSystems::createTabButtons(const QString& ourpFileName) {
         LOG_INFO("Закрытие вкладки: " << tabWidget->name);
         emit CloseTab(tabWidget);
     });
+
+    connect(tabWidget->nameButton, &QWidget::customContextMenuRequested,
+        this, [this, tabWidget](const QPoint& pos) {
+
+    const QPoint globalPos = tabWidget->nameButton->mapToGlobal(pos);
+
+    QMenu menu;
+    menu.addAction("Rename");
+    menu.addAction("Close");
+
+    const QAction* selected = menu.exec(globalPos);
+    if (!selected) {
+        return;
+    }
+
+    if (selected->text() == "Rename") {
+        mainWindow->renameTabWithInputWindow(tabWidget->name);
+    }
+    else if (selected->text() == "Close") {
+        emit CloseTab(tabWidget);
+    }
+});
 
     LOG_INFO("Создание нового файла:" << ourpFileName);
 
