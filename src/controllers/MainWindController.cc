@@ -440,6 +440,16 @@ void MainWindController::onOpenProject(const QString& workDir) {
     SLOT_GUARD_MAINWIND_END
 }
 
+void MainWindController::onCloseProject() {
+    SLOT_GUARD_MAINWIND_BEGIN
+
+    qDebug()<<"Close project";
+
+    // TODO delete all file
+
+    SLOT_GUARD_MAINWIND_END
+}
+
 void MainWindController::onOpenFile(const QString& fileName) {
     SLOT_GUARD_MAINWIND_BEGIN
 
