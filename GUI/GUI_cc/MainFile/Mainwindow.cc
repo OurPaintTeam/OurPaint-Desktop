@@ -88,7 +88,7 @@ void MainWindow::initConnections() {
     connect(fileSystems, &FileSystems::CreateNewTab, this, &MainWindow::slotCreateNewTab);
     connect(fileSystems, &FileSystems::RenameTab, this, &MainWindow::slotRenameTab);
     connect(fileSystems, &FileSystems::DeleteTab, this, &MainWindow::slotDeleteTab);
-    connect(fileSystems, &FileSystems::DeleteTabRef, this, &MainWindow::slotDeleteTabRef);
+    connect(fileSystems, &FileSystems::CloseTab, this, &MainWindow::slotCloseTab);
 
     connect(ui->actionJPG, &QToolButton::clicked, this, &MainWindow::onExportJPG);
     connect(ui->actionJPEG, &QToolButton::clicked, this, &MainWindow::onExportJPEG);
@@ -348,12 +348,11 @@ void MainWindow::slotOpenFile(const QString& fileName) {
     emit OpenFile(fileName);
 }
 
-void MainWindow::slotDeleteTabRef(const Ui_MainWindow::TabWidget* tabWidget) {
+void MainWindow::slotCloseTab(const Ui_MainWindow::TabWidget* tabWidget) {
     if (!tabWidget) {
         return;
     }
 
-    const QString tabName = tabWidget->name;
     const bool deletingActiveTab = ui->checkActiveTab(tabWidget);
     const bool wasLastTab = (ui->getTabCount() == 1);
 
@@ -362,8 +361,7 @@ void MainWindow::slotDeleteTabRef(const Ui_MainWindow::TabWidget* tabWidget) {
         tabToSwitch = ui->getTabToSwitchAfterDeletion(tabWidget);
     }
 
-    if (ui->deleteTab(tabWidget)) {
-        emit DeleteTabLeftMenu(tabName);
+    if (ui->closeTab(tabWidget)) {
 
         if (deletingActiveTab && tabToSwitch && !tabToSwitch->name.isEmpty()) {
             slotChangeTabs(tabToSwitch->name);
