@@ -89,9 +89,11 @@ void MainWindowController::mouseDoubleClick(QMouseEvent* event) {
 void MainWindowController::wheel(QWheelEvent* event) {
     if (event->angleDelta().y() > 0) {
         Scaling::setZoomPlus();
+        mainWindow->update();
     }
     else {
         Scaling::setZoomMinus();
+        mainWindow->update();
     }
 
     event->accept();
@@ -105,9 +107,11 @@ bool MainWindowController::handleEvent(QEvent* event) {
 
             if (pinch->scaleFactor() > 1.0) {
                 Scaling::setZoomPlus();
+                mainWindow->update();
             }
             else {
                 Scaling::setZoomMinus();
+                mainWindow->update();
             }
 
             return true;
