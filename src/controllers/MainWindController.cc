@@ -520,6 +520,16 @@ void MainWindController::onDeleteTab(const QString& tabName) {
     SLOT_GUARD_MAINWIND_END
 }
 
+void MainWindController::onDeleteTabLeftMenu(const QString& tabName) {
+    SLOT_GUARD_MAINWIND_BEGIN
+
+    // TODO
+    if (_lmb.deleteTabNodeOnName(tabName)) {
+        qDebug()<<"DeleteTab:"<<tabName;
+    }
+    SLOT_GUARD_MAINWIND_END
+}
+
 void MainWindController::onRenameTab(const QString& oldName, const QString& newName) {
     SLOT_GUARD_MAINWIND_BEGIN
 

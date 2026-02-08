@@ -66,6 +66,7 @@ public slots:
     void onChangeTab(const QString& tabName);
     void onRenameTab(const QString& oldName, const QString& newName);
     void onDeleteTab(const QString& tabName);
+    void onDeleteTabLeftMenu(const QString& tabName);
     void onOpenFile(const QString& fileName);
 
     void onUNDO();
