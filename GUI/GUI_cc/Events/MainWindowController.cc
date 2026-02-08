@@ -120,6 +120,10 @@ bool MainWindowController::handleEvent(QEvent* event) {
 bool MainWindowController::handleEventFilter(QObject* obj, QEvent* event) {
     Q_UNUSED(obj)
 
+    if (obj != mainWindow) {
+        return false;
+    }
+
     switch (event->type()) {
         case QEvent::MouseMove:
             mouseMove(static_cast<QMouseEvent*>(event));
