@@ -111,11 +111,8 @@ public:
     void removeFigureById(const qlonglong id);
 
     QModelIndex selectFigureById(const qlonglong id);
-
     QVector<QPair<qlonglong, QString>> collectAllIDs(TreeNode* node) const;
-
     QVector<QPair<qlonglong, QString>> getAllFigureIDs() const;
-
     QVector<QPair<qlonglong, QString>> getAllReqIDs() const;
 
 public slots:
@@ -134,6 +131,8 @@ public slots:
                     const double* center_x,
                     const double* center_y);
     void onReqAdded(const Requirement& req);
+
+    void renameTabName(const QString& oldName, const QString& newName);
 
 private slots:
     void paramChanged(TreeNode* node);

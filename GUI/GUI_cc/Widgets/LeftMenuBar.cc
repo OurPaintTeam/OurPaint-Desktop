@@ -1,5 +1,7 @@
 #include "LeftMenuBar.h"
 
+#include "FileSystems.h"
+
 
 LeftMenuBar::LeftMenuBar(QWidget* parent) {
     // Creating a model
@@ -135,21 +137,71 @@ void LeftMenuBar::renameNode(TreeNode* node,const QString& oldName,const QString
         return;
     }
 
-    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+    QString fixedName = newName;
 
+    if (!fixedName.endsWith(".ourp", Qt::CaseInsensitive)) {
+        fixedName += ".ourp";
+    }
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
         const TreeNode* child = projectsNode->child(i);
 
-        if (child == node)
+        if (child == node) {
             continue;
+        }
 
-        if (child->getName() == newName) {
+        if (child->getName().compare(fixedName, Qt::CaseInsensitive) == 0) {
             node->setName(oldName);
             return;
         }
     }
 
-    emit renameTab(oldName, newName);
+    node->setName(fixedName);
+    emit renameTab(oldName, fixedName);
 }
+
+
+void LeftMenuBar::renameTabName(const QString& oldName, const QString& newName) {
+    if (!projectsNode) {
+        return;
+    }
+
+    QString fixedName = newName;
+
+    if (!fixedName.endsWith(".ourp", Qt::CaseInsensitive)) {
+        fixedName += ".ourp";
+    }
+
+    TreeNode* targetNode = nullptr;
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+        if (TreeNode* child = projectsNode->child(i);
+            child->getName().compare(oldName, Qt::CaseInsensitive) == 0) {
+            targetNode = child;
+            break;
+        }
+    }
+
+    if (!targetNode) {
+        LOG_ERROR("Не найден узел с именем: " << oldName);
+        return;
+    }
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+        const TreeNode* child = projectsNode->child(i);
+
+        if (child == targetNode)
+            continue;
+
+        if (child->getName().compare(fixedName, Qt::CaseInsensitive) == 0) {
+            LOG_ERROR("Узел с именем уже существует: " << fixedName);
+            return;
+        }
+    }
+
+    targetNode->setName(fixedName);
+}
+
 
 void LeftMenuBar::doubleClickID(const QModelIndex& index) {
     QString text = index.data(Qt::DisplayRole).toString();
