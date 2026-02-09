@@ -15,6 +15,7 @@
 #include <QIcon>
 #include <QCheckBox>
 #include <QLabel>
+#include <QTextBlock>
 #include <QToolButton>
 #include <QWidgetAction>
 
@@ -54,6 +55,7 @@ public:
     // Actions
     QToolButton *actionCreate_project_to;
     QToolButton *actionOpen_project;
+    QToolButton *create_new_file;
     QToolButton *actionJPG;
     QToolButton *actionJPEG;
     QToolButton *actionPNG;
@@ -66,6 +68,7 @@ public:
     QToolButton *actionScript;
 
     QWidgetAction *createAction;
+    QWidgetAction *createNewFileAction;
     QWidgetAction *openAction;
     QWidgetAction *widgetJPG;
     QWidgetAction *widgetJPEG;
@@ -112,6 +115,7 @@ public:
 
     // Menu buttons
     QPushButton *projectButton;
+    QLabel *textOURPAINT;
     QPushButton *collaborationButton;
     QPushButton *helpButton;
     Help *helpWindow = nullptr; // Help Window
@@ -316,7 +320,6 @@ public:
 
 
     void onStart() {
-        //  collaborationButton->hide();
         if (settings) { settings->hide(); }
         if (highShowTabBar) { highShowTabBar->hide(); }
         if (tabBar) { tabBar->hide(); }
@@ -328,13 +331,16 @@ public:
         if (console) { console->hide(); }
         if (openCreateProjectsWidget) { openCreateProjectsWidget->show(); }
         if (animationPanel) { animationPanel->show(); }
+        if (projectButton) { projectButton->hide(); }
+        if (collaborationButton) { collaborationButton->hide(); }
+        if (helpButton) { helpButton->hide(); }
+        if (textOURPAINT) { textOURPAINT->show(); }
 
         resetTabs();
     }
 
     void resetTabs() {
-
-        for (const auto* tab : tabs) {
+        for (const auto *tab: tabs) {
             if (tab) {
                 if (tab->container) {
                     tabBarLayout->removeWidget(tab->container);
@@ -345,7 +351,7 @@ public:
         }
         tabs.clear();
 
-        for (const auto* tab : closeTabs) {
+        for (const auto *tab: closeTabs) {
             if (tab) {
                 if (tab->container) {
                     tab->container->deleteLater();
@@ -371,10 +377,14 @@ public:
                 "}"
             );
         }
-        //  collaborationButton->show();
+
         if (settings) { settings->show(); }
         if (highShowTabBar) { highShowTabBar->show(); }
         if (collapsedPanel) { collapsedPanel->show(); }
+        if (projectButton) { projectButton->show(); }
+        if (textOURPAINT) { textOURPAINT->hide(); }
+        if (collaborationButton) { collaborationButton->show(); }
+        if (helpButton) { helpButton->show(); }
     }
 
 
@@ -1090,6 +1100,7 @@ public:
         setupMenuButtons();
 
         // Adding menu buttons to the top panel
+        topBarLayout->addWidget(textOURPAINT);
         topBarLayout->addWidget(projectButton);
         topBarLayout->addSpacing(10);
         topBarLayout->addWidget(collaborationButton);
@@ -1111,6 +1122,7 @@ public:
 
     void setupActionsSaveLoad(QMainWindow *MainWindow) {
         createAction = new QWidgetAction(menuProject);
+        createNewFileAction = new QWidgetAction(menuProject);
         openAction = new QWidgetAction(menuProject);
         widgetImport_file = new QWidgetAction(menuProject);
         widgetScript = new QWidgetAction(menuProject);
@@ -1134,6 +1146,11 @@ public:
         actionCreate_project_to->setObjectName("actionCreate_project_to");
         createAction->setDefaultWidget(actionCreate_project_to);
         createAction->setObjectName("createAction");
+
+        create_new_file = new QToolButton(MainWindow);
+        create_new_file->setObjectName("create_new_file");
+        createNewFileAction->setDefaultWidget(create_new_file);
+        createNewFileAction->setObjectName("CreateNewFileAction");
 
 
         actionOpen_project = new QToolButton(MainWindow);
@@ -1364,6 +1381,33 @@ public:
             "}"
         );
 
+        create_new_file->setIcon(fileIn);
+        create_new_file->setFont(font);
+        create_new_file->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        create_new_file->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+        // Use the style to position the icon on the right and the text on the left
+        create_new_file->setStyleSheet(
+            "QToolButton#create_new_file {"
+            "   background-color: transparent;" // Transparent button
+            "   border: none;"
+            "   font-size: 9pt;"
+            "   color: #D8D8F6;"
+            "   padding: 5px;"
+            " padding-left: 10px;" // Text indentation from the left edge
+            "   text-align: left;"
+            " qproperty-iconSize: 16px;" // Icon size
+            "}"
+            "QToolButton#create_new_file::icon {"
+            " margin-left: 10px;" // Indentation between text and icon
+            " width: 16px; height: 16px;" // Icon size
+            "}"
+            "QToolButton#create_new_file:hover {"
+            " background-color: rgba(255, 255, 255, 0.2);" // Illumination when pointing
+            "   border-radius: 4px;"
+            "}"
+        );
+
 
         actionOpen_project->setIcon(fileIn);
         actionOpen_project->setFont(font);
@@ -1583,6 +1627,7 @@ public:
 
 
         menuProject->addAction(createAction);
+        menuProject->addAction(createNewFileAction);
         menuProject->addAction(openAction);
         menuProject->addAction(widgetImport_file);
         menuProject->addAction(widgetScript);
@@ -1619,6 +1664,20 @@ public:
 
 
     void setupMenuButtons() {
+        textOURPAINT = new QLabel(topBar);
+        textOURPAINT->setObjectName("textOURPAINT");
+        textOURPAINT->setText("OurPaint");
+        textOURPAINT->setStyleSheet(
+            "QLabel#textOURPAINT { "
+            "background-color: transparent; "
+            "color: #D8D8F6; "
+            "border: none; "
+            "font-size: 14px; "
+            "font: bold; "
+            "margin-left: 10px; "
+            "}"
+        );
+
         //  "Project"
         projectButton = new QPushButton("Project", topBar);
         projectButton->setObjectName("projectButton");
@@ -2793,6 +2852,7 @@ public:
         MainWindow->setWindowTitle(QCoreApplication::translate("OurPaint", "OurPaint", nullptr));
 
         actionCreate_project_to->setText(QCoreApplication::translate("MainWindow", "Create project", nullptr));
+        create_new_file->setText(QCoreApplication::translate("MainWindow", "Create new file", nullptr));
         actionOpen_project->setText(QCoreApplication::translate("MainWindow", "Open project", nullptr));
         actionImport_file->setText(QCoreApplication::translate("MainWindow", "Import file to...", nullptr));
         actionScript->setText(QCoreApplication::translate("MainWindow", "Script                        ", nullptr));
