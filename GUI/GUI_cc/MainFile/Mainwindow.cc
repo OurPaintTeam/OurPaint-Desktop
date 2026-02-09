@@ -77,6 +77,7 @@ void MainWindow::initConnections() {
     connect(ui->actionCreate_project_to, &QPushButton::clicked, fileSystems, &FileSystems::slotCreateNewProject);
     connect(ui->actionOpen_project, &QPushButton::clicked, fileSystems, &FileSystems::slotOpenProject);
     connect(ui->plusButton, &QPushButton::clicked, this, &MainWindow::slotCreateNewFile);
+    connect(ui->create_new_file, &QPushButton::clicked, this, &MainWindow::slotCreateNewFile);
 
     connect(fileSystems, &FileSystems::ChangeTabs, this, &MainWindow::slotChangeTabs);
     connect(fileSystems, &FileSystems::OpenProject, this, &MainWindow::slotOpenProject);
