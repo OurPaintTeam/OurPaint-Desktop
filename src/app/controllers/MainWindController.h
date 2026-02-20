@@ -2,52 +2,45 @@
 #define OURPAINT_HEADERS_CONTROLLERS_MAIN_WINDOW_CONTROLLER_H_
 
 #include <QObject>
+#include <fstream>
 #include "Objects.h"
 
 class QTPainter;
 class ID;
-class Scene;
 class MainWindow;
 class LeftMenuBar;
-namespace UndoRedo { class UndoRedoManager; }
-class CommandManager;
 class Server;
 class Client;
+class DocumentManager;
+class InputWindow;
+class SaveLoadJson;
+class SceneQtAdapter;
 
-class MainWindController : public QObject {
+class MainWindController final : public QObject {
 Q_OBJECT
 private:
     QTPainter& _painter;
-    Scene& _scene;
     MainWindow& _mainWind;
     LeftMenuBar& _lmb;
-    UndoRedo::UndoRedoManager& _urm;
-    CommandManager& _cm;
-    Server& _s;
-    Client& _c;
+    DocumentManager& _documentManager;
+    SceneQtAdapter& _sceneQtAdapter;
     std::vector<std::function<void()>> vecCalls;
     std::vector<QString> vec_requirements;
     std::vector<ObjectData> objectsBuffer;
-    QString _username;
-    const QString pathTxtFileCommands = "../CommandsFile.txt";
+    QString pathTxtFileCommands = "../CommandsFile.txt";
 
 public:
     MainWindController(QTPainter& painter,
-                       Scene& scene,
+                       DocumentManager& documentManager,
                        MainWindow& mainWind,
                        LeftMenuBar& lmb,
-                       UndoRedo::UndoRedoManager& urm,
-                       CommandManager& cm,
-                       Server& s,
-                       Client& c,
-                       QString& username);
+                       SceneQtAdapter& sceneQtAdapter);
 
 public slots:
     void onDelete();
     void onCopy();
     void onPaste();
     void onCut();
-    void onResize();
 
     void onOneRequirements();
     void onTwoRequirements();
@@ -60,19 +53,26 @@ public slots:
     void onNineRequirements();
     void onTenRequirements();
 
-    void onEnterPressed(const QString& command);
-    void onProjectSaved(const QString& fileName, QString format);
-    void onLoadFile(const QString& fileName);
+    void onEnterCommand(const QString& command);
     void onEmitScript(const QString& fileName);
+
+    // Project level
+    void onSaveProject();
+    void onOpenProject(const QString& workDir);
+    void onCreateProject(const QString& workDir);
+
+    // Document level
+    void onCreateTab(const QString& tabName);
+    void onChangeTab(const QString& tabName);
+    void onRenameTab(const QString& oldName, const QString& newName);
+    void onDeleteTab(const QString& tabName);
+    void onOpenFile(const QString& fileName);
+    void onCloseProject();
+
     void onUNDO();
     void onREDO();
 
-    void onSigExitSession();
-    void onSigOpenServer(const QString& text);
-    void onSigJoinServer(const QString& text);
-
     void onEnterMessage(const QString& text);
-    void onNameUsers(const QString& text);
 
 private:
     void deleteOwnPoints(QVector<ID>& vecPoints,

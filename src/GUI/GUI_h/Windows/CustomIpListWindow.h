@@ -7,7 +7,6 @@
 #include <QPushButton>
 #include <QPainter>
 #include <QApplication>
-#include <QDebug>
 #include <QScrollArea>
 #include <QHBoxLayout>
 #include <QIcon>

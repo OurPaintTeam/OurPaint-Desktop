@@ -17,24 +17,29 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QGestureEvent>
+#include <QDirIterator>
 #include <QStandardPaths>
 
-#include "Help.h"
-#include "CustomWindowError.h"
-#include "CustomWindowSuccessful.h"
-#include "CustomWindowWarning.h"
-#include "CustomIpListWindow.h"
-#include "LocalScanner.h"
-#include "SaveDialog.h"
-#include "InputWindow.h"
+#include "FileSystems.h"
 #include "ui_mainwindow.h"
-#include "QTPainter.h"
-#include "Modes.h"
-#include "MouseEventWorkWindow.h"
-#include "KeyWorkWindow.h"
 #include "LeftMenuBar.h"
-#include "Settings.h"
-#include "ParameterDelegate.h"
+#include "MainWindowController.h"
+
+class FileSystems;
+class LeftMenuBar;
+class ui_mainwindow;
+class Help;
+class CustomWindowError;
+class CustomWindowSuccessful;
+class CustomWindowWarning;
+class CustomIpListWindow;
+class SaveDialog;
+class InputWindow;
+class QTPainter;
+class Modes;
+class ParameterDelegate;
+class  MainWindowController;
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -42,78 +47,60 @@ namespace Ui {
 }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow {
+class MainWindow final : public QMainWindow {
 Q_OBJECT
 
 private:
-    Ui::MainWindow* ui;
+    Ui::MainWindow* ui = new Ui::MainWindow;
+    LeftMenuBar* leftMenuBar= new LeftMenuBar(this);             // A class for managing the left menu
+    MainWindowController* windowController = new MainWindowController(this);
 
-    QTPainter* painter;
-    MouseWorkWindow* mouseWW;            // For processing mouse events
-    KeyWorkWindow* keyWW;                // For handling key events
-    LeftMenuBar* leftMenuBar;             // A class for managing the left menu
-    Settings* settings;                   // Saving Settings
-    Help* helpWindow;                     // Help Window
+    FileSystems* fileSystems = new FileSystems(this);
+    friend class FileSystems;
 
-    CustomWindowError* error;
-    CustomWindowWarning* warning;
-    CustomWindowSuccessful* success;
-
-    QString documentsPath;
-    QString projectsPath;
-    QString settingsPath;
-
-    std::vector<QString> commands;  // Command buffer for the console
-    int Index;                      // Index for navigating commands
-
-    enum ResizeRegion {
-        None,
-        Top, Bottom, Left, Right,
-        TopLeft, TopRight, BottomLeft, BottomRight
-    };
-
-    const qint16 edgeMargin=8;
-
-    bool resizing;
-    bool moving;
-    QPoint dragStartPos;
-    QRect originalGeometry;
-    ResizeRegion currentRegion = None;
-public:
-
-    MainWindow(QWidget* parent = nullptr);
-
-    ~MainWindow();
-
-    QTPainter* getQTPainter() const;
-    LeftMenuBar* getLeftMenuBar() const;
+private:
     void initConnections();
-    void setupConsoleCommands(const QStringList& commandList );
     void setupLeftMenu();
-    void selectLeftMenuElem(QModelIndex& index);
-    void updateStyle();
-    void updateExitServerStyle(bool);
-    void updateShapeCursor(const QPoint& pos);
-    void setMessage(const std::string& name, const std::string& message);
 
-    // Mouse Tracking
-    void setAllMouseTracking(QWidget* widget);
+public:
+    explicit MainWindow(QWidget* parent = nullptr);
+
+    LeftMenuBar* getLeftMenuBar() const;
+    QTPainter* getQTPainter() const;
+    QString getProjectPath() const;
+
+    void inStartWindow() const;
+    void inProjectWindow() const;
+    void renameTabWithInputWindow(const QString& oldName);
+
+    void selectLeftMenuElem(const QModelIndex& index) const;
+    void setupConsoleCommands(const QStringList& commandList) const;
+    void updateExitServerStyle(bool) const;
+    void setMessage(const QString& name, const QString& message) const;
 
     /***    Custom windows      ***/
-    void showHelp();
-    void showError(const QString& text);
-    void showSuccess(const QString& text);
-    void showWarning(const QString& text);
+    void showError(const QString& text) const;
+    void showSuccess(const QString& text) const;
+    void showWarning(const QString& text) const;
 
     /***     Save/import settings       ***/
     QString getUserName();
-    void saveSettings();
-    void loadSettings();
+
+    QPushButton* getFirstBut() const;
+    QPushButton* getSecondBut() const;
+    QPushButton* getThirdBut() const;
+    QPushButton* getFourthBut() const;
+    QPushButton* getFifthBut() const;
+    QPushButton* getSixthBut() const;
+    QPushButton* getSeventhBut() const;
+    QPushButton* getEighthBut() const;
+    QPushButton* getNinthBut() const;
+    QPushButton* getTenthBut() const;
+
+    bool closeProgram();
 
 protected:
-
     void closeEvent(QCloseEvent* event) override;
-    void resizeEvent(QResizeEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -123,46 +110,30 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
 
-
 public slots:
-
-    void redo();
-    void undo();
-    void deleteButton();
-    void cut();
-    void paste();
-    void copy();
-
-    void loadProjectFile();
-    void saveProjectToFile(const QString& format);
+    void slotSaveProject();
+    void slotRenameTab(const QString& oldName,const QString& newName);
+    void slotDeleteTab(const QString& tabName);
+    void slotOpenTab(const QString& tabName);
+    void slotCloseTab(const Ui_MainWindow::TabWidget* tabWidget);
+    void slotOpenFile(const QString& fileName);
+    void slotCreateNewProject(const QString& workDir);
+    void slotOpenProject(const QString& workDir);
+    void slotChangeTabs(const QString& tabName);
+    void slotCreateNewTab(const QString& tabName);
+    void slotCreateNewFile();
 
     void buttonScript();
-    void openServer();
-    void joinServer();
-    void joinLocalServer();
-    void exitSession();
     void Message();
 
-    void Point();
-    void Section();
-    void Circle();
-    void Arc();
+    static void Point();
+    static void Section();
+    static void Circle();
+    static void Arc();
+    static void ToolMoving();
+    static void ToolSelected();
+    static void ToolShowSize();
 
-    void FigMoving();
-    void ToolMoving();
-    void ToolSelected();
-    void onWorkWindowResized();
-
-    void firstReq();
-    void secondReq();
-    void thirdReq();
-    void fourthReq();
-    void fifthReq();
-    void sixthReq();
-    void seventhReq();
-    void eighthReq();
-    void ninthReq();
-    void tenthReq();
     void onExportJPG();
     void onExportJPEG();
     void onExportPNG();
@@ -172,37 +143,28 @@ public slots:
     void onExportOURP();
     void onExportSVG();
 
-signals:
+    void onLeftMenuRightClick(const QPoint& pos);
+    void updateGrid(const bool checked) const;
+    void updateAxis(const bool checked) const;
+    void commandsInConsole();
 
-    void EnterPressed(const QString& command);
+signals:
+    void EnterCommand(const QString& command);
     void EnterMessage(const QString& text);
-    void NameUsers(const QString& text);
-    void SigOpenServer(const QString& text);
-    void SigJoinServer(const QString& text);
-    void SigExitSession();
-    void projectSaved(const QString& fileName, QString format);
-    void LoadFile(const QString& fileName);
     void EmitScript(const QString& fileName);
 
-    void oneRequirements();
-    void twoRequirements();
-    void threeRequirements();
-    void fourRequirements();
-    void fiveRequirements();
-    void sixRequirements();
-    void sevenRequirements();
-    void eightRequirements();
-    void nineRequirements();
-    void tenRequirements();
+    void SaveProject();
+    void CloseProject();
+    void CreateNewProject(const QString& workDir);
+    void OpenProject(const QString& workDir);
+    void OpenFile(const QString& fileName);
+    void ChangeTabs(const QString& tabName);
+    void CreateNewTab(const QString& tabName);
+    void DeleteTab(const QString& tabName);
+    void DeleteTabLeftMenu(const QString& tabName);
+    void RenameTab(const QString& oldName,const QString& newName);
 
-    void REDO();
-    void UNDO();
-    void DELETE();
-    void CUT();
-    void PASTE();
-    void COPY();
-    void resize();
-
+    void SaveProjectInFormat(const QString& fileName,const QString& format);
 };
 
 #endif // MAINWINDOW_H

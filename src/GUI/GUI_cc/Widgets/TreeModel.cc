@@ -81,29 +81,41 @@ bool TreeModel::setData(const QModelIndex& index, const QVariant& value, qint32 
     }
 
     TreeNode* node = static_cast<TreeNode*>(index.internalPointer());
-    if (!node) return false;
+    if (!node) {
+        return false;
+    }
 
     QString oldText = node->data(0).toString();
+    QString str;
 
     if (node->isNumber()) {
         QString name = oldText.section(": ", 0, 0);
         bool ok = false;
         double number = value.toString().toDouble(&ok);
-        if (!ok) return false;
+        if (!ok) {
+            return false;
+        }
 
         QString newText = QString("%1: %2").arg(name).arg(number, 0, 'g', 10);
         node->setName(newText.isEmpty() ? oldText : newText);
 
     } else if (node->isLiteral()) {
-        QString str = value.toString();
+        str = value.toString();
         node->setName(str.isEmpty() ? oldText : str);
     }
 
     emit dataChanged(index, index, {Qt::DisplayRole, Qt::EditRole});
 
-    if (node->isNumber() && node->parent()) {
-        emit treeModelChanged(node->parent());
+    if (node->parent()) {
+        if (node->isNumber()) {
+            emit treeModelChanged(node->parent());
+        }else if (node->isLiteral() && !str.isEmpty()) {
+            if (oldText!=str) {
+                emit treeModelRenameNode(node,oldText,str);
+            }
+        }
     }
+
 
     return true;
 }

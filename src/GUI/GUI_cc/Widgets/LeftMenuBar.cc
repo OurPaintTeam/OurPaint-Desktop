@@ -1,6 +1,7 @@
 #include "LeftMenuBar.h"
-#include "ID.h"
-#include "Objects.h"
+
+#include "FileSystems.h"
+
 
 LeftMenuBar::LeftMenuBar(QWidget* parent) {
     // Creating a model
@@ -10,16 +11,20 @@ LeftMenuBar::LeftMenuBar(QWidget* parent) {
     // Creating nodes
     nothing = new TreeNode("", rootNode); // to indent from the top
     nothing->setEnable(false);
+
+    projectsNode = new TreeNode("Projects", rootNode);
     figuresNode = new TreeNode("Figures", rootNode);
     requirementsNode = new TreeNode("Requirements", rootNode);
 
     rootNode->addChild(nothing);
+    rootNode->addChild(projectsNode);
     rootNode->addChild(figuresNode);
     rootNode->addChild(requirementsNode);
 
     // Font
     QFont fontCategory;
     fontCategory.setPointSize(12);
+    projectsNode->setFont(fontCategory);
     figuresNode->setFont(fontCategory);
     requirementsNode->setFont(fontCategory);
 
@@ -29,15 +34,24 @@ LeftMenuBar::LeftMenuBar(QWidget* parent) {
     connect(treeModel, &TreeModel::treeModelChanged,
             this, &LeftMenuBar::paramChanged);
 
+    connect(treeModel, &TreeModel::treeModelRenameNode,
+        this, &LeftMenuBar::renameNode);
+
 }
 
+
 void LeftMenuBar::refreshAllLinkedParams() {
-    if (!figuresNode) return;
+    if (!figuresNode) {
+        return;
+    }
     refreshLinkedParams(figuresNode);
 }
 
+
 void LeftMenuBar::refreshLinkedParams(TreeNode* node) {
-    if (!node) return;
+    if (!node) {
+        return;
+    }
 
     if (node->isLinkedNumber()) {
         node->updateTextFromLinkedValue();
@@ -92,17 +106,113 @@ void LeftMenuBar::paramChanged(TreeNode* node) {
     }
 }
 
+void  LeftMenuBar::slotOpenTab(TreeNode* node) {
+    if (!node || node->parent() != projectsNode || !treeModel) {
+        return;
+    }
+
+    const QString fileName = node->getName();
+
+    emit openTab(fileName);
+}
+
+void LeftMenuBar::deleteTabNode(TreeNode* node) {
+    if (!node || node->parent() != projectsNode || !treeModel) {
+        return;
+    }
+
+    const QString fileName = node->getName();
+    treeModel->removeNode(projectsNode, node);
+
+    emit deleteTab(fileName);
+}
+
+
+void LeftMenuBar::renameNode(TreeNode* node,const QString& oldName,const QString& newName) {
+    if (!node) {
+        return;
+    }
+
+    if (node->parent() != projectsNode) {
+        return;
+    }
+
+    QString fixedName = newName;
+
+    if (!fixedName.endsWith(".ourp", Qt::CaseInsensitive)) {
+        fixedName += ".ourp";
+    }
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+        const TreeNode* child = projectsNode->child(i);
+
+        if (child == node) {
+            continue;
+        }
+
+        if (child->getName().compare(fixedName, Qt::CaseInsensitive) == 0) {
+            node->setName(oldName);
+            return;
+        }
+    }
+
+    node->setName(fixedName);
+    emit renameTab(oldName, fixedName);
+}
+
+
+void LeftMenuBar::renameTabName(const QString& oldName, const QString& newName) {
+    if (!projectsNode) {
+        return;
+    }
+
+    QString fixedName = newName;
+
+    if (!fixedName.endsWith(".ourp", Qt::CaseInsensitive)) {
+        fixedName += ".ourp";
+    }
+
+    TreeNode* targetNode = nullptr;
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+        if (TreeNode* child = projectsNode->child(i);
+            child->getName().compare(oldName, Qt::CaseInsensitive) == 0) {
+            targetNode = child;
+            break;
+        }
+    }
+
+    if (!targetNode) {
+        LOG_ERROR("Не найден узел с именем: " << oldName);
+        return;
+    }
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+        const TreeNode* child = projectsNode->child(i);
+
+        if (child == targetNode)
+            continue;
+
+        if (child->getName().compare(fixedName, Qt::CaseInsensitive) == 0) {
+            LOG_ERROR("Узел с именем уже существует: " << fixedName);
+            return;
+        }
+    }
+
+    targetNode->setName(fixedName);
+}
+
+
 void LeftMenuBar::doubleClickID(const QModelIndex& index) {
     QString text = index.data(Qt::DisplayRole).toString();
 
-    qlonglong id = 0;
-    std::string type;
+    QString type;
 
     if (!text.startsWith("ID: ")) {
         return;
     }
 
-    id = text.section(": ", 1).toULongLong();
+    qlonglong id = text.section(": ", 1).toULongLong();
 
     QModelIndex parentIndex = index.parent();
     qint16 row = index.row();
@@ -111,17 +221,18 @@ void LeftMenuBar::doubleClickID(const QModelIndex& index) {
         QModelIndex typeIndex = index.model()->index(row - 1, 0, parentIndex);
         QString typeText = typeIndex.data(Qt::DisplayRole).toString();
         if (typeText.startsWith("Type: ")) {
-            type = typeText.section(": ", 1).toStdString();
+            type = typeText.section(": ", 1);
         }
     }
 
-    emit doubleClickLeftMenu(id, type);
+    emit doubleClickLeftMenu(id, type.toStdString());
 }
 
 
 TreeModel* LeftMenuBar::getTreeModel() {
     return treeModel;
 }
+
 
 TreeNode* LeftMenuBar::createParamNode(const QString& name, const QVariant& value, TreeNode* parent,
                                        bool editable = false, bool isNumber = false, bool doubleClickable = false) {
@@ -141,6 +252,7 @@ TreeNode* LeftMenuBar::createParamNode(const QString& name, const QVariant& valu
     parent->addChild(node);
     return node;
 }
+
 
 TreeNode* LeftMenuBar::createParamNode(const QString& name, const qreal* ptr, TreeNode* parent) {
 
@@ -173,13 +285,42 @@ TreeNode* LeftMenuBar::createPointNode(const QString& name, qlonglong id,
     return pointNode;
 }
 
+
+void LeftMenuBar::addFileToProject(const QString& fileName) {
+
+    if (!projectsNode) {
+        return;
+    }
+
+    for (qint32 i = 0; i < projectsNode->childCount(); ++i) {
+        if (const TreeNode* child = projectsNode->child(i);
+            child->getName().compare(fileName, Qt::CaseInsensitive) == 0) {
+            return;
+        }
+    }
+
+    font.setPointSize(9);
+
+    const auto projectNode = new TreeNode(fileName, projectsNode);
+    projectNode->setEditable(true);
+    projectNode->setSelected(true);
+    projectNode->setLiteral(true);
+    projectNode->setDropEnabled(true);
+    projectNode->setIcon(elem);
+    projectsNode->addChild(projectNode);
+}
+
+
 void LeftMenuBar::addPointInLeftMenu(const QString& namePoint, const qlonglong pID,
                                      const std::pair<const qreal*, const qreal*>& params) {
 
-    if (!figuresNode || pID <= 0) return;
+    if (!figuresNode || pID <= 0) {
+        return;
+    }
     font.setPointSize(9);
     createPointNode(namePoint, pID, params, figuresNode);
 }
+
 
 void LeftMenuBar::addSectionInLeftMenu(const QString& nameSection, const QString& namePoint1, const QString& namePoint2,
                                        const qlonglong secID, const qlonglong pID1, const qlonglong pID2,
@@ -207,6 +348,7 @@ void LeftMenuBar::addSectionInLeftMenu(const QString& nameSection, const QString
     createPointNode(namePoint1, pID1, firstParams, sectionNode);
     createPointNode(namePoint2, pID2, secondParams, sectionNode);
 }
+
 
 void LeftMenuBar::addArcInLeftMenu(const QString& nameArc,
                                    const QString& namePoint1, const QString& namePoint2, const QString& namePoint3,
@@ -245,9 +387,9 @@ void LeftMenuBar::addCircleInLeftMenu(const QString& nameCircle, const QString& 
                                       const std::pair<const qreal*, const qreal*>& params, qreal R) {
     if (!figuresNode || cID <= 0 || pID <= 0){
         return;
-    } 
-    
-    constexpr quint16 SIZE=9;
+    }
+
+    constexpr quint16 SIZE = 9;
     font.setPointSize(SIZE);
 
     TreeNode* circleNode = new TreeNode(nameCircle, figuresNode);
@@ -263,6 +405,7 @@ void LeftMenuBar::addCircleInLeftMenu(const QString& nameCircle, const QString& 
 
     createPointNode(namePoint, pID, params, circleNode);
 }
+
 
 // Adding requirements
 void LeftMenuBar::addRequirementElem(const QString& name, const QString& type, const qint32 ReqID,
@@ -317,15 +460,15 @@ void LeftMenuBar::addRequirementElem(const QString& name, const QString& type, c
 // Adding requirements
 void LeftMenuBar::addRequirementElem(const QString& type, const QString& name, const qint32 ReqID,
                                      const qlonglong ElemID1, const qlonglong ElemID2) {
-    if (!requirementsNode) { 
-        return; 
+    if (!requirementsNode) {
+        return;
     }
 
     constexpr quint16 SIZE = 9;
     font.setPointSize(SIZE);
 
     // Creating the main node of the element
-    TreeNode* elemNode = new TreeNode(name, requirementsNode);
+    const auto elemNode = new TreeNode(name, requirementsNode);
     elemNode->setIcon(elem);
     elemNode->setEditable(true);
     elemNode->setSelected(true);
@@ -353,14 +496,16 @@ void LeftMenuBar::addRequirementElem(const QString& type, const QString& name, c
     elemNode->addChild(ElemID2Node);
 }
 
+
 void LeftMenuBar::updateLeftMenu() {
     refreshAllLinkedParams();
     treeModel->layoutChanged();
 }
 
+
 // Clearing all the elements
-void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
-    if (!requirementsNode || !treeModel) { 
+void LeftMenuBar::LeftMenuBar::clearAllRequirements() const {
+    if (!requirementsNode || !treeModel) {
         return;
     }
 
@@ -372,8 +517,10 @@ void LeftMenuBar::LeftMenuBar::clearAllRequirements() {
 }
 
 // Clearing all the elements
-void LeftMenuBar::clearAllFigures() {
-    if (!figuresNode || !treeModel) { return; }
+void LeftMenuBar::clearAllFigures() const {
+    if (!figuresNode || !treeModel) {
+        return;
+    }
 
     // Deleting all children of the node
     figuresNode->deleteAll();
@@ -385,7 +532,9 @@ void LeftMenuBar::clearAllFigures() {
 
 // Clearing one element by ID
 void LeftMenuBar::removeFigureById(qlonglong id) {
-    if (!figuresNode || !treeModel) { return; }
+    if (!figuresNode || !treeModel) {
+        return;
+    }
 
     for (qsizetype i = 0; i < figuresNode->childCount(); ++i) {
         TreeNode* elemNode = figuresNode->child(i);
@@ -398,6 +547,7 @@ void LeftMenuBar::removeFigureById(qlonglong id) {
         }
     }
 }
+
 
 QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
     if (!figuresNode || !treeModel) {
@@ -425,6 +575,7 @@ QModelIndex LeftMenuBar::selectFigureById(qlonglong id) {
     return index;
 }
 
+
 void LeftMenuBar::onPointAdded(ID id, const double* x, const double* y) {
     addPointInLeftMenu(
             "Point",
@@ -432,6 +583,7 @@ void LeftMenuBar::onPointAdded(ID id, const double* x, const double* y) {
             {x, y});
     updateLeftMenu();
 }
+
 
 void LeftMenuBar::onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2) {
     addSectionInLeftMenu(
@@ -446,6 +598,7 @@ void LeftMenuBar::onSectionAdded(ID id, const double* x1, const double* y1, cons
     updateLeftMenu();
 }
 
+
 void LeftMenuBar::onCircleAdded(ID id, const double* x, const double* y, const double* r) {
     addCircleInLeftMenu(
             "Circle",
@@ -456,6 +609,7 @@ void LeftMenuBar::onCircleAdded(ID id, const double* x, const double* y, const d
             *r);
     updateLeftMenu();
 }
+
 
 void LeftMenuBar::onArcAdded(ID id,
                              const double* beg_x,
@@ -479,6 +633,7 @@ void LeftMenuBar::onArcAdded(ID id,
     updateLeftMenu();
 }
 
+
 void LeftMenuBar::onReqAdded(const Requirement& req) {
     if (req.param.has_value()) {
         addRequirementElem(
@@ -500,6 +655,58 @@ void LeftMenuBar::onReqAdded(const Requirement& req) {
         );
     }
     updateLeftMenu();
+}
+
+
+QVector<QPair<qlonglong, QString>> LeftMenuBar::collectAllIDs(TreeNode* node) const {
+    QVector<QPair<qlonglong, QString>> result;
+
+    if (!node) { return result; }
+
+    // Check child
+    for (qsizetype i = 0; i < node->childCount(); ++i) {
+        TreeNode* child = node->child(i);
+
+        QString text = child->data(0).toString().trimmed();
+        if (text.startsWith("ID")) {
+            bool ok = false;
+            qlonglong id = text.section(':', 1).trimmed().toLongLong(&ok);
+            if (ok && id > 0) {
+                QString name = node->data(0).toString();
+                result.append({id, name});
+            }
+        }
+
+        auto childResult = collectAllIDs(child);
+        result.append(childResult);
+    }
+
+    return result;
+}
+
+
+QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllFigureIDs() const {
+    QVector<QPair<qlonglong, QString>> all;
+
+    if (figuresNode) {
+        auto figs = collectAllIDs(figuresNode);
+        all.append(figs);
+    }
+
+    return all;
+}
+
+
+QVector<QPair<qlonglong, QString>> LeftMenuBar::getAllReqIDs() const {
+    QVector<QPair<qlonglong, QString>> all;
+
+
+    if (requirementsNode) {
+        auto reqs = collectAllIDs(requirementsNode);
+        all.append(reqs);
+    }
+
+    return all;
 }
 
 

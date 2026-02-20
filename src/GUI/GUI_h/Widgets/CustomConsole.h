@@ -23,9 +23,13 @@ private:
     QStringList _commands; // Users commands
     QString _currentCommands; // The basic command
 
+    QVector<QString> commandsArray;  // Command buffer for the console
+    int Index = 0;                      // Index for navigating commands
+
 public:
     explicit CustomConsole(QWidget* parent = nullptr);
     void setCommands(const QStringList& commands);
+    void pushBack(const QString& text);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

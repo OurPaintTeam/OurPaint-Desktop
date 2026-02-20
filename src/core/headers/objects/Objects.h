@@ -3,8 +3,10 @@
 
 #include <vector>
 #include <optional>
+#include <unordered_map>
 #include "ID.h"
 #include "Enums.h"
+#include "GeometricObjects.h"
 
 struct ObjectData {
     ObjType et;
@@ -28,6 +30,14 @@ struct Requirement {
     ID obj2{0};
     ID obj3{0};
     std::optional<double> param;
+};
+
+struct ObjectContainer {
+    std::unordered_map<ID, Point*>* casePoints;
+    std::unordered_map<ID, Section*>* caseSections;
+    std::unordered_map<ID, Circle*>* caseCircles;
+    std::unordered_map<ID, Arc*>* caseArcs;
+    const BoundBox2D* rectangle;
 };
 
 inline bool operator==(Requirement const& a, Requirement const& b) noexcept {

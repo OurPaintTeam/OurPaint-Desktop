@@ -5,12 +5,17 @@
 #include <QLineEdit>
 #include <QMouseEvent>
 
-#include "DRegex.h"
+#include "QRegex.h"
 
 // A class for managing data in the left menu
 
 class ProtectedPrefixLineEdit : public QLineEdit {
 Q_OBJECT
+
+private:
+    qint32 prefixLength;
+    bool doubleNumber;
+
 public:
 
     // To enter a new number
@@ -23,9 +28,6 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
 
-private:
-    int prefixLength;
-    bool doubleNumber;
 };
 
 #endif //OURPAINT_PROTECTEDPREFIXLINEEDIT_H

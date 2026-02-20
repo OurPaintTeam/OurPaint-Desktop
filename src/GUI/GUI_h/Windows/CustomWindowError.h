@@ -7,7 +7,6 @@
 #include <QPixmap>
 #include <QPainter>
 #include <QApplication>
-#include <QDebug>
 #include <QPropertyAnimation>
 #include <QTimer>
 
