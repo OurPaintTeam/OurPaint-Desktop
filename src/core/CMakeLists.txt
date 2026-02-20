@@ -1,6 +1,4 @@
 add_library(ourpaint_core
-        ../headers/painters/Painter.h
-        ../headers/painters/BMPpainter.h
         ../headers/saveload/FileOurP.h
         ../headers/saveload/requirementInFile.h
         ../headers/saveload/objectInFile.h
@@ -27,14 +25,12 @@ add_library(ourpaint_core
         Scene.cc
         objects/GeometricObjects.cc
         objects/BoundBox.cc
-        painters/BMPpainter.cc
         saveload/objectInFile.cc
         saveload/FileOurP.cc
         saveload/requirementInFile.cc
         saveload/requirementInJson.cc
         saveload/SaveLoadJson.cc
         saveload/objectInJson.cc
-        BMPfile.cc
         UndoRedo/commands/Add/CommandAddObject.cc
         UndoRedo/commands/Delete/CommandDeleteObject.cc
         UndoRedo/commands/CommandAddRequirement.cc
