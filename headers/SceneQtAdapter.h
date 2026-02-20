@@ -4,7 +4,6 @@
 #include <QObject>
 #include "SceneObserver.h"
 
-class Scene;
 class ID;
 struct Requirement;
 
@@ -14,7 +13,7 @@ class SceneQtAdapter final
     Q_OBJECT
     Q_INTERFACES(ISceneObserver)
 public:
-    explicit SceneQtAdapter(Scene& scene);
+    explicit SceneQtAdapter();
 
     void pointAdded(ID id, const double* x, const double* y) override;
     void sectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2) override;
@@ -40,6 +39,7 @@ signals:
                     const double* center_x,
                     const double* center_y);
     void reqAddedQt(const Requirement& req);
+    void sceneChanged();
 };
 
 #endif // ! OURPAINT_HEADERS_SCENE_QT_ADAPTER_H_

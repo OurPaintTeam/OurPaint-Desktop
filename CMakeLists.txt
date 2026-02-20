@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOUIC OFF)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Svg)
 
@@ -26,7 +26,6 @@ FetchContent_MakeAvailable(json)
 
 include_directories(ourpaint
         headers
-        headers/painters
         headers/saveload
         headers/UndoRedo
         headers/objects
@@ -36,16 +35,17 @@ include_directories(ourpaint
         headers/controllers
 
         GUI/GUI_h
-        GUI/GUI_h/Unnecessary
-        GUI/GUI_h/client_server
         GUI/GUI_h/Windows
         GUI/GUI_h/Events
-        GUI/GUI_h/Drawing
-        GUI/GUI_h/Drawing/Mouse
+        GUI/GUI_h/Rendering
+        GUI/GUI_h/Rendering/Mouse
+        GUI/GUI_h/Rendering/RenderingStyle
+        GUI/GUI_h/Rendering/RenderingFigures
+        GUI/GUI_h/Rendering/RenderRequirements
         GUI/GUI_h/MainFile
         GUI/GUI_h/Widgets
         GUI/GUI_h/Logger
-        GUI/GUI_h/Settings
+        GUI/GUI_h/FileSystem
 
         Math/headers
         Math/headers/decomposition
@@ -64,8 +64,6 @@ add_executable(ourpaint
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
 
-        src/painters/BMPpainter.cc
-
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
         src/saveload/requirementInFile.cc
@@ -74,16 +72,20 @@ add_executable(ourpaint
         src/saveload/objectInJson.cc
 
         src/Application.cc
-        src/BMPfile.cc
         src/SceneQtAdapter.cc
 
         src/controllers/PainterController.cc
         src/controllers/MainWindController.cc
         src/controllers/LeftMenuController.cc
 
+        src/Document.cc
+        src/DocumentManager.cc
+        src/saveload/DocumentSaveLoad.cc
 
-        headers/painters/Painter.h
-        headers/painters/BMPpainter.h
+
+        headers/Document.h
+        headers/DocumentManager.h
+        headers/UndoRedo/DocumentSaveLoad.h
 
         headers/saveload/FileOurP.h
         headers/saveload/requirementInFile.h
@@ -93,7 +95,6 @@ add_executable(ourpaint
         headers/saveload/requirementInJson.h
 
         headers/Application.h
-        headers/BMPfile.h
         headers/SceneObserver.h
         headers/SceneQtAdapter.h
         headers/ExceptionGuard.h
@@ -146,24 +147,24 @@ add_executable(ourpaint
 
         GUI/GUI_cc/MainFile/Mainwindow.cc
 
-        GUI/GUI_cc/Drawing/Scaling.cc
-        GUI/GUI_cc/Drawing/ClosestPoint.cc
-        GUI/GUI_cc/Drawing/DrawAdditionalInf.cc
-        GUI/GUI_cc/Drawing/DrawBackground.cc
-        GUI/GUI_cc/Drawing/DrawFigures.cc
-        GUI/GUI_cc/Drawing/Modes.cc
-        GUI/GUI_cc/Drawing/QTPainter.cc
-        GUI/GUI_cc/Unnecessary/SelectedRectangle.cc
+        GUI/GUI_cc/Rendering/Scaling.cc
+        GUI/GUI_cc/Rendering/ClosestPoint.cc
+        GUI/GUI_cc/Rendering/DrawAdditionalInf.cc
+        GUI/GUI_cc/Rendering/DrawBackground.cc
+        GUI/GUI_cc/Rendering/DrawFigures.cc
+        GUI/GUI_cc/Rendering/Modes.cc
+        GUI/GUI_cc/Rendering/QTPainter.cc
 
 
-        GUI/GUI_cc/Drawing/Mouse/DrawTool.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawPointTool.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawLineTool.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawCircleTool.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawArcTool.cc
-        GUI/GUI_cc/Drawing/Mouse/MouseDrawingManager.cc
-        GUI/GUI_cc/Drawing/Mouse/DrawRectangleTool.cc
+        GUI/GUI_cc/Rendering/Mouse/DrawTool.cc
+        GUI/GUI_cc/Rendering/Mouse/DrawPointTool.cc
+        GUI/GUI_cc/Rendering/Mouse/DrawLineTool.cc
+        GUI/GUI_cc/Rendering/Mouse/DrawCircleTool.cc
+        GUI/GUI_cc/Rendering/Mouse/DrawArcTool.cc
+        GUI/GUI_cc/Rendering/Mouse/MouseDrawingManager.cc
+        GUI/GUI_cc/Rendering/Mouse/DrawRectangleTool.cc
 
+        GUI/GUI_cc/Events/MainWindowController.cc
         GUI/GUI_cc/Events/SmileRightClickFilter.cc
         GUI/GUI_cc/Events/KeyWorkWindow.cc
         GUI/GUI_cc/Events/MouseEventWorkWindow.cc
@@ -175,12 +176,9 @@ add_executable(ourpaint
         GUI/GUI_cc/Widgets/TreeModel.cc
         GUI/GUI_cc/Widgets/ParameterDelegate.cc
         GUI/GUI_cc/Widgets/ProtectedPrefixLineEdit.cc
-        GUI/GUI_cc/Widgets/DRegex.cc
-
-        GUI/GUI_cc/client_server/Server.cc
-        GUI/GUI_cc/client_server/Client.cc
-        GUI/GUI_cc/client_server/LocalScanner.cc
-        GUI/GUI_cc/client_server/PortCheckTask.cc
+        GUI/GUI_cc/Widgets/QRegex.cc
+        GUI/GUI_cc/Widgets/AnimationWidget.cc
+        GUI/GUI_cc/Widgets/AngleLineEdit.cc
 
         GUI/GUI_cc/Windows/Help.cc
         GUI/GUI_cc/Windows/CustomWindowError.cc
@@ -189,18 +187,19 @@ add_executable(ourpaint
         GUI/GUI_cc/Windows/CustomIpListWindow.cc
         GUI/GUI_cc/Windows/InputWindow.cc
         GUI/GUI_cc/Windows/SaveDialog.cc
+        GUI/GUI_cc/Windows/CloseDialog.cc
 
-        GUI/GUI_cc/Unnecessary/FrameOverlay.cc
-        GUI/GUI_cc/Unnecessary/DrawMouse.cc
 
         GUI/GUI_cc/Logger/GUI_Logger.cc
+        GUI/GUI_cc/FileSystem/FileSystems.cc
 
-        GUI/GUI_cc/Settings/Settings.cc
 
-        GUI/GUI_h/client_server/Client.h
-        GUI/GUI_h/client_server/LocalScanner.h
-        GUI/GUI_h/client_server/PortCheckTask.h
-        GUI/GUI_h/client_server/Server.h
+        GUI/GUI_cc/Rendering/RenderFigures/RenderCircles.cc
+        GUI/GUI_cc/Rendering/RenderFigures/RenderPoints.cc
+        GUI/GUI_cc/Rendering/RenderFigures/RenderArcs.cc
+        GUI/GUI_cc/Rendering/RenderFigures/RenderLines.cc
+
+        GUI/GUI_cc/Rendering/RenderRequirements/RenderDistance.cc
 
         GUI/GUI_h/Windows/CustomWindowError.h
         GUI/GUI_h/Windows/CustomWindowWarning.h
@@ -209,8 +208,10 @@ add_executable(ourpaint
         GUI/GUI_h/Windows/CustomIpListWindow.h
         GUI/GUI_h/Windows/InputWindow.h
         GUI/GUI_h/Windows/SaveDialog.h
+        GUI/GUI_h/Windows/CloseDialog.h
         GUI/GUI_h/Windows/ui_help.h
 
+        GUI/GUI_h/Events/MainWindowController.h
         GUI/GUI_h/Events/KeyEventToolPanel.h
         GUI/GUI_h/Events/GlobalEventFilter.h
         GUI/GUI_h/Events/KeyEventCollapsedPanel.h
@@ -225,31 +226,37 @@ add_executable(ourpaint
         GUI/GUI_h/Widgets/TreeModel.h
         GUI/GUI_h/Widgets/ParameterDelegate.h
         GUI/GUI_h/Widgets/ProtectedPrefixLineEdit.h
-        GUI/GUI_h/Widgets/DRegex.h
+        GUI/GUI_h/Widgets/QRegex.h
+        GUI/GUI_h/Widgets/AnimationWidget.h
+        GUI/GUI_h/Widgets/AngleLineEdit.h
 
-        GUI/GUI_h/Drawing/Scaling.h
-        GUI/GUI_h/Drawing/QTPainter.h
-        GUI/GUI_h/Unnecessary/SelectedRectangle.h
-        GUI/GUI_h/Drawing/Colors.h
+        GUI/GUI_h/Rendering/Scaling.h
+        GUI/GUI_h/Rendering/QTPainter.h
+        GUI/GUI_h/Rendering/Colors.h
 
-        GUI/GUI_h/Drawing/Mouse/DrawTool.h
-        GUI/GUI_h/Drawing/Mouse/DrawPointTool.h
-        GUI/GUI_h/Drawing/Mouse/DrawLineTool.h
-        GUI/GUI_h/Drawing/Mouse/DrawCircleTool.h
-        GUI/GUI_h/Drawing/Mouse/DrawArcTool.h
-        GUI/GUI_h/Drawing/Mouse/MouseDrawingManager.h
-        GUI/GUI_h/Drawing/Mouse/DrawRectangleTool.h
+        GUI/GUI_h/Rendering/Mouse/DrawTool.h
+        GUI/GUI_h/Rendering/Mouse/DrawPointTool.h
+        GUI/GUI_h/Rendering/Mouse/DrawLineTool.h
+        GUI/GUI_h/Rendering/Mouse/DrawCircleTool.h
+        GUI/GUI_h/Rendering/Mouse/DrawArcTool.h
+        GUI/GUI_h/Rendering/Mouse/MouseDrawingManager.h
+        GUI/GUI_h/Rendering/Mouse/DrawRectangleTool.h
 
 
         GUI/GUI_h/MainFile/Mainwindow.h
         GUI/GUI_h/MainFile/ui_mainwindow.h
 
-        GUI/GUI_h/Unnecessary/FrameOverlay.h
-        GUI/GUI_h/Unnecessary/DrawMouse.h
 
         GUI/GUI_h/Logger/GUI_Logger.h
+        GUI/GUI_h/FileSystem/FileSystems.h
 
-        GUI/GUI_h/Settings/Settings.h
+
+        GUI/GUI_h/Rendering/RenderingStyle/RenderStyle.h
+        GUI/GUI_h/Rendering/RenderingFigures/RenderCircles.h
+        GUI/GUI_h/Rendering/RenderingFigures/RenderPoints.h
+        GUI/GUI_h/Rendering/RenderingFigures/RenderArcs.h
+        GUI/GUI_h/Rendering/RenderingFigures/RenderLines.h
+        GUI/GUI_h/Rendering/RenderRequirements/RenderDistance.h
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)

@@ -16,6 +16,8 @@
 
 #include "TreeModel.h"
 #include "SceneQtAdapter.h"
+#include "ID.h"
+#include "Objects.h"
 
 // A class for managing a tree
 
@@ -24,12 +26,12 @@ class LeftMenuBar: public QWidget  {
 private:
     TreeModel *treeModel = nullptr;
     TreeNode *rootNode = nullptr;
+    TreeNode *projectsNode = nullptr;
     TreeNode *figuresNode = nullptr;
     TreeNode *requirementsNode = nullptr;
     TreeNode *nothing = nullptr;
     QIcon elem;
     QIcon paraam;
-
     QFont font;
 
     // TODO вынести
@@ -47,28 +49,19 @@ private:
     };
 
 public:
-    void refreshAllLinkedParams();
 
+    TreeNode* getProjectsNode() const {
+        return projectsNode;
+    };
+
+    void refreshAllLinkedParams();
     void refreshLinkedParams(TreeNode* node);
 
     explicit LeftMenuBar(QWidget* parent = nullptr);
 
-
-public slots:
-    void onPointAdded(ID id, const double* x, const double* y);
-    void onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2);
-    void onCircleAdded(ID id, const double* x, const double* y, const double* r);
-    void onArcAdded(ID id,
-                    const double* beg_x,
-                    const double* beg_y,
-                    const double* end_x,
-                    const double* end_y,
-                    const double* center_x,
-                    const double* center_y);
-    void onReqAdded(const Requirement& req);
-
 public:
     TreeModel *getTreeModel();
+    void addFileToProject(const QString& file);
 
     void addPointInLeftMenu(const QString &namePoint, const qlonglong pID,
                               const std::pair<const qreal*,const qreal *> &params);
@@ -107,28 +100,51 @@ public:
 
 
     // Clearing all the elements
-    void clearAllFigures();
+    void clearAllFigures() const;
 
     // // Clearing all the requirements
-    void clearAllRequirements();
+    void clearAllRequirements() const;
 
-    void  updateLeftMenu();
+    void updateLeftMenu();
 
     // Clearing one element by ID
     void removeFigureById(const qlonglong id);
 
     QModelIndex selectFigureById(const qlonglong id);
+    QVector<QPair<qlonglong, QString>> collectAllIDs(TreeNode* node) const;
+    QVector<QPair<qlonglong, QString>> getAllFigureIDs() const;
+    QVector<QPair<qlonglong, QString>> getAllReqIDs() const;
 
 public slots:
     void doubleClickID(const QModelIndex& index);
+    void deleteTabNode(TreeNode* node);
+    void slotOpenTab(TreeNode* node);
+
+    void onPointAdded(ID id, const double* x, const double* y);
+    void onSectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2);
+    void onCircleAdded(ID id, const double* x, const double* y, const double* r);
+    void onArcAdded(ID id,
+                    const double* beg_x,
+                    const double* beg_y,
+                    const double* end_x,
+                    const double* end_y,
+                    const double* center_x,
+                    const double* center_y);
+    void onReqAdded(const Requirement& req);
+
+    void renameTabName(const QString& oldName, const QString& newName);
+
 private slots:
     void paramChanged(TreeNode* node);
+    void renameNode(TreeNode* node,const QString& oldName,const QString& newName);
 
 signals:
     void figureParamsChanged(const qlonglong id,const std::string &type, const std::vector<qreal> &parameters);
     void reqParamChanged(const qlonglong id, const qreal &parameter);
     void doubleClickLeftMenu(const qlonglong id,const std::string &type);
-
+    void renameTab(const QString& oldName,const QString& newName);
+    void deleteTab(const QString& fileName);
+    void openTab(const QString& fileName);
 
 };
 

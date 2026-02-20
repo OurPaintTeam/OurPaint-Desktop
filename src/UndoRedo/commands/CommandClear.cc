@@ -9,7 +9,7 @@ UndoRedo::CommandClear::~CommandClear() {
 
 bool UndoRedo::CommandClear::Execute() {
     _sceneBefore = _scene;
-    _sceneAfter = new Scene(nullptr);
+    _sceneAfter = new Scene();
     _scene = _sceneAfter;
     return true;
 }

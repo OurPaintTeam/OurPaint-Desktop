@@ -44,8 +44,6 @@ add_executable(SceneGTEST SceneGTEST.cc
         ../src/Scene.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
-        ../src/painters/BMPpainter.cc
-        ../src/BMPfile.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/requirementInFile.cc
@@ -93,8 +91,6 @@ add_executable(MoveGTEST MoveGTEST.cc
         ../src/Scene.cc
         ../src/objects/GeometricObjects.cc
         ../src/objects/BoundBox.cc
-        ../src/painters/BMPpainter.cc
-        ../src/BMPfile.cc
         ../src/saveload/FileOurP.cc
         ../src/saveload/objectInFile.cc
         ../src/saveload/requirementInFile.cc
@@ -105,7 +101,6 @@ add_executable(MoveGTEST MoveGTEST.cc
 target_include_directories(MoveGTEST PRIVATE
         ../headers
         ../headers/objects
-        ../headers/painters
         ../headers/saveload
         ../Math/headers/decomposition
         ../Math/headers

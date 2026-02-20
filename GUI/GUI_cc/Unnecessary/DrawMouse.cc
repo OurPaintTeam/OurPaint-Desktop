@@ -74,20 +74,20 @@ QPointF DrawMouse::getSnappedPoint(const QPointF& start, const QPointF& current)
 
 
 void DrawMouse::drawPreviewSection(QPainter& painter, const QPointF& start, const QPointF& end) {
-    DrawFigures::setPen(QPen(hintColor()));
-    DrawFigures::drawSection(painter, start, end);
+    // DrawFigures::setPen(QPen(hintColor()));
+    // DrawFigures::drawSection(painter, start, end);
 }
 
 
 void DrawMouse::drawPreviewPoint(QPainter& painter, const QPointF& point) {
-    DrawFigures::setPen(hintColor());
-    DrawFigures::drawPoint(painter, point);
+    // DrawFigures::setPen(hintColor());
+    // DrawFigures::drawPoint(painter, point);
 }
 
 
 void DrawMouse::drawPreviewArcs(QPainter& painter, const QPointF& startCoordinates, const QPointF& cursor) {
     const QPointF center = (startCoordinates + cursor) / 2.0;
-    DrawFigures::drawArc(painter, cursor, startCoordinates, center);
+    // DrawFigures::drawArc(painter, cursor, startCoordinates, center);
 }
 
 
@@ -171,11 +171,11 @@ void DrawMouse::drawPreviewCircles(QPainter& painter, const QPointF& startCoordi
     const QPointF center = (startCoordinates + cursor) / 2.0;
     const qreal radius = qHypot(startCoordinates.x() - center.x(), startCoordinates.y() - center.y());
 
-    DrawFigures::drawCircle(painter, center, radius);
-    DrawFigures::drawPoint(painter, center);
+    // DrawFigures::drawCircle(painter, center, radius);
+    // DrawFigures::drawPoint(painter, center);
 
-    DrawFigures::setPen(hintColor());
-    DrawFigures::drawSection(painter, center, cursor);
+    // DrawFigures::setPen(hintColor());
+    // DrawFigures::drawSection(painter, center, cursor);
 }
 
 
@@ -186,9 +186,9 @@ void DrawMouse::drawRunningSection(QPainter& painter, const QPointF& startCoordi
 
     if (shiftPressed) {
         const QPointF snapped = getSnappedPoint(startCoordinates, Cursor);
-        DrawFigures::drawSection(painter, startCoordinates, snapped);
+     //   // DrawFigures::drawSection(painter, startCoordinates, snapped);
     } else {
-        DrawFigures::drawSection(painter, startCoordinates, Cursor);
+      //  // DrawFigures::drawSection(painter, startCoordinates, Cursor);
     }
 }
 
