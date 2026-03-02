@@ -1,8 +1,8 @@
 #ifndef OURPAINT_PROTECTEDPREFIXLINEEDIT_H
 #define OURPAINT_PROTECTEDPREFIXLINEEDIT_H
 
-#include <QKeyEvent>
 #include <QLineEdit>
+#include <QKeyEvent>
 #include <QMouseEvent>
 
 #include "QRegex.h"

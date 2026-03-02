@@ -5,8 +5,8 @@
 #include <QtMath>
 
 #include "DrawAdditionalInf.h"
-#include "Modes.h"
 #include "Scaling.h"
+#include "Modes.h"
 
 // The class responsible for rendering the background of the widget
 // The center is in the center of the widget

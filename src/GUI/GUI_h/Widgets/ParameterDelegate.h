@@ -1,15 +1,15 @@
 #ifndef OURPAINT_PARAMETERDELEGATE_H
 #define OURPAINT_PARAMETERDELEGATE_H
 
-#include <QApplication>
-#include <QHBoxLayout>
-#include <QItemDelegate>
-#include <QLineEdit>
-#include <QPainter>
-#include <QString>
 #include <QStyledItemDelegate>
+#include <QLineEdit>
+#include <QString>
+#include <QHBoxLayout>
+#include <QLineEdit>
 #include <QTimer>
-
+#include <QItemDelegate>
+#include <QPainter>
+#include <QApplication>
 #include "ProtectedPrefixLineEdit.h"
 #include "TreeNode.h"
 

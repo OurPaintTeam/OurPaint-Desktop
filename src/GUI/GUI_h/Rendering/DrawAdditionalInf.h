@@ -4,14 +4,10 @@
 #include <QPainter>
 #include <QPainterPath>
 
-#include "Colors.h"
 #include "ID.h"
 #include "Scaling.h"
-<<<<<<<< HEAD:src/GUI/GUI_h/Drawing/DrawAdditionalInf.h
-========
 #include "Colors.h"
 #include "RenderStyle.h"
->>>>>>>> origin/dev:GUI/GUI_h/Rendering/DrawAdditionalInf.h
 
 // Class for drawing additional information (outlines, numbers)
 
