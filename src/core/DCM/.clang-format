@@ -1,0 +1,29 @@
+# .clang-format for C++20 OurPaintDCM project
+
+BasedOnStyle: Google
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+
+BreakBeforeBraces: Attach
+
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: Right
+AlignOperands: true
+AlignTrailingComments: true
+
+PointerAlignment: Left
+DerivePointerAlignment: false
+SpacesBeforeTrailingComments: 2
+SpaceBeforeParens: ControlStatements
+
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortIfStatementsOnASingleLine: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+BinPackParameters: false
+BinPackArguments: false
+SortIncludes: true
+IncludeBlocks: Preserve

@@ -1,6 +1,0 @@
-[submodule "Math"]
-	path = src/Math
-	url = https://github.com/OurPaintTeam/Math-MinimizerOptimizer-Module.git
-[submodule "src/DCM"]
-	path = src/DCM
-	url = https://github.com/OurPaintTeam/OurPaintDCM.git
