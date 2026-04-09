@@ -31,9 +31,11 @@ private:
     GLint primitiveColorLoc_ = -1;
     GLint primitiveTransformLoc_ = -1;
 
+    // Circles
     GLuint circleProgram_ = 0;
     GLuint circleVao_ = 0;
-    GLuint circleVbo_ = 0;
+    GLuint circleQuadVbo_ = 0;
+    GLuint circleInstanceVbo_ = 0;
     GLint circleTransformLoc_ = -1;
     GLint circleColorLoc_ = -1;
 

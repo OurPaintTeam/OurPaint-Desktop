@@ -52,9 +52,14 @@ void OpenGLRenderer::shutdown() {
     primitiveColorLoc_ = -1;
 
     // Circle states
-    if (circleVbo_) {
-        glDeleteBuffers(1, &circleVbo_);
+    if (circleInstanceVbo_) {
+        glDeleteBuffers(1, &circleInstanceVbo_);
     }
+
+    if (circleQuadVbo_) {
+        glDeleteBuffers(1, &circleQuadVbo_);
+    }
+
     if (circleVao_) {
         glDeleteVertexArrays(1, &circleVao_);
     }
@@ -62,7 +67,8 @@ void OpenGLRenderer::shutdown() {
         glDeleteProgram(circleProgram_);
     }
 
-    circleVbo_ = 0;
+    circleInstanceVbo_ = 0;
+    circleQuadVbo_ = 0;
     circleVao_ = 0;
     circleProgram_ = 0;
     circleColorLoc_ = -1;
@@ -148,78 +154,34 @@ void OpenGLRenderer::renderPointsAndLines(const RenderData& rd, const glm::mat4&
 }
 
 void OpenGLRenderer::renderCircles(const RenderData& renderData, const glm::mat4& mvp) {
-    if (!circleProgram_ || !circleVao_ || !circleVbo_) {
-        return;
-    }
-
-    if (renderData.circles.empty() && renderData.overlay.empty()) {
+    if (!circleProgram_ || !circleVao_ || !circleQuadVbo_ || !circleInstanceVbo_) {
         return;
     }
 
     size_t circlesCount = renderData.circles.size() + renderData.overlay.circles.size();
+    if (circlesCount == 0) {
+        return;
+    }
 
-    std::vector<float> verts;
-    verts.reserve(circlesCount * 6 * 4);
-
-    float pad = 1.05f;
+    std::vector<Circle> instances;
+    instances.reserve(circlesCount);
 
     for (const auto& c : renderData.overlay.circles) {
-        float pr = c.r * pad;
-
-        // triangle 1
-        verts.push_back(c.x - pr); verts.push_back(c.y - pr);
-        verts.push_back(-pad);     verts.push_back(-pad);
-
-        verts.push_back(c.x - pr); verts.push_back(c.y + pr);
-        verts.push_back(-pad);     verts.push_back( pad);
-
-        verts.push_back(c.x + pr); verts.push_back(c.y - pr);
-        verts.push_back( pad);     verts.push_back(-pad);
-
-        // triangle 2
-        verts.push_back(c.x - pr); verts.push_back(c.y + pr);
-        verts.push_back(-pad);     verts.push_back( pad);
-
-        verts.push_back(c.x + pr); verts.push_back(c.y - pr);
-        verts.push_back( pad);     verts.push_back(-pad);
-
-        verts.push_back(c.x + pr); verts.push_back(c.y + pr);
-        verts.push_back( pad);     verts.push_back( pad);
+        instances.push_back(Circle{ c.x, c.y, c.r });
     }
 
     for (const auto& c : renderData.circles) {
-        float pr = c.r * pad;
-
-        // triangle 1
-        verts.push_back(c.x - pr); verts.push_back(c.y - pr);
-        verts.push_back(-pad);     verts.push_back(-pad);
-
-        verts.push_back(c.x - pr); verts.push_back(c.y + pr);
-        verts.push_back(-pad);     verts.push_back( pad);
-
-        verts.push_back(c.x + pr); verts.push_back(c.y - pr);
-        verts.push_back( pad);     verts.push_back(-pad);
-
-        // triangle 2
-        verts.push_back(c.x - pr); verts.push_back(c.y + pr);
-        verts.push_back(-pad);     verts.push_back( pad);
-
-        verts.push_back(c.x + pr); verts.push_back(c.y - pr);
-        verts.push_back( pad);     verts.push_back(-pad);
-
-        verts.push_back(c.x + pr); verts.push_back(c.y + pr);
-        verts.push_back( pad);     verts.push_back( pad);
+        instances.push_back(Circle{ c.x, c.y, c.r });
     }
-
 
     glUseProgram(circleProgram_);
     glBindVertexArray(circleVao_);
-    glBindBuffer(GL_ARRAY_BUFFER, circleVbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, circleInstanceVbo_);
 
     glBufferData(
         GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(verts.size() * sizeof(float)),
-        verts.data(),
+        static_cast<GLsizeiptr>(instances.size() * sizeof(Circle)),
+        instances.data(),
         GL_DYNAMIC_DRAW
     );
 
@@ -231,7 +193,12 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const glm::mat4
         glUniform3f(circleColorLoc_, 0.0f, 0.0f, 0.0f);
     }
 
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(circlesCount * 6));
+    glDrawArraysInstanced(
+        GL_TRIANGLES,
+        0,                                      // first vertex
+        6,                                      // 6 vertices in quad
+        static_cast<GLsizei>(instances.size())  // number of circles
+    );
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -345,19 +312,64 @@ bool OpenGLRenderer::initializeCirclePipeline() {
 
 
 
+    const float quadVerts[] = {
+        -1.0f, -1.0f,
+        -1.0f,  1.0f,
+         1.0f, -1.0f,
+
+        -1.0f,  1.0f,
+         1.0f, -1.0f,
+         1.0f,  1.0f
+    };
+
+
     glGenVertexArrays(1, &circleVao_);
-    glGenBuffers(1, &circleVbo_);
-
     glBindVertexArray(circleVao_);
-    glBindBuffer(GL_ARRAY_BUFFER, circleVbo_);
 
+    // static quad VBO
+    glGenBuffers(1, &circleQuadVbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, circleQuadVbo_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
+
+    // location = 0 -> aQuadPos
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        0, // location
+        2, // vec2
+        GL_FLOAT,
+        GL_FALSE,
+        2 * sizeof(float),
+        reinterpret_cast<void*>(0)
+    );
+
+    // instance VBO
+    glGenBuffers(1, &circleInstanceVbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, circleInstanceVbo_);
     glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-
+    // location = 1 -> aCenter
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(
+        1,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(Circle),
+        reinterpret_cast<void*>(offsetof(Circle, x))
+    );
+    glVertexAttribDivisor(1, 1);
+
+    // location = 2 -> aRadius
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(
+        2,
+        1,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(Circle),
+        reinterpret_cast<void*>(offsetof(Circle, r))
+    );
+    glVertexAttribDivisor(2, 1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

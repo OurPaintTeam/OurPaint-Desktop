@@ -11,8 +11,7 @@ void main() {
     float sd = abs(r - 1.0);           // distance to ideal circle border in local units
     float px = fwidth(r);              // local-units per pixel approximately
 
-    float halfThickness = 0.5 * 0.5 * px;
-    float alpha = 1.0 - smoothstep(halfThickness, halfThickness + px, sd);
+    float alpha = 1.0 - smoothstep(0.0, px, sd);
 
     if (alpha <= 0.0) {
         discard;
