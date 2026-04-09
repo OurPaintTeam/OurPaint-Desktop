@@ -2,7 +2,7 @@
 #define OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_CIRCLE_
 
 #include "CommandAddObject.h"
-#include "ID.h"
+#include "Scene_ID.h"
 #include "Objects.h"
 #include "Scene.h"
 
@@ -14,8 +14,8 @@ namespace UndoRedo {
         using CommandAddObject::CommandAddObject;
 
     public:
-        ID getCircleID() {
-            if (_id == ID{}) {
+        SceneObjects::ID getCircleID() {
+            if (_id == SceneObjects::ID{}) {
                 return Scene::_errorID;
             }
             return _id;

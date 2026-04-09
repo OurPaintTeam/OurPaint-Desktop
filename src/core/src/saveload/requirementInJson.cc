@@ -4,7 +4,7 @@ requirementInJson::requirementInJson(const nlohmann::json& req) {
     // Type and name
     _name = req.at("name").get<std::string>();
     _req.type = requirement_from_string(req.at("type").get<std::string>());
-    _req.id = ID(req.at("id").get<unsigned int>());
+    _req.id = SceneObjects::ID(req.at("id").get<unsigned int>());
 
     // Objects
     const auto& arr = req.at("object");
@@ -15,16 +15,16 @@ requirementInJson::requirementInJson(const nlohmann::json& req) {
         case 0:
             break;
         case 1:
-            _req.obj1 = ID(arr[0].get<unsigned int>());
+            _req.obj1 = SceneObjects::ID(arr[0].get<unsigned int>());
             break;
         case 2:
-            _req.obj1 = ID(arr[0].get<unsigned int>());
-            _req.obj2 = ID(arr[1].get<unsigned int>());
+            _req.obj1 = SceneObjects::ID(arr[0].get<unsigned int>());
+            _req.obj2 = SceneObjects::ID(arr[1].get<unsigned int>());
             break;
         default:
-            _req.obj1 = ID(arr[0].get<unsigned int>());
-            _req.obj2 = ID(arr[1].get<unsigned int>());
-            _req.obj3 = ID(arr[2].get<unsigned int>());
+            _req.obj1 = SceneObjects::ID(arr[0].get<unsigned int>());
+            _req.obj2 = SceneObjects::ID(arr[1].get<unsigned int>());
+            _req.obj3 = SceneObjects::ID(arr[2].get<unsigned int>());
             if (arr.size() > 3) {
                 // it's not ok.
             }
@@ -75,9 +75,9 @@ nlohmann::json requirementInJson::to_json() const {
     json["name"] = _name;
 
     nlohmann::json arr = nlohmann::json::array();
-    if (_req.obj1 != ID(0)) arr.push_back(_req.obj1.get());
-    if (_req.obj2 != ID(0)) arr.push_back(_req.obj2.get());
-    if (_req.obj3 != ID(0)) arr.push_back(_req.obj3.get());
+    if (_req.obj1 != SceneObjects::ID(0)) arr.push_back(_req.obj1.get());
+    if (_req.obj2 != SceneObjects::ID(0)) arr.push_back(_req.obj2.get());
+    if (_req.obj3 != SceneObjects::ID(0)) arr.push_back(_req.obj3.get());
     json["object"] = std::move(arr);
 
     if (_req.param.has_value()) {

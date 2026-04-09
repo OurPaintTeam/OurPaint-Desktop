@@ -1,16 +1,33 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
-class QApplication;
-class PainterController;
-class MainWindController;
-class LeftMenuController;
-class SceneQtAdapter;
-class LeftMenuBar;
-class MainWindow;
-class QTPainter;
-class QString;
+#define GL_GLEXT_PROTOTYPES
+
+#include "IRenderer.h"
+#include "InteractionTools/EditorSession.h"
+#include "InteractionTools/IInteractionTool.h"
+#include "QtMainWindowBinder.h"
+#include "UIManager.h"
+#include "Camera2D.h"
+
 class DocumentManager;
+
+class IPlatformRuntime;
+class IViewportHost;
+
+class UIController;
+class ViewportController;
+
+class UIObserver;
+class RenderDataObserver;
+
+namespace renderer { class RenderData; }
+
+
+// ProjectSession
+// ProjectContext
+// Project
+// Workspace
 
 class Application {
 public:
@@ -19,24 +36,37 @@ public:
     int exec();
 
 private:
-    void initCore();
-    void initGUI(int& argc, char** argv);
-    void initLogger();
-    void initControllers();
+    void init(int& argc, char** argv);
 
 private:
-    DocumentManager* documentManager;
+    // Core (UndoRedoManager, CommandSystem, Scene)
+    DocumentManager* documentManager_;
 
-    SceneQtAdapter* sqa;
+    // Platform
+    IPlatformRuntime* platformRuntime_;
 
-    QApplication* app;
-    MainWindow* mainWind;
-    QTPainter* painter;
-    LeftMenuBar* leftMenu;
+    // Host
+    IViewportHost* viewportHost_;
+    QtMainWindowBinder* mainWindowBinder_;
 
-    PainterController* pc;
-    MainWindController* mwc;
-    LeftMenuController* lmc;
+    // Rendering
+    IRenderer* renderer_;
+    renderer::RenderData* renderData_;
+
+    // Controllers
+    UIController* uiController_;
+    ViewportController* viewportController_;
+
+    // Core observer
+    UIObserver* uiObserver_;
+    RenderDataObserver* renderDataObserver_;
+
+    // Application
+    UI::MainWindow* mainWindow_;
+    QtMainWindowBinder* binder_;
+    EditorSession* editorSession_;
+    IInteractionTool* interactionTool_;
+    Camera2D* camera2D_;
 };
 
 #endif // APPLICATION_H_

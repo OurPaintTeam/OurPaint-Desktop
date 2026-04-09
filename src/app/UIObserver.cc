@@ -5,22 +5,22 @@
 UIObserver::UIObserver()
         : QObject(nullptr) {}
 
-void UIObserver::pointAdded(ID id, const double* x, const double* y) {
+void UIObserver::pointAdded(SceneObjects::ID id, const double* x, const double* y) {
     emit pointAddedQt(id, x, y);
     emit sceneChanged();
 }
 
-void UIObserver::sectionAdded(ID id, const double* x1, const double* y1, const double* x2, const double* y2) {
+void UIObserver::sectionAdded(SceneObjects::ID id, const double* x1, const double* y1, const double* x2, const double* y2) {
     emit sectionAddedQt(id, x1, y1, x2, y2);
     emit sceneChanged();
 }
 
-void UIObserver::circleAdded(ID id, const double* x, const double* y, const double* r) {
+void UIObserver::circleAdded(SceneObjects::ID id, const double* x, const double* y, const double* r) {
     emit circleAddedQt(id, x, y, r);
     emit sceneChanged();
 }
 
-void UIObserver::arcAdded(ID id,
+void UIObserver::arcAdded(SceneObjects::ID id,
                                 const double* beg_x,
                                 const double* beg_y,
                                 const double* end_x,

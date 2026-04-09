@@ -18,7 +18,7 @@ add_library(ourpaint_core
         headers/objects/Objects.h
         headers/objects/GeometricObjects.h
         headers/objects/Component.h
-        headers/objects/ID.h
+        headers/objects/Scene_ID.h
         headers/objects/BoundBox.h
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
@@ -38,7 +38,7 @@ add_library(ourpaint_core
 
 
         # /
-        headers/SceneObserver.h
+        headers/ISceneObserver.h
         headers/ExceptionGuard.h
         headers/Document.h
         headers/DocumentManager.h
@@ -59,10 +59,11 @@ target_include_directories(ourpaint_core
         headers/UndoRedo/commands/Add
         headers/UndoRedo/commands/Delete
 )
+add_subdirectory(DCM {CMAKE_CURRENT_BINARY_DIR}/DCM)
 target_link_libraries(ourpaint_core
     PUBLIC
-        Math
         nlohmann_json::nlohmann_json
+        OurPaintDCM
 )
 
 

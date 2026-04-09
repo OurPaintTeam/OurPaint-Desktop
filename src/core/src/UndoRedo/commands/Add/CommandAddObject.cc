@@ -5,7 +5,7 @@ namespace UndoRedo {
     bool CommandAddObject::Execute() {
         try {
             _id = _scene.addObject(_data);
-            if (_id == ID(-1)) {
+            if (_id == SceneObjects::ID(-1)) {
                 return false;
             }
         } catch (...) {

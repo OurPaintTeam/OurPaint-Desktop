@@ -13,7 +13,7 @@ namespace UndoRedo {
     protected:
         Scene &_scene;
         ObjectData _data;
-        ID _id;
+        SceneObjects::ID _id;
 
         bool Execute() override;
 

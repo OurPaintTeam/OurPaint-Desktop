@@ -13,7 +13,7 @@ namespace UndoRedo {
     protected:
         Scene &_scene;
         Requirement _reqData;
-        ID _reqID;
+        SceneObjects::ID _reqID;
 
         bool Execute() override;
 
@@ -22,7 +22,7 @@ namespace UndoRedo {
         bool Redo() override;
 
     public:
-        CommandDeleteRequirement(Scene &scene, ID reqID) : _scene(scene), _reqID(reqID) {}
+        CommandDeleteRequirement(Scene &scene, SceneObjects::ID reqID) : _scene(scene), _reqID(reqID) {}
 
         std::string description() const override { return "Delete requirement to scene"; };
     };

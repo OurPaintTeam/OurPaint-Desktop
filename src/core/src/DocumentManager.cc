@@ -1,8 +1,9 @@
 #include "DocumentManager.h"
-#include "Document.h"
-#include "DocumentSaveLoad.h"
 
 #include <stdexcept>
+
+#include "../headers/saveload/DocumentSaveLoad.h"
+#include "Document.h"
 
 Document* DocumentManager::getActiveDocument() {
     if (activeDocumentIndex == -1) {

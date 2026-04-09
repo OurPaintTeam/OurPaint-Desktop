@@ -237,8 +237,8 @@ public:
         }
 
         Requirement req;
-        req.obj1 = ID(std::stoi(rawArgs[1]));
-        req.obj2 = ID(std::stoi(rawArgs[2]));
+        req.obj1 = SceneObjects::ID(std::stoi(rawArgs[1]));
+        req.obj2 = SceneObjects::ID(std::stoi(rawArgs[2]));
 
         if (rawArgs.size() >= 4) {
             req.param = std::stod(rawArgs[3]);
@@ -290,8 +290,8 @@ public:
         }
 
         Requirement req;
-        req.obj1 = ID(rawArgs[1]);
-        req.obj2 = ID(rawArgs[2]);
+        req.obj1 = SceneObjects::ID(rawArgs[1]);
+        req.obj2 = SceneObjects::ID(rawArgs[2]);
 
         if (rawArgs.size() >= 4) {
             req.param = rawArgs[3];
@@ -359,7 +359,7 @@ public:
         }
 
         if (rawArgs.size() == 2) {
-            ID id(std::stoi(rawArgs[1]));
+            SceneObjects::ID id(std::stoi(rawArgs[1]));
             if (rawArgs[0] == "REQ") {
                 txn.addCommand(new CommandDeleteRequirement(_scene, id));
             }
@@ -371,7 +371,7 @@ public:
             }
         }
         else if (rawArgs.size() == 1) {
-            ID id(std::stoi(rawArgs[0]));
+            SceneObjects::ID id(std::stoi(rawArgs[0]));
             bool bObj = _scene.hasObject(id);
             bool bReq = _scene.hasRequirement(id);
             if (bObj && bReq) {
@@ -398,8 +398,8 @@ public:
         }
 
         Requirement req;
-        req.obj1 = ID(rawArgs[1]);
-        req.obj2 = ID(rawArgs[2]);
+        req.obj1 = SceneObjects::ID(rawArgs[1]);
+        req.obj2 = SceneObjects::ID(rawArgs[2]);
 
         if (rawArgs.size() >= 4) {
             req.param = rawArgs[3];

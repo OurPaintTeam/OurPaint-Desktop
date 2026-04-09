@@ -2,7 +2,7 @@
 #define OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_POINT_
 
 #include "CommandAddObject.h"
-#include "ID.h"
+#include "Scene_ID.h"
 #include "Objects.h"
 #include "Scene.h"
 
@@ -14,8 +14,8 @@ namespace UndoRedo {
         using CommandAddObject::CommandAddObject;
 
     public:
-        ID getPointID() {
-            if (_id == ID{}) {
+        SceneObjects::ID getPointID() {
+            if (_id == SceneObjects::ID{}) {
                 return Scene::_errorID;
             }
             return _id;

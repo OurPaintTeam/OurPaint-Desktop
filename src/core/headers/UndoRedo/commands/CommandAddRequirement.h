@@ -3,7 +3,7 @@
 
 #include "Command.h"
 #include "Scene.h"
-#include "ID.h"
+#include "Scene_ID.h"
 #include "Objects.h"
 
 namespace UndoRedo {
@@ -13,7 +13,7 @@ namespace UndoRedo {
     protected:
         Scene &_scene;
         Requirement _reqData;
-        ID _reqID;
+        SceneObjects::ID _reqID;
 
         bool Execute() override;
 
@@ -24,7 +24,7 @@ namespace UndoRedo {
     public:
         CommandAddRequirement(Scene &scene, Requirement data) : _scene(scene), _reqData(data) {}
 
-        ID getReqID() const {
+        SceneObjects::ID getReqID() const {
             return _reqID;
         }
 

@@ -1,10 +1,11 @@
 #ifndef OURPAINT_HEADERS_ID_H_
 #define OURPAINT_HEADERS_ID_H_
 
-#include <fstream>
-#include <unordered_set>
 #include <cstdint>
+#include <unordered_set>
+#include <ostream>
 
+namespace SceneObjects {
 class ID {
 private:
     int64_t _value;
@@ -36,15 +37,21 @@ public:
         return os << x._value;
     }
 };
+}
+
+
 
 namespace std {
-    template <>
-    struct hash<ID> {
-        std::size_t operator()(const ID &id) const {
-            return hash<int64_t>()(id.get());
-        }
-    };
+template <>
+struct hash<SceneObjects::ID> {
+    std::size_t operator()(const SceneObjects::ID &id) const {
+        return hash<int64_t>()(id.get());
+    }
+};
 }
+
+
+namespace SceneObjects {
 
 class IDGenerator {
     int64_t last_id = 0;
@@ -74,5 +81,7 @@ public:
         return ID(last_id);
     }
 };
+
+}
 
 #endif // ! OURPAINT_HEADERS_ID_H_

@@ -4,15 +4,15 @@
 #include <vector>
 #include <optional>
 #include <unordered_map>
-#include "ID.h"
+#include "Scene_ID.h"
 #include "Enums.h"
 #include "GeometricObjects.h"
 
 struct ObjectData {
     ObjType et;
-    std::vector<ID> subObjects;
+    std::vector<SceneObjects::ID> subObjects;
     std::vector<double> params;
-    ID id;
+    SceneObjects::ID id;
 
     bool operator==(const ObjectData& other) const {
         return et == other.et && params == other.params;
@@ -24,19 +24,19 @@ struct ObjectData {
 };
 
 struct Requirement {
-    ID id{0};
+    SceneObjects::ID id{0};
     ReqType type;
-    ID obj1{0};
-    ID obj2{0};
-    ID obj3{0};
+    SceneObjects::ID obj1{0};
+    SceneObjects::ID obj2{0};
+    SceneObjects::ID obj3{0};
     std::optional<double> param;
 };
 
 struct ObjectContainer {
-    std::unordered_map<ID, Point*>* casePoints;
-    std::unordered_map<ID, Section*>* caseSections;
-    std::unordered_map<ID, Circle*>* caseCircles;
-    std::unordered_map<ID, Arc*>* caseArcs;
+    std::unordered_map<SceneObjects::ID, Point*>* casePoints;
+    std::unordered_map<SceneObjects::ID, Section*>* caseSections;
+    std::unordered_map<SceneObjects::ID, Circle*>* caseCircles;
+    std::unordered_map<SceneObjects::ID, Arc*>* caseArcs;
     const BoundBox2D* rectangle;
 };
 
@@ -57,9 +57,9 @@ namespace std {
     struct hash<Requirement> {
         size_t operator()(Requirement const& r) const noexcept {
             auto h1 = std::hash<uint8_t>()(static_cast<uint8_t>(r.type));
-            auto h2 = std::hash<ID>()(r.obj1);
-            auto h3 = std::hash<ID>()(r.obj2);
-            auto h4 = std::hash<ID>()(r.obj3);
+            auto h2 = std::hash<SceneObjects::ID>()(r.obj1);
+            auto h3 = std::hash<SceneObjects::ID>()(r.obj2);
+            auto h4 = std::hash<SceneObjects::ID>()(r.obj3);
             auto h5 = r.param ? std::hash<double>()(*r.param) : 0u;
             return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4);
         }

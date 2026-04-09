@@ -3,7 +3,7 @@
 SaveLoadJson::SaveLoadJson(Scene &scene): _scene(scene) {
     std::vector<ObjectData> obj = _scene.getObjects();
     std::vector<Requirement> req = _scene.getRequirements();
-    std::unordered_set<ID> childIds;
+    std::unordered_set<SceneObjects::ID> childIds;
     for (const auto &o : obj) {
         for (const auto &sub : o.subObjects) {
             childIds.insert(sub);

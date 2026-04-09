@@ -19,6 +19,9 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
             else if (obj_.et == ObjType::ET_SECTION) {
                 scene.moveSection(obj_.id, v.x - lastPos_.x, v.y - lastPos_.y);
             }
+            else if (obj_.et == ObjType::ET_CIRCLE) {
+                scene.moveCircle(obj_.id, v.x - lastPos_.x, v.y - lastPos_.y);
+            }
             lastPos_.x = v.x;
             lastPos_.y = v.y;
             
@@ -39,9 +42,11 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if (std::abs(x - v.x) < eps && std::abs(y - v.y) < eps) {
                     obj_ = p;
                     state_ = State::Moving;
+                    lastPos_ = v;
                     return;
                 }
             }
+
             std::vector<ObjectData> lines = scene.getLines();
             for (const auto& l : lines) {
                 const double& x1 = l.params[0];
@@ -83,6 +88,23 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                     }
                 }
             }
+
+            std::vector<ObjectData> circles = scene.getCircles();
+            for (const auto& c : circles) {
+                const double& x = c.params[0];
+                const double& y = c.params[1];
+                const double& r = c.params[2];
+                double d = sqrt(pow((v.x - x), 2) + pow((v.y - y), 2));
+                //std::cout << "d: " << d << ", r: " << r << ", eps: " << eps << '\n';
+                if (d > r - eps && d < r + eps) {
+                    //std::cout << "GOT it" << '\n';
+                    obj_ = c;
+                    state_ = State::Moving;
+                    lastPos_ = v;
+                    return;
+                }
+            }
+
         }
     }
     else if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Release) {
