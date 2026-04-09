@@ -69,7 +69,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                         state_ = State::Moving;
                         lastPos_ = v;
                     }
-                    return;
+                    continue;
                 }
 
                 double dist = cross / len;
