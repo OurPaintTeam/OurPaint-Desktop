@@ -1,0 +1,6 @@
+[submodule "src/core/DCM"]
+	path = src/core/DCM
+	url = https://github.com/OurPaintTeam/OurPaintDCM
+[submodule "src/UI"]
+	path = src/UI
+	url = git@github.com:OurPaintTeam/OurPaint-Desktop-UI.git
