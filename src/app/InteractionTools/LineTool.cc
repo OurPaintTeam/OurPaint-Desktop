@@ -4,6 +4,9 @@
 #include "DocumentManager.h"
 #include "Objects.h"
 #include "Scene.h"
+#include "Transaction.h"
+#include "ConsoleManager.h"
+#include "UndoRedo.h"
 
 LineTool::LineTool(DocumentManager& documentManager, Camera2D& camera, renderer::RenderData& renderData)
     : firstPoint_X(0), firstPoint_Y(0), documentManager_(documentManager), camera_(camera), renderData_(renderData) {}
@@ -31,15 +34,10 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
             renderData_.overlay.lines.push_back(renderer::Line(firstPoint_X, firstPoint_Y, firstPoint_X, firstPoint_Y));
         }
         else {
-            { // Тут временно используем Scene напрямую для тестов, после будет transaction system
-                Document* document = documentManager_.getActiveDocument();
-                Scene& scene = document->scene();
-                ObjectData od;
-                od.et = ObjType::ET_LINE;
-                glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
-                od.params = {firstPoint_X , firstPoint_Y, v.x, v.y};
-                scene.addObject(od);
-            }
+            Document* document = documentManager_.getActiveDocument();
+            glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
+            UndoRedo::Transaction* txn = document->commandManager().invoke("LINE", {firstPoint_X , firstPoint_Y, v.x, v.y});
+            document->undoRedoManager().push(std::move(*txn));
 
             state_ = State::WaitingFirstPoint;
 

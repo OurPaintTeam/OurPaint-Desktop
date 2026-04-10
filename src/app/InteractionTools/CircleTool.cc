@@ -1,5 +1,8 @@
 #include "CircleTool.h"
 #include "Document.h"
+#include "Transaction.h"
+#include "UndoRedo.h"
+#include "ConsoleManager.h"
 #include "DocumentManager.h"
 #include "Objects.h"
 #include "Scene.h"
@@ -35,13 +38,10 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
             if (r <= 0) {
                 return;
             }
-            Document* document = documentManager_.getActiveDocument();
-            Scene& scene = document->scene();
 
-            ObjectData od;
-            od.et = ObjType::ET_CIRCLE;
-            od.params = {firstPoint_X , firstPoint_Y, r};
-            scene.addObject(od);
+            Document* document = documentManager_.getActiveDocument();
+            UndoRedo::Transaction* txn = document->commandManager().invoke("CIRCLE", {firstPoint_X , firstPoint_Y, r});
+            document->undoRedoManager().push(std::move(*txn));
 
             state_ = State::WaitingFirstPoint;
 

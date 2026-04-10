@@ -345,12 +345,6 @@ void Scene::movePoint(SceneObjects::ID pointID, double dx, double dy) {
     std::optional<OurPaintDCM::ComponentID> comp = DCM_manager.getComponentForFigure(OurPaintDCM::Utils::ID(pointID.get() + 1));
     std::vector<OurPaintDCM::Utils::ID> figures = DCM_manager.getFiguresInComponent(comp.value());
 
-    ObjDescriptor desc = DCM_manager.getFigure(id).value();
-
-    std::cout << "Point requested: " << d.newX.value() << ' ' << d.newY.value() << '\n';
-    std::cout << "Point       got: " << desc.x.value() << ' ' << desc.y.value() << '\n';
-    std::cout << '\n';
-
     for (auto& observer : _observers) {
         observer->onObjectUpdated(figures);
     }

@@ -93,7 +93,41 @@ void Application::init(int& argc, char** argv) {
     binder_ = new QtMainWindowBinder(*mainWindow_, *uiController_);
 
     // other
-    editorSession_->select(ToolId::Line);
+    editorSession_->select(ToolId::CircleByDiameter);
+
+    // renderData_->circles.reserve(1'000'000);
+    // for (int i = 0; i < 1'000; i++) {
+    //     for (int j = 0; j < 1'000; ++j) {
+    //         renderData_->circles.push_back(renderer::Circle(i, j, 1.0));
+    //     }
+    // }
+
+    // for (int i = 0; i < 1'000; i++) {
+    //     for (int j = 0; j < 1'000; ++j) {
+    //         input::MouseButtonEvent e1;
+    //         e1.x = i;
+    //         e1.y = j;
+    //         e1.action = input::MouseButtonAction::Press;
+    //         e1.button = input::MouseButton::Left;
+    //         editorSession_->activeTool()->onMouseButton(e1);
+    //
+    //         input::MouseMoveEvent e2;
+    //         e2.x = i + 1;
+    //         e2.y = j + 1;
+    //         editorSession_->activeTool()->onMouseMove(e2);
+    //
+    //         input::MouseButtonEvent e3;
+    //         e3.x = i + 1;
+    //         e3.y = j + 1;
+    //         e3.action = input::MouseButtonAction::Press;
+    //         e3.button = input::MouseButton::Left;
+    //         editorSession_->activeTool()->onMouseButton(e3);
+    //
+    //
+    //         //renderData_->circles.push_back(renderer::Circle(i, j, 1.0));
+    //     }
+    // }
+
 }
 
 int Application::exec() {
