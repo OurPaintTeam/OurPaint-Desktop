@@ -7,7 +7,7 @@
 
 enum class ObjType : uint8_t {
     ET_POINT,
-    ET_SECTION,
+    ET_LINE,
     ET_CIRCLE,
     ET_ARC,
     ERROR
@@ -35,10 +35,10 @@ struct ReqRule {
     bool needsParam;
 };
 
-constexpr ObjType P_S[] = {ObjType::ET_POINT, ObjType::ET_SECTION};
+constexpr ObjType P_S[] = {ObjType::ET_POINT, ObjType::ET_LINE};
 constexpr ObjType P_P[] = {ObjType::ET_POINT, ObjType::ET_POINT};
-constexpr ObjType S_C[] = {ObjType::ET_SECTION, ObjType::ET_CIRCLE};
-constexpr ObjType S_S[] = {ObjType::ET_SECTION, ObjType::ET_SECTION};
+constexpr ObjType S_C[] = {ObjType::ET_LINE, ObjType::ET_CIRCLE};
+constexpr ObjType S_S[] = {ObjType::ET_LINE, ObjType::ET_LINE};
 constexpr ObjType P_P_P[] = {ObjType::ET_POINT, ObjType::ET_POINT, ObjType::ET_POINT};
 
 static constexpr ReqRule ReqRules[static_cast<std::size_t>(ReqType::COUNT)] = {
@@ -59,7 +59,7 @@ inline std::string to_string(ObjType el) {
     switch (el) {
         case ObjType::ET_POINT:
             return "point";
-        case ObjType::ET_SECTION:
+        case ObjType::ET_LINE:
             return "section";
         case ObjType::ET_CIRCLE:
             return "circle";
@@ -73,7 +73,7 @@ inline std::string to_string(ObjType el) {
 
 inline ObjType element_from_string(const std::string& s) {
     if (s == "point") return ObjType::ET_POINT;
-    if (s == "section") return ObjType::ET_SECTION;
+    if (s == "section") return ObjType::ET_LINE;
     if (s == "circle") return ObjType::ET_CIRCLE;
     if (s == "arc") return ObjType::ET_ARC;
     return ObjType::ERROR;

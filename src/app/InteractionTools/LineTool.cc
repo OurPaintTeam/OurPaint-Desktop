@@ -35,7 +35,7 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
                 Document* document = documentManager_.getActiveDocument();
                 Scene& scene = document->scene();
                 ObjectData od;
-                od.et = ObjType::ET_SECTION;
+                od.et = ObjType::ET_LINE;
                 glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
                 od.params = {firstPoint_X , firstPoint_Y, v.x, v.y};
                 scene.addObject(od);

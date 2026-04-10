@@ -40,7 +40,7 @@ SceneObjects::ID Scene::addObject(const ObjectData& objData) {
 
             return SceneObjects::ID();
         }
-        case ObjType::ET_SECTION: {
+        case ObjType::ET_LINE: {
             if (objData.params.size() < 4) {
                 throw std::invalid_argument("Section requires 4 coordinates");
             }
@@ -183,7 +183,7 @@ std::vector<ObjectData> Scene::getObjects() const {
                 od.params.push_back(f.coords[1]);
                 break;
             case OurPaintDCM::Utils::FigureType::ET_LINE:
-                od.et = ObjType::ET_SECTION;
+                od.et = ObjType::ET_LINE;
                 od.params.push_back(f.coords[0]);
                 od.params.push_back(f.coords[1]);
                 od.params.push_back(f.coords[2]);
@@ -211,18 +211,22 @@ std::vector<ObjectData> Scene::getObjects() const {
     return objects;
 }
 std::vector<ObjectData> Scene::getPoints() const {
-    std::vector<ObjectData> objs;
 
-    std::vector<OurPaintDCM::Utils::FigureDescriptor> desc = DCM_manager.getAllFigures();
-    for (auto& f : desc) {
-        if (f.type == OurPaintDCM::Utils::FigureType::ET_POINT2D) {
-            ObjectData od;
-            od.et = ObjType::ET_POINT;
-            od.id = SceneObjects::ID(f.id.value().id - 1);
-            od.params = {f.x.value(), f.y.value()};
-            objs.push_back(od);
-        }
+    const std::vector<OurPaintDCM::Figures::FigureRef<OurPaintDCM::Figures::Point2D>>& points = storage_->pointsWithIds();
+    std::vector objs(points.size(), ObjectData(ObjType::ET_POINT));
+    for (int i = 0; i < points.size(); i++) {
+        objs[i].params = { points[i].ptr->x(), points[i].ptr->y() };
+        objs[i].id = SceneObjects::ID(points[i].id.id - 1);
     }
+
+    // std::vector<OurPaintDCM::Utils::FigureDescriptor> desc = DCM_manager.getAllPoints();
+    // for (auto& f : desc) {
+    //     ObjectData od;
+    //     od.et = ObjType::ET_POINT;
+    //     od.id = SceneObjects::ID(f.id.value().id - 1);
+    //     od.params = {f.x.value(), f.y.value()};
+    //     objs.push_back(od);
+    // }
 
     // std::span<const OurPaintDCM::Figures::Point2D> points = storage_->allPoints();
     // objs.reserve(points.size());
@@ -239,15 +243,13 @@ std::vector<ObjectData> Scene::getPoints() const {
 std::vector<ObjectData> Scene::getLines() const {
     std::vector<ObjectData> objs;
 
-    std::vector<OurPaintDCM::Utils::FigureDescriptor> desc = DCM_manager.getAllFigures();
+    std::vector<OurPaintDCM::Utils::FigureDescriptor> desc = DCM_manager.getAllLines();
     for (auto& f : desc) {
-        if (f.type == OurPaintDCM::Utils::FigureType::ET_LINE) {
-            ObjectData od;
-            od.et = ObjType::ET_SECTION;
-            od.id = SceneObjects::ID(f.id.value().id - 1);
-            od.params = {f.coords[0], f.coords[1], f.coords[2], f.coords[3]};
-            objs.push_back(od);
-        }
+        ObjectData od;
+        od.et = ObjType::ET_LINE;
+        od.id = SceneObjects::ID(f.id.value().id - 1);
+        od.params = {f.coords[0], f.coords[1], f.coords[2], f.coords[3]};
+        objs.push_back(od);
     }
 
     // std::span<const OurPaintDCM::Figures::Line2D> lines = storage_->allLines();
@@ -263,18 +265,22 @@ std::vector<ObjectData> Scene::getLines() const {
 }
 
 std::vector<ObjectData> Scene::getCircles() const {
-    std::vector<ObjectData> objs;
-
-    std::vector<OurPaintDCM::Utils::FigureDescriptor> desc = DCM_manager.getAllFigures();
-    for (auto& f : desc) {
-        if (f.type == OurPaintDCM::Utils::FigureType::ET_CIRCLE) {
-            ObjectData od;
-            od.et = ObjType::ET_CIRCLE;
-            od.id = SceneObjects::ID(f.id.value().id - 1);
-            od.params = {f.coords[0], f.coords[1], f.radius.value()};
-            objs.push_back(od);
-        }
+    const std::vector<OurPaintDCM::Figures::FigureRef<OurPaintDCM::Figures::Circle2D>>& circles = storage_->circlesWithIds();
+    std::vector objs(circles.size(), ObjectData(ObjType::ET_CIRCLE));
+    for (int i = 0; i < circles.size(); i++) {
+        objs[i].params = { circles[i].ptr->center->x(), circles[i].ptr->center->y(), circles[i].ptr->radius };
+        objs[i].id = SceneObjects::ID(circles[i].id.id - 1);
     }
+
+    // std::vector<ObjectData> objs;
+    // std::vector<OurPaintDCM::Utils::FigureDescriptor> desc = DCM_manager.getAllCircles();
+    // for (auto& f : desc) {
+    //     ObjectData od;
+    //     od.et = ObjType::ET_CIRCLE;
+    //     od.id = SceneObjects::ID(f.id.value().id - 1);
+    //     od.params = {f.coords[0], f.coords[1], f.radius.value()};
+    //     objs.push_back(od);
+    // }
 
     // std::span<const OurPaintDCM::Figures::Circle2D> circles = storage_->allCircles();
     // objs.reserve(circles.size());
@@ -339,13 +345,19 @@ void Scene::movePoint(SceneObjects::ID pointID, double dx, double dy) {
     std::optional<OurPaintDCM::ComponentID> comp = DCM_manager.getComponentForFigure(OurPaintDCM::Utils::ID(pointID.get() + 1));
     std::vector<OurPaintDCM::Utils::ID> figures = DCM_manager.getFiguresInComponent(comp.value());
 
+    ObjDescriptor desc = DCM_manager.getFigure(id).value();
+
+    std::cout << "Point requested: " << d.newX.value() << ' ' << d.newY.value() << '\n';
+    std::cout << "Point       got: " << desc.x.value() << ' ' << desc.y.value() << '\n';
+    std::cout << '\n';
+
     for (auto& observer : _observers) {
         observer->onObjectUpdated(figures);
     }
 }
 
-void Scene::moveSection(SceneObjects::ID sectionID, double dx, double dy) {
-    OurPaintDCM::Utils::ID id = OurPaintDCM::Utils::ID(sectionID.get() + 1);
+void Scene::moveLine(SceneObjects::ID lineID, double dx, double dy) {
+    OurPaintDCM::Utils::ID id = OurPaintDCM::Utils::ID(lineID.get() + 1);
 
     OurPaintDCM::Utils::FigureDescriptor desc = DCM_manager.getFigure(id).value();
 
@@ -354,7 +366,7 @@ void Scene::moveSection(SceneObjects::ID sectionID, double dx, double dy) {
     DCM_manager.updatePoint(d1);
     DCM_manager.updatePoint(d2);
 
-    std::optional<OurPaintDCM::ComponentID> comp = DCM_manager.getComponentForFigure(OurPaintDCM::Utils::ID(sectionID.get() + 1));
+    std::optional<OurPaintDCM::ComponentID> comp = DCM_manager.getComponentForFigure(OurPaintDCM::Utils::ID(lineID.get() + 1));
     std::vector<OurPaintDCM::Utils::ID> figures = DCM_manager.getFiguresInComponent(comp.value());
 
     for (auto& observer : _observers) {

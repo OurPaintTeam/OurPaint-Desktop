@@ -16,8 +16,8 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
             if (obj_.et == ObjType::ET_POINT) {
                 scene.movePoint(obj_.id, v.x, v.y);
             }
-            else if (obj_.et == ObjType::ET_SECTION) {
-                scene.moveSection(obj_.id, v.x - lastPos_.x, v.y - lastPos_.y);
+            else if (obj_.et == ObjType::ET_LINE) {
+                scene.moveLine(obj_.id, v.x - lastPos_.x, v.y - lastPos_.y);
             }
             else if (obj_.et == ObjType::ET_CIRCLE) {
                 scene.moveCircle(obj_.id, v.x - lastPos_.x, v.y - lastPos_.y);
@@ -43,6 +43,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                     obj_ = p;
                     state_ = State::Moving;
                     lastPos_ = v;
+                    scene.movePoint(obj_.id, v.x, v.y);
                     return;
                 }
             }
@@ -94,17 +95,23 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                 const double& x = c.params[0];
                 const double& y = c.params[1];
                 const double& r = c.params[2];
-                double d = sqrt(pow((v.x - x), 2) + pow((v.y - y), 2));
-                //std::cout << "d: " << d << ", r: " << r << ", eps: " << eps << '\n';
+                double dx = v.x - x;
+                double dy = v.y - y;
+                double d = sqrt(dx*dx + dy*dy);
                 if (d > r - eps && d < r + eps) {
-                    //std::cout << "GOT it" << '\n';
                     obj_ = c;
                     state_ = State::Moving;
+
+                    if (d > 1e-12) {
+                        double shiftX = dx * (1.0 - r / d);
+                        double shiftY = dy * (1.0 - r / d);
+                        scene.moveCircle(c.id, shiftX, shiftY);
+                    }
+
                     lastPos_ = v;
                     return;
                 }
             }
-
         }
     }
     else if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Release) {

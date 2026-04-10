@@ -96,7 +96,7 @@ public:
             throw std::runtime_error("LINE: need 4 numbers");
         }
         ObjectData obj;
-        obj.et = ObjType::ET_SECTION;
+        obj.et = ObjType::ET_LINE;
         obj.params = {
                 std::stod(rawArgs[0]),
                 std::stod(rawArgs[1]),
@@ -111,7 +111,7 @@ public:
             throw std::runtime_error("LINE: need 4 numbers");
         }
         ObjectData obj;
-        obj.et = ObjType::ET_SECTION;
+        obj.et = ObjType::ET_LINE;
         obj.params = {
                 rawArgs[0],
                 rawArgs[1],

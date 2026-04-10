@@ -9,7 +9,7 @@ objectInJson::objectInJson(const std::vector<std::string> &name, const ObjectDat
     switch (t) {
         case ObjType::ET_POINT:
             break;
-        case ObjType::ET_SECTION:
+        case ObjType::ET_LINE:
             p.et = ObjType::ET_POINT;
             p.params.push_back(obj.params[0]);
             p.params.push_back(obj.params[1]);

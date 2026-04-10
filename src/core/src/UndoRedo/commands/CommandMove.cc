@@ -20,7 +20,7 @@ bool UndoRedo::CommandMove::Undo() {
                     false
                     );
         }
-        else if (objData.et == ObjType::ET_SECTION) {
+        else if (objData.et == ObjType::ET_LINE) {
             _scene.setSection(
                     objData.id,
                     objData.params[0],
@@ -70,7 +70,7 @@ bool UndoRedo::CommandMove::Redo() {
                     false
             );
         }
-        else if (objData.et == ObjType::ET_SECTION) {
+        else if (objData.et == ObjType::ET_LINE) {
             _scene.setSection(
                     objData.id,
                     objData.params[0],

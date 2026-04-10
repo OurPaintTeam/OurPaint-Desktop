@@ -75,26 +75,26 @@ void RenderDataObserver::setStorage(const Scene::Storage* storage) {
 
 void RenderDataObserver::rebuildRenderData() {
     renderData_.clear();
-    for (auto& p : storage_->allPoints()) {
-        const double& x = p.x();
-        const double& y = p.y();
+    for (auto& p : storage_->pointsWithIds()) {
+        const double& x = p.ptr->x();
+        const double& y = p.ptr->y();
 
         renderData_.points.push_back(renderer::Point(x, y));
     }
 
-    for (auto& s : storage_->allLines()) {
-        double x1 = s.p1->x();
-        double y1 = s.p1->y();
-        double x2 = s.p2->x();
-        double y2 = s.p2->y();
+    for (auto& s : storage_->linesWithIds()) {
+        const double& x1 = s.ptr->p1->x();
+        const double& y1 = s.ptr->p1->y();
+        const double& x2 = s.ptr->p2->x();
+        const double& y2 = s.ptr->p2->y();
 
         renderData_.lines.push_back(renderer::Line(x1, y1, x2, y2));
     }
 
-    for (auto& c : storage_->allCircles()) {
-        double x = c.center->x();
-        double y = c.center->y();
-        double r = c.radius;
+    for (auto& c : storage_->circlesWithIds()) {
+        const double& x = c.ptr->center->x();
+        const double& y = c.ptr->center->y();
+        const double& r = c.ptr->radius;
         renderData_.circles.push_back(renderer::Circle(x, y, r));
         renderData_.points.push_back(renderer::Point(x, y));
     }
