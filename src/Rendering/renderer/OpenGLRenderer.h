@@ -25,11 +25,21 @@ public:
     void render(const RenderData& scene, const Camera2D& camera) override;
 
 private:
-    GLuint primitiveProgram_ = 0;
-    GLuint primitiveVao_ = 0;
-    GLuint primitiveVbo_ = 0;
-    GLint primitiveColorLoc_ = -1;
-    GLint primitiveTransformLoc_ = -1;
+    // Points
+    GLuint pointProgram_ = 0;
+    GLuint pointVao_ = 0;
+    GLuint pointQuadVbo_ = 0;
+    GLuint pointInstanceVbo_ = 0;
+    GLint pointColorLoc_ = -1;
+    GLint pointTransformLoc_ = -1;
+
+    // Lines
+    GLuint lineProgram_ = 0;
+    GLuint lineVao_ = 0;
+    GLuint lineQuadVbo_ = 0;
+    GLuint lineInstanceVbo_ = 0;
+    GLint lineColorLoc_ = -1;
+    GLint lineTransformLoc_ = -1;
 
     // Circles
     GLuint circleProgram_ = 0;
@@ -42,12 +52,17 @@ private:
     int width_ = 1;
     int height_ = 1;
 
+    float pointSizeWorld = 1.0f;
+    float halfWidthWorld = 1.0f;
+
 private:
-    void renderPointsAndLines(const RenderData& scene, const glm::mat4& mvp);
-    void renderCircles(const RenderData& scene, const glm::mat4& mvp);
+    void renderPoints   (const RenderData& scene, const glm::mat4& mvp);
+    void renderLines    (const RenderData& scene, const glm::mat4& mvp);
+    void renderCircles  (const RenderData& scene, const glm::mat4& mvp);
 
     void initGlobalState();
-    bool initializePrimitivePipeline();
+    bool initializePointPipeline();
+    bool initializeLinePipeline();
     bool initializeCirclePipeline();
 
     static GLuint compileShader(GLenum type, const char* src);
