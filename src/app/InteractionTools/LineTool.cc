@@ -52,7 +52,12 @@ void LineTool::onKey(const input::KeyEvent& e) {
 
 }
 
-void LineTool::onCancel() {
-
+bool LineTool::cancel() {
+    if (state_ == State::WaitingSecondPoint) {
+        renderData_.overlay.clear();
+        state_ = State::WaitingFirstPoint;
+        return true;
+    }
+    return false;
 }
 

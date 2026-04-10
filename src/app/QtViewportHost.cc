@@ -98,12 +98,12 @@ QWidget* QtViewportHost::createContainer(QWidget* parent) {
 // --- QWindow events ---
 
 void QtViewportHost::exposeEvent(QExposeEvent*) {
-    if (!isExposed()) return;
-
-    if (!initialized_) {
-        //initContext();
+    if (!isExposed()) {
+        return;
     }
-
+    if (!initialized_) {
+        initContext();
+    }
     renderFrame();
 }
 
@@ -125,14 +125,26 @@ void QtViewportHost::resizeEvent(QResizeEvent* e) {
 
 
 void QtViewportHost::keyPressEvent(QKeyEvent* e) {
+    if (!initialized_) {
+        initContext();
+    }
     if (controller_) {
-        controller_->onKey(toKeyEvent(e, input::KeyAction::Press));
+        bool needsRender = controller_->onKey(toKeyEvent(e, input::KeyAction::Press));
+        if (needsRender) {
+            renderFrame();
+        }
     }
 }
 
 void QtViewportHost::keyReleaseEvent(QKeyEvent* e) {
+    if (!initialized_) {
+        initContext();
+    }
     if (controller_) {
-        controller_->onKey(toKeyEvent(e, input::KeyAction::Release));
+        bool needsRender = controller_->onKey(toKeyEvent(e, input::KeyAction::Release));
+        if (needsRender) {
+            renderFrame();
+        }
     }
 }
 
@@ -141,8 +153,8 @@ void QtViewportHost::mouseMoveEvent(QMouseEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool b = controller_->onMouseMove(toMouseMoveEvent(e));
-        if (b) {
+        bool needsRender = controller_->onMouseMove(toMouseMoveEvent(e));
+        if (needsRender) {
             renderFrame();
         }
     }
@@ -153,16 +165,22 @@ void QtViewportHost::mousePressEvent(QMouseEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool b = controller_->onMouseButton(toMouseButtonEvent(e, input::MouseButtonAction::Press));
-        if (b) {
+        bool needsRender = controller_->onMouseButton(toMouseButtonEvent(e, input::MouseButtonAction::Press));
+        if (needsRender) {
             renderFrame();
         }
     }
 }
 
 void QtViewportHost::mouseReleaseEvent(QMouseEvent* e) {
+    if (!initialized_) {
+        initContext();
+    }
     if (controller_) {
-        controller_->onMouseButton(toMouseButtonEvent(e, input::MouseButtonAction::Release));
+        bool needsRender = controller_->onMouseButton(toMouseButtonEvent(e, input::MouseButtonAction::Release));
+        if (needsRender) {
+            renderFrame();
+        }
     }
 }
 
@@ -171,8 +189,8 @@ void QtViewportHost::wheelEvent(QWheelEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool b = controller_->onWheel(toWheelEvent(e));
-        if (b) {
+        bool needsRender = controller_->onWheel(toWheelEvent(e));
+        if (needsRender) {
             renderFrame();
         }
     }

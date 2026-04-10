@@ -14,7 +14,7 @@ public:
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;
     void onKey(const input::KeyEvent& e) override;
-    void onCancel() override;
+    bool cancel() override;
 
 private:
     enum class State {

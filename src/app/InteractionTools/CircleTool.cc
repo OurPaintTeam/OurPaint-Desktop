@@ -54,7 +54,12 @@ void CircleTool::onKey(const input::KeyEvent& e) {
     (void)e;
 }
 
-void CircleTool::onCancel() {
-
+bool CircleTool::cancel() {
+    if (state_ == State::WaitingSecondPoint) {
+        renderData_.overlay.clear();
+        state_ = State::WaitingFirstPoint;
+        return true;
+    }
+    return false;
 }
 

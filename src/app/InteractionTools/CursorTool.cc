@@ -123,7 +123,7 @@ void CursorTool::onKey(const input::KeyEvent& e) {
     (void)e;
 }
 
-void CursorTool::onCancel() {
-
+bool CursorTool::cancel() {
+    return true;
 }
 

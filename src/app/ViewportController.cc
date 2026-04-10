@@ -70,6 +70,13 @@ bool ViewportController::onWheel(const input::WheelEvent& e) {
 }
 
 bool ViewportController::onKey(const input::KeyEvent& e) {
+    if (e.key == input::KeyCode::Escape && e.action == input::KeyAction::Press) {
+        bool canceled = editorSession_.activeTool()->cancel();
+        if (!canceled) {
+            editorSession_.select(ToolId::Cursor);
+        }
+        return true;
+    }
 
     return false;
 }

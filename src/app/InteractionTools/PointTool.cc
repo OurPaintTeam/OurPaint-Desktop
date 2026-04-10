@@ -25,8 +25,8 @@ void PointTool::onKey(const input::KeyEvent& e) {
 
 }
 
-void PointTool::onCancel() {
-
+bool PointTool::cancel() {
+    return false;
 }
 
 
