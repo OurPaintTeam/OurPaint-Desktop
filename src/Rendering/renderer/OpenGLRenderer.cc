@@ -32,13 +32,16 @@ struct LineInstance {
 
 bool OpenGLRenderer::initialize() {
     initGlobalState();
-    if (!initializePointPipeline()) {
+    if (!initGridPipeline()) {
         return false;
     }
-    if (!initializeLinePipeline()) {
+    if (!initPointPipeline()) {
         return false;
     }
-    if (!initializeCirclePipeline()) {
+    if (!initLinePipeline()) {
+        return false;
+    }
+    if (!initCirclePipeline()) {
         return false;
     }
 
@@ -55,6 +58,21 @@ void OpenGLRenderer::resize(int w, int h) {
 }
 
 void OpenGLRenderer::shutdown() {
+    // Grid states
+    if (gridQuadVbo_) {
+        glDeleteBuffers(1, &gridQuadVbo_);
+    }
+    if (gridVao_) {
+        glDeleteVertexArrays(1, &gridVao_);
+    }
+    if (gridProgram_) {
+        glDeleteProgram(gridProgram_);
+    }
+    gridQuadVbo_ = 0;
+    gridVao_ = 0;
+    gridProgram_ = 0;
+    gridColorLoc_ = -1;
+
     // Points states
     if (pointInstanceVbo_) {
         glDeleteBuffers(1, &pointInstanceVbo_);
@@ -121,20 +139,55 @@ void OpenGLRenderer::render(const RenderData& rd, const Camera2D& camera) {
 
     glm::mat4 mvp = camera.viewProjectionMatrix();
 
+    renderGrid(rd, camera, mvp);
+
     // 1.0 zoom = 100 pixel.
     // 0.02 is a point size
     pointSizeWorld = 0.02 / (camera.zoom() / 100.0);
 
-    renderPoints(rd, mvp);
+    renderPoints(rd, camera, mvp);
 
     // 0.009 is a line width
     halfWidthWorld = 0.009 / (camera.zoom() / 100.0);
-    renderLines(rd, mvp);
+    renderLines(rd, camera, mvp);
 
-    renderCircles(rd, mvp);
+    renderCircles(rd, camera, mvp);
 }
 
-void OpenGLRenderer::renderPoints(const RenderData& scene, const glm::mat4& mvp) {
+void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
+    if (!gridProgram_ || !gridVao_ || !gridQuadVbo_) {
+        return;
+    }
+
+    glUseProgram(gridProgram_);
+
+    glm::mat4 viewProj = camera.viewProjectionMatrix();
+    glm::mat4 invViewProj = glm::inverse(viewProj);
+
+    if (gridColorLoc_ >= 0) {
+        glUniform3f(gridColorLoc_, 0.5f, 0.5f, 0.5f);
+    }
+
+    if (gridZoomLoc_ >= 0) {
+        glUniform1f(gridZoomLoc_, camera.zoom());
+    }
+
+    if (gridViewportSizeLoc_ >= 0) {
+        glUniform2f(gridViewportSizeLoc_, (float)width_, (float)height_);
+    }
+
+    if (gridInvViewProjLoc_ >= 0) {
+        glUniformMatrix4fv(gridInvViewProjLoc_, 1, GL_FALSE, glm::value_ptr(invViewProj));
+    }
+
+    glBindVertexArray(gridVao_);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
     if (!pointProgram_ || !pointVao_ || !pointQuadVbo_ || !pointInstanceVbo_) {
         return;
     }
@@ -181,7 +234,7 @@ void OpenGLRenderer::renderPoints(const RenderData& scene, const glm::mat4& mvp)
     glUseProgram(0);
 }
 
-void OpenGLRenderer::renderLines(const RenderData& scene, const glm::mat4& mvp) {
+void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
     if (!lineProgram_ || !lineVao_ || !lineQuadVbo_ || !lineInstanceVbo_) {
         return;
     }
@@ -228,7 +281,7 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const glm::mat4& mvp) 
     glUseProgram(0);
 }
 
-void OpenGLRenderer::renderCircles(const RenderData& renderData, const glm::mat4& mvp) {
+void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D& camera, const glm::mat4& mvp) {
     if (!circleProgram_ || !circleVao_ || !circleQuadVbo_ || !circleInstanceVbo_) {
         return;
     }
@@ -286,7 +339,72 @@ void OpenGLRenderer::initGlobalState() {
     glEnable(GL_MULTISAMPLE);
 }
 
-bool OpenGLRenderer::initializePointPipeline() {
+bool OpenGLRenderer::initGridPipeline() {
+    std::string vertexSource = ShaderUtils::readFile("shaders/grid.vert");
+    std::string fragmentSource = ShaderUtils::readFile("shaders/grid.frag");
+
+    if (vertexSource.empty() || fragmentSource.empty()) {
+        return false;
+    }
+
+    int vs = compileShader(GL_VERTEX_SHADER, vertexSource.c_str());
+    if (!vs) {
+        return false;
+    }
+
+    int fs = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
+    if (!fs) {
+        glDeleteShader(vs);
+        return false;
+    }
+
+    gridProgram_ = glCreateProgram();
+    glAttachShader(gridProgram_, vs);
+    glAttachShader(gridProgram_, fs);
+    glLinkProgram(gridProgram_);
+
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    if (!checkProgramLink(gridProgram_)) {
+        glDeleteProgram(gridProgram_);
+        gridProgram_ = 0;
+        return false;
+    }
+
+    gridColorLoc_ = glGetUniformLocation(gridProgram_, "uColor");
+    gridZoomLoc_ = glGetUniformLocation(gridProgram_, "uZoom");
+    gridInvViewProjLoc_ = glGetUniformLocation(gridProgram_, "uInvViewProj");
+    gridViewportSizeLoc_ = glGetUniformLocation(gridProgram_, "uViewportSize");
+
+    const float quadVerts[] = {
+        -1.0f, -1.0f,
+        -1.0f,  1.0f,
+         1.0f, -1.0f,
+
+        -1.0f,  1.0f,
+         1.0f, -1.0f,
+         1.0f,  1.0f
+    };
+
+    glGenVertexArrays(1, &gridVao_);
+    glBindVertexArray(gridVao_);
+
+    glGenBuffers(1, &gridQuadVbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, gridQuadVbo_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
+
+    // position attribute
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return true;
+}
+
+bool OpenGLRenderer::initPointPipeline() {
     std::string vertexSource = ShaderUtils::readFile("shaders/point.vert");
     std::string fragmentSource = ShaderUtils::readFile("shaders/point.frag");
 
@@ -371,7 +489,7 @@ bool OpenGLRenderer::initializePointPipeline() {
     return true;
 }
 
-bool OpenGLRenderer::initializeLinePipeline() {
+bool OpenGLRenderer::initLinePipeline() {
     std::string vertexSource = ShaderUtils::readFile("shaders/line.vert");
     std::string fragmentSource = ShaderUtils::readFile("shaders/line.frag");
 
@@ -481,7 +599,7 @@ bool OpenGLRenderer::initializeLinePipeline() {
     return true;
 }
 
-bool OpenGLRenderer::initializeCirclePipeline() {
+bool OpenGLRenderer::initCirclePipeline() {
     std::string vertexSource = ShaderUtils::readFile("shaders/circle.vert");
     std::string fragmentSource = ShaderUtils::readFile("shaders/circle.frag");
 

@@ -55,10 +55,14 @@ int GlfwRuntimePlatform::run() {
     // }
     //
     // return 0;
+
+    return false;
 }
 
 IViewportHost* GlfwRuntimePlatform::createViewportHost() {
     // return host_;
+
+    return nullptr;
 }
 void GlfwRuntimePlatform::destroyViewportHost(IViewportHost* viewportHost) {}
 

@@ -25,6 +25,16 @@ public:
     void render(const RenderData& scene, const Camera2D& camera) override;
 
 private:
+    // Grid
+    GLuint gridProgram_ = 0;
+    GLuint gridVao_ = 0;
+    GLuint gridQuadVbo_ = 0;
+    GLint gridColorLoc_ = -1;
+    GLint gridTransformLoc_ = -1;
+    GLint gridZoomLoc_ = -1;
+    GLint gridInvViewProjLoc_ = -1;
+    GLint gridViewportSizeLoc_ = -1;
+
     // Points
     GLuint pointProgram_ = 0;
     GLuint pointVao_ = 0;
@@ -56,14 +66,16 @@ private:
     float halfWidthWorld = 1.0f;
 
 private:
-    void renderPoints   (const RenderData& scene, const glm::mat4& mvp);
-    void renderLines    (const RenderData& scene, const glm::mat4& mvp);
-    void renderCircles  (const RenderData& scene, const glm::mat4& mvp);
+    void renderGrid     (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderPoints   (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderLines    (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderCircles  (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
 
     void initGlobalState();
-    bool initializePointPipeline();
-    bool initializeLinePipeline();
-    bool initializeCirclePipeline();
+    bool initGridPipeline();
+    bool initPointPipeline();
+    bool initLinePipeline();
+    bool initCirclePipeline();
 
     static GLuint compileShader(GLenum type, const char* src);
     static bool checkProgramLink(GLuint prog);
