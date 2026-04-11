@@ -109,23 +109,33 @@ SceneObjects::ID Scene::addObject(const ObjectData& objData) {
 }
 
 bool Scene::deleteObject(SceneObjects::ID objectID) {
-    throw std::runtime_error("Scene error");
+    OurPaintDCM::Utils::ID id(objectID.get());
+    try {
+        DCM_manager.removeFigure(id, true);
+    }
+    catch (...) {
+        return false;
+    }
+    for (const auto& observer : _observers) {
+        observer->onObjectRemoved(id);
+    }
+    return true;
 }
 
 bool Scene::deletePoint(SceneObjects::ID pointID) {
-    throw std::runtime_error("Scene error");
+    return deleteObject(pointID);
 }
 
-bool Scene::deleteSection(SceneObjects::ID sectionID) {
-    throw std::runtime_error("Scene error");
+bool Scene::deleteLine(SceneObjects::ID lineID) {
+    return deleteObject(lineID);
 }
 
 bool Scene::deleteCircle(SceneObjects::ID circleID) {
-    throw std::runtime_error("Scene error");
+    return deleteObject(circleID);
 }
 
 bool Scene::deleteArc(SceneObjects::ID arcID) {
-    throw std::runtime_error("Scene error");
+    return deleteObject(arcID);
 }
 
 void Scene::clear() {
@@ -145,11 +155,11 @@ ObjectData Scene::getObjectData(SceneObjects::ID id) const {
 }
 
 bool Scene::hasObject(SceneObjects::ID id) const {
-    throw std::runtime_error("Scene error");
+    return DCM_manager.hasFigure(OurPaintDCM::Utils::ID(id.get()));
 }
 
 bool Scene::hasRequirement(SceneObjects::ID id) const {
-    throw std::runtime_error("Scene error");
+    return DCM_manager.hasRequirement(OurPaintDCM::Utils::ID(id.get()));
 }
 
 ObjectData Scene::getRootObjectData(SceneObjects::ID id) const {
@@ -213,7 +223,7 @@ std::vector<ObjectData> Scene::getObjects() const {
 std::vector<ObjectData> Scene::getPoints() const {
 
     const std::vector<OurPaintDCM::Figures::FigureRef<OurPaintDCM::Figures::Point2D>>& points = storage_->pointsWithIds();
-    std::vector objs(points.size(), ObjectData(ObjType::ET_POINT));
+    std::vector<ObjectData> objs(points.size(), ObjectData(ObjType::ET_POINT));
     for (int i = 0; i < points.size(); i++) {
         objs[i].params = { points[i].ptr->x(), points[i].ptr->y() };
         objs[i].id = SceneObjects::ID(points[i].id.id - 1);
@@ -266,7 +276,7 @@ std::vector<ObjectData> Scene::getLines() const {
 
 std::vector<ObjectData> Scene::getCircles() const {
     const std::vector<OurPaintDCM::Figures::FigureRef<OurPaintDCM::Figures::Circle2D>>& circles = storage_->circlesWithIds();
-    std::vector objs(circles.size(), ObjectData(ObjType::ET_CIRCLE));
+    std::vector<ObjectData> objs(circles.size(), ObjectData(ObjType::ET_CIRCLE));
     for (int i = 0; i < circles.size(); i++) {
         objs[i].params = { circles[i].ptr->center->x(), circles[i].ptr->center->y(), circles[i].ptr->radius };
         objs[i].id = SceneObjects::ID(circles[i].id.id - 1);
@@ -403,22 +413,6 @@ void Scene::setCircle(SceneObjects::ID circleID, double x, double y, double r, c
 
 void Scene::setArc(SceneObjects::ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double,
                    const bool updateRequirementFlag) {
-    throw std::runtime_error("Scene error");
-}
-
-std::vector<const double*> Scene::getPointParams(SceneObjects::ID pointID) const {
-    throw std::runtime_error("Scene error");
-}
-
-std::vector<const double*> Scene::getSectionParams(SceneObjects::ID sectionID) const {
-    throw std::runtime_error("Scene error");
-}
-
-std::vector<const double*> Scene::getCircleParams(SceneObjects::ID circleID) const {
-    throw std::runtime_error("Scene error");
-}
-
-std::vector<const double*> Scene::getArcParams(SceneObjects::ID arcID) const {
     throw std::runtime_error("Scene error");
 }
 

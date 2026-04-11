@@ -4,8 +4,8 @@ namespace UndoRedo {
 
     bool CommandDeleteObject::Execute() {
         try {
-            _reqData = _scene.getObjectRequirementsWithConnectedObjects(_id);
-            _data = _scene.getRootObjectData(_id);
+            //_reqData = _scene.getObjectRequirementsWithConnectedObjects(_id);
+            //_data = _scene.getRootObjectData(_id);
             return _scene.deleteObject(_id);
         } catch (...) {
             return false;

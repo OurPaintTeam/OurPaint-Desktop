@@ -65,7 +65,7 @@ public:
     SceneObjects::ID addObject(const ObjectData&);
     bool deleteObject(SceneObjects::ID objectID);
     bool deletePoint(SceneObjects::ID pointID);
-    bool deleteSection(SceneObjects::ID sectionID);
+    bool deleteLine(SceneObjects::ID sectionID);
     bool deleteCircle(SceneObjects::ID circleID);
     bool deleteArc(SceneObjects::ID arcID);
     void clear();
@@ -103,11 +103,6 @@ public:
     void setSection(SceneObjects::ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag = true);
     void setCircle(SceneObjects::ID pointID, double x, double y, double r, const bool updateRequirementFlag = true);
     void setArc(SceneObjects::ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r, const bool updateRequirementFlag = true);
-
-    std::vector<const double*> getPointParams(SceneObjects::ID pointID) const;
-    std::vector<const double*> getSectionParams(SceneObjects::ID sectionID) const;
-    std::vector<const double*> getCircleParams(SceneObjects::ID circleID) const;
-    std::vector<const double*> getArcParams(SceneObjects::ID arcID) const;
 
     SceneObjects::ID addRequirement(const Requirement& reqData, const bool updateRequirementFlag = true);
     void updateRequirements(SceneObjects::ID objectID);

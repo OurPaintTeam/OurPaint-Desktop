@@ -77,8 +77,9 @@ bool ViewportController::onKey(const input::KeyEvent& e) {
         }
         return true;
     }
+    editorSession_.activeTool()->onKey(e);
 
-    return false;
+    return true;
 }
 
 void ViewportController::render() {

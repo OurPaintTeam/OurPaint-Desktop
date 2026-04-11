@@ -18,11 +18,11 @@ public:
 
 private:
     enum class State {
-        WaitingStartMoving,
-        Moving
+        Waiting,
+        Selected
     };
 
-    State state_ = State::WaitingStartMoving;
+    State state_ = State::Waiting;
     DocumentManager& documentManager_;
     Camera2D& camera_;
     renderer::RenderData& renderData_;

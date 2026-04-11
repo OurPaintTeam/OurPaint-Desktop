@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.20)
 project(ourpaint)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -39,3 +39,14 @@ add_subdirectory(src/Rendering/renderer)
 #add_subdirectory(src/ui_qt)
 add_subdirectory(src/Rendering/GlfwApp)
 add_subdirectory(src/UI)
+
+
+
+if(MSVC)
+    add_compile_options(
+        /Zc:__cplusplus     # Правильный __cplusplus
+        /Zc:preprocessor    # Современный препроцессор (для C++20)
+        /permissive-        # Строгий режим стандарта
+        /std:c++17
+    )
+endif()

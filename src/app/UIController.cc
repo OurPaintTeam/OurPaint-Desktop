@@ -14,7 +14,7 @@ UIController::UIController(EditorSession& editorSession, DocumentManager& manage
 void UIController::selectTool(ToolId tool) {
     editorSession_.select(tool);
 }
-#include <iostream>
+
 void UIController::executeConsoleCommand(std::string str) {
     Document* document = docManager_.getActiveDocument();
     UndoRedo::UndoRedoManager& urm = document->undoRedoManager();

@@ -21,7 +21,7 @@ namespace UndoRedo {
         bool Undo() override;
 
     public:
-        CommandDeleteObject(Scene& scene, SceneObjects::ID id) : _scene(scene), _id(id) {}
+        CommandDeleteObject(Scene& scene, SceneObjects::ID id) : _scene(scene), _id(id), _data() {}
 
         virtual std::string description() const override { return "Delete scene object"; };
     };
