@@ -232,13 +232,16 @@ public:
     }
 
     void createCommands(const std::vector<std::string>& rawArgs, UndoRedo::Transaction& txn) const override {
-        if (rawArgs.size() < 3) {
-            throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
+        if (rawArgs.size() < 2) {
+            throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 [OBJ_2] [OBJ_3] [PARAM]  ");
         }
 
         Requirement req;
         req.obj1 = SceneObjects::ID(std::stoi(rawArgs[1]));
-        req.obj2 = SceneObjects::ID(std::stoi(rawArgs[2]));
+
+        if (rawArgs.size() >= 3) {
+            req.obj2 = SceneObjects::ID(std::stoi(rawArgs[2]));
+        }
 
         if (rawArgs.size() >= 4) {
             req.param = std::stod(rawArgs[3]);
@@ -247,10 +250,10 @@ public:
         int req_id = std::stoi(rawArgs[0]);
         switch (req_id) {
             case 1:
-                req.type = ReqType::ET_POINTSECTIONDIST;
+                req.type = ReqType::ET_POINTLINEDIST;
                 break;
             case 2:
-                req.type = ReqType::ET_POINTONSECTION;
+                req.type = ReqType::ET_POINTONLINE;
                 break;
             case 3:
                 req.type = ReqType::ET_POINTPOINTDIST;
@@ -259,22 +262,31 @@ public:
                 req.type = ReqType::ET_POINTONPOINT;
                 break;
             case 5:
-                req.type = ReqType::ET_SECTIONCIRCLEDIST;
+                req.type = ReqType::ET_LINECIRCLEDIST;
                 break;
             case 6:
-                req.type = ReqType::ET_SECTIONONCIRCLE;
+                req.type = ReqType::ET_LINEONCIRCLE;
                 break;
             case 7:
-                req.type = ReqType::ET_SECTIONINCIRCLE;
+                req.type = ReqType::ET_LINEINCIRCLE;
                 break;
             case 8:
-                req.type = ReqType::ET_SECTIONSECTIONPARALLEL;
+                req.type = ReqType::ET_LINELINEPARALLEL;
                 break;
             case 9:
-                req.type = ReqType::ET_SECTIONSECTIONPERPENDICULAR;
+                req.type = ReqType::ET_LINELINEPERPENDICULAR;
                 break;
             case 10:
-                req.type = ReqType::ET_SECTIONSECTIONANGLE;
+                req.type = ReqType::ET_LINELINEANGLE;
+                break;
+            case 11:
+                req.type = ReqType::ET_FIXPOINT;
+                break;
+            case 12:
+                req.type = ReqType::ET_FIXLINE;
+                break;
+            case 13:
+                req.type = ReqType::ET_FIXCIRCLE;
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
@@ -285,7 +297,7 @@ public:
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
-        if (rawArgs.size() < 3) {
+        if (rawArgs.size() < 2) {
             throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
         }
 
@@ -300,10 +312,10 @@ public:
         int req_id = rawArgs[0];
         switch (req_id) {
             case 1:
-                req.type = ReqType::ET_POINTSECTIONDIST;
+                req.type = ReqType::ET_POINTLINEDIST;
                 break;
             case 2:
-                req.type = ReqType::ET_POINTONSECTION;
+                req.type = ReqType::ET_POINTONLINE;
                 break;
             case 3:
                 req.type = ReqType::ET_POINTPOINTDIST;
@@ -312,22 +324,22 @@ public:
                 req.type = ReqType::ET_POINTONPOINT;
                 break;
             case 5:
-                req.type = ReqType::ET_SECTIONCIRCLEDIST;
+                req.type = ReqType::ET_LINECIRCLEDIST;
                 break;
             case 6:
-                req.type = ReqType::ET_SECTIONONCIRCLE;
+                req.type = ReqType::ET_LINEONCIRCLE;
                 break;
             case 7:
-                req.type = ReqType::ET_SECTIONINCIRCLE;
+                req.type = ReqType::ET_LINEINCIRCLE;
                 break;
             case 8:
-                req.type = ReqType::ET_SECTIONSECTIONPARALLEL;
+                req.type = ReqType::ET_LINELINEPARALLEL;
                 break;
             case 9:
-                req.type = ReqType::ET_SECTIONSECTIONPERPENDICULAR;
+                req.type = ReqType::ET_LINELINEPERPENDICULAR;
                 break;
             case 10:
-                req.type = ReqType::ET_SECTIONSECTIONANGLE;
+                req.type = ReqType::ET_LINELINEANGLE;
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");
@@ -408,10 +420,10 @@ public:
         int req_id = rawArgs[0];
         switch (req_id) {
             case 1:
-                req.type = ReqType::ET_POINTSECTIONDIST;
+                req.type = ReqType::ET_POINTLINEDIST;
                 break;
             case 2:
-                req.type = ReqType::ET_POINTONSECTION;
+                req.type = ReqType::ET_POINTONLINE;
                 break;
             case 3:
                 req.type = ReqType::ET_POINTPOINTDIST;
@@ -420,22 +432,22 @@ public:
                 req.type = ReqType::ET_POINTONPOINT;
                 break;
             case 5:
-                req.type = ReqType::ET_SECTIONCIRCLEDIST;
+                req.type = ReqType::ET_LINECIRCLEDIST;
                 break;
             case 6:
-                req.type = ReqType::ET_SECTIONONCIRCLE;
+                req.type = ReqType::ET_LINEONCIRCLE;
                 break;
             case 7:
-                req.type = ReqType::ET_SECTIONINCIRCLE;
+                req.type = ReqType::ET_LINEINCIRCLE;
                 break;
             case 8:
-                req.type = ReqType::ET_SECTIONSECTIONPARALLEL;
+                req.type = ReqType::ET_LINELINEPARALLEL;
                 break;
             case 9:
-                req.type = ReqType::ET_SECTIONSECTIONPERPENDICULAR;
+                req.type = ReqType::ET_LINELINEPERPENDICULAR;
                 break;
             case 10:
-                req.type = ReqType::ET_SECTIONSECTIONANGLE;
+                req.type = ReqType::ET_LINELINEANGLE;
                 break;
             default:
                 throw std::runtime_error("REQ ERROR:    REQ REQ_ID OBJ_1 OBJ_2 PARAM  ");

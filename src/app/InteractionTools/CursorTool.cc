@@ -116,11 +116,19 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
     }
 }
 
+#include <QDebug>
+
 void CursorTool::onKey(const input::KeyEvent& e) {
     if (e.key == input::KeyCode::Delete && e.action == input::KeyAction::Press) {
         if (state_ == State::Selected) {
             Scene& scene = documentManager_.getActiveDocument()->scene();
-            scene.deleteObject(obj_.id);
+            bool result = scene.deleteObject(obj_.id);
+            if (!result) {
+                qDebug() << "Failed delete: " << obj_.id.get();
+            }
+            else {
+                qDebug() << "Success delete: " << obj_.id.get();
+            }
             state_ = State::Waiting;
         }
     }

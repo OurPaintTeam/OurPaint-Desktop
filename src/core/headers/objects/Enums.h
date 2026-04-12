@@ -14,17 +14,20 @@ enum class ObjType : uint8_t {
 };
 
 enum class ReqType : uint8_t {
-    ET_POINTSECTIONDIST,
-    ET_POINTONSECTION,
+    ET_POINTLINEDIST,
+    ET_POINTONLINE,
     ET_POINTPOINTDIST,
     ET_POINTONPOINT,
-    ET_SECTIONCIRCLEDIST,
-    ET_SECTIONONCIRCLE,
-    ET_SECTIONINCIRCLE,
-    ET_SECTIONSECTIONPARALLEL,
-    ET_SECTIONSECTIONPERPENDICULAR,
-    ET_SECTIONSECTIONANGLE,
+    ET_LINECIRCLEDIST,
+    ET_LINEONCIRCLE,
+    ET_LINEINCIRCLE,
+    ET_LINELINEPARALLEL,
+    ET_LINELINEPERPENDICULAR,
+    ET_LINELINEANGLE,
     ET_ARCCENTERONPERPENDICULAR,
+    ET_FIXPOINT,
+    ET_FIXLINE,
+    ET_FIXCIRCLE,
     COUNT,
     ERROR
 };
@@ -42,16 +45,16 @@ constexpr ObjType S_S[] = {ObjType::ET_LINE, ObjType::ET_LINE};
 constexpr ObjType P_P_P[] = {ObjType::ET_POINT, ObjType::ET_POINT, ObjType::ET_POINT};
 
 static constexpr ReqRule ReqRules[static_cast<std::size_t>(ReqType::COUNT)] = {
-    {P_S, true, true},    // ET_POINTSECTIONDIST
-    {P_S, false, false},  // ET_POINTONSECTION
+    {P_S, true, true},    // ET_POINTLINEDIST
+    {P_S, false, false},  // ET_POINTONLINE
     {P_P, true, true},    // ET_POINTPOINTDIST
     {P_P, false, false},  // ET_POINTONPOINT
-    {S_C, true, true},    // ET_SECTIONCIRCLEDIST
-    {S_C, false, false},  // ET_SECTIONONCIRCLE
-    {S_C, false, false},  // ET_SECTIONINCIRCLE
-    {S_S, true, false},   // ET_SECTIONSECTIONPARALLEL
-    {S_S, true, false},   // ET_SECTIONSECTIONPERPENDICULAR
-    {S_S, false, true},   // ET_SECTIONSECTIONANGLE
+    {S_C, true, true},    // ET_LINECIRCLEDIST
+    {S_C, false, false},  // ET_LINEONCIRCLE
+    {S_C, false, false},  // ET_LINEINCIRCLE
+    {S_S, true, false},   // ET_LINELINEPARALLEL
+    {S_S, true, false},   // ET_LINELINEPERPENDICULAR
+    {S_S, false, true},   // ET_LINELINEANGLE
     {P_P_P, true, false}  // ET_ARCCENTERONPERPENDICULAR
 };
 
@@ -81,25 +84,25 @@ inline ObjType element_from_string(const std::string& s) {
 
 inline std::string to_string(ReqType requirement) {
     switch (requirement) {
-        case ReqType::ET_POINTSECTIONDIST:
+        case ReqType::ET_POINTLINEDIST:
             return "pointsectiondist";
-        case ReqType::ET_POINTONSECTION:
+        case ReqType::ET_POINTONLINE:
             return "pointonsection";
         case ReqType::ET_POINTPOINTDIST:
             return "pointpointdist";
         case ReqType::ET_POINTONPOINT:
             return "pointonpoint";
-        case ReqType::ET_SECTIONCIRCLEDIST:
+        case ReqType::ET_LINECIRCLEDIST:
             return "sectioncircledist";
-        case ReqType::ET_SECTIONONCIRCLE:
+        case ReqType::ET_LINEONCIRCLE:
             return "sectiononcircle";
-        case ReqType::ET_SECTIONINCIRCLE:
+        case ReqType::ET_LINEINCIRCLE:
             return "sectionincircle";
-        case ReqType::ET_SECTIONSECTIONPARALLEL:
+        case ReqType::ET_LINELINEPARALLEL:
             return "sectionsectionparallel";
-        case ReqType::ET_SECTIONSECTIONPERPENDICULAR:
+        case ReqType::ET_LINELINEPERPENDICULAR:
             return "sectionsectionperpendicular";
-        case ReqType::ET_SECTIONSECTIONANGLE:
+        case ReqType::ET_LINELINEANGLE:
             return "sectionsectionangle";
         case ReqType::ET_ARCCENTERONPERPENDICULAR:
             return "arccenteronperpendicular";
@@ -112,16 +115,16 @@ inline std::string to_string(ReqType requirement) {
 }
 
 inline ReqType requirement_from_string(const std::string& s) {
-    if (s == "pointsectiondist") return ReqType::ET_POINTSECTIONDIST;
-    if (s == "pointonsection") return ReqType::ET_POINTONSECTION;
+    if (s == "pointsectiondist") return ReqType::ET_POINTLINEDIST;
+    if (s == "pointonsection") return ReqType::ET_POINTONLINE;
     if (s == "pointpointdist") return ReqType::ET_POINTPOINTDIST;
     if (s == "pointonpoint") return ReqType::ET_POINTONPOINT;
-    if (s == "sectioncircledist") return ReqType::ET_SECTIONCIRCLEDIST;
-    if (s == "sectiononcircle") return ReqType::ET_SECTIONONCIRCLE;
-    if (s == "sectionincircle") return ReqType::ET_SECTIONINCIRCLE;
-    if (s == "sectionsectionparallel") return ReqType::ET_SECTIONSECTIONPARALLEL;
-    if (s == "sectionsectionperpendicular") return ReqType::ET_SECTIONSECTIONPERPENDICULAR;
-    if (s == "sectionsectionangle") return ReqType::ET_SECTIONSECTIONANGLE;
+    if (s == "sectioncircledist") return ReqType::ET_LINECIRCLEDIST;
+    if (s == "sectiononcircle") return ReqType::ET_LINEONCIRCLE;
+    if (s == "sectionincircle") return ReqType::ET_LINEINCIRCLE;
+    if (s == "sectionsectionparallel") return ReqType::ET_LINELINEPARALLEL;
+    if (s == "sectionsectionperpendicular") return ReqType::ET_LINELINEPERPENDICULAR;
+    if (s == "sectionsectionangle") return ReqType::ET_LINELINEANGLE;
     if (s == "arccenteronperpendicular") return ReqType::ET_ARCCENTERONPERPENDICULAR;
     return ReqType::ERROR;
 }

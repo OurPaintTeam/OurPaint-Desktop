@@ -12,7 +12,7 @@
 
 class ViewportController : public IViewportController {
 public:
-    ViewportController(DocumentManager& documentManager, Camera2D& view, EditorSession& session, IRenderer& renderer, renderer::RenderData& renderScene);
+    ViewportController(Camera2D& view, EditorSession& session, IRenderer& renderer, renderer::RenderData& renderScene);
 
     void initialize();
 
@@ -28,7 +28,6 @@ public:
     void setContinuousRedraw(bool enable);
 
 private:
-    DocumentManager& documentManager_; // убрать если не надо.
     Camera2D& camera2D_;
     EditorSession& editorSession_;
     IRenderer& renderer_;

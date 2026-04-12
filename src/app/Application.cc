@@ -58,7 +58,7 @@ void Application::init(int& argc, char** argv) {
     renderer_ = new renderer::OpenGLRenderer();
 
     // init viewport controller
-    viewportController_ = new ViewportController(*documentManager_, *camera2D_, *editorSession_, *renderer_, *renderData_);
+    viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderData_);
 
     // set EventSink viewport controller to viewport host
     viewportHost_->setEventSink(viewportController_);
@@ -87,7 +87,7 @@ void Application::init(int& argc, char** argv) {
     mainWindow_->show();
 
     // init UIController
-    uiController_ = new UIController(*editorSession_, *documentManager_);
+    uiController_ = new UIController(*editorSession_, *documentManager_, *viewportHost_);
 
     // init binder
     binder_ = new QtMainWindowBinder(*mainWindow_, *uiController_);

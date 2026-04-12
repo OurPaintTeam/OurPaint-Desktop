@@ -3,8 +3,8 @@
 #include "Document.h"
 #include "Scene.h"
 
-ViewportController::ViewportController(DocumentManager& documentManager, Camera2D& camera2D, EditorSession& editorSession_, IRenderer& renderer, renderer::RenderData& renderScene)
-    : documentManager_(documentManager), camera2D_(camera2D), editorSession_(editorSession_), renderer_(renderer), renderScene_(renderScene) {}
+ViewportController::ViewportController(Camera2D& camera2D, EditorSession& editorSession_, IRenderer& renderer, renderer::RenderData& renderScene)
+    : camera2D_(camera2D), editorSession_(editorSession_), renderer_(renderer), renderScene_(renderScene) {}
 
 void ViewportController::initialize() {
     //auto target = host_.getRenderTargetDesc();

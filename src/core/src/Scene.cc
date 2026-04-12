@@ -109,7 +109,7 @@ SceneObjects::ID Scene::addObject(const ObjectData& objData) {
 }
 
 bool Scene::deleteObject(SceneObjects::ID objectID) {
-    OurPaintDCM::Utils::ID id(objectID.get());
+    OurPaintDCM::Utils::ID id(objectID.get() + 1);
     try {
         DCM_manager.removeFigure(id, true);
     }
@@ -177,8 +177,6 @@ std::size_t Scene::objectsCount() const {
 std::size_t Scene::requirementsCount() const {
     throw std::runtime_error("Scene error");
 }
-
-#include "FigureDescriptor.h"
 
 std::vector<ObjectData> Scene::getObjects() const {
     std::vector<OurPaintDCM::Utils::FigureDescriptor> figures = DCM_manager.getAllFigures();
@@ -267,7 +265,7 @@ std::vector<ObjectData> Scene::getLines() const {
     // for (auto& l : lines) {
     //     ObjectData od;
     //     od.params = {l.p1->x(), l.p1->y(), l.p2->x(), l.p2->y()};
-    //     od.et = ObjType::ET_SECTION;
+    //     od.et = ObjType::ET_LINE;
     //     objs.push_back(od);
     // }
 
@@ -419,16 +417,69 @@ void Scene::setArc(SceneObjects::ID arcID, double x0, double y0, double x1, doub
 SceneObjects::ID Scene::addRequirement(const Requirement& reqData, const bool updateRequirementFlag) {
     ReqDescriptor rd;
     switch (reqData.type) {
+        case ReqType::ET_POINTLINEDIST:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_POINTLINEDIST;
+            break;
+        case ReqType::ET_POINTONLINE:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_POINTONLINE;
+            break;
         case ReqType::ET_POINTPOINTDIST:
             rd.type = OurPaintDCM::Utils::RequirementType::ET_POINTPOINTDIST;
+            break;
+        case ReqType::ET_POINTONPOINT:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_POINTONPOINT;
+            break;
+        case ReqType::ET_LINECIRCLEDIST:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_LINECIRCLEDIST;
+            break;
+        case ReqType::ET_LINEONCIRCLE:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_LINEONCIRCLE;
+            break;
+        case ReqType::ET_LINEINCIRCLE:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_LINEINCIRCLE;
+            break;
+        case ReqType::ET_LINELINEPARALLEL:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_LINELINEPARALLEL;
+            break;
+        case ReqType::ET_LINELINEPERPENDICULAR:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_LINELINEPERPENDICULAR;
+            break;
+        case ReqType::ET_LINELINEANGLE:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_LINELINEANGLE;
+            break;
+        case ReqType::ET_ARCCENTERONPERPENDICULAR:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_ARCCENTERONPERPENDICULAR;
+            break;
+        case ReqType::ET_FIXPOINT:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_FIXPOINT;
+            break;
+        case ReqType::ET_FIXLINE:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_FIXLINE;
+            break;
+        case ReqType::ET_FIXCIRCLE:
+            rd.type = OurPaintDCM::Utils::RequirementType::ET_FIXCIRCLE;
             break;
         default:
             break;
     }
-    rd.objectIds = { ID(reqData.obj1.get()), ID(reqData.obj2.get()) };
-    rd.param = reqData.param;
+
+    std::vector<ID> ids;
+    if (hasObject(reqData.obj1)) {
+        ids.push_back(ID(reqData.obj1.get()));
+        if (hasObject(reqData.obj2)) {
+            ids.push_back(ID(reqData.obj2.get()));
+            if (hasObject(reqData.obj3)) {
+                ids.push_back(ID(reqData.obj3.get()));
+            }
+        }
+    }
+    rd.objectIds = ids;
+    if (reqData.param.has_value()) {
+        rd.param = reqData.param;
+    }
 
     DCM_manager.addRequirement(rd);
+    DCM_manager.solve();
 
     for (auto& observer : _observers) {
         observer->onRequirementAdded(rd);

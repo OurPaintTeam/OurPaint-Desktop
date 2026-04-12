@@ -6,10 +6,11 @@
 #include "DocumentManager.h"
 #include "InteractionTools/EditorSession.h"
 #include "InteractionTools/ToolId.h"
+#include "IViewportHost.h"
 
 class UIController {
 public:
-    UIController(EditorSession& editorSession, DocumentManager& manager);
+    UIController(EditorSession& editorSession, DocumentManager& manager, IViewportHost& host);
     ~UIController() = default;
 
     void selectTool(ToolId tool);
@@ -37,6 +38,7 @@ public:
 private:
     EditorSession& editorSession_;
     DocumentManager& docManager_;
+    IViewportHost& host_;
 };
 
 #endif // ! OURPAINT_APPLICATION_UI_CONTROLLER_H_

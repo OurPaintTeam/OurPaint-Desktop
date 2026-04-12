@@ -4,12 +4,13 @@
 #include "ConsoleManager.h"
 #include "UndoRedo.h"
 #include "Document.h"
+#include "IViewportHost.h"
 
 #include <iostream>
 
 #include "QDebug"
-UIController::UIController(EditorSession& editorSession, DocumentManager& manager)
-    : editorSession_(editorSession), docManager_(manager) {}
+UIController::UIController(EditorSession& editorSession, DocumentManager& manager, IViewportHost& host)
+    : editorSession_(editorSession), docManager_(manager), host_(host) {}
 
 void UIController::selectTool(ToolId tool) {
     editorSession_.select(tool);
@@ -21,6 +22,8 @@ void UIController::executeConsoleCommand(std::string str) {
     CommandManager& cm = document->commandManager();
     Transaction* txn = cm.invoke(str);
     urm.push(std::move(*txn));
+
+    host_.requestRedraw();
 }
 
 void UIController::openProjectInNewWindow() {}
