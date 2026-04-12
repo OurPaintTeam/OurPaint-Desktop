@@ -36,8 +36,6 @@ add_subdirectory(src/app)
 add_subdirectory(src/core)
 add_subdirectory(src/core/tests)
 add_subdirectory(src/Rendering/renderer)
-#add_subdirectory(src/ui_qt)
-add_subdirectory(src/Rendering/GlfwApp)
 add_subdirectory(src/UI)
 
 

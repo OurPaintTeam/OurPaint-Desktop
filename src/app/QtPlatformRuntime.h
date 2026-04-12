@@ -1,9 +1,10 @@
 #ifndef OURPAINT_QT_PLATFORM_RUNTIME_H_
 #define OURPAINT_QT_PLATFORM_RUNTIME_H_
 
-#include "IPlatformRuntime.h"
 #include <cstdint>
 #include <vector>
+
+#include "IPlatformRuntime.h"
 
 class QApplication;
 class QtViewportHost;

@@ -2,6 +2,3 @@ build
 cmake-build-debug
 .idea
 .vs
-src/Rendering/GlfwApp/glfw
-src/Rendering/renderer/glad
-src/Rendering/renderer/glm

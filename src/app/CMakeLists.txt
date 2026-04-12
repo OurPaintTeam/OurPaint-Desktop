@@ -18,7 +18,6 @@ set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
 
 target_link_libraries(ourpaint PRIVATE
         ourpaint_core
-        ourpaint_glfw
         ourpaint_rendering
         ourpaint_ui
 )

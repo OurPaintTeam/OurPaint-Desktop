@@ -1,7 +1,7 @@
 #ifndef OURPAINT_APPLICATION_GLFW_RUNTIME_PLATFORM_H_
 #define OURPAINT_APPLICATION_GLFW_RUNTIME_PLATFORM_H_
 
-#include "IPlatformRuntime.h"
+#include "../../app/IPlatformRuntime.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
