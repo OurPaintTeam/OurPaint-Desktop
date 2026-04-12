@@ -33,7 +33,6 @@ private:
     GLint gridTransformLoc_ = -1;
     GLint gridZoomLoc_ = -1;
     GLint gridInvViewProjLoc_ = -1;
-    GLint gridViewportSizeLoc_ = -1;
 
     // Points
     GLuint pointProgram_ = 0;
@@ -79,6 +78,8 @@ private:
 
     static GLuint compileShader(GLenum type, const char* src);
     static bool checkProgramLink(GLuint prog);
+
+    bool createProgramFromFiles(const char* vertPath, const char* fragPath, GLuint& outProgram);
 };
 
 }

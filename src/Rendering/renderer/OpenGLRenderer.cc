@@ -1,12 +1,14 @@
 ﻿#include "OpenGLRenderer.h"
 
+#include <io.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Camera2D.h"
-#include "shaders/shader_utils.h"
 #include "RenderData.h"
+#include "shaders/shader_utils.h"
 
 using namespace renderer;
 
@@ -140,17 +142,8 @@ void OpenGLRenderer::render(const RenderData& rd, const Camera2D& camera) {
     glm::mat4 mvp = camera.viewProjectionMatrix();
 
     renderGrid(rd, camera, mvp);
-
-    // 1.0 zoom = 100 pixel.
-    // 0.02 is a point size
-    pointSizeWorld = 0.02 / (camera.zoom() / 100.0);
-
     renderPoints(rd, camera, mvp);
-
-    // 0.009 is a line width
-    halfWidthWorld = 0.009 / (camera.zoom() / 100.0);
     renderLines(rd, camera, mvp);
-
     renderCircles(rd, camera, mvp);
 }
 
@@ -170,10 +163,6 @@ void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera,
 
     if (gridZoomLoc_ >= 0) {
         glUniform1f(gridZoomLoc_, camera.zoom());
-    }
-
-    if (gridViewportSizeLoc_ >= 0) {
-        glUniform2f(gridViewportSizeLoc_, (float)width_, (float)height_);
     }
 
     if (gridInvViewProjLoc_ >= 0) {
@@ -196,6 +185,10 @@ void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camer
     if (count == 0) {
         return;
     }
+
+    // 1.0 zoom = 100 pixel.
+    // 0.02 is a point size
+    pointSizeWorld = 0.02 / (camera.zoom() / 100.0);
 
     std::vector<PointInstance> instances;
     instances.reserve(count);
@@ -243,6 +236,9 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera
     if (count == 0) {
         return;
     }
+
+    // 0.009 is a line width
+    halfWidthWorld = 0.009 / (camera.zoom() / 100.0);
 
     std::vector<LineInstance> instances;
     instances.reserve(count);
@@ -340,42 +336,11 @@ void OpenGLRenderer::initGlobalState() {
 }
 
 bool OpenGLRenderer::initGridPipeline() {
-    std::string vertexSource = ShaderUtils::readFile("shaders/grid.vert");
-    std::string fragmentSource = ShaderUtils::readFile("shaders/grid.frag");
-
-    if (vertexSource.empty() || fragmentSource.empty()) {
-        return false;
-    }
-
-    int vs = compileShader(GL_VERTEX_SHADER, vertexSource.c_str());
-    if (!vs) {
-        return false;
-    }
-
-    int fs = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
-    if (!fs) {
-        glDeleteShader(vs);
-        return false;
-    }
-
-    gridProgram_ = glCreateProgram();
-    glAttachShader(gridProgram_, vs);
-    glAttachShader(gridProgram_, fs);
-    glLinkProgram(gridProgram_);
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    if (!checkProgramLink(gridProgram_)) {
-        glDeleteProgram(gridProgram_);
-        gridProgram_ = 0;
-        return false;
-    }
+    createProgramFromFiles("shaders/grid.vert", "shaders/grid.frag", gridProgram_);
 
     gridColorLoc_ = glGetUniformLocation(gridProgram_, "uColor");
     gridZoomLoc_ = glGetUniformLocation(gridProgram_, "uZoom");
     gridInvViewProjLoc_ = glGetUniformLocation(gridProgram_, "uInvViewProj");
-    gridViewportSizeLoc_ = glGetUniformLocation(gridProgram_, "uViewportSize");
 
     const float quadVerts[] = {
         -1.0f, -1.0f,
@@ -405,37 +370,7 @@ bool OpenGLRenderer::initGridPipeline() {
 }
 
 bool OpenGLRenderer::initPointPipeline() {
-    std::string vertexSource = ShaderUtils::readFile("shaders/point.vert");
-    std::string fragmentSource = ShaderUtils::readFile("shaders/point.frag");
-
-    if (vertexSource.empty() || fragmentSource.empty()) {
-        return false;
-    }
-
-    int vs = compileShader(GL_VERTEX_SHADER, vertexSource.c_str());
-    if (!vs) {
-        return false;
-    }
-
-    int fs = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
-    if (!fs) {
-        glDeleteShader(vs);
-        return false;
-    }
-
-    pointProgram_ = glCreateProgram();
-    glAttachShader(pointProgram_, vs);
-    glAttachShader(pointProgram_, fs);
-    glLinkProgram(pointProgram_);
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    if (!checkProgramLink(pointProgram_)) {
-        glDeleteProgram(pointProgram_);
-        pointProgram_ = 0;
-        return false;
-    }
+    createProgramFromFiles("shaders/point.vert", "shaders/point.frag", pointProgram_);
 
     pointColorLoc_ = glGetUniformLocation(pointProgram_, "uColor");
     pointTransformLoc_ = glGetUniformLocation(pointProgram_, "uTransform");
@@ -490,37 +425,7 @@ bool OpenGLRenderer::initPointPipeline() {
 }
 
 bool OpenGLRenderer::initLinePipeline() {
-    std::string vertexSource = ShaderUtils::readFile("shaders/line.vert");
-    std::string fragmentSource = ShaderUtils::readFile("shaders/line.frag");
-
-    if (vertexSource.empty() || fragmentSource.empty()) {
-        return false;
-    }
-
-    int vs = compileShader(GL_VERTEX_SHADER, vertexSource.c_str());
-    if (!vs) {
-        return false;
-    }
-
-    int fs = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
-    if (!fs) {
-        glDeleteShader(vs);
-        return false;
-    }
-
-    lineProgram_ = glCreateProgram();
-    glAttachShader(lineProgram_, vs);
-    glAttachShader(lineProgram_, fs);
-    glLinkProgram(lineProgram_);
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    if (!checkProgramLink(lineProgram_)) {
-        glDeleteProgram(lineProgram_);
-        lineProgram_ = 0;
-        return false;
-    }
+    createProgramFromFiles("shaders/line.vert", "shaders/line.frag", lineProgram_);
 
     lineColorLoc_ = glGetUniformLocation(lineProgram_, "uColor");
     lineTransformLoc_ = glGetUniformLocation(lineProgram_, "uTransform");
@@ -600,37 +505,7 @@ bool OpenGLRenderer::initLinePipeline() {
 }
 
 bool OpenGLRenderer::initCirclePipeline() {
-    std::string vertexSource = ShaderUtils::readFile("shaders/circle.vert");
-    std::string fragmentSource = ShaderUtils::readFile("shaders/circle.frag");
-
-    if (vertexSource.empty() || fragmentSource.empty()) {
-        return false;
-    }
-
-    int vs = compileShader(GL_VERTEX_SHADER, vertexSource.c_str());
-    if (!vs) {
-        return false;
-    }
-
-    int fs = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
-    if (!fs) {
-        glDeleteShader(vs);
-        return false;
-    }
-
-    circleProgram_ = glCreateProgram();
-    glAttachShader(circleProgram_, vs);
-    glAttachShader(circleProgram_, fs);
-    glLinkProgram(circleProgram_);
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
-
-    if (!checkProgramLink(circleProgram_)) {
-        glDeleteProgram(circleProgram_);
-        circleProgram_ = 0;
-        return false;
-    }
+    createProgramFromFiles("shaders/circle.vert", "shaders/circle.frag", circleProgram_);
 
     circleColorLoc_ = glGetUniformLocation(circleProgram_, "uColor");
     circleTransformLoc_ = glGetUniformLocation(circleProgram_, "uTransform");
@@ -731,6 +606,42 @@ bool OpenGLRenderer::checkProgramLink(GLuint prog)
         std::fprintf(stderr, "Program link error:\n%s\n", log.c_str());
         return false;
     }
+    return true;
+}
+
+bool OpenGLRenderer::createProgramFromFiles(const char* vertPath, const char* fragPath, GLuint& outProgram) {
+    std::string vertexSource = ShaderUtils::readFile(vertPath);
+    std::string fragmentSource = ShaderUtils::readFile(fragPath);
+
+    if (vertexSource.empty() || fragmentSource.empty()) {
+        return false;
+    }
+
+    int vs = compileShader(GL_VERTEX_SHADER, vertexSource.c_str());
+    if (!vs) {
+        return false;
+    }
+
+    int fs = compileShader(GL_FRAGMENT_SHADER, fragmentSource.c_str());
+    if (!fs) {
+        glDeleteShader(vs);
+        return false;
+    }
+
+    outProgram = glCreateProgram();
+    glAttachShader(outProgram, vs);
+    glAttachShader(outProgram, fs);
+    glLinkProgram(outProgram);
+
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    if (!checkProgramLink(outProgram)) {
+        glDeleteProgram(outProgram);
+        outProgram = 0;
+        return false;
+    }
+
     return true;
 }
 

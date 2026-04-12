@@ -1,15 +1,20 @@
 #version 330 core
 
-in vec2 vQuadPos;
+in vec2 vNdcPos;
 out vec4 FragColor;
 
 uniform vec3 uColor;
 uniform float uZoom;
 uniform mat4 uInvViewProj;
-uniform vec2 uViewportSize;
+
+const float BASE_CELL_SIZE = 1.0;
+const float SUBGRID_DIVISIONS = 5.0;
+const float SUBGRID_ALPHA = 0.3;
+const float AXIS_WIDTH_MULT = 2.0;
+const float GRID_ALPHA = 0.7;
 
 void main() {
-    vec4 ndc = vec4(vQuadPos, 0.0, 1.0);
+    vec4 ndc = vec4(vNdcPos, 0.0, 1.0);
     vec4 worldPos4 = uInvViewProj * ndc;
     vec2 worldPos = worldPos4.xy / worldPos4.w;
 
@@ -21,8 +26,7 @@ void main() {
     float zoomFactor = pow(2.0, floor(zoomLevel));
 
     // Base cell size adapts with zoom
-    float baseCellSize = 1.0;
-    float cellSize = baseCellSize / zoomFactor;
+    float cellSize = BASE_CELL_SIZE / zoomFactor;
 
     // Line width stays consistent in screen space
     float lineWidth = 0.01 / zoom;
@@ -38,7 +42,7 @@ void main() {
     float isLine = max(lineX, lineY);
 
     // Sub-grid for finer detail when zoomed in
-        float subCellSize = cellSize / 5.0;
+        float subCellSize = cellSize / SUBGRID_DIVISIONS;
         vec2 subGridPos = worldPos / subCellSize;
         vec2 subGridFrac = fract(subGridPos);
         vec2 subDistToLine = min(subGridFrac, 1.0 - subGridFrac) * subCellSize;
@@ -49,10 +53,10 @@ void main() {
         float subLine = max(subLineX, subLineY);
 
         // Blend sub-grid with lower opacity
-        isLine = max(isLine, subLine * 0.3);
+        isLine = max(isLine, subLine * SUBGRID_ALPHA);
 
     // Axes with consistent width
-    float axisWidth = lineWidth * 2.0;
+    float axisWidth = lineWidth * AXIS_WIDTH_MULT;
     float axisX = 1.0 - smoothstep(0.0, axisWidth, abs(worldPos.x));
     float axisY = 1.0 - smoothstep(0.0, axisWidth, abs(worldPos.y));
     float axes = max(axisX, axisY);
@@ -63,7 +67,7 @@ void main() {
     vec3 axisColor = vec3(0.9, 0.2, 0.2);
 
     // Adjust alpha based on zoom for better visibility
-    float alpha = isLine * 0.7;
+    float alpha = isLine * GRID_ALPHA;
 
     vec3 finalColor = gridColor;
     if (axes > 0.5) {
