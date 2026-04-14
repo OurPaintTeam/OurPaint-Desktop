@@ -7,6 +7,8 @@
 #include "Objects.h"
 #include "RenderData.h"
 
+#include <unordered_set>
+
 class CursorTool : public IInteractionTool {
 public:
     explicit CursorTool(DocumentManager& documentManager, Camera2D& camera, renderer::RenderData& renderData);
@@ -26,7 +28,8 @@ private:
     DocumentManager& documentManager_;
     Camera2D& camera_;
     renderer::RenderData& renderData_;
-    ObjectData obj_;
+    std::unordered_set<SceneObjects::ID> ids_;
+    std::vector<ObjectData> objs_;
     glm::dvec2 lastPos_{};
 };
 

@@ -5,7 +5,7 @@
 
 CursorTool::CursorTool(DocumentManager& documentManager, Camera2D& camera, renderer::RenderData& renderData)
     : documentManager_(documentManager), camera_(camera), renderData_(renderData) {
-    obj_ = ObjectData();
+    objs_ = {};
 }
 
 void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
@@ -13,18 +13,21 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
         if (state_ == State::Selected) {
             glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
             Scene& scene = documentManager_.getActiveDocument()->scene();
-            if (obj_.et == ObjType::ET_POINT) {
-                scene.movePoint(obj_.id, v.x, v.y);
-            }
-            else if (obj_.et == ObjType::ET_LINE) {
-                scene.moveLine(obj_.id, v.x - lastPos_.x, v.y - lastPos_.y);
-            }
-            else if (obj_.et == ObjType::ET_CIRCLE) {
-                scene.moveCircle(obj_.id, v.x - lastPos_.x, v.y - lastPos_.y);
+            double dx = v.x - lastPos_.x;
+            double dy = v.y - lastPos_.y;
+            for (const auto& obj : objs_) {
+                if (obj.et == ObjType::ET_POINT) {
+                    scene.movePoint(obj.id, dx, dy);
+                }
+                else if (obj.et == ObjType::ET_LINE) {
+                    scene.moveLine(obj.id, dx, dy);
+                }
+                else if (obj.et == ObjType::ET_CIRCLE) {
+                    scene.moveCircle(obj.id, dx, dy);
+                }
             }
             lastPos_.x = v.x;
             lastPos_.y = v.y;
-            
         }
     }
 }
@@ -34,15 +37,21 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
         glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
         double eps = 0.05 / (camera_.zoom() / 100.0);
         Scene& scene = documentManager_.getActiveDocument()->scene();
+
+        ObjectData obj;
         std::vector<ObjectData> points = scene.getPoints();
         for (const auto& p : points) {
             const double& x = p.params[0];
             const double& y = p.params[1];
             if (std::abs(x - v.x) < eps && std::abs(y - v.y) < eps) {
-                obj_ = p;
+                obj = p;
                 state_ = State::Selected;
+                scene.movePoint(obj.id, v.x - x, v.y - y);
                 lastPos_ = v;
-                scene.movePoint(obj_.id, v.x, v.y);
+                if (!ids_.contains(obj.id)) {
+                    objs_.push_back(obj);
+                    ids_.insert(obj.id);
+                }
                 return;
             }
         }
@@ -65,9 +74,14 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
             double len = std::sqrt(dx*dx + dy*dy);
             if (len < 1e-9) {
                 if (std::abs(v.x - x1) < eps && std::abs(v.y - y1) < eps) {
-                    obj_ = l;
+                    obj = l;
                     state_ = State::Selected;
+                    //scene.moveLine(obj.id, v.x - lastPos_.x, v.y - lastPos_.y);
                     lastPos_ = v;
+                    if (!ids_.contains(obj.id)) {
+                        objs_.push_back(obj);
+                        ids_.insert(obj.id);
+                    }
                 }
                 continue;
             }
@@ -81,9 +95,14 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                 double maxY = std::max(y1, y2) + eps;
 
                 if (v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) {
-                    obj_ = l;
+                    obj = l;
                     state_ = State::Selected;
+                    //scene.moveLine(obj.id, v.x - lastPos_.x, v.y - lastPos_.y);
                     lastPos_ = v;
+                    if (!ids_.contains(obj.id)) {
+                        objs_.push_back(obj);
+                        ids_.insert(obj.id);
+                    }
                     return;
                 }
             }
@@ -98,7 +117,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
             double dy = v.y - y;
             double d = sqrt(dx*dx + dy*dy);
             if (d > r - eps && d < r + eps) {
-                obj_ = c;
+                obj = c;
                 state_ = State::Selected;
 
                 if (d > 1e-12) {
@@ -108,26 +127,34 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                 }
 
                 lastPos_ = v;
+                if (!ids_.contains(obj.id)) {
+                    objs_.push_back(obj);
+                    ids_.insert(obj.id);
+                }
                 return;
             }
         }
 
         state_ = State::Waiting;
+        ids_.clear();
+        objs_.clear();
     }
 }
 
-#include <QDebug>
+//#include <QDebug>
 
 void CursorTool::onKey(const input::KeyEvent& e) {
     if (e.key == input::KeyCode::Delete && e.action == input::KeyAction::Press) {
         if (state_ == State::Selected) {
             Scene& scene = documentManager_.getActiveDocument()->scene();
-            bool result = scene.deleteObject(obj_.id);
-            if (!result) {
-                qDebug() << "Failed delete: " << obj_.id.get();
-            }
-            else {
-                qDebug() << "Success delete: " << obj_.id.get();
+            for (const auto& obj : objs_) {
+                bool result = scene.deleteObject(obj.id);
+                if (!result) {
+                    //qDebug() << "Failed delete: " << obj_.id.get();
+                }
+                else {
+                    //qDebug() << "Success delete: " << obj_.id.get();
+                }
             }
             state_ = State::Waiting;
         }
