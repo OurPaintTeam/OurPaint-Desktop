@@ -5,11 +5,11 @@
 #include <unordered_set>
 #include <vector>
 
-#include "BoundBox.h"
-#include "Enums.h"
-#include "ID.h"
+#include "objects/BoundBox.h"
+#include "objects/Enums.h"
+#include "objects/Scene_ID.h"
 #include "InheritanceGraph.h"
-#include "Objects.h"
+#include "objects/Objects.h"
 
 class ISceneObserver;
 namespace SceneObjects {class ID;}

@@ -14,12 +14,6 @@ add_library(ourpaint_core
         src/saveload/objectInJson.cc
 
         # /objects/
-        headers/objects/Enums.h
-        headers/objects/Objects.h
-        headers/objects/GeometricObjects.h
-        headers/objects/Component.h
-        headers/objects/Scene_ID.h
-        headers/objects/BoundBox.h
         src/objects/GeometricObjects.cc
         src/objects/BoundBox.cc
 
@@ -52,7 +46,6 @@ add_library(ourpaint_core
 target_include_directories(ourpaint_core
         PUBLIC
         headers
-        headers/objects
         headers/saveload
         headers/UndoRedo
         headers/UndoRedo/commands

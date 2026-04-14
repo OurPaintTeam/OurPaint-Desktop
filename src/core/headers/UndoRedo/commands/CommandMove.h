@@ -2,7 +2,7 @@
 #define OURPAINT_HEADERS_COMMANDS_MOVE_
 
 #include "Command.h"
-#include "Objects.h"
+#include "objects/Objects.h"
 class Scene;
 
 namespace UndoRedo {

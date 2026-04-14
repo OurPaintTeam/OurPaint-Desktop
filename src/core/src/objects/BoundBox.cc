@@ -1,4 +1,4 @@
-#include "BoundBox.h"
+#include "objects/BoundBox.h"
 
 BoundBox2D BoundBox2D::unite(const BoundBox2D &other) const {
     return {

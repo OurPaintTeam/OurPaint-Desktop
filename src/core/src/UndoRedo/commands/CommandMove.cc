@@ -1,5 +1,5 @@
 #include "CommandMove.h"
-#include "Component.h"
+#include "objects/Component.h"
 #include "Scene.h"
 
 bool UndoRedo::CommandMove::Execute() {
