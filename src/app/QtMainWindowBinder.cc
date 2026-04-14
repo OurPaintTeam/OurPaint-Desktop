@@ -7,8 +7,6 @@ QtMainWindowBinder::QtMainWindowBinder(UI::MainWindow& window,
     , window_(window)
     , controller_(controller)  {
 
-
-
     // Console
     QObject::connect(&window, &UI::MainWindow::sentCommandTriggered,
                      this, [this](const QString & str) {

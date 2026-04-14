@@ -26,7 +26,7 @@ bool ViewportController::onResize(const input::ResizeEvent& e) {
 }
 
 bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
-    if ((e.buttons & input::MouseButton::Right) != input::MouseButton::None) {
+    if (input::has_flag(e.buttons, input::MouseButton::Right)) {
         const double dx = e.x - lastX_;
         const double dy = e.y - lastY_;
 

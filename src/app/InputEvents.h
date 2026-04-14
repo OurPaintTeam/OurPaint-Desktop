@@ -67,6 +67,14 @@ inline Modifiers operator&(Modifiers a, Modifiers b) {
     );
 }
 
+inline bool has_flag(MouseButton value, MouseButton flag) noexcept {
+    return (value & flag) == flag;
+}
+
+inline bool has_flag(Modifiers value, Modifiers flag) noexcept {
+    return (value & flag) == flag;
+}
+
 enum class KeyAction {
     Press,
     Release,

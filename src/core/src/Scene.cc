@@ -347,7 +347,9 @@ void Scene::moveObject(SceneObjects::ID id, double dx, double dy) {
 void Scene::movePoint(SceneObjects::ID pointID, double dx, double dy) {
     OurPaintDCM::Utils::ID id = OurPaintDCM::Utils::ID(pointID.get() + 1);
 
-    OurPaintDCM::Utils::PointUpdateDescriptor d(id, dx, dy);
+    OurPaintDCM::Utils::FigureDescriptor desc = DCM_manager.getFigure(id).value();
+
+    OurPaintDCM::Utils::PointUpdateDescriptor d(id, desc.x.value() + dx, desc.y.value() + dy);
     DCM_manager.updatePoint(d);
 
     std::optional<OurPaintDCM::ComponentID> comp = DCM_manager.getComponentForFigure(OurPaintDCM::Utils::ID(pointID.get() + 1));

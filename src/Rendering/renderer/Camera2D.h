@@ -63,6 +63,8 @@ public:
     // glm::dvec2 visibleMaxWorld() const;
     // void fitToBox(glm::dvec2 minP, glm::dvec2 maxP, double paddingPixels);
 
+    void clampToWorld();
+
 private:
     glm::dvec2 center_{0.0, 0.0};
 
@@ -73,8 +75,11 @@ private:
     int viewportH_ = 1;
     double dpr_ = 1.0;
 
+    // World units
     static constexpr double kMinZoom = 1e-6;
     static constexpr double kMaxZoom = 1e6;
+    static constexpr glm::dvec2 worldMin_ = {-10.0, -10.0};
+    static constexpr glm::dvec2 worldMax_ = {10.0, 10.0};
 };
 
 #endif // ! OURPAINT_RENDERING_VIEW2D_H_

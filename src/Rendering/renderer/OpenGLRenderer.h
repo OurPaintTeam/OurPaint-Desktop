@@ -27,42 +27,76 @@ public:
 private:
     // Grid
     GLuint gridProgram_ = 0;
+
     GLuint gridVao_ = 0;
     GLuint gridQuadVbo_ = 0;
+
     GLint gridColorLoc_ = -1;
     GLint gridTransformLoc_ = -1;
     GLint gridZoomLoc_ = -1;
     GLint gridInvViewProjLoc_ = -1;
 
+    GLint gridCellSizeLoc_ = -1;
+    GLint gridSubCellSizeLoc_ = -1;
+    GLint gridOriginLoc_ = -1;
+
+
+
     // Points
     GLuint pointProgram_ = 0;
     GLuint pointVao_ = 0;
+
     GLuint pointQuadVbo_ = 0;
     GLuint pointInstanceVbo_ = 0;
+
     GLint pointColorLoc_ = -1;
     GLint pointTransformLoc_ = -1;
+    GLint pointPadLoc_ = -1;
+    GLint pointEdgeSoftnessLoc_ = -1;
+
+    float pointRadiusPx = 1.5f;
+    float pointEdgeSoftnessPx = 1.5f;
+
+
 
     // Lines
     GLuint lineProgram_ = 0;
     GLuint lineVao_ = 0;
+
     GLuint lineQuadVbo_ = 0;
     GLuint lineInstanceVbo_ = 0;
+
     GLint lineColorLoc_ = -1;
     GLint lineTransformLoc_ = -1;
+    GLint linePadLoc_ = -1;
+    GLint lineEdgeSoftnessLoc_ = -1;
+
+    float lineHalfWidthPx = 0.0;
+    float lineEdgeSoftnessPx = 1.0;
+
+
 
     // Circles
     GLuint circleProgram_ = 0;
     GLuint circleVao_ = 0;
+
     GLuint circleQuadVbo_ = 0;
     GLuint circleInstanceVbo_ = 0;
+
     GLint circleTransformLoc_ = -1;
     GLint circleColorLoc_ = -1;
+    GLint circleZoomLoc_ = -1;
+    GLint circleCurveHalfWidthPxLoc_ = -1;
+    GLint circleCurveEdgeSoftnessPxLoc_ = -1;
 
+    float circleCurveHalfWidthPx = 0.1;
+    float circleCurveEdgeSoftnessPx = 1.0;
+
+
+
+    // Viewport size
     int width_ = 1;
     int height_ = 1;
-
-    float pointSizeWorld = 1.0f;
-    float halfWidthWorld = 1.0f;
 
 private:
     void renderGrid     (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);

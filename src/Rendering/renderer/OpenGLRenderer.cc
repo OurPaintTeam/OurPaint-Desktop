@@ -26,7 +26,7 @@ struct LineInstance {
     float y1;
     float x2;
     float y2;
-    float halfWidth;
+    float halfWidthWorld;
 };
 }
 
@@ -74,24 +74,26 @@ void OpenGLRenderer::shutdown() {
     gridColorLoc_ = -1;
 
     // Points states
-    if (pointInstanceVbo_) {
-        glDeleteBuffers(1, &pointInstanceVbo_);
-    }
-    if (pointQuadVbo_) {
-        glDeleteBuffers(1, &pointQuadVbo_);
+    if (pointProgram_) {
+        glDeleteProgram(pointProgram_);
     }
     if (pointVao_) {
         glDeleteVertexArrays(1, &pointVao_);
     }
-    if (pointProgram_) {
-        glDeleteProgram(pointProgram_);
+    if (pointQuadVbo_) {
+        glDeleteBuffers(1, &pointQuadVbo_);
     }
-    pointInstanceVbo_ = 0;
-    pointQuadVbo_ = 0;
-    pointVao_ = 0;
+    if (pointInstanceVbo_) {
+        glDeleteBuffers(1, &pointInstanceVbo_);
+    }
     pointProgram_ = 0;
+    pointVao_ = 0;
+    pointQuadVbo_ = 0;
+    pointInstanceVbo_ = 0;
     pointColorLoc_ = -1;
     pointTransformLoc_ = -1;
+    pointPadLoc_ = -1;
+    pointEdgeSoftnessLoc_ = -1;
 
     // Line states
     if (lineInstanceVbo_) {
@@ -150,10 +152,29 @@ void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera,
         return;
     }
 
+    //std::cout << "Camera center: " << camera.center().x << ' ' << camera.center().y << ", zoom: " << camera.zoom() << '\n';
+
     glUseProgram(gridProgram_);
 
     glm::mat4 viewProj = camera.viewProjectionMatrix();
     glm::mat4 invViewProj = glm::inverse(viewProj);
+
+    double zoom = camera.zoom() / 100.0;
+    double zoomLevel = std::log2(zoom);
+    double zoomFactor = std::pow(2.0, std::floor(zoomLevel));
+
+    double cellSize = 1.0 / zoomFactor;
+    double subCellSize = cellSize / 5.0;
+
+    double camX = camera.center().x;
+    double camY = camera.center().y;
+
+    double originX = std::floor(camX / cellSize) * cellSize;
+    double originY = std::floor(camY / cellSize) * cellSize;
+
+    glUniform1f(gridCellSizeLoc_, static_cast<float>(cellSize));
+    glUniform1f(gridSubCellSizeLoc_, static_cast<float>(subCellSize));
+    glUniform2f(gridOriginLoc_, static_cast<float>(originX), static_cast<float>(originY));
 
     if (gridColorLoc_ >= 0) {
         glUniform3f(gridColorLoc_, 0.5f, 0.5f, 0.5f);
@@ -184,9 +205,11 @@ void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camer
         return;
     }
 
-    // 1.0 zoom = 100 pixel.
-    // 0.02 is a point size
-    pointSizeWorld = 0.02 / (camera.zoom() / 100.0);
+    float worldPerPixel = 1.0f / camera.zoom();
+    float pointSizeWorld = pointRadiusPx * worldPerPixel;
+    pointRadiusPx = glm::max(pointRadiusPx, 1e-6f);
+    float edgeSoftness = pointEdgeSoftnessPx / pointRadiusPx;
+    float pointPad = 1.0f + edgeSoftness;
 
     std::vector<PointInstance> instances;
     instances.reserve(count);
@@ -218,6 +241,14 @@ void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camer
         glUniform3f(pointColorLoc_, 0.0f, 0.0f, 0.0f);
     }
 
+    if (pointPadLoc_ >= 0) {
+        glUniform1f(pointPadLoc_, pointPad);
+    }
+
+    if (pointEdgeSoftnessLoc_ >= 0) {
+        glUniform1f(pointEdgeSoftnessLoc_, edgeSoftness);
+    }
+
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(instances.size()));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -235,18 +266,21 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera
         return;
     }
 
-    // 0.009 is a line width
-    halfWidthWorld = 0.009 / (camera.zoom() / 100.0);
+    float worldPerPixel = 1.0f / camera.zoom();
+    float lineHalfWidthWorld = lineHalfWidthPx * worldPerPixel;
+    lineHalfWidthPx = glm::max(lineHalfWidthPx, 1e-6f);
+    float lineEdgeSoftness = lineEdgeSoftnessPx / lineHalfWidthPx;
+    float linePad = 1.0f + lineEdgeSoftness;
 
     std::vector<LineInstance> instances;
     instances.reserve(count);
 
     for (const auto& l : scene.overlay.lines) {
-        instances.push_back({l.x1, l.y1, l.x2, l.y2, halfWidthWorld});
+        instances.push_back({l.x1, l.y1, l.x2, l.y2, lineHalfWidthWorld});
     }
 
     for (const auto& l : scene.lines) {
-        instances.push_back({l.x1, l.y1, l.x2, l.y2, halfWidthWorld});
+        instances.push_back({l.x1, l.y1, l.x2, l.y2, lineHalfWidthWorld});
     }
 
     glUseProgram(lineProgram_);
@@ -268,6 +302,14 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera
         glUniform3f(lineColorLoc_, 0.0f, 0.0f, 0.0f);
     }
 
+    if (linePadLoc_ >= 0) {
+        glUniform1f(linePadLoc_, linePad);
+    }
+
+    if (lineEdgeSoftnessLoc_ >= 0) {
+        glUniform1f(lineEdgeSoftnessLoc_, lineEdgeSoftness);
+    }
+
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(instances.size()));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -279,6 +321,8 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
     if (!circleProgram_ || !circleVao_ || !circleQuadVbo_ || !circleInstanceVbo_) {
         return;
     }
+
+    //float radiusPx = c.r * camera.zoom()
 
     size_t circlesCount = renderData.circles.size() + renderData.overlay.circles.size();
     if (circlesCount == 0) {
@@ -315,6 +359,18 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
         glUniform3f(circleColorLoc_, 0.0f, 0.0f, 0.0f);
     }
 
+    if (circleZoomLoc_ >= 0) {
+        glUniform1f(circleZoomLoc_, camera.zoom());
+    }
+
+    if (circleCurveHalfWidthPxLoc_ >= 0) {
+        glUniform1f(circleCurveHalfWidthPxLoc_, circleCurveHalfWidthPx);
+    }
+
+    if (circleCurveEdgeSoftnessPxLoc_ >= 0) {
+        glUniform1f(circleCurveEdgeSoftnessPxLoc_, circleCurveEdgeSoftnessPx);
+    }
+
     glDrawArraysInstanced(
         GL_TRIANGLES,
         0,                                      // first vertex
@@ -339,6 +395,10 @@ bool OpenGLRenderer::initGridPipeline() {
     gridColorLoc_ = glGetUniformLocation(gridProgram_, "uColor");
     gridZoomLoc_ = glGetUniformLocation(gridProgram_, "uZoom");
     gridInvViewProjLoc_ = glGetUniformLocation(gridProgram_, "uInvViewProj");
+
+    gridCellSizeLoc_ = glGetUniformLocation(gridProgram_, "uCellSize");
+    gridSubCellSizeLoc_ = glGetUniformLocation(gridProgram_, "uSubCellSize");
+    gridOriginLoc_ = glGetUniformLocation(gridProgram_, "uGridOrigin");
 
     const float quadVerts[] = {
         -1.0f, -1.0f,
@@ -370,8 +430,10 @@ bool OpenGLRenderer::initGridPipeline() {
 bool OpenGLRenderer::initPointPipeline() {
     createProgramFromFiles("shaders/point.vert", "shaders/point.frag", pointProgram_);
 
-    pointColorLoc_ = glGetUniformLocation(pointProgram_, "uColor");
-    pointTransformLoc_ = glGetUniformLocation(pointProgram_, "uTransform");
+    pointColorLoc_          = glGetUniformLocation(pointProgram_, "uColor");
+    pointTransformLoc_      = glGetUniformLocation(pointProgram_, "uTransform");
+    pointPadLoc_            = glGetUniformLocation(pointProgram_, "uPad");
+    pointEdgeSoftnessLoc_   = glGetUniformLocation(pointProgram_, "uEdgeSoftness");
 
     const float quadVerts[] = {
         -1.0f, -1.0f,
@@ -425,8 +487,10 @@ bool OpenGLRenderer::initPointPipeline() {
 bool OpenGLRenderer::initLinePipeline() {
     createProgramFromFiles("shaders/line.vert", "shaders/line.frag", lineProgram_);
 
-    lineColorLoc_ = glGetUniformLocation(lineProgram_, "uColor");
-    lineTransformLoc_ = glGetUniformLocation(lineProgram_, "uTransform");
+    lineColorLoc_           = glGetUniformLocation(lineProgram_, "uColor");
+    lineTransformLoc_       = glGetUniformLocation(lineProgram_, "uTransform");
+    linePadLoc_             = glGetUniformLocation(lineProgram_, "uPad");
+    lineEdgeSoftnessLoc_    = glGetUniformLocation(lineProgram_, "uEdgeSoftness");
 
     const float quadVerts[] = {
         0.0f, -1.0f,
@@ -492,7 +556,7 @@ bool OpenGLRenderer::initLinePipeline() {
         GL_FLOAT,
         GL_FALSE,
         sizeof(LineInstance),
-        reinterpret_cast<void*>(offsetof(LineInstance, halfWidth))
+        reinterpret_cast<void*>(offsetof(LineInstance, halfWidthWorld))
     );
     glVertexAttribDivisor(3, 1);
 
@@ -505,8 +569,11 @@ bool OpenGLRenderer::initLinePipeline() {
 bool OpenGLRenderer::initCirclePipeline() {
     createProgramFromFiles("shaders/circle.vert", "shaders/circle.frag", circleProgram_);
 
-    circleColorLoc_ = glGetUniformLocation(circleProgram_, "uColor");
-    circleTransformLoc_ = glGetUniformLocation(circleProgram_, "uTransform");
+    circleColorLoc_                 = glGetUniformLocation(circleProgram_, "uColor");
+    circleTransformLoc_             = glGetUniformLocation(circleProgram_, "uTransform");
+    circleZoomLoc_                  = glGetUniformLocation(circleProgram_, "uZoom");
+    circleCurveHalfWidthPxLoc_      = glGetUniformLocation(circleProgram_, "uCurveHalfWidthPx");
+    circleCurveEdgeSoftnessPxLoc_   = glGetUniformLocation(circleProgram_, "uEdgeSoftnessPx");
 
     const float quadVerts[] = {
         -1.0f, -1.0f,

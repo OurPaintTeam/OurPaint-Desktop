@@ -11,15 +11,18 @@ void Camera2D::setViewport(int width, int height, double devicePixelRatio) {
 
 void Camera2D::setCenter(const glm::dvec2& center) {
     center_ = center;
+    //clampToWorld();
 }
 
 void Camera2D::setZoom(double zoom) {
     zoom_ = std::clamp(zoom, kMinZoom, kMaxZoom);
+    //clampToWorld();
 }
 
 void Camera2D::panScreen(double dx, double dy) {
     center_.x -= dx / zoom_;
     center_.y += dy / zoom_;
+    //clampToWorld();
 }
 
 void Camera2D::zoomAtScreen(double factor, const glm::dvec2& screenPoint) {
@@ -34,6 +37,7 @@ void Camera2D::zoomAtScreen(double factor, const glm::dvec2& screenPoint) {
     const glm::dvec2 after = screenToWorld(screenPoint);
 
     center_ += (before - after);
+    //clampToWorld();
 }
 
 glm::dvec2 Camera2D::screenToWorld(const glm::dvec2& p) const {
@@ -82,6 +86,32 @@ glm::mat4 Camera2D::projectionMatrix() const {
 
 glm::mat4 Camera2D::viewProjectionMatrix() const {
     return projectionMatrix() * viewMatrix();
+}
+
+void Camera2D::clampToWorld()
+{
+    const double viewWidthWorld  = viewportW_ / zoom_;
+    const double viewHeightWorld = viewportH_ / zoom_;
+
+    const double halfWidthWorld = viewWidthWorld * 0.5;
+    const double halfHeightWorld = viewHeightWorld * 0.5;
+
+    const double minCenterX = worldMin_.x + halfWidthWorld;
+    const double maxCenterX = worldMax_.x - halfWidthWorld;
+    const double minCenterY = worldMin_.y + halfHeightWorld;
+    const double maxCenterY = worldMax_.y - halfHeightWorld;
+
+    if (minCenterX > maxCenterX) {
+        center_.x = 0.5 * (worldMin_.x + worldMax_.x);
+    } else {
+        center_.x = std::clamp(center_.x, minCenterX, maxCenterX);
+    }
+
+    if (minCenterY > maxCenterY) {
+        center_.y = 0.5 * (worldMin_.y + worldMax_.y);
+    } else {
+        center_.y = std::clamp(center_.y, minCenterY, maxCenterY);
+    }
 }
 
 
