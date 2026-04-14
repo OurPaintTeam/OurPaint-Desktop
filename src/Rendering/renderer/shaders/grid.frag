@@ -7,6 +7,10 @@ uniform vec3 uColor;
 uniform float uZoom;
 uniform mat4 uInvViewProj;
 
+uniform float uCellSize;
+uniform float uSubCellSize;
+uniform vec2 uGridOrigin;
+
 const float BASE_CELL_SIZE = 1.0;
 const float SUBGRID_DIVISIONS = 5.0;
 const float SUBGRID_ALPHA = 0.3;
@@ -34,7 +38,7 @@ void main() {
     // Calculate grid lines
     vec2 gridPos = worldPos / cellSize;
     vec2 gridFrac = abs(fract(gridPos - 0.5) - 0.5);
-    vec2 distToLine = abs(gridFrac) * cellSize;
+    vec2 distToLine = gridFrac * cellSize;
 
     // Main grid lines (thicker)
     float lineX = 1.0 - smoothstep(0.0, lineWidth, distToLine.x);
@@ -42,18 +46,18 @@ void main() {
     float isLine = max(lineX, lineY);
 
     // Sub-grid for finer detail when zoomed in
-        float subCellSize = cellSize / SUBGRID_DIVISIONS;
-        vec2 subGridPos = worldPos / subCellSize;
-        vec2 subGridFrac = fract(subGridPos);
-        vec2 subDistToLine = min(subGridFrac, 1.0 - subGridFrac) * subCellSize;
+    float subCellSize = cellSize / SUBGRID_DIVISIONS;
+    vec2 subGridPos = worldPos / subCellSize;
+    vec2 subGridFrac = fract(subGridPos);
+    vec2 subDistToLine = min(subGridFrac, 1.0 - subGridFrac) * subCellSize;
 
-        float subLineWidth = lineWidth * 1.0;
-        float subLineX = 1.0 - smoothstep(0.0, subLineWidth, subDistToLine.x);
-        float subLineY = 1.0 - smoothstep(0.0, subLineWidth, subDistToLine.y);
-        float subLine = max(subLineX, subLineY);
+    float subLineWidth = lineWidth * 1.0;
+    float subLineX = 1.0 - smoothstep(0.0, subLineWidth, subDistToLine.x);
+    float subLineY = 1.0 - smoothstep(0.0, subLineWidth, subDistToLine.y);
+    float subLine = max(subLineX, subLineY);
 
-        // Blend sub-grid with lower opacity
-        isLine = max(isLine, subLine * SUBGRID_ALPHA);
+    // Blend sub-grid with lower opacity
+    isLine = max(isLine, subLine * SUBGRID_ALPHA);
 
     // Axes with consistent width
     float axisWidth = lineWidth * AXIS_WIDTH_MULT;

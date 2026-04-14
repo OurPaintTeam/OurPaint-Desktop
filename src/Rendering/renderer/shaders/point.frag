@@ -3,17 +3,18 @@
 in vec2 vLocalPos;
 
 uniform vec3 uColor;
+uniform float uEdgeSoftness;
+
 out vec4 FragColor;
 
 void main() {
     float d = length(vLocalPos);
-    float aa = max(fwidth(d), 1e-4);
-    float alpha = 1.0 - smoothstep(1.0 - aa, 1.0, d);
-
-    if (alpha <= 0.0) {
-        discard;
+    float alpha;
+    if (uEdgeSoftness <= 0.0) {
+        alpha = d <= 1.0 ? 1.0 : 0.0;
+    } else {
+        alpha = 1.0 - smoothstep(1.0, 1.0 + uEdgeSoftness, d);
     }
-
     FragColor = vec4(uColor, alpha);
 }
 
