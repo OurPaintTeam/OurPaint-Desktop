@@ -12,7 +12,7 @@
 #include "RenderData.h"
 #include "Scene.h"
 #include "ViewportController.h"
-#include "RenderDataObserver.h"
+#include "RenderDataBuilder.h"
 #include "UIManager.h"
 
 Application::Application(int& argc, char** argv)
@@ -50,25 +50,28 @@ void Application::init(int& argc, char** argv) {
     renderData_->overlay.lines.reserve(32);
     renderData_->overlay.circles.reserve(32);
 
+    // Overlay
+    overlay_ = new OverlayModel();
+
+    // picker
+    picker_ = new Cpu2dPicker(documentManager_->getActiveDocument()->scene(), *camera2D_);
 
     // init app
-    editorSession_ = new EditorSession(*documentManager_, *camera2D_, *renderData_);
+    editorSession_ = new EditorSession(*documentManager_, *camera2D_, *renderData_, *picker_, *overlay_);
 
     // init renderer
     renderer_ = new renderer::OpenGLRenderer();
 
+    // init core observer
+    builder_ = new RenderDataBuilder(documentManager_->getActiveDocument()->scene(), *overlay_, *renderData_);
+
     // init viewport controller
-    viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderData_);
+    viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderData_, *builder_);
 
     // set EventSink viewport controller to viewport host
     viewportHost_->setEventSink(viewportController_);
 
 
-    // init core observer
-    renderDataObserver_ = new RenderDataObserver(*renderData_);
-
-    // set observer to scene
-    documentManager_->getActiveDocument()->scene().setObserver(renderDataObserver_);
 
 
     // init UI
@@ -93,40 +96,7 @@ void Application::init(int& argc, char** argv) {
     binder_ = new QtMainWindowBinder(*mainWindow_, *uiController_);
 
     // other
-    editorSession_->select(ToolId::CircleByDiameter);
-
-    // renderData_->circles.reserve(1'000'000);
-    // for (int i = 0; i < 1'000; i++) {
-    //     for (int j = 0; j < 1'000; ++j) {
-    //         renderData_->circles.push_back(renderer::Circle(i, j, 1.0));
-    //     }
-    // }
-
-    // for (int i = 0; i < 1'000; i++) {
-    //     for (int j = 0; j < 1'000; ++j) {
-    //         input::MouseButtonEvent e1;
-    //         e1.x = i;
-    //         e1.y = j;
-    //         e1.action = input::MouseButtonAction::Press;
-    //         e1.button = input::MouseButton::Left;
-    //         editorSession_->activeTool()->onMouseButton(e1);
-    //
-    //         input::MouseMoveEvent e2;
-    //         e2.x = i + 1;
-    //         e2.y = j + 1;
-    //         editorSession_->activeTool()->onMouseMove(e2);
-    //
-    //         input::MouseButtonEvent e3;
-    //         e3.x = i + 1;
-    //         e3.y = j + 1;
-    //         e3.action = input::MouseButtonAction::Press;
-    //         e3.button = input::MouseButton::Left;
-    //         editorSession_->activeTool()->onMouseButton(e3);
-    //
-    //
-    //         //renderData_->circles.push_back(renderer::Circle(i, j, 1.0));
-    //     }
-    // }
+    editorSession_->select(ToolId::Cursor);
 
 }
 

@@ -9,6 +9,8 @@
 #include "QtMainWindowBinder.h"
 #include "UIManager.h"
 #include "Camera2D.h"
+#include "Cpu2dPicker.h"
+#include "OverlayModel.h"
 
 class DocumentManager;
 
@@ -19,7 +21,7 @@ class UIController;
 class ViewportController;
 
 class UIObserver;
-class RenderDataObserver;
+class RenderDataBuilder;
 
 namespace renderer { class RenderData; }
 
@@ -59,7 +61,7 @@ private:
 
     // Core observer
     UIObserver* uiObserver_;
-    RenderDataObserver* renderDataObserver_;
+    RenderDataBuilder* builder_;
 
     // Application
     UI::MainWindow* mainWindow_;
@@ -67,6 +69,8 @@ private:
     EditorSession* editorSession_;
     IInteractionTool* interactionTool_;
     Camera2D* camera2D_;
+    Cpu2dPicker* picker_;
+    OverlayModel* overlay_;
 };
 
 #endif // APPLICATION_H_

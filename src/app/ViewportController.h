@@ -9,10 +9,15 @@
 #include "InteractionTools/EditorSession.h"
 #include "RenderData.h"
 #include "Camera2D.h"
+#include "RenderDataBuilder.h"
 
 class ViewportController : public IViewportController {
 public:
-    ViewportController(Camera2D& view, EditorSession& session, IRenderer& renderer, renderer::RenderData& renderScene);
+    ViewportController(Camera2D& view,
+                       EditorSession& session,
+                       IRenderer& renderer,
+                       renderer::RenderData& renderScene,
+                       RenderDataBuilder& builder);
 
     void initialize();
 
@@ -32,6 +37,7 @@ private:
     EditorSession& editorSession_;
     IRenderer& renderer_;
     renderer::RenderData& renderScene_;
+    RenderDataBuilder& builder_;
 
     bool panning_ = false;
     double lastX_ = 0.0;

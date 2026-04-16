@@ -4,7 +4,7 @@
 #include "UndoRedo.h"
 #include "ConsoleManager.h"
 #include "DocumentManager.h"
-#include "Objects.h"
+#include "objects/Objects.h"
 #include "Scene.h"
 #include "RenderData.h"
 

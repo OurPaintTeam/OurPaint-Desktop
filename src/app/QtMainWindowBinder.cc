@@ -1,5 +1,7 @@
 #include "QtMainWindowBinder.h"
 
+#include "ToolsType.h"
+
 QtMainWindowBinder::QtMainWindowBinder(UI::MainWindow& window,
                                        UIController& controller,
                                        QObject* parent)
@@ -82,79 +84,97 @@ QtMainWindowBinder::QtMainWindowBinder(UI::MainWindow& window,
 
 
     // Tools - constrains
-    QObject::connect(&window, &UI::MainWindow::pointLineDistanceTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintPointLineDistance);
-    });
-    QObject::connect(&window, &UI::MainWindow::pointOnLineTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintPointOnLine);
-    });
-    QObject::connect(&window, &UI::MainWindow::pointPointDistanceTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintPointPointDistance);
-    });
-    QObject::connect(&window, &UI::MainWindow::coincidentPointsTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintCoincidentPoints);
-    });
-    QObject::connect(&window, &UI::MainWindow::lineCircleDistanceTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintLineCircleDistance);
-    });
-    QObject::connect(&window, &UI::MainWindow::lineOnCircleTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintLineOnCircle);
-    });
-    QObject::connect(&window, &UI::MainWindow::lineInCircleTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintLineInCircle);
-    });
-    QObject::connect(&window, &UI::MainWindow::parallelLinesTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintParallelLines);
-    });
-    QObject::connect(&window, &UI::MainWindow::perpendicularLinesTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintPerpendicularLines);
-    });
-    QObject::connect(&window, &UI::MainWindow::angleBetweenLinesTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ConstraintAngleBetweenLines);
+    QObject::connect(&window, &UI::MainWindow::constraintTriggered, this,[this](UI::ConstraintType & _t1) {
+        switch (_t1) {
+            case UI::ConstraintType::PointLineDistance:
+                controller_.selectTool(ToolId::ConstraintPointPointDistance);
+                break;
+            case UI::ConstraintType::PointOnLine:
+                controller_.selectTool(ToolId::ConstraintPointOnLine);
+                break;
+            case UI::ConstraintType::PointPointDistance:
+                controller_.selectTool(ToolId::ConstraintPointPointDistance);
+                break;
+            case UI::ConstraintType::CoincidentPoints:
+                controller_.selectTool(ToolId::ConstraintCoincidentPoints);
+                break;
+            case UI::ConstraintType::LineCircleDistance:
+                controller_.selectTool(ToolId::ConstraintLineCircleDistance);
+                break;
+            case UI::ConstraintType::LineOnCircle:
+                controller_.selectTool(ToolId::ConstraintLineOnCircle);
+                break;
+            case UI::ConstraintType::LineInCircle:
+                controller_.selectTool(ToolId::ConstraintLineInCircle);
+                break;
+            case UI::ConstraintType::ParallelLines:
+                controller_.selectTool(ToolId::ConstraintParallelLines);
+                break;
+            case UI::ConstraintType::PerpendicularLines:
+                controller_.selectTool(ToolId::ConstraintPerpendicularLines);
+                break;
+            case UI::ConstraintType::AngleBetweenLines:
+                controller_.selectTool(ToolId::ConstraintAngleBetweenLines);
+                break;
+            default:
+                break;
+        }
     });
 
     // Tools - point/line
-    QObject::connect(&window, &UI::MainWindow::pointTriggered, this,[this]() {
-        controller_.selectTool(ToolId::Point);
-    });
-    QObject::connect(&window, &UI::MainWindow::lineTriggered, this,[this]() {
-        controller_.selectTool(ToolId::Line);
-    });
-    QObject::connect(&window, &UI::MainWindow::polylineTriggered, this,[this]() {
-        controller_.selectTool(ToolId::Polyline);
-    });
-    QObject::connect(&window, &UI::MainWindow::infiniteLineTriggered, this,[this]() {
-        controller_.selectTool(ToolId::InfiniteLine);
-    });
+    QObject::connect(&window, &UI::MainWindow::primitiveTriggered, this,[this](UI::PrimitiveType & _t1) {
+        switch (_t1) {
+            case UI::PrimitiveType::Point:
+                controller_.selectTool(ToolId::Point);
+                break;
 
-    // Tools - circle
-    QObject::connect(&window, &UI::MainWindow::circleByDiameterTriggered, this,[this]() {
-        controller_.selectTool(ToolId::CircleByDiameter);
-    });
-    QObject::connect(&window, &UI::MainWindow::circleTwoPointsTriggered, this,[this]() {
-        controller_.selectTool(ToolId::CircleTwoPoints);
-    });
-    QObject::connect(&window, &UI::MainWindow::ellipseThreePointsTriggered, this,[this]() {
-        controller_.selectTool(ToolId::EllipseThreePoints);
-    });
+            case UI::PrimitiveType::Line:
+                controller_.selectTool(ToolId::Line);
+                break;
+            case UI::PrimitiveType::Polyline:
+                controller_.selectTool(ToolId::Polyline);
+                break;
+            case UI::PrimitiveType::InfiniteLine:
+                controller_.selectTool(ToolId::InfiniteLine);
+                break;
+            case UI::PrimitiveType::LineSettings:
+                //controller_.selectTool(ToolId::);
+                break;
 
-    // Tools - arc
-    QObject::connect(&window, &UI::MainWindow::arcByRadiusTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ArcByRadius);
-    });
-    QObject::connect(&window, &UI::MainWindow::arcByDiameterTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ArcByDiameter);
-    });
-    QObject::connect(&window, &UI::MainWindow::arcByThreePointsTriggered, this,[this]() {
-        controller_.selectTool(ToolId::ArcByThreePoints);
+            case UI::PrimitiveType::CircleByDiameter:
+                controller_.selectTool(ToolId::CircleByDiameter);
+                break;
+            case UI::PrimitiveType::CircleTwoPoints:
+                controller_.selectTool(ToolId::CircleTwoPoints);
+                break;
+            case UI::PrimitiveType::EllipseThreePoints:
+                //controller_.selectTool(ToolId::);
+                break;
+            case UI::PrimitiveType::CircleSettings:
+                //controller_.selectTool(ToolId::);
+                break;
+
+            case UI::PrimitiveType::ArcByRadius:
+                //controller_.selectTool(ToolId::);
+                break;
+            case UI::PrimitiveType::ArcByDiameter:
+                //controller_.selectTool(ToolId::);
+                break;
+            case UI::PrimitiveType::ArcThreePoints:
+                //controller_.selectTool(ToolId::);
+                break;
+            case UI::PrimitiveType::ArcSettings:
+                //controller_.selectTool(ToolId::);
+                break;
+            default: break;
+        }
     });
 
     // Tools - cursor/size
-    QObject::connect(&window, &UI::MainWindow::cursorTriggered, this,[this]() {
-        controller_.selectTool(ToolId::Cursor);
-    });
-    QObject::connect(&window, &UI::MainWindow::sizeTriggered, this,[this]() {
-        controller_.selectTool(ToolId::Size);
+    QObject::connect(&window, &UI::MainWindow::toolsTriggered, this,[this](UI::ToolsType & _t1) {
+        if (_t1 == UI::ToolsType::Cursor) {
+            controller_.selectTool(ToolId::Cursor);
+        }
     });
 }
 

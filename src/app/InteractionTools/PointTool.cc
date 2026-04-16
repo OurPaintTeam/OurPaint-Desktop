@@ -1,6 +1,6 @@
 #include "PointTool.h"
 #include "Document.h"
-#include "Objects.h"
+#include "objects/Objects.h"
 #include "Scene.h"
 #include "Transaction.h"
 #include "ConsoleManager.h"

@@ -3,7 +3,7 @@ add_executable(ourpaint
         Application.cc
         QtPlatformRuntime.cc
         QtViewportHost.cc
-        RenderDataObserver.cc
+        RenderDataBuilder.cc
         ViewportController.cc
         QtMainWindowBinder.cc
         UIController.cc
@@ -12,6 +12,8 @@ add_executable(ourpaint
         InteractionTools/LineTool.cc
         InteractionTools/CircleTool.cc
         InteractionTools/CursorTool.cc
+        Cpu2dPicker.cc
+        SelectionModel.cc
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)

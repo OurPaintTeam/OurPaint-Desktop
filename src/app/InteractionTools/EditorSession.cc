@@ -5,8 +5,20 @@
 #include "CircleTool.h"
 #include "CursorTool.h"
 
-EditorSession::EditorSession(DocumentManager& manager, Camera2D& camera, renderer::RenderData& renderData)
-    : documentManager_(manager), camera_(camera), renderData_(renderData) {
+EditorSession::EditorSession(DocumentManager& manager,
+                            Camera2D& camera,
+                            renderer::RenderData& renderData,
+                            Cpu2dPicker& picker,
+                            OverlayModel& overlay)
+    : documentManager_(manager),
+      camera_(camera),
+      renderData_(renderData),
+      picker_(picker),
+      overlay_(overlay),
+      cursorTool_(documentManager_, camera_, picker_, overlay_),
+      pointTool_(documentManager_, camera_),
+      lineTool_(documentManager_, camera_, renderData_),
+      circleTool_(documentManager_, camera_, renderData_) {
     activeTool_ = new PointTool(documentManager_, camera_);
 }
 
@@ -15,21 +27,19 @@ EditorSession::~EditorSession() {
 }
 
 void EditorSession::select(ToolId id) {
+    activeTool_->cancel();
     switch (id) {
         case ToolId::Cursor:
-            delete activeTool_;
-            activeTool_ = new CursorTool(documentManager_, camera_, renderData_);
+            activeTool_ = &cursorTool_;
             break;
         case ToolId::Size:
 
             break;
         case ToolId::Point:
-            delete activeTool_;
-            activeTool_ = new PointTool(documentManager_, camera_);
+            activeTool_ = &pointTool_;
             break;
         case ToolId::Line:
-            delete activeTool_;
-            activeTool_ = new LineTool(documentManager_, camera_, renderData_);
+            activeTool_ = &lineTool_;
             break;
         case ToolId::Polyline:
 
@@ -39,16 +49,13 @@ void EditorSession::select(ToolId id) {
             break;
 
         case ToolId::CircleByDiameter:
-            delete activeTool_;
-            activeTool_ = new CircleTool(documentManager_, camera_, renderData_);
+            activeTool_ = &circleTool_;
             break;
         case ToolId::CircleTwoPoints:
-            delete activeTool_;
-            activeTool_ = new CircleTool(documentManager_, camera_, renderData_);
+            activeTool_ = &circleTool_;
             break;
         case ToolId::EllipseThreePoints:
-            delete activeTool_;
-            activeTool_ = new CircleTool(documentManager_, camera_, renderData_);
+            activeTool_ = &circleTool_;
             break;
 
         case ToolId::ArcByRadius:

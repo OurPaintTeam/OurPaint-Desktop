@@ -4,14 +4,17 @@
 #include "Camera2D.h"
 #include "DocumentManager.h"
 #include "IInteractionTool.h"
-#include "Objects.h"
-#include "RenderData.h"
-
+#include "objects/Objects.h"
+#include "../Cpu2dPicker.h"
+#include "../OverlayModel.h"
 #include <unordered_set>
 
 class CursorTool : public IInteractionTool {
 public:
-    explicit CursorTool(DocumentManager& documentManager, Camera2D& camera, renderer::RenderData& renderData);
+    explicit CursorTool(DocumentManager& documentManager,
+                        Camera2D& camera,
+                        Cpu2dPicker& picker,
+                        OverlayModel& overlay);
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;
@@ -20,17 +23,19 @@ public:
 
 private:
     enum class State {
-        Waiting,
-        Selected
+        Idle,
+        Pressed,
+        DraggingSelection,
+        MarqueeSelection
     };
 
-    State state_ = State::Waiting;
+    State state_ = State::Idle;
     DocumentManager& documentManager_;
     Camera2D& camera_;
-    renderer::RenderData& renderData_;
-    std::unordered_set<SceneObjects::ID> ids_;
-    std::vector<ObjectData> objs_;
     glm::dvec2 lastPos_{};
+    glm::dvec2 lastScreenPos_{};
+    Cpu2dPicker& picker_;
+    OverlayModel& overlay_;
 };
 
 #endif // ! OURPAINT_APPLICATION_CURSOR_TOOL_H_

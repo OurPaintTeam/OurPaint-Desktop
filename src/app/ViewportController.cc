@@ -3,8 +3,12 @@
 #include "Document.h"
 #include "Scene.h"
 
-ViewportController::ViewportController(Camera2D& camera2D, EditorSession& editorSession_, IRenderer& renderer, renderer::RenderData& renderScene)
-    : camera2D_(camera2D), editorSession_(editorSession_), renderer_(renderer), renderScene_(renderScene) {}
+ViewportController::ViewportController(Camera2D& camera2D,
+                                       EditorSession& editorSession_,
+                                       IRenderer& renderer,
+                                       renderer::RenderData& renderScene,
+                                       RenderDataBuilder& builder)
+    : camera2D_(camera2D), editorSession_(editorSession_), renderer_(renderer), renderScene_(renderScene), builder_(builder) {}
 
 void ViewportController::initialize() {
     //auto target = host_.getRenderTargetDesc();
@@ -42,11 +46,15 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
 
     editorSession_.activeTool()->onMouseMove(e);
 
+    builder_.rebuild();
+
     return true;
 }
 
 bool ViewportController::onMouseButton(const input::MouseButtonEvent& e) {
     editorSession_.activeTool()->onMouseButton(e);
+
+    builder_.rebuild();
 
     return true;
 }
@@ -71,13 +79,13 @@ bool ViewportController::onWheel(const input::WheelEvent& e) {
 
 bool ViewportController::onKey(const input::KeyEvent& e) {
     if (e.key == input::KeyCode::Escape && e.action == input::KeyAction::Press) {
-        bool canceled = editorSession_.activeTool()->cancel();
-        if (!canceled) {
-            editorSession_.select(ToolId::Cursor);
-        }
+        editorSession_.select(ToolId::Cursor);
         return true;
     }
+
     editorSession_.activeTool()->onKey(e);
+
+    builder_.rebuild();
 
     return true;
 }
