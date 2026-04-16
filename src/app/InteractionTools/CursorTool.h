@@ -33,9 +33,12 @@ private:
     DocumentManager& documentManager_;
     Camera2D& camera_;
     glm::dvec2 lastPos_{};
-    glm::dvec2 lastScreenPos_{};
+    glm::dvec2 pressWorldPos_{};
+    glm::ivec2 lastScreenPos_{};
     Cpu2dPicker& picker_;
     OverlayModel& overlay_;
+
+    std::vector<SceneObjects::ID> marqueeBaseSelection_;
 };
 
 #endif // ! OURPAINT_APPLICATION_CURSOR_TOOL_H_
