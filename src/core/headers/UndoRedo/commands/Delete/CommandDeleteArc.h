@@ -3,7 +3,7 @@
 
 #include "CommandDeleteObject.h"
 #include "ID.h"
-#include "Objects.h"
+#include "objects/Objects.h"
 #include "Scene.h"
 
 namespace UndoRedo {

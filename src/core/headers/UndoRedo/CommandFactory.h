@@ -5,7 +5,7 @@
 #include <vector>
 #include "Transaction.h"
 #include "Scene.h"
-#include "Objects.h"
+#include "objects/Objects.h"
 
 #include "CommandAddObject.h"
 #include "CommandAddPoint.h"

@@ -2,8 +2,8 @@
 #define OURPAINT_HEADERS_COMMANDS_COMMAND_ADD_POINT_
 
 #include "CommandAddObject.h"
-#include "Scene_ID.h"
-#include "Objects.h"
+#include "objects/Scene_ID.h"
+#include "objects/Objects.h"
 #include "Scene.h"
 
 namespace UndoRedo {

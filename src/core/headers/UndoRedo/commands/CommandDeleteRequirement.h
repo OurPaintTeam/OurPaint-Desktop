@@ -4,7 +4,7 @@
 #include "Command.h"
 #include "Scene.h"
 #include "ID.h"
-#include "Objects.h"
+#include "objects/Objects.h"
 
 namespace UndoRedo {
 

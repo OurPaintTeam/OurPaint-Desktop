@@ -3,8 +3,8 @@
 
 #include "CommandAddObject.h"
 #include "Scene.h"
-#include "Scene_ID.h"
-#include "Objects.h"
+#include "objects/Scene_ID.h"
+#include "objects/Objects.h"
 
 namespace UndoRedo {
 

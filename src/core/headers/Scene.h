@@ -94,6 +94,7 @@ public:
     bool hasRequirement(SceneObjects::ID id) const;
 
     void moveObject(SceneObjects::ID objectID, double dx, double dy);
+    void moveObjects(std::vector<SceneObjects::ID> ids, double dx, double dy);
     void movePoint(SceneObjects::ID pointID, double dx, double dy);
     void moveLine(SceneObjects::ID lineID, double dx, double dy);
     void moveCircle(SceneObjects::ID circleID, double dx, double dy);
