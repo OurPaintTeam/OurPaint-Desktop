@@ -2,7 +2,7 @@
 
 #include "ToolsType.h"
 
-QtMainWindowBinder::QtMainWindowBinder(UI::MainWindow& window,
+QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window,
                                        UIController& controller,
                                        QObject* parent)
     : QObject(parent)
@@ -10,81 +10,81 @@ QtMainWindowBinder::QtMainWindowBinder(UI::MainWindow& window,
     , controller_(controller)  {
 
     // Console
-    QObject::connect(&window, &UI::MainWindow::sentCommandTriggered,
+    QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered,
                      this, [this](const QString & str) {
                          controller_.executeConsoleCommand(str.toStdString());
                      });
 
     // --- Open project in new window ---
-    QObject::connect(&window, &UI::MainWindow::openNewWindowOpenProjectTriggered,
+    QObject::connect(&window, &UI::ProjectManager::openNewWindowOpenProjectTriggered,
                      this, [this]() {
                         controller_.openProjectInNewWindow();
                      });
 
     // --- Create project in new window ---
-    QObject::connect(&window, &UI::MainWindow::openNewWindowCreateProjectTriggered,
+    QObject::connect(&window, &UI::ProjectManager::openNewWindowCreateProjectTriggered,
                      this,[this]() {
                          controller_.createProjectInNewWindow();
                      });
 
     // --- Open project in this window ---
-    QObject::connect(&window, &UI::MainWindow::openProjectThisWindowTriggered,
+    QObject::connect(&window, &UI::ProjectManager::openProjectThisWindowTriggered,
                      this,[this]() {
                          controller_.openProjectInCurrentWindow();
                      });
 
     // --- Create project in this window ---
-    QObject::connect(&window, &UI::MainWindow::createProjectThisWindowTriggered,
+    QObject::connect(&window, &UI::ProjectManager::createProjectThisWindowTriggered,
                      this,[this]() {
                          controller_.createProjectInCurrentWindow();
                      });
 
     // --- Open file ---
-    QObject::connect(&window, &UI::MainWindow::openFileTriggered,
+    QObject::connect(&window, &UI::ProjectManager::openFileTriggered,
                      this,[this]() {
                          controller_.openFile();
                      });
 
     // --- Rename tab ---
-    QObject::connect(&window, &UI::MainWindow::renameTabTriggered,
+    QObject::connect(&window, &UI::ProjectManager::renameTabTriggered,
                      this,[this]() {
                          controller_.renameTab();
                      });
 
     // --- Remove tab ---
-    QObject::connect(&window, &UI::MainWindow::removeTabTriggered,
+    QObject::connect(&window, &UI::ProjectManager::removeTabTriggered,
                      this,[this]() {
                          controller_.removeTab();
                      });
 
     // --- Create file ---
-    QObject::connect(&window, &UI::MainWindow::createFileTriggered,
+    QObject::connect(&window, &UI::ProjectManager::createFileTriggered,
                      this,[this]() {
                          controller_.createFile();
                      });
 
     // --- Project ---
 
-    QObject::connect(&window, &UI::MainWindow::renameProjectTriggered,
+    QObject::connect(&window, &UI::ProjectManager::renameProjectTriggered,
                      this,[this]() {
                          controller_.renameProject();
                      });
 
     // --- Delete project ---
-    QObject::connect(&window, &UI::MainWindow::deleteProjectTriggered,
+    QObject::connect(&window, &UI::ProjectManager::deleteProjectTriggered,
                      this,[this]() {
                             controller_.deleteProject();
                          });
 
     // Close
-    QObject::connect(&window, &UI::MainWindow::closeApplication,
+   /* QObject::connect(&window, &UI::ProjectManager::closeApplication,
                      this,[this]() {
                          controller_.closeApplication();
-                     });
+                     });*/
 
 
     // Tools - constrains
-    QObject::connect(&window, &UI::MainWindow::constraintTriggered, this,[this](UI::ConstraintType & _t1) {
+    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this,[this](UI::ConstraintType & _t1) {
         switch (_t1) {
             case UI::ConstraintType::PointLineDistance:
                 controller_.selectTool(ToolId::ConstraintPointPointDistance);
@@ -122,7 +122,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::MainWindow& window,
     });
 
     // Tools - point/line
-    QObject::connect(&window, &UI::MainWindow::primitiveTriggered, this,[this](UI::PrimitiveType & _t1) {
+    QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this,[this](UI::PrimitiveType & _t1) {
         switch (_t1) {
             case UI::PrimitiveType::Point:
                 controller_.selectTool(ToolId::Point);
@@ -171,7 +171,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::MainWindow& window,
     });
 
     // Tools - cursor/size
-    QObject::connect(&window, &UI::MainWindow::toolsTriggered, this,[this](UI::ToolsType & _t1) {
+    QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this,[this](UI::ToolsType & _t1) {
         if (_t1 == UI::ToolsType::Cursor) {
             controller_.selectTool(ToolId::Cursor);
         }

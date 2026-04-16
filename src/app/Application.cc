@@ -4,16 +4,16 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include "App/CustomConsole.h"
 #include "Document.h"
 #include "DocumentManager.h"
 #include "OpenGLRenderer.h"
 #include "QtPlatformRuntime.h"
 #include "QtViewportHost.h"
 #include "RenderData.h"
+#include "RenderDataBuilder.h"
 #include "Scene.h"
 #include "ViewportController.h"
-#include "RenderDataBuilder.h"
-#include "UIManager.h"
 
 Application::Application(int& argc, char** argv)
         : documentManager_(nullptr)
@@ -76,18 +76,8 @@ void Application::init(int& argc, char** argv) {
 
     // init UI
     Q_INIT_RESOURCE(resources);
-
-    //QWidget* renderWidget = qt_host->createContainer();
-    //renderWidget->show();
-
-
-    mainWindow_ = new UI::MainWindow();
-
-    mainWindow_->onOpenProjectSlot({"", ""});
-    mainWindow_->setQWindowRender(qt_host);
+    mainWindow_ = new UI::ProjectManager({}, qt_host,nullptr);
     mainWindow_->addTabSlot("ds");
-
-    mainWindow_->show();
 
     // init UIController
     uiController_ = new UIController(*editorSession_, *documentManager_, *viewportHost_);

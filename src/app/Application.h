@@ -7,7 +7,6 @@
 #include "InteractionTools/EditorSession.h"
 #include "InteractionTools/IInteractionTool.h"
 #include "QtMainWindowBinder.h"
-#include "UIManager.h"
 #include "Camera2D.h"
 #include "Cpu2dPicker.h"
 #include "OverlayModel.h"
@@ -64,7 +63,7 @@ private:
     RenderDataBuilder* builder_;
 
     // Application
-    UI::MainWindow* mainWindow_;
+    UI::ProjectManager* mainWindow_;
     QtMainWindowBinder* binder_;
     EditorSession* editorSession_;
     IInteractionTool* interactionTool_;

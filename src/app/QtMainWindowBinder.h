@@ -2,18 +2,18 @@
 #define OURPAINT_APPLICATION_QT_MAINWINDOW_BINDER_H_
 
 #include <QObject>
-#include "MainWindow.h"
+#include "ProjectManager.h"
 #include "UIController.h"
 
 class QtMainWindowBinder : public QObject {
     Q_OBJECT
 public:
-    explicit QtMainWindowBinder(UI::MainWindow& window,
+    explicit QtMainWindowBinder(UI::ProjectManager& window,
                                 UIController& controller,
                                 QObject* parent = nullptr);
 
 private:
-    UI::MainWindow& window_;
+    UI::ProjectManager& window_;
     UIController& controller_;
 };
 
