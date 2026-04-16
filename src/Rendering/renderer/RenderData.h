@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cmath>
+#include <optional>
 
 namespace renderer {
 struct Point {
@@ -21,6 +22,12 @@ struct Circle {
     float y;
     float r;
 };
+struct Rect {
+    float xMin;
+    float yMin;
+    float xMax;
+    float yMax;
+};
 
 class RenderData {
 public:
@@ -28,7 +35,7 @@ public:
     std::vector<Line> lines;
     std::vector<Circle> circles;
 
-    struct {
+    struct Layer {
         std::vector<Point> points;
         std::vector<Line> lines;
         std::vector<Circle> circles;
@@ -42,12 +49,20 @@ public:
         bool empty() const {
             return points.empty() && lines.empty() && circles.empty();
         }
-    } overlay;
+    };
+
+    Layer overlay;
+    Layer selected;
+
+    std::optional<Rect> selectionRect;
 
     void clear() {
         points.clear();
         lines.clear();
         circles.clear();
+        overlay.clear();
+        selected.clear();
+        selectionRect.reset();
     }
 };
 }

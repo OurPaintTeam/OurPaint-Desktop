@@ -57,6 +57,9 @@ private:
     float pointRadiusPx = 1.5f;
     float pointEdgeSoftnessPx = 1.5f;
 
+    float pointSelectedRadiusPx = 3.0f;
+    float pointSelectedEdgeSoftnessPx = 3.0f;
+
 
 
     // Lines
@@ -73,6 +76,9 @@ private:
 
     float lineHalfWidthPx = 0.0;
     float lineEdgeSoftnessPx = 1.0;
+
+    float lineSelectedHalfWidthPx = 1.0;
+    float lineSelectedEdgeSoftnessPx = 2.0;
 
 
 
@@ -92,6 +98,23 @@ private:
     float circleCurveHalfWidthPx = 0.1;
     float circleCurveEdgeSoftnessPx = 1.0;
 
+    float circleSelectedCurveHalfWidthPx = .5;
+    float circleSelectedCurveEdgeSoftnessPx = 2.0;
+
+
+    // Overlay rectangles
+    GLuint rectProgram_ = 0;
+    GLuint rectVao_ = 0;
+
+    GLuint rectQuadVbo_ = 0;
+    GLuint rectInstanceVbo_ = 0;
+
+    GLint rectTransformLoc_ = -1;
+    GLint rectFillColorLoc_ = -1;
+    GLint rectBorderColorLoc_ = -1;
+    GLint rectBorderHalfWidthLoc_ = -1;
+    GLint rectEdgeSoftnessLoc_ = -1;
+    GLint rectPadLoc_ = -1;
 
 
     // Viewport size
@@ -99,16 +122,19 @@ private:
     int height_ = 1;
 
 private:
-    void renderGrid     (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
-    void renderPoints   (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
-    void renderLines    (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
-    void renderCircles  (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderGrid         (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderPoints       (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderLines        (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderCircles      (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderSelectionRect(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+
 
     void initGlobalState();
     bool initGridPipeline();
     bool initPointPipeline();
     bool initLinePipeline();
     bool initCirclePipeline();
+    bool initRectPipeline();
 
     static GLuint compileShader(GLenum type, const char* src);
     static bool checkProgramLink(GLuint prog);

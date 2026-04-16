@@ -28,6 +28,12 @@ struct LineInstance {
     float y2;
     float halfWidthWorld;
 };
+struct RectInstance {
+    float cx;
+    float cy;
+    float hx;
+    float hy;
+};
 }
 
 bool OpenGLRenderer::initialize() {
@@ -42,6 +48,9 @@ bool OpenGLRenderer::initialize() {
         return false;
     }
     if (!initCirclePipeline()) {
+        return false;
+    }
+    if (!initRectPipeline()) {
         return false;
     }
 
@@ -142,9 +151,10 @@ void OpenGLRenderer::render(const RenderData& rd, const Camera2D& camera) {
     glm::mat4 mvp = camera.viewProjectionMatrix();
 
     renderGrid(rd, camera, mvp);
-    renderPoints(rd, camera, mvp);
     renderLines(rd, camera, mvp);
+    renderPoints(rd, camera, mvp);
     renderCircles(rd, camera, mvp);
+    renderSelectionRect(rd, camera, mvp);
 }
 
 void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
@@ -200,16 +210,74 @@ void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camer
         return;
     }
 
-    const size_t count = scene.points.size() + scene.overlay.points.size();
-    if (count == 0) {
-        return;
-    }
 
     float worldPerPixel = 1.0f / camera.zoom();
-    float pointSizeWorld = pointRadiusPx * worldPerPixel;
-    pointRadiusPx = glm::max(pointRadiusPx, 1e-6f);
-    float edgeSoftness = pointEdgeSoftnessPx / pointRadiusPx;
+
+
+    // Selected points
+    float pointSizeWorld = pointSelectedRadiusPx * worldPerPixel;
+    pointSelectedRadiusPx = glm::max(pointSelectedRadiusPx, 1e-6f);
+    float edgeSoftness = pointSelectedEdgeSoftnessPx / pointSelectedRadiusPx;
     float pointPad = 1.0f + edgeSoftness;
+
+    const size_t selectedCount = scene.selected.points.size();
+    if (selectedCount == 0) {
+        //return;
+    }
+
+    std::vector<PointInstance> selectedInstances;
+    selectedInstances.reserve(selectedCount);
+
+    for (const auto& p : scene.selected.points) {
+        selectedInstances.push_back({p.x, p.y, pointSizeWorld});
+    }
+
+    glUseProgram(pointProgram_);
+    glBindVertexArray(pointVao_);
+    glBindBuffer(GL_ARRAY_BUFFER, pointInstanceVbo_);
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(selectedInstances.size() * sizeof(PointInstance)),
+        selectedInstances.data(),
+        GL_DYNAMIC_DRAW
+    );
+
+    if (pointTransformLoc_ >= 0) {
+        glUniformMatrix4fv(pointTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+    }
+
+    if (pointColorLoc_ >= 0) {
+        glUniform3f(pointColorLoc_, 0.0f, 1.0f, 1.0f);
+    }
+
+    if (pointPadLoc_ >= 0) {
+        glUniform1f(pointPadLoc_, pointPad);
+    }
+
+    if (pointEdgeSoftnessLoc_ >= 0) {
+        glUniform1f(pointEdgeSoftnessLoc_, edgeSoftness);
+    }
+
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(selectedInstances.size()));
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+
+
+
+    // Base and overlay points
+    pointSizeWorld = pointRadiusPx * worldPerPixel;
+    pointRadiusPx = glm::max(pointRadiusPx, 1e-6f);
+    edgeSoftness = pointEdgeSoftnessPx / pointRadiusPx;
+    pointPad = 1.0f + edgeSoftness;
+
+    const size_t count = scene.points.size() + scene.overlay.points.size();
+    if (count == 0) {
+        //return;
+    }
 
     std::vector<PointInstance> instances;
     instances.reserve(count);
@@ -261,16 +329,71 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera
         return;
     }
 
-    const size_t count = scene.lines.size() + scene.overlay.lines.size();
-    if (count == 0) {
-        return;
+    float worldPerPixel = 1.0f / camera.zoom();
+
+
+    // Selected lines
+    float lineHalfWidthWorld = lineSelectedHalfWidthPx * worldPerPixel;
+    lineSelectedHalfWidthPx = glm::max(lineSelectedHalfWidthPx, 1e-6f);
+    float lineEdgeSoftness = lineSelectedEdgeSoftnessPx / lineSelectedHalfWidthPx;
+    float linePad = 1.0f + lineEdgeSoftness;
+
+    const size_t countSelected = scene.selected.lines.size();
+    if (countSelected == 0) {
+        //return;
     }
 
-    float worldPerPixel = 1.0f / camera.zoom();
-    float lineHalfWidthWorld = lineHalfWidthPx * worldPerPixel;
+    std::vector<LineInstance> selectedInstances;
+    selectedInstances.reserve(countSelected);
+
+    for (const auto& l : scene.selected.lines) {
+        selectedInstances.push_back({l.x1, l.y1, l.x2, l.y2, lineHalfWidthWorld});
+    }
+
+    glUseProgram(lineProgram_);
+    glBindVertexArray(lineVao_);
+    glBindBuffer(GL_ARRAY_BUFFER, lineInstanceVbo_);
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(selectedInstances.size() * sizeof(LineInstance)),
+        selectedInstances.data(),
+        GL_DYNAMIC_DRAW
+    );
+
+    if (lineTransformLoc_ >= 0) {
+        glUniformMatrix4fv(lineTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+    }
+
+    if (lineColorLoc_ >= 0) {
+        glUniform3f(lineColorLoc_, 0.0f, 1.0f, 1.0f);
+    }
+
+    if (linePadLoc_ >= 0) {
+        glUniform1f(linePadLoc_, linePad);
+    }
+
+    if (lineEdgeSoftnessLoc_ >= 0) {
+        glUniform1f(lineEdgeSoftnessLoc_, lineEdgeSoftness);
+    }
+
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(selectedInstances.size()));
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+
+    // Base lines + overlay lines
+    lineHalfWidthWorld = lineHalfWidthPx * worldPerPixel;
     lineHalfWidthPx = glm::max(lineHalfWidthPx, 1e-6f);
-    float lineEdgeSoftness = lineEdgeSoftnessPx / lineHalfWidthPx;
-    float linePad = 1.0f + lineEdgeSoftness;
+    lineEdgeSoftness = lineEdgeSoftnessPx / lineHalfWidthPx;
+    linePad = 1.0f + lineEdgeSoftness;
+
+    const size_t count = scene.lines.size() + scene.overlay.lines.size();
+    if (count == 0) {
+        //return;
+    }
 
     std::vector<LineInstance> instances;
     instances.reserve(count);
@@ -322,11 +445,65 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
         return;
     }
 
-    //float radiusPx = c.r * camera.zoom()
 
+    size_t circlesSelectedCount = renderData.selected.circles.size();
+    if (circlesSelectedCount == 0) {
+        //return;
+    }
+
+    std::vector<CircleInstance> selectedInstances;
+    selectedInstances.reserve(circlesSelectedCount);
+
+    for (const auto& c : renderData.selected.circles) {
+        selectedInstances.push_back(CircleInstance{ c.x, c.y, c.r });
+    }
+
+    glUseProgram(circleProgram_);
+    glBindVertexArray(circleVao_);
+    glBindBuffer(GL_ARRAY_BUFFER, circleInstanceVbo_);
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(selectedInstances.size() * sizeof(CircleInstance)),
+        selectedInstances.data(),
+        GL_DYNAMIC_DRAW
+    );
+
+    if (circleTransformLoc_ >= 0) {
+        glUniformMatrix4fv(circleTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+    }
+
+    if (circleColorLoc_ >= 0) {
+        glUniform3f(circleColorLoc_, 0.0f, 1.0f, 1.0f);
+    }
+
+    if (circleZoomLoc_ >= 0) {
+        glUniform1f(circleZoomLoc_, camera.zoom());
+    }
+
+    if (circleCurveHalfWidthPxLoc_ >= 0) {
+        glUniform1f(circleCurveHalfWidthPxLoc_, circleSelectedCurveHalfWidthPx);
+    }
+
+    if (circleCurveEdgeSoftnessPxLoc_ >= 0) {
+        glUniform1f(circleCurveEdgeSoftnessPxLoc_, circleSelectedCurveEdgeSoftnessPx);
+    }
+
+    glDrawArraysInstanced(
+        GL_TRIANGLES,
+        0,                                      // first vertex
+        6,                                      // 6 vertices in quad
+        static_cast<GLsizei>(selectedInstances.size())  // number of circles
+    );
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+    // Base + overlay
     size_t circlesCount = renderData.circles.size() + renderData.overlay.circles.size();
     if (circlesCount == 0) {
-        return;
+        //return;
     }
 
     std::vector<CircleInstance> instances;
@@ -377,6 +554,89 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
         6,                                      // 6 vertices in quad
         static_cast<GLsizei>(instances.size())  // number of circles
     );
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+void OpenGLRenderer::renderSelectionRect(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
+    if (!rectProgram_ || !rectVao_ || !rectQuadVbo_ || !rectInstanceVbo_) {
+        return;
+    }
+
+    if (!scene.selectionRect.has_value()) {
+        return;
+    }
+
+    const auto& r = *scene.selectionRect;
+
+    float xMin = std::min(r.xMin, r.xMax);
+    float xMax = std::max(r.xMin, r.xMax);
+    float yMin = std::min(r.yMin, r.yMax);
+    float yMax = std::max(r.yMin, r.yMax);
+
+    RectInstance inst;
+    inst.cx = 0.5f * (xMin + xMax);
+    inst.cy = 0.5f * (yMin + yMax);
+    inst.hx = 0.5f * (xMax - xMin);
+    inst.hy = 0.5f * (yMax - yMin);
+
+    inst.hx = std::max(inst.hx, 1e-6f);
+    inst.hy = std::max(inst.hy, 1e-6f);
+
+    float worldPerPixel = 1.0f / camera.zoom();
+
+    float rectBorderHalfWidthPx = 1.0f;
+    float rectEdgeSoftnessPx = 1.0f;
+
+    float borderHalfWidthWorld = rectBorderHalfWidthPx * worldPerPixel;
+    float edgeSoftnessWorld = rectEdgeSoftnessPx * worldPerPixel;
+
+    float minHalfExtent = std::max(std::min(inst.hx, inst.hy), 1e-6f);
+
+    float borderHalfWidthLocal = borderHalfWidthWorld / minHalfExtent;
+    float edgeSoftnessLocal = edgeSoftnessWorld / minHalfExtent;
+    float pad = 1.0f + borderHalfWidthLocal + edgeSoftnessLocal;
+
+
+
+    glUseProgram(rectProgram_);
+    glBindVertexArray(rectVao_);
+    glBindBuffer(GL_ARRAY_BUFFER, rectInstanceVbo_);
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        sizeof(RectInstance),
+        &inst,
+        GL_DYNAMIC_DRAW
+    );
+
+    if (rectTransformLoc_ >= 0) {
+        glUniformMatrix4fv(rectTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+    }
+
+    if (rectFillColorLoc_ >= 0) {
+        glUniform4f(rectFillColorLoc_, 0.2f, 0.5f, 1.0f, 0.12f);
+    }
+
+    if (rectBorderColorLoc_ >= 0) {
+        glUniform4f(rectBorderColorLoc_, 0.2f, 0.5f, 1.0f, 0.9f);
+    }
+
+    if (rectBorderHalfWidthLoc_ >= 0) {
+        glUniform1f(rectBorderHalfWidthLoc_, borderHalfWidthLocal);
+    }
+
+    if (rectEdgeSoftnessLoc_ >= 0) {
+        glUniform1f(rectEdgeSoftnessLoc_, edgeSoftnessLocal);
+    }
+
+    if (rectPadLoc_ >= 0) {
+        glUniform1f(rectPadLoc_, pad);
+    }
+
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -630,6 +890,71 @@ bool OpenGLRenderer::initCirclePipeline() {
         GL_FALSE,
         sizeof(CircleInstance),
         reinterpret_cast<void*>(offsetof(CircleInstance, r))
+    );
+    glVertexAttribDivisor(2, 1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return true;
+}
+
+bool OpenGLRenderer::initRectPipeline() {
+    if (!createProgramFromFiles("shaders/rect.vert", "shaders/rect.frag", rectProgram_)) {
+        return false;
+    }
+
+    rectTransformLoc_ = glGetUniformLocation(rectProgram_, "uTransform");
+    rectFillColorLoc_ = glGetUniformLocation(rectProgram_, "uFillColor");
+    rectBorderColorLoc_ = glGetUniformLocation(rectProgram_, "uBorderColor");
+    rectBorderHalfWidthLoc_ = glGetUniformLocation(rectProgram_, "uBorderHalfWidth");
+    rectEdgeSoftnessLoc_ = glGetUniformLocation(rectProgram_, "uEdgeSoftness");
+    rectPadLoc_ = glGetUniformLocation(rectProgram_, "uPad");
+
+    const float quadVerts[] = {
+        -1.0f, -1.0f,
+        -1.0f,  1.0f,
+         1.0f, -1.0f,
+
+        -1.0f,  1.0f,
+         1.0f, -1.0f,
+         1.0f,  1.0f
+    };
+
+    glGenVertexArrays(1, &rectVao_);
+    glBindVertexArray(rectVao_);
+
+    glGenBuffers(1, &rectQuadVbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, rectQuadVbo_);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
+
+    // location = 0 : quad local pos
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        0, 2, GL_FLOAT, GL_FALSE,
+        2 * sizeof(float),
+        reinterpret_cast<void*>(0)
+    );
+
+    glGenBuffers(1, &rectInstanceVbo_);
+    glBindBuffer(GL_ARRAY_BUFFER, rectInstanceVbo_);
+    glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
+
+    // location = 1 : center
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        1, 2, GL_FLOAT, GL_FALSE,
+        sizeof(RectInstance),
+        reinterpret_cast<void*>(offsetof(RectInstance, cx))
+    );
+    glVertexAttribDivisor(1, 1);
+
+    // location = 2 : half extents
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(
+        2, 2, GL_FLOAT, GL_FALSE,
+        sizeof(RectInstance),
+        reinterpret_cast<void*>(offsetof(RectInstance, hx))
     );
     glVertexAttribDivisor(2, 1);
 
