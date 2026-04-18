@@ -25,6 +25,13 @@ struct Arc {
     Point* center;
 };
 
+struct CubicBezier {
+    Point start;
+    Point end;
+    Point control1;
+    Point control2;
+};
+
 inline std::ifstream& operator>>(std::ifstream& in, Point& x) {
     in >> x.x;
     in >> x.y;

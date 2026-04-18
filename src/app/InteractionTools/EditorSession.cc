@@ -18,7 +18,8 @@ EditorSession::EditorSession(DocumentManager& manager,
       cursorTool_(documentManager_, camera_, picker_, overlay_),
       pointTool_(documentManager_, camera_),
       lineTool_(documentManager_, camera_, renderData_),
-      circleTool_(documentManager_, camera_, renderData_) {
+      circleTool_(documentManager_, camera_, renderData_),
+      bezierTool_(documentManager_, camera_, renderData_) {
     activeTool_ = new PointTool(documentManager_, camera_);
 }
 
@@ -65,8 +66,10 @@ void EditorSession::select(ToolId id) {
 
             break;
         case ToolId::ArcByThreePoints:
-
             break;
+
+        case ToolId::CubicBezier:
+            activeTool_ = &bezierTool_;
 
         case ToolId::ConstraintPointLineDistance:
 

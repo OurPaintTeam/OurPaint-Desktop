@@ -76,6 +76,29 @@ void RenderDataBuilder::rebuild() {
 
         renderData_.selectionRect = r;
     }
+
+    std::vector<ObjectData> beziers = scene_.getBeziers();
+    for (size_t i = 0; i < beziers.size(); i++) {
+        ObjectData od = beziers[i];
+
+        renderer::Point p0(od.params[0], od.params[1]);
+        renderer::Point p3(od.params[2], od.params[3]);
+
+        renderer::Point p1(od.params[4], od.params[5]);
+        renderer::Point p2(od.params[6], od.params[7]);
+
+        double t = 0.0;
+        double x0 = (1-t)*(1-t)*(1-t)*p0.x + 3*(1-t)*(1-t)*t*p1.x + 3*(1-t)*t*t*p2.x + t*t*t*p3.x;
+        double y0 = (1-t)*(1-t)*(1-t)*p0.y + 3*(1-t)*(1-t)*t*p1.y + 3*(1-t)*t*t*p2.y + t*t*t*p3.y;
+        while (t < 1.01) {
+            double x1 = (1-t)*(1-t)*(1-t)*p0.x + 3*(1-t)*(1-t)*t*p1.x + 3*(1-t)*t*t*p2.x + t*t*t*p3.x;
+            double y1 = (1-t)*(1-t)*(1-t)*p0.y + 3*(1-t)*(1-t)*t*p1.y + 3*(1-t)*t*t*p2.y + t*t*t*p3.y;
+            t += 0.01;
+            renderData_.lines.push_back(renderer::Line(x0, y0, x1, y1));
+            x0 = x1;
+            y0 = y1;
+        }
+    }
 }
 
 

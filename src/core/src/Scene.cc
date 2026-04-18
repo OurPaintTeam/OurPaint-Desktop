@@ -102,6 +102,61 @@ SceneObjects::ID Scene::addObject(const ObjectData& objData) {
 
             return SceneObjects::ID();
         }
+        case ObjType::ET_CUBIC_BEZIER: {
+            if (objData.params.size() < 4) {
+                throw std::invalid_argument("Cubic bezier requires 4 points");
+            }
+
+            double x1 = objData.params[0];
+            double y1 = objData.params[1];
+            double x2 = objData.params[2];
+            double y2 = objData.params[3];
+
+            double x3 = x1 + (x2 - x1) / 3.0;
+            double y3 = y1 + (y2 - y1) / 3.0;
+
+            double x4 = x1 + 2.0 * (x2 - x1) / 3.0;
+            double y4 = y1 + 2.0 * (y2 - y1) / 3.0;
+
+
+            ObjDescriptor od1 = OurPaintDCM::Utils::FigureDescriptor::point(x1, y1);
+            ObjDescriptor od2 = OurPaintDCM::Utils::FigureDescriptor::point(x2, y2);
+            ObjDescriptor od3 = OurPaintDCM::Utils::FigureDescriptor::point(x3, y3);
+            ObjDescriptor od4 = OurPaintDCM::Utils::FigureDescriptor::point(x4, y4);
+
+            OurPaintDCM::Utils::ID id1 = DCM_manager.addFigure(od1);
+            OurPaintDCM::Utils::ID id3 = DCM_manager.addFigure(od3);
+            OurPaintDCM::Utils::ID id4 = DCM_manager.addFigure(od4);
+            OurPaintDCM::Utils::ID id2 = DCM_manager.addFigure(od2);
+
+            ++lastBezierId;
+
+            pointToBezier_[SceneObjects::ID(id1.id)] = SceneObjects::ID(lastBezierId);
+            pointToBezier_[SceneObjects::ID(id2.id)] = SceneObjects::ID(lastBezierId);
+            pointToBezier_[SceneObjects::ID(id3.id)] = SceneObjects::ID(lastBezierId);
+            pointToBezier_[SceneObjects::ID(id4.id)] = SceneObjects::ID(lastBezierId);
+
+            CubicBezier b({
+                Point(x1, y1),
+                Point(x2, y2),
+                Point(x3, y3),
+                Point(x4, y4)
+            });
+
+            beziers_[SceneObjects::ID(lastBezierId)] = {
+                b,
+                SceneObjects::ID(id1.id),
+                SceneObjects::ID(id2.id),
+                SceneObjects::ID(id3.id),
+                SceneObjects::ID(id4.id)
+            };
+
+            for (auto& observer : _observers) {
+                //observer->onObjectAdded(l);
+            }
+
+            return SceneObjects::ID();
+        }
         default:
             throw std::invalid_argument("Unknown object type");
     }
@@ -111,6 +166,10 @@ bool Scene::deleteObject(SceneObjects::ID objectID) {
     OurPaintDCM::Utils::ID id(objectID.get());
     try {
         DCM_manager.removeFigure(id, true);
+        if (pointToBezier_.contains(SceneObjects::ID(id.id))) {
+            SceneObjects::ID& b_id = pointToBezier_[SceneObjects::ID(id.id)];
+            beziers_.erase(b_id);
+        }
     }
     catch (...) {
         return false;
@@ -282,6 +341,30 @@ std::vector<ObjectData> Scene::getArcs() const {
     return objs;
 }
 
+std::vector<ObjectData> Scene::getBeziers() const {
+    std::vector<ObjectData> beziers;
+    for (const auto& [id, b] : beziers_) {
+        ObjectData od;
+        od.et = ObjType::ET_CUBIC_BEZIER;
+        od.id = id;
+
+        od.params.push_back(b.b.start.x);
+        od.params.push_back(b.b.start.y);
+
+        od.params.push_back(b.b.end.x);
+        od.params.push_back(b.b.end.y);
+
+        od.params.push_back(b.b.control1.x);
+        od.params.push_back(b.b.control1.y);
+
+        od.params.push_back(b.b.control2.x);
+        od.params.push_back(b.b.control2.y);
+
+        beziers.push_back(od);
+    }
+    return beziers;
+}
+
 std::vector<Requirement> Scene::getRequirements() const {
     throw std::runtime_error("Scene error");
 }
@@ -383,6 +466,26 @@ void Scene::moveObjects(std::vector<SceneObjects::ID> ids, double dx, double dy)
 
         OurPaintDCM::Utils::PointUpdateDescriptor d(id, desc.value().x.value() + dx, desc.value().y.value() + dy);
         DCM_manager.updatePoint(d);
+    }
+
+    for (const auto& p : DCM_manager.getAllPoints()) {
+        auto id = SceneObjects::ID(p.id.value().id);
+        if (pointToBezier_.contains(id)) {
+            SceneObjects::ID& b_id = pointToBezier_[SceneObjects::ID(p.id.value().id)];
+            bezier& b = beziers_[b_id];
+            if (b.start == id) {
+                b.b.start = {p.x.value(), p.y.value()};
+            }
+            else if (b.end == id) {
+                b.b.end = {p.x.value(), p.y.value()};
+            }
+            else if (b.control1 == id) {
+                b.b.control1 = {p.x.value(), p.y.value()};
+            }
+            else if (b.control2 == id) {
+                b.b.control2 = {p.x.value(), p.y.value()};
+            }
+        }
     }
 
     DCM_manager.setSolveMode(OurPaintDCM::Utils::SolveMode::DRAG);

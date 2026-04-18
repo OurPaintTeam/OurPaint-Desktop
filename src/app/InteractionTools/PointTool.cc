@@ -18,6 +18,8 @@ void PointTool::onMouseButton(const input::MouseButtonEvent& e) {
         glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
         UndoRedo::Transaction* txn = document->commandManager().invoke("POINT", { v.x, v.y });
         document->undoRedoManager().push(std::move(*txn));
+
+
     }
 }
 

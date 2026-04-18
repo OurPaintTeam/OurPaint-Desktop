@@ -10,6 +10,7 @@ enum class ObjType : uint8_t {
     ET_LINE,
     ET_CIRCLE,
     ET_ARC,
+    ET_CUBIC_BEZIER,
     ERROR
 };
 

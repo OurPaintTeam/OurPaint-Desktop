@@ -16,6 +16,7 @@ Document::Document(const std::string& documentName) {
     _commandManager->registerFactory(new ReqFactory(*_scene));
     _commandManager->registerFactory(new DelFactory(*_scene));
     _commandManager->registerFactory(new ClearFactory(_scene));
+    _commandManager->registerFactory(new CubicBezierFactory(*_scene));
 }
 Document::~Document() {
     delete _scene;

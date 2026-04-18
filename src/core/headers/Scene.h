@@ -22,6 +22,7 @@ class Component;
 class Variable;
 class Function;
 struct ObjectData;
+#include "objects/GeometricObjects.h"
 
 #include "DCMManager.h"
 
@@ -29,6 +30,18 @@ class Scene {
 private:
     OurPaintDCM::DCMManager DCM_manager;
     const OurPaintDCM::Figures::GeometryStorage* storage_ = nullptr;
+
+    struct bezier {
+        CubicBezier b;
+        SceneObjects::ID start;
+        SceneObjects::ID end;
+        SceneObjects::ID control1;
+        SceneObjects::ID control2;
+    };
+
+    std::map<SceneObjects::ID, bezier> beziers_;
+    std::map<SceneObjects::ID, SceneObjects::ID> pointToBezier_;
+    int lastBezierId = 0;
 
 private:
     mutable bool _isRectangleDirty;
@@ -86,6 +99,7 @@ public:
     std::vector<ObjectData> getLines() const;
     std::vector<ObjectData> getCircles() const;
     std::vector<ObjectData> getArcs() const;
+    std::vector<ObjectData> getBeziers() const;
     std::vector<Requirement> getRequirements() const;
     std::vector<Requirement> getObjectRequirements(SceneObjects::ID objectID) const;
     std::vector<Requirement> getObjectRequirementsWithConnectedObjects(SceneObjects::ID objectID) const;

@@ -13,6 +13,7 @@
 #include "PointTool.h"
 #include "CircleTool.h"
 #include "CursorTool.h"
+#include "CubicBezierTool.h"
 
 class EditorSession {
 public:
@@ -34,6 +35,7 @@ private:
     PointTool pointTool_;
     LineTool lineTool_;
     CircleTool circleTool_;
+    CubicBezierTool bezierTool_;
 };
 
 #endif // ! OURPAINT_APPLICATION_EDITORSESSION_H_

@@ -17,6 +17,7 @@
 #include "CommandDeleteSection.h"
 #include "CommandDeleteCircle.h"
 #include "CommandDeleteArc.h"
+#include "CommandAddCubicBezier.h"
 #include "CommandAddRequirement.h"
 #include "CommandDeleteRequirement.h"
 #include "CommandMove.h"
@@ -213,6 +214,52 @@ public:
                 rawArgs[5]
         };
         txn.addCommand(new CommandAddCircle(_scene, obj));
+    }
+
+private:
+    Scene& _scene;
+};
+
+class CubicBezierFactory : public ICommandFactory {
+public:
+    CubicBezierFactory(Scene& sc) : _scene(sc) {}
+
+    std::string id() const override {
+        return "BEZIER";
+    }
+
+    std::string hint() const override {
+        return "BEZIER X1 Y1 X2 Y2";
+    }
+
+    void createCommands(const std::vector<std::string>& rawArgs, UndoRedo::Transaction& txn) const override {
+        if (rawArgs.size() != 4) {
+            throw std::runtime_error("BEZIER: need 4 numbers");
+        }
+        ObjectData obj;
+        obj.et = ObjType::ET_CUBIC_BEZIER;
+        obj.params = {
+            std::stod(rawArgs[0]),
+            std::stod(rawArgs[1]),
+            std::stod(rawArgs[2]),
+            std::stod(rawArgs[3])
+    };
+        txn.addCommand(new CommandAddCubicBezier(_scene, obj));
+    }
+
+    void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
+        if (rawArgs.size() != 4) {
+            throw std::runtime_error("BEZIER: need 4 numbers");
+        }
+        ObjectData obj;
+        obj.et = ObjType::ET_CUBIC_BEZIER;
+        obj.params = {
+            rawArgs[0],
+            rawArgs[1],
+            rawArgs[2],
+            rawArgs[3]
+    };
+        txn.addCommand(new CommandAddCubicBezier(_scene, obj));
     }
 
 private:

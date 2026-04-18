@@ -18,6 +18,8 @@ enum class ToolId {
     ArcByDiameter,
     ArcByThreePoints,
 
+    CubicBezier,
+
     ConstraintPointLineDistance,
     ConstraintPointOnLine,
     ConstraintPointPointDistance,
