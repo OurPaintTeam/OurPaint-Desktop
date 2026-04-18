@@ -13,6 +13,7 @@ void RenderDataBuilder::rebuild() {
     //renderData_.overlay.clear();
     renderData_.selected.clear();
     renderData_.selectionRect.reset();
+    renderData_.special.clear();
     std::vector<ObjectData> points = scene_.getPoints();
     for (auto& p : points) {
         const double& x = p.params[0];
@@ -86,6 +87,9 @@ void RenderDataBuilder::rebuild() {
 
         renderer::Point p1(od.params[4], od.params[5]);
         renderer::Point p2(od.params[6], od.params[7]);
+
+        renderData_.special.lines.push_back(renderer::Line(od.params[0], od.params[1], od.params[4], od.params[5]));
+        renderData_.special.lines.push_back(renderer::Line(od.params[2], od.params[3], od.params[6], od.params[7]));
 
         double t = 0.0;
         double x0 = (1-t)*(1-t)*(1-t)*p0.x + 3*(1-t)*(1-t)*t*p1.x + 3*(1-t)*t*t*p2.x + t*t*t*p3.x;

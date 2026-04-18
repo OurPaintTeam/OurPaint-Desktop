@@ -377,6 +377,11 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera
         glUniform1f(lineEdgeSoftnessLoc_, lineEdgeSoftness);
     }
 
+    if (lineAlphaLoc_ >= 0) {
+        glUniform1f(lineAlphaLoc_, 1.0);
+    }
+
+
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(selectedInstances.size()));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -433,7 +438,70 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera
         glUniform1f(lineEdgeSoftnessLoc_, lineEdgeSoftness);
     }
 
+    if (lineAlphaLoc_ >= 0) {
+        glUniform1f(lineAlphaLoc_, 1.0);
+    }
+
+
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(instances.size()));
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+
+
+
+
+    // Special lines
+    lineHalfWidthWorld = lineHalfWidthPx * worldPerPixel;
+    lineHalfWidthPx = glm::max(lineHalfWidthPx, 1e-6f);
+    lineEdgeSoftness = lineEdgeSoftnessPx / lineHalfWidthPx;
+    linePad = 1.0f + lineEdgeSoftness;
+
+    const size_t countSpecial = scene.special.lines.size();
+    if (countSpecial == 0) {
+        //return;
+    }
+
+    std::vector<LineInstance> instancesSpecial;
+    instancesSpecial.reserve(count);
+
+    for (const auto& l : scene.special.lines) {
+        instancesSpecial.push_back({l.x1, l.y1, l.x2, l.y2, lineHalfWidthWorld});
+    }
+
+    glUseProgram(lineProgram_);
+    glBindVertexArray(lineVao_);
+    glBindBuffer(GL_ARRAY_BUFFER, lineInstanceVbo_);
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(instancesSpecial.size() * sizeof(LineInstance)),
+        instancesSpecial.data(),
+        GL_DYNAMIC_DRAW
+    );
+
+    if (lineTransformLoc_ >= 0) {
+        glUniformMatrix4fv(lineTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+    }
+
+    if (lineColorLoc_ >= 0) {
+        glUniform3f(lineColorLoc_, 0.5f, 0.5f, 0.5f);
+    }
+
+    if (linePadLoc_ >= 0) {
+        glUniform1f(linePadLoc_, linePad);
+    }
+
+    if (lineEdgeSoftnessLoc_ >= 0) {
+        glUniform1f(lineEdgeSoftnessLoc_, lineEdgeSoftness);
+    }
+
+    if (lineAlphaLoc_ >= 0) {
+        glUniform1f(lineAlphaLoc_, 0.4);
+    }
+
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(instancesSpecial.size()));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -748,6 +816,7 @@ bool OpenGLRenderer::initLinePipeline() {
     createProgramFromFiles("shaders/line.vert", "shaders/line.frag", lineProgram_);
 
     lineColorLoc_           = glGetUniformLocation(lineProgram_, "uColor");
+    lineAlphaLoc_           = glGetUniformLocation(lineProgram_, "uAlpha");
     lineTransformLoc_       = glGetUniformLocation(lineProgram_, "uTransform");
     linePadLoc_             = glGetUniformLocation(lineProgram_, "uPad");
     lineEdgeSoftnessLoc_    = glGetUniformLocation(lineProgram_, "uEdgeSoftness");

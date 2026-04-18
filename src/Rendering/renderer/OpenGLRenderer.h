@@ -70,6 +70,7 @@ private:
     GLuint lineInstanceVbo_ = 0;
 
     GLint lineColorLoc_ = -1;
+    GLint lineAlphaLoc_ = -1;
     GLint lineTransformLoc_ = -1;
     GLint linePadLoc_ = -1;
     GLint lineEdgeSoftnessLoc_ = -1;

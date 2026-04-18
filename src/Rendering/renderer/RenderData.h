@@ -53,6 +53,7 @@ public:
 
     Layer overlay;
     Layer selected;
+    Layer special;
 
     std::optional<Rect> selectionRect;
 
