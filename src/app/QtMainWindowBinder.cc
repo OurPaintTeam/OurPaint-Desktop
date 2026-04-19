@@ -9,7 +9,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     : QObject(parent), window_(window), controller_(controller) {
     // Console
     QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered, this,
-                     [this](const QString& str) { controller_.executeConsoleCommand(str.toStdString()); });
+                     [this](const QString& tabName,const QString& str) { controller_.executeConsoleCommand(str.toStdString()); });
 
     // --- Open project in new window ---
     QObject::connect(&window, &UI::ProjectManager::openNewWindowOpenProjectTriggered, this, [this]() { controller_.openProjectInNewWindow(); });
@@ -49,7 +49,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                       });*/
 
     // Tools - constrains
-    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](UI::ConstraintType& _t1) {
+    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](const QString& tabName,UI::ConstraintType& _t1) {
         // auto* prompt = new UI::ParameterInputWidget("Input parament:",nullptr);
         //
         // connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, prompt](const QString& parametr) {
@@ -97,7 +97,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 
     // Tools - point/line
-    QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](UI::PrimitiveType& _t1) {
+    QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](const QString& tabName,UI::PrimitiveType& _t1) {
         switch (_t1) {
             case UI::PrimitiveType::Point:
                 controller_.selectTool(ToolId::Point);
@@ -122,7 +122,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
             case UI::PrimitiveType::CircleByDiameter:
                 controller_.selectTool(ToolId::CircleByDiameter);
                 break;
-            case UI::PrimitiveType::CircleTwoPoints:
+            case UI::PrimitiveType::CircleByRadius:
                 controller_.selectTool(ToolId::CircleTwoPoints);
                 break;
             case UI::PrimitiveType::EllipseThreePoints:
@@ -150,7 +150,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 
     // Tools - cursor/size
-    QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](UI::ToolsType& _t1) {
+    QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](const QString& tabName,UI::ToolsType& _t1) {
         if (_t1 == UI::ToolsType::Cursor) {
             controller_.selectTool(ToolId::Cursor);
         }
