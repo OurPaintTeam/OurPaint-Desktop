@@ -17,13 +17,17 @@ void UIController::selectTool(ToolId tool) {
 }
 
 void UIController::executeConsoleCommand(std::string str) {
-    Document* document = docManager_.getActiveDocument();
-    UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
-    CommandManager& cm = document->commandManager();
-    Transaction* txn = cm.invoke(str);
-    urm.push(std::move(*txn));
+    try {
+        Document* document = docManager_.getActiveDocument();
+        UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+        CommandManager& cm = document->commandManager();
+        Transaction* txn = cm.invoke(str);
+        urm.push(std::move(*txn));
 
-    host_.requestRedraw();
+        host_.requestRedraw();
+    }catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
+    }
 }
 
 void UIController::openProjectInNewWindow() {}

@@ -9,7 +9,16 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     : QObject(parent), window_(window), controller_(controller) {
     // Console
     QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered, this,
-                     [this](const QString& tabName,const QString& str) { controller_.executeConsoleCommand(str.toStdString()); });
+                     [this](const QString& tabName,const QString& str) {
+                         try {
+                             controller_.executeConsoleCommand(str.toStdString()   );
+                         }catch (const std::exception& e) {
+                             QString error = "Error: " + QString::fromStdString(e.what());
+                             window_.addNotification(error);
+                         }
+
+
+                     });
 
     // --- Open project in new window ---
     QObject::connect(&window, &UI::ProjectManager::openNewWindowOpenProjectTriggered, this, [this]() { controller_.openProjectInNewWindow(); });
