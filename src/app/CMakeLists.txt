@@ -15,6 +15,8 @@ add_executable(ourpaint
         InteractionTools/CubicBezierTool.cc
         Cpu2dPicker.cc
         SelectionModel.cc
+        CommandConsole.cc
+        CommandConsole.h
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
