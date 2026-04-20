@@ -7,6 +7,10 @@
 #include <QStringList>
 #include <QVector>
 
+#include "Scene.h"
+
+class OverlayModel;
+
 class QKeyEvent;
 class QPaintEvent;
 
@@ -15,7 +19,7 @@ class CommandConsole final : public QLineEdit {
     Q_OBJECT
 
 public:
-    explicit CommandConsole(QWidget* parent = nullptr);
+    explicit CommandConsole(OverlayModel& overlayModel_);
     void setCommands(const QStringList& commands);
 
     signals:
@@ -24,11 +28,14 @@ public:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
-    bool focusNextPrevChild(bool next);
+    bool focusNextPrevChild(bool next) override;
 
 private:
     void updateAutocomplete(const QString& text);
+    void onTextChanged(const QString& text);
+    void parseReqInput(const QString& text) const;
 
+    OverlayModel& overlayModel_;
     QStringList commands_;
     QString currentCommands_;
     QVector<QString> commandsArray_;
