@@ -3,13 +3,14 @@
 
 #define GL_GLEXT_PROTOTYPES
 
+#include "App/CustomConsole.h"
+#include "Camera2D.h"
+#include "Cpu2dPicker.h"
 #include "IRenderer.h"
 #include "InteractionTools/EditorSession.h"
 #include "InteractionTools/IInteractionTool.h"
-#include "QtMainWindowBinder.h"
-#include "Camera2D.h"
-#include "Cpu2dPicker.h"
 #include "OverlayModel.h"
+#include "QtMainWindowBinder.h"
 
 class DocumentManager;
 
@@ -21,6 +22,8 @@ class ViewportController;
 
 class UIObserver;
 class RenderDataBuilder;
+
+class CommandConsole;
 
 namespace renderer { class RenderData; }
 
@@ -70,6 +73,7 @@ private:
     Camera2D* camera2D_;
     Cpu2dPicker* picker_;
     OverlayModel* overlay_;
+    CommandConsole* commandConsole_;
 };
 
 #endif // APPLICATION_H_

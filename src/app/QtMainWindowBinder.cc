@@ -1,5 +1,8 @@
 #include "QtMainWindowBinder.h"
 
+#include <QDir>
+#include <QFile>
+
 #include "InputWidget.h"
 #include "PainterWidget.h"
 #include "ParameterInputWidget.h"
@@ -8,10 +11,47 @@
 QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController& controller, QObject* parent)
     : QObject(parent), window_(window), controller_(controller) {
     // Console
-    QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered, this,
-                     [this](const QString& name, const QString& str) {
-                         controller_.executeConsoleCommand(str.toStdString());
-                     });
+    QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered, this, [this](const QString& tabName, const QString& str) {
+        try {
+            controller_.executeConsoleCommand(str.toStdString());
+        } catch (const std::exception& e) {
+            QString error = "Error: " + QString::fromStdString(e.what());
+            window_.addNotification(error);
+        }
+    });
+
+    // Scripts
+    QObject::connect(&window, &UI::ProjectManager::scriptTriggered, this, [this](const QString& path) {
+        qDebug() << "Script start:" << path;
+
+        QFile file(path);
+
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            qDebug() << "OPEN FAILED:" << file.errorString();
+            window_.addNotification("Error: cannot open file");
+            return;
+        }
+
+        qDebug() << "File opened OK";
+
+        QTextStream in(&file);
+
+        while (!in.atEnd()) {
+            QString line = in.readLine().trimmed();
+
+            if (line.isEmpty()) {
+                continue;
+            }
+
+            try {
+                controller_.executeConsoleCommand(line.toStdString());
+            } catch (const std::exception& e) {
+                window_.addNotification("Error: " + QString::fromStdString(e.what()));
+            }
+        }
+
+        file.close();
+    });
 
     // --- Open project in new window ---
     QObject::connect(&window, &UI::ProjectManager::openNewWindowOpenProjectTriggered, this, [this]() { controller_.openProjectInNewWindow(); });
@@ -51,7 +91,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                       });*/
 
     // Tools - constrains
-    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](const QString _t1, UI::ConstraintType & _t2) {
+    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](const QString& tabName, UI::ConstraintType& _t1) {
         // auto* prompt = new UI::ParameterInputWidget("Input parament:",nullptr);
         //
         // connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, prompt](const QString& parametr) {
@@ -62,7 +102,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
         //     prompt->deleteLater();
         // });
 
-        switch (_t2) {
+        switch (_t1) {
             case UI::ConstraintType::PointLineDistance:
                 controller_.selectTool(ToolId::ConstraintPointPointDistance);
                 break;
@@ -99,8 +139,8 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 
     // Tools - point/line
-    QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](const QString _t1, UI::PrimitiveType& _t2) {
-        switch (_t2) {
+    QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](const QString& tabName, UI::PrimitiveType& _t1) {
+        switch (_t1) {
             case UI::PrimitiveType::Point:
                 controller_.selectTool(ToolId::Point);
                 break;
@@ -123,6 +163,9 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
             case UI::PrimitiveType::CircleByDiameter:
                 controller_.selectTool(ToolId::CircleByDiameter);
+                break;
+            case UI::PrimitiveType::CircleByRadius:
+                controller_.selectTool(ToolId::CircleTwoPoints);
                 break;
             case UI::PrimitiveType::EllipseThreePoints:
                 // controller_.selectTool(ToolId::);
@@ -149,8 +192,8 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 
     // Tools - cursor/size
-    QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](const QString _t1, UI::ToolsType & _t2) {
-        if (_t2 == UI::ToolsType::Cursor) {
+    QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](const QString& tabName, UI::ToolsType& _t1) {
+        if (_t1 == UI::ToolsType::Cursor) {
             controller_.selectTool(ToolId::Cursor);
         }
     });

@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 
 #include "App/CustomConsole.h"
+#include "CommandConsole.h"
 #include "Document.h"
 #include "DocumentManager.h"
 #include "OpenGLRenderer.h"
@@ -76,7 +77,8 @@ void Application::init(int& argc, char** argv) {
 
     // init UI
     Q_INIT_RESOURCE(resources);
-    mainWindow_ = new UI::ProjectManager({}, qt_host,nullptr);
+    commandConsole_ = new CommandConsole();
+    mainWindow_ = new UI::ProjectManager({}, qt_host,commandConsole_);
     mainWindow_->addTabSlot("ds");
 
     // init UIController
