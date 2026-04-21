@@ -7,11 +7,21 @@
 CursorTool::CursorTool(DocumentManager& documentManager, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
     : documentManager_(documentManager), camera_(camera), picker_(picker), overlay_(overlay) {}
 
+#include <iomanip>
+
 void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
+    glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
+
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(3)
+        << std::setw(10) << v.x
+        << " "
+        << std::setw(10) << v.y;
+    overlay_.pos = oss.str();
+    overlay_.posX = 1.5 * e.x - 150;
+    overlay_.posY = 1.5 * -e.y + 650;
+
     if (input::has_flag(e.buttons, input::MouseButton::Left)) {
-
-        glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
-
         if (state_ == State::DraggingSelection) {
             const std::vector<SceneObjects::ID> ids = overlay_.selection_.items();
             if (!ids.empty()) {
@@ -48,6 +58,7 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
             }
         }
     }
+    lastCursorPos_ = v;
 }
 
 void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
@@ -115,6 +126,50 @@ void CursorTool::onKey(const input::KeyEvent& e) {
             reqData.obj2 = SceneObjects::ID(ids[1].get());
             scene.addRequirement(reqData);
         }
+    }
+    else if (e.modifiers == input::Modifiers::Ctrl && e.key == input::KeyCode::C && e.action == input::KeyAction::Press) {
+        copiedObjects_ = overlay_.selection_.items();
+
+        Scene& scene = documentManager_.getActiveDocument()->scene();
+
+        bool first = true;
+
+        double minX, maxX, minY, maxY;
+
+        for (const auto id : copiedObjects_) {
+            ObjectData od = scene.getObjectData(id);
+            if (od.et == ObjType::ET_POINT) {
+                double x = od.params[0];
+                double y = od.params[1];
+
+                if (first) {
+                    minX = maxX = x;
+                    minY = maxY = y;
+                    first = false;
+                } else {
+                    minX = std::min(minX, x);
+                    maxX = std::max(maxX, x);
+                    minY = std::min(minY, y);
+                    maxY = std::max(maxY, y);
+                }
+            }
+        }
+        double midX = minX + (maxX - minX) / 2;
+        double midY = minY + (maxY - minY) / 2;
+        copiedPos_ = {midX, midY};
+    }
+    else if (e.modifiers == input::Modifiers::Ctrl && e.key == input::KeyCode::V && e.action == input::KeyAction::Press) {
+        Scene& scene = documentManager_.getActiveDocument()->scene();
+        std::vector<SceneObjects::ID> copiedObjectsNewIDs;
+        for (const auto id : copiedObjects_) {
+            ObjectData od = scene.getObjectData(id);
+            copiedObjectsNewIDs.push_back(scene.addObject(od));
+        }
+        scene.moveObjects(copiedObjectsNewIDs, lastCursorPos_.x - copiedPos_.x, lastCursorPos_.y - copiedPos_.y);
+        overlay_.selection_.replace(copiedObjectsNewIDs);
+        state_ = State::MarqueeSelection;
+    }
+    else if (e.key == input::KeyCode::Enter && e.action == input::KeyAction::Press) {
     }
 }
 
