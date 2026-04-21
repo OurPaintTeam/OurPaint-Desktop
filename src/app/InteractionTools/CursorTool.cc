@@ -127,6 +127,44 @@ void CursorTool::onKey(const input::KeyEvent& e) {
             scene.addRequirement(reqData);
         }
     }
+    else if (e.key == input::KeyCode::Num8 && e.action == input::KeyAction::Press) {
+        Scene& scene = documentManager_.getActiveDocument()->scene();
+        std::vector<SceneObjects::ID> ids = overlay_.selection_.items();
+        SceneObjects::ID firstLine(-1);
+        SceneObjects::ID secondLine(-1);
+        for (const auto id : ids) {
+            ObjectData od = scene.getObjectData(id);
+
+            if (od.et == ObjType::ET_LINE) {
+                if (firstLine.get() == -1) {
+                    firstLine = od.id;
+                } else {
+                    secondLine = od.id;
+                    scene.addRequirement({SceneObjects::ID(-1), ReqType::ET_LINELINEPARALLEL, firstLine, secondLine});
+                    break;
+                }
+            }
+        }
+    }
+    else if (e.key == input::KeyCode::Num9 && e.action == input::KeyAction::Press) {
+        Scene& scene = documentManager_.getActiveDocument()->scene();
+        std::vector<SceneObjects::ID> ids = overlay_.selection_.items();
+        SceneObjects::ID firstLine(-1);
+        SceneObjects::ID secondLine(-1);
+        for (const auto id : ids) {
+            ObjectData od = scene.getObjectData(id);
+
+            if (od.et == ObjType::ET_LINE) {
+                if (firstLine.get() == -1) {
+                    firstLine = od.id;
+                } else {
+                    secondLine = od.id;
+                    scene.addRequirement({SceneObjects::ID(-1), ReqType::ET_LINELINEPERPENDICULAR, firstLine, secondLine});
+                    break;
+                }
+            }
+        }
+    }
     else if (e.modifiers == input::Modifiers::Ctrl && e.key == input::KeyCode::C && e.action == input::KeyAction::Press) {
         copiedObjects_ = overlay_.selection_.items();
 
