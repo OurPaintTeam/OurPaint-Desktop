@@ -10,7 +10,7 @@
 CommandConsole::CommandConsole(OverlayModel& overlayModel) : QLineEdit(nullptr), overlayModel_(overlayModel) {
     connect(this, &QLineEdit::textChanged, this, &CommandConsole::updateAutocomplete);
     connect(this, &QLineEdit::textChanged, this, &CommandConsole::onTextChanged);
-    const QStringList list = {"LINE", "POINT", "CIRCLE", "ARC", "REQ"};
+    const QStringList list = {"LINE ", "POINT ", "CIRCLE ", "ARC ", "REQ "};
     setCommands(list);
     for (const auto& cmd : list) {
         commandsArray_.push_back(cmd);
