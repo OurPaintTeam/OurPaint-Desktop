@@ -7,7 +7,7 @@
 #include "Camera2D.h"
 
 struct PickResult {
-    SceneObjects::ID id;
+    ID id;
     ObjType type;
 };
 
@@ -16,7 +16,7 @@ public:
     explicit Cpu2dPicker(Scene& scene, Camera2D& camera);
 
     std::optional<PickResult> pickAt(double screenX, double screenY) const;
-    std::vector<SceneObjects::ID> pickInRect(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
+    std::vector<ID> pickInRect(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
 
 private:
     Scene& scene_;

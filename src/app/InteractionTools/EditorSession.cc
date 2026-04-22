@@ -17,7 +17,7 @@ EditorSession::EditorSession(DocumentManager& manager,
       overlay_(overlay),
       cursorTool_(documentManager_, camera_, picker_, overlay_),
       pointTool_(documentManager_, camera_),
-      lineTool_(documentManager_, camera_, renderData_),
+      lineTool_(documentManager_, camera_, renderData_, overlay),
       circleTool_(documentManager_, camera_, renderData_),
       bezierTool_(documentManager_, camera_, renderData_) {
     activeTool_ = new PointTool(documentManager_, camera_);

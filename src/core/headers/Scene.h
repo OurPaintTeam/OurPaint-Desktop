@@ -7,12 +7,10 @@
 
 #include "objects/BoundBox.h"
 #include "objects/Enums.h"
-#include "objects/Scene_ID.h"
 #include "InheritanceGraph.h"
 #include "objects/Objects.h"
 
 class ISceneObserver;
-namespace SceneObjects {class ID;}
 struct Point;
 struct Section;
 struct Circle;
@@ -26,6 +24,9 @@ struct ObjectData;
 
 #include "DCMManager.h"
 
+#include "objects/ID.h"
+using namespace core;
+
 class Scene {
 private:
     OurPaintDCM::DCMManager DCM_manager;
@@ -33,39 +34,35 @@ private:
 
     struct bezier {
         CubicBezier b;
-        SceneObjects::ID start;
-        SceneObjects::ID end;
-        SceneObjects::ID control1;
-        SceneObjects::ID control2;
+        ID start;
+        ID end;
+        ID control1;
+        ID control2;
     };
 
-    std::map<SceneObjects::ID, bezier> beziers_;
-    std::map<SceneObjects::ID, SceneObjects::ID> pointToBezier_;
+    std::map<ID, bezier> beziers_;
+    std::map<ID, ID> pointToBezier_;
     int lastBezierId = 0;
 
 private:
-    mutable bool _isRectangleDirty;
-    mutable BoundBox2D _allFiguresRectangle;
-
-
-private:
-    ObjType getObjType(SceneObjects::ID id) const;
-    bool exists(SceneObjects::ID id, ObjType expected) const;
+    ObjType getObjType(ID id) const;
+    bool exists(ID id, ObjType expected) const;
     bool isValid(const Requirement& req) const;
     std::vector<Variable*> getVariables(const Requirement& req) const;
     Function* getFunction(const Requirement& req);
 
-    std::unordered_map<SceneObjects::ID, OurPaintDCM::Utils::ID> DCM_ids;
+    std::unordered_map<ID, OurPaintDCM::Utils::ID> DCM_ids;
 
 public:
-    using ID = OurPaintDCM::Utils::ID;
+    using DCM_ID = OurPaintDCM::Utils::ID;
+    using SCENE_ID = ID;
     using ObjDescriptor = OurPaintDCM::Utils::FigureDescriptor;
     using ReqDescriptor = OurPaintDCM::Utils::RequirementDescriptor;
     using Type = OurPaintDCM::Utils::FigureType;
     using Storage = OurPaintDCM::Figures::GeometryStorage;
 
-    static const SceneObjects::ID _errorID;
-    static const SceneObjects::ID _connectionEdgeID;
+    static const ID _errorID;
+    static const ID _connectionEdgeID;
 
 public:
     Scene();
@@ -75,23 +72,23 @@ public:
     // Scene& operator=(Scene&&);
     ~Scene();
 
-    SceneObjects::ID addObject(const ObjectData&);
-    bool deleteObject(SceneObjects::ID objectID);
-    bool deletePoint(SceneObjects::ID pointID);
-    bool deleteLine(SceneObjects::ID sectionID);
-    bool deleteCircle(SceneObjects::ID circleID);
-    bool deleteArc(SceneObjects::ID arcID);
+    ID addObject(const ObjectData&);
+    bool deleteObject(ID objectID);
+    bool deletePoint(ID pointID);
+    bool deleteLine(ID sectionID);
+    bool deleteCircle(ID circleID);
+    bool deleteArc(ID arcID);
     void clear();
 
     const BoundBox2D& getBoundingBox() const;
     void updateBoundingBox() const;
 
     void rebuildComponents();
-    Component& findComponentByID(SceneObjects::ID id);
+    Component& findComponentByID(ID id);
 
-    ObjectData getObjectData(SceneObjects::ID objectID) const;
-    ObjectData getRootObjectData(SceneObjects::ID objectID) const;
-    Requirement getRequirementData(SceneObjects::ID object1, SceneObjects::ID object2) const;
+    ObjectData getObjectData(ID objectID) const;
+    ObjectData getRootObjectData(ID objectID) const;
+    Requirement getRequirementData(ID object1, ID object2) const;
     std::size_t objectsCount() const;
     std::size_t requirementsCount() const;
     std::vector<ObjectData> getObjects() const;
@@ -101,44 +98,49 @@ public:
     std::vector<ObjectData> getArcs() const;
     std::vector<ObjectData> getBeziers() const;
     std::vector<Requirement> getRequirements() const;
-    std::vector<Requirement> getObjectRequirements(SceneObjects::ID objectID) const;
-    std::vector<Requirement> getObjectRequirementsWithConnectedObjects(SceneObjects::ID objectID) const;
+    std::vector<Requirement> getObjectRequirements(ID objectID) const;
+    std::vector<Requirement> getObjectRequirementsWithConnectedObjects(ID objectID) const;
 
-    bool hasObject(SceneObjects::ID id) const;
-    bool hasRequirement(SceneObjects::ID id) const;
+    bool hasObject(ID id) const;
+    bool hasRequirement(ID id) const;
 
-    void moveObject(SceneObjects::ID objectID, double dx, double dy);
-    void moveObjects(std::vector<SceneObjects::ID> ids, double dx, double dy);
-    void movePoint(SceneObjects::ID pointID, double dx, double dy);
-    void moveLine(SceneObjects::ID lineID, double dx, double dy);
-    void moveCircle(SceneObjects::ID circleID, double dx, double dy);
-    void moveArc(SceneObjects::ID circleID, double dx, double dy);
+    void moveObject(ID objectID, double dx, double dy);
+    void moveObjects(std::vector<ID> ids, double dx, double dy);
+    void movePoint(ID pointID, double dx, double dy);
+    void moveLine(ID lineID, double dx, double dy);
+    void moveCircle(ID circleID, double dx, double dy);
+    void moveArc(ID circleID, double dx, double dy);
 
-    void setPoint(SceneObjects::ID pointID, double x, double y, const bool updateRequirementFlag = true);
-    void setSection(SceneObjects::ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag = true);
-    void setCircle(SceneObjects::ID pointID, double x, double y, double r, const bool updateRequirementFlag = true);
-    void setArc(SceneObjects::ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r, const bool updateRequirementFlag = true);
+    void setPoint(ID pointID, double x, double y, const bool updateRequirementFlag = true);
+    void setSection(ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag = true);
+    void setCircle(ID pointID, double x, double y, double r, const bool updateRequirementFlag = true);
+    void setArc(ID arcID, double x0, double y0, double x1, double y1, double x2, double y2, double r, const bool updateRequirementFlag = true);
 
-    SceneObjects::ID addRequirement(const Requirement& reqData, const bool updateRequirementFlag = true);
-    void updateRequirements(SceneObjects::ID objectID);
-    Requirement getRequirementData(SceneObjects::ID reqID) const;
+    ID addRequirement(const Requirement& reqData, const bool updateRequirementFlag = true);
+    void updateRequirements(ID objectID);
+    Requirement getRequirementData(ID reqID) const;
     std::vector<Requirement> getAllRequirementsData() const;
-    bool deleteRequirement(SceneObjects::ID reqID);
+    bool deleteRequirement(ID reqID);
 
-    bool tryRestoreObject(const ObjectData&, SceneObjects::ID id);
-    bool tryRestoreRequirement(const Requirement&, SceneObjects::ID id);
+    bool tryRestoreObject(const ObjectData&, ID id);
+    bool tryRestoreRequirement(const Requirement&, ID id);
 
     void setObserver(ISceneObserver* o);
 
-    void load(const std::vector<ObjectData>&, const std::vector<Requirement>&);
+    ClipboardData copyFragment(const std::vector<ID>& selected) const;
+    std::vector<ID> pasteFragment(const ClipboardData& data, double targetPosX, double targetPosY);
 
-    ObjectContainer& getObjectContainer();
+    BoundBox2D makeBoundingBoxForObject(ID id) const;
+    BoundBox2D makeBoundingBoxFromObjects(const std::vector<ID>& objects) const;
 
 private:
     ObjectContainer _objectContainer;
     std::vector<ISceneObserver*> _observers;
 
-    void addRequirement(const Requirement& reqData, SceneObjects::ID reqID);
+    void addRequirement(const Requirement& reqData, ID reqID);
+
+    static ReqType reqTypeMapper(OurPaintDCM::Utils::RequirementType type);
+    static OurPaintDCM::Utils::RequirementType reqTypeMapper(ReqType type);
 };
 
 #endif  // ! OURPAINT_HEADERS_SCENE_H_

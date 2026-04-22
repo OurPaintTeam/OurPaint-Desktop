@@ -118,7 +118,7 @@ bool lineIntersectsRectFast(double x1, double y1, double x2, double y2,
            intersect(x1, y1, x2, y2, xmin, ymax, xmin, ymin);    // left
 }
 
-std::vector<SceneObjects::ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
+std::vector<ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
     glm::dvec2 p1 = camera_.screenToWorld({screenMinX, screenMinY});
     glm::dvec2 p2 = camera_.screenToWorld({screenMaxX, screenMaxY});
 
@@ -127,7 +127,7 @@ std::vector<SceneObjects::ID> Cpu2dPicker::pickInRect(double screenMinX, double 
     double rx2 = std::max(p1.x, p2.x);
     double ry2 = std::max(p1.y, p2.y);
 
-    std::vector<SceneObjects::ID> res;
+    std::vector<ID> res;
 
     // Points
     std::vector<ObjectData> points = scene_.getPoints();

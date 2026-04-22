@@ -111,6 +111,12 @@ inline std::string to_string(ReqType requirement) {
             return "count";
         case ReqType::ERROR:
             return "error";
+        case ReqType::ET_FIXPOINT:
+            break;
+        case ReqType::ET_FIXLINE:
+            break;
+        case ReqType::ET_FIXCIRCLE:
+            break;
     }
     return "None";
 }

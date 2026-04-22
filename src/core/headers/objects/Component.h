@@ -20,7 +20,7 @@ struct Component {
     std::vector<Function*> _errorFunctions;
     std::vector<Variable*> _vars;
     LSMFORLMTask* _task = nullptr;
-    std::unordered_set<SceneObjects::ID> _objectIDs;
+    std::unordered_set<ID> _objectIDs;
 
     Component() : _task(nullptr) {}
 
@@ -71,7 +71,7 @@ struct Component {
         _objectIDs.clear();
     }
 
-    inline bool contains(SceneObjects::ID id) const {
+    inline bool contains(ID id) const {
         return _objectIDs.contains(id);
     }
 

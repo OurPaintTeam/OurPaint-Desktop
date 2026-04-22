@@ -5,10 +5,11 @@
 #include "Camera2D.h"
 #include "IInteractionTool.h"
 #include "RenderData.h"
+#include "../OverlayModel.h"
 
 class LineTool : public IInteractionTool {
 public:
-    explicit LineTool(DocumentManager& documentManager, Camera2D& camera, renderer::RenderData& renderData);
+    explicit LineTool(DocumentManager& documentManager, Camera2D& camera, renderer::RenderData& renderData, OverlayModel& overlay);
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;
@@ -27,6 +28,7 @@ private:
     DocumentManager& documentManager_;
     Camera2D& camera_;
     renderer::RenderData& renderData_;
+    OverlayModel& overlay_;
 };
 
 #endif // ! OURPAINT_APPLICATION_LINE_TOOL_H_

@@ -3,7 +3,7 @@
 
 #include "CommandAddObject.h"
 #include "Scene.h"
-#include "objects/Scene_ID.h"
+#include "objects/ID.h"
 #include "objects/Objects.h"
 
 namespace UndoRedo {
@@ -14,8 +14,8 @@ namespace UndoRedo {
         using CommandAddObject::CommandAddObject;
 
     public:
-        SceneObjects::ID getSectionID() {
-            if (_id == SceneObjects::ID{}) {
+        ID getSectionID() {
+            if (_id == ID{}) {
                 return Scene::_errorID;
             }
             return _id;

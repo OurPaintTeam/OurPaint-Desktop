@@ -2,10 +2,12 @@
 #define OURPAINT_HEADERS_ID_H_
 
 #include <cstdint>
-#include <unordered_set>
 #include <ostream>
+#include <unordered_set>
 
-namespace SceneObjects {
+
+namespace core {
+
 class ID {
 private:
     int64_t _value;
@@ -43,16 +45,15 @@ public:
 
 namespace std {
 template <>
-struct hash<SceneObjects::ID> {
-    std::size_t operator()(const SceneObjects::ID &id) const {
+struct hash<core::ID> {
+    std::size_t operator()(const core::ID &id) const {
         return hash<int64_t>()(id.get());
     }
 };
 }
 
 
-namespace SceneObjects {
-
+namespace core {
 class IDGenerator {
     int64_t last_id = 0;
     std::unordered_set<ID> excluded_ids;
