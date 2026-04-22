@@ -8,6 +8,7 @@
 #include <QVector>
 
 #include "Scene.h"
+#include "QtViewportHost.h"
 
 class OverlayModel;
 
@@ -19,7 +20,7 @@ class CommandConsole final : public QLineEdit {
     Q_OBJECT
 
 public:
-    explicit CommandConsole(OverlayModel& overlayModel_);
+    explicit CommandConsole(OverlayModel& overlayModel_, IViewportHost& host);
     void setCommands(const QStringList& commands);
 
     signals:
@@ -40,6 +41,8 @@ private:
     QString currentCommands_;
     QVector<QString> commandsArray_;
     long long index_ = -1;
+
+    IViewportHost& host_;
 };
 
 
