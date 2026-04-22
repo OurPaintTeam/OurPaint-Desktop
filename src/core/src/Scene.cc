@@ -761,6 +761,7 @@ BoundBox2D Scene::makeBoundingBoxFromObjects(const std::vector<ID>& objects) con
 void Scene::addRequirement(const Requirement& reqData, ID reqID) {
     throw std::runtime_error("Scene error");
 }
+
 ReqType Scene::reqTypeMapper(OurPaintDCM::Utils::RequirementType type) {
     switch (type) {
         case OurPaintDCM::Utils::RequirementType::ET_POINTLINEDIST:

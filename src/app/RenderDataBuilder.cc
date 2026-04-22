@@ -103,6 +103,19 @@ void RenderDataBuilder::rebuild() {
             y0 = y1;
         }
     }
+
+    renderData_.texts.clear();
+    // for (const auto& text : overlay_.texts_) {
+    //     renderData_.texts.push_back(text);
+    // }
+
+    renderData_.pos = overlay_.pos;
+    renderData_.posX = overlay_.posX;
+    renderData_.posY = overlay_.posY;
+
+    renderData_.linePrview.str = overlay_.lp;
+    renderData_.linePrview.posX = overlay_.lpX;
+    renderData_.linePrview.posY = overlay_.lpY;
 }
 
 

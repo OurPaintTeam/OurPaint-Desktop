@@ -1,9 +1,10 @@
 #ifndef OURPAINT_RENDERING_RENDERSCENE_H_
 #define OURPAINT_RENDERING_RENDERSCENE_H_
 
-#include <vector>
 #include <cmath>
 #include <optional>
+#include <string>
+#include <vector>
 
 namespace renderer {
 struct Point {
@@ -28,6 +29,8 @@ struct Rect {
     float xMax;
     float yMax;
 };
+
+#include <vector>
 
 class RenderData {
 public:
@@ -65,6 +68,21 @@ public:
         selected.clear();
         selectionRect.reset();
     }
+
+    struct to {
+        std::string str;
+        int posX{};
+        int posY{};
+        int a{};
+    };
+
+    std::vector<to> texts;
+
+    to linePrview;
+
+    std::string pos;
+    int posX{};
+    int posY{};
 };
 }
 
