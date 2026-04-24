@@ -2,7 +2,6 @@
 
 #include "Document.h"
 #include "Scene.h"
-#include "glm/ext/scalar_constants.hpp"
 
 CursorTool::CursorTool(DocumentManager& documentManager, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
     : documentManager_(documentManager), camera_(camera), picker_(picker), overlay_(overlay) {}
@@ -27,7 +26,7 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
             if (!ids.empty()) {
                 Scene& scene = documentManager_.getActiveDocument()->scene();
                 ObjectData od = scene.getObjectData(ids[0]);
-                if (od.et == ObjType::ET_CIRCLE) {
+                if (ids.size() == 1 && od.et == ObjType::ET_CIRCLE) {
                     double radius = std::hypot(v.x - od.params[0], v.y - od.params[1]);
                     scene.resizeCircle(ids[0], radius);
                 } else {
