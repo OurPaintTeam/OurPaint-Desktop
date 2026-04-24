@@ -259,7 +259,7 @@ std::size_t Scene::objectsCount() const {
 }
 
 std::size_t Scene::requirementsCount() const {
-    throw std::runtime_error("Scene error");
+    return DCM_manager.requirementCount();
 }
 
 std::vector<ObjectData> Scene::getObjects() const {
@@ -459,7 +459,7 @@ void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
 
         switch (desc.value().type) {
             case OurPaintDCM::Utils::FigureType::ET_POINT2D: {
-                points.insert(desc.value().id.value());
+                points.insert(id);
                 break;
             }
             case OurPaintDCM::Utils::FigureType::ET_LINE: {
@@ -475,10 +475,6 @@ void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
                 break;
             default: break;
         }
-
-        // std::optional<OurPaintDCM::ComponentID> comp = DCM_manager.getComponentForFigure(id);
-        // std::vector<OurPaintDCM::Utils::ID> compFigures = DCM_manager.getFiguresInComponent(comp.value());
-        // figures.insert(compFigures.begin(), compFigures.end());
     }
 
     for (const auto& id : points) {
@@ -570,6 +566,14 @@ void Scene::moveArc(ID arcID, double dx, double dy) {
     throw std::runtime_error("Scene error");
 }
 
+void Scene::resizeCircle(ID circleId, double radius) {
+    if (radius <= 0.0) {
+        return;
+    }
+
+    OurPaintDCM::Utils::CircleUpdateDescriptor c(DCM_ID(circleId.get()), radius);
+    DCM_manager.updateCircle(c);
+}
 void Scene::setPoint(ID pointID, double x, double y, const bool updateRequirementFlag) {
 
 
@@ -609,7 +613,9 @@ ID Scene::addRequirement(const Requirement& reqData, const bool updateRequiremen
     }
 
     DCM_manager.addRequirement(rd);
-    DCM_manager.solve();
+    if (updateRequirementFlag) {
+        DCM_manager.solve();
+    }
 
     for (auto& observer : _observers) {
         observer->onRequirementAdded(rd);
@@ -717,8 +723,9 @@ std::vector<ID> Scene::pasteFragment(const ClipboardData& data, double targetPos
         if (!remapIfValid(req.obj2)) continue;
         if (!remapIfValid(req.obj3)) continue;
 
-        addRequirement(req);
+        addRequirement(req, false);
     }
+    DCM_manager.solve();
 
     return copiedObjectsNewIDs;
 }
@@ -761,6 +768,7 @@ BoundBox2D Scene::makeBoundingBoxFromObjects(const std::vector<ID>& objects) con
 void Scene::addRequirement(const Requirement& reqData, ID reqID) {
     throw std::runtime_error("Scene error");
 }
+
 ReqType Scene::reqTypeMapper(OurPaintDCM::Utils::RequirementType type) {
     switch (type) {
         case OurPaintDCM::Utils::RequirementType::ET_POINTLINEDIST:

@@ -7,7 +7,7 @@
 CursorTool::CursorTool(DocumentManager& documentManager, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
     : documentManager_(documentManager), camera_(camera), picker_(picker), overlay_(overlay) {}
 
-#include <iomanip>
+//#include <iomanip>
 
 void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
@@ -25,9 +25,16 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
         if (state_ == State::DraggingSelection) {
             const std::vector<ID> ids = overlay_.selection_.items();
             if (!ids.empty()) {
-                double dx = v.x - lastPos_.x;
-                double dy = v.y - lastPos_.y;
-                documentManager_.getActiveDocument()->scene().moveObjects(ids, dx, dy);
+                Scene& scene = documentManager_.getActiveDocument()->scene();
+                ObjectData od = scene.getObjectData(ids[0]);
+                if (od.et == ObjType::ET_CIRCLE) {
+                    double radius = std::hypot(v.x - od.params[0], v.y - od.params[1]);
+                    scene.resizeCircle(ids[0], radius);
+                } else {
+                    double dx = v.x - lastPos_.x;
+                    double dy = v.y - lastPos_.y;
+                    documentManager_.getActiveDocument()->scene().moveObjects(ids, dx, dy);
+                }
                 lastPos_ = v;
             }
         }

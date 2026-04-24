@@ -111,6 +111,8 @@ public:
     void moveCircle(ID circleID, double dx, double dy);
     void moveArc(ID circleID, double dx, double dy);
 
+    void resizeCircle(ID circleID, double radius);
+
     void setPoint(ID pointID, double x, double y, const bool updateRequirementFlag = true);
     void setSection(ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag = true);
     void setCircle(ID pointID, double x, double y, double r, const bool updateRequirementFlag = true);
