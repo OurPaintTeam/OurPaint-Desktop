@@ -12,7 +12,7 @@ namespace UndoRedo {
     class CommandDeleteObject : public Command {
     protected:
         Scene& _scene;
-        SceneObjects::ID _id;
+        ID _id;
         ObjectData _data;
         std::vector<Requirement> _reqData;
 
@@ -21,7 +21,7 @@ namespace UndoRedo {
         bool Undo() override;
 
     public:
-        CommandDeleteObject(Scene& scene, SceneObjects::ID id) : _scene(scene), _id(id), _data() {}
+        CommandDeleteObject(Scene& scene, ID id) : _scene(scene), _id(id), _data() {}
 
         virtual std::string description() const override { return "Delete scene object"; };
     };

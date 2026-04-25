@@ -14,6 +14,7 @@ public:
     constexpr bool isValid() const;
     double width() const;
     double height() const;
+    void expand(double x, double y);
 
     BoundBox2D unite(const BoundBox2D &other) const;
     BoundBox2D operator|(const BoundBox2D &other) const;

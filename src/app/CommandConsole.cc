@@ -7,7 +7,7 @@
 
 #include "OverlayModel.h"
 
-CommandConsole::CommandConsole(OverlayModel& overlayModel) : QLineEdit(nullptr), overlayModel_(overlayModel) {
+CommandConsole::CommandConsole(OverlayModel& overlayModel, IViewportHost& host) : QLineEdit(nullptr), overlayModel_(overlayModel), host_(host) {
     connect(this, &QLineEdit::textChanged, this, &CommandConsole::updateAutocomplete);
     connect(this, &QLineEdit::textChanged, this, &CommandConsole::onTextChanged);
     const QStringList list = {"LINE ", "POINT ", "CIRCLE ", "ARC ", "REQ "};
@@ -156,16 +156,18 @@ void CommandConsole::parseReqInput(const QString& text) const {
 
     overlayModel_.selection_.clear();
 
-    std::vector<SceneObjects::ID> ids;
+    std::vector<ID> ids;
 
     for (int i = 2; i < parts.size(); ++i) {
         bool ok = false;
         const int id = parts[i].toInt(&ok);
 
         if (ok) {
-            ids.push_back(SceneObjects::ID(id));
+            ids.push_back(ID(id));
         }
     }
 
     overlayModel_.selection_.add(ids);
+
+    host_.requestRedraw();
 }

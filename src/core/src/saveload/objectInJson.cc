@@ -109,7 +109,7 @@ nlohmann::json objectInJson::to_json() const {
 }
 
 objectInJson::objectInJson(const nlohmann::json &j) {
-    _obj.id = SceneObjects::ID(j.at("id").get<unsigned int>());
+    _obj.id = ID(j.at("id").get<unsigned int>());
     _obj.et = element_from_string(j.at("type").get<std::string>());
     _name.clear();
     _name.push_back(j.at("name").get<std::string>());
@@ -123,7 +123,7 @@ objectInJson::objectInJson(const nlohmann::json &j) {
     }
     const auto &points = j.at("points");
     for (const auto &ptJson: points) {
-        SceneObjects::ID ptId(ptJson.at("id").get<unsigned int>());
+        ID ptId(ptJson.at("id").get<unsigned int>());
         std::string ptName = ptJson.at("name").get<std::string>();
         double x = ptJson.at("x").get<double>();
         double y = ptJson.at("y").get<double>();

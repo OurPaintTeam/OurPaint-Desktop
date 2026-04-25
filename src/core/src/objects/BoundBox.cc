@@ -42,3 +42,10 @@ double BoundBox2D::height() const {
     return isValid() ? (max_y - min_y) : 0.0;
 }
 
+void BoundBox2D::expand(double x, double y) {
+    min_x = std::min(min_x, x);
+    max_x = std::max(max_x, x);
+    min_y = std::min(min_y, y);
+    max_y = std::max(max_y, y);
+}
+

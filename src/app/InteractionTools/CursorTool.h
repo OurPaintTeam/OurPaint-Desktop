@@ -38,7 +38,13 @@ private:
     Cpu2dPicker& picker_;
     OverlayModel& overlay_;
 
-    std::vector<SceneObjects::ID> marqueeBaseSelection_;
+    std::vector<ID> marqueeBaseSelection_;
+
+
+    glm::dvec2 lastCursorWorldPos_{};
+    glm::dvec2 copiedPos_{};
+
+    ClipboardData data_;
 };
 
 #endif // ! OURPAINT_APPLICATION_CURSOR_TOOL_H_

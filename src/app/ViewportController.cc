@@ -35,10 +35,6 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
         const double dy = e.y - lastY_;
 
         camera2D_.panScreen(dx, dy);
-
-        lastX_ = e.x;
-        lastY_ = e.y;
-        return true;
     }
 
     lastX_ = e.x;
@@ -85,8 +81,6 @@ bool ViewportController::onKey(const input::KeyEvent& e) {
 
     editorSession_.activeTool()->onKey(e);
 
-    builder_.rebuild();
-
     return true;
 }
 
@@ -95,6 +89,7 @@ void ViewportController::render() {
         renderer_.initialize();
         _ini = true;
     }
+    builder_.rebuild();
     renderer_.render(renderScene_, camera2D_);
 }
 
