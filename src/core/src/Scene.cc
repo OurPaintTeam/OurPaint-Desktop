@@ -319,6 +319,20 @@ std::vector<ObjectData> Scene::getPoints() const {
     return objs;
 }
 
+void Scene::appendPickedPointsInRect(double rx1, double ry1, double rx2, double ry2, std::vector<ID>& out) const {
+    const auto& points = DCM_manager.getStorage().pointsWithIds();
+
+    for (const auto& ref : points) {
+        const double x = ref.ptr->x();
+        const double y = ref.ptr->y();
+
+        if (x >= rx1 && x <= rx2 && y >= ry1 && y <= ry2) {
+            out.push_back(ID(ref.id.id));
+        }
+    }
+}
+
+
 std::vector<ObjectData> Scene::getLines() const {
     std::vector<ObjectData> objs;
 
