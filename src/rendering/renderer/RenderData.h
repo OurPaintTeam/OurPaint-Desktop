@@ -17,10 +17,12 @@ struct Line {
     float x2;
     float y2;
 };
-struct Circle {
+struct CircleArc {
     float x;
     float y;
     float r;
+    float startAngle = 0.0;
+    float endAngle = 0.0;
 };
 struct Rect {
     float xMin;
@@ -31,14 +33,15 @@ struct Rect {
 
 class RenderData {
 public:
+    // Base
     std::vector<Point> points;
     std::vector<Line> lines;
-    std::vector<Circle> circles;
+    std::vector<CircleArc> circles;
 
     struct Layer {
         std::vector<Point> points;
         std::vector<Line> lines;
-        std::vector<Circle> circles;
+        std::vector<CircleArc> circles;
 
         void clear() {
             points.clear();

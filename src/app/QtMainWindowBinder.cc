@@ -161,30 +161,38 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                 // controller_.selectTool(ToolId::);
                 break;
 
+
+            case UI::PrimitiveType::CircleByRadius:
+                controller_.selectTool(ToolId::CircleByRadius);
+                break;
             case UI::PrimitiveType::CircleByDiameter:
                 controller_.selectTool(ToolId::CircleByDiameter);
                 break;
-            case UI::PrimitiveType::CircleByRadius:
-                controller_.selectTool(ToolId::CircleTwoPoints);
+            case UI::PrimitiveType::CircleByTwoPoints:
+                controller_.selectTool(ToolId::CircleByTwoPoints);
                 break;
-            case UI::PrimitiveType::EllipseThreePoints:
-                // controller_.selectTool(ToolId::);
+            case UI::PrimitiveType::CircleByThreePoints:
+                controller_.selectTool(ToolId::CircleByThreePoints);
                 break;
-            case UI::PrimitiveType::CircleSettings:
-                // controller_.selectTool(ToolId::);
+            case UI::PrimitiveType::CircleTangentTwoLines:
+                controller_.selectTool(ToolId::CircleTangentTwoLines);
+                break;
+            case UI::PrimitiveType::CircleTangentThreeLines:
+                controller_.selectTool(ToolId::CircleTangentThreeLines);
                 break;
 
+
             case UI::PrimitiveType::ArcByRadius:
-                // controller_.selectTool(ToolId::);
+                controller_.selectTool(ToolId::ArcByThreePoints);
                 break;
             case UI::PrimitiveType::ArcByDiameter:
-                // controller_.selectTool(ToolId::);
+                controller_.selectTool(ToolId::ArcByThreePoints);
                 break;
             case UI::PrimitiveType::ArcThreePoints:
-                // controller_.selectTool(ToolId::);
+                controller_.selectTool(ToolId::ArcByThreePoints);
                 break;
             case UI::PrimitiveType::ArcSettings:
-                // controller_.selectTool(ToolId::);
+                controller_.selectTool(ToolId::ArcByThreePoints);
                 break;
             default:
                 break;

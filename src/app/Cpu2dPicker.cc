@@ -130,15 +130,14 @@ std::vector<ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, do
     std::vector<ID> res;
 
     // Points
-    // std::vector<ObjectData> points = scene_.getPoints();
-    // for (const auto& p : points) {
-    //     const double& x = p.params[0];
-    //     const double& y = p.params[1];
-    //     if (x >= rx1 && x <= rx2 && y >= ry1 && y <= ry2) {
-    //         res.push_back(p.id);
-    //     }
-    // }
-    scene_.appendPickedPointsInRect(rx1, ry1, rx2, ry2, res);
+    std::vector<ObjectData> points = scene_.getPoints();
+    for (const auto& p : points) {
+        const double& x = p.params[0];
+        const double& y = p.params[1];
+        if (x >= rx1 && x <= rx2 && y >= ry1 && y <= ry2) {
+            res.push_back(p.id);
+        }
+    }
 
     // Lines
     std::vector<ObjectData> lines_ = scene_.getLines();
