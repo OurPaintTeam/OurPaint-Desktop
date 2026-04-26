@@ -91,7 +91,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                       });*/
 
     // Tools - constrains
-    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](const QString& tabName, UI::ConstraintType& _t1) {
+    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](const QString& tabName, UI::ConstraintType _t1) {
         // auto* prompt = new UI::ParameterInputWidget("Input parament:",nullptr);
         //
         // connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, prompt](const QString& parametr) {
@@ -103,20 +103,18 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
         // });
 
         switch (_t1) {
-            case UI::ConstraintType::PointLineDistance:
+            case UI::ConstraintType::ObjectObjectDistance:
                 controller_.selectTool(ToolId::ConstraintPointPointDistance);
+               // controller_.selectTool(ToolId::ConstraintPointPointDistance);
+               //controller_.selectTool(ToolId::ConstraintLineCircleDistance);
                 break;
             case UI::ConstraintType::PointOnLine:
                 controller_.selectTool(ToolId::ConstraintPointOnLine);
                 break;
-            case UI::ConstraintType::PointPointDistance:
-                controller_.selectTool(ToolId::ConstraintPointPointDistance);
                 break;
             case UI::ConstraintType::CoincidentPoints:
                 controller_.selectTool(ToolId::ConstraintCoincidentPoints);
                 break;
-            case UI::ConstraintType::LineCircleDistance:
-                controller_.selectTool(ToolId::ConstraintLineCircleDistance);
                 break;
             case UI::ConstraintType::LineOnCircle:
                 controller_.selectTool(ToolId::ConstraintLineOnCircle);
@@ -139,7 +137,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 
     // Tools - point/line
-    QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](const QString& tabName, UI::PrimitiveType& _t1) {
+    QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](const QString tabName, UI::PrimitiveType _t1) {
         switch (_t1) {
             case UI::PrimitiveType::Point:
                 controller_.selectTool(ToolId::Point);
@@ -200,7 +198,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 
     // Tools - cursor/size
-    QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](const QString& tabName, UI::ToolsType& _t1) {
+    QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](const QString& tabName, UI::ToolsType _t1) {
         if (_t1 == UI::ToolsType::Cursor) {
             controller_.selectTool(ToolId::Cursor);
         }
