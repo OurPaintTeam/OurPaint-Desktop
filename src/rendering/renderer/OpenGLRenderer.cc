@@ -655,22 +655,6 @@ void OpenGLRenderer::renderSelectionRect(const RenderData& scene, const Camera2D
     inst.hx = std::max(inst.hx, 1e-6f);
     inst.hy = std::max(inst.hy, 1e-6f);
 
-    float worldPerPixel = 1.0f / camera.zoom();
-
-    float rectBorderHalfWidthPx = 1.0f;
-    float rectEdgeSoftnessPx = 1.0f;
-
-    float borderHalfWidthWorld = rectBorderHalfWidthPx * worldPerPixel;
-    float edgeSoftnessWorld = rectEdgeSoftnessPx * worldPerPixel;
-
-    float minHalfExtent = std::max(std::min(inst.hx, inst.hy), 1e-6f);
-
-    float borderHalfWidthLocal = borderHalfWidthWorld / minHalfExtent;
-    float edgeSoftnessLocal = edgeSoftnessWorld / minHalfExtent;
-    float pad = 1.0f + borderHalfWidthLocal + edgeSoftnessLocal;
-
-
-
     glUseProgram(rectProgram_);
     glBindVertexArray(rectVao_);
     glBindBuffer(GL_ARRAY_BUFFER, rectInstanceVbo_);
@@ -690,21 +674,7 @@ void OpenGLRenderer::renderSelectionRect(const RenderData& scene, const Camera2D
         glUniform4f(rectFillColorLoc_, 0.2f, 0.5f, 1.0f, 0.12f);
     }
 
-    if (rectBorderColorLoc_ >= 0) {
-        glUniform4f(rectBorderColorLoc_, 0.2f, 0.5f, 1.0f, 0.9f);
-    }
-
-    if (rectBorderHalfWidthLoc_ >= 0) {
-        glUniform1f(rectBorderHalfWidthLoc_, borderHalfWidthLocal);
-    }
-
-    if (rectEdgeSoftnessLoc_ >= 0) {
-        glUniform1f(rectEdgeSoftnessLoc_, edgeSoftnessLocal);
-    }
-
-    if (rectPadLoc_ >= 0) {
-        glUniform1f(rectPadLoc_, pad);
-    }
+    // In future use 0.2f, 0.5f, 1.0f, 0.9f color for border
 
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1);
 
@@ -1001,10 +971,6 @@ bool OpenGLRenderer::initRectPipeline() {
 
     rectTransformLoc_ = glGetUniformLocation(rectProgram_, "uTransform");
     rectFillColorLoc_ = glGetUniformLocation(rectProgram_, "uFillColor");
-    rectBorderColorLoc_ = glGetUniformLocation(rectProgram_, "uBorderColor");
-    rectBorderHalfWidthLoc_ = glGetUniformLocation(rectProgram_, "uBorderHalfWidth");
-    rectEdgeSoftnessLoc_ = glGetUniformLocation(rectProgram_, "uEdgeSoftness");
-    rectPadLoc_ = glGetUniformLocation(rectProgram_, "uPad");
 
     const float quadVerts[] = {
         -1.0f, -1.0f,
