@@ -92,7 +92,10 @@ public:
     std::size_t objectsCount() const;
     std::size_t requirementsCount() const;
     std::vector<ObjectData> getObjects() const;
+
     std::vector<ObjectData> getPoints() const;
+    void appendPickedPointsInRect(double rx1, double ry1, double rx2, double ry2, std::vector<ID>& out) const;
+
     std::vector<ObjectData> getLines() const;
     std::vector<ObjectData> getCircles() const;
     std::vector<ObjectData> getArcs() const;
@@ -110,6 +113,8 @@ public:
     void moveLine(ID lineID, double dx, double dy);
     void moveCircle(ID circleID, double dx, double dy);
     void moveArc(ID circleID, double dx, double dy);
+
+    void resizeCircle(ID circleID, double radius);
 
     void setPoint(ID pointID, double x, double y, const bool updateRequirementFlag = true);
     void setSection(ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag = true);

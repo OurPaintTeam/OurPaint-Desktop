@@ -17,8 +17,9 @@ EditorSession::EditorSession(DocumentManager& manager,
       overlay_(overlay),
       cursorTool_(documentManager_, camera_, picker_, overlay_),
       pointTool_(documentManager_, camera_),
-      lineTool_(documentManager_, camera_, renderData_, overlay),
-      circleTool_(documentManager_, camera_, renderData_),
+      lineTool_(documentManager_, camera_, overlay),
+      circleTool_(documentManager_, camera_, picker, overlay),
+      arcTool_(documentManager_, camera_, picker, overlay),
       bezierTool_(documentManager_, camera_, renderData_) {
     activeTool_ = new PointTool(documentManager_, camera_);
 }
@@ -49,23 +50,44 @@ void EditorSession::select(ToolId id) {
 
             break;
 
+
+        case ToolId::CircleByRadius:
+            circleTool_.setMode(CircleTool::Mode::CenterRadius);
+            activeTool_ = &circleTool_;
+            break;
         case ToolId::CircleByDiameter:
+            circleTool_.setMode(CircleTool::Mode::CenterDiameter);
             activeTool_ = &circleTool_;
             break;
-        case ToolId::CircleTwoPoints:
+        case ToolId::CircleByTwoPoints:
+            circleTool_.setMode(CircleTool::Mode::DiameterTwoPoints);
             activeTool_ = &circleTool_;
             break;
-        case ToolId::EllipseThreePoints:
+        case ToolId::CircleByThreePoints:
+            circleTool_.setMode(CircleTool::Mode::ThreePoints);
             activeTool_ = &circleTool_;
             break;
+        case ToolId::CircleTangentTwoLines:
+            circleTool_.setMode(CircleTool::Mode::TangentTwoObjectsRadius);
+            activeTool_ = &circleTool_;
+            break;
+        case ToolId::CircleTangentThreeLines:
+            circleTool_.setMode(CircleTool::Mode::TangentThreeObjects);
+            activeTool_ = &circleTool_;
+            break;
+
 
         case ToolId::ArcByRadius:
-
+            arcTool_.setMode(ArcTool::Mode::ThreePoints);
+            activeTool_ = &arcTool_;
             break;
         case ToolId::ArcByDiameter:
-
+            arcTool_.setMode(ArcTool::Mode::ThreePoints);
+            activeTool_ = &arcTool_;
             break;
         case ToolId::ArcByThreePoints:
+            arcTool_.setMode(ArcTool::Mode::ThreePoints);
+            activeTool_ = &arcTool_;
             break;
 
         case ToolId::CubicBezier:

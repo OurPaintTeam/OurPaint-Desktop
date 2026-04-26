@@ -18,6 +18,10 @@ public:
     std::optional<PickResult> pickAt(double screenX, double screenY) const;
     std::vector<ID> pickInRect(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
 
+    std::optional<PickResult> pickPointAt(double screenX, double screenY) const;
+    std::optional<PickResult> pickLineAt(double screenX, double screenY) const;
+    std::optional<PickResult> pickCircleAt(double screenX, double screenY) const;
+
 private:
     Scene& scene_;
     Camera2D& camera_;

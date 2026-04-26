@@ -16,10 +16,12 @@ struct PointInstance {
     float y;
     float size;
 };
-struct CircleInstance {
+struct CircleArcInstance {
     float x;
     float y;
     float r;
+    float startAngle;
+    float endAngle;
 };
 struct LineInstance {
     float x1;
@@ -48,7 +50,7 @@ bool OpenGLRenderer::initialize() {
     if (!initLinePipeline()) {
         return false;
     }
-    if (!initCirclePipeline()) {
+    if (!initCircleArcPipeline()) {
         return false;
     }
     if (!initRectPipeline()) {
@@ -526,11 +528,11 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
         //return;
     }
 
-    std::vector<CircleInstance> selectedInstances;
+    std::vector<CircleArcInstance> selectedInstances;
     selectedInstances.reserve(circlesSelectedCount);
 
     for (const auto& c : renderData.selected.circles) {
-        selectedInstances.push_back(CircleInstance{ c.x, c.y, c.r });
+        selectedInstances.push_back(CircleArcInstance{ c.x, c.y, c.r, c.startAngle, c.endAngle });
     }
 
     glUseProgram(circleProgram_);
@@ -539,7 +541,7 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
 
     glBufferData(
         GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(selectedInstances.size() * sizeof(CircleInstance)),
+        static_cast<GLsizeiptr>(selectedInstances.size() * sizeof(CircleArcInstance)),
         selectedInstances.data(),
         GL_DYNAMIC_DRAW
     );
@@ -581,15 +583,15 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
         //return;
     }
 
-    std::vector<CircleInstance> instances;
+    std::vector<CircleArcInstance> instances;
     instances.reserve(circlesCount);
 
     for (const auto& c : renderData.overlay.circles) {
-        instances.push_back(CircleInstance{ c.x, c.y, c.r });
+        instances.push_back(CircleArcInstance{ c.x, c.y, c.r, c.startAngle, c.endAngle });
     }
 
     for (const auto& c : renderData.circles) {
-        instances.push_back(CircleInstance{ c.x, c.y, c.r });
+        instances.push_back(CircleArcInstance{ c.x, c.y, c.r, c.startAngle, c.endAngle });
     }
 
     glUseProgram(circleProgram_);
@@ -598,7 +600,7 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
 
     glBufferData(
         GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(instances.size() * sizeof(CircleInstance)),
+        static_cast<GLsizeiptr>(instances.size() * sizeof(CircleArcInstance)),
         instances.data(),
         GL_DYNAMIC_DRAW
     );
@@ -902,7 +904,7 @@ bool OpenGLRenderer::initLinePipeline() {
     return true;
 }
 
-bool OpenGLRenderer::initCirclePipeline() {
+bool OpenGLRenderer::initCircleArcPipeline() {
     createProgramFromFiles("shaders/circle.vert", "shaders/circle.frag", circleProgram_);
 
     circleColorLoc_                 = glGetUniformLocation(circleProgram_, "uColor");
@@ -948,26 +950,50 @@ bool OpenGLRenderer::initCirclePipeline() {
     // location = 1 -> aCenter
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(
-        1,
-        2,
+        1, // location
+        2, // vec2
         GL_FLOAT,
         GL_FALSE,
-        sizeof(CircleInstance),
-        reinterpret_cast<void*>(offsetof(CircleInstance, x))
+        sizeof(CircleArcInstance),
+        reinterpret_cast<void*>(offsetof(CircleArcInstance, x))
     );
     glVertexAttribDivisor(1, 1);
 
     // location = 2 -> aRadius
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(
-        2,
-        1,
+        2, // location
+        1, // float
         GL_FLOAT,
         GL_FALSE,
-        sizeof(CircleInstance),
-        reinterpret_cast<void*>(offsetof(CircleInstance, r))
+        sizeof(CircleArcInstance),
+        reinterpret_cast<void*>(offsetof(CircleArcInstance, r))
     );
     glVertexAttribDivisor(2, 1);
+
+    // location = 3 -> aStartAngle
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(
+        3, // location
+        1, // float
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(CircleArcInstance),
+        reinterpret_cast<void*>(offsetof(CircleArcInstance, startAngle))
+    );
+    glVertexAttribDivisor(3, 1);
+
+    // location = 4 -> aEndAngle
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(
+        4, // location
+        1, // float
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(CircleArcInstance),
+        reinterpret_cast<void*>(offsetof(CircleArcInstance, endAngle))
+    );
+    glVertexAttribDivisor(4, 1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

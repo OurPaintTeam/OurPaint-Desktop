@@ -191,7 +191,9 @@ bool Scene::deleteArc(ID arcID) {
 }
 
 void Scene::clear() {
-    throw std::runtime_error("Scene error");
+    DCM_manager.clear();
+    beziers_.clear();
+    pointToBezier_.clear();
 }
 
 const BoundBox2D& Scene::getBoundingBox() const {
@@ -199,7 +201,7 @@ const BoundBox2D& Scene::getBoundingBox() const {
 }
 
 void Scene::updateBoundingBox() const {
-    throw std::runtime_error("Scene error");
+    throw std::runtime_error("Scene error: update Bounding box");
 }
 
 ObjectData Scene::getObjectData(SCENE_ID id) const {
@@ -259,7 +261,7 @@ std::size_t Scene::objectsCount() const {
 }
 
 std::size_t Scene::requirementsCount() const {
-    throw std::runtime_error("Scene error");
+    return DCM_manager.requirementCount();
 }
 
 std::vector<ObjectData> Scene::getObjects() const {
@@ -317,6 +319,19 @@ std::vector<ObjectData> Scene::getPoints() const {
     }
 
     return objs;
+}
+
+void Scene::appendPickedPointsInRect(double rx1, double ry1, double rx2, double ry2, std::vector<ID>& out) const {
+    const auto& points = DCM_manager.getStorage().pointsWithIds();
+
+    for (const auto& ref : points) {
+        const double x = ref.ptr->x();
+        const double y = ref.ptr->y();
+
+        if (x >= rx1 && x <= rx2 && y >= ry1 && y <= ry2) {
+            out.push_back(ID(ref.id.id));
+        }
+    }
 }
 
 std::vector<ObjectData> Scene::getLines() const {
@@ -459,7 +474,7 @@ void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
 
         switch (desc.value().type) {
             case OurPaintDCM::Utils::FigureType::ET_POINT2D: {
-                points.insert(desc.value().id.value());
+                points.insert(id);
                 break;
             }
             case OurPaintDCM::Utils::FigureType::ET_LINE: {
@@ -475,12 +490,10 @@ void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
                 break;
             default: break;
         }
-
-        // std::optional<OurPaintDCM::ComponentID> comp = DCM_manager.getComponentForFigure(id);
-        // std::vector<OurPaintDCM::Utils::ID> compFigures = DCM_manager.getFiguresInComponent(comp.value());
-        // figures.insert(compFigures.begin(), compFigures.end());
     }
 
+    std::vector<OurPaintDCM::Utils::PointUpdateDescriptor> descs;
+    descs.reserve(points.size());
     for (const auto& id : points) {
         std::optional<OurPaintDCM::Utils::FigureDescriptor> desc =  DCM_manager.getFigure(id);
         if (!desc.has_value()) {
@@ -488,8 +501,9 @@ void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
         }
 
         OurPaintDCM::Utils::PointUpdateDescriptor d(id, desc.value().x.value() + dx, desc.value().y.value() + dy);
-        DCM_manager.updatePoint(d);
+        descs.push_back(d);
     }
+    DCM_manager.updatePoints(descs);
 
     for (const auto& p : DCM_manager.getAllPoints()) {
         auto id = ID(p.id.value().id);
@@ -570,6 +584,14 @@ void Scene::moveArc(ID arcID, double dx, double dy) {
     throw std::runtime_error("Scene error");
 }
 
+void Scene::resizeCircle(ID circleId, double radius) {
+    if (radius <= 0.0) {
+        return;
+    }
+
+    OurPaintDCM::Utils::CircleUpdateDescriptor c(DCM_ID(circleId.get()), radius);
+    DCM_manager.updateCircle(c);
+}
 void Scene::setPoint(ID pointID, double x, double y, const bool updateRequirementFlag) {
 
 
@@ -609,7 +631,9 @@ ID Scene::addRequirement(const Requirement& reqData, const bool updateRequiremen
     }
 
     DCM_manager.addRequirement(rd);
-    DCM_manager.solve();
+    if (updateRequirementFlag) {
+        DCM_manager.solve();
+    }
 
     for (auto& observer : _observers) {
         observer->onRequirementAdded(rd);
@@ -717,8 +741,9 @@ std::vector<ID> Scene::pasteFragment(const ClipboardData& data, double targetPos
         if (!remapIfValid(req.obj2)) continue;
         if (!remapIfValid(req.obj3)) continue;
 
-        addRequirement(req);
+        addRequirement(req, false);
     }
+    DCM_manager.solve();
 
     return copiedObjectsNewIDs;
 }

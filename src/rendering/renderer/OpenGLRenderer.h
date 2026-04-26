@@ -135,7 +135,7 @@ private:
     bool initGridPipeline();
     bool initPointPipeline();
     bool initLinePipeline();
-    bool initCirclePipeline();
+    bool initCircleArcPipeline();
     bool initRectPipeline();
 
     static GLuint compileShader(GLenum type, const char* src);

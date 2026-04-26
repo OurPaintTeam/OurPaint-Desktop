@@ -19,8 +19,6 @@ public:
                        renderer::RenderData& renderScene,
                        RenderDataBuilder& builder);
 
-    void initialize();
-
     bool onResize     (const input::ResizeEvent& e)      override;
     bool onMouseMove  (const input::MouseMoveEvent& e)   override;
     bool onMouseButton(const input::MouseButtonEvent& e) override;
@@ -42,9 +40,6 @@ private:
     bool panning_ = false;
     double lastX_ = 0.0;
     double lastY_ = 0.0;
-
-    bool dirty_ = false;
-    bool continuousRedraw_ = false;
 
     bool _ini = false;
 };

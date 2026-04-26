@@ -3,83 +3,19 @@
 Cpu2dPicker::Cpu2dPicker(Scene& scene, Camera2D& camera) : scene_(scene), camera_(camera) {}
 
 std::optional<PickResult> Cpu2dPicker::pickAt(double screenX, double screenY) const {
-    glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
-
-    // Depends on zoom
-    double eps = 0.05 / (camera_.zoom() / 100.0);
-
-    std::vector<ObjectData> points = scene_.getPoints();
-    for (const auto& p : points) {
-        PickResult res;
-        const double& x = p.params[0];
-        const double& y = p.params[1];
-        if (std::abs(x - v.x) < eps && std::abs(y - v.y) < eps) {
-            res.type = ObjType::ET_POINT;
-            res.id = p.id;
-            return res;
-        }
+    std::optional<PickResult> p = pickPointAt(screenX, screenY);
+    if (p.has_value()) {
+        return p;
     }
 
-
-
-    std::vector<ObjectData> lines_ = scene_.getLines();
-    for (const auto& l : lines_) {
-        PickResult res;
-
-        const double& x1 = l.params[0];
-        const double& y1 = l.params[1];
-        const double& x2 = l.params[2];
-        const double& y2 = l.params[3];
-
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-
-        double px = v.x - x1;
-        double py = v.y - y1;
-
-        double cross = std::abs(dx * py - dy * px);
-
-        double len = std::sqrt(dx*dx + dy*dy);
-        if (len < 1e-9) {
-            if (std::abs(v.x - x1) < eps && std::abs(v.y - y1) < eps) {
-                res.type = ObjType::ET_LINE;
-                res.id = l.id;
-                return res;
-            }
-            continue;
-        }
-
-        double dist = cross / len;
-
-        if (dist < eps) {
-            double minX = std::min(x1, x2) - eps;
-            double maxX = std::max(x1, x2) + eps;
-            double minY = std::min(y1, y2) - eps;
-            double maxY = std::max(y1, y2) + eps;
-
-            if (v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) {
-                res.type = ObjType::ET_LINE;
-                res.id = l.id;
-                return res;
-            }
-        }
+    std::optional<PickResult> l = pickLineAt(screenX, screenY);
+    if (l.has_value()) {
+        return l;
     }
 
-    std::vector<ObjectData> circles_ = scene_.getCircles();
-    for (const auto& c : circles_) {
-        PickResult res;
-
-        const double& x = c.params[0];
-        const double& y = c.params[1];
-        const double& r = c.params[2];
-        double dx = v.x - x;
-        double dy = v.y - y;
-        double d = sqrt(dx*dx + dy*dy);
-        if (d > r - eps && d < r + eps) {
-            res.type = ObjType::ET_CIRCLE;
-            res.id = c.id;
-            return res;
-        }
+    std::optional<PickResult> c = pickCircleAt(screenX, screenY);
+    if (c.has_value()) {
+        return c;
     }
 
     return std::nullopt;
@@ -183,4 +119,98 @@ std::vector<ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, do
 
     return res;
 }
+
+std::optional<PickResult> Cpu2dPicker::pickPointAt(double screenX, double screenY) const {
+    glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
+    double eps = 0.05 / (camera_.zoom() / 100.0);
+
+    std::vector<ObjectData> points = scene_.getPoints();
+    for (const auto& p : points) {
+        PickResult res;
+        const double& x = p.params[0];
+        const double& y = p.params[1];
+        if (std::abs(x - v.x) < eps && std::abs(y - v.y) < eps) {
+            res.type = ObjType::ET_POINT;
+            res.id = p.id;
+            return res;
+        }
+    }
+
+    return std::nullopt;
+}
+
+std::optional<PickResult> Cpu2dPicker::pickLineAt(double screenX, double screenY) const {
+    glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
+    double eps = 0.05 / (camera_.zoom() / 100.0);
+
+    std::vector<ObjectData> lines_ = scene_.getLines();
+    for (const auto& l : lines_) {
+        PickResult res;
+
+        const double& x1 = l.params[0];
+        const double& y1 = l.params[1];
+        const double& x2 = l.params[2];
+        const double& y2 = l.params[3];
+
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+
+        double px = v.x - x1;
+        double py = v.y - y1;
+
+        double cross = std::abs(dx * py - dy * px);
+
+        double len = std::sqrt(dx*dx + dy*dy);
+        if (len < 1e-9) {
+            if (std::abs(v.x - x1) < eps && std::abs(v.y - y1) < eps) {
+                res.type = ObjType::ET_LINE;
+                res.id = l.id;
+                return res;
+            }
+            continue;
+        }
+
+        double dist = cross / len;
+
+        if (dist < eps) {
+            double minX = std::min(x1, x2) - eps;
+            double maxX = std::max(x1, x2) + eps;
+            double minY = std::min(y1, y2) - eps;
+            double maxY = std::max(y1, y2) + eps;
+
+            if (v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) {
+                res.type = ObjType::ET_LINE;
+                res.id = l.id;
+                return res;
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
+std::optional<PickResult> Cpu2dPicker::pickCircleAt(double screenX, double screenY) const {
+    glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
+    double eps = 0.05 / (camera_.zoom() / 100.0);
+
+    std::vector<ObjectData> circles_ = scene_.getCircles();
+    for (const auto& c : circles_) {
+        PickResult res;
+
+        const double& x = c.params[0];
+        const double& y = c.params[1];
+        const double& r = c.params[2];
+        double dx = v.x - x;
+        double dy = v.y - y;
+        double d = sqrt(dx*dx + dy*dy);
+        if (d > r - eps && d < r + eps) {
+            res.type = ObjType::ET_CIRCLE;
+            res.id = c.id;
+            return res;
+        }
+    }
+
+    return std::nullopt;
+}
+
 

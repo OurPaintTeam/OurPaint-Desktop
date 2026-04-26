@@ -10,9 +10,12 @@ enum class ToolId {
     Polyline,
     InfiniteLine,
 
+    CircleByRadius,
     CircleByDiameter,
-    CircleTwoPoints,
-    EllipseThreePoints,
+    CircleByTwoPoints,
+    CircleByThreePoints,
+    CircleTangentTwoLines,
+    CircleTangentThreeLines,
 
     ArcByRadius,
     ArcByDiameter,
