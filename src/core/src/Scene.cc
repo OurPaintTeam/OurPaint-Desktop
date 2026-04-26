@@ -191,7 +191,9 @@ bool Scene::deleteArc(ID arcID) {
 }
 
 void Scene::clear() {
-    throw std::runtime_error("Scene error");
+    DCM_manager.clear();
+    beziers_.clear();
+    pointToBezier_.clear();
 }
 
 const BoundBox2D& Scene::getBoundingBox() const {
@@ -199,7 +201,7 @@ const BoundBox2D& Scene::getBoundingBox() const {
 }
 
 void Scene::updateBoundingBox() const {
-    throw std::runtime_error("Scene error");
+    throw std::runtime_error("Scene error: update Bounding box");
 }
 
 ObjectData Scene::getObjectData(SCENE_ID id) const {
@@ -331,7 +333,6 @@ void Scene::appendPickedPointsInRect(double rx1, double ry1, double rx2, double 
         }
     }
 }
-
 
 std::vector<ObjectData> Scene::getLines() const {
     std::vector<ObjectData> objs;
@@ -491,6 +492,8 @@ void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
         }
     }
 
+    std::vector<OurPaintDCM::Utils::PointUpdateDescriptor> descs;
+    descs.reserve(points.size());
     for (const auto& id : points) {
         std::optional<OurPaintDCM::Utils::FigureDescriptor> desc =  DCM_manager.getFigure(id);
         if (!desc.has_value()) {
@@ -498,8 +501,9 @@ void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
         }
 
         OurPaintDCM::Utils::PointUpdateDescriptor d(id, desc.value().x.value() + dx, desc.value().y.value() + dy);
-        DCM_manager.updatePoint(d);
+        descs.push_back(d);
     }
+    DCM_manager.updatePoints(descs);
 
     for (const auto& p : DCM_manager.getAllPoints()) {
         auto id = ID(p.id.value().id);

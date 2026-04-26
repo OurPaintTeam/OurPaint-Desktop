@@ -7,7 +7,7 @@
 
 class PointTool : public IInteractionTool {
 public:
-    explicit PointTool(DocumentManager& documentManager_, Camera2D& camera);
+    explicit PointTool(DocumentManager& documentManager, Camera2D& camera);
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;
