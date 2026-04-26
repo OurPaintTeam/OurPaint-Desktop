@@ -77,6 +77,7 @@ void Application::init(int& argc, char** argv) {
 
     // init UI
     Q_INIT_RESOURCE(resources);
+    Q_INIT_RESOURCE(translations);
     commandConsole_ = new CommandConsole(*overlay_, *qt_host);
     mainWindow_ = new UI::ProjectManager({}, qt_host,commandConsole_);
     mainWindow_->addTabSlot("ds");
