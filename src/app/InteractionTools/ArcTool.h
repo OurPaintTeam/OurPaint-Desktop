@@ -1,34 +1,23 @@
-#ifndef OURPAINT_APPLICATION_CIRCLE_TOOL_H_
-#define OURPAINT_APPLICATION_CIRCLE_TOOL_H_
-
-#include <vector>
-#include <optional>
-
-#include <glm/glm.hpp>
+#ifndef OURPAINT_APPLICATION_ARC_TOOL_H_
+#define OURPAINT_APPLICATION_ARC_TOOL_H_
 
 #include "DocumentManager.h"
 #include "Camera2D.h"
 #include "IInteractionTool.h"
-#include "objects/Objects.h"
 #include "../Cpu2dPicker.h"
 #include "../OverlayModel.h"
 
-class CircleTool : public IInteractionTool {
+class ArcTool : public IInteractionTool {
 public:
     enum class Mode {
-        CenterRadius,
-        CenterDiameter,
-        TwoPoints,
-        ThreePoints,
-        TangentTwoLines,
-        TangentThreeLines
+        ThreePoints
     };
 
 public:
-    explicit CircleTool(DocumentManager& documentManager,
-                        Camera2D& camera,
-                        Cpu2dPicker& picker,
-                        OverlayModel& overlay);
+    explicit ArcTool(DocumentManager& documentManager,
+                     Camera2D& camera,
+                     Cpu2dPicker& picker,
+                     OverlayModel& overlay);
 
     void setMode(Mode mode);
 
@@ -38,18 +27,26 @@ public:
     bool cancel() override;
 
 private:
+    glm::dvec2 screenToWorld(double x, double y) const;
+    void reset();
+
+
+    struct Arc {
+        double cx, cy, r;
+        double startAngle, endAngle;
+        bool valid;
+    };
+
+    Arc buildArcFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2);
+
+private:
     enum class Step {
         WaitingFirstInput,
         WaitingSecondInput,
         WaitingThirdInput
     };
 
-private:
-    glm::dvec2 screenToWorld(double x, double y) const;
-    void reset();
-
-private:
-    Mode mode_ = Mode::CenterRadius;
+    Mode mode_ = Mode::ThreePoints;
     Step step_ = Step::WaitingFirstInput;
 
     std::vector<glm::dvec2> points_;
@@ -60,4 +57,4 @@ private:
     OverlayModel& overlay_;
 };
 
-#endif // ! OURPAINT_APPLICATION_CIRCLE_TOOL_H_
+#endif // ! OURPAINT_APPLICATION_ARC_TOOL_H_

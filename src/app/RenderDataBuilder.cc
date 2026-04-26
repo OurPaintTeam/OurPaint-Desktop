@@ -14,6 +14,9 @@ void RenderDataBuilder::rebuild() {
     renderData_.selected.clear();
     renderData_.selectionRect.reset();
     renderData_.special.clear();
+
+
+    // Base points
     std::vector<ObjectData> points = scene_.getPoints();
     for (auto& p : points) {
         const double& x = p.params[0];
@@ -21,6 +24,7 @@ void RenderDataBuilder::rebuild() {
         renderData_.points.push_back(renderer::Point(x, y));
     }
 
+    // Base lines
     std::vector<ObjectData> lines = scene_.getLines();
     for (auto& l : lines) {
         const double& x1 = l.params[0];
@@ -30,54 +34,88 @@ void RenderDataBuilder::rebuild() {
         renderData_.lines.push_back(renderer::Line(x1, y1, x2, y2));
     }
 
+    // Base circles
     std::vector<ObjectData> circles = scene_.getCircles();
     for (auto& c : circles) {
         const double& x = c.params[0];
         const double& y = c.params[1];
         const double& r = c.params[2];
-        renderData_.circles.push_back(renderer::Circle(x, y, r));
+        renderData_.circles.push_back(renderer::CircleArc(x, y, r));
         renderData_.points.push_back(renderer::Point(x, y));
     }
 
-    for (const auto& id : overlay_.selection_.items()) {
-        for (const auto& p : points) {
-            if (p.id.get() == id.get()) {
-                renderData_.selected.points.push_back({static_cast<float>(p.params[0]), static_cast<float>(p.params[1])});
-            }
+    // Selection objects
+    for (const auto& id : overlay_.selection_.model.items()) {
+        ObjectData od = scene_.getObjectData(id);
+        if (od.et == ObjType::ET_POINT) {
+            renderData_.selected.points.push_back({static_cast<float>(od.params[0]), static_cast<float>(od.params[1])});
         }
-        for (const auto& l : lines) {
-            if (l.id.get() == id.get()) {
-                renderData_.selected.lines.push_back({
-                    static_cast<float>(l.params[0]),
-                    static_cast<float>(l.params[1]),
-                    static_cast<float>(l.params[2]),
-                    static_cast<float>(l.params[3])
-                });
-
-            }
+        else if (od.et == ObjType::ET_LINE) {
+            renderData_.selected.lines.push_back({
+                static_cast<float>(od.params[0]),
+                static_cast<float>(od.params[1]),
+                static_cast<float>(od.params[2]),
+                static_cast<float>(od.params[3])
+            });
         }
-        for (const auto& c : circles) {
-            if (c.id.get() == id.get()) {
-                renderData_.selected.circles.push_back({
-                    static_cast<float>(c.params[0]),
-                    static_cast<float>(c.params[1]),
-                    static_cast<float>(c.params[2])
-                });
-
-            }
+        else if (od.et == ObjType::ET_CIRCLE) {
+            renderData_.selected.circles.push_back({
+                static_cast<float>(od.params[0]),
+                static_cast<float>(od.params[1]),
+                static_cast<float>(od.params[2])
+            });
         }
     }
 
-    if (overlay_.rect_.has_value()) {
+    // Overlay selection rectangle
+    if (overlay_.selectionRect_.has_value()) {
         renderer::Rect r;
-        r.xMin = overlay_.rect_->xMin;
-        r.yMin = overlay_.rect_->yMin;
-        r.xMax = overlay_.rect_->xMax;
-        r.yMax = overlay_.rect_->yMax;
-
+        r.xMin = overlay_.selectionRect_->xMin;
+        r.yMin = overlay_.selectionRect_->yMin;
+        r.xMax = overlay_.selectionRect_->xMax;
+        r.yMax = overlay_.selectionRect_->yMax;
         renderData_.selectionRect = r;
     }
 
+    // Overlay points
+    for (const auto& point : overlay_.points_) {
+        renderer::Point p;
+        p.x = point.x;
+        p.y = point.y;
+        renderData_.points.push_back(p);
+    }
+
+    // Overlay line
+    for (const auto& line : overlay_.lines_) {
+        renderer::Line l;
+        l.x1 = line.x1;
+        l.y1 = line.y1;
+        l.x2 = line.x2;
+        l.y2 = line.y2;
+        renderData_.lines.push_back(l);
+    }
+
+    // Overlay circle
+    for (const auto& circle : overlay_.circles_) {
+        renderer::CircleArc c;
+        c.x = circle.cx;
+        c.y = circle.cy;
+        c.r = circle.r;
+        renderData_.circles.push_back(c);
+    }
+
+    // Overlay arc
+    for (const auto& arc : overlay_.arcs_) {
+        renderer::CircleArc ca;
+        ca.x = arc.cx;
+        ca.y = arc.cy;
+        ca.r = arc.r;
+        ca.startAngle = arc.startAngle;
+        ca.endAngle = arc.endAngle;
+        renderData_.circles.push_back(ca);
+    }
+
+    // Cubic bezier curve
     std::vector<ObjectData> beziers = scene_.getBeziers();
     for (size_t i = 0; i < beziers.size(); i++) {
         ObjectData od = beziers[i];
@@ -103,6 +141,14 @@ void RenderDataBuilder::rebuild() {
             y0 = y1;
         }
     }
+
+    // if (points.size() >= 3) {
+    //     CircleArc arc = buildArcFromThreePoints(points[0], points[1], points[2]);
+    //     if (arc.valid) {
+    //         renderer::CircleArc c(arc.cx, arc.cy, arc.r, arc.startAngle, arc.endAngle);
+    //         renderData_.circles.push_back(c);
+    //     }
+    // }
 }
 
 

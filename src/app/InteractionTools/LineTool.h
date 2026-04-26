@@ -4,12 +4,11 @@
 #include "DocumentManager.h"
 #include "Camera2D.h"
 #include "IInteractionTool.h"
-#include "RenderData.h"
 #include "../OverlayModel.h"
 
 class LineTool : public IInteractionTool {
 public:
-    explicit LineTool(DocumentManager& documentManager, Camera2D& camera, renderer::RenderData& renderData, OverlayModel& overlay);
+    explicit LineTool(DocumentManager& documentManager, Camera2D& camera, OverlayModel& overlay);
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;
@@ -23,11 +22,10 @@ private:
     };
 
     State state_ = State::WaitingFirstPoint;
-    double firstPoint_X;
-    double firstPoint_Y;
+    glm::dvec2 firstPoint_;
+
     DocumentManager& documentManager_;
     Camera2D& camera_;
-    renderer::RenderData& renderData_;
     OverlayModel& overlay_;
 };
 

@@ -22,7 +22,7 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
 
     if (input::has_flag(e.buttons, input::MouseButton::Left)) {
         if (state_ == State::DraggingSelection) {
-            const std::vector<ID> ids = overlay_.selection_.items();
+            const std::vector<ID> ids = overlay_.selection_.model.items();
             if (!ids.empty()) {
                 Scene& scene = documentManager_.getActiveDocument()->scene();
                 ObjectData od = scene.getObjectData(ids[0]);
@@ -38,9 +38,9 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
             }
         }
         else if (state_ == State::MarqueeSelection) {
-            if (overlay_.rect_.has_value()) {
-                overlay_.rect_->xMax = v.x;
-                overlay_.rect_->yMax = v.y;
+            if (overlay_.selectionRect_.has_value()) {
+                overlay_.selectionRect_->xMax = v.x;
+                overlay_.selectionRect_->yMax = v.y;
 
                 const bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
 
@@ -51,13 +51,13 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
                     e.y);
                 if (!pickedIds.empty()) {
                     if (shift) {
-                        overlay_.selection_.add(pickedIds);
+                        overlay_.selection_.model.add(pickedIds);
                     } else {
-                        overlay_.selection_.replace(pickedIds);
+                        overlay_.selection_.model.replace(pickedIds);
                     }
                 } else {
                     if (!shift) {
-                        overlay_.selection_.clear();
+                        overlay_.selection_.model.clear();
                     }
                 }
                 lastPos_ = v;
@@ -77,11 +77,11 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
             const ID id = pickRes->id;
 
             if (shift) {
-                overlay_.selection_.toggle(id);
+                overlay_.selection_.model.toggle(id);
                 state_ = State::Idle;
             } else {
-                if (!overlay_.selection_.contains(id)) {
-                    overlay_.selection_.replace({id});
+                if (!overlay_.selection_.model.contains(id)) {
+                    overlay_.selection_.model.replace({id});
                 }
                 state_ = State::DraggingSelection;
                 lastPos_ = camera_.screenToWorld({e.x, e.y});
@@ -90,15 +90,15 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
             state_ = State::MarqueeSelection;
 
             marqueeBaseSelection_ = shift
-                ? overlay_.selection_.items()
+                ? overlay_.selection_.model.items()
                 : std::vector<ID>{};
 
             if (!shift) {
-                overlay_.selection_.clear();
+                overlay_.selection_.model.clear();
             }
 
             glm::dvec2 worldPos = camera_.screenToWorld({e.x, e.y});
-            overlay_.rect_ = OverlayModel::Rect(worldPos.x, worldPos.y, worldPos.x, worldPos.y);
+            overlay_.selectionRect_ = OverlayModel::Rect(worldPos.x, worldPos.y, worldPos.x, worldPos.y);
             lastScreenPos_ = {e.x, e.y};
             pressWorldPos_ = worldPos;
         }
@@ -108,7 +108,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
 
     if (e.button == input::MouseButton::Left &&
         e.action == input::MouseButtonAction::Release) {
-        overlay_.rect_.reset();
+        overlay_.selectionRect_.reset();
         marqueeBaseSelection_.clear();
         state_ = State::Idle;
     }
@@ -117,14 +117,14 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
 void CursorTool::onKey(const input::KeyEvent& e) {
     if (e.key == input::KeyCode::Delete && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
-        for (const auto& id : overlay_.selection_.items()) {
+        for (const auto& id : overlay_.selection_.model.items()) {
             scene.deleteObject(id);
         }
-        overlay_.selection_.clear();
+        overlay_.selection_.model.clear();
     }
     else if (e.key == input::KeyCode::Num4 && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
-        std::vector<ID> ids = overlay_.selection_.items();
+        std::vector<ID> ids = overlay_.selection_.model.items();
         if (ids.size() >= 2) {
             Requirement reqData;
             reqData.type = ReqType::ET_POINTONPOINT;
@@ -135,7 +135,7 @@ void CursorTool::onKey(const input::KeyEvent& e) {
     }
     else if (e.key == input::KeyCode::Num8 && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
-        std::vector<ID> ids = overlay_.selection_.items();
+        std::vector<ID> ids = overlay_.selection_.model.items();
         ID firstLine(-1);
         ID secondLine(-1);
         for (const auto id : ids) {
@@ -154,7 +154,7 @@ void CursorTool::onKey(const input::KeyEvent& e) {
     }
     else if (e.key == input::KeyCode::Num9 && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
-        std::vector<ID> ids = overlay_.selection_.items();
+        std::vector<ID> ids = overlay_.selection_.model.items();
         ID firstLine(-1);
         ID secondLine(-1);
         for (const auto id : ids) {
@@ -173,7 +173,7 @@ void CursorTool::onKey(const input::KeyEvent& e) {
     }
     else if (e.modifiers == input::Modifiers::Ctrl && e.key == input::KeyCode::C && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
-        data_ = scene.copyFragment(overlay_.selection_.items());
+        data_ = scene.copyFragment(overlay_.selection_.model.items());
     }
     else if (e.modifiers == input::Modifiers::Ctrl && e.key == input::KeyCode::V && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
@@ -185,8 +185,8 @@ void CursorTool::onKey(const input::KeyEvent& e) {
 }
 
 bool CursorTool::cancel() {
-    overlay_.selection_.clear();
-    overlay_.rect_.reset();
+    overlay_.selection_.model.clear();
+    overlay_.selectionRect_.reset();
     marqueeBaseSelection_.clear();
     state_ = State::Idle;
     return true;

@@ -146,7 +146,7 @@ void CommandConsole::parseReqInput(const QString& text) const {
     const auto parts = text.split(' ', Qt::SkipEmptyParts);
 
     if (parts.size() < 3) {
-        overlayModel_.selection_.clear();
+        overlayModel_.selection_.model.clear();
         return;
     }
 
@@ -154,7 +154,7 @@ void CommandConsole::parseReqInput(const QString& text) const {
         return;
     }
 
-    overlayModel_.selection_.clear();
+    overlayModel_.selection_.model.clear();
 
     std::vector<ID> ids;
 
@@ -167,7 +167,7 @@ void CommandConsole::parseReqInput(const QString& text) const {
         }
     }
 
-    overlayModel_.selection_.add(ids);
+    overlayModel_.selection_.model.add(ids);
 
     host_.requestRedraw();
 }

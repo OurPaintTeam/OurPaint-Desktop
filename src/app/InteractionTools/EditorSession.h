@@ -12,6 +12,7 @@
 #include "LineTool.h"
 #include "PointTool.h"
 #include "CircleTool.h"
+#include "ArcTool.h"
 #include "CursorTool.h"
 #include "CubicBezierTool.h"
 
@@ -35,6 +36,7 @@ private:
     PointTool pointTool_;
     LineTool lineTool_;
     CircleTool circleTool_;
+    ArcTool arcTool_;
     CubicBezierTool bezierTool_;
 };
 

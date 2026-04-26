@@ -92,7 +92,10 @@ public:
     std::size_t objectsCount() const;
     std::size_t requirementsCount() const;
     std::vector<ObjectData> getObjects() const;
+
     std::vector<ObjectData> getPoints() const;
+    void appendPickedPointsInRect(double rx1, double ry1, double rx2, double ry2, std::vector<ID>& out) const;
+
     std::vector<ObjectData> getLines() const;
     std::vector<ObjectData> getCircles() const;
     std::vector<ObjectData> getArcs() const;
