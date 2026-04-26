@@ -14,6 +14,9 @@ public:
     virtual bool onKey        (const input::KeyEvent& e)         = 0;
 
     virtual void render() = 0;
+
+    bool dirty_ = false;
+    bool continuousRedraw_ = false;
 };
 
 #endif // ! OURPAINT_APPLICATION_IVIEWPORTEVENTSINK_H_

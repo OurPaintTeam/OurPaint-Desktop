@@ -116,9 +116,10 @@ void QtViewportHost::resizeEvent(QResizeEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool b = controller_->onResize(toResizeEvent(e, static_cast<float>(devicePixelRatio())));
-        if (b) {
+        controller_->onResize(toResizeEvent(e, static_cast<float>(devicePixelRatio())));
+        while (controller_->dirty_ || controller_->continuousRedraw_) {
             renderFrame();
+            controller_->dirty_ = false;
         }
     }
 }
@@ -129,9 +130,10 @@ void QtViewportHost::keyPressEvent(QKeyEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool needsRender = controller_->onKey(toKeyEvent(e, input::KeyAction::Press));
-        if (needsRender) {
+        controller_->onKey(toKeyEvent(e, input::KeyAction::Press));
+        while (controller_->dirty_ || controller_->continuousRedraw_) {
             renderFrame();
+            controller_->dirty_ = false;
         }
     }
 }
@@ -141,9 +143,10 @@ void QtViewportHost::keyReleaseEvent(QKeyEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool needsRender = controller_->onKey(toKeyEvent(e, input::KeyAction::Release));
-        if (needsRender) {
+        controller_->onKey(toKeyEvent(e, input::KeyAction::Release));
+        while (controller_->dirty_ || controller_->continuousRedraw_) {
             renderFrame();
+            controller_->dirty_ = false;
         }
     }
 }
@@ -153,9 +156,10 @@ void QtViewportHost::mouseMoveEvent(QMouseEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool needsRender = controller_->onMouseMove(toMouseMoveEvent(e));
-        if (needsRender) {
+        controller_->onMouseMove(toMouseMoveEvent(e));
+        while (controller_->dirty_ || controller_->continuousRedraw_) {
             renderFrame();
+            controller_->dirty_ = false;
         }
     }
 }
@@ -165,9 +169,10 @@ void QtViewportHost::mousePressEvent(QMouseEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool needsRender = controller_->onMouseButton(toMouseButtonEvent(e, input::MouseButtonAction::Press));
-        if (needsRender) {
+        controller_->onMouseButton(toMouseButtonEvent(e, input::MouseButtonAction::Press));
+        while (controller_->dirty_ || controller_->continuousRedraw_) {
             renderFrame();
+            controller_->dirty_ = false;
         }
     }
 }
@@ -177,9 +182,10 @@ void QtViewportHost::mouseReleaseEvent(QMouseEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool needsRender = controller_->onMouseButton(toMouseButtonEvent(e, input::MouseButtonAction::Release));
-        if (needsRender) {
+        controller_->onMouseButton(toMouseButtonEvent(e, input::MouseButtonAction::Release));
+        while (controller_->dirty_ || controller_->continuousRedraw_) {
             renderFrame();
+            controller_->dirty_ = false;
         }
     }
 }
@@ -189,9 +195,10 @@ void QtViewportHost::wheelEvent(QWheelEvent* e) {
         initContext();
     }
     if (controller_) {
-        bool needsRender = controller_->onWheel(toWheelEvent(e));
-        if (needsRender) {
+        controller_->onWheel(toWheelEvent(e));
+        while (controller_->dirty_ || controller_->continuousRedraw_) {
             renderFrame();
+            controller_->dirty_ = false;
         }
     }
 }

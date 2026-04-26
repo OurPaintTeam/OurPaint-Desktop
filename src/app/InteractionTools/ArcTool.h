@@ -37,7 +37,7 @@ private:
         bool valid;
     };
 
-    Arc buildArcFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2);
+    static Arc buildArcFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2);
 
 private:
     enum class Step {

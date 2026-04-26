@@ -60,7 +60,7 @@ void EditorSession::select(ToolId id) {
             activeTool_ = &circleTool_;
             break;
         case ToolId::CircleByTwoPoints:
-            circleTool_.setMode(CircleTool::Mode::TwoPoints);
+            circleTool_.setMode(CircleTool::Mode::DiameterTwoPoints);
             activeTool_ = &circleTool_;
             break;
         case ToolId::CircleByThreePoints:
@@ -68,11 +68,11 @@ void EditorSession::select(ToolId id) {
             activeTool_ = &circleTool_;
             break;
         case ToolId::CircleTangentTwoLines:
-            circleTool_.setMode(CircleTool::Mode::TangentTwoLines);
+            circleTool_.setMode(CircleTool::Mode::TangentTwoObjectsRadius);
             activeTool_ = &circleTool_;
             break;
         case ToolId::CircleTangentThreeLines:
-            circleTool_.setMode(CircleTool::Mode::TangentThreeLines);
+            circleTool_.setMode(CircleTool::Mode::TangentThreeObjects);
             activeTool_ = &circleTool_;
             break;
 

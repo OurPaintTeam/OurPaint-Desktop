@@ -50,7 +50,7 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
                 }
             }
             break;
-        case Mode::TwoPoints:
+        case Mode::DiameterTwoPoints:
             if (step_ == Step::WaitingSecondInput) {
                 glm::dvec2 a = points_[0];
                 glm::dvec2 b = cursor;
@@ -70,58 +70,51 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
                     overlay_.points_[2].y = cursor.y;
                 }
             }
+            break;
         case Mode::ThreePoints:
             if (step_ == Step::WaitingThirdInput) {
-                const glm::dvec2& a = points_[0];
-                const glm::dvec2& b = points_[1];
-                const glm::dvec2& c = cursor;
-
-                const double d = 2.0 * (
-                    a.x * (b.y - c.y) +
-                    b.x * (c.y - a.y) +
-                    c.x * (a.y - b.y)
-                    );
-
-                const double a2 = a.x * a.x + a.y * a.y;
-                const double b2 = b.x * b.x + b.y * b.y;
-                const double c2 = c.x * c.x + c.y * c.y;
-
-                const double ux =
-                    (a2 * (b.y - c.y) +
-                     b2 * (c.y - a.y) +
-                     c2 * (a.y - b.y)) / d;
-
-                const double uy =
-                    (a2 * (c.x - b.x) +
-                     b2 * (a.x - c.x) +
-                     c2 * (b.x - a.x)) / d;
-
-                const glm::dvec2 center{ux, uy};
-                const double r = glm::distance(center, a);
-
+                Circle c = buildCircleFromThreePoints(points_[0], points_[1], cursor);
 
                 if (!overlay_.circles_.empty()) {
-                    overlay_.circles_[0].r = r;
-                    overlay_.circles_[0].cx = center.x;
-                    overlay_.circles_[0].cy = center.y;
+                    overlay_.circles_[0].r = c.r;
+                    overlay_.circles_[0].cx = c.cx;
+                    overlay_.circles_[0].cy = c.cy;
                 }
                 if (overlay_.points_.size() > 3) {
                     overlay_.points_[2].x = cursor.x;
                     overlay_.points_[2].y = cursor.y;
-                    overlay_.points_[3].x = center.x;
-                    overlay_.points_[3].y = center.y;
+                    overlay_.points_[3].x = c.cx;
+                    overlay_.points_[3].y = c.cy;
                 }
             }
             break;
 
-        case Mode::TangentTwoLines:
+        case Mode::TangentTwoObjectsRadius:
             //handleTangentTwoLinesMove(cursor);
             break;
 
-        case Mode::TangentThreeLines:
+        case Mode::TangentThreeObjects:
             //handleTangentThreeLinesMove(cursor);
             break;
     }
+}
+
+bool intersectLines(
+    glm::dvec2 p1, glm::dvec2 d1,
+    glm::dvec2 p2, glm::dvec2 d2,
+    glm::dvec2& out)
+{
+    double det = d1.x * d2.y - d1.y * d2.x;
+
+    if (std::abs(det) < 1e-12)
+        return false; // параллельны
+
+    glm::dvec2 diff = p2 - p1;
+
+    double t = (diff.x * d2.y - diff.y * d2.x) / det;
+
+    out = p1 + t * d1;
+    return true;
 }
 
 void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
@@ -144,9 +137,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 double cx = points_[0].x;
                 double cy = points_[0].y;
                 double r = glm::distance(cursor, points_[0]);
-                Document* document = documentManager_.getActiveDocument();
-                UndoRedo::Transaction* txn = document->commandManager().invoke("CIRCLE", {cx, cy, r});
-                document->undoRedoManager().push(std::move(*txn));
+                pushCircleToModel({cx, cy, r});
                 reset();
             }
             break;
@@ -163,13 +154,11 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 double cy = points_[0].y;
                 double diameter = glm::distance(cursor, points_[0]);
                 double r = diameter / 2.0;
-                Document* document = documentManager_.getActiveDocument();
-                UndoRedo::Transaction* txn = document->commandManager().invoke("CIRCLE", {cx, cy, r});
-                document->undoRedoManager().push(std::move(*txn));
+                pushCircleToModel({cx, cy, r});
                 reset();
             }
             break;
-        case Mode::TwoPoints:
+        case Mode::DiameterTwoPoints:
             if (step_ == Step::WaitingFirstInput) {
                 points_.push_back(cursor);
                 overlay_.circles_.push_back(OverlayModel::Circle(cursor.x, cursor.y, 0.0));
@@ -184,9 +173,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 glm::dvec2 center = (a + b) * 0.5;
                 double r = glm::distance(a, b) * 0.5;
 
-                Document* document = documentManager_.getActiveDocument();
-                UndoRedo::Transaction* txn = document->commandManager().invoke("CIRCLE", {center.x, center.y, r});
-                document->undoRedoManager().push(std::move(*txn));
+                pushCircleToModel({center.x, center.y, r});
                 reset();
             }
             break;
@@ -205,45 +192,86 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 step_ = Step::WaitingThirdInput;
             }
             else if (step_ == Step::WaitingThirdInput) {
-                glm::dvec2 a = points_[0];
-                glm::dvec2 b = points_[1];
-                glm::dvec2 c = cursor;
-
-                double d = 2.0 * (
-                    a.x * (b.y - c.y) +
-                    b.x * (c.y - a.y) +
-                    c.x * (a.y - b.y)
-                    );
-
-                double a2 = a.x * a.x + a.y * a.y;
-                double b2 = b.x * b.x + b.y * b.y;
-                double c2 = c.x * c.x + c.y * c.y;
-
-                double ux =
-                    (a2 * (b.y - c.y) +
-                     b2 * (c.y - a.y) +
-                     c2 * (a.y - b.y)) / d;
-
-                double uy =
-                    (a2 * (c.x - b.x) +
-                     b2 * (a.x - c.x) +
-                     c2 * (b.x - a.x)) / d;
-
-                glm::dvec2 center{ux, uy};
-                double r = glm::distance(center, a);
-
-                Document* document = documentManager_.getActiveDocument();
-                UndoRedo::Transaction* txn = document->commandManager().invoke("CIRCLE", {center.x, center.y, r});
-                document->undoRedoManager().push(std::move(*txn));
+                Circle c = buildCircleFromThreePoints(points_[0], points_[1], cursor);
+                pushCircleToModel(c);
                 reset();
             }
             break;
-        case Mode::TangentTwoLines:
-            //handleTangentTwoLinesClick(cursor);
-            break;
+        case Mode::TangentTwoObjectsRadius:
+            if (step_ == Step::WaitingFirstInput) {
+                auto obj = picker_.pickAt(e.x, e.y);
+                if (!obj.has_value()) {
+                    return;
+                }
+                objects_.push_back(obj.value().id);
+                points_.push_back(cursor);
+                step_ = Step::WaitingSecondInput;
+            }
+            else if (step_ == Step::WaitingSecondInput) {
+                auto obj = picker_.pickAt(e.x, e.y);
+                if (!obj.has_value()) {
+                    return;
+                }
+                if (!obj.has_value()) {
+                    return;
+                }
+                Scene& scene = documentManager_.getActiveDocument()->scene();
+                ObjectData od1 = scene.getObjectData(objects_[0]);
+                ObjectData od2 = scene.getObjectData(obj.value().id);
 
-        case Mode::TangentThreeLines:
-            //handleTangentThreeLinesClick(cursor);
+                if (od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_POINT) {
+
+                }
+                else if (od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_LINE) {
+
+                }
+                else if (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_CIRCLE) {
+
+                }
+                else if ((od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_LINE) ||
+                         (od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_POINT)) {
+
+                }
+                else if ((od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_CIRCLE) ||
+                         (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_POINT)) {
+
+                }
+                else if ((od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_CIRCLE) ||
+                         (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_LINE)) {
+
+                }
+                reset();
+
+                // const glm::dvec2& click1 = points_[0];
+                // const glm::dvec2& click2 = cursor;
+                //
+                // // Line 1: A1 -> B1
+                // glm::dvec2 A1 = {l1.params[0], l1.params[1]};
+                // glm::dvec2 B1 = {l1.params[2], l1.params[3]};
+                //
+                // // Line 2: A2 -> B2
+                // glm::dvec2 A2 = {l2.params[0], l2.params[1]};
+                // glm::dvec2 B2 = {l2.params[2], l2.params[3]};
+                //
+                // glm::dvec2 d1 = glm::normalize(B1 - A1);
+                // glm::dvec2 d2 = glm::normalize(B2 - A2);
+                //
+                // glm::dvec2 n1 = { -d1.y, d1.x };
+                // glm::dvec2 n2 = { -d2.y, d2.x };
+                //
+                // glm::dvec2 O;
+                // intersectLines(A1, d1, A2, d2, O);
+                //
+                // glm::dvec2 ray1 = glm::normalize(click1 - O);
+                // glm::dvec2 ray2 = glm::normalize(click2 - O);
+                //
+                // int sign1 = glm::dot(n1, ray2) > 0.0 ? +1 : -1;
+                // int sign2 = glm::dot(n2, ray1) > 0.0 ? +1 : -1;
+                //
+                // std::cout << sign1 << ' ' << sign2 << '\n';
+            }
+            break;
+        case Mode::TangentThreeObjects:
             break;
     }
 }
@@ -267,282 +295,46 @@ glm::dvec2 CircleTool::screenToWorld(double x, double y) const {
 
 void CircleTool::reset() {
     points_.clear();
+    objects_.clear();
     step_ = Step::WaitingFirstInput;
     overlay_.circles_.clear();
     overlay_.points_.clear();
 }
 
-/*
-void CircleTool::handlePointModeMove(glm::dvec2 cursor) {
-    if (points_.empty()) {
-        return;
+CircleTool::Circle CircleTool::buildCircleFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2) {
+    double det = p0.x * (p1.y - p2.y) +
+                 p1.x * (p2.y - p0.y) +
+                 p2.x * (p0.y - p1.y);
+
+    const double eps = 1e-10;
+    if (std::abs(det) < eps) {
+        // points are collinear or almost collinear
+        return {0.0, 0.0, 0.0};
     }
 
-    std::optional<CircleDraft> preview = buildPreviewCircle(cursor);
-    if (!preview.has_value()) {
-        return;
-    }
+    double a2 = p0.x * p0.x + p0.y * p0.y;
+    double b2 = p1.x * p1.x + p1.y * p1.y;
+    double c2 = p2.x * p2.x + p2.y * p2.y;
 
-    updateOverlayCircle(preview.value());
+    double ux =
+        (a2 * (p1.y - p2.y) +
+         b2 * (p2.y - p0.y) +
+         c2 * (p0.y - p1.y)) / (det * 2.0);
+
+    double uy =
+        (a2 * (p2.x - p1.x) +
+         b2 * (p0.x - p2.x) +
+         c2 * (p1.x - p0.x)) / (det * 2.0);
+
+    double r = glm::distance({ux, uy}, p0);
+
+    return Circle{ux, uy, r};
 }
 
-void CircleTool::handlePointClick(glm::dvec2 cursor) {
-    points_.push_back(cursor);
-
-
-    updateStep();
-
-    std::optional<CircleDraft> finalCircle = buildFinalCircle();
-
-    if (!finalCircle.has_value()) {
-        return;
-    }
-
-    commitCircle(finalCircle.value());
-    reset();
-}
-
-std::optional<CircleTool::CircleDraft>
-CircleTool::buildPreviewCircle(glm::dvec2 cursor) const {
-    switch (mode_) {
-        case Mode::CenterRadius:
-            if (points_.size() == 1) {
-                return buildCenterRadius(cursor);
-            }
-            break;
-
-        case Mode::CenterDiameter:
-            if (points_.size() == 1) {
-                return buildCenterDiameter(cursor);
-            }
-            break;
-
-        case Mode::TwoPoints:
-            if (points_.size() == 1) {
-                return buildTwoPoints(cursor);
-            }
-            break;
-
-        case Mode::ThreePoints:
-            if (points_.size() == 2) {
-                return buildThreePoints(cursor);
-            }
-            break;
-
-        case Mode::TangentTwoLines:
-        case Mode::TangentThreeLines:
-            break;
-    }
-
-    return std::nullopt;
-}
-
-std::optional<CircleTool::CircleDraft>
-CircleTool::buildFinalCircle() const {
-    switch (mode_) {
-        case Mode::CenterRadius:
-            if (points_.size() == 2) {
-                return buildCenterRadius(points_[1]);
-            }
-            break;
-
-        case Mode::CenterDiameter:
-            if (points_.size() == 2) {
-                return buildCenterDiameter(points_[1]);
-            }
-            break;
-
-        case Mode::TwoPoints:
-            if (points_.size() == 2) {
-                return buildTwoPoints(points_[1]);
-            }
-            break;
-
-        case Mode::ThreePoints:
-            if (points_.size() == 3) {
-                return buildThreePoints(points_[2]);
-            }
-            break;
-
-        case Mode::TangentTwoLines:
-        case Mode::TangentThreeLines:
-            break;
-    }
-
-    return std::nullopt;
-}
-
-std::optional<CircleTool::CircleDraft>
-CircleTool::buildCenterRadius(glm::dvec2 secondPoint) const {
-    if (points_.empty()) {
-        return std::nullopt;
-    }
-
-    const glm::dvec2 center = points_[0];
-    const double radius = glm::distance(center, secondPoint);
-
-    if (radius <= kEpsilon) {
-        return std::nullopt;
-    }
-
-    return CircleDraft{center, radius};
-}
-
-std::optional<CircleTool::CircleDraft>
-CircleTool::buildCenterDiameter(glm::dvec2 secondPoint) const {
-    if (points_.empty()) {
-        return std::nullopt;
-    }
-
-    const glm::dvec2 center = points_[0];
-    const double diameter = glm::distance(center, secondPoint);
-    const double radius = diameter / 2.0;
-
-    if (radius <= kEpsilon) {
-        return std::nullopt;
-    }
-
-    return CircleDraft{center, radius};
-}
-
-std::optional<CircleTool::CircleDraft>
-CircleTool::buildTwoPoints(glm::dvec2 secondPoint) const {
-    if (points_.empty()) {
-        return std::nullopt;
-    }
-
-    const glm::dvec2 a = points_[0];
-    const glm::dvec2 b = secondPoint;
-
-    const glm::dvec2 center = (a + b) * 0.5;
-    const double radius = glm::distance(a, b) * 0.5;
-
-    if (radius <= kEpsilon) {
-        return std::nullopt;
-    }
-
-    return CircleDraft{center, radius};
-}
-
-std::optional<CircleTool::CircleDraft>
-CircleTool::buildThreePoints(glm::dvec2 thirdPoint) const {
-    if (points_.size() < 2) {
-        return std::nullopt;
-    }
-
-    return circleFromThreePoints(points_[0], points_[1], thirdPoint);
-}
-
-std::optional<CircleTool::CircleDraft>
-CircleTool::circleFromThreePoints(
-    glm::dvec2 a,
-    glm::dvec2 b,
-    glm::dvec2 c
-) {
-    const double d =
-        2.0 * (
-            a.x * (b.y - c.y) +
-            b.x * (c.y - a.y) +
-            c.x * (a.y - b.y)
-        );
-
-    if (std::abs(d) <= kEpsilon) {
-        return std::nullopt;
-    }
-
-    const double a2 = a.x * a.x + a.y * a.y;
-    const double b2 = b.x * b.x + b.y * b.y;
-    const double c2 = c.x * c.x + c.y * c.y;
-
-    const double ux =
-        (a2 * (b.y - c.y) +
-         b2 * (c.y - a.y) +
-         c2 * (a.y - b.y)) / d;
-
-    const double uy =
-        (a2 * (c.x - b.x) +
-         b2 * (a.x - c.x) +
-         c2 * (b.x - a.x)) / d;
-
-    const glm::dvec2 center{ux, uy};
-    const double radius = glm::distance(center, a);
-
-    if (radius <= kEpsilon) {
-        return std::nullopt;
-    }
-
-    return CircleDraft{center, radius};
-}
-
-
-void CircleTool::updateOverlayCircle(const CircleDraft& circle) {
-    if (renderData_.overlay.circles.empty()) {
-        renderData_.overlay.circles.push_back(
-            renderer::CircleArc(circle.center.x, circle.center.y, circle.radius)
-        );
-        return;
-    }
-
-    renderData_.overlay.circles[0].x = circle.center.x;
-    renderData_.overlay.circles[0].y = circle.center.y;
-    renderData_.overlay.circles[0].r = circle.radius;
-}
-
-void CircleTool::commitCircle(const CircleDraft& circle) {
-    if (circle.radius <= kEpsilon) {
-        return;
-    }
-
+void CircleTool::pushCircleToModel(const Circle& c) const {
     Document* document = documentManager_.getActiveDocument();
-    if (document == nullptr) {
-        return;
-    }
-
-    UndoRedo::Transaction* txn =
-        document->commandManager().invoke(
-            "CIRCLE",
-            {circle.center.x, circle.center.y, circle.radius}
-        );
-
-    if (txn == nullptr) {
-        return;
-    }
-
+    Transaction* txn = document->commandManager().invoke("CIRCLE", {c.cx, c.cy, c.r});
     document->undoRedoManager().push(std::move(*txn));
 }
 
-void CircleTool::handleTangentTwoLinesMove(glm::dvec2 cursor) {
-    (void)cursor;
-
-    // Здесь позже:
-    // 1. подсветить линию под курсором;
-    // 2. если выбрано 2 линии — показать preview касательной окружности.
-}
-
-void CircleTool::handleTangentTwoLinesClick(glm::dvec2 cursor) {
-    (void)cursor;
-
-    // Здесь позже:
-    // 1. найти line/segment под курсором;
-    // 2. добавить ID в objects_;
-    // 3. если objects_.size() == 2:
-    //      - вычислить окружность;
-    //      - создать Circle;
-    //      - добавить Tangent constraints.
-}
-
-void CircleTool::handleTangentThreeLinesMove(glm::dvec2 cursor) {
-    (void)cursor;
-
-    // Аналогично TangentTwoLines, но для 3 линий.
-}
-
-void CircleTool::handleTangentThreeLinesClick(glm::dvec2 cursor) {
-    (void)cursor;
-
-    // Здесь позже:
-    // если objects_.size() == 3:
-    //      Scene::createCircleTangentToThreeLines(...)
-}
-*/
 

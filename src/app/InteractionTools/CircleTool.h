@@ -18,10 +18,10 @@ public:
     enum class Mode {
         CenterRadius,
         CenterDiameter,
-        TwoPoints,
+        DiameterTwoPoints,
         ThreePoints,
-        TangentTwoLines,
-        TangentThreeLines
+        TangentTwoObjectsRadius,
+        TangentThreeObjects
     };
 
 public:
@@ -48,11 +48,22 @@ private:
     glm::dvec2 screenToWorld(double x, double y) const;
     void reset();
 
+    struct Circle {
+        double cx;
+        double cy;
+        double r;
+    };
+    static Circle buildCircleFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2);
+    void pushCircleToModel(const Circle& c) const;
+
+
+
 private:
     Mode mode_ = Mode::CenterRadius;
     Step step_ = Step::WaitingFirstInput;
 
     std::vector<glm::dvec2> points_;
+    std::vector<ID> objects_;
 
     DocumentManager& documentManager_;
     Camera2D& camera_;

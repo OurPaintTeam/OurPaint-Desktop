@@ -10,19 +10,6 @@ ViewportController::ViewportController(Camera2D& camera2D,
                                        RenderDataBuilder& builder)
     : camera2D_(camera2D), editorSession_(editorSession_), renderer_(renderer), renderScene_(renderScene), builder_(builder) {}
 
-void ViewportController::initialize() {
-    //auto target = host_.getRenderTargetDesc();
-    //bool result = renderer_.initialize();
-    //if (!result) {
-    //    mLog("initialize renderer failed");
-    //}
-
-    //auto s = host_.size();
-    //renderer_.resize(s.width, s.height);
-
-    dirty_ = true;
-}
-
 bool ViewportController::onResize(const input::ResizeEvent& e) {
     camera2D_.setViewport(e.width, e.height, e.devicePixelRatio);
     renderer_.resize(e.width * e.devicePixelRatio,e.height * e.devicePixelRatio);
@@ -44,6 +31,7 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
 
     builder_.rebuild();
 
+    requestRedraw();
     return true;
 }
 
@@ -52,6 +40,7 @@ bool ViewportController::onMouseButton(const input::MouseButtonEvent& e) {
 
     builder_.rebuild();
 
+    requestRedraw();
     return true;
 }
 
@@ -70,6 +59,7 @@ bool ViewportController::onWheel(const input::WheelEvent& e) {
         camera2D_.zoomAtScreen(factor, {e.x, e.y});
     }
 
+    requestRedraw();
     return true;
 }
 
@@ -81,6 +71,7 @@ bool ViewportController::onKey(const input::KeyEvent& e) {
 
     editorSession_.activeTool()->onKey(e);
 
+    requestRedraw();
     return true;
 }
 
