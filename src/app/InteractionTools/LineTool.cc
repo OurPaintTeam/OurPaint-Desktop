@@ -15,6 +15,7 @@ LineTool::LineTool(DocumentManager& documentManager, Camera2D& camera, OverlayMo
 
 void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
+    lastCursorWorldPos_ = v;
 
     // std::ostringstream oss;
     // oss << std::fixed << std::setprecision(3)
@@ -41,20 +42,30 @@ void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
         // overlay_.lpY = 1.5 * -posY + 650;
 
 
-        if (overlay_.lines_.size() > 0 && overlay_.points_.size() > 0) {
-            overlay_.lines_[0].x2 = v.x;
-            overlay_.lines_[0].y2 = v.y;
-            overlay_.points_[0].x = v.x;
-            overlay_.points_[0].y = v.y;
+        if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
+            glm::dvec2 delta = v - firstPoint_;
+
+            // Snap to the dominant axis
+            if (std::abs(delta.x) > std::abs(delta.y)) {
+                v.y = firstPoint_.y; // Lock to horizontal
+            } else {
+                v.x = firstPoint_.x; // Lock to vertical
+            }
         }
+
+        overlay_.lines_[0].x2 = v.x;
+        overlay_.lines_[0].y2 = v.y;
+        overlay_.points_[0].x = v.x;
+        overlay_.points_[0].y = v.y;
     }
 }
 
 
 void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
+    glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
+    lastCursorWorldPos_ = v;
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         if (state_ == State::WaitingFirstPoint) {
-            glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
             firstPoint_ = v;
             state_ = State::WaitingSecondPoint;
 
@@ -64,8 +75,17 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
             overlay_.lines_.push_back(OverlayModel::Line(v.x, v.y, v.x, v.y));
         }
         else {
+            if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
+                glm::dvec2 delta = v - firstPoint_;
+
+                // Snap to the dominant axis
+                if (std::abs(delta.x) > std::abs(delta.y)) {
+                    v.y = firstPoint_.y; // Lock to horizontal
+                } else {
+                    v.x = firstPoint_.x; // Lock to vertical
+                }
+            }
             Document* document = documentManager_.getActiveDocument();
-            glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
             UndoRedo::Transaction* txn = document->commandManager().invoke("LINE", {firstPoint_.x, firstPoint_.y, v.x, v.y});
             document->undoRedoManager().push(std::move(*txn));
 
@@ -86,6 +106,33 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
 }
 
 void LineTool::onKey(const input::KeyEvent& e) {
+    if (input::has_flag(e.modifiers, input::Modifiers::Shift) &&
+        e.action == input::KeyAction::Press &&
+        state_ == State::WaitingSecondPoint) {
+
+        glm::dvec2 v = lastCursorWorldPos_;
+        glm::dvec2 delta = v - firstPoint_;
+
+        // Snap to the dominant axis
+        if (std::abs(delta.x) > std::abs(delta.y)) {
+            v.y = firstPoint_.y; // Lock to horizontal
+        } else {
+            v.x = firstPoint_.x; // Lock to vertical
+        }
+
+        overlay_.lines_[0].x2 = v.x;
+        overlay_.lines_[0].y2 = v.y;
+        overlay_.points_[0].x = v.x;
+        overlay_.points_[0].y = v.y;
+    }
+    else if (e.action == input::KeyAction::Release &&
+             state_ == State::WaitingSecondPoint) {
+        glm::dvec2 v = lastCursorWorldPos_;
+        overlay_.lines_[0].x2 = v.x;
+        overlay_.lines_[0].y2 = v.y;
+        overlay_.points_[0].x = v.x;
+        overlay_.points_[0].y = v.y;
+    }
 
 }
 

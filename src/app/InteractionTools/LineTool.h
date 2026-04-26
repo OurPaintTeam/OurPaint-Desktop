@@ -23,6 +23,7 @@ private:
 
     State state_ = State::WaitingFirstPoint;
     glm::dvec2 firstPoint_;
+    glm::dvec2 lastCursorWorldPos_;
 
     DocumentManager& documentManager_;
     Camera2D& camera_;
