@@ -1,11 +1,11 @@
 add_library(ourpaint_core
         # /saveload/
-        headers/saveload/FileOurP.h
-        headers/saveload/requirementInFile.h
-        headers/saveload/objectInFile.h
-        headers/saveload/objectInJson.h
-        headers/saveload/SaveLoadJson.h
-        headers/saveload/requirementInJson.h
+        src/saveload/FileOurP.h
+        src/saveload/requirementInFile.h
+        src/saveload/objectInFile.h
+        src/saveload/objectInJson.h
+        src/saveload/SaveLoadJson.h
+        src/saveload/requirementInJson.h
         src/saveload/objectInFile.cc
         src/saveload/FileOurP.cc
         src/saveload/requirementInFile.cc
@@ -28,15 +28,15 @@ add_library(ourpaint_core
         src/UndoRedo/UndoRedoTemplate.cc
         src/UndoRedo/UndoRedo.cc
         src/UndoRedo/ConsoleManager.cc
-        headers/UndoRedo/UndoRedoTemplate.h
+        src/UndoRedo/UndoRedoTemplate.h
 
 
         # /
-        headers/ISceneObserver.h
-        headers/ExceptionGuard.h
-        headers/Document.h
-        headers/DocumentManager.h
-        headers/Scene.h
+        src/ISceneObserver.h
+        src/ExceptionGuard.h
+        src/Document.h
+        src/DocumentManager.h
+        src/Scene.h
         src/Scene.cc
         src/Document.cc
         src/DocumentManager.cc
@@ -45,12 +45,12 @@ add_library(ourpaint_core
 
 target_include_directories(ourpaint_core
         PUBLIC
-        headers
-        headers/saveload
-        headers/UndoRedo
-        headers/UndoRedo/commands
-        headers/UndoRedo/commands/Add
-        headers/UndoRedo/commands/Delete
+        src
+        src/saveload
+        src/UndoRedo
+        src/UndoRedo/commands
+        src/UndoRedo/commands/Add
+        src/UndoRedo/commands/Delete
 )
 add_subdirectory(DCM {CMAKE_CURRENT_BINARY_DIR}/DCM)
 target_link_libraries(ourpaint_core
