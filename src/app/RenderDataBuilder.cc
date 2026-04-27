@@ -2,8 +2,11 @@
 #include "Scene.h"
 #include "OverlayModel.h"
 #include "RenderData.h"
+#include "objects/Objects.h"
 
-RenderDataBuilder::RenderDataBuilder(const Scene& scene, const OverlayModel& overlay, renderer::RenderData& renderData)
+using namespace core;
+
+RenderDataBuilder::RenderDataBuilder(const core::Scene& scene, const OverlayModel& overlay, renderer::RenderData& renderData)
     : scene_(scene), overlay_(overlay), renderData_(renderData) {}
 
 void RenderDataBuilder::rebuild() {

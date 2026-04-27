@@ -10,15 +10,15 @@
 class SaveLoadJson {
     std::vector<objectInJson> _objects;
     std::vector<requirementInJson> _reqs;
-    Scene& _scene;
+    core::Scene& _scene;
 public:
-    SaveLoadJson(Scene& scene);
+    SaveLoadJson(core::Scene& scene);
     //SaveLoadJson(const std::vector<objectInJson> &objects,const std::vector<requirementInJson> &reqs);
     nlohmann::json to_json() const;
     void from_json(const nlohmann::json &obj);
     void loadToScene();
-    std::vector<ObjectData> getObjects();
-    std::vector<Requirement> getRequirements();
+    std::vector<core::ObjectData> getObjects();
+    std::vector<core::Requirement> getRequirements();
 };
 
 #endif  // JSONSAVER_H

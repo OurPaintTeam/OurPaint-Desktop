@@ -5,7 +5,7 @@
 
 Document::Document(const std::string& documentName) {
     _documentName = documentName;
-    _scene = new Scene();
+    _scene = new core::Scene();
     _undoRedo = new UndoRedo::UndoRedoManager(100);
     _commandManager = new CommandManager();
 
@@ -40,11 +40,11 @@ const std::string& Document::path() const {
     return _filePath;
 }
 
-Scene& Document::scene() {
+core::Scene& Document::scene() {
     _isDirty = true;
     return *_scene;
 }
-const Scene& Document::scene() const {
+const core::Scene& Document::scene() const {
     return *_scene;
 }
 

@@ -1,6 +1,6 @@
 #include "CommandClear.h"
 
-UndoRedo::CommandClear::CommandClear(Scene*& scene) : _scene(scene) {}
+UndoRedo::CommandClear::CommandClear(core::Scene*& scene) : _scene(scene) {}
 
 UndoRedo::CommandClear::~CommandClear() {
     // TODO исправить, после лимита истории сцена может удалиться.
@@ -9,7 +9,7 @@ UndoRedo::CommandClear::~CommandClear() {
 
 bool UndoRedo::CommandClear::Execute() {
     _sceneBefore = _scene;
-    _sceneAfter = new Scene();
+    _sceneAfter = new core::Scene();
     _scene = _sceneAfter;
     return true;
 }

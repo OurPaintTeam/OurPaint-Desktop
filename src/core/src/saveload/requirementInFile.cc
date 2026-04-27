@@ -1,6 +1,6 @@
 #include "requirementInFile.h"
 
-requirementInFile::requirementInFile(const std::pair<unsigned int, Requirement> &obj) : id(obj.first), s_req(obj.second) {}
+requirementInFile::requirementInFile(const std::pair<unsigned int, core::Requirement> &obj) : id(obj.first), s_req(obj.second) {}
 
 requirementInFile::requirementInFile(const requirementInFile &other) {
     id = other.id;
@@ -17,7 +17,7 @@ requirementInFile &requirementInFile::operator=(requirementInFile &&other) noexc
     return *this;
 }
 
-std::pair<unsigned int, Requirement> requirementInFile::to_pair() const {
+std::pair<unsigned int, core::Requirement> requirementInFile::to_pair() const {
     return {id, s_req};
 }
 

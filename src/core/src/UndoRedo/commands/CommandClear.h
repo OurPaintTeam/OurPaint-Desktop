@@ -9,9 +9,9 @@ namespace UndoRedo {
 // Command -> CommandClear
 class CommandClear : public Command {
 protected:
-    Scene*& _scene;
-    Scene* _sceneBefore{};
-    Scene* _sceneAfter{};
+    core::Scene*& _scene;
+    core::Scene* _sceneBefore{};
+    core::Scene* _sceneAfter{};
 
     bool Execute() override;
 
@@ -20,7 +20,7 @@ protected:
     bool Redo() override;
 
 public:
-    CommandClear(Scene*& scene);
+    CommandClear(core::Scene*& scene);
     ~CommandClear();
 
     std::string description() const override { return "Clear scene"; };

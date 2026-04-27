@@ -1,5 +1,7 @@
 #include "objectInJson.h"
 
+using namespace core;
+
 objectInJson::objectInJson(const std::vector<std::string> &name, const ObjectData &obj) {
     _name = name;
     _obj = obj;

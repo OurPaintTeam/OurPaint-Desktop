@@ -12,11 +12,11 @@ namespace UndoRedo {
     }
 
     bool CommandDeleteRequirement::Undo() {
-        try {
-            return _scene.tryRestoreRequirement(_reqData, _reqID);
-        } catch (...) {
+        // try {
+        //     return _scene.tryRestoreRequirement(_reqData, _reqID);
+        // } catch (...) {
             return false;
-        }
+        //}
     }
 
     bool CommandDeleteRequirement::Redo() {

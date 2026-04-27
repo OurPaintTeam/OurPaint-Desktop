@@ -11,9 +11,9 @@ namespace UndoRedo {
     // Command -> CommandAddRequirement
     class CommandAddRequirement : public Command {
     protected:
-        Scene &_scene;
-        Requirement _reqData;
-        ID _reqID;
+        core::Scene &_scene;
+        core::Requirement _reqData;
+        core::ID _reqID;
 
         bool Execute() override;
 
@@ -22,9 +22,9 @@ namespace UndoRedo {
         bool Redo() override;
 
     public:
-        CommandAddRequirement(Scene &scene, Requirement data) : _scene(scene), _reqData(data) {}
+        CommandAddRequirement(core::Scene &scene, core::Requirement data) : _scene(scene), _reqData(data) {}
 
-        ID getReqID() const {
+        core::ID getReqID() const {
             return _reqID;
         }
 

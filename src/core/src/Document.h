@@ -2,7 +2,7 @@
 #define OURPAINT_HEADERS_DOCUMENT_H_
 
 #include <string>
-class Scene;
+namespace core { class Scene;}
 namespace UndoRedo { class UndoRedoManager; }
 class CommandManager;
 
@@ -17,8 +17,8 @@ public:
     std::string& path();
     const std::string& path() const;
 
-    Scene& scene();
-    const Scene& scene() const;
+    core::Scene& scene();
+    const core::Scene& scene() const;
 
     UndoRedo::UndoRedoManager& undoRedoManager();
     const UndoRedo::UndoRedoManager& undoRedoManager() const;
@@ -33,7 +33,7 @@ private:
     std::string _documentName{};
     bool _isDirty = false;
 
-    Scene* _scene;
+    core::Scene* _scene;
     UndoRedo::UndoRedoManager* _undoRedo;
     CommandManager* _commandManager;
 };

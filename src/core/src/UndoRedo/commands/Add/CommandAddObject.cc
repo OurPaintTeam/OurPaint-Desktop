@@ -24,11 +24,11 @@ namespace UndoRedo {
     }
 
     bool CommandAddObject::Redo() {
-        try {
-            return _scene.tryRestoreObject(_data, _id);
-        } catch (...) {
+        // try {
+        //     return _scene.tryRestoreObject(_data, _id);
+        // } catch (...) {
             return false;
-        }
+        // }
     }
 
 }

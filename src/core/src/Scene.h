@@ -1,36 +1,25 @@
-#ifndef OURPAINT_HEADERS_SCENE_H_
-#define OURPAINT_HEADERS_SCENE_H_
+#ifndef OURPAINT_CORE_SCENE_H_
+#define OURPAINT_CORE_SCENE_H_
 
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include "objects/BoundBox.h"
-#include "objects/Enums.h"
-#include "InheritanceGraph.h"
-#include "objects/Objects.h"
-
-class ISceneObserver;
-struct Point;
-struct Section;
-struct Circle;
-struct Arc;
-class Painter;
-class Component;
-class Variable;
-class Function;
-struct ObjectData;
-#include "objects/GeometricObjects.h"
-
-#include "DCMManager.h"
-
 #include "objects/ID.h"
-using namespace core;
+#include "objects/GeometricObjects.h"
+#include "DCMManager.h"
+#include "objects/Enums.h"
+class ISceneObserver;
+
+namespace core {
+class Requirement;
+class ClipboardData;
+class ObjectData;
+
+using namespace OurPaintDCM;
 
 class Scene {
 private:
-    OurPaintDCM::DCMManager DCM_manager;
-    const OurPaintDCM::Figures::GeometryStorage* storage_ = nullptr;
+    DCMManager DCM_;
 
     struct bezier {
         CubicBezier b;
@@ -44,25 +33,13 @@ private:
     std::map<ID, ID> pointToBezier_;
     int lastBezierId = 0;
 
-private:
-    ObjType getObjType(ID id) const;
-    bool exists(ID id, ObjType expected) const;
-    bool isValid(const Requirement& req) const;
-    std::vector<Variable*> getVariables(const Requirement& req) const;
-    Function* getFunction(const Requirement& req);
-
-    std::unordered_map<ID, OurPaintDCM::Utils::ID> DCM_ids;
-
 public:
-    using DCM_ID = OurPaintDCM::Utils::ID;
-    using SCENE_ID = ID;
-    using ObjDescriptor = OurPaintDCM::Utils::FigureDescriptor;
-    using ReqDescriptor = OurPaintDCM::Utils::RequirementDescriptor;
-    using Type = OurPaintDCM::Utils::FigureType;
-    using Storage = OurPaintDCM::Figures::GeometryStorage;
-
-    static const ID _errorID;
-    static const ID _connectionEdgeID;
+    using DCM_ID = Utils::ID;
+    using DCM_FigDesc = Utils::FigureDescriptor;
+    using DCM_ReqDesc = Utils::RequirementDescriptor;
+    using DCM_FigType = Utils::FigureType;
+    using DCM_ReqType = Utils::RequirementType;
+    using DCM_PointUpdateDesc = Utils::PointUpdateDescriptor;
 
 public:
     Scene();
@@ -82,9 +59,6 @@ public:
 
     const BoundBox2D& getBoundingBox() const;
     void updateBoundingBox() const;
-
-    void rebuildComponents();
-    Component& findComponentByID(ID id);
 
     ObjectData getObjectData(ID objectID) const;
     ObjectData getRootObjectData(ID objectID) const;
@@ -127,9 +101,6 @@ public:
     std::vector<Requirement> getAllRequirementsData() const;
     bool deleteRequirement(ID reqID);
 
-    bool tryRestoreObject(const ObjectData&, ID id);
-    bool tryRestoreRequirement(const Requirement&, ID id);
-
     void setObserver(ISceneObserver* o);
 
     ClipboardData copyFragment(const std::vector<ID>& selected) const;
@@ -139,13 +110,13 @@ public:
     BoundBox2D makeBoundingBoxFromObjects(const std::vector<ID>& objects) const;
 
 private:
-    ObjectContainer _objectContainer;
     std::vector<ISceneObserver*> _observers;
 
     void addRequirement(const Requirement& reqData, ID reqID);
 
-    static ReqType reqTypeMapper(OurPaintDCM::Utils::RequirementType type);
-    static OurPaintDCM::Utils::RequirementType reqTypeMapper(ReqType type);
+    static ReqType reqTypeMapper(DCM_ReqType type);
+    static DCM_ReqType reqTypeMapper(ReqType type);
 };
+}
 
-#endif  // ! OURPAINT_HEADERS_SCENE_H_
+#endif  // ! OURPAINT_CORE_SCENE_H_

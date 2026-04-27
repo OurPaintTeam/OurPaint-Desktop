@@ -3,8 +3,8 @@
 requirementInJson::requirementInJson(const nlohmann::json& req) {
     // Type and name
     _name = req.at("name").get<std::string>();
-    _req.type = requirement_from_string(req.at("type").get<std::string>());
-    _req.id = ID(req.at("id").get<unsigned int>());
+    _req.type = core::requirement_from_string(req.at("type").get<std::string>());
+    _req.id = core::ID(req.at("id").get<unsigned int>());
 
     // Objects
     const auto& arr = req.at("object");
@@ -15,16 +15,16 @@ requirementInJson::requirementInJson(const nlohmann::json& req) {
         case 0:
             break;
         case 1:
-            _req.obj1 = ID(arr[0].get<unsigned int>());
+            _req.obj1 = core::ID(arr[0].get<unsigned int>());
             break;
         case 2:
-            _req.obj1 = ID(arr[0].get<unsigned int>());
-            _req.obj2 = ID(arr[1].get<unsigned int>());
+            _req.obj1 = core::ID(arr[0].get<unsigned int>());
+            _req.obj2 = core::ID(arr[1].get<unsigned int>());
             break;
         default:
-            _req.obj1 = ID(arr[0].get<unsigned int>());
-            _req.obj2 = ID(arr[1].get<unsigned int>());
-            _req.obj3 = ID(arr[2].get<unsigned int>());
+            _req.obj1 = core::ID(arr[0].get<unsigned int>());
+            _req.obj2 = core::ID(arr[1].get<unsigned int>());
+            _req.obj3 = core::ID(arr[2].get<unsigned int>());
             if (arr.size() > 3) {
                 // it's not ok.
             }
@@ -40,7 +40,7 @@ requirementInJson::requirementInJson(const nlohmann::json& req) {
     }
 }
 
-requirementInJson::requirementInJson(Requirement req, const std::string& name) {
+requirementInJson::requirementInJson(core::Requirement req, const std::string& name) {
     _name = name;
     _req = req;
 }
@@ -64,7 +64,7 @@ requirementInJson& requirementInJson::operator=(requirementInJson&& other) noexc
     _req = std::move(other._req);
     return *this;
 }
-std::pair<std::string, Requirement> requirementInJson::to_pair() const {
+std::pair<std::string, core::Requirement> requirementInJson::to_pair() const {
     return std::make_pair(_name, _req);
 }
 nlohmann::json requirementInJson::to_json() const {
@@ -75,9 +75,9 @@ nlohmann::json requirementInJson::to_json() const {
     json["name"] = _name;
 
     nlohmann::json arr = nlohmann::json::array();
-    if (_req.obj1 != ID(0)) arr.push_back(_req.obj1.get());
-    if (_req.obj2 != ID(0)) arr.push_back(_req.obj2.get());
-    if (_req.obj3 != ID(0)) arr.push_back(_req.obj3.get());
+    if (_req.obj1 != core::ID(0)) arr.push_back(_req.obj1.get());
+    if (_req.obj2 != core::ID(0)) arr.push_back(_req.obj2.get());
+    if (_req.obj3 != core::ID(0)) arr.push_back(_req.obj3.get());
     json["object"] = std::move(arr);
 
     if (_req.param.has_value()) {

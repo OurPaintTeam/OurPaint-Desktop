@@ -16,7 +16,7 @@ namespace UndoRedo {
     public:
         ID getSectionID() {
             if (_id == ID{}) {
-                return Scene::_errorID;
+                return ID(0);
             }
             return _id;
         }

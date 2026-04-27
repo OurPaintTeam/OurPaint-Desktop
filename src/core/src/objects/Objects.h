@@ -5,11 +5,10 @@
 #include <optional>
 #include <unordered_map>
 #include "objects/ID.h"
-#include "Enums.h"
 #include "GeometricObjects.h"
+#include "objects/Enums.h"
 
-using namespace core;
-
+namespace core {
 struct ObjectData {
     ObjType et;
     std::vector<ID> subObjects;
@@ -61,15 +60,16 @@ inline bool operator==(Requirement const& a, Requirement const& b) noexcept {
 inline bool operator!=(Requirement const& a, Requirement const& b) noexcept {
     return !(a == b);
 }
+}
 
 namespace std {
     template<>
-    struct hash<Requirement> {
-        size_t operator()(Requirement const& r) const noexcept {
+    struct hash<core::Requirement> {
+        size_t operator()(core::Requirement const& r) const noexcept {
             auto h1 = std::hash<uint8_t>()(static_cast<uint8_t>(r.type));
-            auto h2 = std::hash<ID>()(r.obj1);
-            auto h3 = std::hash<ID>()(r.obj2);
-            auto h4 = std::hash<ID>()(r.obj3);
+            auto h2 = std::hash<core::ID>()(r.obj1);
+            auto h3 = std::hash<core::ID>()(r.obj2);
+            auto h4 = std::hash<core::ID>()(r.obj3);
             auto h5 = r.param ? std::hash<double>()(*r.param) : 0u;
             return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4);
         }

@@ -5,7 +5,8 @@
 #include <span>
 #include <string>
 
-enum class ObjType : uint8_t {
+namespace core {
+enum class ObjType : std::uint8_t {
     ET_POINT,
     ET_LINE,
     ET_CIRCLE,
@@ -134,6 +135,7 @@ inline ReqType requirement_from_string(const std::string& s) {
     if (s == "sectionsectionangle") return ReqType::ET_LINELINEANGLE;
     if (s == "arccenteronperpendicular") return ReqType::ET_ARCCENTERONPERPENDICULAR;
     return ReqType::ERROR;
+}
 }
 
 #endif  // ! OURPAINT_HEADERS_ENUMS_H_

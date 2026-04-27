@@ -21,11 +21,11 @@ namespace UndoRedo {
     }
 
     bool CommandAddRequirement::Redo() {
-        try {
-            return _scene.tryRestoreRequirement(_reqData, _reqID);
-        } catch (...) {
+        // try {
+        //     return _scene.tryRestoreRequirement(_reqData, _reqID);
+        // } catch (...) {
             return false;
-        }
+        // }
     }
 
 }

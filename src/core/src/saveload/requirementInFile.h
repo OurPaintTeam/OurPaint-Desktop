@@ -6,16 +6,16 @@
 
 class requirementInFile {
     unsigned int id;
-    Requirement s_req;
+    core::Requirement s_req;
     public:
-    explicit requirementInFile(const std::pair<unsigned int, Requirement> &obj);
+    explicit requirementInFile(const std::pair<unsigned int, core::Requirement> &obj);
 
     requirementInFile(const requirementInFile &other);
     requirementInFile(requirementInFile &&other) noexcept;
     requirementInFile &operator=(const requirementInFile &other);
     requirementInFile &operator=(requirementInFile &&other) noexcept;
 
-    std::pair<unsigned int, Requirement> to_pair() const;
+    std::pair<unsigned int, core::Requirement> to_pair() const;
     std::string to_string() const;
 };
 

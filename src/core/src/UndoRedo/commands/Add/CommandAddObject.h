@@ -2,18 +2,19 @@
 #define OURPAINT_HEADERS_COMMANDS_ADD_COMMAND_ADD_OBJECT_
 
 #include "Command.h"
-#include "Scene.h"
 #include "ID.h"
 #include "objects/Objects.h"
+#include "Scene.h"
+using namespace core;
 
 namespace UndoRedo {
 
     // Command -> CommandAddObject -> CommandAddX
     class CommandAddObject : public Command {
     protected:
-        Scene &_scene;
-        ObjectData _data;
-        ID _id;
+        core::Scene &_scene;
+        core::ObjectData _data;
+        core::ID _id;
 
         bool Execute() override;
 
@@ -22,7 +23,7 @@ namespace UndoRedo {
         bool Redo() override;
 
     public:
-        CommandAddObject(Scene& scene, ObjectData data) : _scene(scene), _data(data) {}
+        CommandAddObject(core::Scene& scene, core::ObjectData data) : _scene(scene), _data(data) {}
 
         virtual std::string description() const override { return "Add object to scene"; };
     };

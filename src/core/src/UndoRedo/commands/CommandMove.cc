@@ -3,16 +3,12 @@
 #include "Scene.h"
 
 bool UndoRedo::CommandMove::Execute() {
-    const Component& c = _scene.findComponentByID(_pre_move_object_states.at(0).id);
-    for (auto& id : c._objectIDs) {
-        _post_move_object_states.push_back(_scene.getObjectData(id));
-    }
-    return true;
+    return false;
 }
 
 bool UndoRedo::CommandMove::Undo() {
     for (auto& objData : _pre_move_object_states) {
-        if (objData.et == ObjType::ET_POINT) {
+        if (objData.et == core::ObjType::ET_POINT) {
             _scene.setPoint(
                     objData.id,
                     objData.params[0],
@@ -20,7 +16,7 @@ bool UndoRedo::CommandMove::Undo() {
                     false
                     );
         }
-        else if (objData.et == ObjType::ET_LINE) {
+        else if (objData.et == core::ObjType::ET_LINE) {
             _scene.setSection(
                     objData.id,
                     objData.params[0],
@@ -30,7 +26,7 @@ bool UndoRedo::CommandMove::Undo() {
                     false
                     );
         }
-        else if (objData.et == ObjType::ET_CIRCLE) {
+        else if (objData.et == core::ObjType::ET_CIRCLE) {
             _scene.setCircle(
                     objData.id,
                     objData.params[0],
@@ -39,7 +35,7 @@ bool UndoRedo::CommandMove::Undo() {
                     false
                     );
         }
-        else if (objData.et == ObjType::ET_ARC) {
+        else if (objData.et == core::ObjType::ET_ARC) {
             _scene.setArc(
                     objData.id,
                     objData.params[0],
@@ -62,7 +58,7 @@ bool UndoRedo::CommandMove::Undo() {
 
 bool UndoRedo::CommandMove::Redo() {
     for (auto& objData : _post_move_object_states) {
-        if (objData.et == ObjType::ET_POINT) {
+        if (objData.et == core::ObjType::ET_POINT) {
             _scene.setPoint(
                     objData.id,
                     objData.params[0],
@@ -70,7 +66,7 @@ bool UndoRedo::CommandMove::Redo() {
                     false
             );
         }
-        else if (objData.et == ObjType::ET_LINE) {
+        else if (objData.et == core::ObjType::ET_LINE) {
             _scene.setSection(
                     objData.id,
                     objData.params[0],
@@ -80,7 +76,7 @@ bool UndoRedo::CommandMove::Redo() {
                     false
             );
         }
-        else if (objData.et == ObjType::ET_CIRCLE) {
+        else if (objData.et == core::ObjType::ET_CIRCLE) {
             _scene.setCircle(
                     objData.id,
                     objData.params[0],
@@ -89,7 +85,7 @@ bool UndoRedo::CommandMove::Redo() {
                     false
             );
         }
-        else if (objData.et == ObjType::ET_ARC) {
+        else if (objData.et == core::ObjType::ET_ARC) {
             _scene.setArc(
                     objData.id,
                     objData.params[0],

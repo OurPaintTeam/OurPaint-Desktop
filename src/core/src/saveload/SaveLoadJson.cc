@@ -1,5 +1,7 @@
 #include "SaveLoadJson.h"
 
+using namespace core;
+
 SaveLoadJson::SaveLoadJson(Scene &scene): _scene(scene) {
     std::vector<ObjectData> obj = _scene.getObjects();
     std::vector<Requirement> req = _scene.getRequirements();

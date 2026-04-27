@@ -3,16 +3,16 @@
 
 #include "Command.h"
 #include "objects/Objects.h"
-class Scene;
+namespace core {class Scene;}
 
 namespace UndoRedo {
 
     // Command -> CommandMove
     class CommandMove : public Command {
     protected:
-        Scene& _scene;
-        std::vector<ObjectData> _pre_move_object_states;
-        std::vector<ObjectData> _post_move_object_states;
+        core::Scene& _scene;
+        std::vector<core::ObjectData> _pre_move_object_states;
+        std::vector<core::ObjectData> _post_move_object_states;
 
         bool Execute() override;
 
@@ -21,7 +21,7 @@ namespace UndoRedo {
         bool Redo() override;
 
     public:
-        CommandMove(Scene& scene, std::vector<ObjectData> pre_move_object_states) : _scene(scene), _pre_move_object_states(pre_move_object_states) {}
+        CommandMove(core::Scene& scene, std::vector<core::ObjectData> pre_move_object_states) : _scene(scene), _pre_move_object_states(pre_move_object_states) {}
 
         std::string description() const override { return "Move objects"; };
     };

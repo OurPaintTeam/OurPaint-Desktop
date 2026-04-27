@@ -40,7 +40,7 @@ public:
 
 class PointFactory : public ICommandFactory {
 public:
-    PointFactory(Scene& sc) : _scene(sc) {}
+    PointFactory(core::Scene& sc) : _scene(sc) {}
 
     std::string id() const override {
         return "POINT";
@@ -77,12 +77,12 @@ public:
     }
 
 private:
-    Scene& _scene;
+    core::Scene& _scene;
 };
 
 class LineFactory : public ICommandFactory {
 public:
-    LineFactory(Scene& sc) : _scene(sc) {}
+    LineFactory(core::Scene& sc) : _scene(sc) {}
 
     std::string id() const override {
         return "LINE";
@@ -123,12 +123,12 @@ public:
     }
 
 private:
-    Scene& _scene;
+    core::Scene& _scene;
 };
 
 class CircleFactory : public ICommandFactory {
 public:
-    CircleFactory(Scene& sc) : _scene(sc) {}
+    CircleFactory(core::Scene& sc) : _scene(sc) {}
 
     std::string id() const override {
         return "CIRCLE";
@@ -167,12 +167,12 @@ public:
     }
 
 private:
-    Scene& _scene;
+    core::Scene& _scene;
 };
 
 class ArcFactory : public ICommandFactory {
 public:
-    ArcFactory(Scene& sc) : _scene(sc) {}
+    ArcFactory(core::Scene& sc) : _scene(sc) {}
 
     std::string id() const override {
         return "ARC";
@@ -217,12 +217,12 @@ public:
     }
 
 private:
-    Scene& _scene;
+    core::Scene& _scene;
 };
 
 class CubicBezierFactory : public ICommandFactory {
 public:
-    CubicBezierFactory(Scene& sc) : _scene(sc) {}
+    CubicBezierFactory(core::Scene& sc) : _scene(sc) {}
 
     std::string id() const override {
         return "BEZIER";
@@ -263,12 +263,12 @@ public:
     }
 
 private:
-    Scene& _scene;
+    core::Scene& _scene;
 };
 
 class ReqFactory : public ICommandFactory {
 public:
-    ReqFactory(Scene& sc) : _scene(sc) {}
+    ReqFactory(core::Scene& sc) : _scene(sc) {}
 
     std::string id() const override {
         return "REQ";
@@ -397,12 +397,12 @@ public:
     }
 
 private:
-    Scene& _scene;
+    core::Scene& _scene;
 };
 
 class DelFactory : public ICommandFactory {
 public:
-    DelFactory(Scene& sc) : _scene(sc) {}
+    DelFactory(core::Scene& sc) : _scene(sc) {}
 
     std::string id() const override {
         return "DELETE";
@@ -505,12 +505,12 @@ public:
     }
 
 private:
-    Scene& _scene;
+    core::Scene& _scene;
 };
 
 class ClearFactory : public ICommandFactory {
 public:
-    ClearFactory(Scene*& sc) : _scene(sc) {}
+    ClearFactory(core::Scene*& sc) : _scene(sc) {}
 
     std::string id() const override {
         return "CLEAR";
@@ -529,7 +529,7 @@ public:
     }
 
 private:
-    Scene*& _scene;
+    core::Scene*& _scene;
 };
 
 #endif // ! OURPAINT_HEADERS_UNDOREDO_COMMAND_FACTORY_H_
