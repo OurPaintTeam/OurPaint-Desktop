@@ -113,10 +113,6 @@ private:
 
     GLint rectTransformLoc_ = -1;
     GLint rectFillColorLoc_ = -1;
-    GLint rectBorderColorLoc_ = -1;
-    GLint rectBorderHalfWidthLoc_ = -1;
-    GLint rectEdgeSoftnessLoc_ = -1;
-    GLint rectPadLoc_ = -1;
 
 
     // Viewport size

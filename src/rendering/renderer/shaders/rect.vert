@@ -5,13 +5,12 @@ layout(location = 1) in vec2 aCenter;    // per-instance
 layout(location = 2) in vec2 aHalfExt;   // per-instance
 
 uniform mat4 uTransform;
-uniform float uPad;
 
 out vec2 vLocalPos;
 
 void main() {
-    vLocalPos = aQuadPos * uPad;
+    vLocalPos = aQuadPos;
 
-    vec2 worldPos = aCenter + aQuadPos * (aHalfExt * uPad);
+    vec2 worldPos = aCenter + aQuadPos * aHalfExt;
     gl_Position = uTransform * vec4(worldPos, 0.0, 1.0);
 }

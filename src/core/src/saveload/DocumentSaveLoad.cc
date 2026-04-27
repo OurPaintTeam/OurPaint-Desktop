@@ -1,4 +1,4 @@
-#include "../../headers/saveload/DocumentSaveLoad.h"
+#include "DocumentSaveLoad.h"
 
 bool loadDocumentFromFile(const std::string& filePath, const Document* document) {
     (void)filePath;
