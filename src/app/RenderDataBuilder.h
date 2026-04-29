@@ -11,10 +11,11 @@ public:
                       const OverlayModel& overlay,
                       renderer::RenderData& renderData);
 
+    void setScene(const Scene& scene);
     void rebuild();
 
 private:
-    const Scene& scene_;
+    const Scene* scene_;
     const OverlayModel& overlay_;
     renderer::RenderData& renderData_;
 };

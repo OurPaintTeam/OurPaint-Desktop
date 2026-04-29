@@ -4,7 +4,11 @@
 #include "RenderData.h"
 
 RenderDataBuilder::RenderDataBuilder(const Scene& scene, const OverlayModel& overlay, renderer::RenderData& renderData)
-    : scene_(scene), overlay_(overlay), renderData_(renderData) {}
+    : scene_(&scene), overlay_(overlay), renderData_(renderData) {}
+
+void RenderDataBuilder::setScene(const Scene& scene) {
+    scene_ = &scene;
+}
 
 void RenderDataBuilder::rebuild() {
     renderData_.points.clear();
@@ -17,7 +21,7 @@ void RenderDataBuilder::rebuild() {
 
 
     // Base points
-    std::vector<ObjectData> points = scene_.getPoints();
+    std::vector<ObjectData> points = scene_->getPoints();
     for (auto& p : points) {
         const double& x = p.params[0];
         const double& y = p.params[1];
@@ -25,7 +29,7 @@ void RenderDataBuilder::rebuild() {
     }
 
     // Base lines
-    std::vector<ObjectData> lines = scene_.getLines();
+    std::vector<ObjectData> lines = scene_->getLines();
     for (auto& l : lines) {
         const double& x1 = l.params[0];
         const double& y1 = l.params[1];
@@ -35,7 +39,7 @@ void RenderDataBuilder::rebuild() {
     }
 
     // Base circles
-    std::vector<ObjectData> circles = scene_.getCircles();
+    std::vector<ObjectData> circles = scene_->getCircles();
     for (auto& c : circles) {
         const double& x = c.params[0];
         const double& y = c.params[1];
@@ -46,7 +50,7 @@ void RenderDataBuilder::rebuild() {
 
     // Selection objects
     for (const auto& id : overlay_.selection_.model.items()) {
-        ObjectData od = scene_.getObjectData(id);
+        ObjectData od = scene_->getObjectData(id);
         if (od.et == ObjType::ET_POINT) {
             renderData_.selected.points.push_back({static_cast<float>(od.params[0]), static_cast<float>(od.params[1])});
         }
@@ -116,7 +120,7 @@ void RenderDataBuilder::rebuild() {
     }
 
     // Cubic bezier curve
-    std::vector<ObjectData> beziers = scene_.getBeziers();
+    std::vector<ObjectData> beziers = scene_->getBeziers();
     for (size_t i = 0; i < beziers.size(); i++) {
         ObjectData od = beziers[i];
 
