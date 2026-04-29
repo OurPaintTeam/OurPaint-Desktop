@@ -44,6 +44,14 @@ add_ourpaint_test(ComponentTest ComponentTest.cc)
 add_ourpaint_test(RequirementJsonTest requirementInJsonGTEST.cc)
 add_ourpaint_test(MoveTest MoveGTEST.cc)
 
+add_executable(DocumentSaveLoadGTEST DocumentSaveLoadGTEST.cc)
+target_link_libraries(DocumentSaveLoadGTEST
+    PRIVATE
+        ourpaint_core
+        GTest::gtest_main
+)
+gtest_discover_tests(DocumentSaveLoadGTEST)
+
 
 
 set(TYPE_OF_COMPILING BOOL 1)

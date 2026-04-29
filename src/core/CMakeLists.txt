@@ -52,7 +52,7 @@ target_include_directories(ourpaint_core
         src/UndoRedo/commands/Add
         src/UndoRedo/commands/Delete
 )
-add_subdirectory(DCM {CMAKE_CURRENT_BINARY_DIR}/DCM)
+add_subdirectory(DCM ${CMAKE_CURRENT_BINARY_DIR}/DCM)
 target_link_libraries(ourpaint_core
     PUBLIC
         nlohmann_json::nlohmann_json
