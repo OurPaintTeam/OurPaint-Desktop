@@ -73,7 +73,7 @@ ID Scene::addObject(const ObjectData& objData) {
             return ID(id.id);
         }
         case ObjType::ET_ARC: {
-            if (objData.params.size() < 5) {
+            if (objData.params.size() < 6) {
                 throw std::invalid_argument("Arc requires first point, second point, center and radius");
             }
 
@@ -112,6 +112,12 @@ ID Scene::addObject(const ObjectData& objData) {
             double x4 = x1 + 2.0 * (x2 - x1) / 3.0;
             double y4 = y1 + 2.0 * (y2 - y1) / 3.0;
 
+            if (objData.params.size() >= 8) {
+                x3 = objData.params[4];
+                y3 = objData.params[5];
+                x4 = objData.params[6];
+                y4 = objData.params[7];
+            }
 
             ObjDescriptor od1 = OurPaintDCM::Utils::FigureDescriptor::point(x1, y1);
             ObjDescriptor od2 = OurPaintDCM::Utils::FigureDescriptor::point(x2, y2);
@@ -123,7 +129,7 @@ ID Scene::addObject(const ObjectData& objData) {
             OurPaintDCM::Utils::ID id4 = DCM_manager.addFigure(od4);
             OurPaintDCM::Utils::ID id2 = DCM_manager.addFigure(od2);
 
-            ++lastBezierId;
+            --lastBezierId;
 
             pointToBezier_[ID(id1.id)] = ID(lastBezierId);
             pointToBezier_[ID(id2.id)] = ID(lastBezierId);
@@ -149,7 +155,7 @@ ID Scene::addObject(const ObjectData& objData) {
                 //observer->onObjectAdded(l);
             }
 
-            return ID();
+            return ID(lastBezierId);
         }
         default:
             throw std::invalid_argument("Unknown object type");
@@ -194,6 +200,7 @@ void Scene::clear() {
     DCM_manager.clear();
     beziers_.clear();
     pointToBezier_.clear();
+    lastBezierId = 0;
 }
 
 const BoundBox2D& Scene::getBoundingBox() const {
@@ -205,6 +212,22 @@ void Scene::updateBoundingBox() const {
 }
 
 ObjectData Scene::getObjectData(SCENE_ID id) const {
+    auto bezierIt = beziers_.find(id);
+    if (bezierIt != beziers_.end()) {
+        const bezier& b = bezierIt->second;
+        ObjectData od;
+        od.id = id;
+        od.et = ObjType::ET_CUBIC_BEZIER;
+        od.params = {
+            b.b.start.x, b.b.start.y,
+            b.b.end.x, b.b.end.y,
+            b.b.control1.x, b.b.control1.y,
+            b.b.control2.x, b.b.control2.y
+        };
+        od.subObjects = {b.start, b.end, b.control1, b.control2};
+        return od;
+    }
+
     ObjectData od;
     OurPaintDCM::Utils::FigureDescriptor desc = DCM_manager.getFigure(DCM_ID(id.get())).value();
     od.id = ID(desc.id.value().id);
@@ -233,7 +256,7 @@ ObjectData Scene::getObjectData(SCENE_ID id) const {
             od.params.push_back(desc.coords[3]);
             od.params.push_back(desc.coords[4]);
             od.params.push_back(desc.coords[5]);
-            od.subObjects = {SCENE_ID(desc.pointIds[0].id), SCENE_ID(desc.pointIds[1].id), SCENE_ID(desc.pointIds[1].id)};
+            od.subObjects = {SCENE_ID(desc.pointIds[0].id), SCENE_ID(desc.pointIds[1].id), SCENE_ID(desc.pointIds[2].id)};
             od.et = ObjType::ET_ARC;
             break;
     }
@@ -282,11 +305,13 @@ std::vector<ObjectData> Scene::getObjects() const {
                 od.params.push_back(f.coords[1]);
                 od.params.push_back(f.coords[2]);
                 od.params.push_back(f.coords[3]);
+                od.subObjects = {SCENE_ID(f.pointIds[0].id), SCENE_ID(f.pointIds[1].id)};
                 break;
             case OurPaintDCM::Utils::FigureType::ET_CIRCLE:
                 od.params.push_back(f.coords[0]);
                 od.params.push_back(f.coords[1]);
                 od.params.push_back(f.radius.value());
+                od.subObjects = {SCENE_ID(f.pointIds[0].id)};
                 od.et = ObjType::ET_CIRCLE;
                 break;
             case OurPaintDCM::Utils::FigureType::ET_ARC:
@@ -296,12 +321,19 @@ std::vector<ObjectData> Scene::getObjects() const {
                 od.params.push_back(f.coords[3]);
                 od.params.push_back(f.coords[4]);
                 od.params.push_back(f.coords[5]);
+                od.subObjects = {
+                    SCENE_ID(f.pointIds[0].id),
+                    SCENE_ID(f.pointIds[1].id),
+                    SCENE_ID(f.pointIds[2].id)
+                };
                 od.et = ObjType::ET_ARC;
                 break;
         }
         od.id = ID(f.id.value().id);
         objects.push_back(od);
     }
+    std::vector<ObjectData> beziers = getBeziers();
+    objects.insert(objects.end(), beziers.begin(), beziers.end());
     return objects;
 }
 
@@ -376,6 +408,7 @@ std::vector<ObjectData> Scene::getArcs() const {
             od.et = ObjType::ET_ARC;
             od.id = ID(f.id.value().id);
             od.params = {f.coords[0], f.coords[1], f.coords[2], f.coords[3], f.coords[4], f.coords[5]};
+            od.subObjects = {ID(f.pointIds[0].id), ID(f.pointIds[1].id), ID(f.pointIds[2].id)};
             objs.push_back(od);
         }
     }
@@ -402,13 +435,14 @@ std::vector<ObjectData> Scene::getBeziers() const {
         od.params.push_back(b.b.control2.x);
         od.params.push_back(b.b.control2.y);
 
+        od.subObjects = {b.start, b.end, b.control1, b.control2};
         beziers.push_back(od);
     }
     return beziers;
 }
 
 std::vector<Requirement> Scene::getRequirements() const {
-    throw std::runtime_error("Scene error");
+    return getAllRequirementsData();
 }
 
 std::vector<Requirement> Scene::getObjectRequirements(ID objectID) const {
@@ -630,16 +664,17 @@ ID Scene::addRequirement(const Requirement& reqData, const bool updateRequiremen
         rd.param = reqData.param;
     }
 
-    DCM_manager.addRequirement(rd);
+    DCM_ID reqId = DCM_manager.addRequirement(rd);
     if (updateRequirementFlag) {
         DCM_manager.solve();
     }
 
+    rd.id = reqId;
     for (auto& observer : _observers) {
         observer->onRequirementAdded(rd);
     }
 
-    return ID();
+    return ID(reqId.id);
 }
 
 static bool requirementFullyInside(const Requirement& r, const std::unordered_set<ID>& copiedIds) {
@@ -784,7 +819,29 @@ BoundBox2D Scene::makeBoundingBoxFromObjects(const std::vector<ID>& objects) con
 }
 
 void Scene::addRequirement(const Requirement& reqData, ID reqID) {
-    throw std::runtime_error("Scene error");
+    ReqDescriptor rd;
+    rd.id = DCM_ID(reqID.get());
+    rd.type = reqTypeMapper(reqData.type);
+
+    if (hasObject(reqData.obj1)) {
+        rd.objectIds.push_back(DCM_ID(reqData.obj1.get()));
+    }
+    if (hasObject(reqData.obj2)) {
+        rd.objectIds.push_back(DCM_ID(reqData.obj2.get()));
+    }
+    if (hasObject(reqData.obj3)) {
+        rd.objectIds.push_back(DCM_ID(reqData.obj3.get()));
+    }
+    if (reqData.param.has_value()) {
+        rd.param = reqData.param;
+    }
+
+    DCM_ID id = DCM_manager.addRequirement(rd);
+    rd.id = id;
+
+    for (auto& observer : _observers) {
+        observer->onRequirementAdded(rd);
+    }
 }
 
 ReqType Scene::reqTypeMapper(OurPaintDCM::Utils::RequirementType type) {
@@ -809,6 +866,10 @@ ReqType Scene::reqTypeMapper(OurPaintDCM::Utils::RequirementType type) {
             return ReqType::ET_LINELINEPERPENDICULAR;
         case OurPaintDCM::Utils::RequirementType::ET_LINELINEANGLE:
             return ReqType::ET_LINELINEANGLE;
+        case OurPaintDCM::Utils::RequirementType::ET_VERTICAL:
+            return ReqType::ET_VERTICAL;
+        case OurPaintDCM::Utils::RequirementType::ET_HORIZONTAL:
+            return ReqType::ET_HORIZONTAL;
         case OurPaintDCM::Utils::RequirementType::ET_ARCCENTERONPERPENDICULAR:
             return ReqType::ET_ARCCENTERONPERPENDICULAR;
         case OurPaintDCM::Utils::RequirementType::ET_FIXPOINT:
@@ -845,6 +906,10 @@ OurPaintDCM::Utils::RequirementType Scene::reqTypeMapper(ReqType type) {
             return OurPaintDCM::Utils::RequirementType::ET_LINELINEPERPENDICULAR;
         case ReqType::ET_LINELINEANGLE:
             return OurPaintDCM::Utils::RequirementType::ET_LINELINEANGLE;
+        case ReqType::ET_VERTICAL:
+            return OurPaintDCM::Utils::RequirementType::ET_VERTICAL;
+        case ReqType::ET_HORIZONTAL:
+            return OurPaintDCM::Utils::RequirementType::ET_HORIZONTAL;
         case ReqType::ET_ARCCENTERONPERPENDICULAR:
             return OurPaintDCM::Utils::RequirementType::ET_ARCCENTERONPERPENDICULAR;
         case ReqType::ET_FIXPOINT:
@@ -880,6 +945,7 @@ void Scene::updateRequirements(ID id) {}
 Requirement Scene::getRequirementData(ID reqID) const {
     OurPaintDCM::Utils::RequirementDescriptor desc = DCM_manager.getRequirement(DCM_ID(reqID.get())).value();
     Requirement r;
+    r.id = reqID;
     r.type = reqTypeMapper(desc.type);
     auto ids = desc.objectIds;
     if (ids.size() > 0) {
@@ -898,7 +964,30 @@ Requirement Scene::getRequirementData(ID reqID) const {
 }
 
 std::vector<Requirement> Scene::getAllRequirementsData() const {
-    throw std::runtime_error("Scene error");
+    std::vector<OurPaintDCM::Utils::RequirementDescriptor> descriptors = DCM_manager.getAllRequirements();
+    std::vector<Requirement> requirements;
+    requirements.reserve(descriptors.size());
+
+    for (const auto& desc : descriptors) {
+        Requirement r;
+        if (desc.id.has_value()) {
+            r.id = ID(desc.id->id);
+        }
+        r.type = reqTypeMapper(desc.type);
+        if (!desc.objectIds.empty()) {
+            r.obj1 = ID(desc.objectIds[0].id);
+        }
+        if (desc.objectIds.size() > 1) {
+            r.obj2 = ID(desc.objectIds[1].id);
+        }
+        if (desc.objectIds.size() > 2) {
+            r.obj3 = ID(desc.objectIds[2].id);
+        }
+        r.param = desc.param;
+        requirements.push_back(r);
+    }
+
+    return requirements;
 }
 
 bool Scene::deleteRequirement(ID reqID) {
@@ -906,11 +995,22 @@ bool Scene::deleteRequirement(ID reqID) {
 }
 
 bool Scene::tryRestoreObject(const ObjectData& data, ID id) {
-    throw std::runtime_error("Scene error");
+    try {
+        return addObject(data) == id;
+    }
+    catch (...) {
+        return false;
+    }
 }
 
 bool Scene::tryRestoreRequirement(const Requirement& data, ID id) {
-    throw std::runtime_error("Scene error");
+    try {
+        addRequirement(data, id);
+        return hasRequirement(id);
+    }
+    catch (...) {
+        return false;
+    }
 }
 
 ObjType Scene::getObjType(ID id) const {
