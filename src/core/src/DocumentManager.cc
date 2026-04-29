@@ -5,6 +5,12 @@
 #include "Document.h"
 #include "saveload/DocumentSaveLoad.h"
 
+DocumentManager::~DocumentManager() {
+    for (Document* document : documents) {
+        delete document;
+    }
+}
+
 Document* DocumentManager::getActiveDocument() {
     if (activeDocumentIndex == -1) {
         return nullptr;
@@ -13,12 +19,10 @@ Document* DocumentManager::getActiveDocument() {
 }
 
 Document* DocumentManager::at(int index) {
-    try {
-        return documents[index];
-    }
-    catch (...) {
+    if (index < 0 || index >= count()) {
         throw std::out_of_range("out of range");
     }
+    return documents[index];
 }
 
 bool DocumentManager::setActiveDocument(int index) {
@@ -31,7 +35,8 @@ bool DocumentManager::setActiveDocument(int index) {
 
 bool DocumentManager::setActiveDocument(const std::string& name) {
     for (int i = 0; i < count(); i++) {
-        if (documents[i]->name() == name) {
+        const Document* document = documents[i];
+        if (document->name() == name) {
             activeDocumentIndex = i;
             return true;
         }
@@ -44,7 +49,7 @@ int DocumentManager::getActiveIndex() const {
 }
 
 int DocumentManager::count() const {
-    return documents.size();
+    return static_cast<int>(documents.size());
 }
 
 int DocumentManager::createNewDocument(const std::string& documentName) {
@@ -55,12 +60,14 @@ int DocumentManager::createNewDocument(const std::string& documentName) {
 }
 
 int DocumentManager::openDocument(const std::string& path) {
-    Document* document = nullptr;
-    if (loadDocumentFromFile(path, document) == false) {
+    Document* document = new Document();
+    if (loadDocumentFromFile(path, *document) == false) {
+        delete document;
         return -1;
     }
     documents.push_back(document);
-    return documents.size() - 1;
+    activeDocumentIndex = count() - 1;
+    return activeDocumentIndex;
 }
 
 bool DocumentManager::closeDocument(const int index, const bool autoSave) {
@@ -69,27 +76,29 @@ bool DocumentManager::closeDocument(const int index, const bool autoSave) {
     }
     Document* document = documents[index];
     if (autoSave) {
-        if (saveDocumentToFile(document->path(), document) == false) {
+        if (saveDocumentToFile(document->path(), *document) == false) {
             return false;
         }
     }
     delete document;
+    documents.erase(documents.begin() + index);
+    if (documents.empty()) {
+        activeDocumentIndex = -1;
+    } else if (activeDocumentIndex >= count()) {
+        activeDocumentIndex = count() - 1;
+    } else if (activeDocumentIndex > index) {
+        --activeDocumentIndex;
+    }
     return true;
 }
 bool DocumentManager::closeDocument(const std::string& name, bool autoSave) {
-    Document* document = nullptr;
     for (int i = 0; i < count(); i++) {
-        if (documents[i]->name() == name) {
-            document = documents[i];
+        const Document* document = documents[i];
+        if (document->name() == name) {
+            return closeDocument(i, autoSave);
         }
     }
-    if (document && autoSave) {
-        if (saveDocumentToFile(document->path(), document) == false) {
-            return false;
-        }
-    }
-    delete document;
-    return true;
+    return false;
 }
 
 bool DocumentManager::isDocumentSaved(const int index) const {
@@ -122,11 +131,16 @@ bool DocumentManager::isAllDocumentsSaved() const {
 bool DocumentManager::closeAllDocuments(const bool autoSave) {
     for (const Document* document : documents) {
         if (autoSave) {
-            if (saveDocumentToFile(document->path(), document) == false) {
+            if (saveDocumentToFile(document->path(), *document) == false) {
                 return false;
             }
         }
     }
+    for (Document* document : documents) {
+        delete document;
+    }
+    documents.clear();
+    activeDocumentIndex = -1;
     return true;
 }
 

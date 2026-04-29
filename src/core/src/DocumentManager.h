@@ -7,6 +7,8 @@ class Document;
 
 class DocumentManager {
 public:
+    ~DocumentManager();
+
     Document* getActiveDocument();
     Document* at(int index);
     bool setActiveDocument(int index);
