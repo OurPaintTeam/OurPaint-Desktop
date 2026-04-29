@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 
 #include "InputWidget.h"
 #include "PainterWidget.h"
@@ -20,39 +21,6 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
         }
     });
 
-    // Scripts
-    QObject::connect(&window, &UI::ProjectManager::scriptTriggered, this, [this](const QString& path) {
-        qDebug() << "Script start:" << path;
-
-        QFile file(path);
-
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            qDebug() << "OPEN FAILED:" << file.errorString();
-            window_.addNotification("Error: cannot open file");
-            return;
-        }
-
-        qDebug() << "File opened OK";
-
-        QTextStream in(&file);
-
-        while (!in.atEnd()) {
-            QString line = in.readLine().trimmed();
-
-            if (line.isEmpty()) {
-                continue;
-            }
-
-            try {
-                controller_.executeConsoleCommand(line.toStdString());
-            } catch (const std::exception& e) {
-                window_.addNotification("Error: " + QString::fromStdString(e.what()));
-            }
-        }
-
-        file.close();
-    });
-
     // --- Open project in new window ---
     QObject::connect(&window, &UI::ProjectManager::openNewWindowOpenProjectTriggered, this, [this]() { controller_.openProjectInNewWindow(); });
 
@@ -66,7 +34,18 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     QObject::connect(&window, &UI::ProjectManager::createProjectThisWindowTriggered, this, [this]() { controller_.createProjectInCurrentWindow(); });
 
     // --- Open file ---
-    QObject::connect(&window, &UI::ProjectManager::openFileTriggered, this, [this]() { controller_.openFile(); });
+    QObject::connect(&window, &UI::ProjectManager::openFileTriggered, this, [this](const QString& filePath) {
+        const std::string documentName = controller_.openFile(filePath.toStdString());
+        if (documentName.empty()) {
+            window_.addNotification("Error: cannot open file");
+            return;
+        }
+
+        const QString tabName = QString::fromStdString(documentName);
+        window_.addTabSlot(tabName);
+        window_.setActiveTabNameProject(tabName);
+        window_.addNotification("File opened: " + QFileInfo(filePath).fileName());
+    });
 
     // --- Rename tab ---
     QObject::connect(&window, &UI::ProjectManager::renameTabTriggered, this, [this]() { controller_.renameTab(); });
@@ -75,11 +54,42 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     QObject::connect(&window, &UI::ProjectManager::removeTabTriggered, this, [this]() { controller_.removeTab(); });
 
     // --- Create file ---
-    QObject::connect(&window, &UI::ProjectManager::createFileTriggered, this, [this]() { controller_.createFile(); });
+    QObject::connect(&window, &UI::ProjectManager::createFileTriggered, this, [this](const QString& fileName) {
+        const std::string documentName = controller_.createFile(fileName.toStdString());
+        if (documentName.empty()) {
+            window_.addNotification("Error: cannot create file");
+            return;
+        }
+
+        const QString tabName = QString::fromStdString(documentName);
+        window_.addTabSlot(tabName);
+        window_.setActiveTabNameProject(tabName);
+    });
+
+    // --- Save/export file ---
+    QObject::connect(&window, &UI::ProjectManager::exportFileTriggered, this, [this](const QString& filePath) {
+        const QString oldName = QString::fromStdString(controller_.activeDocumentName());
+        const std::string savedName = controller_.saveActiveDocumentAs(filePath.toStdString());
+        if (savedName.empty()) {
+            window_.addNotification("Error: cannot save file");
+            return;
+        }
+
+        const QString newName = QString::fromStdString(savedName);
+        if (!oldName.isEmpty() && oldName != newName) {
+            window_.renameTabSlot(oldName, newName);
+        }
+        window_.setActiveTabNameProject(newName);
+        window_.addNotification("File saved: " + QFileInfo(filePath).fileName());
+    });
 
     // --- Project ---
 
     QObject::connect(&window, &UI::ProjectManager::renameProjectTriggered, this, [this]() { controller_.renameProject(); });
+
+    QObject::connect(&window, &UI::ProjectManager::setActiveTabTriggered, this, [this](const QString& name) {
+        controller_.setActiveDocument(name.toStdString());
+    });
 
     // --- Delete project ---
     QObject::connect(&window, &UI::ProjectManager::deleteProjectTriggered, this, [this]() { controller_.deleteProject(); });
@@ -103,7 +113,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
         // });
 
         switch (_t1) {
-            case UI::ConstraintType::ObjectObjectDistance:
+            case UI::ConstraintType::PointPointDistance:
                 controller_.selectTool(ToolId::ConstraintPointPointDistance);
                // controller_.selectTool(ToolId::ConstraintPointPointDistance);
                //controller_.selectTool(ToolId::ConstraintLineCircleDistance);
@@ -166,17 +176,8 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
             case UI::PrimitiveType::CircleByDiameter:
                 controller_.selectTool(ToolId::CircleByDiameter);
                 break;
-            case UI::PrimitiveType::CircleByTwoPoints:
-                controller_.selectTool(ToolId::CircleByTwoPoints);
-                break;
-            case UI::PrimitiveType::CircleByThreePoints:
-                controller_.selectTool(ToolId::CircleByThreePoints);
-                break;
-            case UI::PrimitiveType::CircleTangentTwoLines:
-                controller_.selectTool(ToolId::CircleTangentTwoLines);
-                break;
-            case UI::PrimitiveType::CircleTangentThreeLines:
-                controller_.selectTool(ToolId::CircleTangentThreeLines);
+            case UI::PrimitiveType::EllipseThreePoints:
+            case UI::PrimitiveType::CircleSettings:
                 break;
 
 
