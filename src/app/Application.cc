@@ -83,7 +83,7 @@ void Application::init(int& argc, char** argv) {
     mainWindow_->addTabSlot("ds");
 
     // init UIController
-    uiController_ = new UIController(*editorSession_, *documentManager_, *viewportHost_);
+    uiController_ = new UIController(*editorSession_, *documentManager_, *viewportHost_, *builder_, *picker_, *overlay_);
 
     // init binder
     binder_ = new QtMainWindowBinder(*mainWindow_, *uiController_);
