@@ -83,6 +83,7 @@ public:
         points_.clear();
         lines_.clear();
         circles_.clear();
+        arcs_.clear();
     }
 };
 
