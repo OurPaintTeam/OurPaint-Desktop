@@ -13,8 +13,9 @@ struct PickResult {
 
 class Cpu2dPicker {
 public:
-    explicit Cpu2dPicker(Scene& scene, Camera2D& camera);
+    explicit Cpu2dPicker(const Scene& scene, Camera2D& camera);
 
+    void setScene(const Scene& scene);
     std::optional<PickResult> pickAt(double screenX, double screenY) const;
     std::vector<ID> pickInRect(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
 
@@ -23,7 +24,7 @@ public:
     std::optional<PickResult> pickCircleAt(double screenX, double screenY) const;
 
 private:
-    Scene& scene_;
+    const Scene* scene_;
     Camera2D& camera_;
 };
 

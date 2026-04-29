@@ -1,6 +1,10 @@
 #include "Cpu2dPicker.h"
 
-Cpu2dPicker::Cpu2dPicker(Scene& scene, Camera2D& camera) : scene_(scene), camera_(camera) {}
+Cpu2dPicker::Cpu2dPicker(const Scene& scene, Camera2D& camera) : scene_(&scene), camera_(camera) {}
+
+void Cpu2dPicker::setScene(const Scene& scene) {
+    scene_ = &scene;
+}
 
 std::optional<PickResult> Cpu2dPicker::pickAt(double screenX, double screenY) const {
     std::optional<PickResult> p = pickPointAt(screenX, screenY);
@@ -66,7 +70,7 @@ std::vector<ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, do
     std::vector<ID> res;
 
     // Points
-    std::vector<ObjectData> points = scene_.getPoints();
+    std::vector<ObjectData> points = scene_->getPoints();
     for (const auto& p : points) {
         const double& x = p.params[0];
         const double& y = p.params[1];
@@ -76,7 +80,7 @@ std::vector<ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, do
     }
 
     // Lines
-    std::vector<ObjectData> lines_ = scene_.getLines();
+    std::vector<ObjectData> lines_ = scene_->getLines();
     for (const auto& l : lines_) {
         const double& x1 = l.params[0];
         const double& y1 = l.params[1];
@@ -89,7 +93,7 @@ std::vector<ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, do
     }
 
     // Circles
-    std::vector<ObjectData> circles_ = scene_.getCircles();
+    std::vector<ObjectData> circles_ = scene_->getCircles();
     for (const auto& c : circles_) {
         const double& cx = c.params[0];
         const double& cy = c.params[1];
@@ -124,7 +128,7 @@ std::optional<PickResult> Cpu2dPicker::pickPointAt(double screenX, double screen
     glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
-    std::vector<ObjectData> points = scene_.getPoints();
+    std::vector<ObjectData> points = scene_->getPoints();
     for (const auto& p : points) {
         PickResult res;
         const double& x = p.params[0];
@@ -143,7 +147,7 @@ std::optional<PickResult> Cpu2dPicker::pickLineAt(double screenX, double screenY
     glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
-    std::vector<ObjectData> lines_ = scene_.getLines();
+    std::vector<ObjectData> lines_ = scene_->getLines();
     for (const auto& l : lines_) {
         PickResult res;
 
@@ -193,7 +197,7 @@ std::optional<PickResult> Cpu2dPicker::pickCircleAt(double screenX, double scree
     glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
-    std::vector<ObjectData> circles_ = scene_.getCircles();
+    std::vector<ObjectData> circles_ = scene_->getCircles();
     for (const auto& c : circles_) {
         PickResult res;
 
