@@ -32,12 +32,22 @@ const std::string& Document::name() const {
     return _documentName;
 }
 
+void Document::setName(const std::string& documentName) {
+    _documentName = documentName;
+    _isDirty = true;
+}
+
 std::string& Document::path() {
     _isDirty = true;
     return _filePath;
 }
 const std::string& Document::path() const {
     return _filePath;
+}
+
+void Document::setPath(const std::string& filePath) {
+    _filePath = filePath;
+    _isDirty = true;
 }
 
 Scene& Document::scene() {
@@ -66,4 +76,12 @@ const CommandManager& Document::commandManager() const {
 
 bool Document::isDirty() const {
     return _isDirty;
+}
+
+void Document::markDirty() {
+    _isDirty = true;
+}
+
+void Document::markClean() {
+    _isDirty = false;
 }
