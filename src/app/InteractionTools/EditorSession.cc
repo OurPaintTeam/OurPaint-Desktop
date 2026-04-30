@@ -1,27 +1,29 @@
 #include "EditorSession.h"
 
-#include "LineTool.h"
-#include "PointTool.h"
 #include "CircleTool.h"
 #include "CursorTool.h"
+#include "LineTool.h"
+#include "PointTool.h"
+#include "SnapEngine.h"
 
 EditorSession::EditorSession(DocumentManager& manager,
                             Camera2D& camera,
                             renderer::RenderData& renderData,
                             Cpu2dPicker& picker,
-                            OverlayModel& overlay)
+                            OverlayModel& overlay,
+                            SnapEngine& snapEngine)
     : documentManager_(manager),
       camera_(camera),
       renderData_(renderData),
       picker_(picker),
       overlay_(overlay),
       cursorTool_(documentManager_, camera_, picker_, overlay_),
-      pointTool_(documentManager_, camera_),
+      pointTool_(documentManager_, camera_, snapEngine),
       lineTool_(documentManager_, camera_, overlay),
       circleTool_(documentManager_, camera_, picker, overlay),
       arcTool_(documentManager_, camera_, picker, overlay),
-      bezierTool_(documentManager_, camera_, renderData_) {
-    activeTool_ = new PointTool(documentManager_, camera_);
+      bezierTool_(documentManager_, camera_, renderData_){
+      activeTool_ = new PointTool(documentManager_, camera_, snapEngine);
 }
 
 EditorSession::~EditorSession() {

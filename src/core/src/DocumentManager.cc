@@ -61,7 +61,7 @@ int DocumentManager::createNewDocument(const std::string& documentName) {
 
 int DocumentManager::openDocument(const std::string& path) {
     Document* document = new Document();
-    if (loadDocumentFromFile(path, *document) == false) {
+    if (loadDocumentFromFile(path, document) == false) {
         delete document;
         return -1;
     }
@@ -76,7 +76,7 @@ bool DocumentManager::closeDocument(const int index, const bool autoSave) {
     }
     Document* document = documents[index];
     if (autoSave) {
-        if (saveDocumentToFile(document->path(), *document) == false) {
+        if (saveDocumentToFile(document->path(), document) == false) {
             return false;
         }
     }
@@ -131,7 +131,7 @@ bool DocumentManager::isAllDocumentsSaved() const {
 bool DocumentManager::closeAllDocuments(const bool autoSave) {
     for (const Document* document : documents) {
         if (autoSave) {
-            if (saveDocumentToFile(document->path(), *document) == false) {
+            if (saveDocumentToFile(document->path(), document) == false) {
                 return false;
             }
         }

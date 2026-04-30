@@ -14,6 +14,8 @@ add_executable(ourpaint
         InteractionTools/CursorTool.cc
         InteractionTools/CubicBezierTool.cc
         InteractionTools/ArcTool.cc
+        InteractionTools/SnapEngine.cc
+        InteractionTools/SnapEngine.h
         Cpu2dPicker.cc
         SelectionModel.cc
         CommandConsole.cc

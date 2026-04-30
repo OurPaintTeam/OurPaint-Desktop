@@ -1,24 +1,24 @@
 #ifndef OURPAINT_APPLICATION_EDITORSESSION_H_
 #define OURPAINT_APPLICATION_EDITORSESSION_H_
 
-#include "DocumentManager.h"
-#include "IInteractionTool.h"
-#include "ToolId.h"
-#include "Camera2D.h"
-#include "RenderData.h"
 #include "../Cpu2dPicker.h"
 #include "../OverlayModel.h"
-
+#include "ArcTool.h"
+#include "Camera2D.h"
+#include "CircleTool.h"
+#include "CubicBezierTool.h"
+#include "CursorTool.h"
+#include "DocumentManager.h"
+#include "IInteractionTool.h"
 #include "LineTool.h"
 #include "PointTool.h"
-#include "CircleTool.h"
-#include "ArcTool.h"
-#include "CursorTool.h"
-#include "CubicBezierTool.h"
+#include "RenderData.h"
+#include "ToolId.h"
 
+class SnapEngine;
 class EditorSession {
 public:
-    EditorSession(DocumentManager& manager, Camera2D& camera, renderer::RenderData& renderData, Cpu2dPicker& picker, OverlayModel& overlay);
+    EditorSession(DocumentManager& manager, Camera2D& camera, renderer::RenderData& renderData, Cpu2dPicker& picker, OverlayModel& overlay, SnapEngine& snapEngine);
     ~EditorSession();
 
     void select(ToolId id);

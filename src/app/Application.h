@@ -9,6 +9,7 @@
 #include "IRenderer.h"
 #include "InteractionTools/EditorSession.h"
 #include "InteractionTools/IInteractionTool.h"
+#include "InteractionTools/SnapEngine.h"
 #include "OverlayModel.h"
 #include "QtMainWindowBinder.h"
 
@@ -74,6 +75,7 @@ private:
     Cpu2dPicker* picker_;
     OverlayModel* overlay_;
     CommandConsole* commandConsole_;
+    SnapEngine* snapEngine_;
 };
 
 #endif // APPLICATION_H_

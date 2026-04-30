@@ -58,7 +58,7 @@ void Application::init(int& argc, char** argv) {
     picker_ = new Cpu2dPicker(documentManager_->getActiveDocument()->scene(), *camera2D_);
 
     // init app
-    editorSession_ = new EditorSession(*documentManager_, *camera2D_, *renderData_, *picker_, *overlay_);
+    editorSession_ = new EditorSession(*documentManager_, *camera2D_, *renderData_, *picker_, *overlay_,*snapEngine_);
 
     // init renderer
     renderer_ = new renderer::OpenGLRenderer();
