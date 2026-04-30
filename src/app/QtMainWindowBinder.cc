@@ -66,8 +66,9 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
         window_.setActiveTabNameProject(tabName);
     });
 
-    // --- Save/export file ---
-    QObject::connect(&window, &UI::ProjectManager::exportFileTriggered, this, [this](const QString& filePath) {
+    // Save
+   /* QObject::connect(&window, &UI::ProjectManager::saveFullProjectTriggered, this, [this]() {
+        const QString path = window_.projectPath();
         const QString oldName = QString::fromStdString(controller_.activeDocumentName());
         const std::string savedName = controller_.saveActiveDocumentAs(filePath.toStdString());
         if (savedName.empty()) {
@@ -81,7 +82,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
         }
         window_.setActiveTabNameProject(newName);
         window_.addNotification("File saved: " + QFileInfo(filePath).fileName());
-    });
+    });*/
 
     // --- Project ---
 
@@ -113,7 +114,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
         // });
 
         switch (_t1) {
-            case UI::ConstraintType::PointPointDistance:
+            case UI::ConstraintType::ObjectObjectDistance:
                 controller_.selectTool(ToolId::ConstraintPointPointDistance);
                // controller_.selectTool(ToolId::ConstraintPointPointDistance);
                //controller_.selectTool(ToolId::ConstraintLineCircleDistance);
@@ -176,10 +177,18 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
             case UI::PrimitiveType::CircleByDiameter:
                 controller_.selectTool(ToolId::CircleByDiameter);
                 break;
-            case UI::PrimitiveType::EllipseThreePoints:
-            case UI::PrimitiveType::CircleSettings:
+            case UI::PrimitiveType::CircleByTwoPoints:
+                controller_.selectTool(ToolId::CircleByTwoPoints);
                 break;
-
+            case UI::PrimitiveType::CircleByThreePoints:
+                controller_.selectTool(ToolId::CircleByThreePoints);
+                break;
+            case UI::PrimitiveType::CircleTangentTwoLines:
+                controller_.selectTool(ToolId::CircleTangentTwoLines);
+                break;
+            case UI::PrimitiveType::CircleTangentThreeLines:
+                controller_.selectTool(ToolId::CircleTangentThreeLines);
+                break;
 
             case UI::PrimitiveType::ArcByRadius:
                 controller_.selectTool(ToolId::ArcByThreePoints);
