@@ -66,7 +66,7 @@ bool UIController::saveActiveDocument() {
     if (document == nullptr) {
         return false;
     }
-    if (!saveDocumentToFile(document->path(), *document)) {
+    if (!saveDocumentToFile(document->path(), document)) {
         return false;
     }
     document->markClean();
@@ -88,7 +88,7 @@ std::string UIController::saveActiveDocumentAs(const std::string& filePath) {
 
     document->setName(newName);
     document->setPath(filePath);
-    if (!saveDocumentToFile(filePath, *document)) {
+    if (!saveDocumentToFile(filePath, document)) {
         document->setName(oldName);
         document->setPath(oldPath);
         return {};

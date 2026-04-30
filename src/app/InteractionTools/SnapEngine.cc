@@ -1,79 +1,77 @@
 #include "SnapEngine.h"
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
 #include "Scene.h"
 
 SnapEngine::SnapEngine() {}
 
 SnapEngine::SnapResult SnapEngine::getHint(const SnapRequest& req) {
-    SnapResult result{};
-
-    struct LocalBest {
-        SnapCandidate c;
-        bool valid = false;
-    } best;
-
-    auto check = [&](const SnapCandidate& c) {
-        if (c.valid && (!best.valid || c.dist < best.c.dist)) {
-            best.c = c;
-            best.valid = true;
-        }
-    };
-
-    for (auto& p : req.scene.getPoints()) check(snapPoint(req, p));
-
-    for (auto& l : req.scene.getLines()) check(snapLine(req, l));
-
-    for (auto& c : req.scene.getCircles()) check(snapCircle(req, c));
-
-    if (!best.valid) {
-        return axisFallback(req);
+    if (req.object != TypeObject::point) {
+        return SnapResult{};
     }
 
-    return refineSnap(req, best.c.obj);
+    SnapCandidate best;
+    best.valid = false;
+    best.dist = std::numeric_limits<double>::max();
+
+    for (auto& p : req.scene.getPoints()) {
+        if (const auto candidate = snapPoint(req, p); candidate.valid && candidate.dist < best.dist) {
+            best = candidate;
+        }
+    }
+
+    for (auto& l : req.scene.getLines()) {
+        if (const auto candidate = snapLine(req, l); candidate.valid && candidate.dist < best.dist) {
+            best = candidate;
+        }
+    }
+
+    for (auto& c : req.scene.getCircles()) {
+        if (const auto candidate = snapCircle(req, c); candidate.valid && candidate.dist < best.dist) {
+            best = candidate;
+        }
+    }
+
+    if (best.valid && best.dist < SNAP_THRESHOLD) {
+        return generateSnapForObject(req, best.obj);
+    }
+
+    return axisFallback(req);
 }
 
 SnapEngine::SnapCandidate SnapEngine::snapPoint(const SnapRequest& req, const ObjectData& p) {
     SnapCandidate c;
-
-    const double px = req.cursor.first;
-    const double py = req.cursor.second;
-
-    const double x = p.params[0];
-    const double y = p.params[1];
-
-    c.dist = dist(px, py, x, y);
     c.obj = p;
+    c.dist = dist(req.cursor.first, req.cursor.second, p.params[0], p.params[1]);
     c.valid = true;
-
     return c;
 }
 
 SnapEngine::SnapCandidate SnapEngine::snapLine(const SnapRequest& req, const ObjectData& l) {
-    double px = req.cursor.first;
-    double py = req.cursor.second;
+    const double px = req.cursor.first;
+    const double py = req.cursor.second;
 
-    double x1 = l.params[0];
-    double y1 = l.params[1];
-    double x2 = l.params[2];
-    double y2 = l.params[3];
+    const double x1 = l.params[0];
+    const double y1 = l.params[1];
+    const double x2 = l.params[2];
+    const double y2 = l.params[3];
 
-    double A = px - x1;
-    double B = py - y1;
-    double C = x2 - x1;
-    double D = y2 - y1;
+    double nx, ny;
+    double distToLine = closestPointOnSegment(px, py, x1, y1, x2, y2, nx, ny);
+    double distToStart = dist(px, py, x1, y1);
+    double distToCenter = dist(px, py, (x1 + x2) / 2, (y1 + y2) / 2);
+    double distToEnd = dist(px, py, x2, y2);
 
-    double lenSq = C * C + D * D;
-    double t = (lenSq != 0) ? (A * C + B * D) / lenSq : 0;
-
-    t = std::clamp(t, 0.0, 1.0);
-
-    double nx = x1 + t * C;
-    double ny = y1 + t * D;
+    const double minDist = std::min({distToLine, distToStart, distToCenter, distToEnd});
 
     SnapCandidate c;
-    c.dist = dist(px, py, nx, ny);
     c.obj = l;
+    c.dist = minDist;
     c.valid = true;
+    c.snapPoint = {nx, ny};
 
     return c;
 }
@@ -88,110 +86,145 @@ SnapEngine::SnapCandidate SnapEngine::snapCircle(const SnapRequest& req, const O
 
     const double dx = px - cx;
     const double dy = py - cy;
-
     const double len = std::sqrt(dx * dx + dy * dy);
+
     if (len == 0) {
         return SnapCandidate();
     }
 
+    const double distToCircle = std::abs(len - r);
+    double minDist = distToCircle;
+
+    for (int i = 0; i < 8; ++i) {
+        const double angle = i * M_PI / 4.0;
+        const double kx = cx + r * std::cos(angle);
+        const double ky = cy + r * std::sin(angle);
+        if (const double d = dist(px, py, kx, ky); d < minDist) {
+            minDist = d;
+        }
+    }
+
+    const double angle = std::atan2(dy, dx);
+    double nx = cx + r * std::cos(angle);
+    double ny = cy + r * std::sin(angle);
+
     SnapCandidate c;
-    c.dist = std::abs(len - r);
     c.obj = cobj;
+    c.dist = minDist;
     c.valid = true;
+    c.snapPoint = {nx, ny};
 
     return c;
 }
 
-SnapEngine::SnapResult SnapEngine::refineSnap(const SnapRequest& req, const ObjectData& obj) {
-    if (obj.et == ObjType::ET_POINT) {
-        auto res = refinePoint(req, obj);
-        if (req.object == point) {
-            res.action = pointOnPoint;
-        }
-    }
-
-    if (obj.et == ObjType::ET_LINE) {
-        auto res = refineLine(req, obj);
-        if (req.object == point) {
-            res.action = pointOnLine;
-        }
-    }
-
-    if (obj.et == ObjType::ET_CIRCLE) {
-        auto res = refineCircle(req, obj);
-        if (req.object == point) {
-            res.action = pointOnCircle;
-        }
-    }
-
-    auto res = axisFallback(req);
-    if (req.object == point) {
-        res.action = pointOnAxis;
-    }
-
-    return res;
-}
-
-SnapEngine::SnapResult SnapEngine::refinePoint(const SnapRequest&, const ObjectData& p) {
-    SnapResult r{};
-    const OurPaintDCM::Utils::ID id((p.id.get()));
-    r.ids.push_back(id);
-    r.candidate.first = p.params[0];
-    r.candidate.second = p.params[1];
-    return r;
-}
-
-SnapEngine::SnapResult SnapEngine::refineLine(const SnapRequest& req, const ObjectData& l) {
-    SnapResult r{};
-    const OurPaintDCM::Utils::ID id((l.id.get()));
-    r.ids.push_back(id);
-
-    double x1 = l.params[0];
-    double y1 = l.params[1];
-    double x2 = l.params[2];
-    double y2 = l.params[3];
+SnapEngine::SnapResult SnapEngine::generateSnapForObject(const SnapRequest& req, const ObjectData& obj) {
+    SnapResult result;
+    result.ids.push_back(OurPaintDCM::Utils::ID(obj.id.get()));
+    result.action = TypeAction::pointOnPoint;
 
     double px = req.cursor.first;
     double py = req.cursor.second;
 
-    return r;
-}
+    if (obj.et == ObjType::ET_POINT) {
+        result.candidate = {roundCoord(obj.params[0]), roundCoord(obj.params[1])};
+    } else if (obj.et == ObjType::ET_LINE) {
+        double x1 = roundCoord(obj.params[0]);
+        double y1 = roundCoord(obj.params[1]);
+        double x2 = roundCoord(obj.params[2]);
+        double y2 = roundCoord(obj.params[3]);
 
-SnapEngine::SnapResult SnapEngine::refineCircle(const SnapRequest& req, const ObjectData& c) {
-    SnapResult r{};
-    const OurPaintDCM::Utils::ID id((c.id.get()));
-    r.ids.push_back(id);
+        double centerX = roundCoord((x1 + x2) / 2.0);
+        double centerY = roundCoord((y1 + y2) / 2.0);
 
-    const double cx = c.params[0];
-    double cy = c.params[1];
-    const double radius = c.params[2];
+        const std::vector<std::pair<double, double>> keyPoints = {
+            {x1, y1},
+            {centerX, centerY},
+            {x2, y2}
+        };
 
-    const double px = req.cursor.first;
-    const double py = req.cursor.second;
+        double bestDist = std::numeric_limits<double>::max();
+        std::pair<double, double> bestPoint = keyPoints[0];
 
-    const double dx = px - cx;
-    const double dy = py - cy;
+        for (const auto& point : keyPoints) {
+            double d = dist(px, py, point.first, point.second);
+            if (d < bestDist) {
+                bestDist = d;
+                bestPoint = point;
+            }
+        }
 
-    const double len = std::sqrt(dx * dx + dy * dy);
-    if (len == 0.0) {
-        r.candidate = {cx + radius, cy};
-        return r;
+        double nx, ny;
+        closestPointOnSegment(px, py, x1, y1, x2, y2, nx, ny);
+        nx = roundCoord(nx);
+        ny = roundCoord(ny);
+
+        if (const double distToLine = dist(px, py, nx, ny); distToLine < SNAP_THRESHOLD && distToLine < bestDist) {
+            result.candidate = {nx, ny};
+        } else {
+            result.candidate = bestPoint;
+        }
+    } else if (obj.et == ObjType::ET_CIRCLE) {
+        const double cx = roundCoord(obj.params[0]);
+        const double cy = roundCoord(obj.params[1]);
+        const double r = obj.params[2];
+
+        std::vector<std::pair<double, double>> circlePoints;
+
+        for (double angles[] = {0, 45, 90, 135, 180, 225, 270, 315}; double deg : angles) {
+            const double rad = deg * M_PI / 180.0;
+            const double nx = cx + r * std::cos(rad);
+            const double ny = cy + r * std::sin(rad);
+            circlePoints.push_back({roundCoord(nx), roundCoord(ny)});
+        }
+
+        double bestDist = std::numeric_limits<double>::max();
+        auto bestPoint = circlePoints[0];
+
+        for (const auto& point : circlePoints) {
+            if (const double d = dist(px, py, point.first, point.second); d < bestDist) {
+                bestDist = d;
+                bestPoint = point;
+            }
+        }
+
+        const double dx = px - cx;
+        const double dy = py - cy;
+
+        if (const double len = std::sqrt(dx * dx + dy * dy); len > 0) {
+            if (const double distToCircle = std::abs(len - r); distToCircle < SNAP_THRESHOLD) {
+                const double angleRad = std::atan2(dy, dx);
+                double angleDeg = angleRad * 180.0 / M_PI;
+                if (angleDeg < 0) angleDeg += 360.0;
+
+                const int nearestMultiple = static_cast<int>(std::round(angleDeg / 45.0)) % 8;
+                const double snapDeg = nearestMultiple * 45.0;
+                const double snapRad = snapDeg * M_PI / 180.0;
+
+                const double nx = cx + r * std::cos(snapRad);
+                const double ny = cy + r * std::sin(snapRad);
+                result.candidate = {roundCoord(nx), roundCoord(ny)};
+                return result;
+            }
+        }
+
+        result.candidate = bestPoint;
     }
 
-    double nx = cx + (dx / len) * radius;
-    double ny = cy + (dy / len) * radius;
-
-    r.candidate = {nx, ny};
-
-    return r;
+    return result;
 }
 
 SnapEngine::SnapResult SnapEngine::axisFallback(const SnapRequest& req) {
-    SnapResult r{};
+    SnapResult r;
+    r.action = TypeAction::pointOnAxis;
 
     double px = req.cursor.first;
+    double py = req.cursor.second;
 
-    if (double py = req.cursor.second; std::abs(px) < std::abs(py)) {
+    if (std::abs(py) < SNAP_THRESHOLD) {
+        r.candidate = {px, 0.0};
+    } else if (std::abs(px) < SNAP_THRESHOLD) {
+        r.candidate = {0.0, py};
+    } else if (std::abs(px) < std::abs(py)) {
         r.candidate = {0.0, py};
     } else {
         r.candidate = {px, 0.0};
@@ -200,4 +233,39 @@ SnapEngine::SnapResult SnapEngine::axisFallback(const SnapRequest& req) {
     return r;
 }
 
-double SnapEngine::dist(const double x1, const double y1, const double x2, const double y2) { return std::hypot(x2 - x1, y2 - y1); }
+double SnapEngine::closestPointOnSegment(double px, double py, double x1, double y1, double x2, double y2, double& nx, double& ny) {
+    const double ax = px - x1;
+    const double ay = py - y1;
+    const double bx = x2 - x1;
+    const double by = y2 - y1;
+
+    const double dot = ax * bx + ay * by;
+    const double len2 = bx * bx + by * by;
+
+    if (len2 == 0) {
+        nx = x1;
+        ny = y1;
+        return dist(px, py, x1, y1);
+    }
+
+    double t = dot / len2;
+    t = std::clamp(t, 0.0, 1.0);
+
+    nx = x1 + t * bx;
+    ny = y1 + t * by;
+
+    return dist(px, py, nx, ny);
+}
+
+double SnapEngine::dist(const double x1, const double y1, const double x2, const double y2) {
+    return std::hypot(x2 - x1, y2 - y1);
+}
+
+double SnapEngine::roundCoord(const double value) {
+    const double nearestInt = std::round(value);
+    if (constexpr double EPS = 1e-8; std::abs(value - nearestInt) < EPS) {
+        return nearestInt;
+    }
+
+    return std::round(value * 1e6) / 1e6;
+}

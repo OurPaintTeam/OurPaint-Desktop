@@ -19,18 +19,13 @@ void PointTool::onMouseMove(const input::MouseMoveEvent& e) {
         );
 
     if (const auto res = snapEngine_.getHint(req); res.action == SnapEngine::TypeAction::pointOnPoint) {
-        std::cout<< res.candidate.first << std::endl;
-        std::cout<< res.candidate.second << std::endl;
+        std::cout<< res.candidate.first <<" "<<res.candidate.second << std::endl;
         if (!res.ids.empty()) {
-        std::cout<< res.ids[0].id;
+        std::cout<<"ID "<< res.ids[0].id << std::endl;
         }
     }
     if (const auto res = snapEngine_.getHint(req); res.action == SnapEngine::TypeAction::pointOnAxis) {
-        std::cout<< res.candidate.first << std::endl;
-        std::cout<< res.candidate.second << std::endl;
-        if (!res.ids.empty()) {
-            std::cout<< res.ids[0].id;
-        }
+        std::cout<<"CAND AXIS"<< res.candidate.first<<" "<< res.candidate.second << std::endl;
     }
 }
 
