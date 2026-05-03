@@ -114,7 +114,7 @@ void AxisTexts::update() {
     const glm::vec2 screen = camera_.worldToScreenFramebuffer(glm::vec2(0.0f, 0));
     TextObject label;
     label.utf8Text = "0";
-    label.placement.screen.anchorPx.x = screenX - pixelsPadding;  // левее оси
+    label.placement.screen.anchorPx.x = screen.x - pixelsPadding;
     label.placement.screen.anchorPx.y = camera_.hFramebuffer() - screen.y - pixelsPadding;
     label.style.r = textConfig.textColor.r;
     label.style.g = textConfig.textColor.g;

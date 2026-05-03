@@ -60,4 +60,8 @@ if (TYPE_OF_OPTIMIZATION)
     endif ()
 endif ()
 
-
+add_custom_command(TARGET ${PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/shader_script.bat
+    COMMENT "Copy shaders"
+)
