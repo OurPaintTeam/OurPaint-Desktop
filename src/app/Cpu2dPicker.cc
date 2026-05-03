@@ -56,8 +56,8 @@ bool lineIntersectsRectFast(double x1, double y1, double x2, double y2,
 }
 
 std::vector<core::ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
-    glm::dvec2 p1 = camera_.screenToWorld({screenMinX, screenMinY});
-    glm::dvec2 p2 = camera_.screenToWorld({screenMaxX, screenMaxY});
+    glm::dvec2 p1 = camera_.screenLogicalToWorld({screenMinX, screenMinY});
+    glm::dvec2 p2 = camera_.screenLogicalToWorld({screenMaxX, screenMaxY});
 
     double rx1 = std::min(p1.x, p2.x);
     double ry1 = std::min(p1.y, p2.y);
@@ -122,7 +122,7 @@ std::vector<core::ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMi
 }
 
 std::optional<PickResult> Cpu2dPicker::pickPointAt(double screenX, double screenY) const {
-    glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
+    glm::dvec2 v = camera_.screenLogicalToWorld({screenX, screenY});
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
     std::vector<core::ObjectData> points = scene_.getPoints();
@@ -141,7 +141,7 @@ std::optional<PickResult> Cpu2dPicker::pickPointAt(double screenX, double screen
 }
 
 std::optional<PickResult> Cpu2dPicker::pickLineAt(double screenX, double screenY) const {
-    glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
+    glm::dvec2 v = camera_.screenLogicalToWorld({screenX, screenY});
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
     std::vector<core::ObjectData> lines_ = scene_.getLines();
@@ -191,7 +191,7 @@ std::optional<PickResult> Cpu2dPicker::pickLineAt(double screenX, double screenY
 }
 
 std::optional<PickResult> Cpu2dPicker::pickCircleAt(double screenX, double screenY) const {
-    glm::dvec2 v = camera_.screenToWorld({screenX, screenY});
+    glm::dvec2 v = camera_.screenLogicalToWorld({screenX, screenY});
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
     std::vector<core::ObjectData> circles_ = scene_.getCircles();

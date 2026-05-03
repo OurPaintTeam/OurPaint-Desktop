@@ -33,6 +33,7 @@ private:
     GLuint gridQuadVbo_ = 0;
 
     GLint gridColorLoc_ = -1;
+    GLint axisColorLoc_ = -1;
     GLint gridTransformLoc_ = -1;
     GLint gridZoomLoc_ = -1;
     GLint gridInvViewProjLoc_ = -1;
@@ -124,7 +125,7 @@ private:
     void renderPoints       (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
     void renderLines        (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
     void renderCircles      (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
-    void renderSelectionRect(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderRect         (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
 
 
     void initGlobalState();
@@ -140,7 +141,7 @@ private:
     bool createProgramFromFiles(const char* vertPath, const char* fragPath, GLuint& outProgram);
 
     void initRenderText();
-    void renderText(std::string text, float x, float y, float scale, glm::vec3 color);
+    void renderText(const rendering::text::TextObject& textObj);
 
     struct Character {
         unsigned int TextureID;  // ID handle of the glyph texture
@@ -154,6 +155,7 @@ private:
     GLuint textProgram_ = 0;
     GLuint textVao_ = 0;
     GLuint textQuadVbo_ = 0;
+    GLint textTransformLoc_ = -1;
 };
 
 }

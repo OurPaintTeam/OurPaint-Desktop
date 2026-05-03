@@ -8,6 +8,12 @@
 #include "RenderData.h"
 #include "shaders/shader_utils.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+FT_Library  library;   /* handle to library     */
+FT_Face     face;      /* handle to face object */
+
 using namespace renderer;
 
 namespace {
@@ -39,7 +45,6 @@ struct RectInstance {
 }
 
 bool OpenGLRenderer::initialize() {
-    initRenderText();
     initGlobalState();
     if (!initGridPipeline()) {
         return false;
@@ -56,7 +61,7 @@ bool OpenGLRenderer::initialize() {
     if (!initRectPipeline()) {
         return false;
     }
-
+    initRenderText();
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -157,13 +162,11 @@ void OpenGLRenderer::render(const RenderData& rd, const Camera2D& camera) {
     renderLines(rd, camera, mvp);
     renderPoints(rd, camera, mvp);
     renderCircles(rd, camera, mvp);
-    renderSelectionRect(rd, camera, mvp);
+    renderRect(rd, camera, mvp);
 
-    // for (const auto& text : rd.texts) {
-    //     renderText(text, 1.0, 1.0, .4, {0.0, 0.0, 0.0});
-    // }
-    renderText(rd.linePrview.str, rd.linePrview.posX, rd.linePrview.posY, 0.4, {0.0, 0.0, 0.0});
-    renderText(rd.pos, rd.posX, rd.posY, .4, {0.0, 0.0, 0.0});
+    for (const auto& t : rd.textObjects_) {
+        renderText(t);
+    }
 }
 
 void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
@@ -171,32 +174,27 @@ void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera,
         return;
     }
 
-    //std::cout << "Camera center: " << camera.center().x << ' ' << camera.center().y << ", zoom: " << camera.zoom() << '\n';
-
     glUseProgram(gridProgram_);
 
     glm::mat4 viewProj = camera.viewProjectionMatrix();
     glm::mat4 invViewProj = glm::inverse(viewProj);
 
-    double zoom = camera.zoom() / 100.0;
-    double zoomLevel = std::log2(zoom);
-    double zoomFactor = std::pow(2.0, std::floor(zoomLevel));
+    if (gridCellSizeLoc_ >= 0) {
+        glUniform1f(gridCellSizeLoc_, static_cast<float>(scene.gridInfo.cellSize));
+    }
 
-    double cellSize = 1.0 / zoomFactor;
-    double subCellSize = cellSize / 5.0;
+    if (gridSubCellSizeLoc_ >= 0) {
+        glUniform1f(gridSubCellSizeLoc_, static_cast<float>(scene.gridInfo.subCellSize));
+    }
 
-    double camX = camera.center().x;
-    double camY = camera.center().y;
-
-    double originX = std::floor(camX / cellSize) * cellSize;
-    double originY = std::floor(camY / cellSize) * cellSize;
-
-    glUniform1f(gridCellSizeLoc_, static_cast<float>(cellSize));
-    glUniform1f(gridSubCellSizeLoc_, static_cast<float>(subCellSize));
-    glUniform2f(gridOriginLoc_, static_cast<float>(originX), static_cast<float>(originY));
-
+    glm::vec3 c = scene.gridInfo.gridColor;
     if (gridColorLoc_ >= 0) {
-        glUniform3f(gridColorLoc_, 0.5f, 0.5f, 0.5f);
+        glUniform3f(gridColorLoc_, c.r, c.g, c.b);
+    }
+
+    c = scene.gridInfo.axisColor;
+    if (axisColorLoc_ >= 0) {
+        glUniform3f(axisColorLoc_, c.r, c.g, c.b);
     }
 
     if (gridZoomLoc_ >= 0) {
@@ -637,7 +635,7 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
     glUseProgram(0);
 }
 
-void OpenGLRenderer::renderSelectionRect(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
+void OpenGLRenderer::renderRect(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
     if (!rectProgram_ || !rectVao_ || !rectQuadVbo_ || !rectInstanceVbo_) {
         return;
     }
@@ -699,13 +697,13 @@ void OpenGLRenderer::initGlobalState() {
 bool OpenGLRenderer::initGridPipeline() {
     createProgramFromFiles("shaders/grid.vert", "shaders/grid.frag", gridProgram_);
 
-    gridColorLoc_ = glGetUniformLocation(gridProgram_, "uColor");
+    gridColorLoc_ = glGetUniformLocation(gridProgram_, "uGridColor");
+    axisColorLoc_ = glGetUniformLocation(gridProgram_, "uAxisColor");
     gridZoomLoc_ = glGetUniformLocation(gridProgram_, "uZoom");
     gridInvViewProjLoc_ = glGetUniformLocation(gridProgram_, "uInvViewProj");
 
     gridCellSizeLoc_ = glGetUniformLocation(gridProgram_, "uCellSize");
     gridSubCellSizeLoc_ = glGetUniformLocation(gridProgram_, "uSubCellSize");
-    gridOriginLoc_ = glGetUniformLocation(gridProgram_, "uGridOrigin");
 
     const float quadVerts[] = {
         -1.0f, -1.0f,
@@ -1103,18 +1101,6 @@ bool OpenGLRenderer::createProgramFromFiles(const char* vertPath, const char* fr
     return true;
 }
 
-
-
-
-
-
-
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
-FT_Library  library;   /* handle to library     */
-FT_Face     face;      /* handle to face object */
-
 void OpenGLRenderer::initRenderText() {
     FT_Error error = FT_Init_FreeType(&library);
     if (error) {
@@ -1145,17 +1131,20 @@ void OpenGLRenderer::initRenderText() {
     error = FT_Set_Char_Size(
           face,    /* handle to face object         */
           0,       /* char_width in 1/64 of points  */
-          16*64,   /* char_height in 1/64 of points */
+          5*64,   /* char_height in 1/64 of points */
           300,     /* horizontal device resolution  */
           300 );   /* vertical device resolution    */
+
+    // error = FT_Set_Pixel_Sizes(
+    //     face,       // объект шрифта
+    //     0,          // ширина в px, 0 = авто
+    //     24          // высота в px
+    // );
+
     if (error) {
         // ... an error occurred ...
         return;
     }
-
-    std::cout << "OKS" << '\n';
-
-
 
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
@@ -1165,7 +1154,7 @@ void OpenGLRenderer::initRenderText() {
         // load character glyph
         if (FT_Load_Char(face, c, FT_LOAD_RENDER))
         {
-            std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+            std::cout << "ERROR::FREETYPE: Failed to load Glyph" << std::endl;
             continue;
         }
         // generate texture
@@ -1211,40 +1200,85 @@ void OpenGLRenderer::initRenderText() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    createProgramFromFiles("shaders/text.vert", "shaders/text.frag", textProgram_);
+    if (!createProgramFromFiles("shaders/text.vert", "shaders/text.frag", textProgram_)) {
+        std::cout << "ERROR::FREETYPE: Failed create program from files" << std::endl;
+    }
+
+    textTransformLoc_ = glGetUniformLocation(textProgram_, "uTransform");
 }
 
-void OpenGLRenderer::renderText(std::string text, float x, float y, float scale, glm::vec3 color) {
+void OpenGLRenderer::renderText(const rendering::text::TextObject& textObj) {
     if (!textProgram_) {
         std::cout << "Program not init!\n";
         return;
     }
+
     // activate corresponding render state
     glUseProgram(textProgram_);
-    glUniform3f(glGetUniformLocation(textProgram_, "textColor"), color.x, color.y, color.z);
+    glUniform3f(glGetUniformLocation(textProgram_, "textColor"), textObj.style.r, textObj.style.g, textObj.style.b);
 
-    static bool once = true;
-    if (once) {
-        glm::mat4 proj = glm::ortho(0.0f, (float)width_, 0.0f, (float)height_);
-        glUniformMatrix4fv(glGetUniformLocation(textProgram_, "projection"), 1, GL_FALSE, glm::value_ptr(proj));
-        once = false;
+    glm::mat4 ortho = glm::ortho(0.0f, (float)width_, 0.0f, (float)height_);
+    if (textTransformLoc_ >= 0) {
+        glUniformMatrix4fv(textTransformLoc_, 1, GL_FALSE, glm::value_ptr(ortho));
     }
 
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(textVao_);
 
-    // iterate through all characters
-    std::string::const_iterator c;
-    for (c = text.begin(); c != text.end(); c++)
-    {
-        Character ch = Characters[*c];
+    const std::string& text = textObj.utf8Text;
 
-        float xpos = x + ch.Bearing.x * scale;
-        float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+    float textWidth = 0.0f;
+    float textAscent = 0.0f;
+    float textDescent = 0.0f;
 
-        float w = ch.Size.x * scale;
-        float h = ch.Size.y * scale;
-        // update VBO for each character
+
+    for (char c : text) {
+        const Character& ch = Characters.at(c);
+        textWidth += (ch.Advance >> 6);
+        if (ch.Bearing.y > textAscent) textAscent = ch.Bearing.y;
+        float depth = ch.Size.y - ch.Bearing.y;
+        if (depth > textDescent) textDescent = depth;
+    }
+
+    using namespace rendering::text;
+
+    double x = textObj.placement.screen.anchorPx.x;
+    switch (textObj.style.hAlign) {
+        case TextHorizontalAlign::Left:
+            break;
+        case TextHorizontalAlign::Center:
+            x -= textWidth * 0.5f;
+            break;
+        case TextHorizontalAlign::Right:
+            x -= textWidth;
+            break;
+    }
+
+    double y = textObj.placement.screen.anchorPx.y;
+    switch (textObj.style.vAlign) {
+        case TextVerticalAlign::Top:
+            y -= textAscent;
+            break;
+        case TextVerticalAlign::Middle:
+            y -= (textAscent + textDescent) * 0.5f;
+            break;
+        case TextVerticalAlign::Baseline:
+            // y = anchorPx.y - baseline и есть anchor
+            break;
+        case TextVerticalAlign::Bottom:
+            y += textDescent;
+            break;
+    }
+
+    for (char c : text) {
+        Character ch = Characters.at(c);
+
+        float xpos = x + ch.Bearing.x;
+        float ypos = y - (ch.Size.y - ch.Bearing.y);
+
+        float w = ch.Size.x;
+        float h = ch.Size.y;
+
         float vertices[6][4] = {
             { xpos,     ypos + h,   0.0f, 0.0f },
             { xpos,     ypos,       0.0f, 1.0f },
@@ -1254,17 +1288,16 @@ void OpenGLRenderer::renderText(std::string text, float x, float y, float scale,
             { xpos + w, ypos,       1.0f, 1.0f },
             { xpos + w, ypos + h,   1.0f, 0.0f }
         };
-        // render glyph texture over quad
+
         glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-        // update content of VBO memory
         glBindBuffer(GL_ARRAY_BUFFER, textQuadVbo_);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // render quad
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-        x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+
+        x += (ch.Advance >> 6);
     }
+
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
 }

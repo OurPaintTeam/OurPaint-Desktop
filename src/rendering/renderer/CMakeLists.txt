@@ -38,6 +38,7 @@ add_library(ourpaint_rendering STATIC
         OpenGLRenderer.cc
         Camera2D.cc
         Logger.cc
+        #text/FreeTypeFontManager.cc
 )
 target_include_directories(ourpaint_rendering PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/

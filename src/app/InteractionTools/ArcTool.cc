@@ -101,7 +101,7 @@ bool ArcTool::cancel() {
 }
 
 glm::dvec2 ArcTool::screenToWorld(double x, double y) const {
-    return camera_.screenToWorld({x, y});
+    return camera_.screenLogicalToWorld({x, y});
 }
 
 ArcTool::Arc ArcTool::buildArcFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2) {

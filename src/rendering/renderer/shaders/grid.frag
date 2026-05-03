@@ -3,16 +3,13 @@
 in vec2 vNdcPos;
 out vec4 FragColor;
 
-uniform vec3 uColor;
+uniform vec3 uGridColor;
+uniform vec3 uAxisColor;
 uniform float uZoom;
 uniform mat4 uInvViewProj;
-
 uniform float uCellSize;
 uniform float uSubCellSize;
-uniform vec2 uGridOrigin;
 
-const float BASE_CELL_SIZE = 1.0;
-const float SUBGRID_DIVISIONS = 5.0;
 const float SUBGRID_ALPHA = 0.3;
 const float AXIS_WIDTH_MULT = 2.0;
 const float GRID_ALPHA = 0.7;
@@ -22,18 +19,8 @@ void main() {
     vec4 worldPos4 = uInvViewProj * ndc;
     vec2 worldPos = worldPos4.xy / worldPos4.w;
 
-    float zoom = uZoom / 100.0;
-
-    // Adaptive cell size based on zoom
-    // Use log2 to create discrete zoom levels
-    float zoomLevel = log2(zoom);
-    float zoomFactor = pow(2.0, floor(zoomLevel));
-
-    // Base cell size adapts with zoom
-    float cellSize = BASE_CELL_SIZE / zoomFactor;
-
-    // Line width stays consistent in screen space
-    float lineWidth = 0.01 / zoom;
+    float cellSize = uCellSize;
+    float lineWidth = 0.01 / (uZoom / 100.0);
 
     // Calculate grid lines
     vec2 gridPos = worldPos / cellSize;
@@ -46,7 +33,7 @@ void main() {
     float isLine = max(lineX, lineY);
 
     // Sub-grid for finer detail when zoomed in
-    float subCellSize = cellSize / SUBGRID_DIVISIONS;
+    float subCellSize = uSubCellSize;
     vec2 subGridPos = worldPos / subCellSize;
     vec2 subGridFrac = fract(subGridPos);
     vec2 subDistToLine = min(subGridFrac, 1.0 - subGridFrac) * subCellSize;
@@ -67,8 +54,8 @@ void main() {
 
     isLine = max(isLine, axes);
 
-    vec3 gridColor = uColor;
-    vec3 axisColor = vec3(0.9, 0.2, 0.2);
+    vec3 gridColor = uGridColor;
+    vec3 axisColor = uAxisColor;
 
     // Adjust alpha based on zoom for better visibility
     float alpha = isLine * GRID_ALPHA;

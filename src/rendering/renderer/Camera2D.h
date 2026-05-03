@@ -3,83 +3,94 @@
 
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <cmath>
 
-enum class RenderBackend {
-    OpenGL,
-    Vulkan,
+struct Viewport2D {
+    int logicalWidth = 1;
+    int logicalHeight = 1;
+    double devicePixelRatio = 1.0;
+
+    int framebufferWidth() const {
+        return static_cast<int>(std::round(logicalWidth * devicePixelRatio));
+    }
+
+    int framebufferHeight() const {
+        return static_cast<int>(std::round(logicalHeight * devicePixelRatio));
+    }
 };
 
-struct ViewportSize {
-    int width = 1;
-    int height = 1;
-};
+struct RectD {
+    glm::dvec2 min{0.0, 0.0};
+    glm::dvec2 max{0.0, 0.0};
 
-
-struct RenderTargetDesc {
-    int           width;
-    int           height;
-    float         devicePixelRatio;
-    RenderBackend backend;
-
-    // OpenGL: всегда 0 (default framebuffer)
-    // Vulkan: зарезервировано, используй platformHandle
-    uint32_t      framebufferId = 0;
-
-    // Платформенный хэндл если нужен (HWND, ANativeWindow, etc.)
-    // nullptr если не нужен на этой платформе
-    void*         platformHandle = nullptr;
-};
-
-struct Vec2 {
-    double x = 0.0;
-    double y = 0.0;
-};
-
-struct Mat3 {
-    double m[9] = {0};
+    double width() const { return max.x - min.x; }
+    double height() const { return max.y - min.y; }
+    glm::dvec2 center() const { return (min + max) * 0.5; }
 };
 
 class Camera2D {
 public:
-    void setViewport(int width, int height, double devicePixelRatio = 1.0);
+    void setViewport(int logicalWidth, int logicalHeight, double devicePixelRatio = 1.0);
+    const Viewport2D& viewport() const { return viewport_; }
+
     void setCenter(const glm::dvec2& center);
+    const glm::dvec2& centerWorld() const { return center_; }
+    glm::dvec2 centerScreenLogical() const;
+    glm::dvec2 centerScreenFramebuffer() const;
+
     void setZoom(double zoom);
 
-    const glm::dvec2& center() const { return center_; }
     double zoom() const { return zoom_; }
+    double minZoom() const { return kMinZoom; }
+    double maxZoom() const { return kMaxZoom; }
 
-    void panScreen(double dx, double dy);
-    void zoomAtScreen(double factor, const glm::dvec2& screenPoint);
+    int wLogical() const { return viewport_.logicalWidth; }
+    int hLogical() const { return viewport_.logicalHeight; }
+    int wFramebuffer() const;
+    int hFramebuffer() const;
 
-    glm::dvec2 screenToWorld(const glm::dvec2& p) const;
-    glm::dvec2 worldToScreen(const glm::dvec2& p) const;
+    void panScreenLogical(double dx, double dy);
+    void panScreenFramebuffer(double dx, double dy);
 
+    void zoomAtScreenLogical(double factor, glm::dvec2 screenPointLogical);
+    void setZoomAtScreenLogical(double newZoom, glm::dvec2 screenPointLogical);
+
+    void zoomAtScreenFramebuffer(double factor, glm::dvec2 screenPointFramebuffer);
+    void setZoomAtScreenFramebuffer(double newZoom, glm::dvec2 screenPointFramebuffer);
+
+    glm::dvec2 screenLogicalToWorld(glm::dvec2 p) const;
+    glm::dvec2 worldToScreenLogical(glm::dvec2 p) const;
+
+    glm::dvec2 screenFramebufferToWorld(glm::dvec2 p) const;
+    glm::dvec2 worldToScreenFramebuffer(glm::dvec2 p) const;
+
+    double screenLogicalToWorld(double pixels) const;
+    double worldToScreenLogical(double worldUnit) const;
+
+    double screenFramebufferToWorld(double pixels) const;
+    double worldToScreenFramebuffer(double worldUnit) const;
+
+    // Matrices map world coordinates to logical screen coordinates, then to clip space.
     glm::mat4 viewMatrix() const;
     glm::mat4 projectionMatrix() const;
     glm::mat4 viewProjectionMatrix() const;
 
-    // glm::dvec2 viewportCenterScreen() const;
-    // glm::dvec2 visibleMinWorld() const;
-    // glm::dvec2 visibleMaxWorld() const;
-    // void fitToBox(glm::dvec2 minP, glm::dvec2 maxP, double paddingPixels);
+    glm::dvec2 visibleMinWorld() const;
+    glm::dvec2 visibleMaxWorld() const;
 
-    void clampToWorld();
+    RectD visibleWorldRect() const;
 
 private:
+    Viewport2D viewport_;
+
     glm::dvec2 center_{0.0, 0.0};
 
-    // pixels per world unit
+    // Logical pixels per world unit
     double zoom_ = 100.0;
-
-    int viewportW_ = 1;
-    int viewportH_ = 1;
-    double dpr_ = 1.0;
 
     // World units
     static constexpr double kMinZoom = 1e-6;
     static constexpr double kMaxZoom = 1e6;
-    static constexpr glm::dvec2 worldMin_ = {-10.0, -10.0};
-    static constexpr glm::dvec2 worldMax_ = {10.0, 10.0};
 };
 
 #endif // ! OURPAINT_RENDERING_VIEW2D_H_

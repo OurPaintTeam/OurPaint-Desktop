@@ -14,7 +14,7 @@ LineTool::LineTool(DocumentManager& documentManager, Camera2D& camera, OverlayMo
     : documentManager_(documentManager), camera_(camera), overlay_(overlay) {}
 
 void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
-    glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
+    glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
     // std::ostringstream oss;
@@ -62,7 +62,7 @@ void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
 
 
 void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
-    glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
+    glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         if (state_ == State::WaitingFirstPoint) {

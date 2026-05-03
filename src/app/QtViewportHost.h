@@ -20,9 +20,8 @@ public:
     ~QtViewportHost() override;
 
     uint32_t         id()                   const override;
-    ViewportSize     getSize()              const override;
+    Viewport2D       getSize()              const override;
     float            getDevicePixelRatio()  const override;
-    RenderTargetDesc renderTargetDesc()     const override;
 
     void requestRedraw()               override;
     void setContinuousRedraw(bool on)  override;

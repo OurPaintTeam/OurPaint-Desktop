@@ -1,7 +1,7 @@
 #ifndef OURPAINT_RENDERING_IVEIWPORTHOST_H_
 #define OURPAINT_RENDERING_IVEIWPORTHOST_H_
 
-class ViewportSize;
+class Viewport2D;
 class IViewportController;
 class RenderTargetDesc;
 
@@ -13,9 +13,8 @@ public:
 
     virtual uint32_t id() const = 0;
 
-    virtual ViewportSize getSize() const = 0;
+    virtual Viewport2D getSize() const = 0;
     virtual float getDevicePixelRatio() const = 0;
-    virtual RenderTargetDesc renderTargetDesc() const = 0;
 
     // Запросить один кадр.
     virtual void requestRedraw() = 0;

@@ -3,11 +3,15 @@
 #include "OverlayModel.h"
 #include "RenderData.h"
 #include "objects/Objects.h"
+#include "AxisTexts.h"
 
 using namespace core;
 
-RenderDataBuilder::RenderDataBuilder(const core::Scene& scene, const OverlayModel& overlay, renderer::RenderData& renderData)
-    : scene_(scene), overlay_(overlay), renderData_(renderData) {}
+RenderDataBuilder::RenderDataBuilder(const Scene& scene,
+                                     const OverlayModel& overlay,
+                                     AxisTexts& axis,
+                                     renderer::RenderData& renderData)
+    : scene_(scene), overlay_(overlay), axis_(axis), renderData_(renderData) {}
 
 void RenderDataBuilder::rebuild() {
     renderData_.points.clear();
@@ -145,30 +149,20 @@ void RenderDataBuilder::rebuild() {
         }
     }
 
-    // if (points.size() >= 3) {
-    //     CircleArc arc = buildArcFromThreePoints(points[0], points[1], points[2]);
-    //     if (arc.valid) {
-    //         renderer::CircleArc c(arc.cx, arc.cy, arc.r, arc.startAngle, arc.endAngle);
-    //         renderData_.circles.push_back(c);
-    //     }
-    // }
 
 
 
 
-    // TODO
-    renderData_.texts.clear();
-    // for (const auto& text : overlay_.texts_) {
-    //     renderData_.texts.push_back(text);
-    // }
+    // TODO text EXPERIMENTAL
 
-    renderData_.pos = overlay_.pos;
-    renderData_.posX = overlay_.posX;
-    renderData_.posY = overlay_.posY;
+    axis_.update();
+    renderData_.gridInfo.cellSize = axis_.getGridInfo().cellSize;
+    renderData_.gridInfo.subCellSize = axis_.getGridInfo().subCellSize;
+    renderData_.gridInfo.gridColor = axis_.getGridInfo().gridColor;
+    renderData_.gridInfo.axisColor = axis_.getGridInfo().axisColor;
 
-    renderData_.linePrview.str = overlay_.lp;
-    renderData_.linePrview.posX = overlay_.lpX;
-    renderData_.linePrview.posY = overlay_.lpY;
+    renderData_.textObjects_.clear();
+    renderData_.textObjects_ = axis_.getLabels();
 }
 
 

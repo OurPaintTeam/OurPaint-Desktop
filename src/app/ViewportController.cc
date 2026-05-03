@@ -21,7 +21,7 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
         const double dx = e.x - lastX_;
         const double dy = e.y - lastY_;
 
-        camera2D_.panScreen(dx, dy);
+        camera2D_.panScreenLogical(dx, dy);
     }
 
     lastX_ = e.x;
@@ -56,7 +56,7 @@ bool ViewportController::onWheel(const input::WheelEvent& e) {
     if (steps != 0.0) {
         constexpr double base = 1.2;
         const double factor = std::pow(base, steps);
-        camera2D_.zoomAtScreen(factor, {e.x, e.y});
+        camera2D_.zoomAtScreenLogical(factor, {e.x, e.y});
     }
 
     requestRedraw();

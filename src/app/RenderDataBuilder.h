@@ -4,11 +4,13 @@
 namespace core {class Scene;}
 class OverlayModel;
 namespace renderer { class RenderData; }
+class AxisTexts;
 
 class RenderDataBuilder {
 public:
     RenderDataBuilder(const core::Scene& scene,
                       const OverlayModel& overlay,
+                      AxisTexts& axis,
                       renderer::RenderData& renderData);
 
     void rebuild();
@@ -16,6 +18,7 @@ public:
 private:
     const core::Scene& scene_;
     const OverlayModel& overlay_;
+    AxisTexts& axis_;
     renderer::RenderData& renderData_;
 };
 

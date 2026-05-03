@@ -24,6 +24,7 @@ class UIObserver;
 class RenderDataBuilder;
 
 class CommandConsole;
+class AxisTexts;
 
 namespace renderer { class RenderData; }
 
@@ -74,6 +75,7 @@ private:
     Cpu2dPicker* picker_;
     OverlayModel* overlay_;
     CommandConsole* commandConsole_;
+    AxisTexts* axisTexts_;
 };
 
 #endif // APPLICATION_H_

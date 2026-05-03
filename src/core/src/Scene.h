@@ -1,8 +1,6 @@
 #ifndef OURPAINT_CORE_SCENE_H_
 #define OURPAINT_CORE_SCENE_H_
 
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 #include "objects/ID.h"
 #include "objects/GeometricObjects.h"

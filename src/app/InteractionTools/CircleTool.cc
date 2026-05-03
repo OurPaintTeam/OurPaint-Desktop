@@ -290,7 +290,7 @@ bool CircleTool::cancel() {
 }
 
 glm::dvec2 CircleTool::screenToWorld(double x, double y) const {
-    return camera_.screenToWorld({x, y});
+    return camera_.screenLogicalToWorld({x, y});
 }
 
 void CircleTool::reset() {

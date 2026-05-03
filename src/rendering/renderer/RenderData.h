@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+#include "glm/glm.hpp"
+#include "text/Types.h"
+
 namespace renderer {
 struct Point {
     float x;
@@ -72,20 +75,16 @@ public:
         selectionRect.reset();
     }
 
-    struct to {
-        std::string str;
-        int posX{};
-        int posY{};
-        int a{};
-    };
 
-    std::vector<to> texts;
+    std::vector<rendering::text::TextObject> textObjects_;
 
-    to linePrview;
+    struct GridInfo {
+        float cellSize;
+        float subCellSize;
+        glm::vec3 gridColor{};
+        glm::vec3 axisColor{};
+    } gridInfo;
 
-    std::string pos;
-    int posX{};
-    int posY{};
 };
 }
 

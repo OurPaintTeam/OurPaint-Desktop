@@ -9,7 +9,7 @@ CursorTool::CursorTool(DocumentManager& documentManager, Camera2D& camera, Cpu2d
 //#include <iomanip>
 
 void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
-    glm::dvec2 v = camera_.screenToWorld({e.x, e.y});
+    glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
 
     // std::ostringstream oss;
     // oss << std::fixed << std::setprecision(3)
@@ -84,7 +84,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                     overlay_.selection_.model.replace({id});
                 }
                 state_ = State::DraggingSelection;
-                lastPos_ = camera_.screenToWorld({e.x, e.y});
+                lastPos_ = camera_.screenLogicalToWorld({e.x, e.y});
             }
         } else {
             state_ = State::MarqueeSelection;
@@ -97,7 +97,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                 overlay_.selection_.model.clear();
             }
 
-            glm::dvec2 worldPos = camera_.screenToWorld({e.x, e.y});
+            glm::dvec2 worldPos = camera_.screenLogicalToWorld({e.x, e.y});
             overlay_.selectionRect_ = OverlayModel::Rect(worldPos.x, worldPos.y, worldPos.x, worldPos.y);
             lastScreenPos_ = {e.x, e.y};
             pressWorldPos_ = worldPos;

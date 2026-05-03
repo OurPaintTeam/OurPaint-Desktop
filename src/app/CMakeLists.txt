@@ -18,6 +18,7 @@ add_executable(ourpaint
         SelectionModel.cc
         CommandConsole.cc
         CommandConsole.h
+        AxisTexts.cc
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)

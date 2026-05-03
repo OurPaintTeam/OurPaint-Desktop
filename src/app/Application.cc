@@ -15,6 +15,7 @@
 #include "RenderDataBuilder.h"
 #include "Scene.h"
 #include "ViewportController.h"
+#include "AxisTexts.h"
 
 Application::Application(int& argc, char** argv)
         : documentManager_(nullptr)
@@ -63,8 +64,11 @@ void Application::init(int& argc, char** argv) {
     // init renderer
     renderer_ = new renderer::OpenGLRenderer();
 
+    // init AxisTexts
+    axisTexts_ = new AxisTexts(*camera2D_);
+
     // init core observer
-    builder_ = new RenderDataBuilder(documentManager_->getActiveDocument()->scene(), *overlay_, *renderData_);
+    builder_ = new RenderDataBuilder(documentManager_->getActiveDocument()->scene(), *overlay_, *axisTexts_, *renderData_);
 
     // init viewport controller
     viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderData_, *builder_);
@@ -90,6 +94,7 @@ void Application::init(int& argc, char** argv) {
 
     // other
     editorSession_->select(ToolId::Cursor);
+
 
 }
 

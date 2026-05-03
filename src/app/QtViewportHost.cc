@@ -49,7 +49,7 @@ QtViewportHost::~QtViewportHost() {
 
 uint32_t QtViewportHost::id() const { return id_; }
 
-ViewportSize QtViewportHost::getSize() const {
+Viewport2D QtViewportHost::getSize() const {
     int w = static_cast<int>(QWindow::width() * devicePixelRatio());
     int h = static_cast<int>(QWindow::height() * devicePixelRatio());
     return { w, h };
@@ -57,10 +57,6 @@ ViewportSize QtViewportHost::getSize() const {
 
 float QtViewportHost::getDevicePixelRatio() const {
     return static_cast<float>(QWindow::devicePixelRatio());
-}
-
-RenderTargetDesc QtViewportHost::renderTargetDesc() const {
-    return {};
 }
 
 void QtViewportHost::requestRedraw() {
