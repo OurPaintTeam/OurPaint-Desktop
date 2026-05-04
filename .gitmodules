@@ -1,4 +1,6 @@
-[submodule "Math-MinimizerOptimizer-Module"]
-	path = Math
-	url = https://github.com/OurPaintTeam/Math-MinimizerOptimizer-Module.git
-	branch = main
+[submodule "src/core/DCM"]
+	path = src/core/DCM
+	url = https://github.com/OurPaintTeam/OurPaintDCM
+[submodule "src/UI"]
+	path = src/UI
+	url = git@github.com:OurPaintTeam/OurPaint-Desktop-UI.git

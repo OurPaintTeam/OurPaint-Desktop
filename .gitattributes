@@ -1,2 +1,1 @@
-resources/** linguist-generated
-test/testStructures/** linguist-generated
+src/rendering/renderer/fonts/* linguist-vendored
