@@ -78,7 +78,7 @@ private:
     GLint lineEdgeSoftnessLoc_ = -1;
 
     float lineHalfWidthPx = 0.0;
-    float lineEdgeSoftnessPx = 1.0;
+    float lineEdgeSoftnessPx = 1.5;
 
     float lineSelectedHalfWidthPx = 1.0;
     float lineSelectedEdgeSoftnessPx = 2.0;
