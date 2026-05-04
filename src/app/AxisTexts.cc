@@ -159,16 +159,16 @@ float AxisTexts::niceStep(float roughStep) const {
 }
 
 
-std::vector<float> AxisTexts::computeMarks(float min, float max, float step) const {
+std::vector<float> AxisTexts::computeMarks(const float min, const float max, const float step) {
     std::vector<float> marks;
     const float first = std::ceil(min / step) * step;
-    float val = first;
-    marks.push_back(val - step);
-    while (val <= max + 0.0001f) {
-        marks.push_back(val);
-        val += step;
+    const float last = std::floor(max / step) * step;
+    const int count = static_cast<int>(std::round((last - first) / step)) + 1;
+
+    marks.reserve(count);
+    for (int i = 0 - 1; i < count + 1; ++i) {
+        marks.push_back(first + i * step);
     }
-    marks.push_back(val);
     return marks;
 }
 

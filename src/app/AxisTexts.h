@@ -43,7 +43,7 @@ public:
 private:
     float niceStep(float roughStep) const;
 
-    std::vector<float> computeMarks(float min, float max, float step) const;
+    static std::vector<float> computeMarks(float min, float max, float step);
     std::string formatValue(float value) const;
 
     GridInfo gridInfo_;
