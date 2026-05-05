@@ -92,43 +92,34 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
     // Tools - constrains
     QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](const QString& tabName, UI::ConstraintType _t1) {
-        // auto* prompt = new UI::ParameterInputWidget("Input parament:",nullptr);
-        //
-        // connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, prompt](const QString& parametr) {
-        //     if (parametr.isEmpty()) {
-        //         return;
-        //     }
-        // qDebug()<<parametr;
-        //     prompt->deleteLater();
-        // });
-
         switch (_t1) {
-            case UI::ConstraintType::ObjectObjectDistance:
-                controller_.selectTool(ToolId::ConstraintPointPointDistance);
-               // controller_.selectTool(ToolId::ConstraintPointPointDistance);
-               //controller_.selectTool(ToolId::ConstraintLineCircleDistance);
+            case UI::ConstraintType::Distance: {
+                auto* prompt = new UI::ParameterInputWidget("Input:",nullptr);
+                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, prompt](const QString& parameter) {
+                    if (parameter.isEmpty()) {
+                        return;
+                    }
+                    controller_.selectTool(ToolId::ConstraintDimension, parameter.toDouble());
+                    prompt->deleteLater();
+                });
+
+                prompt->move(200, 200);
+                prompt->show();
                 break;
-            case UI::ConstraintType::PointOnLine:
+            }
+            case UI::ConstraintType::Tangent:
                 controller_.selectTool(ToolId::ConstraintPointOnLine);
                 break;
-                break;
-            case UI::ConstraintType::CoincidentPoints:
+            case UI::ConstraintType::Coincident:
                 controller_.selectTool(ToolId::ConstraintCoincidentPoints);
                 break;
-                break;
-            case UI::ConstraintType::LineOnCircle:
-                controller_.selectTool(ToolId::ConstraintLineOnCircle);
-                break;
-            case UI::ConstraintType::LineInCircle:
-                controller_.selectTool(ToolId::ConstraintLineInCircle);
-                break;
-            case UI::ConstraintType::ParallelLines:
+            case UI::ConstraintType::Parallel:
                 controller_.selectTool(ToolId::ConstraintParallelLines);
                 break;
-            case UI::ConstraintType::PerpendicularLines:
+            case UI::ConstraintType::Perpendicular:
                 controller_.selectTool(ToolId::ConstraintPerpendicularLines);
                 break;
-            case UI::ConstraintType::AngleBetweenLines:
+            case UI::ConstraintType::Collinear:
                 controller_.selectTool(ToolId::ConstraintAngleBetweenLines);
                 break;
             default:

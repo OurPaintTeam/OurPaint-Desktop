@@ -12,8 +12,8 @@
 UIController::UIController(EditorSession& editorSession, DocumentManager& manager, IViewportHost& host)
     : editorSession_(editorSession), docManager_(manager), host_(host) {}
 
-void UIController::selectTool(ToolId tool) {
-    editorSession_.select(tool);
+void UIController::selectTool(ToolId tool, double value) {
+    editorSession_.select(tool, value);
 }
 
 void UIController::executeConsoleCommand(std::string str) {

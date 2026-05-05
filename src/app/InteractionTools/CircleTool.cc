@@ -199,7 +199,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
             break;
         case Mode::TangentTwoObjectsRadius:
             if (step_ == Step::WaitingFirstInput) {
-                auto obj = picker_.pickAt(e.x, e.y);
+                auto obj = picker_.pickAtScreenLogical(e.x, e.y);
                 if (!obj.has_value()) {
                     return;
                 }
@@ -208,7 +208,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 step_ = Step::WaitingSecondInput;
             }
             else if (step_ == Step::WaitingSecondInput) {
-                auto obj = picker_.pickAt(e.x, e.y);
+                auto obj = picker_.pickAtScreenLogical(e.x, e.y);
                 if (!obj.has_value()) {
                     return;
                 }

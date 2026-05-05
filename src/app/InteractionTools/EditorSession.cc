@@ -20,15 +20,16 @@ EditorSession::EditorSession(DocumentManager& manager,
       lineTool_(documentManager_, camera_, overlay),
       circleTool_(documentManager_, camera_, picker, overlay),
       arcTool_(documentManager_, camera_, picker, overlay),
-      bezierTool_(documentManager_, camera_, renderData_) {
-    activeTool_ = new PointTool(documentManager_, camera_);
+      bezierTool_(documentManager_, camera_, renderData_),
+      dimensionTool_(documentManager_, camera_, picker_, overlay_) {
+    activeTool_ = &pointTool_;
 }
 
 EditorSession::~EditorSession() {
     delete activeTool_;
 }
 
-void EditorSession::select(ToolId id) {
+void EditorSession::select(ToolId id, double value) {
     activeTool_->cancel();
     switch (id) {
         case ToolId::Cursor:
@@ -48,6 +49,12 @@ void EditorSession::select(ToolId id) {
             break;
         case ToolId::InfiniteLine:
 
+            break;
+
+
+        case ToolId::ConstraintDimension:
+            dimensionTool_.setDimension(value);
+            activeTool_ = &dimensionTool_;
             break;
 
 

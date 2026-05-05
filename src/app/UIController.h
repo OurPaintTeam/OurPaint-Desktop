@@ -13,7 +13,7 @@ public:
     UIController(EditorSession& editorSession, DocumentManager& manager, IViewportHost& host);
     ~UIController() = default;
 
-    void selectTool(ToolId tool);
+    void selectTool(ToolId tool, double value = 0.0);
 
     // Console
     void executeConsoleCommand(std::string str);

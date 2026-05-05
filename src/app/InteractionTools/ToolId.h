@@ -23,6 +23,8 @@ enum class ToolId {
 
     CubicBezier,
 
+    ConstraintDimension,
+
     ConstraintPointLineDistance,
     ConstraintPointOnLine,
     ConstraintPointPointDistance,

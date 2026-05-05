@@ -312,8 +312,12 @@ void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camer
         glUniformMatrix4fv(pointTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
     }
 
+    float r = 63.0 / 255.0;
+    float g = 72.0 / 255.0;
+    float b = 204.0 / 255.0;
+
     if (pointColorLoc_ >= 0) {
-        glUniform3f(pointColorLoc_, 0.0f, 0.0f, 0.0f);
+        glUniform3f(pointColorLoc_, r, g, b);
     }
 
     if (pointPadLoc_ >= 0) {
