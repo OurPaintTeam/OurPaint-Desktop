@@ -30,6 +30,8 @@ enum class ReqType : uint8_t {
     ET_FIXPOINT,
     ET_FIXLINE,
     ET_FIXCIRCLE,
+    ET_HORIZONTAL,
+    ET_VERTICAL,
     COUNT,
     ERROR
 };

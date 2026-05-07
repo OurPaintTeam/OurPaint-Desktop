@@ -3,61 +3,93 @@
 
 Cpu2dPicker::Cpu2dPicker(core::Scene& scene, Camera2D& camera) : scene_(scene), camera_(camera) {}
 
-std::optional<PickResult> Cpu2dPicker::pickAt(double screenX, double screenY) const {
-    std::optional<PickResult> p = pickPointAt(screenX, screenY);
-    if (p.has_value()) {
-        return p;
-    }
+// Pick in rect
 
-    std::optional<PickResult> l = pickLineAt(screenX, screenY);
-    if (l.has_value()) {
-        return l;
-    }
-
-    std::optional<PickResult> c = pickCircleAt(screenX, screenY);
-    if (c.has_value()) {
-        return c;
-    }
-
-    return std::nullopt;
+std::vector<core::ID> Cpu2dPicker::pickInRectAtScreenLogical(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
+    glm::dvec2 worldP1 = camera_.screenLogicalToWorld({screenMinX, screenMinY});
+    glm::dvec2 worldP2 = camera_.screenLogicalToWorld({screenMaxX, screenMaxY});
+    return pickInRect(worldP1.x, worldP1.y, worldP2.x, worldP2.y);
 }
 
-bool lineIntersectsRectFast(double x1, double y1, double x2, double y2,
-                            double xmin, double ymin, double xmax, double ymax) {
-    // Быстрая проверка через ограничивающие прямоугольники
-    if (std::max(x1, x2) < xmin || std::min(x1, x2) > xmax ||
-        std::max(y1, y2) < ymin || std::min(y1, y2) > ymax) {
-        return false;  // Тривиальное отклонение
-        }
-
-    // Проверка, что хотя бы один конец внутри
-    if ((x1 >= xmin && x1 <= xmax && y1 >= ymin && y1 <= ymax) ||
-        (x2 >= xmin && x2 <= xmax && y2 >= ymin && y2 <= ymax)) {
-        return true;
-        }
-
-    // Проверка пересечения с каждой стороной
-    auto intersect = [](double x1, double y1, double x2, double y2,
-                        double x3, double y3, double x4, double y4) -> bool {
-        double denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-        if (denom == 0) return false;
-
-        double t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
-        double u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
-
-        return (t >= 0 && t <= 1 && u >= 0 && u <= 1);
-    };
-
-    // Проверка всех 4 сторон прямоугольника
-    return intersect(x1, y1, x2, y2, xmin, ymin, xmax, ymin) ||  // bottom
-           intersect(x1, y1, x2, y2, xmax, ymin, xmax, ymax) ||  // right
-           intersect(x1, y1, x2, y2, xmax, ymax, xmin, ymax) ||  // top
-           intersect(x1, y1, x2, y2, xmin, ymax, xmin, ymin);    // left
+std::vector<core::ID> Cpu2dPicker::pickInRectAtScreenFramebuffer(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
+    glm::dvec2 worldP1 = camera_.screenFramebufferToWorld({screenMinX, screenMinY});
+    glm::dvec2 worldP2 = camera_.screenFramebufferToWorld({screenMaxX, screenMaxY});
+    return pickInRect(worldP1.x, worldP1.y, worldP2.x, worldP2.y);
 }
 
-std::vector<core::ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
-    glm::dvec2 p1 = camera_.screenLogicalToWorld({screenMinX, screenMinY});
-    glm::dvec2 p2 = camera_.screenLogicalToWorld({screenMaxX, screenMaxY});
+std::vector<core::ID> Cpu2dPicker::pickInRectAtWorld(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
+    return pickInRect(screenMinX, screenMinY, screenMaxX, screenMaxY);
+}
+
+// Pick at screen logical
+
+std::optional<PickResult> Cpu2dPicker::pickAtScreenLogical(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
+    return pickAt(world.x, world.y);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickPointAtScreenLogical(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
+    return pickPointAt(world.x, world.y);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickLineAtScreenLogical(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
+    return pickLineAt(world.x, world.y);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickCircleAtScreenLogical(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
+    return pickCircleAt(world.x, world.y);
+}
+
+// Pick at screen framebuffer
+
+std::optional<PickResult> Cpu2dPicker::pickAtScreenFramebuffer(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
+    return pickAt(world.x, world.y);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickPointAtScreenFramebuffer(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
+    return pickPointAt(world.x, world.y);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickLineAtScreenFramebuffer(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
+    return pickLineAt(world.x, world.y);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickCircleAtScreenFramebuffer(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
+    return pickCircleAt(world.x, world.y);
+}
+
+// Pick at world
+
+std::optional<PickResult> Cpu2dPicker::pickAtWorld(double worldX, double worldY) const {
+    return pickAt(worldX, worldY);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickPointAtWorld(double worldX, double worldY) const {
+    return pickPointAt(worldX, worldY);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickLineAtWorld(double worldX, double worldY) const {
+    return pickLineAt(worldX, worldY);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickCircleAtWorld(double worldX, double worldY) const {
+    return pickCircleAt(worldX, worldY);
+}
+
+
+
+// Private
+
+std::vector<core::ID> Cpu2dPicker::pickInRect(double worldMinX, double worldMinY, double worldMaxX, double worldMaxY) const {
+    glm::dvec2 p1 = {worldMinX, worldMinY};
+    glm::dvec2 p2 = {worldMaxX, worldMaxY};
 
     double rx1 = std::min(p1.x, p2.x);
     double ry1 = std::min(p1.y, p2.y);
@@ -121,8 +153,27 @@ std::vector<core::ID> Cpu2dPicker::pickInRect(double screenMinX, double screenMi
     return res;
 }
 
-std::optional<PickResult> Cpu2dPicker::pickPointAt(double screenX, double screenY) const {
-    glm::dvec2 v = camera_.screenLogicalToWorld({screenX, screenY});
+std::optional<PickResult> Cpu2dPicker::pickAt(double worldX, double worldY) const {
+    std::optional<PickResult> p = pickPointAt(worldX, worldY);
+    if (p.has_value()) {
+        return p;
+    }
+
+    std::optional<PickResult> l = pickLineAt(worldX, worldY);
+    if (l.has_value()) {
+        return l;
+    }
+
+    std::optional<PickResult> c = pickCircleAt(worldX, worldY);
+    if (c.has_value()) {
+        return c;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<PickResult> Cpu2dPicker::pickPointAt(double worldX, double worldY) const {
+    glm::dvec2 v = {worldX, worldY};
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
     std::vector<core::ObjectData> points = scene_.getPoints();
@@ -140,8 +191,8 @@ std::optional<PickResult> Cpu2dPicker::pickPointAt(double screenX, double screen
     return std::nullopt;
 }
 
-std::optional<PickResult> Cpu2dPicker::pickLineAt(double screenX, double screenY) const {
-    glm::dvec2 v = camera_.screenLogicalToWorld({screenX, screenY});
+std::optional<PickResult> Cpu2dPicker::pickLineAt(double worldX, double worldY) const {
+    glm::dvec2 v = {worldX, worldY};
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
     std::vector<core::ObjectData> lines_ = scene_.getLines();
@@ -190,8 +241,8 @@ std::optional<PickResult> Cpu2dPicker::pickLineAt(double screenX, double screenY
     return std::nullopt;
 }
 
-std::optional<PickResult> Cpu2dPicker::pickCircleAt(double screenX, double screenY) const {
-    glm::dvec2 v = camera_.screenLogicalToWorld({screenX, screenY});
+std::optional<PickResult> Cpu2dPicker::pickCircleAt(double worldX, double worldY) const {
+    glm::dvec2 v = {worldX, worldY};
     double eps = 0.05 / (camera_.zoom() / 100.0);
 
     std::vector<core::ObjectData> circles_ = scene_.getCircles();
@@ -214,4 +265,37 @@ std::optional<PickResult> Cpu2dPicker::pickCircleAt(double screenX, double scree
     return std::nullopt;
 }
 
+
+bool Cpu2dPicker::lineIntersectsRectFast(double x1, double y1, double x2, double y2,
+                            double xmin, double ymin, double xmax, double ymax) {
+    // Быстрая проверка через ограничивающие прямоугольники
+    if (std::max(x1, x2) < xmin || std::min(x1, x2) > xmax ||
+        std::max(y1, y2) < ymin || std::min(y1, y2) > ymax) {
+        return false;  // Тривиальное отклонение
+        }
+
+    // Проверка, что хотя бы один конец внутри
+    if ((x1 >= xmin && x1 <= xmax && y1 >= ymin && y1 <= ymax) ||
+        (x2 >= xmin && x2 <= xmax && y2 >= ymin && y2 <= ymax)) {
+        return true;
+        }
+
+    // Проверка пересечения с каждой стороной
+    auto intersect = [](double x1, double y1, double x2, double y2,
+                        double x3, double y3, double x4, double y4) -> bool {
+        double denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (denom == 0) return false;
+
+        double t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+        double u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+
+        return (t >= 0 && t <= 1 && u >= 0 && u <= 1);
+    };
+
+    // Проверка всех 4 сторон прямоугольника
+    return intersect(x1, y1, x2, y2, xmin, ymin, xmax, ymin) ||  // bottom
+           intersect(x1, y1, x2, y2, xmax, ymin, xmax, ymax) ||  // right
+           intersect(x1, y1, x2, y2, xmax, ymax, xmin, ymax) ||  // top
+           intersect(x1, y1, x2, y2, xmin, ymax, xmin, ymin);    // left
+}
 

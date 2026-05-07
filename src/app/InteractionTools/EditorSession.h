@@ -15,13 +15,14 @@
 #include "ArcTool.h"
 #include "CursorTool.h"
 #include "CubicBezierTool.h"
+#include "DimensionTool.h"
 
 class EditorSession {
 public:
     EditorSession(DocumentManager& manager, Camera2D& camera, renderer::RenderData& renderData, Cpu2dPicker& picker, OverlayModel& overlay);
     ~EditorSession();
 
-    void select(ToolId id);
+    void select(ToolId id, double value = 0.0);
     IInteractionTool* activeTool();
 
 private:
@@ -38,6 +39,7 @@ private:
     CircleTool circleTool_;
     ArcTool arcTool_;
     CubicBezierTool bezierTool_;
+    DimensionTool dimensionTool_;
 };
 
 #endif // ! OURPAINT_APPLICATION_EDITORSESSION_H_

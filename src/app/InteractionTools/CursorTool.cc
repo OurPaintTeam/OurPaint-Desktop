@@ -44,7 +44,7 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
 
                 const bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
 
-                const std::vector<ID> pickedIds = picker_.pickInRect(
+                const std::vector<ID> pickedIds = picker_.pickInRectAtScreenLogical(
                     lastScreenPos_.x,
                     lastScreenPos_.y,
                     e.x,
@@ -71,7 +71,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
 
         bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
-        std::optional<PickResult> pickRes = picker_.pickAt(e.x, e.y);
+        std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
 
         if (pickRes.has_value()) {
             const ID id = pickRes->id;
@@ -171,6 +171,39 @@ void CursorTool::onKey(const input::KeyEvent& e) {
             }
         }
     }
+    else if (e.key == input::KeyCode::Num5 && e.action == input::KeyAction::Press) {
+        Scene& scene = documentManager_.getActiveDocument()->scene();
+        std::vector<ID> ids = overlay_.selection_.model.items();
+        ID line;
+        std::vector<ID> points;
+        for (const auto id : ids) {
+            ObjectData od = scene.getObjectData(id);
+            if (od.et == ObjType::ET_LINE) {
+                line = od.id;
+                scene.addRequirement({ID(-1), ReqType::ET_HORIZONTAL, line});
+                break;
+            }
+            // else if (od.et == ObjType::ET_POINT) {
+            //     points.push_back(od.id);
+            //     if (points.size() == 2) {
+            //         scene.addRequirement({ID(-1), ReqType::ET_HORIZONTAL, points[0], points[1]});
+            //     }
+            // }
+        }
+    }
+    else if (e.key == input::KeyCode::Num6 && e.action == input::KeyAction::Press) {
+        Scene& scene = documentManager_.getActiveDocument()->scene();
+        std::vector<ID> ids = overlay_.selection_.model.items();
+        ID line;
+        for (const auto id : ids) {
+            ObjectData od = scene.getObjectData(id);
+            if (od.et == ObjType::ET_LINE) {
+                line = od.id;
+                scene.addRequirement({ID(-1), ReqType::ET_VERTICAL, line});
+                break;
+            }
+        }
+    }
     else if (e.modifiers == input::Modifiers::Ctrl && e.key == input::KeyCode::C && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
         data_ = scene.copyFragment(overlay_.selection_.model.items());
@@ -181,11 +214,12 @@ void CursorTool::onKey(const input::KeyEvent& e) {
         state_ = State::MarqueeSelection;
     }
     else if (e.key == input::KeyCode::Enter && e.action == input::KeyAction::Press) {
+
     }
 }
 
 bool CursorTool::cancel() {
-    overlay_.selection_.model.clear();
+    //overlay_.selection_.model.clear(); // need for Dimension tool maybe
     overlay_.selectionRect_.reset();
     marqueeBaseSelection_.clear();
     state_ = State::Idle;

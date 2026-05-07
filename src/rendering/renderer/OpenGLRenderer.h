@@ -80,7 +80,7 @@ private:
     float lineHalfWidthPx = 0.0;
     float lineEdgeSoftnessPx = 1.5;
 
-    float lineSelectedHalfWidthPx = 1.0;
+    float lineSelectedHalfWidthPx = 1.5;
     float lineSelectedEdgeSoftnessPx = 2.0;
 
 

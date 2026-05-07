@@ -812,6 +812,10 @@ ReqType Scene::reqTypeMapper(DCM_ReqType type) {
             return ReqType::ET_FIXLINE;
         case DCM_ReqType::ET_FIXCIRCLE:
             return ReqType::ET_FIXCIRCLE;
+        case DCM_ReqType::ET_HORIZONTAL:
+            return ReqType::ET_HORIZONTAL;
+        case DCM_ReqType::ET_VERTICAL:
+            return ReqType::ET_VERTICAL;
         default:
             return {};
     }
@@ -848,6 +852,10 @@ Scene::DCM_ReqType Scene::reqTypeMapper(ReqType type) {
             return DCM_ReqType::ET_FIXLINE;
         case ReqType::ET_FIXCIRCLE:
             return DCM_ReqType::ET_FIXCIRCLE;
+        case ReqType::ET_HORIZONTAL:
+            return DCM_ReqType::ET_HORIZONTAL;
+        case ReqType::ET_VERTICAL:
+            return DCM_ReqType::ET_VERTICAL;
         default:
             return {};
     }
