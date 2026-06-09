@@ -587,6 +587,7 @@ void Scene::resizeCircle(ID circleId, double radius) {
     Utils::CircleUpdateDescriptor c(DCM_ID(circleId.get()), radius);
     DCM_.updateCircle(c);
 }
+
 void Scene::setPoint(ID pointID, double x, double y, const bool updateRequirementFlag) {
 
 
@@ -606,6 +607,36 @@ void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double 
 }
 
 ID Scene::addRequirement(const Requirement& reqData, const bool updateRequirementFlag) {
+    if (reqData.type == ReqType::ET_POINTONPOINT) {
+
+        // Retrieve current coordinates of both points.
+        ID id1 = reqData.obj1;
+        ID id2 = reqData.obj2;
+
+        ObjectData leftPoint = getObjectData(id1);
+        ObjectData rightPoint = getObjectData(id2);
+
+        double x1 = leftPoint.params[0];
+        double y1 = leftPoint.params[1];
+        double x2 = rightPoint.params[0];
+        double y2 = rightPoint.params[1];
+
+        // Compute midpoint between the two points.
+        double midX = (x1 + x2) * 0.5;
+        double midY = (y1 + y2) * 0.5;
+
+
+        // Move both points toward the midpoint before adding
+        // the coincidence constraint. This provides a better
+        // initial configuration for the solver and produces
+        // more intuitive visual behavior in the sketch.
+        //
+        // Fixed points will remain unchanged because movePoint()
+        // ignores movement of constrained points.
+        movePoint(leftPoint.id, midX - x1,  midY - y1);
+        movePoint(rightPoint.id, midX - x2, midY - y2);
+    }
+
     DCM_ReqDesc rd;
 
     rd.type = reqTypeMapper(reqData.type);
@@ -776,6 +807,25 @@ BoundBox2D Scene::makeBoundingBoxFromObjects(const std::vector<ID>& objects) con
         total = total | makeBoundingBoxForObject(id);
     }
     return total;
+}
+
+bool Scene::pointIsFixed(ID pointID) const {
+    ObjectData od = getObjectData(pointID);
+    if (od.et != ObjType::ET_POINT) {
+        return false;
+    }
+
+    std::vector<DCM_ReqDesc> reqs = DCM_.getAllRequirements();
+    for (const auto& desc : reqs) {
+        if (desc.type == DCM_ReqType::ET_FIXPOINT) {
+            for (const auto& id : desc.objectIds) {
+                if (id.id == pointID.get()) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 void Scene::addRequirement(const Requirement& reqData, ID reqID) {

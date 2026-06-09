@@ -107,6 +107,8 @@ public:
     BoundBox2D makeBoundingBoxForObject(ID id) const;
     BoundBox2D makeBoundingBoxFromObjects(const std::vector<ID>& objects) const;
 
+    bool pointIsFixed(ID pointID) const;
+
 private:
     std::vector<ISceneObserver*> _observers;
 
