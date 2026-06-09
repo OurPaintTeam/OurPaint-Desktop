@@ -22,6 +22,9 @@ public:
 
     void setDimension(double value);
 
+    bool tryApplyDimensionToObject(ID id);
+    bool tryApplyDimensionToTwoObjects(ID id1, ID id2);
+
 private:
     enum class Step {
         WaitingFirstInput,

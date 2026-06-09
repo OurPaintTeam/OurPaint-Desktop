@@ -14,39 +14,31 @@ void DimensionTool::onMouseButton(const input::MouseButtonEvent& e) {
         return;
     }
 
-    const glm::dvec2 cursor = screenToWorld(e.x, e.y);
-    if (step_ == Step::WaitingFirstInput) {
-        std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
-        if (!pickRes.has_value()) {
-            return;
-        }
-
-        if (pickRes.value().type == ObjType::ET_POINT) {
-            objects_.push_back(pickRes.value().id);
-            points_.push_back(cursor);
-            step_ = Step::WaitingSecondInput;
-        }
+    std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
+    if (!pickRes.has_value()) {
+        return;
     }
-    else if (step_ == Step::WaitingSecondInput) {
-        std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
-        if (!pickRes.has_value()) {
-            return;
-        }
 
-        if (pickRes.value().type == ObjType::ET_POINT) {
-            objects_.push_back(pickRes.value().id);
-            points_.push_back(cursor);
-        }
+    ID pickedId = pickRes->id;
 
-        Scene& scene = documentManager_.getActiveDocument()->scene();
-        Requirement req;
-        req.type = ReqType::ET_POINTPOINTDIST;
-        req.obj1 = objects_[0];
-        req.obj2 = objects_[1];
-        req.param = dimension_;
-        scene.addRequirement(req);
+    if (pickRes->type == ObjType::ET_LINE) {
+        tryApplyDimensionToObject(pickedId);
+        return;
+    }
 
-        reset();
+    if (pickRes->type != ObjType::ET_POINT) {
+        return;
+    }
+
+    if (step_ == Step::WaitingFirstInput) {
+        objects_.push_back(pickedId);
+        step_ = Step::WaitingSecondInput;
+        return;
+    }
+
+    if (step_ == Step::WaitingSecondInput) {
+        tryApplyDimensionToTwoObjects(objects_[0], pickedId);
+        return;
     }
 }
 
@@ -55,6 +47,7 @@ void DimensionTool::onKey(const input::KeyEvent& e) {
 }
 
 bool DimensionTool::cancel() {
+    reset();
     return true;
 }
 
@@ -65,29 +58,60 @@ glm::dvec2 DimensionTool::screenToWorld(double x, double y) const {
 void DimensionTool::setDimension(double value) {
     dimension_ = value;
 
-    std::vector<ID> objects = overlay_.selection_.model.items();
-    if (objects.size() != 2) {
+    const std::vector<ID> objects = overlay_.selection_.model.items();
+
+    if (objects.size() == 1) {
+        tryApplyDimensionToObject(objects[0]);
         return;
     }
 
-    // Push
+    if (objects.size() == 2) {
+        tryApplyDimensionToTwoObjects(objects[0], objects[1]);
+        return;
+    }
+}
+
+bool DimensionTool::tryApplyDimensionToObject(ID id) {
+    Scene& scene = documentManager_.getActiveDocument()->scene();
+    ObjectData line = scene.getObjectData(id);
+
+    if (line.et != ObjType::ET_LINE) {
+        return false;
+    }
+
+    if (line.subObjects.size() < 2) {
+        return false;
+    }
+
+    ID p1 = line.subObjects[0];
+    ID p2 = line.subObjects[1];
+
+    return tryApplyDimensionToTwoObjects(p1, p2);
+}
+
+bool DimensionTool::tryApplyDimensionToTwoObjects(ID id1, ID id2) {
+    if (id1 == id2) {
+        return false;
+    }
+
     Scene& scene = documentManager_.getActiveDocument()->scene();
 
-    ObjectData odP1 = scene.getObjectData(objects[0]);
-    ObjectData odP2 = scene.getObjectData(objects[0]);
-    if (odP1.et != ObjType::ET_POINT || odP2.et != ObjType::ET_POINT) {
-        return;
+    ObjectData od1 = scene.getObjectData(id1);
+    ObjectData od2 = scene.getObjectData(id2);
+
+    if (od1.et != ObjType::ET_POINT || od2.et != ObjType::ET_POINT) {
+        return false;
     }
 
     Requirement req;
     req.type = ReqType::ET_POINTPOINTDIST;
-    req.obj1 = objects[0];
-    req.obj2 = objects[1];
+    req.obj1 = id1;
+    req.obj2 = id2;
     req.param = dimension_;
 
     scene.addRequirement(req);
-
     reset();
+    return true;
 }
 
 void DimensionTool::reset() {
