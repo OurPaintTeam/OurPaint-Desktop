@@ -109,6 +109,12 @@ public:
 
     bool pointIsFixed(ID pointID) const;
 
+    struct PointGroup {
+        std::vector<ObjectData> points;
+    };
+
+    std::vector<PointGroup> getPointOnPointGroups() const;
+
 private:
     std::vector<ISceneObserver*> _observers;
 

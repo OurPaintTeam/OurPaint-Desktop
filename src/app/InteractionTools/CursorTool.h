@@ -21,6 +21,8 @@ public:
     void onKey(const input::KeyEvent& e) override;
     bool cancel() override;
 
+    bool tryApplyPointOnPointNearCursor(double xLogic, double yLogic);
+
 private:
     enum class State {
         Idle,

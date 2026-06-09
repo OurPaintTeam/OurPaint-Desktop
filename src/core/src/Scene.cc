@@ -1,6 +1,7 @@
 #include "Scene.h"
 #include "objects/Objects.h"
 #include "ISceneObserver.h"
+#include "DSU.h"
 
 using namespace core;
 
@@ -826,6 +827,53 @@ bool Scene::pointIsFixed(ID pointID) const {
         }
     }
     return false;
+}
+
+std::vector<Scene::PointGroup> Scene::getPointOnPointGroups() const {
+    std::vector<ObjectData> points = getPoints();
+
+    if (points.empty()) {
+        return {};
+    }
+
+    DSU<ID> dsu;
+
+    for (const auto& p : points) {
+        dsu.makeSet(p.id);
+    }
+
+    std::vector<DCM_ReqDesc> reqs = DCM_.getAllRequirements();
+
+    for (const auto& req : reqs) {
+        if (req.type != DCM_ReqType::ET_POINTONPOINT) {
+            continue;
+        }
+
+        if (req.objectIds.size() < 2) {
+            continue;
+        }
+
+        ID p1(req.objectIds[0].id);
+        ID p2(req.objectIds[1].id);
+
+        dsu.unite(p1, p2);
+    }
+
+    std::unordered_map<ID, PointGroup> groups;
+
+    for (const auto& p : points) {
+        ID root = dsu.find(p.id);
+        groups[root].points.push_back(p);
+    }
+
+    std::vector<PointGroup> result;
+    result.reserve(groups.size());
+
+    for (auto& [root, group] : groups) {
+        result.push_back(std::move(group));
+    }
+
+    return result;
 }
 
 void Scene::addRequirement(const Requirement& reqData, ID reqID) {

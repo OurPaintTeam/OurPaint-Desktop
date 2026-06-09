@@ -1,5 +1,6 @@
 #include "CursorTool.h"
 
+#include "../../core/src/DSU.h"
 #include "Document.h"
 #include "Scene.h"
 
@@ -71,7 +72,16 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
 
         bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
+        bool alt = input::has_flag(e.modifiers, input::Modifiers::Alt);
+
         std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
+
+        if (alt) {
+            if (tryApplyPointOnPointNearCursor(e.x, e.y)) {
+                state_ = State::Idle;
+            }
+            return;
+        }
 
         if (pickRes.has_value()) {
             const ID id = pickRes->id;
@@ -124,14 +134,25 @@ void CursorTool::onKey(const input::KeyEvent& e) {
     }
     else if (e.key == input::KeyCode::Num4 && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
+
         std::vector<ID> ids = overlay_.selection_.model.items();
-        if (ids.size() >= 2) {
-            Requirement reqData;
-            reqData.type = ReqType::ET_POINTONPOINT;
-            reqData.obj1 = ID(ids[0].get());
-            reqData.obj2 = ID(ids[1].get());
-            scene.addRequirement(reqData);
+        if (ids.size() != 2) {
+            return;
         }
+
+        ObjectData od1 = scene.getObjectData(ids[0]);
+        ObjectData od2 = scene.getObjectData(ids[1]);
+
+        if (od1.et != ObjType::ET_POINT || od2.et != ObjType::ET_POINT) {
+            return;
+        }
+
+        Requirement reqData;
+        reqData.type = ReqType::ET_POINTONPOINT;
+        reqData.obj1 = ids[0];
+        reqData.obj2 = ids[1];
+
+        scene.addRequirement(reqData);
     }
     else if (e.key == input::KeyCode::Num8 && e.action == input::KeyAction::Press) {
         Scene& scene = documentManager_.getActiveDocument()->scene();
@@ -226,5 +247,64 @@ bool CursorTool::cancel() {
     return true;
 }
 
+bool CursorTool::tryApplyPointOnPointNearCursor(double xLogic, double yLogic) {
+    glm::dvec2 worldCursor = camera_.screenLogicalToWorld({xLogic, yLogic});
 
+    Scene& scene = documentManager_.getActiveDocument()->scene();
+    std::vector<Scene::PointGroup> groups = scene.getPointOnPointGroups();
+
+    if (groups.size() < 2) {
+        return false;
+    }
+
+    struct Candidate {
+        ID pointId{};
+        double dist{};
+    };
+
+    Candidate first{};
+    Candidate second{};
+    bool hasFirst = false;
+    bool hasSecond = false;
+
+    for (const Scene::PointGroup& group : groups) {
+        if (group.points.empty()) {
+            continue;
+        }
+
+        const ObjectData& p = group.points.front();
+
+        glm::dvec2 pos = {p.params[0], p.params[1]};
+        double d = glm::distance(worldCursor, pos);
+
+        Candidate candidate {
+            .pointId = p.id,
+            .dist = d
+        };
+
+        if (!hasFirst || candidate.dist < first.dist) {
+            second = first;
+            hasSecond = hasFirst;
+
+            first = candidate;
+            hasFirst = true;
+        }
+        else if (!hasSecond || candidate.dist < second.dist) {
+            second = candidate;
+            hasSecond = true;
+        }
+    }
+
+    if (!hasFirst || !hasSecond) {
+        return false;
+    }
+
+    Requirement req;
+    req.type = ReqType::ET_POINTONPOINT;
+    req.obj1 = first.pointId;
+    req.obj2 = second.pointId;
+
+    scene.addRequirement(req);
+    return true;
+}
 
