@@ -2,7 +2,7 @@
 #define OURPAINT_APPLICATION_QT_MAINWINDOW_BINDER_H_
 
 #include <QObject>
-#include "ProjectManager.h"
+#include "Lib/Core/ProjectManager.h"
 #include "UIController.h"
 
 class QtMainWindowBinder : public QObject {

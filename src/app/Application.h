@@ -11,6 +11,7 @@
 #include "InteractionTools/IInteractionTool.h"
 #include "OverlayModel.h"
 #include "QtMainWindowBinder.h"
+#include "Project.h"
 
 class DocumentManager;
 
@@ -27,7 +28,6 @@ class CommandConsole;
 class AxisTexts;
 
 namespace renderer { class RenderData; }
-
 
 // ProjectSession
 // ProjectContext
@@ -76,6 +76,7 @@ private:
     OverlayModel* overlay_;
     CommandConsole* commandConsole_;
     AxisTexts* axisTexts_;
+    std::vector<app::Project> projects_;
 };
 
 #endif // APPLICATION_H_
