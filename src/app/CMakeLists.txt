@@ -3,7 +3,7 @@ add_executable(ourpaint
         Application.cc
         QtPlatformRuntime.cc
         QtViewportHost.cc
-        RenderDataBuilder.cc
+        RenderSceneBuilder.cc
         ViewportController.cc
         QtMainWindowBinder.cc
         UIController.cc
@@ -20,6 +20,7 @@ add_executable(ourpaint
         CommandConsole.cc
         CommandConsole.h
         AxisTexts.cc
+        ViewportStyle.cc
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)

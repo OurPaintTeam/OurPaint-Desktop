@@ -21,12 +21,14 @@ class UIController;
 class ViewportController;
 
 class UIObserver;
-class RenderDataBuilder;
+class RenderSceneBuilder;
 
 class CommandConsole;
 class AxisTexts;
 
 namespace renderer { class RenderData; }
+
+#include "ViewportStyle.h"
 
 
 // ProjectSession
@@ -56,7 +58,7 @@ private:
 
     // Rendering
     IRenderer* renderer_;
-    renderer::RenderData* renderData_;
+    render::RenderScene* renderScene_;
 
     // Controllers
     UIController* uiController_;
@@ -64,7 +66,7 @@ private:
 
     // Core observer
     UIObserver* uiObserver_;
-    RenderDataBuilder* builder_;
+    RenderSceneBuilder* builder_;
 
     // Application
     UI::ProjectManager* mainWindow_;
@@ -76,6 +78,7 @@ private:
     OverlayModel* overlay_;
     CommandConsole* commandConsole_;
     AxisTexts* axisTexts_;
+    app::ViewportStyle viewportStyle_;
 };
 
 #endif // APPLICATION_H_

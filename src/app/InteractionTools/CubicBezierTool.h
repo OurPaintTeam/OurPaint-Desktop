@@ -4,11 +4,11 @@
 #include "DocumentManager.h"
 #include "Camera2D.h"
 #include "IInteractionTool.h"
-#include "RenderData.h"
+#include "RenderScene.h"
 
 class CubicBezierTool : public IInteractionTool {
 public:
-    explicit CubicBezierTool(DocumentManager& documentManager, Camera2D& camera, renderer::RenderData& renderData);
+    explicit CubicBezierTool(DocumentManager& documentManager, Camera2D& camera, render::RenderScene& renderData);
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;
@@ -26,7 +26,7 @@ private:
     double firstPoint_Y;
     DocumentManager& documentManager_;
     Camera2D& camera_;
-    renderer::RenderData& renderData_;
+    render::RenderScene& renderData_;
 };
 
 #endif // ! OURPAINT_APPLICATION_CUBIC_BEZIER_TOOL_H_

@@ -7,12 +7,12 @@
 
 EditorSession::EditorSession(DocumentManager& manager,
                             Camera2D& camera,
-                            renderer::RenderData& renderData,
+                            render::RenderScene& renderScene,
                             Cpu2dPicker& picker,
                             OverlayModel& overlay)
     : documentManager_(manager),
       camera_(camera),
-      renderData_(renderData),
+      renderScene_(renderScene),
       picker_(picker),
       overlay_(overlay),
       cursorTool_(documentManager_, camera_, picker_, overlay_),
@@ -20,7 +20,7 @@ EditorSession::EditorSession(DocumentManager& manager,
       lineTool_(documentManager_, camera_, overlay),
       circleTool_(documentManager_, camera_, picker, overlay),
       arcTool_(documentManager_, camera_, picker, overlay),
-      bezierTool_(documentManager_, camera_, renderData_),
+      bezierTool_(documentManager_, camera_, renderScene),
       dimensionTool_(documentManager_, camera_, picker_, overlay_) {
     activeTool_ = &pointTool_;
 }

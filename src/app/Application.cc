@@ -5,17 +5,18 @@
 #include <QVBoxLayout>
 
 #include "App/CustomConsole.h"
+#include "AxisTexts.h"
 #include "CommandConsole.h"
 #include "Document.h"
 #include "DocumentManager.h"
-#include "OpenGLRenderer.h"
+#include "OpenGL2dRenderer.h"
 #include "QtPlatformRuntime.h"
 #include "QtViewportHost.h"
-#include "RenderData.h"
-#include "RenderDataBuilder.h"
+#include "RenderScene.h"
+#include "RenderSceneBuilder.h"
 #include "Scene.h"
 #include "ViewportController.h"
-#include "AxisTexts.h"
+#include "ViewportStyle.h"
 
 Application::Application(int& argc, char** argv)
         : documentManager_(nullptr)
@@ -47,10 +48,7 @@ void Application::init(int& argc, char** argv) {
     camera2D_ = new Camera2D();
 
     // init render scene
-    renderData_ = new renderer::RenderData();
-    renderData_->overlay.points.reserve(32);
-    renderData_->overlay.lines.reserve(32);
-    renderData_->overlay.circles.reserve(32);
+    renderScene_ = new render::RenderScene();
 
     // Overlay
     overlay_ = new OverlayModel();
@@ -59,19 +57,22 @@ void Application::init(int& argc, char** argv) {
     picker_ = new Cpu2dPicker(documentManager_->getActiveDocument()->scene(), *camera2D_);
 
     // init app
-    editorSession_ = new EditorSession(*documentManager_, *camera2D_, *renderData_, *picker_, *overlay_);
+    editorSession_ = new EditorSession(*documentManager_, *camera2D_, *renderScene_, *picker_, *overlay_);
 
     // init renderer
-    renderer_ = new renderer::OpenGLRenderer();
+    renderer_ = new render::OpenGL2dRenderer();
 
     // init AxisTexts
     axisTexts_ = new AxisTexts(*camera2D_);
 
+    // init ViewportStyle
+    viewportStyle_ = app::ViewportStyle::makeDefault();
+
     // init core observer
-    builder_ = new RenderDataBuilder(documentManager_->getActiveDocument()->scene(), *overlay_, *axisTexts_, *renderData_);
+    builder_ = new RenderSceneBuilder(documentManager_->getActiveDocument()->scene(), *overlay_, *axisTexts_, viewportStyle_, *renderScene_);
 
     // init viewport controller
-    viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderData_, *builder_);
+    viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderScene_, *builder_);
 
     // set EventSink viewport controller to viewport host
     viewportHost_->setEventSink(viewportController_);

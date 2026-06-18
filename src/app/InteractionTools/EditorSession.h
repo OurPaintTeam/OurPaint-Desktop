@@ -5,7 +5,7 @@
 #include "IInteractionTool.h"
 #include "ToolId.h"
 #include "Camera2D.h"
-#include "RenderData.h"
+#include "RenderScene.h"
 #include "../Cpu2dPicker.h"
 #include "../OverlayModel.h"
 
@@ -19,7 +19,7 @@
 
 class EditorSession {
 public:
-    EditorSession(DocumentManager& manager, Camera2D& camera, renderer::RenderData& renderData, Cpu2dPicker& picker, OverlayModel& overlay);
+    EditorSession(DocumentManager& manager, Camera2D& camera, render::RenderScene& renderScene, Cpu2dPicker& picker, OverlayModel& overlay);
     ~EditorSession();
 
     void select(ToolId id, double value = 0.0);
@@ -29,7 +29,7 @@ private:
     IInteractionTool* activeTool_ = nullptr;
     DocumentManager& documentManager_;
     Camera2D& camera_;
-    renderer::RenderData& renderData_;
+    render::RenderScene& renderScene_;
     Cpu2dPicker& picker_;
     OverlayModel& overlay_;
 

@@ -6,8 +6,8 @@
 ViewportController::ViewportController(Camera2D& camera2D,
                                        EditorSession& editorSession_,
                                        IRenderer& renderer,
-                                       renderer::RenderData& renderScene,
-                                       RenderDataBuilder& builder)
+                                       render::RenderScene& renderScene,
+                                       RenderSceneBuilder& builder)
     : camera2D_(camera2D), editorSession_(editorSession_), renderer_(renderer), renderScene_(renderScene), builder_(builder) {}
 
 bool ViewportController::onResize(const input::ResizeEvent& e) {

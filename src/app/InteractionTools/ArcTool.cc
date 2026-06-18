@@ -6,7 +6,7 @@
 #include "DocumentManager.h"
 #include "objects/Objects.h"
 #include "Scene.h"
-#include "RenderData.h"
+#include "RenderScene.h"
 
 ArcTool::ArcTool(DocumentManager& documentManager, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
     : documentManager_(documentManager), camera_(camera), picker_(picker), overlay_(overlay) {}

@@ -7,17 +7,17 @@
 #include "IViewportHost.h"
 #include "InputEvents.h"
 #include "InteractionTools/EditorSession.h"
-#include "RenderData.h"
+#include "RenderScene.h"
 #include "Camera2D.h"
-#include "RenderDataBuilder.h"
+#include "RenderSceneBuilder.h"
 
 class ViewportController : public IViewportController {
 public:
     ViewportController(Camera2D& view,
                        EditorSession& session,
                        IRenderer& renderer,
-                       renderer::RenderData& renderScene,
-                       RenderDataBuilder& builder);
+                       render::RenderScene& renderScene,
+                       RenderSceneBuilder& builder);
 
     bool onResize     (const input::ResizeEvent& e)      override;
     bool onMouseMove  (const input::MouseMoveEvent& e)   override;
@@ -34,8 +34,8 @@ private:
     Camera2D& camera2D_;
     EditorSession& editorSession_;
     IRenderer& renderer_;
-    renderer::RenderData& renderScene_;
-    RenderDataBuilder& builder_;
+    render::RenderScene& renderScene_;
+    RenderSceneBuilder& builder_;
 
     bool panning_ = false;
     double lastX_ = 0.0;
