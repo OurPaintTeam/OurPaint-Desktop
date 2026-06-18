@@ -9,13 +9,13 @@ ViewportController::ViewportController(Camera2D& camera2D,
                                        IRenderer& renderer,
                                        renderer::RenderData& renderScene,
                                        RenderDataBuilder& builder,
-                                       DocumentManager& documentManager)
+                                       Document& document)
     :   camera2D_(camera2D),
         editorSession_(editorSession_),
         renderer_(renderer),
         renderScene_(renderScene),
         builder_(builder),
-        documentManager_(documentManager) {}
+        document_(document) {}
 
 bool ViewportController::onResize(const input::ResizeEvent& e) {
     camera2D_.setViewport(e.width, e.height, e.devicePixelRatio);
@@ -77,7 +77,7 @@ bool ViewportController::onKey(const input::KeyEvent& e) {
         return true;
     }
 
-    UndoRedo::UndoRedoManager& mgr = documentManager_.getActiveDocument()->undoRedoManager();
+    UndoRedo::UndoRedoManager& mgr = document_.undoRedoManager();
     // redo
     if (e.key == input::KeyCode::Z &&
              input::has_flag(e.modifiers, input::Modifiers::Ctrl) &&

@@ -8,9 +8,16 @@
 #include "InteractionTools/ToolId.h"
 #include "IViewportHost.h"
 
+#include "Lib/Core/ProjectManager.h"
+#include "Tab.h"
+#include "IPlatformRuntime.h"
+
 class UIController {
 public:
-    UIController(EditorSession& editorSession, DocumentManager& manager, IViewportHost& host);
+    UIController(DocumentManager& manager,
+                 IPlatformRuntime& platformRuntime,
+                 UI::ProjectManager& projectManager,
+                 std::vector<Tab>& tabs);
     ~UIController() = default;
 
     void selectTool(ToolId tool, double value = 0.0);
@@ -28,7 +35,9 @@ public:
     void openFile();
     void renameTab();
     void removeTab();
-    void createFile();
+
+    void createFile(const std::string& fileName);
+    void setActiveFile(const std::string& fileName);
 
     void renameProject();
     void deleteProject();
@@ -36,9 +45,14 @@ public:
     void closeApplication();
 
 private:
-    EditorSession& editorSession_;
-    DocumentManager& docManager_;
-    IViewportHost& host_;
+    DocumentManager& documentManager_;
+    IPlatformRuntime& platformRuntime_;
+    UI::ProjectManager& projectManager_;
+    std::vector<Tab>& tabs_;
+
+    std::unordered_map<std::string, int> indicesMap_;
+
+    std::string activeTabName_;
 };
 
 #endif // ! OURPAINT_APPLICATION_UI_CONTROLLER_H_

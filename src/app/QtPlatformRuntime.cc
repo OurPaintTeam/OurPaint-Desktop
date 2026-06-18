@@ -34,7 +34,7 @@ bool QtPlatformRuntime::init() {
 }
 
 int QtPlatformRuntime::run() {
-    if (!app_ || hosts_.empty()) {
+    if (!app_) {
         return -1;
     }
 

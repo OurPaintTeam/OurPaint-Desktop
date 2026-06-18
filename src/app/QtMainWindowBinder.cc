@@ -75,10 +75,18 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     QObject::connect(&window, &UI::ProjectManager::removeTabTriggered, this, [this]() { controller_.removeTab(); });
 
     // --- Create file ---
-    QObject::connect(&window, &UI::ProjectManager::createFileTriggered, this, [this]() { controller_.createFile(); });
+    QObject::connect(&window, &UI::ProjectManager::createFileTriggered, this, [this](const QString& fileName) {
+        std::cout << "create file triggered: " << fileName.toStdString() << '\n';
+        controller_.createFile(fileName.toStdString());
+    });
+
+    // --- Set active file
+    QObject::connect(&window, &UI::ProjectManager::setActiveTabTriggered, this, [this](const QString& fileName) {
+        std::cout << "set active file: " << fileName.toStdString() << '\n';
+        controller_.setActiveFile(fileName.toStdString());
+    });
 
     // --- Project ---
-
     QObject::connect(&window, &UI::ProjectManager::renameProjectTriggered, this, [this]() { controller_.renameProject(); });
 
     // --- Delete project ---

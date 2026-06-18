@@ -19,7 +19,8 @@
 
 
 Application::Application(int& argc, char** argv)
-        : documentManager_(nullptr)
+        : documentManager_(nullptr),
+          tabs_()
           {
     try {
         init(argc, argv);
@@ -29,68 +30,19 @@ Application::Application(int& argc, char** argv)
 }
 
 void Application::init(int& argc, char** argv) {
-    // init qt platform
     platformRuntime_ = new QtPlatformRuntime(argc, argv);
     platformRuntime_->init();
 
-
-
-    // init core
     documentManager_ = new DocumentManager();
-    documentManager_->createNewDocument("newDocument");
 
-    // init viewport host
-    viewportHost_ = platformRuntime_->createViewportHost();
-    QtViewportHost* qt_host = static_cast<QtViewportHost*>(viewportHost_);
-
-    // init Camera2D
-    camera2D_ = new Camera2D();
-
-    // init render scene
-    renderData_ = new renderer::RenderData();
-    renderData_->overlay.points.reserve(32);
-    renderData_->overlay.lines.reserve(32);
-    renderData_->overlay.circles.reserve(32);
-
-    // Overlay
-    overlay_ = new OverlayModel();
-
-    // picker
-    picker_ = new Cpu2dPicker(documentManager_->getActiveDocument()->scene(), *camera2D_);
-
-    // init app
-    editorSession_ = new EditorSession(*documentManager_, *camera2D_, *renderData_, *picker_, *overlay_);
-
-    // init renderer
-    renderer_ = new renderer::OpenGLRenderer();
-
-    // init AxisTexts
-    axisTexts_ = new AxisTexts(*camera2D_);
-
-    // init core observer
-    builder_ = new RenderDataBuilder(documentManager_->getActiveDocument()->scene(), *overlay_, *axisTexts_, *renderData_);
-
-    // init viewport controller
-    viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderData_, *builder_, *documentManager_);
-
-    // set EventSink viewport controller to viewport host
-    viewportHost_->setEventSink(viewportController_);
-
-    // other
-    editorSession_->select(ToolId::Cursor);
-
-    // init UI
     Q_INIT_RESOURCE(resources);
     Q_INIT_RESOURCE(translations);
-    commandConsole_ = new CommandConsole(*overlay_, *qt_host);
-    mainWindow_ = new UI::ProjectManager({}, qt_host,commandConsole_);
-    mainWindow_->addTabSlot("ds");
 
-    // init UIController
-    uiController_ = new UIController(*editorSession_, *documentManager_, *viewportHost_);
+    projectManager_ = new UI::ProjectManager({}, nullptr, nullptr);
 
-    // init binder
-    binder_ = new QtMainWindowBinder(*mainWindow_, *uiController_);
+    uiController_ = new UIController(*documentManager_,  *platformRuntime_, *projectManager_, tabs_);
+
+    binder_ = new QtMainWindowBinder(*projectManager_, *uiController_);
 
 }
 
@@ -98,22 +50,7 @@ int Application::exec() {
     return platformRuntime_->run();
 }
 
-Application::~Application() {
-    /* free core */
-    delete documentManager_;
-
-    /* free platform */
-    delete platformRuntime_;
-    //delete viewportHost_;
-
-    /* free controllers*/
-    //delete UIController_;
-    delete viewportController_;
-
-    /* free observers*/
-    //delete UIObserver_;
-    //delete viewportObserver_;
-}
+Application::~Application() {}
 
 
 

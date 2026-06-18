@@ -1,7 +1,7 @@
 #ifndef OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 #define OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 
-#include "DocumentManager.h"
+#include "Document.h"
 #include "IRenderer.h"
 #include "IViewportController.h"
 #include "IViewportHost.h"
@@ -18,7 +18,7 @@ public:
                        IRenderer& renderer,
                        renderer::RenderData& renderScene,
                        RenderDataBuilder& builder,
-                       DocumentManager& documentManager);
+                       Document& document);
 
     bool onResize     (const input::ResizeEvent& e)      override;
     bool onMouseMove  (const input::MouseMoveEvent& e)   override;
@@ -37,9 +37,8 @@ private:
     IRenderer& renderer_;
     renderer::RenderData& renderScene_;
     RenderDataBuilder& builder_;
-    DocumentManager& documentManager_;
+    Document& document_;
 
-    bool panning_ = false;
     double lastX_ = 0.0;
     double lastY_ = 0.0;
 

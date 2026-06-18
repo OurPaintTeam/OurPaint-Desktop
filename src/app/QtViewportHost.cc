@@ -120,7 +120,6 @@ void QtViewportHost::resizeEvent(QResizeEvent* e) {
     }
 }
 
-
 void QtViewportHost::keyPressEvent(QKeyEvent* e) {
     if (!initialized_) {
         initContext();
@@ -395,7 +394,6 @@ input::Modifiers QtViewportHost::toModifiersEnum(Qt::KeyboardModifiers mods) {
 
     return m;
 }
-
 
 input::MouseMoveEvent QtViewportHost::toMouseMoveEvent(QMouseEvent* e) {
     input::MouseMoveEvent me;
