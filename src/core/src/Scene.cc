@@ -192,14 +192,6 @@ void Scene::clear() {
     pointToBezier_.clear();
 }
 
-const BoundBox2D& Scene::getBoundingBox() const {
-    throw std::runtime_error("Scene error");
-}
-
-void Scene::updateBoundingBox() const {
-    throw std::runtime_error("Scene error: update Bounding box");
-}
-
 ObjectData Scene::getObjectData(ID id) const {
     ObjectData od;
     DCM_FigDesc desc = DCM_.getFigure(DCM_ID(id.get())).value();
@@ -245,7 +237,7 @@ bool Scene::hasRequirement(ID id) const {
 }
 
 ObjectData Scene::getRootObjectData(ID id) const {
-    throw std::runtime_error("Scene error");
+    throw std::runtime_error("Scene error: getRootObjectData");
 }
 
 Requirement Scene::getRequirementData(ID object1, ID object2) const {
@@ -404,7 +396,28 @@ std::vector<ObjectData> Scene::getBeziers() const {
 }
 
 std::vector<Requirement> Scene::getRequirements() const {
-    throw std::runtime_error("Scene error");
+    std::vector<DCM_ReqDesc> reqs = DCM_.getAllRequirements();
+
+    std::vector<Requirement> result;
+
+    for (const auto& req : reqs) {
+        Requirement r;
+        r.id = ID(req.id.value().id);
+        if (req.objectIds.size() > 0) {
+            r.obj1 = ID(req.objectIds[0].id);
+        }
+        if (req.objectIds.size() > 1) {
+            r.obj2 = ID(req.objectIds[1].id);
+        }
+        if (req.objectIds.size() > 2) {
+            r.obj3 = ID(req.objectIds[2].id);
+        }
+        r.type = reqTypeMapper(req.type);
+        r.param = req.param;
+        result.push_back(r);
+    }
+
+    return result;
 }
 
 std::vector<Requirement> Scene::getObjectRequirements(ID objectID) const {
@@ -590,8 +603,7 @@ void Scene::resizeCircle(ID circleId, double radius) {
 }
 
 void Scene::setPoint(ID pointID, double x, double y, const bool updateRequirementFlag) {
-
-
+    throw std::runtime_error("Scene error");
 }
 
 void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag) {
@@ -960,7 +972,9 @@ Scene::DCM_ReqType Scene::reqTypeMapper(ReqType type) {
     return {};
 }
 
-void Scene::updateRequirements(ID id) {}
+void Scene::updateRequirements(ID id) {
+    throw std::runtime_error("Scene error");
+}
 
 Requirement Scene::getRequirementData(ID reqID) const {
     Utils::RequirementDescriptor desc = DCM_.getRequirement(DCM_ID(reqID.get())).value();

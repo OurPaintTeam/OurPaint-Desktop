@@ -71,7 +71,7 @@ void Application::init(int& argc, char** argv) {
     builder_ = new RenderDataBuilder(documentManager_->getActiveDocument()->scene(), *overlay_, *axisTexts_, *renderData_);
 
     // init viewport controller
-    viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderData_, *builder_);
+    viewportController_ = new ViewportController(*camera2D_, *editorSession_, *renderer_, *renderData_, *builder_, *documentManager_);
 
     // set EventSink viewport controller to viewport host
     viewportHost_->setEventSink(viewportController_);

@@ -2,13 +2,20 @@
 
 #include "Document.h"
 #include "Scene.h"
+#include "UndoRedo.h"
 
 ViewportController::ViewportController(Camera2D& camera2D,
                                        EditorSession& editorSession_,
                                        IRenderer& renderer,
                                        renderer::RenderData& renderScene,
-                                       RenderDataBuilder& builder)
-    : camera2D_(camera2D), editorSession_(editorSession_), renderer_(renderer), renderScene_(renderScene), builder_(builder) {}
+                                       RenderDataBuilder& builder,
+                                       DocumentManager& documentManager)
+    :   camera2D_(camera2D),
+        editorSession_(editorSession_),
+        renderer_(renderer),
+        renderScene_(renderScene),
+        builder_(builder),
+        documentManager_(documentManager) {}
 
 bool ViewportController::onResize(const input::ResizeEvent& e) {
     camera2D_.setViewport(e.width, e.height, e.devicePixelRatio);
@@ -64,9 +71,25 @@ bool ViewportController::onWheel(const input::WheelEvent& e) {
 }
 
 bool ViewportController::onKey(const input::KeyEvent& e) {
+    // escape
     if (e.key == input::KeyCode::Escape && e.action == input::KeyAction::Press) {
         editorSession_.select(ToolId::Cursor);
         return true;
+    }
+
+    UndoRedo::UndoRedoManager& mgr = documentManager_.getActiveDocument()->undoRedoManager();
+    // redo
+    if (e.key == input::KeyCode::Z &&
+             input::has_flag(e.modifiers, input::Modifiers::Ctrl) &&
+             input::has_flag(e.modifiers, input::Modifiers::Shift) &&
+             e.action == input::KeyAction::Press) {
+        mgr.redo();
+    }
+    // undo
+    else if (e.key == input::KeyCode::Z &&
+        input::has_flag(e.modifiers, input::Modifiers::Ctrl) &&
+        e.action == input::KeyAction::Press) {
+        mgr.undo();
     }
 
     editorSession_.activeTool()->onKey(e);

@@ -1,6 +1,5 @@
 #include "CursorTool.h"
 
-#include "../../core/src/DSU.h"
 #include "Document.h"
 #include "Scene.h"
 

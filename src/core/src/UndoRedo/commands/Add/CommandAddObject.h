@@ -12,18 +12,18 @@ namespace UndoRedo {
     // Command -> CommandAddObject -> CommandAddX
     class CommandAddObject : public Command {
     protected:
-        core::Scene &_scene;
-        core::ObjectData _data;
-        core::ID _id;
+        Scene& scene_;
+        ObjectData data_;
+        ID id_;
 
-        bool Execute() override;
+        bool doExecute() noexcept override;
 
-        bool Undo() override;
+        bool doUndo() noexcept override;
 
-        bool Redo() override;
+        bool doRedo() noexcept override;
 
     public:
-        CommandAddObject(core::Scene& scene, core::ObjectData data) : _scene(scene), _data(data) {}
+        CommandAddObject(Scene& scene, ObjectData data) : scene_(scene), data_(data) {}
 
         virtual std::string description() const override { return "Add object to scene"; };
     };

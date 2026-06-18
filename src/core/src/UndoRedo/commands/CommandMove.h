@@ -14,11 +14,11 @@ namespace UndoRedo {
         std::vector<core::ObjectData> _pre_move_object_states;
         std::vector<core::ObjectData> _post_move_object_states;
 
-        bool Execute() override;
+        bool doExecute() noexcept override;
 
-        bool Undo() override;
+        bool doUndo() noexcept override;
 
-        bool Redo() override;
+        bool doRedo() noexcept override;
 
     public:
         CommandMove(core::Scene& scene, std::vector<core::ObjectData> pre_move_object_states) : _scene(scene), _pre_move_object_states(pre_move_object_states) {}

@@ -15,10 +15,10 @@ namespace UndoRedo {
 
     public:
         ID getPointID() {
-            if (_id == ID{}) {
+            if (id_ == ID{}) {
                 return ID(-1);
             }
-            return _id;
+            return id_;
         }
 
         std::string description() const override { return "Add point to Scene"; }

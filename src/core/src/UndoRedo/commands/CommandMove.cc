@@ -2,11 +2,11 @@
 #include "objects/Component.h"
 #include "Scene.h"
 
-bool UndoRedo::CommandMove::Execute() {
+bool UndoRedo::CommandMove::doExecute() noexcept {
     return false;
 }
 
-bool UndoRedo::CommandMove::Undo() {
+bool UndoRedo::CommandMove::doUndo() noexcept {
     for (auto& objData : _pre_move_object_states) {
         if (objData.et == core::ObjType::ET_POINT) {
             _scene.setPoint(
@@ -56,7 +56,7 @@ bool UndoRedo::CommandMove::Undo() {
     return true;
 }
 
-bool UndoRedo::CommandMove::Redo() {
+bool UndoRedo::CommandMove::doRedo() noexcept {
     for (auto& objData : _post_move_object_states) {
         if (objData.et == core::ObjType::ET_POINT) {
             _scene.setPoint(

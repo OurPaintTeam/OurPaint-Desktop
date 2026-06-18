@@ -17,7 +17,8 @@ public:
                        EditorSession& session,
                        IRenderer& renderer,
                        renderer::RenderData& renderScene,
-                       RenderDataBuilder& builder);
+                       RenderDataBuilder& builder,
+                       DocumentManager& documentManager);
 
     bool onResize     (const input::ResizeEvent& e)      override;
     bool onMouseMove  (const input::MouseMoveEvent& e)   override;
@@ -36,6 +37,7 @@ private:
     IRenderer& renderer_;
     renderer::RenderData& renderScene_;
     RenderDataBuilder& builder_;
+    DocumentManager& documentManager_;
 
     bool panning_ = false;
     double lastX_ = 0.0;

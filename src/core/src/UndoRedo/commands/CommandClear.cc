@@ -7,18 +7,18 @@ UndoRedo::CommandClear::~CommandClear() {
     delete _sceneAfter;
 }
 
-bool UndoRedo::CommandClear::Execute() {
+bool UndoRedo::CommandClear::doExecute() noexcept {
     _sceneBefore = _scene;
     _sceneAfter = new core::Scene();
     _scene = _sceneAfter;
     return true;
 }
-bool UndoRedo::CommandClear::Undo() {
+bool UndoRedo::CommandClear::doUndo() noexcept {
     _scene = _sceneBefore;
     return true;
 }
 
-bool UndoRedo::CommandClear::Redo() {
+bool UndoRedo::CommandClear::doRedo() noexcept {
     _scene = _sceneAfter;
     return true;
 }

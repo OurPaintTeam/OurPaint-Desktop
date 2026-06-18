@@ -55,9 +55,6 @@ public:
     bool deleteArc(ID arcID);
     void clear();
 
-    const BoundBox2D& getBoundingBox() const;
-    void updateBoundingBox() const;
-
     ObjectData getObjectData(ID objectID) const;
     ObjectData getRootObjectData(ID objectID) const;
     Requirement getRequirementData(ID object1, ID object2) const;
@@ -115,6 +112,10 @@ public:
 
     std::vector<PointGroup> getPointOnPointGroups() const;
 
+    bool restoreObject(const ObjectData& object);
+    bool restoreRequirement(const Requirement& requirement);
+    bool setObjectData(const ObjectData& object);
+
 private:
     std::vector<ISceneObserver*> _observers;
 
@@ -123,6 +124,7 @@ private:
     static ReqType reqTypeMapper(DCM_ReqType type);
     static DCM_ReqType reqTypeMapper(ReqType type);
 };
+
 }
 
 #endif  // ! OURPAINT_CORE_SCENE_H_

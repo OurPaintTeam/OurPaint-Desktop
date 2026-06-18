@@ -1,8 +1,10 @@
-#ifndef OURPAINT_HEADERS_UNDOREDO_TRANSACTIONS_H_
-#define OURPAINT_HEADERS_UNDOREDO_TRANSACTIONS_H_
+#ifndef OURPAINT_HEADERS_UNDOREDO_TRANSACTION_H_
+#define OURPAINT_HEADERS_UNDOREDO_TRANSACTION_H_
 
-#include <stdexcept>
+
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Command.h"
@@ -11,32 +13,45 @@ namespace UndoRedo {
 
     class Transaction {
     private:
-        std::vector<Command *> commands;
-        std::string name;
-        bool committed = false;
+        enum class State {
+            Building,
+            Applied,
+            Reverted
+        };
+
+        std::vector<std::unique_ptr<Command>> commands_;
+        std::string name_;
+        State state_ = State::Building;
 
     public:
-        Transaction(std::string &&name);
-        ~Transaction();
-        Transaction(const Transaction &) = delete;
-        Transaction &operator=(const Transaction &) = delete;
-        Transaction(Transaction &&);
-        Transaction &operator=(Transaction &&);
+        explicit Transaction(std::string name);
 
-        void addCommand(Command *cnd);
+        Transaction(const Transaction&) = delete;
+        Transaction& operator=(const Transaction&) = delete;
 
-        void commit(); // Фиксация транзакции
-        bool undo();
+        Transaction(Transaction&&) noexcept = default;
+        Transaction& operator=(Transaction&&) noexcept = default;
 
-        bool redo();
+        [[nodiscard]] bool addCommand(std::unique_ptr<Command> command);
 
-        std::string label() const; // Название транзакции
-        bool isCommitted() const;
+        // Executes all commands in order. If any command fails,
+        // already executed commands are rolled back in reverse order.
+        [[nodiscard]] bool commit() noexcept;
 
-    private:
-        void rollback() noexcept; // Откат (если ошибка)
+        // Reverts all commands in reverse order. If any command fails,
+        // already reverted commands are restored in forward order.
+        [[nodiscard]] bool undo() noexcept;
+
+        // Reapplies all commands in forward order. If any command fails,
+        // already reapplied commands are reverted in reverse order.
+        [[nodiscard]] bool redo() noexcept;
+
+        [[nodiscard]] const std::string& label() const noexcept;
+        [[nodiscard]] bool isApplied() const noexcept;
+        [[nodiscard]] bool isReverted() const noexcept;
+        [[nodiscard]] bool isBuilding() const noexcept;
     };
 
 }
 
-#endif // ! OURPAINT_HEADERS_UNDOREDO_TRANSACTIONS_H_
+#endif // ! OURPAINT_HEADERS_UNDOREDO_TRANSACTION_H_

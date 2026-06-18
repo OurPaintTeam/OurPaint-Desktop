@@ -1,62 +1,73 @@
 #include "UndoRedo.h"
 
 namespace UndoRedo {
+    UndoRedoManager::UndoRedoManager(unsigned int steps) : maxSteps_(steps) {}
 
-    UndoRedoManager::UndoRedoManager(unsigned int steps) : maxSteps(steps) {}
-
-    void UndoRedoManager::push(Transaction &&tnx) {
-        if (!tnx.isCommitted()) {
-            tnx.commit();
-        }
-        if (transactions_undo.size() >= maxSteps) {
-            transactions_undo.pop_front();
-        }
-        transactions_undo.push_back(std::move(tnx));
-        transactions_redo = std::stack<Transaction>();
-    }
-
-
-    bool UndoRedoManager::undo() {
-        if (transactions_undo.empty()) {
+    bool UndoRedoManager::push(Transaction&& tnx) {
+        if (maxSteps_ == 0) {
             return false;
         }
-        Transaction &txn_ref = transactions_undo.back();
-        if (txn_ref.undo()) {
-            Transaction txn = std::move(txn_ref);
-            transactions_undo.pop_back();
-            transactions_redo.push(std::move(txn));
-            return true;
+
+        if (tnx.isBuilding()) {
+            if (!tnx.commit()) {
+                return false;
+            };
         }
-        return false;
+
+        redo_.clear();
+
+        if (undo_.size() >= maxSteps_) {
+            undo_.pop_front();
+        }
+
+        undo_.push_back(std::move(tnx));
+
+        return true;
     }
 
-    bool UndoRedoManager::redo() {
-        if (transactions_redo.empty()) {
+    bool UndoRedoManager::undo() noexcept {
+        if (undo_.empty()) {
             return false;
         }
-        Transaction &txn_ref = transactions_redo.top();
-        if (txn_ref.redo()) {
-            Transaction txn = std::move(txn_ref);
-            transactions_redo.pop();
-            transactions_undo.push_back(std::move(txn));
-            return true;
+
+        if (!undo_.back().undo()) {
+            return false;
         }
-        return false;
+
+        redo_.push_back(std::move(undo_.back()));
+        undo_.pop_back();
+
+        return true;
+    }
+
+    bool UndoRedoManager::redo() noexcept {
+        if (redo_.empty()) {
+            return false;
+        }
+
+        if (!redo_.back().redo()) {
+            return false;
+        }
+
+        undo_.push_back(std::move(redo_.back()));
+        redo_.pop_back();
+
+        return true;
     }
 
     void UndoRedoManager::setMaxUndoSteps(unsigned int steps) {
-        maxSteps = steps;
-        while (transactions_undo.size() > maxSteps) {
-            transactions_undo.pop_front();
+        maxSteps_ = steps;
+        while (undo_.size() > maxSteps_) {
+            undo_.pop_front();
         }
     }
 
     bool UndoRedoManager::canUndo() const {
-        return !transactions_undo.empty();
+        return !undo_.empty();
     }
 
     bool UndoRedoManager::canRedo() const {
-        return !transactions_redo.empty();
+        return !redo_.empty();
     }
 
 }
