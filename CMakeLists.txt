@@ -35,7 +35,7 @@ find_package(OpenMP REQUIRED)
 add_subdirectory(src/app)
 add_subdirectory(src/core)
 add_subdirectory(src/core/tests)
-add_subdirectory(src/Rendering/renderer)
+add_subdirectory(src/render/render)
 add_subdirectory(src/UI)
 
 
