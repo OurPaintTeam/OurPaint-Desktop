@@ -35,7 +35,7 @@ FetchContent_MakeAvailable(glm)
 
 
 add_library(ourpaint_rendering STATIC
-        OpenGLRenderer.cc
+        OpenGL2dRenderer.cc
         Camera2D.cc
         Logger.cc
         #text/FreeTypeFontManager.cc

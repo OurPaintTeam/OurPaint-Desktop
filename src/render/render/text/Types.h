@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace rendering::text {
+namespace render::text {
 // ------------------------------------------------------------
 // Basic types
 // ------------------------------------------------------------
