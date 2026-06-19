@@ -51,11 +51,30 @@ void RenderDataBuilder::rebuild() {
         renderData_.points.push_back(renderer::Point(x, y));
     }
 
+
+    std::vector<ObjectData> beziers = scene_.getBeziers();
+    std::unordered_map<ID, ID> pointToBezier;
+    pointToBezier.reserve(beziers.size() * 4);
+    for (const auto& od : beziers) {
+        if (od.subObjects.size() == 4) {
+            pointToBezier[od.subObjects[0]] = od.id;
+            pointToBezier[od.subObjects[1]] = od.id;
+            pointToBezier[od.subObjects[2]] = od.id;
+            pointToBezier[od.subObjects[3]] = od.id;
+        }
+    }
+
+    std::unordered_set<ID> selectionBeziers;
+
     // Selection objects
     for (const auto& id : overlay_.selection_.model.items()) {
         ObjectData od = scene_.getObjectData(id);
         if (od.et == ObjType::ET_POINT) {
             renderData_.selected.points.push_back({static_cast<float>(od.params[0]), static_cast<float>(od.params[1])});
+            if (pointToBezier.contains(od.id)) {
+                ID bezierID = pointToBezier[od.id];
+                selectionBeziers.insert(bezierID);
+            }
         }
         else if (od.et == ObjType::ET_LINE) {
             renderData_.selected.lines.push_back({
@@ -123,7 +142,6 @@ void RenderDataBuilder::rebuild() {
     }
 
     // Cubic bezier curve
-    std::vector<ObjectData> beziers = scene_.getBeziers();
     for (size_t i = 0; i < beziers.size(); i++) {
         ObjectData od = beziers[i];
 
@@ -144,6 +162,11 @@ void RenderDataBuilder::rebuild() {
             double y1 = (1-t)*(1-t)*(1-t)*p0.y + 3*(1-t)*(1-t)*t*p1.y + 3*(1-t)*t*t*p2.y + t*t*t*p3.y;
             t += 0.01;
             renderData_.lines.push_back(renderer::Line(x0, y0, x1, y1));
+
+            if (selectionBeziers.contains(od.id)) {
+                renderData_.selected.lines.push_back(renderer::Line(x0, y0, x1, y1));
+            }
+
             x0 = x1;
             y0 = y1;
         }

@@ -383,7 +383,6 @@ std::vector<ObjectData> Scene::getBeziers() const {
         DCM_FigDesc desc1 = DCM_.getFigure(DCM_ID(b.control1.get())).value();
         DCM_FigDesc desc2 = DCM_.getFigure(DCM_ID(b.control2.get())).value();
 
-
         od.params.push_back(descStart.coords[0]);
         od.params.push_back(descStart.coords[1]);
 
@@ -395,6 +394,11 @@ std::vector<ObjectData> Scene::getBeziers() const {
 
         od.params.push_back(desc2.coords[0]);
         od.params.push_back(desc2.coords[1]);
+
+        od.subObjects.push_back(b.start);
+        od.subObjects.push_back(b.end);
+        od.subObjects.push_back(b.control1);
+        od.subObjects.push_back(b.control2);
 
         beziers.push_back(od);
     }
