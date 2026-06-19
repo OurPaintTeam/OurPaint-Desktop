@@ -378,17 +378,23 @@ std::vector<ObjectData> Scene::getBeziers() const {
         od.et = ObjType::ET_CUBIC_BEZIER;
         od.id = id;
 
-        od.params.push_back(b.b.start.x);
-        od.params.push_back(b.b.start.y);
+        DCM_FigDesc descStart = DCM_.getFigure(DCM_ID(b.start.get())).value();
+        DCM_FigDesc descEnd = DCM_.getFigure(DCM_ID(b.end.get())).value();
+        DCM_FigDesc desc1 = DCM_.getFigure(DCM_ID(b.control1.get())).value();
+        DCM_FigDesc desc2 = DCM_.getFigure(DCM_ID(b.control2.get())).value();
 
-        od.params.push_back(b.b.end.x);
-        od.params.push_back(b.b.end.y);
 
-        od.params.push_back(b.b.control1.x);
-        od.params.push_back(b.b.control1.y);
+        od.params.push_back(descStart.coords[0]);
+        od.params.push_back(descStart.coords[1]);
 
-        od.params.push_back(b.b.control2.x);
-        od.params.push_back(b.b.control2.y);
+        od.params.push_back(descEnd.coords[0]);
+        od.params.push_back(descEnd.coords[1]);
+
+        od.params.push_back(desc1.coords[0]);
+        od.params.push_back(desc1.coords[1]);
+
+        od.params.push_back(desc2.coords[0]);
+        od.params.push_back(desc2.coords[1]);
 
         beziers.push_back(od);
     }
