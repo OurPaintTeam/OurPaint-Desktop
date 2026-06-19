@@ -10,6 +10,7 @@
 #include "IViewportHost.h"
 #include "InputEvents.h"
 #include "Camera2D.h"
+#include <vector>
 
 class QWidget;
 class QTimer;
@@ -32,7 +33,11 @@ public:
     QWidget* createContainer(QWidget* parent = nullptr);
 
     // Для shared context между несколькими viewport-ами
-    QOpenGLContext* context() const { return context_; }
+    //QOpenGLContext* context() const { return context_; }
+
+    int addController(IViewportController* controller);
+    void setActiveController(int index);
+    bool removeController(IViewportController* controller);
 
 protected:
     // QWindow events
@@ -66,9 +71,16 @@ private:
     static input::ResizeEvent      toResizeEvent       (QResizeEvent* e, float dpr);
 
 private:
-    uint32_t             id_;
-    QOpenGLContext*      context_          = nullptr;
-    IViewportController* controller_       = nullptr;
+    struct ControllerContext {
+        IViewportController* controller = nullptr;
+        QOpenGLContext*      context    = nullptr;
+    };
+
+    std::vector<ControllerContext> controllers_;
+
+    IViewportController* controller_ = nullptr;
+    QOpenGLContext*      context_    = nullptr;
+
     QTimer*              continuousTimer_  = nullptr;
     bool                 initialized_      = false;
 };

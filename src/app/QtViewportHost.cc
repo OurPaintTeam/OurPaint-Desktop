@@ -14,7 +14,6 @@
 
 QtViewportHost::QtViewportHost(uint32_t id, QScreen* screen)
     : QWindow(screen)
-    , id_(id)
 {
     setSurfaceType(QWindow::OpenGLSurface);
 
@@ -38,16 +37,23 @@ QtViewportHost::QtViewportHost(uint32_t id, QScreen* screen)
 
 QtViewportHost::~QtViewportHost() {
     continuousTimer_->stop();
-    if (context_) {
-        context_->doneCurrent();
-        delete context_;
-        context_ = nullptr;
+
+    for (ControllerContext& entry : controllers_) {
+        if (QOpenGLContext::currentContext() == entry.context) {
+            entry.context->doneCurrent();
+        }
+
+        delete entry.context;
     }
+
+    controllers_.clear();
+    controller_ = nullptr;
+    context_ = nullptr;
 }
 
 // --- IViewportHost ---
 
-uint32_t QtViewportHost::id() const { return id_; }
+uint32_t QtViewportHost::id() const { return 0; }
 
 Viewport2D QtViewportHost::getSize() const {
     int w = static_cast<int>(QWindow::width() * devicePixelRatio());
@@ -76,7 +82,137 @@ void QtViewportHost::presentFrame() {
 }
 
 void QtViewportHost::setEventSink(IViewportController* controller) {
-    controller_ = controller;
+    if (!controller) {
+        controller_ = nullptr;
+        context_ = nullptr;
+        return;
+    }
+
+    const int index = addController(controller);
+    if (index >= 0) {
+        setActiveController(index);
+    }
+}
+
+int QtViewportHost::addController(IViewportController* controller) {
+    if (!controller) {
+        qWarning() << "Cannot add null viewport controller";
+        return -1;
+    }
+
+    for (int i = 0; i < static_cast<int>(controllers_.size()); ++i) {
+        if (controllers_[i].controller == controller) {
+            return i;
+        }
+    }
+
+    auto* context = new QOpenGLContext(this);
+    context->setFormat(requestedFormat());
+
+    if (!context->create()) {
+        qWarning() << "Failed to create OpenGL context for controller";
+        delete context;
+        return -1;
+    }
+
+    controllers_.push_back({
+        .controller = controller,
+        .context = context
+    });
+
+    return static_cast<int>(controllers_.size()) - 1;
+}
+
+bool QtViewportHost::removeController(IViewportController* controller) {
+    auto it = std::find_if(
+        controllers_.begin(),
+        controllers_.end(),
+        [controller](const ControllerContext& entry) {
+            return entry.controller == controller;
+        }
+    );
+
+    if (it == controllers_.end()) {
+        return false;
+    }
+
+    const bool wasActive = (controller_ == controller);
+    QOpenGLContext* contextToRemove = it->context;
+
+    if (QOpenGLContext::currentContext() == contextToRemove) {
+        contextToRemove->doneCurrent();
+    }
+
+    if (wasActive) {
+        controller_ = nullptr;
+        context_ = nullptr;
+    }
+
+    delete contextToRemove;
+    controllers_.erase(it);
+
+    if (wasActive && !controllers_.empty()) {
+        setActiveController(0);
+    }
+
+    if (controllers_.empty()) {
+        initialized_ = false;
+    }
+
+    return true;
+}
+
+static void* getGLProcAddress(const char* name) {
+    QOpenGLContext* ctx = QOpenGLContext::currentContext();
+    if (!ctx) {
+        qWarning() << "No current OpenGL context when loading:" << name;
+        return nullptr;
+    }
+    return reinterpret_cast<void*>(ctx->getProcAddress(name));
+}
+
+void QtViewportHost::setActiveController(int index) {
+    if (index < 0 || index >= static_cast<int>(controllers_.size())) {
+        qWarning() << "Invalid viewport controller index:" << index;
+        return;
+    }
+
+    ControllerContext& entry = controllers_[index];
+
+    if (initialized_ && isExposed()) {
+        if (!entry.context->makeCurrent(this)) {
+            qWarning() << "Failed to activate OpenGL context";
+            return;
+        }
+
+        if (!gladLoadGL(reinterpret_cast<GLADloadfunc>(getGLProcAddress))) {
+            qWarning() << "Failed to load OpenGL functions for active context";
+            entry.context->doneCurrent();
+            return;
+        }
+    }
+
+    controller_ = entry.controller;
+    context_ = entry.context;
+
+    if (!initialized_ || !isExposed()) {
+        return;
+    }
+
+    const Viewport2D viewport = getSize();
+
+    const int w = int(width() * devicePixelRatio());
+    const int h = int(height() * devicePixelRatio());
+
+    glViewport(0, 0, w, h);
+
+    input::ResizeEvent event;
+    event.width = w;
+    event.height = h;
+    event.devicePixelRatio = devicePixelRatio();
+
+    controller_->onResize(event);
+    renderFrame();
 }
 
 
@@ -87,8 +223,6 @@ QWidget* QtViewportHost::createContainer(QWidget* parent) {
     container->setAttribute(Qt::WA_MouseTracking);
     return container;
 }
-
-
 
 
 // --- QWindow events ---
@@ -204,68 +338,42 @@ void QtViewportHost::wheelEvent(QWheelEvent* e) {
 
 // --- Private ---
 
-static void* getGLProcAddress(const char* name) {
-    QOpenGLContext* ctx = QOpenGLContext::currentContext();
-    if (!ctx) {
-        qWarning() << "No current OpenGL context when loading:" << name;
-        return nullptr;
-    }
-    return reinterpret_cast<void*>(ctx->getProcAddress(name));
-}
 
 void QtViewportHost::initContext() {
     qDebug() << "initContext() started";
 
-    context_ = new QOpenGLContext();
-    context_->setFormat(requestedFormat());
-
-    if (!context_->create()) {
-        qWarning() << "Failed to create OpenGL context";
-        delete context_;
-        context_ = nullptr;
+    if (!context_) {
+        qWarning() << "No active viewport controller/context";
         return;
     }
-
-    qDebug() << "Context created, making current...";
 
     if (!context_->makeCurrent(this)) {
-        qWarning() << "Failed to make context current";
-        delete context_;
-        context_ = nullptr;
+        qWarning() << "Failed to make active context current";
         return;
     }
-
-    qDebug() << "Context is current, loading GLAD...";
 
     if (!gladLoadGL(reinterpret_cast<GLADloadfunc>(getGLProcAddress))) {
         qWarning() << "Failed to initialize GLAD";
         context_->doneCurrent();
-        delete context_;
-        context_ = nullptr;
-        return;
-    }
-
-    if (!glad_glClear) {
-        qWarning() << "glClear not loaded!";
         return;
     }
 
     initialized_ = true;
 
-    //renderer_->initialize();
+    const Viewport2D viewport = getSize();
 
     const int w = int(width() * devicePixelRatio());
     const int h = int(height() * devicePixelRatio());
 
     glViewport(0, 0, w, h);
 
-    auto s = size();
     if (controller_) {
-        input::ResizeEvent e;
-        e.width = w;
-        e.height = h;
-        e.devicePixelRatio = devicePixelRatio();
-        controller_->onResize(e);
+        input::ResizeEvent event;
+        event.width = w;
+        event.height = h;
+        event.devicePixelRatio = devicePixelRatio();
+
+        controller_->onResize(event);
     }
 
     qDebug() << "initContext() finished successfully";

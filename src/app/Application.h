@@ -44,6 +44,7 @@ private:
     IPlatformRuntime* platformRuntime_;
 
     // Host
+    IViewportHost* host_;
 
     // Rendering
 

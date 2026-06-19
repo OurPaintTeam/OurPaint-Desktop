@@ -11,18 +11,22 @@
 #include "RenderDataBuilder.h"
 #include "ViewportController.h"
 #include "CommandConsole.h"
+#include "IViewportHost.h"
+#include "QtViewportHost.h"
 
 #include <iostream>
 
 UIController::UIController(DocumentManager& manager,
                            IPlatformRuntime& platformRuntime,
                            UI::ProjectManager& projectManager,
-                           std::vector<Tab>& tabs)
+                           std::vector<Tab>& tabs,
+                           QtViewportHost& host)
     : documentManager_(manager),
       platformRuntime_(platformRuntime),
       projectManager_(projectManager),
       tabs_(tabs),
-      activeTabName_({}) {}
+      activeTabName_({}),
+      viewportHost_(host) {}
 
 void UIController::selectTool(ToolId tool, double value) {
     for (const auto& tab : tabs_) {
@@ -42,7 +46,7 @@ void UIController::executeConsoleCommand(std::string str) {
 
         for (const auto& tab : tabs_) {
             if (tab.name_ == activeTabName_) {
-                tab.viewportHost_->requestRedraw();
+                viewportHost_.requestRedraw();
             }
         }
     }catch (const std::exception& e) {
@@ -60,9 +64,6 @@ void UIController::createProjectInCurrentWindow() {}
 
 void UIController::openFile() {}
 
-void UIController::renameTab() {}
-
-void UIController::removeTab() {}
 
 void UIController::createFile(const std::string& fileName) {
     int fileIndex = documentManager_.createNewDocument(fileName);
@@ -91,19 +92,16 @@ void UIController::createFile(const std::string& fileName) {
         *tab.renderData_,
         *tab.builder_,
         *documentManager_.getActiveDocument());
-    tab.viewportHost_ = platformRuntime_.createViewportHost();
-    tab.viewportHost_->setEventSink(tab.viewportController_);
-    tab.commandConsole_ = new CommandConsole(*tab.overlay_, *tab.viewportHost_);
+    tab.commandConsole_ = new CommandConsole(*tab.overlay_, viewportHost_);
     projectManager_.setCommandConsoleEngine(tab.commandConsole_);
-
-    QtViewportHost* qt_host = static_cast<QtViewportHost*>(tab.viewportHost_);
-    projectManager_.setQWindowRender(qt_host);
+    viewportHost_.setEventSink(tab.viewportController_);
 
     tab.name_ = fileName;
 
-
-
     tabs_.push_back(tab);
+
+    int index = viewportHost_.addController(tab.viewportController_);
+    controllerMap_[tab.viewportController_] = index;
 
     // this should be in the end
     projectManager_.addTabSlot(fileName.data());
@@ -116,13 +114,33 @@ void UIController::setActiveFile(const std::string& fileName) {
     }
     for (const auto& tab : tabs_) {
         if (tab.name_ == fileName) {
-            QtViewportHost* qt_host = static_cast<QtViewportHost*>(tab.viewportHost_);
-            projectManager_.setQWindowRender(qt_host);
             activeTabName_ = fileName;
+            int index = controllerMap_.at(tab.viewportController_);
+            viewportHost_.setActiveController(index);
             return;
         }
     }
     throw "didn't find active document with this file name";
+}
+
+void UIController::removeFile(const std::string& fileName) {
+    for (auto it = tabs_.begin(); it != tabs_.end(); ++it) {
+        if ((*it).name_ == fileName) {
+            viewportHost_.removeController((*it).viewportController_);
+            controllerMap_.erase((*it).viewportController_);
+            tabs_.erase(it);
+            return;
+        }
+    }
+}
+
+void UIController::renameTab(const std::string& oldName, const std::string& newName) {
+    int index = indicesMap_[oldName];
+    indicesMap_[newName] = index;
+    if (activeTabName_ == oldName) {
+        activeTabName_ = newName;
+    }
+    projectManager_.renameTabSlot(QString(oldName.data()), QString(newName.data()));
 }
 
 void UIController::renameProject() {}

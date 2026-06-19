@@ -29,7 +29,6 @@ struct Tab {
     AxisTexts* axisTexts_;
     RenderDataBuilder* builder_;
 
-    IViewportHost* viewportHost_;
     ViewportController* viewportController_;
 };
 

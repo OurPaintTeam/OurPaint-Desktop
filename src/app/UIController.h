@@ -4,20 +4,21 @@
 #include <string>
 
 #include "DocumentManager.h"
+#include "IPlatformRuntime.h"
+#include "IViewportHost.h"
 #include "InteractionTools/EditorSession.h"
 #include "InteractionTools/ToolId.h"
-#include "IViewportHost.h"
-
 #include "Lib/Core/ProjectManager.h"
+#include "QtViewportHost.h"
 #include "Tab.h"
-#include "IPlatformRuntime.h"
 
 class UIController {
 public:
     UIController(DocumentManager& manager,
                  IPlatformRuntime& platformRuntime,
                  UI::ProjectManager& projectManager,
-                 std::vector<Tab>& tabs);
+                 std::vector<Tab>& tabs,
+                 QtViewportHost& host);
     ~UIController() = default;
 
     void selectTool(ToolId tool, double value = 0.0);
@@ -33,11 +34,11 @@ public:
     void createProjectInCurrentWindow();
 
     void openFile();
-    void renameTab();
-    void removeTab();
 
     void createFile(const std::string& fileName);
     void setActiveFile(const std::string& fileName);
+    void removeFile(const std::string& fileName);
+    void renameTab(const std::string& oldName, const std::string& newName);
 
     void renameProject();
     void deleteProject();
@@ -47,10 +48,13 @@ public:
 private:
     DocumentManager& documentManager_;
     IPlatformRuntime& platformRuntime_;
+    QtViewportHost& viewportHost_;
     UI::ProjectManager& projectManager_;
     std::vector<Tab>& tabs_;
 
     std::unordered_map<std::string, int> indicesMap_;
+
+    std::unordered_map<ViewportController*, int> controllerMap_;
 
     std::string activeTabName_;
 };

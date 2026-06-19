@@ -69,10 +69,16 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     QObject::connect(&window, &UI::ProjectManager::openFileTriggered, this, [this]() { controller_.openFile(); });
 
     // --- Rename tab ---
-    QObject::connect(&window, &UI::ProjectManager::renameTabTriggered, this, [this]() { controller_.renameTab(); });
+    QObject::connect(&window, &UI::ProjectManager::renameTabTriggered, this, [this](const QString& oldName, const QString& newName) {
+        std::cout << "remove file triggered: " << oldName.toStdString() << " -> " << newName.toStdString() << '\n';
+        controller_.renameTab(oldName.toStdString(), newName.toStdString());
+    });
 
     // --- Remove tab ---
-    QObject::connect(&window, &UI::ProjectManager::removeTabTriggered, this, [this]() { controller_.removeTab(); });
+    QObject::connect(&window, &UI::ProjectManager::removeTabTriggered, this, [this](const QString& fileName) {
+        std::cout << "remove file triggered: " << fileName.toStdString() << '\n';
+        controller_.removeFile(fileName.toStdString());
+    });
 
     // --- Create file ---
     QObject::connect(&window, &UI::ProjectManager::createFileTriggered, this, [this](const QString& fileName) {
@@ -85,6 +91,8 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
         std::cout << "set active file: " << fileName.toStdString() << '\n';
         controller_.setActiveFile(fileName.toStdString());
     });
+
+
 
     // --- Project ---
     QObject::connect(&window, &UI::ProjectManager::renameProjectTriggered, this, [this]() { controller_.renameProject(); });

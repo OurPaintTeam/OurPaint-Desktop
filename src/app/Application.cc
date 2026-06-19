@@ -40,10 +40,13 @@ void Application::init(int& argc, char** argv) {
 
     projectManager_ = new UI::ProjectManager({}, nullptr, nullptr);
 
-    uiController_ = new UIController(*documentManager_,  *platformRuntime_, *projectManager_, tabs_);
+    host_ = platformRuntime_->createViewportHost();
+    QtViewportHost* qt_host = static_cast<QtViewportHost*>(host_);
+    projectManager_->setQWindowRender(qt_host);
+
+    uiController_ = new UIController(*documentManager_,  *platformRuntime_, *projectManager_, tabs_, *qt_host);
 
     binder_ = new QtMainWindowBinder(*projectManager_, *uiController_);
-
 }
 
 int Application::exec() {
