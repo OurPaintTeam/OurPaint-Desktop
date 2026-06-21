@@ -97,7 +97,7 @@ struct Rect {
 
 struct StrokeStyle {
     Color color{};
-    float width = 1.0f;
+    float widthPx = 1.0f;
     std::optional<float> edgeSoftnessPx;
 };
 
@@ -130,7 +130,7 @@ struct ArcBatch {
 
 struct RectBatch {
     std::vector<Rect> rects;
-    StrokeStyle stroke;
+    std::optional<StrokeStyle> stroke;
     std::optional<Color> fill;
 };
 

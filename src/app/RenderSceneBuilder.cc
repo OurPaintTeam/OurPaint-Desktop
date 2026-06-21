@@ -18,7 +18,9 @@ namespace {
 constexpr int kSelectedOrder         = 10;
 
 constexpr int kGeometryOrder         = 20;
-constexpr int kGeometryMarkerOrder   = 21;
+
+constexpr int kSelectedMarkers       = 21;
+constexpr int kGeometryMarkerOrder   = 22;
 
 constexpr int kSpecialOrder          = 30;
 
@@ -414,7 +416,7 @@ void RenderSceneBuilder::buildSelectedObjects() {
 }
 
 void RenderSceneBuilder::buildSelectedMarkers() {
-    render::DrawLayer layer = makeWorldLayer("selected_markers", kSelectedOrder);
+    render::DrawLayer layer = makeWorldLayer("selected_markers", kSelectedMarkers);
 
     render::MarkerBatch markers;
     markers.style = style_.selectedMarker;
@@ -447,7 +449,6 @@ void RenderSceneBuilder::buildSelectionRectangle() {
     render::RectBatch rect;
     rect.stroke = style_.selectionRectStroke;
     rect.fill = style_.selectionRectFill;
-
     rect.rects.push_back(makeRect(
         overlay_.selectionRect_->xMin,
         overlay_.selectionRect_->yMin,

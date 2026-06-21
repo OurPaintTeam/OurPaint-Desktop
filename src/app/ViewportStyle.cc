@@ -23,12 +23,12 @@ ViewportStyle ViewportStyle::makeDefault() {
     {
         // base line
         style.baseLine.color = {0.0f, 0.0f, 0.0f, 1.0f};
-        style.baseLine.width = 0.0f;
-        style.baseLine.edgeSoftnessPx = 2.0f;
+        style.baseLine.widthPx = 0.0f;
+        style.baseLine.edgeSoftnessPx = 1.5f;
 
         // selected line
         style.selectedLine.color = {0.0f, 1.0f, 1.0f, 1.0f};
-        style.selectedLine.width = 3.0f;
+        style.selectedLine.widthPx = 3.0f;
         style.selectedLine.edgeSoftnessPx = 2.0f;
 
         // overlay line
@@ -36,18 +36,18 @@ ViewportStyle ViewportStyle::makeDefault() {
 
         // special line
         style.specialLine.color = {0.5f, 0.5f, 0.5f, 0.4f};
-        style.specialLine.width = 1.0f;
+        style.specialLine.widthPx = 1.0f;
     }
 
     {
         // base circle
         style.baseCircle.color = {0.0f, 0.0f, 0.0f, 1.0f};
-        style.baseCircle.width = 0.0f;
-        style.baseCircle.edgeSoftnessPx = 2.0f;
+        style.baseCircle.widthPx = 0.0f;
+        style.baseCircle.edgeSoftnessPx = 1.5f;
 
         // selected circle
         style.selectedCircle.color = {0.0f, 1.0f, 1.0f, 1.0f};
-        style.selectedCircle.width = 3.0f;
+        style.selectedCircle.widthPx = 3.0f;
         style.selectedCircle.edgeSoftnessPx = 2.0f;
 
         // overlay circle
@@ -57,7 +57,7 @@ ViewportStyle ViewportStyle::makeDefault() {
     {
         // selection rect
         style.selectionRectStroke.color = {0.2f, 0.5f, 1.0f, 0.9f};
-        style.selectionRectStroke.width = 1.0f;
+        style.selectionRectStroke.widthPx = 2.0f;
 
         style.selectionRectFill = {0.2f, 0.5f, 1.0f, 0.12f};
     }

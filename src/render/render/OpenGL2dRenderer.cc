@@ -300,7 +300,7 @@ void OpenGL2dRenderer::renderLayer(const DrawLayer& layer, const Camera2D& camer
     }
 
     for (const RectBatch& batch : layer.rectBatches) {
-        renderRectBatch(batch, transform);
+        renderRectBatch(batch, camera, transform);
     }
 
     for (const TextBatch& batch : layer.textBatches) {
@@ -414,7 +414,7 @@ void OpenGL2dRenderer::renderLineBatch(
         return;
     }
 
-    const float halfWidthPx = std::max(batch.style.width * 0.5f, kMinPixelSize);
+    const float halfWidthPx = std::max(batch.style.widthPx * 0.5f, kMinPixelSize);
     const float halfWidth = halfWidthPx * unitsPerPixel(coordinateSpace, camera);
 
     const float edgeSoftnessPx = batch.style.edgeSoftnessPx.value_or(lineEdgeSoftnessPx_);
@@ -503,7 +503,7 @@ void OpenGL2dRenderer::renderCircleBatch(
 
     // Current circle shader renders stroked circles/arcs.
     // batch.fill is intentionally not used here yet.
-    const float halfWidthPx = std::max(batch.stroke.width * 0.5f, kMinPixelSize);
+    const float halfWidthPx = std::max(batch.stroke.widthPx * 0.5f, kMinPixelSize);
 
     std::vector<CircleArcInstance> instances;
     instances.reserve(batch.circles.size());
@@ -586,7 +586,7 @@ void OpenGL2dRenderer::renderArcBatch(
         return;
     }
 
-    const float halfWidthPx = std::max(batch.stroke.width * 0.5f, kMinPixelSize);
+    const float halfWidthPx = std::max(batch.stroke.widthPx * 0.5f, kMinPixelSize);
 
     std::vector<CircleArcInstance> instances;
     instances.reserve(batch.arcs.size());
@@ -657,6 +657,7 @@ void OpenGL2dRenderer::renderArcBatch(
 
 void OpenGL2dRenderer::renderRectBatch(
     const RectBatch& batch,
+    const Camera2D& camera,
     const glm::mat4& transform
 ) {
     if (batch.rects.empty()) {
@@ -667,10 +668,7 @@ void OpenGL2dRenderer::renderRectBatch(
         return;
     }
 
-    // Current rect shader renders filled rectangles.
-    // Stroke can be rendered later through a dedicated rect-border shader
-    // or by converting borders to LineBatch in the builder.
-    if (!batch.fill.has_value()) {
+    if (!batch.fill.has_value() && !batch.stroke.has_value()) {
         return;
     }
 
@@ -692,8 +690,6 @@ void OpenGL2dRenderer::renderRectBatch(
         instances.push_back(instance);
     }
 
-    const Color& fill = *batch.fill;
-
     glUseProgram(rectProgram_);
     glBindVertexArray(rectVao_);
     glBindBuffer(GL_ARRAY_BUFFER, rectInstanceVbo_);
@@ -705,16 +701,21 @@ void OpenGL2dRenderer::renderRectBatch(
         GL_DYNAMIC_DRAW
     );
 
-    if (rectTransformLoc_ >= 0) {
-        glUniformMatrix4fv(
-            rectTransformLoc_,
-            1,
-            GL_FALSE,
-            glm::value_ptr(transform)
-        );
+    if (rectHasFillLoc_ >= 0) {
+        glUniform1i(rectHasFillLoc_, batch.fill.has_value() ? 1 : 0);
     }
 
-    if (rectFillColorLoc_ >= 0) {
+    if (rectHasStrokeLoc_ >= 0) {
+        glUniform1i(rectHasStrokeLoc_, batch.stroke.has_value() ? 1 : 0);
+    }
+
+    if (rectTransformLoc_ >= 0) {
+        glUniformMatrix4fv(rectTransformLoc_, 1, GL_FALSE, glm::value_ptr(transform));
+    }
+
+    if (batch.fill.has_value()) {
+        const Color& fill = *batch.fill;
+
         glUniform4f(
             rectFillColorLoc_,
             fill.r,
@@ -723,6 +724,24 @@ void OpenGL2dRenderer::renderRectBatch(
             fill.a
         );
     }
+
+    if (batch.stroke.has_value()) {
+        const StrokeStyle& stroke = *batch.stroke;
+
+        glUniform4f(
+            rectStrokeColorLoc_,
+            stroke.color.r,
+            stroke.color.g,
+            stroke.color.b,
+            stroke.color.a
+        );
+
+        glUniform1f(
+            rectStrokeWidthPxLoc_,
+            stroke.widthPx * camera.viewport().devicePixelRatio
+        );
+    }
+
 
     glDrawArraysInstanced(
         GL_TRIANGLES,
@@ -1024,6 +1043,10 @@ bool OpenGL2dRenderer::initRectPipeline() {
 
     rectTransformLoc_ = glGetUniformLocation(rectProgram_, "uTransform");
     rectFillColorLoc_ = glGetUniformLocation(rectProgram_, "uFillColor");
+    rectStrokeColorLoc_ = glGetUniformLocation(rectProgram_, "uStrokeColor");
+    rectHasFillLoc_ = glGetUniformLocation(rectProgram_, "uHasFill");
+    rectHasStrokeLoc_ = glGetUniformLocation(rectProgram_, "uHasStroke");
+    rectStrokeWidthPxLoc_ = glGetUniformLocation(rectProgram_, "uStrokeWidthPx");
 
     const float quadVerts[] = {
         -1.0f, -1.0f,

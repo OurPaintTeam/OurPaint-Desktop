@@ -90,6 +90,10 @@ private:
 
     GLint rectTransformLoc_ = -1;
     GLint rectFillColorLoc_ = -1;
+    GLint rectStrokeColorLoc_ = -1;
+    GLint rectHasFillLoc_ = -1;
+    GLint rectHasStrokeLoc_ = -1;
+    GLint rectStrokeWidthPxLoc_ = -1;
 
     // Viewport size
     int width_ = 1;
@@ -128,6 +132,7 @@ private:
 
     void renderRectBatch(
         const RectBatch& batch,
+        const Camera2D& camera,
         const glm::mat4& transform
     );
 
