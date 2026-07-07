@@ -30,7 +30,7 @@ BoundBox2D BoundBox2D::operator&(const BoundBox2D &other) const {
     return intersect(other);
 }
 
-constexpr bool BoundBox2D::isValid() const {
+bool BoundBox2D::isValid() const {
     return min_x <= max_x && min_y <= max_y;
 }
 

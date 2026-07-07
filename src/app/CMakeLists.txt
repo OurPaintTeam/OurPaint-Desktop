@@ -61,8 +61,16 @@ if (TYPE_OF_OPTIMIZATION)
     endif ()
 endif ()
 
-add_custom_command(TARGET ${PROJECT_NAME}
+add_custom_command(TARGET ourpaint
     POST_BUILD
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/shader_script.bat
-    COMMENT "Copy shaders"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/src/rendering/renderer/shaders
+            $<TARGET_FILE_DIR:ourpaint>/shaders
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/src/Rendering/renderer/shaders
+            $<TARGET_FILE_DIR:ourpaint>/shaders
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/src/Rendering/renderer/fonts
+            $<TARGET_FILE_DIR:ourpaint>/fonts
+    COMMENT "Copy shaders and fonts"
 )

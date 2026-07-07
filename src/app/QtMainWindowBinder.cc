@@ -93,7 +93,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     // Tools - constrains
     QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](const QString& tabName, UI::ConstraintType _t1) {
         switch (_t1) {
-            case UI::ConstraintType::Distance: {
+            case UI::ConstraintType::ObjectObjectDistance: {
                 auto* prompt = new UI::ParameterInputWidget("Input:",nullptr);
                 connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, prompt](const QString& parameter) {
                     if (parameter.isEmpty()) {
@@ -107,19 +107,19 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                 prompt->show();
                 break;
             }
-            case UI::ConstraintType::Tangent:
+            case UI::ConstraintType::PointOnLine:
                 controller_.selectTool(ToolId::ConstraintPointOnLine);
                 break;
-            case UI::ConstraintType::Coincident:
+            case UI::ConstraintType::CoincidentPoints:
                 controller_.selectTool(ToolId::ConstraintCoincidentPoints);
                 break;
-            case UI::ConstraintType::Parallel:
+            case UI::ConstraintType::ParallelLines:
                 controller_.selectTool(ToolId::ConstraintParallelLines);
                 break;
-            case UI::ConstraintType::Perpendicular:
+            case UI::ConstraintType::PerpendicularLines:
                 controller_.selectTool(ToolId::ConstraintPerpendicularLines);
                 break;
-            case UI::ConstraintType::Collinear:
+            case UI::ConstraintType::AngleBetweenLines:
                 controller_.selectTool(ToolId::ConstraintAngleBetweenLines);
                 break;
             default:

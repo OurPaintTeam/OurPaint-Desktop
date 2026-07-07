@@ -43,6 +43,7 @@ add_library(ourpaint_rendering STATIC
 target_include_directories(ourpaint_rendering PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+        ${CMAKE_SOURCE_DIR}/src/Rendering/renderer
 )
 target_link_libraries(ourpaint_rendering PUBLIC
         glad
