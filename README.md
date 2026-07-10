@@ -27,7 +27,7 @@ OurPaint Desktop — настольное приложение на C++ и Qt 6 
 - nlohmann/json
 - GoogleTest
 
-## Зависимости Linux
+## Зависимости
 
 Для Ubuntu/Debian:
 
@@ -38,7 +38,7 @@ sudo apt install -y git cmake ninja-build build-essential pkg-config \
   libgl1-mesa-dev libxkbcommon-dev libxcb-cursor0
 ```
 
-Рекомендуется CMake версии `3.26` или новее.
+Для Windows необходимо установить CMake, Qt 6 с компонентами для выбранного компилятора, а также Visual Studio с набором инструментов C++ ЛИБО MinGW-w64.
 
 ## Клонирование
 
@@ -51,32 +51,16 @@ git switch dev
 ## Подготовка подмодулей
 
 ```bash
-git config submodule.src/UI.url https://github.com/OurPaintTeam/OurPaint-Desktop-UI.git
-
-git submodule update --init --recursive src/UI
-
-rm -rf src/core/DCM .git/modules/src/core/DCM
-git clone https://github.com/OurPaintTeam/OurPaintDCM.git src/core/DCM
-git -C src/core/DCM checkout main
-git -C src/core/DCM submodule update --init --recursive
+git submodule update --init --recursive
 ```
-
 ## Сборка
 
 ```bash
-rm -rf build
-
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target ourpaint --parallel
 ```
 
-## Запуск
-```bash
-cd build/src/app
-./ourpaint
-```
-
-## Если шейдеры не найдены
+## Если шейдеры не найдены!
 
 Скопируйте ресурсы вручную:
 
@@ -88,13 +72,4 @@ cp -a src/Rendering/renderer/shaders/. build/src/app/shaders/
 cp -a src/Rendering/renderer/fonts/. build/src/app/fonts/
 ```
 
-После этого снова запустите:
-
-```bash
-cd build/src/app
-./ourpaint
-```
-
-## Текущее состояние
-
-Ветка `dev` находится в активной разработке. На Linux возможны проблемы из-за различий в регистре путей и Windows-ориентированных скриптов копирования ресурсов. Если сборка падает, в первую очередь нужно проверить пути `src/rendering` и `src/Rendering`, а также наличие шейдеров в `build/src/app/shaders`.
+После этого снова запустите
