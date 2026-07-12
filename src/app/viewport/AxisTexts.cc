@@ -29,7 +29,7 @@ void AxisTexts::update() {
     double pixelsPadding = 2.0;
     double worldPadding = camera_.screenLogicalToWorld(pixelsPadding);
 
-    using namespace rendering::text;
+    using namespace render::text;
 
     TextHorizontalAlign hAlign = TextHorizontalAlign::Center;
     TextVerticalAlign vAlign = TextVerticalAlign::Top;
@@ -61,7 +61,7 @@ void AxisTexts::update() {
         label.style.a = textConfig.textColor.a;
         label.style.hAlign = hAlign;
         label.style.vAlign = vAlign;
-        label.style.pt = 5.0;
+        label.style.pt = 1.0;
         //label.scale = 1.0f;
         labels_.push_back(label);
     }

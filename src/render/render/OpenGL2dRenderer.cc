@@ -1,11 +1,18 @@
-﻿#include "OpenGLRenderer.h"
+﻿#include "OpenGL2dRenderer.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Camera2D.h"
-#include "RenderData.h"
+#include "RenderScene.h"
 #include "shaders/shader_utils.h"
 
 #include <ft2build.h>
@@ -14,14 +21,23 @@
 FT_Library  library;   /* handle to library     */
 FT_Face     face;      /* handle to face object */
 
-using namespace renderer;
+using namespace render;
 
 namespace {
-struct PointInstance {
+
+constexpr float kMinPixelSize = 1e-6f;
+
+// Keep the old shader convention for now:
+// startAngle == 0 and endAngle == 0 means "full circle" in the existing circle shader.
+constexpr float kCircleStartAngle = 0.0f;
+constexpr float kCircleEndAngle = 0.0f;
+
+struct MarkerInstance {
     float x;
     float y;
     float size;
 };
+
 struct CircleArcInstance {
     float x;
     float y;
@@ -29,52 +45,71 @@ struct CircleArcInstance {
     float startAngle;
     float endAngle;
 };
+
 struct LineInstance {
     float x1;
     float y1;
     float x2;
     float y2;
-    float halfWidthWorld;
+    float halfWidth;
 };
+
 struct RectInstance {
     float cx;
     float cy;
     float hx;
     float hy;
 };
+
+float unitsPerPixel(CoordinateSpace coordinateSpace, const Camera2D& camera) {
+    if (coordinateSpace == CoordinateSpace::World) {
+        return 1.0f / camera.zoom();
+    }
+
+    return 1.0f;
 }
 
-bool OpenGLRenderer::initialize() {
+} // namespace
+
+bool OpenGL2dRenderer::initialize() {
     initGlobalState();
+
     if (!initGridPipeline()) {
         return false;
     }
+
     if (!initPointPipeline()) {
         return false;
     }
+
     if (!initLinePipeline()) {
         return false;
     }
+
     if (!initCircleArcPipeline()) {
         return false;
     }
+
     if (!initRectPipeline()) {
         return false;
     }
+
     initRenderText();
+
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     return true;
 }
 
-void OpenGLRenderer::resize(int w, int h) {
-    width_ = w;
-    height_ = h;
-    glViewport(0, 0, w, h);
+void OpenGL2dRenderer::resize(int w, int h) {
+    width_ = std::max(w, 1);
+    height_ = std::max(h, 1);
+
+    glViewport(0, 0, width_, height_);
 }
 
-void OpenGLRenderer::shutdown() {
+void OpenGL2dRenderer::shutdown() {
     // Grid states
     if (gridQuadVbo_) {
         glDeleteBuffers(1, &gridQuadVbo_);
@@ -153,48 +188,53 @@ void OpenGLRenderer::shutdown() {
     circleTransformLoc_ = -1;
 }
 
-void OpenGLRenderer::render(const RenderData& rd, const Camera2D& camera) {
+void OpenGL2dRenderer::render(const RenderScene& scene, const Camera2D& camera) {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glm::mat4 mvp = camera.viewProjectionMatrix();
-
-    renderGrid(rd, camera, mvp);
-    renderLines(rd, camera, mvp);
-    renderPoints(rd, camera, mvp);
-    renderCircles(rd, camera, mvp);
-    renderRect(rd, camera, mvp);
-
-    for (const auto& t : rd.textObjects_) {
-        renderText(t);
-    }
+    renderGrid(scene, camera);
+    renderLayers(scene, camera);
 }
 
-void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
+void OpenGL2dRenderer::renderGrid(const RenderScene& scene, const Camera2D& camera) {
+    if (!scene.grid.has_value()) {
+        return;
+    }
+
     if (!gridProgram_ || !gridVao_ || !gridQuadVbo_) {
         return;
     }
 
+    const Grid& grid = *scene.grid;
+
     glUseProgram(gridProgram_);
 
-    glm::mat4 viewProj = camera.viewProjectionMatrix();
-    glm::mat4 invViewProj = glm::inverse(viewProj);
+    const glm::mat4 viewProj = camera.viewProjectionMatrix();
+    const glm::mat4 invViewProj = glm::inverse(viewProj);
 
     if (gridCellSizeLoc_ >= 0) {
-        glUniform1f(gridCellSizeLoc_, static_cast<float>(scene.gridInfo.cellSize));
+        glUniform1f(gridCellSizeLoc_, grid.cellSize);
     }
 
     if (gridSubCellSizeLoc_ >= 0) {
-        glUniform1f(gridSubCellSizeLoc_, static_cast<float>(scene.gridInfo.subCellSize));
+        glUniform1f(gridSubCellSizeLoc_, grid.subCellSize);
     }
 
-    glm::vec3 c = scene.gridInfo.gridColor;
     if (gridColorLoc_ >= 0) {
-        glUniform3f(gridColorLoc_, c.r, c.g, c.b);
+        glUniform3f(
+            gridColorLoc_,
+            grid.minorColor.r,
+            grid.minorColor.g,
+            grid.minorColor.b
+        );
     }
 
-    c = scene.gridInfo.axisColor;
     if (axisColorLoc_ >= 0) {
-        glUniform3f(axisColorLoc_, c.r, c.g, c.b);
+        glUniform3f(
+            axisColorLoc_,
+            grid.axisColor.r,
+            grid.axisColor.g,
+            grid.axisColor.b
+        );
     }
 
     if (gridZoomLoc_ >= 0) {
@@ -202,7 +242,12 @@ void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera,
     }
 
     if (gridInvViewProjLoc_ >= 0) {
-        glUniformMatrix4fv(gridInvViewProjLoc_, 1, GL_FALSE, glm::value_ptr(invViewProj));
+        glUniformMatrix4fv(
+            gridInvViewProjLoc_,
+            1,
+            GL_FALSE,
+            glm::value_ptr(invViewProj)
+        );
     }
 
     glBindVertexArray(gridVao_);
@@ -212,31 +257,98 @@ void OpenGLRenderer::renderGrid(const RenderData& scene, const Camera2D& camera,
     glUseProgram(0);
 }
 
-void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
+void OpenGL2dRenderer::renderLayers(const RenderScene& scene, const Camera2D& camera) {
+    std::vector<const DrawLayer*> layers;
+    layers.reserve(scene.layers.size());
+
+    for (const DrawLayer& layer : scene.layers) {
+        if (!layer.empty()) {
+            layers.push_back(&layer);
+        }
+    }
+
+    std::stable_sort(
+        layers.begin(),
+        layers.end(),
+        [](const DrawLayer* a, const DrawLayer* b) {
+            return a->order < b->order;
+        }
+    );
+
+    for (const DrawLayer* layer : layers) {
+        renderLayer(*layer, camera);
+    }
+}
+
+void OpenGL2dRenderer::renderLayer(const DrawLayer& layer, const Camera2D& camera) {
+    const glm::mat4 transform = transformFor(layer.coordinateSpace, camera);
+
+    for (const MarkerBatch& batch : layer.markerBatches) {
+        renderMarkerBatch(batch, layer.coordinateSpace, camera, transform);
+    }
+
+    for (const LineBatch& batch : layer.lineBatches) {
+        renderLineBatch(batch, layer.coordinateSpace, camera, transform);
+    }
+
+    for (const CircleBatch& batch : layer.circleBatches) {
+        renderCircleBatch(batch, camera, transform);
+    }
+
+    for (const ArcBatch& batch : layer.arcBatches) {
+        renderArcBatch(batch, camera, transform);
+    }
+
+    for (const RectBatch& batch : layer.rectBatches) {
+        renderRectBatch(batch, camera, transform);
+    }
+
+    for (const TextBatch& batch : layer.textBatches) {
+        for (const text::TextObject& textObject : batch.textObjects) {
+            renderText(textObject);
+        }
+    }
+}
+
+glm::mat4 OpenGL2dRenderer::transformFor(CoordinateSpace coordinateSpace, const Camera2D& camera) const {
+    if (coordinateSpace == CoordinateSpace::World) {
+        return camera.viewProjectionMatrix();
+    }
+
+    return glm::ortho(
+        0.0f,
+        static_cast<float>(width_),
+        0.0f,
+        static_cast<float>(height_)
+    );
+}
+
+void OpenGL2dRenderer::renderMarkerBatch(
+    const MarkerBatch& batch,
+    CoordinateSpace coordinateSpace,
+    const Camera2D& camera,
+    const glm::mat4& transform
+) {
+    if (batch.markers.empty()) {
+        return;
+    }
+
     if (!pointProgram_ || !pointVao_ || !pointQuadVbo_ || !pointInstanceVbo_) {
         return;
     }
 
+    const float radiusPx = std::max(batch.style.radius, kMinPixelSize);
+    const float markerSize = radiusPx * unitsPerPixel(coordinateSpace, camera);
 
-    float worldPerPixel = 1.0f / camera.zoom();
+    const float edgeSoftnessPx = batch.style.edgeSoftnessPx.value_or(pointEdgeSoftnessPx_);
+    const float edgeSoftness = edgeSoftnessPx / radiusPx;
+    const float pointPad = 1.0f + edgeSoftness;
 
+    std::vector<MarkerInstance> instances;
+    instances.reserve(batch.markers.size());
 
-    // Selected points
-    float pointSizeWorld = pointSelectedRadiusPx * worldPerPixel;
-    pointSelectedRadiusPx = glm::max(pointSelectedRadiusPx, 1e-6f);
-    float edgeSoftness = pointSelectedEdgeSoftnessPx / pointSelectedRadiusPx;
-    float pointPad = 1.0f + edgeSoftness;
-
-    const size_t selectedCount = scene.selected.points.size();
-    if (selectedCount == 0) {
-        //return;
-    }
-
-    std::vector<PointInstance> selectedInstances;
-    selectedInstances.reserve(selectedCount);
-
-    for (const auto& p : scene.selected.points) {
-        selectedInstances.push_back({p.x, p.y, pointSizeWorld});
+    for (const Marker& marker : batch.markers) {
+        instances.push_back({marker.x, marker.y, markerSize});
     }
 
     glUseProgram(pointProgram_);
@@ -245,79 +357,27 @@ void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camer
 
     glBufferData(
         GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(selectedInstances.size() * sizeof(PointInstance)),
-        selectedInstances.data(),
-        GL_DYNAMIC_DRAW
-    );
-
-    if (pointTransformLoc_ >= 0) {
-        glUniformMatrix4fv(pointTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
-    }
-
-    if (pointColorLoc_ >= 0) {
-        glUniform3f(pointColorLoc_, 0.0f, 1.0f, 1.0f);
-    }
-
-    if (pointPadLoc_ >= 0) {
-        glUniform1f(pointPadLoc_, pointPad);
-    }
-
-    if (pointEdgeSoftnessLoc_ >= 0) {
-        glUniform1f(pointEdgeSoftnessLoc_, edgeSoftness);
-    }
-
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(selectedInstances.size()));
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glUseProgram(0);
-
-
-
-
-    // Base and overlay points
-    pointSizeWorld = pointRadiusPx * worldPerPixel;
-    pointRadiusPx = glm::max(pointRadiusPx, 1e-6f);
-    edgeSoftness = pointEdgeSoftnessPx / pointRadiusPx;
-    pointPad = 1.0f + edgeSoftness;
-
-    const size_t count = scene.points.size() + scene.overlay.points.size();
-    if (count == 0) {
-        //return;
-    }
-
-    std::vector<PointInstance> instances;
-    instances.reserve(count);
-
-    for (const auto& p : scene.overlay.points) {
-        instances.push_back({p.x, p.y, pointSizeWorld});
-    }
-
-    for (const auto& p : scene.points) {
-        instances.push_back({p.x, p.y, pointSizeWorld});
-    }
-
-    glUseProgram(pointProgram_);
-    glBindVertexArray(pointVao_);
-    glBindBuffer(GL_ARRAY_BUFFER, pointInstanceVbo_);
-
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(instances.size() * sizeof(PointInstance)),
+        static_cast<GLsizeiptr>(instances.size() * sizeof(MarkerInstance)),
         instances.data(),
         GL_DYNAMIC_DRAW
     );
 
     if (pointTransformLoc_ >= 0) {
-        glUniformMatrix4fv(pointTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniformMatrix4fv(
+            pointTransformLoc_,
+            1,
+            GL_FALSE,
+            glm::value_ptr(transform)
+        );
     }
 
-    float r = 63.0 / 255.0;
-    float g = 72.0 / 255.0;
-    float b = 204.0 / 255.0;
-
     if (pointColorLoc_ >= 0) {
-        glUniform3f(pointColorLoc_, r, g, b);
+        glUniform3f(
+            pointColorLoc_,
+            batch.style.color.r,
+            batch.style.color.g,
+            batch.style.color.b
+        );
     }
 
     if (pointPadLoc_ >= 0) {
@@ -328,98 +388,50 @@ void OpenGLRenderer::renderPoints(const RenderData& scene, const Camera2D& camer
         glUniform1f(pointEdgeSoftnessLoc_, edgeSoftness);
     }
 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(instances.size()));
+    glDrawArraysInstanced(
+        GL_TRIANGLES,
+        0,
+        6,
+        static_cast<GLsizei>(instances.size())
+    );
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     glUseProgram(0);
 }
 
-void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
+void OpenGL2dRenderer::renderLineBatch(
+    const LineBatch& batch,
+    CoordinateSpace coordinateSpace,
+    const Camera2D& camera,
+    const glm::mat4& transform) {
+
+    if (batch.lines.empty()) {
+        return;
+    }
+
     if (!lineProgram_ || !lineVao_ || !lineQuadVbo_ || !lineInstanceVbo_) {
         return;
     }
 
-    float worldPerPixel = 1.0f / camera.zoom();
+    const float halfWidthPx = std::max(batch.style.widthPx * 0.5f, kMinPixelSize);
+    const float halfWidth = halfWidthPx * unitsPerPixel(coordinateSpace, camera);
 
-
-    // Selected lines
-    float lineHalfWidthWorld = lineSelectedHalfWidthPx * worldPerPixel;
-    lineSelectedHalfWidthPx = glm::max(lineSelectedHalfWidthPx, 1e-6f);
-    float lineEdgeSoftness = lineSelectedEdgeSoftnessPx / lineSelectedHalfWidthPx;
-    float linePad = 1.0f + lineEdgeSoftness;
-
-    const size_t countSelected = scene.selected.lines.size();
-    if (countSelected == 0) {
-        //return;
-    }
-
-    std::vector<LineInstance> selectedInstances;
-    selectedInstances.reserve(countSelected);
-
-    for (const auto& l : scene.selected.lines) {
-        selectedInstances.push_back({l.x1, l.y1, l.x2, l.y2, lineHalfWidthWorld});
-    }
-
-    glUseProgram(lineProgram_);
-    glBindVertexArray(lineVao_);
-    glBindBuffer(GL_ARRAY_BUFFER, lineInstanceVbo_);
-
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(selectedInstances.size() * sizeof(LineInstance)),
-        selectedInstances.data(),
-        GL_DYNAMIC_DRAW
-    );
-
-    if (lineTransformLoc_ >= 0) {
-        glUniformMatrix4fv(lineTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
-    }
-
-    if (lineColorLoc_ >= 0) {
-        glUniform3f(lineColorLoc_, 0.0f, 1.0f, 1.0f);
-    }
-
-    if (linePadLoc_ >= 0) {
-        glUniform1f(linePadLoc_, linePad);
-    }
-
-    if (lineEdgeSoftnessLoc_ >= 0) {
-        glUniform1f(lineEdgeSoftnessLoc_, lineEdgeSoftness);
-    }
-
-    if (lineAlphaLoc_ >= 0) {
-        glUniform1f(lineAlphaLoc_, 1.0);
-    }
-
-
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(selectedInstances.size()));
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glUseProgram(0);
-
-
-    // Base lines + overlay lines
-    lineHalfWidthWorld = lineHalfWidthPx * worldPerPixel;
-    lineHalfWidthPx = glm::max(lineHalfWidthPx, 1e-6f);
-    lineEdgeSoftness = lineEdgeSoftnessPx / lineHalfWidthPx;
-    linePad = 1.0f + lineEdgeSoftness;
-
-    const size_t count = scene.lines.size() + scene.overlay.lines.size();
-    if (count == 0) {
-        //return;
-    }
+    const float edgeSoftnessPx = batch.style.edgeSoftnessPx.value_or(lineEdgeSoftnessPx_);
+    const float edgeSoftness = edgeSoftnessPx / halfWidthPx;
+    const float linePad = 1.0f + edgeSoftness;
 
     std::vector<LineInstance> instances;
-    instances.reserve(count);
+    instances.reserve(batch.lines.size());
 
-    for (const auto& l : scene.overlay.lines) {
-        instances.push_back({l.x1, l.y1, l.x2, l.y2, lineHalfWidthWorld});
-    }
-
-    for (const auto& l : scene.lines) {
-        instances.push_back({l.x1, l.y1, l.x2, l.y2, lineHalfWidthWorld});
+    for (const Line& line : batch.lines) {
+        instances.push_back({
+            line.x1,
+            line.y1,
+            line.x2,
+            line.y2,
+            halfWidth
+        });
     }
 
     glUseProgram(lineProgram_);
@@ -434,11 +446,25 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera
     );
 
     if (lineTransformLoc_ >= 0) {
-        glUniformMatrix4fv(lineTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniformMatrix4fv(
+            lineTransformLoc_,
+            1,
+            GL_FALSE,
+            glm::value_ptr(transform)
+        );
     }
 
     if (lineColorLoc_ >= 0) {
-        glUniform3f(lineColorLoc_, 0.0f, 0.0f, 0.0f);
+        glUniform3f(
+            lineColorLoc_,
+            batch.style.color.r,
+            batch.style.color.g,
+            batch.style.color.b
+        );
+    }
+
+    if (lineAlphaLoc_ >= 0) {
+        glUniform1f(lineAlphaLoc_, batch.style.color.a);
     }
 
     if (linePadLoc_ >= 0) {
@@ -446,154 +472,50 @@ void OpenGLRenderer::renderLines(const RenderData& scene, const Camera2D& camera
     }
 
     if (lineEdgeSoftnessLoc_ >= 0) {
-        glUniform1f(lineEdgeSoftnessLoc_, lineEdgeSoftness);
+        glUniform1f(lineEdgeSoftnessLoc_, edgeSoftness);
     }
 
-    if (lineAlphaLoc_ >= 0) {
-        glUniform1f(lineAlphaLoc_, 1.0);
-    }
-
-
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(instances.size()));
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glUseProgram(0);
-
-
-
-
-    // Special lines
-    lineHalfWidthWorld = lineHalfWidthPx * worldPerPixel;
-    lineHalfWidthPx = glm::max(lineHalfWidthPx, 1e-6f);
-    lineEdgeSoftness = lineEdgeSoftnessPx / lineHalfWidthPx;
-    linePad = 1.0f + lineEdgeSoftness;
-
-    const size_t countSpecial = scene.special.lines.size();
-    if (countSpecial == 0) {
-        //return;
-    }
-
-    std::vector<LineInstance> instancesSpecial;
-    instancesSpecial.reserve(count);
-
-    for (const auto& l : scene.special.lines) {
-        instancesSpecial.push_back({l.x1, l.y1, l.x2, l.y2, lineHalfWidthWorld});
-    }
-
-    glUseProgram(lineProgram_);
-    glBindVertexArray(lineVao_);
-    glBindBuffer(GL_ARRAY_BUFFER, lineInstanceVbo_);
-
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(instancesSpecial.size() * sizeof(LineInstance)),
-        instancesSpecial.data(),
-        GL_DYNAMIC_DRAW
+    glDrawArraysInstanced(
+        GL_TRIANGLES,
+        0,
+        6,
+        static_cast<GLsizei>(instances.size())
     );
-
-    if (lineTransformLoc_ >= 0) {
-        glUniformMatrix4fv(lineTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
-    }
-
-    if (lineColorLoc_ >= 0) {
-        glUniform3f(lineColorLoc_, 0.5f, 0.5f, 0.5f);
-    }
-
-    if (linePadLoc_ >= 0) {
-        glUniform1f(linePadLoc_, linePad);
-    }
-
-    if (lineEdgeSoftnessLoc_ >= 0) {
-        glUniform1f(lineEdgeSoftnessLoc_, lineEdgeSoftness);
-    }
-
-    if (lineAlphaLoc_ >= 0) {
-        glUniform1f(lineAlphaLoc_, 0.4);
-    }
-
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, static_cast<GLsizei>(instancesSpecial.size()));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     glUseProgram(0);
 }
 
-void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D& camera, const glm::mat4& mvp) {
+
+void OpenGL2dRenderer::renderCircleBatch(
+    const CircleBatch& batch,
+    const Camera2D& camera,
+    const glm::mat4& transform
+) {
+    if (batch.circles.empty()) {
+        return;
+    }
+
     if (!circleProgram_ || !circleVao_ || !circleQuadVbo_ || !circleInstanceVbo_) {
         return;
     }
 
-
-    size_t circlesSelectedCount = renderData.selected.circles.size();
-    if (circlesSelectedCount == 0) {
-        //return;
-    }
-
-    std::vector<CircleArcInstance> selectedInstances;
-    selectedInstances.reserve(circlesSelectedCount);
-
-    for (const auto& c : renderData.selected.circles) {
-        selectedInstances.push_back(CircleArcInstance{ c.x, c.y, c.r, c.startAngle, c.endAngle });
-    }
-
-    glUseProgram(circleProgram_);
-    glBindVertexArray(circleVao_);
-    glBindBuffer(GL_ARRAY_BUFFER, circleInstanceVbo_);
-
-    glBufferData(
-        GL_ARRAY_BUFFER,
-        static_cast<GLsizeiptr>(selectedInstances.size() * sizeof(CircleArcInstance)),
-        selectedInstances.data(),
-        GL_DYNAMIC_DRAW
-    );
-
-    if (circleTransformLoc_ >= 0) {
-        glUniformMatrix4fv(circleTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
-    }
-
-    if (circleColorLoc_ >= 0) {
-        glUniform3f(circleColorLoc_, 0.0f, 1.0f, 1.0f);
-    }
-
-    if (circleZoomLoc_ >= 0) {
-        glUniform1f(circleZoomLoc_, camera.zoom());
-    }
-
-    if (circleCurveHalfWidthPxLoc_ >= 0) {
-        glUniform1f(circleCurveHalfWidthPxLoc_, circleSelectedCurveHalfWidthPx);
-    }
-
-    if (circleCurveEdgeSoftnessPxLoc_ >= 0) {
-        glUniform1f(circleCurveEdgeSoftnessPxLoc_, circleSelectedCurveEdgeSoftnessPx);
-    }
-
-    glDrawArraysInstanced(
-        GL_TRIANGLES,
-        0,                                      // first vertex
-        6,                                      // 6 vertices in quad
-        static_cast<GLsizei>(selectedInstances.size())  // number of circles
-    );
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glUseProgram(0);
-
-    // Base + overlay
-    size_t circlesCount = renderData.circles.size() + renderData.overlay.circles.size();
-    if (circlesCount == 0) {
-        //return;
-    }
+    // Current circle shader renders stroked circles/arcs.
+    // batch.fill is intentionally not used here yet.
+    const float halfWidthPx = std::max(batch.stroke.widthPx * 0.5f, kMinPixelSize);
 
     std::vector<CircleArcInstance> instances;
-    instances.reserve(circlesCount);
+    instances.reserve(batch.circles.size());
 
-    for (const auto& c : renderData.overlay.circles) {
-        instances.push_back(CircleArcInstance{ c.x, c.y, c.r, c.startAngle, c.endAngle });
-    }
-
-    for (const auto& c : renderData.circles) {
-        instances.push_back(CircleArcInstance{ c.x, c.y, c.r, c.startAngle, c.endAngle });
+    for (const Circle& circle : batch.circles) {
+        instances.push_back({
+            circle.x,
+            circle.y,
+            circle.r,
+            kCircleStartAngle,
+            kCircleEndAngle
+        });
     }
 
     glUseProgram(circleProgram_);
@@ -608,11 +530,21 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
     );
 
     if (circleTransformLoc_ >= 0) {
-        glUniformMatrix4fv(circleTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniformMatrix4fv(
+            circleTransformLoc_,
+            1,
+            GL_FALSE,
+            glm::value_ptr(transform)
+        );
     }
 
     if (circleColorLoc_ >= 0) {
-        glUniform3f(circleColorLoc_, 0.0f, 0.0f, 0.0f);
+        glUniform3f(
+            circleColorLoc_,
+            batch.stroke.color.r,
+            batch.stroke.color.g,
+            batch.stroke.color.b
+        );
     }
 
     if (circleZoomLoc_ >= 0) {
@@ -620,18 +552,19 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
     }
 
     if (circleCurveHalfWidthPxLoc_ >= 0) {
-        glUniform1f(circleCurveHalfWidthPxLoc_, circleCurveHalfWidthPx);
+        glUniform1f(circleCurveHalfWidthPxLoc_, halfWidthPx);
     }
 
+    const float edgeSoftnessPx = batch.stroke.edgeSoftnessPx.value_or(circleCurveEdgeSoftnessPx_);
     if (circleCurveEdgeSoftnessPxLoc_ >= 0) {
-        glUniform1f(circleCurveEdgeSoftnessPxLoc_, circleCurveEdgeSoftnessPx);
+        glUniform1f(circleCurveEdgeSoftnessPxLoc_, edgeSoftnessPx);
     }
 
     glDrawArraysInstanced(
         GL_TRIANGLES,
-        0,                                      // first vertex
-        6,                                      // 6 vertices in quad
-        static_cast<GLsizei>(instances.size())  // number of circles
+        0,
+        6,
+        static_cast<GLsizei>(instances.size())
     );
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -639,30 +572,123 @@ void OpenGLRenderer::renderCircles(const RenderData& renderData, const Camera2D&
     glUseProgram(0);
 }
 
-void OpenGLRenderer::renderRect(const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp) {
+
+void OpenGL2dRenderer::renderArcBatch(
+    const ArcBatch& batch,
+    const Camera2D& camera,
+    const glm::mat4& transform
+) {
+    if (batch.arcs.empty()) {
+        return;
+    }
+
+    if (!circleProgram_ || !circleVao_ || !circleQuadVbo_ || !circleInstanceVbo_) {
+        return;
+    }
+
+    const float halfWidthPx = std::max(batch.stroke.widthPx * 0.5f, kMinPixelSize);
+
+    std::vector<CircleArcInstance> instances;
+    instances.reserve(batch.arcs.size());
+
+    for (const Arc& arc : batch.arcs) {
+        instances.push_back({
+            arc.x,
+            arc.y,
+            arc.r,
+            arc.startAngle,
+            arc.endAngle
+        });
+    }
+
+    glUseProgram(circleProgram_);
+    glBindVertexArray(circleVao_);
+    glBindBuffer(GL_ARRAY_BUFFER, circleInstanceVbo_);
+
+    glBufferData(
+        GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(instances.size() * sizeof(CircleArcInstance)),
+        instances.data(),
+        GL_DYNAMIC_DRAW
+    );
+
+    if (circleTransformLoc_ >= 0) {
+        glUniformMatrix4fv(
+            circleTransformLoc_,
+            1,
+            GL_FALSE,
+            glm::value_ptr(transform)
+        );
+    }
+
+    if (circleColorLoc_ >= 0) {
+        glUniform3f(
+            circleColorLoc_,
+            batch.stroke.color.r,
+            batch.stroke.color.g,
+            batch.stroke.color.b
+        );
+    }
+
+    if (circleZoomLoc_ >= 0) {
+        glUniform1f(circleZoomLoc_, camera.zoom());
+    }
+
+    if (circleCurveHalfWidthPxLoc_ >= 0) {
+        glUniform1f(circleCurveHalfWidthPxLoc_, halfWidthPx);
+    }
+
+    const float edgeSoftnessPx = batch.stroke.edgeSoftnessPx.value_or(circleCurveEdgeSoftnessPx_);
+    if (circleCurveEdgeSoftnessPxLoc_ >= 0) {
+        glUniform1f(circleCurveEdgeSoftnessPxLoc_, edgeSoftnessPx);
+    }
+
+    glDrawArraysInstanced(
+        GL_TRIANGLES,
+        0,
+        6,
+        static_cast<GLsizei>(instances.size())
+    );
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+void OpenGL2dRenderer::renderRectBatch(
+    const RectBatch& batch,
+    const Camera2D& camera,
+    const glm::mat4& transform
+) {
+    if (batch.rects.empty()) {
+        return;
+    }
+
     if (!rectProgram_ || !rectVao_ || !rectQuadVbo_ || !rectInstanceVbo_) {
         return;
     }
 
-    if (!scene.selectionRect.has_value()) {
+    if (!batch.fill.has_value() && !batch.stroke.has_value()) {
         return;
     }
 
-    const auto& r = *scene.selectionRect;
+    std::vector<RectInstance> instances;
+    instances.reserve(batch.rects.size());
 
-    float xMin = std::min(r.xMin, r.xMax);
-    float xMax = std::max(r.xMin, r.xMax);
-    float yMin = std::min(r.yMin, r.yMax);
-    float yMax = std::max(r.yMin, r.yMax);
+    for (const Rect& rect : batch.rects) {
+        const float xMin = std::min(rect.xMin, rect.xMax);
+        const float xMax = std::max(rect.xMin, rect.xMax);
+        const float yMin = std::min(rect.yMin, rect.yMax);
+        const float yMax = std::max(rect.yMin, rect.yMax);
 
-    RectInstance inst;
-    inst.cx = 0.5f * (xMin + xMax);
-    inst.cy = 0.5f * (yMin + yMax);
-    inst.hx = 0.5f * (xMax - xMin);
-    inst.hy = 0.5f * (yMax - yMin);
+        RectInstance instance{};
+        instance.cx = 0.5f * (xMin + xMax);
+        instance.cy = 0.5f * (yMin + yMax);
+        instance.hx = std::max(0.5f * (xMax - xMin), kMinPixelSize);
+        instance.hy = std::max(0.5f * (yMax - yMin), kMinPixelSize);
 
-    inst.hx = std::max(inst.hx, 1e-6f);
-    inst.hy = std::max(inst.hy, 1e-6f);
+        instances.push_back(instance);
+    }
 
     glUseProgram(rectProgram_);
     glBindVertexArray(rectVao_);
@@ -670,35 +696,72 @@ void OpenGLRenderer::renderRect(const RenderData& scene, const Camera2D& camera,
 
     glBufferData(
         GL_ARRAY_BUFFER,
-        sizeof(RectInstance),
-        &inst,
+        static_cast<GLsizeiptr>(instances.size() * sizeof(RectInstance)),
+        instances.data(),
         GL_DYNAMIC_DRAW
     );
 
+    if (rectHasFillLoc_ >= 0) {
+        glUniform1i(rectHasFillLoc_, batch.fill.has_value() ? 1 : 0);
+    }
+
+    if (rectHasStrokeLoc_ >= 0) {
+        glUniform1i(rectHasStrokeLoc_, batch.stroke.has_value() ? 1 : 0);
+    }
+
     if (rectTransformLoc_ >= 0) {
-        glUniformMatrix4fv(rectTransformLoc_, 1, GL_FALSE, glm::value_ptr(mvp));
+        glUniformMatrix4fv(rectTransformLoc_, 1, GL_FALSE, glm::value_ptr(transform));
     }
 
-    if (rectFillColorLoc_ >= 0) {
-        glUniform4f(rectFillColorLoc_, 0.2f, 0.5f, 1.0f, 0.12f);
+    if (batch.fill.has_value()) {
+        const Color& fill = *batch.fill;
+
+        glUniform4f(
+            rectFillColorLoc_,
+            fill.r,
+            fill.g,
+            fill.b,
+            fill.a
+        );
     }
 
-    // In future use 0.2f, 0.5f, 1.0f, 0.9f color for border
+    if (batch.stroke.has_value()) {
+        const StrokeStyle& stroke = *batch.stroke;
 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1);
+        glUniform4f(
+            rectStrokeColorLoc_,
+            stroke.color.r,
+            stroke.color.g,
+            stroke.color.b,
+            stroke.color.a
+        );
+
+        glUniform1f(
+            rectStrokeWidthPxLoc_,
+            stroke.widthPx * camera.viewport().devicePixelRatio
+        );
+    }
+
+
+    glDrawArraysInstanced(
+        GL_TRIANGLES,
+        0,
+        6,
+        static_cast<GLsizei>(instances.size())
+    );
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     glUseProgram(0);
 }
 
-void OpenGLRenderer::initGlobalState() {
+void OpenGL2dRenderer::initGlobalState() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_MULTISAMPLE);
 }
 
-bool OpenGLRenderer::initGridPipeline() {
+bool OpenGL2dRenderer::initGridPipeline() {
     createProgramFromFiles("shaders/grid.vert", "shaders/grid.frag", gridProgram_);
 
     gridColorLoc_ = glGetUniformLocation(gridProgram_, "uGridColor");
@@ -736,7 +799,7 @@ bool OpenGLRenderer::initGridPipeline() {
     return true;
 }
 
-bool OpenGLRenderer::initPointPipeline() {
+bool OpenGL2dRenderer::initPointPipeline() {
     createProgramFromFiles("shaders/point.vert", "shaders/point.frag", pointProgram_);
 
     pointColorLoc_          = glGetUniformLocation(pointProgram_, "uColor");
@@ -773,8 +836,8 @@ bool OpenGLRenderer::initPointPipeline() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(
         1, 2, GL_FLOAT, GL_FALSE,
-        sizeof(PointInstance),
-        reinterpret_cast<void*>(offsetof(PointInstance, x))
+        sizeof(MarkerInstance),
+        reinterpret_cast<void*>(offsetof(MarkerInstance, x))
     );
     glVertexAttribDivisor(1, 1);
 
@@ -782,8 +845,8 @@ bool OpenGLRenderer::initPointPipeline() {
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(
         2, 1, GL_FLOAT, GL_FALSE,
-        sizeof(PointInstance),
-        reinterpret_cast<void*>(offsetof(PointInstance, size))
+        sizeof(MarkerInstance),
+        reinterpret_cast<void*>(offsetof(MarkerInstance, size))
     );
     glVertexAttribDivisor(2, 1);
 
@@ -793,7 +856,7 @@ bool OpenGLRenderer::initPointPipeline() {
     return true;
 }
 
-bool OpenGLRenderer::initLinePipeline() {
+bool OpenGL2dRenderer::initLinePipeline() {
     createProgramFromFiles("shaders/line.vert", "shaders/line.frag", lineProgram_);
 
     lineColorLoc_           = glGetUniformLocation(lineProgram_, "uColor");
@@ -866,7 +929,7 @@ bool OpenGLRenderer::initLinePipeline() {
         GL_FLOAT,
         GL_FALSE,
         sizeof(LineInstance),
-        reinterpret_cast<void*>(offsetof(LineInstance, halfWidthWorld))
+        reinterpret_cast<void*>(offsetof(LineInstance, halfWidth))
     );
     glVertexAttribDivisor(3, 1);
 
@@ -876,7 +939,7 @@ bool OpenGLRenderer::initLinePipeline() {
     return true;
 }
 
-bool OpenGLRenderer::initCircleArcPipeline() {
+bool OpenGL2dRenderer::initCircleArcPipeline() {
     createProgramFromFiles("shaders/circle.vert", "shaders/circle.frag", circleProgram_);
 
     circleColorLoc_                 = glGetUniformLocation(circleProgram_, "uColor");
@@ -973,13 +1036,17 @@ bool OpenGLRenderer::initCircleArcPipeline() {
     return true;
 }
 
-bool OpenGLRenderer::initRectPipeline() {
+bool OpenGL2dRenderer::initRectPipeline() {
     if (!createProgramFromFiles("shaders/rect.vert", "shaders/rect.frag", rectProgram_)) {
         return false;
     }
 
     rectTransformLoc_ = glGetUniformLocation(rectProgram_, "uTransform");
     rectFillColorLoc_ = glGetUniformLocation(rectProgram_, "uFillColor");
+    rectStrokeColorLoc_ = glGetUniformLocation(rectProgram_, "uStrokeColor");
+    rectHasFillLoc_ = glGetUniformLocation(rectProgram_, "uHasFill");
+    rectHasStrokeLoc_ = glGetUniformLocation(rectProgram_, "uHasStroke");
+    rectStrokeWidthPxLoc_ = glGetUniformLocation(rectProgram_, "uStrokeWidthPx");
 
     const float quadVerts[] = {
         -1.0f, -1.0f,
@@ -1034,7 +1101,7 @@ bool OpenGLRenderer::initRectPipeline() {
     return true;
 }
 
-GLuint OpenGLRenderer::compileShader(GLenum type, const char* src)
+GLuint OpenGL2dRenderer::compileShader(GLenum type, const char* src)
 {
     GLuint s = glCreateShader(type);
     glShaderSource(s, 1, &src, nullptr);
@@ -1054,7 +1121,7 @@ GLuint OpenGLRenderer::compileShader(GLenum type, const char* src)
     return s;
 }
 
-bool OpenGLRenderer::checkProgramLink(GLuint prog)
+bool OpenGL2dRenderer::checkProgramLink(GLuint prog)
 {
     GLint ok = 0;
     glGetProgramiv(prog, GL_LINK_STATUS, &ok);
@@ -1069,7 +1136,7 @@ bool OpenGLRenderer::checkProgramLink(GLuint prog)
     return true;
 }
 
-bool OpenGLRenderer::createProgramFromFiles(const char* vertPath, const char* fragPath, GLuint& outProgram) {
+bool OpenGL2dRenderer::createProgramFromFiles(const char* vertPath, const char* fragPath, GLuint& outProgram) {
     std::string vertexSource = ShaderUtils::readFile(vertPath);
     std::string fragmentSource = ShaderUtils::readFile(fragPath);
 
@@ -1105,7 +1172,7 @@ bool OpenGLRenderer::createProgramFromFiles(const char* vertPath, const char* fr
     return true;
 }
 
-void OpenGLRenderer::initRenderText() {
+void OpenGL2dRenderer::initRenderText() {
     FT_Error error = FT_Init_FreeType(&library);
     if (error) {
         // ... an error occurred during library initialization ...
@@ -1135,7 +1202,7 @@ void OpenGLRenderer::initRenderText() {
     error = FT_Set_Char_Size(
           face,    /* handle to face object         */
           0,       /* char_width in 1/64 of points  */
-          5*64,   /* char_height in 1/64 of points */
+          3*64,   /* char_height in 1/64 of points */
           300,     /* horizontal device resolution  */
           300 );   /* vertical device resolution    */
 
@@ -1211,7 +1278,7 @@ void OpenGLRenderer::initRenderText() {
     textTransformLoc_ = glGetUniformLocation(textProgram_, "uTransform");
 }
 
-void OpenGLRenderer::renderText(const rendering::text::TextObject& textObj) {
+void OpenGL2dRenderer::renderText(const text::TextObject& textObj) {
     if (!textProgram_) {
         std::cout << "Program not init!\n";
         return;
@@ -1244,7 +1311,7 @@ void OpenGLRenderer::renderText(const rendering::text::TextObject& textObj) {
         if (depth > textDescent) textDescent = depth;
     }
 
-    using namespace rendering::text;
+    using namespace render::text;
 
     double x = textObj.placement.screen.anchorPx.x;
     switch (textObj.style.hAlign) {

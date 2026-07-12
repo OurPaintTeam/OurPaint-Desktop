@@ -37,7 +37,7 @@ public:
     const std::vector<float>& getTickPositionsX() const { return tickX_; }
     const std::vector<float>& getTickPositionsY() const { return tickY_; }
 
-    const std::vector<rendering::text::TextObject>& getLabels() const { return labels_; }
+    const std::vector<render::text::TextObject>& getLabels() const { return labels_; }
     const GridInfo& getGridInfo() const { return gridInfo_; }
 
 private:
@@ -48,7 +48,7 @@ private:
 
     GridInfo gridInfo_;
 
-    std::vector<rendering::text::TextObject> labels_;
+    std::vector<render::text::TextObject> labels_;
     std::vector<float> tickX_;
     std::vector<float> tickY_;
 

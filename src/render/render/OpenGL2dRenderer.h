@@ -1,29 +1,24 @@
-﻿#ifndef OURPAINT_MVK_OPENGL_RENDERER_H_
-#define OURPAINT_MVK_OPENGL_RENDERER_H_
-
-#include <glad/gl.h>
-
-#include "IRenderer.h"
-#include "RenderData.h"
-#include "Logger.h"
-
-#include <string>
-#include "Camera2D.h"
-
-// ------------------------------
-// OpenGLRenderer (backend)`
-// ------------------------------
+﻿#ifndef OURPAINT_OPENGL_RENDERER_H_
+#define OURPAINT_OPENGL_RENDERER_H_
 
 #include <map>
+#include <string>
 
-namespace renderer {
+#include <glad/gl.h>
+#include <glm/glm.hpp>
 
-class OpenGLRenderer : public IRenderer {
+#include "Camera2D.h"
+#include "IRenderer.h"
+#include "RenderScene.h"
+
+namespace render {
+
+class OpenGL2dRenderer : public IRenderer {
 public:
     bool initialize() override;
     void resize(int w, int h) override;
     void shutdown() override;
-    void render(const RenderData& scene, const Camera2D& camera) override;
+    void render(const RenderScene& scene, const Camera2D& camera) override;
 
 private:
     // Grid
@@ -42,9 +37,7 @@ private:
     GLint gridSubCellSizeLoc_ = -1;
     GLint gridOriginLoc_ = -1;
 
-
-
-    // Points
+    // Markers
     GLuint pointProgram_ = 0;
     GLuint pointVao_ = 0;
 
@@ -56,13 +49,7 @@ private:
     GLint pointPadLoc_ = -1;
     GLint pointEdgeSoftnessLoc_ = -1;
 
-    float pointRadiusPx = 1.5f;
-    float pointEdgeSoftnessPx = 1.5f;
-
-    float pointSelectedRadiusPx = 3.0f;
-    float pointSelectedEdgeSoftnessPx = 3.0f;
-
-
+    float pointEdgeSoftnessPx_ = 1.5f;
 
     // Lines
     GLuint lineProgram_ = 0;
@@ -77,15 +64,9 @@ private:
     GLint linePadLoc_ = -1;
     GLint lineEdgeSoftnessLoc_ = -1;
 
-    float lineHalfWidthPx = 0.0;
-    float lineEdgeSoftnessPx = 1.5;
+    float lineEdgeSoftnessPx_ = 1.5f;
 
-    float lineSelectedHalfWidthPx = 1.5;
-    float lineSelectedEdgeSoftnessPx = 2.0;
-
-
-
-    // Circles
+    // Circles / arcs
     GLuint circleProgram_ = 0;
     GLuint circleVao_ = 0;
 
@@ -98,14 +79,9 @@ private:
     GLint circleCurveHalfWidthPxLoc_ = -1;
     GLint circleCurveEdgeSoftnessPxLoc_ = -1;
 
-    float circleCurveHalfWidthPx = 0.1;
-    float circleCurveEdgeSoftnessPx = 1.0;
+    float circleCurveEdgeSoftnessPx_ = 1.0f;
 
-    float circleSelectedCurveHalfWidthPx = .5;
-    float circleSelectedCurveEdgeSoftnessPx = 2.0;
-
-
-    // Overlay rectangles
+    // Rectangles
     GLuint rectProgram_ = 0;
     GLuint rectVao_ = 0;
 
@@ -114,20 +90,55 @@ private:
 
     GLint rectTransformLoc_ = -1;
     GLint rectFillColorLoc_ = -1;
-
+    GLint rectStrokeColorLoc_ = -1;
+    GLint rectHasFillLoc_ = -1;
+    GLint rectHasStrokeLoc_ = -1;
+    GLint rectStrokeWidthPxLoc_ = -1;
 
     // Viewport size
     int width_ = 1;
     int height_ = 1;
 
 private:
-    void renderGrid         (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
-    void renderPoints       (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
-    void renderLines        (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
-    void renderCircles      (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
-    void renderRect         (const RenderData& scene, const Camera2D& camera, const glm::mat4& mvp);
+    void renderGrid(const RenderScene& scene, const Camera2D& camera);
+    void renderLayers(const RenderScene& scene, const Camera2D& camera);
+    void renderLayer(const DrawLayer& layer, const Camera2D& camera);
 
+    void renderMarkerBatch(
+        const MarkerBatch& batch,
+        CoordinateSpace coordinateSpace,
+        const Camera2D& camera,
+        const glm::mat4& transform
+    );
 
+    void renderLineBatch(
+        const LineBatch& batch,
+        CoordinateSpace coordinateSpace,
+        const Camera2D& camera,
+        const glm::mat4& transform
+    );
+
+    void renderCircleBatch(
+        const CircleBatch& batch,
+        const Camera2D& camera,
+        const glm::mat4& transform
+    );
+
+    void renderArcBatch(
+        const ArcBatch& batch,
+        const Camera2D& camera,
+        const glm::mat4& transform
+    );
+
+    void renderRectBatch(
+        const RectBatch& batch,
+        const Camera2D& camera,
+        const glm::mat4& transform
+    );
+
+    glm::mat4 transformFor(CoordinateSpace coordinateSpace, const Camera2D& camera) const;
+
+private:
     void initGlobalState();
     bool initGridPipeline();
     bool initPointPipeline();
@@ -141,7 +152,9 @@ private:
     bool createProgramFromFiles(const char* vertPath, const char* fragPath, GLuint& outProgram);
 
     void initRenderText();
-    void renderText(const rendering::text::TextObject& textObj);
+
+    // Keep text rendering logic unchanged for now.
+    void renderText(const render::text::TextObject& textObj);
 
     struct Character {
         unsigned int TextureID;  // ID handle of the glyph texture
@@ -158,6 +171,6 @@ private:
     GLint textTransformLoc_ = -1;
 };
 
-}
+} // namespace render
 
-#endif // ! OURPAINT_MVK_OPENGL_RENDERER_H_
+#endif // ! OURPAINT_OPENGL_RENDERER_H_

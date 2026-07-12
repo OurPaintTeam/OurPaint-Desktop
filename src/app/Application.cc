@@ -1,11 +1,11 @@
 #include "Application.h"
 
-#include "Document.h"
+#include "App/CustomConsole.h"
 #include "DocumentManager.h"
-#include "OpenGLRenderer.h"
-#include "editor/CommandConsole.h"
+#include "OpenGL2dRenderer.h"
 #include "platform/QtPlatformRuntime.h"
 #include "platform/QtViewportHost.h"
+#include "Scene.h"
 
 Application::Application(int& argc, char** argv) : documentManager_(nullptr) {
     try {
@@ -25,6 +25,8 @@ void Application::init(int& argc, char** argv) {
     Q_INIT_RESOURCE(translations);
 
     projectManager_ = new UI::ProjectManager({}, nullptr, nullptr);
+
+    viewportStyle_ = app::ViewportStyle::makeDefault();
 
     host_ = platformRuntime_->createViewportHost();
     QtViewportHost* qt_host = static_cast<QtViewportHost*>(host_);

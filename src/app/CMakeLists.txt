@@ -21,6 +21,7 @@ add_executable(ourpaint
         editor/CommandConsole.h
         viewport/AxisTexts.cc
         project/DocumentView.cc
+        ViewportStyle.cc
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)

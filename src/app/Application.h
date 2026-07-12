@@ -17,12 +17,7 @@ class UIController;
 
 class UIObserver;
 
-
-// ProjectSession
-// ProjectContext
-// Project
-// Workspace
-
+#include "ViewportStyle.h"
 
 class Application {
 public:
@@ -57,6 +52,7 @@ private:
     QtMainWindowBinder* binder_;
 
     //app::Project* project_;
+    app::ViewportStyle viewportStyle_;
 };
 
 #endif // APPLICATION_H_
