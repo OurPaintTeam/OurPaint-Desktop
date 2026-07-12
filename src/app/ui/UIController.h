@@ -57,7 +57,7 @@ private:
     std::unordered_map<ViewportController*, int> controllerMap_;
     std::unordered_set<std::string> set_;
     std::string activeTabName_;
-    std::string activeIndex_;
+    int activeIndex_;
 };
 
 #endif // ! OURPAINT_APPLICATION_UI_CONTROLLER_H_
