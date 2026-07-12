@@ -17,8 +17,6 @@ class UIController;
 
 class UIObserver;
 
-#include "ViewportStyle.h"
-
 class Application {
 public:
     Application(int& argc, char** argv);
@@ -52,7 +50,6 @@ private:
     QtMainWindowBinder* binder_;
 
     //app::Project* project_;
-    app::ViewportStyle viewportStyle_;
 };
 
 #endif // APPLICATION_H_

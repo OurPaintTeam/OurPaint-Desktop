@@ -3,7 +3,7 @@ add_executable(ourpaint
         Application.cc
         platform/QtPlatformRuntime.cc
         platform/QtViewportHost.cc
-        viewport/rendering/RenderDataBuilder.cc
+        viewport/render/RenderSceneBuilder.cc
         viewport/ViewportController.cc
         UI/QtMainWindowBinder.cc
         UI/UIController.cc
@@ -21,15 +21,23 @@ add_executable(ourpaint
         editor/CommandConsole.h
         viewport/AxisTexts.cc
         project/DocumentView.cc
-        ViewportStyle.cc
+        viewport/ViewportStyle.cc
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
 
 target_link_libraries(ourpaint PRIVATE
         ourpaint_core
-        ourpaint_rendering
+        ourpaint_render
         ourpaint_ui
+)
+
+target_include_directories(ourpaint PRIVATE
+        editor
+        platform
+        project
+        ui
+        viewport
 )
 
 set(TYPE_OF_COMPILING BOOL 1)

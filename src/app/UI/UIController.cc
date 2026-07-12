@@ -7,11 +7,11 @@
 #include "../platform/QtViewportHost.h"
 #include "../viewport/AxisTexts.h"
 #include "../viewport/ViewportController.h"
-#include "../viewport/rendering/RenderDataBuilder.h"
+#include "../viewport/render/RenderSceneBuilder.h"
 #include "ConsoleManager.h"
 #include "Document.h"
 #include "DocumentManager.h"
-#include "OpenGLRenderer.h"
+#include "OpenGL2dRenderer.h"
 #include "Transaction.h"
 #include "UndoRedo.h"
 

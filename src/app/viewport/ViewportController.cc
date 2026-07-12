@@ -13,7 +13,8 @@ ViewportController::ViewportController(Camera2D& camera,
         editorSession_(editorSession_),
         document_(document),
         axisTexts_(camera2D_),
-        builder_(document_.scene(), overlay_, axisTexts_, renderScene_),
+        viewportStyle_(app::ViewportStyle::makeDefault()),
+        builder_(document_.scene(), overlay_, axisTexts_, viewportStyle_, renderScene_),
         renderScene_(),
         renderer_() {}
 

@@ -1,7 +1,7 @@
 #ifndef OURPAINT_RENDER_VIEWPORTSTYLE_H_
 #define OURPAINT_RENDER_VIEWPORTSTYLE_H_
 
-#include "../render/render/RenderScene.h"
+#include "RenderScene.h"
 
 namespace app {
 

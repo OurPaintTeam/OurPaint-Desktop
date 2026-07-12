@@ -34,17 +34,17 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 
-add_library(ourpaint_rendering STATIC
+add_library(ourpaint_render STATIC
         OpenGL2dRenderer.cc
         Camera2D.cc
         Logger.cc
         #text/FreeTypeFontManager.cc
 )
-target_include_directories(ourpaint_rendering PUBLIC
+target_include_directories(ourpaint_render PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/
         ${CMAKE_CURRENT_SOURCE_DIR}/shaders
 )
-target_link_libraries(ourpaint_rendering PUBLIC
+target_link_libraries(ourpaint_render PUBLIC
         glad
         freetype
         glm::glm

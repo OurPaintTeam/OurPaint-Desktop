@@ -6,7 +6,7 @@
 #include "../viewport/OverlayModel.h"
 #include "../viewport/ViewportController.h"
 #include "../viewport/picking/Cpu2dPicker.h"
-#include "../viewport/rendering/RenderDataBuilder.h"
+#include "../viewport/render/RenderSceneBuilder.h"
 #include "Camera2D.h"
 #include "IRenderer.h"
 

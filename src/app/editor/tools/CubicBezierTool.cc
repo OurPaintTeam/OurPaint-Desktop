@@ -7,6 +7,7 @@
 #include "Transaction.h"
 #include "UndoRedo.h"
 #include "objects/Objects.h"
+#include "Camera2D.h"
 
 CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera)
     : firstPoint_X(0), firstPoint_Y(0), document_(document), camera_(camera) {}

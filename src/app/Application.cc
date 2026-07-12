@@ -26,8 +26,6 @@ void Application::init(int& argc, char** argv) {
 
     projectManager_ = new UI::ProjectManager({}, nullptr, nullptr);
 
-    viewportStyle_ = app::ViewportStyle::makeDefault();
-
     host_ = platformRuntime_->createViewportHost();
     QtViewportHost* qt_host = static_cast<QtViewportHost*>(host_);
     projectManager_->setQWindowRender(qt_host);

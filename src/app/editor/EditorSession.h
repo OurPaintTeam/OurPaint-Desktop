@@ -8,7 +8,7 @@
 #include "tools/DimensionTool.h"
 #include "DocumentManager.h"
 #include "tools/PointTool.h"
-#include "RenderData.h"
+#include "RenderScene.h"
 #include "tools/CircleTool.h"
 #include "tools/CubicBezierTool.h"
 #include "tools/CursorTool.h"

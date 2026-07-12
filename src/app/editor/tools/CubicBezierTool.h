@@ -4,7 +4,7 @@
 #include "Camera2D.h"
 #include "DocumentManager.h"
 #include "IInteractionTool.h"
-#include "RenderData.h"
+#include "RenderScene.h"
 
 class CubicBezierTool : public IInteractionTool {
 public:

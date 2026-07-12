@@ -4,14 +4,15 @@
 #include "../editor/EditorSession.h"
 #include "../platform/IViewportHost.h"
 #include "../platform/InputEvents.h"
+#include "AxisTexts.h"
 #include "Camera2D.h"
 #include "Document.h"
 #include "IRenderer.h"
 #include "IViewportController.h"
-#include "RenderData.h"
-#include "rendering/RenderDataBuilder.h"
-#include "OpenGLRenderer.h"
-#include "AxisTexts.h"
+#include "OpenGL2dRenderer.h"
+#include "RenderScene.h"
+#include "render/RenderSceneBuilder.h"
+#include "ViewportStyle.h"
 
 class ViewportController : public IViewportController {
 public:
@@ -38,9 +39,10 @@ private:
     Document& document_;
 
     AxisTexts axisTexts_;
-    RenderDataBuilder builder_;
-    renderer::RenderData renderScene_;
-    renderer::OpenGLRenderer renderer_;
+    app::ViewportStyle viewportStyle_;
+    RenderSceneBuilder builder_;
+    render::RenderScene renderScene_;
+    render::OpenGL2dRenderer renderer_;
 
     double lastX_ = 0.0;
     double lastY_ = 0.0;
