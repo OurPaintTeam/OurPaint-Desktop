@@ -81,7 +81,9 @@ std::string getExecutablePath() {
 void UIController::openProjectInNewWindow() {
     std::string path = getExecutablePath();
 
-    STARTUPINFOA si = { sizeof(STARTUPINFOA) };
+    STARTUPINFOA si;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
     PROCESS_INFORMATION pi;
 
     if (CreateProcessA(NULL, (LPSTR)path.c_str(), NULL, NULL,
