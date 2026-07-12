@@ -15,10 +15,10 @@ namespace UndoRedo {
 
     public:
         ID getCircleID() {
-            if (_id == ID{}) {
+            if (id_ == ID{}) {
                 return ID(0);
             }
-            return _id;
+            return id_;
         }
 
         std::string description() const override { return "Add circle to scene"; }

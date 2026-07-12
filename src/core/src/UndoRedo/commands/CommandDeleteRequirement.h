@@ -11,18 +11,18 @@ namespace UndoRedo {
     // Command -> CommandAddRequirement
     class CommandDeleteRequirement : public Command {
     protected:
-        core::Scene &_scene;
-        core::Requirement _reqData;
-        core::ID _reqID;
+        core::Scene& scene_;
+        core::Requirement reqData_;
+        core::ID reqID_;
 
-        bool Execute() override;
+        bool doExecute() noexcept override;
 
-        bool Undo() override;
+        bool doUndo() noexcept override;
 
-        bool Redo() override;
+        bool doRedo() noexcept override;
 
     public:
-        CommandDeleteRequirement(core::Scene &scene, core::ID reqID) : _scene(scene), _reqID(reqID) {}
+        CommandDeleteRequirement(core::Scene &scene, core::ID reqID) : scene_(scene), reqID_(reqID) {}
 
         std::string description() const override { return "Delete requirement to scene"; };
     };

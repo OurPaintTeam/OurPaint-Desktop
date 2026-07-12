@@ -2,107 +2,112 @@
 
 namespace UndoRedo {
 
-    Transaction::Transaction(std::string &&name) : commands(), name(std::move(name)) {}
+Transaction::Transaction(std::string name)
+    : name_(std::move(name)) {}
 
-    Transaction::~Transaction() {
-        for (Command *cmd: commands) {
-            delete cmd;
-        }
+bool Transaction::addCommand(std::unique_ptr<Command> command) {
+    if (state_ != State::Building) {
+        return false;
     }
 
-    Transaction::Transaction(Transaction &&other)
-            : commands(std::move(other.commands)),
-              name(std::move(other.name)),
-              committed(other.committed) {
-        other.committed = false;
+    if (!command) {
+        return false;
     }
 
-    Transaction &Transaction::operator=(Transaction &&other) {
-        if (this != &other) {
-            for (Command *cmd: commands) {
-                delete cmd;
+    commands_.push_back(std::move(command));
+    return true;
+}
+
+bool Transaction::commit() noexcept {
+    if (state_ != State::Building) {
+        return false;
+    }
+
+    if (commands_.empty()) {
+        return false;
+    }
+
+    std::size_t executedCount = 0;
+
+    for (; executedCount < commands_.size(); ++executedCount) {
+        Command* command = commands_[executedCount].get();
+
+        if (!command->execute()) {
+            while (executedCount > 0) {
+                --executedCount;
+                commands_[executedCount]->rollback();
             }
-            commands = std::move(other.commands);
-            other.commands.clear();
-            name = std::move(other.name);
-            committed = other.committed;
-        }
-        return *this;
-    }
 
-    void Transaction::addCommand(Command *cmd) {
-        if (!cmd) {
-            throw std::invalid_argument("Command cannot be null");
-        }
-        if (committed) {
-            throw std::logic_error("Transaction already committed");
-        }
-        commands.push_back(cmd);
-    }
-
-    void Transaction::commit() {
-        if (committed) {
-            throw std::logic_error("Transaction already committed");
-        }
-        std::vector<Command *> executed;
-        for (auto &cmd: commands) {
-            if (!cmd->execute()) {
-                for (auto it = executed.rbegin(); it != executed.rend(); ++it) {
-                    (*it)->undo();
-                }
-                throw std::runtime_error("Transaction failed to commit");
-            }
-            executed.push_back(cmd);
-        }
-        committed = true;
-    }
-
-    bool Transaction::undo() {
-        if (!committed) {
             return false;
         }
-        std::vector<Command *> undone;
-        for (auto it = commands.rbegin(); it != commands.rend(); ++it) {
-            if (!(*it)->undo()) {
-                for (auto rit = undone.rbegin(); rit != undone.rend(); ++rit) {
-                    (*rit)->redo();
-                }
-                return false;
-            }
-            undone.push_back(*it);
-        }
-        return true;
     }
 
-    bool Transaction::redo() {
-        if (!committed) {
+    state_ = State::Applied;
+    return true;
+}
+
+bool Transaction::undo() noexcept {
+    if (state_ != State::Applied) {
+        return false;
+    }
+
+    const std::size_t commandCount = commands_.size();
+
+    for (std::size_t i = commandCount; i > 0; --i) {
+        const std::size_t index = i - 1;
+        Command* command = commands_[index].get();
+
+        if (!command->undo()) {
+            // Restore commands that were already undone.
+            for (std::size_t j = index + 1; j < commandCount; ++j) {
+                commands_[j]->redo();
+            }
+
             return false;
         }
-        std::vector<Command *> redone;
-        for (Command *cmd: commands) {
-            if (!cmd->redo()) {
-                for (auto it = redone.rbegin(); it != redone.rend(); ++it) {
-                    (*it)->undo();
-                }
-                return false;
+    }
+
+    state_ = State::Reverted;
+    return true;
+}
+
+bool Transaction::redo() noexcept {
+    if (state_ != State::Reverted) {
+        return false;
+    }
+
+    for (std::size_t i = 0; i < commands_.size(); ++i) {
+        Command* command = commands_[i].get();
+
+        if (!command->redo()) {
+            // Revert commands that were already redone.
+            while (i > 0) {
+                --i;
+                commands_[i]->undo();
             }
-            redone.push_back(cmd);
-        }
-        return true;
-    }
 
-    void Transaction::rollback() noexcept {
-        for (auto it = commands.rbegin(); it != commands.rend(); ++it) {
-            (*it)->undo();
+            return false;
         }
     }
 
-    std::string Transaction::label() const {
-        return name;
-    }
+    state_ = State::Applied;
+    return true;
+}
 
-    bool Transaction::isCommitted() const {
-        return committed;
-    }
+const std::string& Transaction::label() const noexcept {
+    return name_;
+}
+
+bool Transaction::isApplied() const noexcept {
+    return state_ == State::Applied;
+}
+
+bool Transaction::isReverted() const noexcept {
+    return state_ == State::Reverted;
+}
+
+bool Transaction::isBuilding() const noexcept {
+    return state_ == State::Building;
+}
 
 }

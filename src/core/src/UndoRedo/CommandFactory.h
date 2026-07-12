@@ -60,7 +60,7 @@ public:
                 std::stod(rawArgs[0]),
                 std::stod(rawArgs[1]),
         };
-        txn.addCommand(new CommandAddPoint(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddPoint>(_scene, obj));
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
@@ -73,7 +73,7 @@ public:
                 rawArgs[0],
                 rawArgs[1],
         };
-        txn.addCommand(new CommandAddPoint(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddPoint>(_scene, obj));
     }
 
 private:
@@ -104,7 +104,7 @@ public:
                 std::stod(rawArgs[2]),
                 std::stod(rawArgs[3])
         };
-        txn.addCommand(new CommandAddSection(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddSection>(_scene, obj));
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
@@ -119,7 +119,7 @@ public:
                 rawArgs[2],
                 rawArgs[3]
         };
-        txn.addCommand(new CommandAddSection(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddSection>(_scene, obj));
     }
 
 private:
@@ -149,7 +149,7 @@ public:
                 std::stod(rawArgs[1]),
                 std::stod(rawArgs[2])
         };
-        txn.addCommand(new CommandAddCircle(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddCircle>(_scene, obj));
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
@@ -163,7 +163,7 @@ public:
                 rawArgs[1],
                 rawArgs[2]
         };
-        txn.addCommand(new CommandAddCircle(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddCircle>(_scene, obj));
     }
 
 private:
@@ -196,7 +196,7 @@ public:
                 std::stod(rawArgs[4]),
                 std::stod(rawArgs[5])
         };
-        txn.addCommand(new CommandAddCircle(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddCircle>(_scene, obj));
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
@@ -213,7 +213,7 @@ public:
                 rawArgs[4],
                 rawArgs[5]
         };
-        txn.addCommand(new CommandAddCircle(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddCircle>(_scene, obj));
     }
 
 private:
@@ -244,7 +244,7 @@ public:
             std::stod(rawArgs[2]),
             std::stod(rawArgs[3])
     };
-        txn.addCommand(new CommandAddCubicBezier(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddCubicBezier>(_scene, obj));
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
@@ -259,7 +259,7 @@ public:
             rawArgs[2],
             rawArgs[3]
     };
-        txn.addCommand(new CommandAddCubicBezier(_scene, obj));
+        txn.addCommand(std::make_unique<CommandAddCubicBezier>(_scene, obj));
     }
 
 private:
@@ -340,7 +340,7 @@ public:
                 break;
         }
 
-        txn.addCommand(new CommandAddRequirement(_scene, req));
+        txn.addCommand(std::make_unique<CommandAddRequirement>(_scene, req));
     }
 
     void createCommands(const std::vector<double>& rawArgs, UndoRedo::Transaction& txn) const override {
@@ -393,7 +393,7 @@ public:
                 break;
         }
 
-        txn.addCommand(new CommandAddRequirement(_scene, req));
+        txn.addCommand(std::make_unique<CommandAddRequirement>(_scene, req));
     }
 
 private:
@@ -420,10 +420,10 @@ public:
         if (rawArgs.size() == 2) {
             ID id(std::stoi(rawArgs[1]));
             if (rawArgs[0] == "REQ") {
-                txn.addCommand(new CommandDeleteRequirement(_scene, id));
+                txn.addCommand(std::make_unique<CommandDeleteRequirement>(_scene, id));
             }
             else if (rawArgs[0] == "OBJ") {
-                txn.addCommand(new CommandDeleteObject(_scene, id));
+                txn.addCommand(std::make_unique<CommandDeleteObject>(_scene, id));
             }
             else {
                 throw std::runtime_error("DELETE: Unknown " + rawArgs[0]);
@@ -437,10 +437,10 @@ public:
                 throw std::runtime_error("DELETE: Error: More than one entity with ID " + std::to_string(id.get()) + " was found.");
             }
             else if (bObj) {
-                txn.addCommand(new CommandDeleteObject(_scene, id));
+                txn.addCommand(std::make_unique<CommandDeleteObject>(_scene, id));
             }
             else if (bReq) {
-                txn.addCommand(new CommandDeleteRequirement(_scene, id));
+                txn.addCommand(std::make_unique<CommandDeleteRequirement>(_scene, id));
             }
             else {
                 throw std::runtime_error("DELETE: no one with id " + std::to_string(id.get()) + " found");
@@ -501,7 +501,7 @@ public:
                 break;
         }
 
-        txn.addCommand(new CommandAddRequirement(_scene, req));
+        txn.addCommand(std::make_unique<CommandAddRequirement>(_scene, req));
     }
 
 private:
@@ -521,11 +521,11 @@ public:
     }
 
     void createCommands(const std::vector<std::string>&, UndoRedo::Transaction& txn) const override {
-        txn.addCommand(new CommandClear(_scene));
+        txn.addCommand(std::make_unique<CommandClear>(_scene));
     }
 
     void createCommands(const std::vector<double>&, UndoRedo::Transaction& txn) const override {
-        txn.addCommand(new CommandClear(_scene));
+        txn.addCommand(std::make_unique<CommandClear>(_scene));
     }
 
 private:

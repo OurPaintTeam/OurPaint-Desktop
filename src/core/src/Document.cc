@@ -4,66 +4,66 @@
 #include "ConsoleManager.h"
 
 Document::Document(const std::string& documentName) {
-    _documentName = documentName;
-    _scene = new core::Scene();
-    _undoRedo = new UndoRedo::UndoRedoManager(100);
-    _commandManager = new CommandManager();
+    documentName_ = documentName;
+    scene_ = new core::Scene();
+    undoRedo_ = new UndoRedo::UndoRedoManager(100);
+    commandManager_ = new CommandManager();
 
-    _commandManager->registerFactory(new PointFactory(*_scene));
-    _commandManager->registerFactory(new LineFactory(*_scene));
-    _commandManager->registerFactory(new CircleFactory(*_scene));
-    _commandManager->registerFactory(new ArcFactory(*_scene));
-    _commandManager->registerFactory(new ReqFactory(*_scene));
-    _commandManager->registerFactory(new DelFactory(*_scene));
-    _commandManager->registerFactory(new ClearFactory(_scene));
-    _commandManager->registerFactory(new CubicBezierFactory(*_scene));
+    commandManager_->registerFactory(new PointFactory(*scene_));
+    commandManager_->registerFactory(new LineFactory(*scene_));
+    commandManager_->registerFactory(new CircleFactory(*scene_));
+    commandManager_->registerFactory(new ArcFactory(*scene_));
+    commandManager_->registerFactory(new ReqFactory(*scene_));
+    commandManager_->registerFactory(new DelFactory(*scene_));
+    commandManager_->registerFactory(new ClearFactory(scene_));
+    commandManager_->registerFactory(new CubicBezierFactory(*scene_));
 }
 Document::~Document() {
-    delete _scene;
-    delete _undoRedo;
-    delete _commandManager;
+    delete scene_;
+    delete undoRedo_;
+    delete commandManager_;
 }
 
 std::string& Document::name() {
-    _isDirty = true;
-    return _documentName;
+    isDirty_ = true;
+    return documentName_;
 }
 const std::string& Document::name() const {
-    return _documentName;
+    return documentName_;
 }
 
 std::string& Document::path() {
-    _isDirty = true;
-    return _filePath;
+    isDirty_ = true;
+    return filePath_;
 }
 const std::string& Document::path() const {
-    return _filePath;
+    return filePath_;
 }
 
 core::Scene& Document::scene() {
-    _isDirty = true;
-    return *_scene;
+    isDirty_ = true;
+    return *scene_;
 }
 const core::Scene& Document::scene() const {
-    return *_scene;
+    return *scene_;
 }
 
 UndoRedo::UndoRedoManager& Document::undoRedoManager() {
-    _isDirty = true;
-    return *_undoRedo;
+    isDirty_ = true;
+    return *undoRedo_;
 }
 const UndoRedo::UndoRedoManager& Document::undoRedoManager() const {
-    return *_undoRedo;
+    return *undoRedo_;
 }
 
 CommandManager& Document::commandManager() {
-    _isDirty = true;
-    return *_commandManager;
+    isDirty_ = true;
+    return *commandManager_;
 }
 const CommandManager& Document::commandManager() const {
-    return *_commandManager;
+    return *commandManager_;
 }
 
 bool Document::isDirty() const {
-    return _isDirty;
+    return isDirty_;
 }

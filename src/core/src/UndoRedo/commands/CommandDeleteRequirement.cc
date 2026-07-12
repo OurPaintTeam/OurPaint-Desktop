@@ -2,27 +2,27 @@
 
 namespace UndoRedo {
 
-    bool CommandDeleteRequirement::Execute() {
+    bool CommandDeleteRequirement::doExecute() noexcept {
         try {
-            _reqData = _scene.getRequirementData(_reqID);
-            return _scene.deleteRequirement(_reqID);
+            reqData_ = scene_.getRequirementData(reqID_);
+            return scene_.deleteRequirement(reqID_);
         } catch (...) {
             return false;
         }
     }
 
-    bool CommandDeleteRequirement::Undo() {
+    bool CommandDeleteRequirement::doUndo() noexcept {
         // try {
-        //     return _scene.tryRestoreRequirement(_reqData, _reqID);
+        //     return scene_.tryRestoreRequirement(reqData_, reqID_);
         // } catch (...) {
             return false;
         //}
     }
 
-    bool CommandDeleteRequirement::Redo() {
+    bool CommandDeleteRequirement::doRedo() noexcept {
         try {
-            _reqData = _scene.getRequirementData(_reqID);
-            return _scene.deleteRequirement(_reqID);
+            reqData_ = scene_.getRequirementData(reqID_);
+            return scene_.deleteRequirement(reqID_);
         } catch (...) {
             return false;
         }

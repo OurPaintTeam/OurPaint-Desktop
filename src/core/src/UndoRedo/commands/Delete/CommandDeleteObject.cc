@@ -2,7 +2,7 @@
 
 namespace UndoRedo {
 
-    bool CommandDeleteObject::Execute() {
+    bool CommandDeleteObject::doExecute() noexcept {
         try {
             //_reqData = _scene.getObjectRequirementsWithConnectedObjects(_id);
             //_data = _scene.getRootObjectData(_id);
@@ -12,7 +12,7 @@ namespace UndoRedo {
         }
     }
 
-    bool CommandDeleteObject::Undo() {
+    bool CommandDeleteObject::doUndo() noexcept {
         // try {
         //     if (_scene.tryRestoreObject(_data, _data.id)) {
         //         for (auto& rd: _reqData) {
@@ -26,5 +26,8 @@ namespace UndoRedo {
             return false;
         // }
     }
+    bool CommandDeleteObject::doRedo() noexcept {
+        return false;
+    }
 
-}
+    }  // namespace UndoRedo

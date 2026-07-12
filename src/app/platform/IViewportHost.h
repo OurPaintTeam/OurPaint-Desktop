@@ -1,0 +1,36 @@
+#ifndef OURPAINT_RENDERING_IVEIWPORTHOST_H_
+#define OURPAINT_RENDERING_IVEIWPORTHOST_H_
+
+class Viewport2D;
+class IViewportController;
+class RenderTargetDesc;
+
+#include <cstdint>
+
+class IViewportHost {
+public:
+    virtual ~IViewportHost() = default;
+
+    virtual uint32_t id() const = 0;
+
+    virtual Viewport2D getSize() const = 0;
+    virtual float getDevicePixelRatio() const = 0;
+
+    // Запросить один кадр.
+    virtual void requestRedraw() = 0;
+
+    // Включить непрерывную отрисовку.
+    virtual void setContinuousRedraw(bool enabled) = 0;
+
+    // Приемник событий. Хост не владеет им.
+    virtual int setEventSink(IViewportController* sink) = 0;
+
+    // Вызывается в конце.
+    virtual void presentFrame() = 0;
+
+    virtual int addController(IViewportController* controller) = 0;
+    virtual void setActiveController(int index) = 0;
+    virtual bool removeController(IViewportController* controller) = 0;
+};
+
+#endif // ! OURPAINT_RENDERING_IVEIWPORTHOST_H_
