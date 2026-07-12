@@ -3,31 +3,31 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 class Document;
+
+using DocumentId = uint64_t;
 
 class DocumentManager {
 public:
-    Document* getActiveDocument();
-    Document* at(int index);
-    bool setActiveDocument(int index);
-    bool setActiveDocument(const std::string& name);
-    int getActiveIndex() const;
-    int count() const;
+    Document* at(DocumentId index) const;
+    Document* at(const std::string& documentName) const;
+    DocumentId findIdByName(const std::string& documentName) const;
+    size_t count() const;
 
-    int createNewDocument(const std::string& documentName = "Untitled");
-    int openDocument(const std::string& path);
+    DocumentId createNewDocument(const std::string& documentName = "Untitled");
+    DocumentId openDocument(const std::string& path);
 
-    bool closeDocument(int index, bool autoSave = true);
+    bool closeDocument(DocumentId index, bool autoSave = true);
     bool closeDocument(const std::string& name, bool autoSave = true);
 
-    bool isDocumentSaved(int index) const;
+    bool isDocumentSaved(DocumentId index) const;
     bool isDocumentSaved(const std::string& name) const;
 
     bool isAllDocumentsSaved() const;
     bool closeAllDocuments(bool autoSave = true);
 
 private:
-    int activeDocumentIndex = -1;
     std::vector<Document*> documents;
 };
 

@@ -3,13 +3,10 @@
 
 #define GL_GLEXT_PROTOTYPES
 
-
-
-#include "InteractionTools/EditorSession.h"
-#include "QtMainWindowBinder.h"
-#include "Project.h"
-
-#include "Tab.h"
+#include "UI/QtMainWindowBinder.h"
+#include "editor/EditorSession.h"
+#include "project/DocumentView.h"
+#include "project/Project.h"
 
 class DocumentManager;
 
@@ -46,20 +43,20 @@ private:
     // Host
     IViewportHost* host_;
 
-    // Rendering
-
     // Controllers
     UIController* uiController_;
 
     // Core observer
-    UIObserver* uiObserver_;
+    //UIObserver* uiObserver_;
 
     // Application
-    std::vector<Tab> tabs_;
+    std::vector<DocumentView*> views_;
 
     // UI
     UI::ProjectManager* projectManager_;
     QtMainWindowBinder* binder_;
+
+    //app::Project* project_;
 };
 
 #endif // APPLICATION_H_

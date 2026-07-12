@@ -5,56 +5,43 @@
 #include "Document.h"
 #include "saveload/DocumentSaveLoad.h"
 
-Document* DocumentManager::getActiveDocument() {
-    if (activeDocumentIndex == -1) {
-        return nullptr;
-    }
-    return documents[activeDocumentIndex];;
-}
-
-Document* DocumentManager::at(int index) {
-    try {
+Document* DocumentManager::at(DocumentId index) const {
+    if (index < documents.size()) {
         return documents[index];
     }
-    catch (...) {
-        throw std::out_of_range("out of range");
-    }
+    return nullptr;
 }
 
-bool DocumentManager::setActiveDocument(int index) {
-    if (index < 0 || index >= count()) {
-        return false;
-    }
-    activeDocumentIndex = index;
-    return true;
-}
-
-bool DocumentManager::setActiveDocument(const std::string& name) {
-    for (int i = 0; i < count(); i++) {
-        if (documents[i]->name() == name) {
-            activeDocumentIndex = i;
-            return true;
+Document* DocumentManager::at(const std::string& documentName) const {
+    for (auto& document : documents) {
+        if (document->name() == documentName) {
+            return document;
         }
     }
-    return false;
+    return nullptr;
 }
 
-int DocumentManager::getActiveIndex() const {
-    return activeDocumentIndex;
+DocumentId DocumentManager::findIdByName(const std::string& documentName) const {
+    size_t i = 0;
+    for (; i < documents.size(); ++i) {
+        if (documents[i]->name() == documentName) {
+            return i;
+        }
+    }
+    return -1;
 }
 
-int DocumentManager::count() const {
+size_t DocumentManager::count() const {
     return documents.size();
 }
 
-int DocumentManager::createNewDocument(const std::string& documentName) {
+DocumentId DocumentManager::createNewDocument(const std::string& documentName) {
     Document* document = new Document(documentName);
     documents.push_back(document);
-    activeDocumentIndex = documents.size() - 1;
-    return activeDocumentIndex;
+    return documents.size() - 1;
 }
 
-int DocumentManager::openDocument(const std::string& path) {
+DocumentId DocumentManager::openDocument(const std::string& path) {
     Document* document = nullptr;
     if (loadDocumentFromFile(path, document) == false) {
         return -1;
@@ -63,8 +50,8 @@ int DocumentManager::openDocument(const std::string& path) {
     return documents.size() - 1;
 }
 
-bool DocumentManager::closeDocument(const int index, const bool autoSave) {
-    if (index < 0 || index >= count()) {
+bool DocumentManager::closeDocument(const DocumentId index, const bool autoSave) {
+    if (index >= count()) {
         return false;
     }
     Document* document = documents[index];
@@ -92,8 +79,9 @@ bool DocumentManager::closeDocument(const std::string& name, bool autoSave) {
     return true;
 }
 
-bool DocumentManager::isDocumentSaved(const int index) const {
-    if (index < 0 || index >= count()) {
+bool DocumentManager::isDocumentSaved(const DocumentId index) const {
+    if (index >= count()) {
+
         return false;
     }
     const Document* document = documents[index];
