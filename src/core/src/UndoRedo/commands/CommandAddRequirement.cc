@@ -2,7 +2,7 @@
 
 namespace UndoRedo {
 
-    bool CommandAddRequirement::Execute() {
+    bool CommandAddRequirement::doExecute() noexcept {
         try {
             _reqID = _scene.addRequirement(_reqData);
             return true;
@@ -11,7 +11,7 @@ namespace UndoRedo {
         }
     }
 
-    bool CommandAddRequirement::Undo() {
+    bool CommandAddRequirement::doUndo() noexcept {
         try {
             _reqData = _scene.getRequirementData(_reqID);
             return _scene.deleteRequirement(_reqID);
@@ -20,7 +20,7 @@ namespace UndoRedo {
         }
     }
 
-    bool CommandAddRequirement::Redo() {
+    bool CommandAddRequirement::doRedo() noexcept {
         // try {
         //     return _scene.tryRestoreRequirement(_reqData, _reqID);
         // } catch (...) {

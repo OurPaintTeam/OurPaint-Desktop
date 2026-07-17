@@ -13,11 +13,11 @@ protected:
     core::Scene* _sceneBefore{};
     core::Scene* _sceneAfter{};
 
-    bool Execute() override;
+    bool doExecute() noexcept override;
 
-    bool Undo() override;
+    bool doUndo() noexcept override;
 
-    bool Redo() override;
+    bool doRedo() noexcept override;
 
 public:
     CommandClear(core::Scene*& scene);

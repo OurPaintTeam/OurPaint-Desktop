@@ -15,11 +15,11 @@ namespace UndoRedo {
         core::Requirement _reqData;
         core::ID _reqID;
 
-        bool Execute() override;
+        bool doExecute() noexcept override;
 
-        bool Undo() override;
+        bool doUndo() noexcept override;
 
-        bool Redo() override;
+        bool doRedo() noexcept override;
 
     public:
         CommandAddRequirement(core::Scene &scene, core::Requirement data) : _scene(scene), _reqData(data) {}

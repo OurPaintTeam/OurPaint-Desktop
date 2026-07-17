@@ -16,9 +16,11 @@ namespace UndoRedo {
         core::ObjectData _data;
         std::vector<core::Requirement> _reqData;
 
-        bool Execute() override;
+        bool doExecute() noexcept override;
 
-        bool Undo() override;
+        bool doUndo() noexcept override;
+
+        bool doRedo() noexcept override;
 
     public:
         CommandDeleteObject(core::Scene& scene, core::ID id) : _scene(scene), _id(id), _data() {}

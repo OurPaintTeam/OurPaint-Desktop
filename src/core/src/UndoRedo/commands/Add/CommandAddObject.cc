@@ -2,10 +2,10 @@
 
 namespace UndoRedo {
 
-    bool CommandAddObject::Execute() {
+    bool CommandAddObject::doExecute() noexcept {
         try {
-            _id = _scene.addObject(_data);
-            if (_id == ID(-1)) {
+            id_ = scene_.addObject(data_);
+            if (id_ == ID(-1)) {
                 return false;
             }
         } catch (...) {
@@ -14,16 +14,17 @@ namespace UndoRedo {
         return true;
     }
 
-    bool CommandAddObject::Undo() {
+    bool CommandAddObject::doUndo() noexcept {
         try {
-            _data = _scene.getObjectData(_id);
-            return _scene.deleteObject(_id);
+            data_ = scene_.getObjectData(id_);
+            return scene_.deleteObject(id_);
         } catch (...) {
             return false;
         }
     }
 
-    bool CommandAddObject::Redo() {
+    bool CommandAddObject::doRedo() noexcept {
+        id_ = scene_.addObject(data_);
         // try {
         //     return _scene.tryRestoreObject(_data, _id);
         // } catch (...) {

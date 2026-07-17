@@ -2,34 +2,36 @@
 #define OURPAINT_HEADERS_UNDOREDO_UNDOREDOMANAGER_H_
 
 #include <stack>
+#include <deque>
 
 #include "Transaction.h"
 
 namespace UndoRedo {
 
-    class UndoRedoManager {
-    private:
-        unsigned int maxSteps;
-        std::deque<Transaction> transactions_undo;
-        std::stack<Transaction> transactions_redo;
+class UndoRedoManager {
+private:
+    unsigned int maxSteps_;
+    std::deque<Transaction> undo_;
+    std::deque<Transaction> redo_;
 
-    public:
-        UndoRedoManager(unsigned int maxSteps = 100);
-        UndoRedoManager(const UndoRedoManager &) = delete;
-        UndoRedoManager(UndoRedoManager &&) = delete;
-        UndoRedoManager &operator=(const UndoRedoManager &) = delete;
-        UndoRedoManager operator=(UndoRedoManager &&) = delete;
+public:
+    UndoRedoManager(unsigned int maxSteps = 100);
 
-        void push(Transaction &&); // Добавить транзакцию
-        bool undo(); // Отменить последнюю транзакцию
-        bool redo(); // Повторить отмененную транзакцию
+    UndoRedoManager(const UndoRedoManager&) = delete;
+    UndoRedoManager(UndoRedoManager&&) = delete;
+    UndoRedoManager& operator=(const UndoRedoManager&) = delete;
+    UndoRedoManager& operator=(UndoRedoManager&&) = delete;
 
-        void setMaxUndoSteps(unsigned int); // Лимит отмены
+    bool push(Transaction&& txn);
+    bool undo() noexcept;
+    bool redo() noexcept;
 
-        bool canUndo() const;
+    void setMaxUndoSteps(unsigned int);
 
-        bool canRedo() const;
-    };
+    bool canUndo() const;
+
+    bool canRedo() const;
+};
 
 }
 

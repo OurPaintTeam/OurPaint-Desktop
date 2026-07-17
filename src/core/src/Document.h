@@ -29,13 +29,13 @@ public:
     bool isDirty() const;
 
 private:
-    std::string _filePath{};
-    std::string _documentName{};
-    bool _isDirty = false;
+    std::string filePath_{};
+    std::string documentName_{};
+    bool isDirty_ = false;
 
-    core::Scene* _scene;
-    UndoRedo::UndoRedoManager* _undoRedo;
-    CommandManager* _commandManager;
+    core::Scene* scene_;
+    UndoRedo::UndoRedoManager* undoRedo_;
+    CommandManager* commandManager_;
 };
 
 

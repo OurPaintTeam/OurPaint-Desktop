@@ -1,6 +1,7 @@
 #include "Scene.h"
 #include "objects/Objects.h"
 #include "ISceneObserver.h"
+#include "DSU.h"
 
 using namespace core;
 
@@ -191,14 +192,6 @@ void Scene::clear() {
     pointToBezier_.clear();
 }
 
-const BoundBox2D& Scene::getBoundingBox() const {
-    throw std::runtime_error("Scene error");
-}
-
-void Scene::updateBoundingBox() const {
-    throw std::runtime_error("Scene error: update Bounding box");
-}
-
 ObjectData Scene::getObjectData(ID id) const {
     ObjectData od;
     DCM_FigDesc desc = DCM_.getFigure(DCM_ID(id.get())).value();
@@ -244,7 +237,7 @@ bool Scene::hasRequirement(ID id) const {
 }
 
 ObjectData Scene::getRootObjectData(ID id) const {
-    throw std::runtime_error("Scene error");
+    throw std::runtime_error("Scene error: getRootObjectData");
 }
 
 Requirement Scene::getRequirementData(ID object1, ID object2) const {
@@ -385,17 +378,27 @@ std::vector<ObjectData> Scene::getBeziers() const {
         od.et = ObjType::ET_CUBIC_BEZIER;
         od.id = id;
 
-        od.params.push_back(b.b.start.x);
-        od.params.push_back(b.b.start.y);
+        DCM_FigDesc descStart = DCM_.getFigure(DCM_ID(b.start.get())).value();
+        DCM_FigDesc descEnd = DCM_.getFigure(DCM_ID(b.end.get())).value();
+        DCM_FigDesc desc1 = DCM_.getFigure(DCM_ID(b.control1.get())).value();
+        DCM_FigDesc desc2 = DCM_.getFigure(DCM_ID(b.control2.get())).value();
 
-        od.params.push_back(b.b.end.x);
-        od.params.push_back(b.b.end.y);
+        od.params.push_back(descStart.coords[0]);
+        od.params.push_back(descStart.coords[1]);
 
-        od.params.push_back(b.b.control1.x);
-        od.params.push_back(b.b.control1.y);
+        od.params.push_back(descEnd.coords[0]);
+        od.params.push_back(descEnd.coords[1]);
 
-        od.params.push_back(b.b.control2.x);
-        od.params.push_back(b.b.control2.y);
+        od.params.push_back(desc1.coords[0]);
+        od.params.push_back(desc1.coords[1]);
+
+        od.params.push_back(desc2.coords[0]);
+        od.params.push_back(desc2.coords[1]);
+
+        od.subObjects.push_back(b.start);
+        od.subObjects.push_back(b.end);
+        od.subObjects.push_back(b.control1);
+        od.subObjects.push_back(b.control2);
 
         beziers.push_back(od);
     }
@@ -403,7 +406,28 @@ std::vector<ObjectData> Scene::getBeziers() const {
 }
 
 std::vector<Requirement> Scene::getRequirements() const {
-    throw std::runtime_error("Scene error");
+    std::vector<DCM_ReqDesc> reqs = DCM_.getAllRequirements();
+
+    std::vector<Requirement> result;
+
+    for (const auto& req : reqs) {
+        Requirement r;
+        r.id = ID(req.id.value().id);
+        if (req.objectIds.size() > 0) {
+            r.obj1 = ID(req.objectIds[0].id);
+        }
+        if (req.objectIds.size() > 1) {
+            r.obj2 = ID(req.objectIds[1].id);
+        }
+        if (req.objectIds.size() > 2) {
+            r.obj3 = ID(req.objectIds[2].id);
+        }
+        r.type = reqTypeMapper(req.type);
+        r.param = req.param;
+        result.push_back(r);
+    }
+
+    return result;
 }
 
 std::vector<Requirement> Scene::getObjectRequirements(ID objectID) const {
@@ -587,9 +611,9 @@ void Scene::resizeCircle(ID circleId, double radius) {
     Utils::CircleUpdateDescriptor c(DCM_ID(circleId.get()), radius);
     DCM_.updateCircle(c);
 }
+
 void Scene::setPoint(ID pointID, double x, double y, const bool updateRequirementFlag) {
-
-
+    throw std::runtime_error("Scene error");
 }
 
 void Scene::setSection(ID sectionID, double x1, double y1, double x2, double y2, const bool updateRequirementFlag) {
@@ -606,6 +630,36 @@ void Scene::setArc(ID arcID, double x0, double y0, double x1, double y1, double 
 }
 
 ID Scene::addRequirement(const Requirement& reqData, const bool updateRequirementFlag) {
+    if (reqData.type == ReqType::ET_POINTONPOINT) {
+
+        // Retrieve current coordinates of both points.
+        ID id1 = reqData.obj1;
+        ID id2 = reqData.obj2;
+
+        ObjectData leftPoint = getObjectData(id1);
+        ObjectData rightPoint = getObjectData(id2);
+
+        double x1 = leftPoint.params[0];
+        double y1 = leftPoint.params[1];
+        double x2 = rightPoint.params[0];
+        double y2 = rightPoint.params[1];
+
+        // Compute midpoint between the two points.
+        double midX = (x1 + x2) * 0.5;
+        double midY = (y1 + y2) * 0.5;
+
+
+        // Move both points toward the midpoint before adding
+        // the coincidence constraint. This provides a better
+        // initial configuration for the solver and produces
+        // more intuitive visual behavior in the sketch.
+        //
+        // Fixed points will remain unchanged because movePoint()
+        // ignores movement of constrained points.
+        movePoint(leftPoint.id, midX - x1,  midY - y1);
+        movePoint(rightPoint.id, midX - x2, midY - y2);
+    }
+
     DCM_ReqDesc rd;
 
     rd.type = reqTypeMapper(reqData.type);
@@ -778,6 +832,72 @@ BoundBox2D Scene::makeBoundingBoxFromObjects(const std::vector<ID>& objects) con
     return total;
 }
 
+bool Scene::pointIsFixed(ID pointID) const {
+    ObjectData od = getObjectData(pointID);
+    if (od.et != ObjType::ET_POINT) {
+        return false;
+    }
+
+    std::vector<DCM_ReqDesc> reqs = DCM_.getAllRequirements();
+    for (const auto& desc : reqs) {
+        if (desc.type == DCM_ReqType::ET_FIXPOINT) {
+            for (const auto& id : desc.objectIds) {
+                if (id.id == pointID.get()) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+std::vector<Scene::PointGroup> Scene::getPointOnPointGroups() const {
+    std::vector<ObjectData> points = getPoints();
+
+    if (points.empty()) {
+        return {};
+    }
+
+    DSU<ID> dsu;
+
+    for (const auto& p : points) {
+        dsu.makeSet(p.id);
+    }
+
+    std::vector<DCM_ReqDesc> reqs = DCM_.getAllRequirements();
+
+    for (const auto& req : reqs) {
+        if (req.type != DCM_ReqType::ET_POINTONPOINT) {
+            continue;
+        }
+
+        if (req.objectIds.size() < 2) {
+            continue;
+        }
+
+        ID p1(req.objectIds[0].id);
+        ID p2(req.objectIds[1].id);
+
+        dsu.unite(p1, p2);
+    }
+
+    std::unordered_map<ID, PointGroup> groups;
+
+    for (const auto& p : points) {
+        ID root = dsu.find(p.id);
+        groups[root].points.push_back(p);
+    }
+
+    std::vector<PointGroup> result;
+    result.reserve(groups.size());
+
+    for (auto& [root, group] : groups) {
+        result.push_back(std::move(group));
+    }
+
+    return result;
+}
+
 void Scene::addRequirement(const Requirement& reqData, ID reqID) {
     throw std::runtime_error("Scene error");
 }
@@ -862,7 +982,9 @@ Scene::DCM_ReqType Scene::reqTypeMapper(ReqType type) {
     return {};
 }
 
-void Scene::updateRequirements(ID id) {}
+void Scene::updateRequirements(ID id) {
+    throw std::runtime_error("Scene error");
+}
 
 Requirement Scene::getRequirementData(ID reqID) const {
     Utils::RequirementDescriptor desc = DCM_.getRequirement(DCM_ID(reqID.get())).value();
