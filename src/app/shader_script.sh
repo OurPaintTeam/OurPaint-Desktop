@@ -9,15 +9,15 @@ APP_DIR="$BUILD_DIR/src/app"
 mkdir -p "$APP_DIR/shaders" "$APP_DIR/fonts"
 
 # Main renderer shaders
-if [ -d "$ROOT_DIR/src/rendering/renderer/shaders" ]; then
-  cp -a "$ROOT_DIR/src/rendering/renderer/shaders/." "$APP_DIR/shaders/"
+if [ -d "$ROOT_DIR/src/render\render/shaders" ]; then
+  cp -a "$ROOT_DIR/src/render\render/shaders/." "$APP_DIR/shaders/"
 fi
 
 # Extra text shaders/resources from legacy-cased folder
-if [ -d "$ROOT_DIR/src/Rendering/renderer/shaders" ]; then
-  cp -a "$ROOT_DIR/src/Rendering/renderer/shaders/." "$APP_DIR/shaders/"
+if [ -d "$ROOT_DIR/src/render\render/shaders" ]; then
+  cp -a "$ROOT_DIR/src/render\render/shaders/." "$APP_DIR/shaders/"
 fi
 
-if [ -d "$ROOT_DIR/src/Rendering/renderer/fonts" ]; then
-  cp -a "$ROOT_DIR/src/Rendering/renderer/fonts/." "$APP_DIR/fonts/"
+if [ -d "$ROOT_DIR/src/render\render/fonts" ]; then
+  cp -a "$ROOT_DIR/src/render\render/fonts/." "$APP_DIR/fonts/"
 fi

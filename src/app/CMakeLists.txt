@@ -61,13 +61,13 @@ endif ()
 add_custom_command(TARGET ourpaint
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/src/rendering/renderer/shaders
+            ${CMAKE_SOURCE_DIR}/src/render/render/shaders
             $<TARGET_FILE_DIR:ourpaint>/shaders
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/src/Rendering/renderer/shaders
+            ${CMAKE_SOURCE_DIR}/src/render/render/shaders
             $<TARGET_FILE_DIR:ourpaint>/shaders
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/src/Rendering/renderer/fonts
+            ${CMAKE_SOURCE_DIR}/src/render/render/fonts
             $<TARGET_FILE_DIR:ourpaint>/fonts
     COMMENT "Copy shaders and fonts"
 )
