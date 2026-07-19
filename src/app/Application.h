@@ -3,7 +3,7 @@
 
 #define GL_GLEXT_PROTOTYPES
 
-#include "UI/QtMainWindowBinder.h"
+#include "ui/QtMainWindowBinder.h"
 #include "editor/EditorSession.h"
 #include "project/DocumentView.h"
 #include "project/Project.h"
