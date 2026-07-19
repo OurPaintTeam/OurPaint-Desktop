@@ -68,6 +68,11 @@ Build the application:
 ```bash
 cmake --build build --target ourpaint --parallel
 ```
+Run:
+```bash
+cd build/src/app
+./ourpaint
+```
 
 ## Building on Windows
 The supported Windows toolchain is MSYS2 UCRT64 with GCC/MinGW-w64.
