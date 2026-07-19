@@ -36,24 +36,76 @@ void UIController::selectTool(ToolId tool, double value) {
 }
 
 void UIController::executeConsoleCommand(std::string str) {
-    // try {
-    //     Document* document = documentManager_.getActiveDocument();
-    //     UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
-    //     CommandManager& cm = document->commandManager();
-    //     Transaction* txn = cm.invoke(str);
-    //     urm.push(std::move(*txn));
-    //
-    //     for (const auto& view : views_) {
-    //         if (view.name_ == activeTabName_) {
-    //             viewportHost_.requestRedraw();
-    //         }
-    //     }
-    // }catch (const std::exception& e) {
-    //     throw std::runtime_error(e.what());
-    // }
+    try {
+        Document* document = manager_.at(activeIndex_);
+        UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+        CommandManager& cm = document->commandManager();
+        Transaction* txn = cm.invoke(str);
+        urm.push(std::move(*txn));
+
+        for (const auto& view : views_) {
+            if (view->document_.name() == activeTabName_) {
+                viewportHost_.requestRedraw();
+            }
+        }
+    }catch (const std::exception& e) {
+        throw std::runtime_error(e.what());
+    }
 }
 
-void UIController::openProjectInNewWindow() {}
+#include <cstdlib>
+#include <string>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+std::string getExecutablePath() {
+#ifdef _WIN32
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    return std::string(buffer);
+#else
+    char buffer[1024];
+    ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer)-1);
+    if (len != -1) {
+        buffer[len] = '\0';
+        return std::string(buffer);
+    }
+    return "";
+#endif
+}
+
+#ifdef _WIN32
+void UIController::openProjectInNewWindow() {
+    std::string path = getExecutablePath();
+
+    STARTUPINFOA si;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi;
+
+    if (CreateProcessA(NULL, (LPSTR)path.c_str(), NULL, NULL,
+                      FALSE, DETACHED_PROCESS, NULL, NULL, &si, &pi)) {
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    }
+}
+#endif
+
+#ifdef __linux__
+void UIController::openProjectInNewWindow() {
+    std::string path = getExecutablePath();
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        setsid();
+        execl(path.c_str(), path.c_str(), NULL);
+        exit(0);
+    }
+}
+#endif
 
 void UIController::createProjectInNewWindow() {}
 
@@ -116,7 +168,10 @@ void UIController::removeFile(const std::string& fileName) {
 
 void UIController::renameTab(const std::string& oldName, const std::string& newName) {
     int index = indicesMap_[oldName];
+    indicesMap_.erase(oldName);
     indicesMap_[newName] = index;
+    Document* document = manager_.at(index);
+    document->name() = newName;
     if (activeTabName_ == oldName) {
         activeTabName_ = newName;
     }

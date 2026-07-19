@@ -1,3 +1,7 @@
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 add_executable(ourpaint
         main.cc
         Application.cc
@@ -5,8 +9,8 @@ add_executable(ourpaint
         platform/QtViewportHost.cc
         viewport/render/RenderSceneBuilder.cc
         viewport/ViewportController.cc
-        UI/QtMainWindowBinder.cc
-        UI/UIController.cc
+        ui/QtMainWindowBinder.cc
+        ui/UIController.cc
         editor/EditorSession.cc
         editor/tools/PointTool.cc
         editor/tools/LineTool.cc
@@ -58,8 +62,13 @@ if (TYPE_OF_OPTIMIZATION)
     endif ()
 endif ()
 
-add_custom_command(TARGET ${PROJECT_NAME}
+add_custom_command(TARGET ourpaint
     POST_BUILD
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/shader_script.bat
-    COMMENT "Copy shaders"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/src/render/render/shaders
+            $<TARGET_FILE_DIR:ourpaint>/shaders
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/src/render/render/fonts
+            $<TARGET_FILE_DIR:ourpaint>/fonts
+    COMMENT "Copy shaders and fonts"
 )

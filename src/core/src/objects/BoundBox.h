@@ -11,7 +11,7 @@ public:
     double min_y = std::numeric_limits<double>::max();
     double max_y = std::numeric_limits<double>::lowest();
 
-    constexpr bool isValid() const;
+    bool isValid() const;
     double width() const;
     double height() const;
     void expand(double x, double y);
