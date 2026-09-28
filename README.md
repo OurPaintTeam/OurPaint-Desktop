@@ -20,8 +20,10 @@ The active development branch is `dev`.
 - FreeType
 - GLM
 
-Most third-party C++ libraries are downloaded and built automatically by
-CMake. Platform-specific build tools and Qt must be installed separately.
+The `third_party/` directory contains the UI and DCM Git submodules, GLAD,
+and bundled fonts. DCM contains its own Math submodule. Other C++ libraries
+are downloaded into the build tree by CMake's FetchContent. Platform-specific
+build tools and Qt must be installed separately.
 
 ## Clone the Repository
 

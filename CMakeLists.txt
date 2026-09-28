@@ -8,10 +8,8 @@ set(CMAKE_AUTOMOC OFF)
 set(CMAKE_AUTOUIC OFF)
 set(CMAKE_AUTORCC OFF)
 
-include(FetchContent)
-
+add_subdirectory(third_party)
 add_subdirectory(src/app)
 add_subdirectory(src/core)
 add_subdirectory(src/core/tests)
 add_subdirectory(src/render/render)
-add_subdirectory(src/UI)

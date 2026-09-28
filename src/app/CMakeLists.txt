@@ -68,7 +68,7 @@ add_custom_command(TARGET ourpaint
             ${CMAKE_SOURCE_DIR}/src/render/render/shaders
             $<TARGET_FILE_DIR:ourpaint>/shaders
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/src/render/render/fonts
+            ${CMAKE_SOURCE_DIR}/third_party/fonts
             $<TARGET_FILE_DIR:ourpaint>/fonts
     COMMENT "Copy shaders and fonts"
 )

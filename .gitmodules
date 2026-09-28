@@ -1,9 +1,9 @@
 [submodule "src/core/DCM"]
-	path = src/core/DCM
+	path = third_party/DCM
 	url = https://github.com/OurPaintTeam/OurPaintDCM.git
 	branch = main
 
 [submodule "src/UI"]
-	path = src/UI
+	path = third_party/UI
 	url = https://github.com/OurPaintTeam/OurPaint-Desktop-UI.git
 	branch = main
