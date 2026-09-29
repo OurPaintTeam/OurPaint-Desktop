@@ -1,8 +1,8 @@
 #ifndef OURPAINT_APPLICATION_CUBIC_BEZIER_TOOL_H_
 #define OURPAINT_APPLICATION_CUBIC_BEZIER_TOOL_H_
 
+#include "../../../core/DocumentManager.h"
 #include "Camera2D.h"
-#include "DocumentManager.h"
 #include "IInteractionTool.h"
 #include "RenderScene.h"
 

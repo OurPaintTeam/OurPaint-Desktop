@@ -1,18 +1,18 @@
 #ifndef OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 #define OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 
+#include "../../core/Document.h"
 #include "../editor/EditorSession.h"
 #include "../platform/IViewportHost.h"
 #include "../platform/InputEvents.h"
 #include "AxisTexts.h"
 #include "Camera2D.h"
-#include "Document.h"
 #include "IRenderer.h"
 #include "IViewportController.h"
 #include "OpenGL2dRenderer.h"
 #include "RenderScene.h"
-#include "render/RenderSceneBuilder.h"
 #include "ViewportStyle.h"
+#include "render/RenderSceneBuilder.h"
 
 class ViewportController : public IViewportController {
 public:

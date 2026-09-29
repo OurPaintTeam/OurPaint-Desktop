@@ -2,10 +2,10 @@
 
 #include <iomanip>
 
+#include "../../../core/Document.h"
+#include "../../../core/DocumentManager.h"
+#include "../../../core/Scene.h"
 #include "ConsoleManager.h"
-#include "Document.h"
-#include "DocumentManager.h"
-#include "Scene.h"
 #include "Transaction.h"
 #include "UndoRedo.h"
 #include "objects/Objects.h"

@@ -1,19 +1,19 @@
 #ifndef OURPAINT_APPLICATION_EDITORSESSION_H_
 #define OURPAINT_APPLICATION_EDITORSESSION_H_
 
+#include "../../core/DocumentManager.h"
 #include "../viewport/OverlayModel.h"
 #include "../viewport/picking/Cpu2dPicker.h"
-#include "tools/ArcTool.h"
 #include "Camera2D.h"
-#include "tools/DimensionTool.h"
-#include "DocumentManager.h"
-#include "tools/PointTool.h"
 #include "RenderScene.h"
+#include "tools/ArcTool.h"
 #include "tools/CircleTool.h"
 #include "tools/CubicBezierTool.h"
 #include "tools/CursorTool.h"
+#include "tools/DimensionTool.h"
 #include "tools/IInteractionTool.h"
 #include "tools/LineTool.h"
+#include "tools/PointTool.h"
 #include "tools/ToolId.h"
 
 class EditorSession {

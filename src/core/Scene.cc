@@ -1,7 +1,8 @@
-#include "Scene.h"
-#include "objects/Objects.h"
-#include "ISceneObserver.h"
+#include "src/Scene.h"
+
 #include "DSU.h"
+#include "ISceneObserver.h"
+#include "objects/Objects.h"
 
 using namespace core;
 

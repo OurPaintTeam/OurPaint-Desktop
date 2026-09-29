@@ -1,6 +1,6 @@
 #include "EditorSession.h"
 
-#include "Document.h"
+#include "../../core/Document.h"
 #include "tools/CircleTool.h"
 #include "tools/CursorTool.h"
 #include "tools/LineTool.h"

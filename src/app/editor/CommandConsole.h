@@ -5,8 +5,8 @@
 #include <QStringList>
 #include <QVector>
 
+#include "../../core/Scene.h"
 #include "../platform/QtViewportHost.h"
-#include "Scene.h"
 
 class OverlayModel;
 

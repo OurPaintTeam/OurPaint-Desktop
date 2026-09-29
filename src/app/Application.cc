@@ -1,11 +1,11 @@
 #include "Application.h"
 
+#include "../core/DocumentManager.h"
+#include "../core/Scene.h"
 #include "App/CustomConsole.h"
-#include "DocumentManager.h"
 #include "OpenGL2dRenderer.h"
 #include "platform/QtPlatformRuntime.h"
 #include "platform/QtViewportHost.h"
-#include "Scene.h"
 
 Application::Application(int& argc, char** argv) : documentManager_(nullptr) {
     try {

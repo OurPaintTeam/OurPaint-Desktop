@@ -1,7 +1,7 @@
 #include "CursorTool.h"
 
-#include "Document.h"
-#include "Scene.h"
+#include "../../../core/Document.h"
+#include "../../../core/Scene.h"
 
 CursorTool::CursorTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
     : document_(document), camera_(camera), picker_(picker), overlay_(overlay), data_() {}

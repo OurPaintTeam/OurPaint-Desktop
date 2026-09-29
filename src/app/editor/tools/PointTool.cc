@@ -1,8 +1,8 @@
 #include "PointTool.h"
 
+#include "../../../core/Document.h"
+#include "../../../core/Scene.h"
 #include "ConsoleManager.h"
-#include "Document.h"
-#include "Scene.h"
 #include "Transaction.h"
 #include "UndoRedo.h"
 #include "objects/Objects.h"

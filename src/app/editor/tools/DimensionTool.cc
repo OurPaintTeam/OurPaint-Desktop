@@ -1,6 +1,6 @@
 #include "DimensionTool.h"
 
-#include "Document.h"
+#include "../../../core/Document.h"
 
 DimensionTool::DimensionTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
     : document_(document), camera_(camera), picker_(picker), overlay_(overlay) {}

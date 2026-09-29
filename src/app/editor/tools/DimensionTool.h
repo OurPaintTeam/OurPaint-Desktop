@@ -1,11 +1,11 @@
 #ifndef OURPAINT_APPLICATION_DIMENSION_TOOL_H_
 #define OURPAINT_APPLICATION_DIMENSION_TOOL_H_
 
+#include "../../../core/Document.h"
 #include "../../viewport/OverlayModel.h"
 #include "../../viewport/picking/Cpu2dPicker.h"
-#include "IInteractionTool.h"
 #include "Camera2D.h"
-#include "Document.h"
+#include "IInteractionTool.h"
 #include "objects/Objects.h"
 
 class DimensionTool : public IInteractionTool {

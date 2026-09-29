@@ -3,7 +3,8 @@
 
 #include <optional>
 #include <vector>
-#include "Scene.h"
+
+#include "../../../core/Scene.h"
 #include "Camera2D.h"
 
 struct PickResult {

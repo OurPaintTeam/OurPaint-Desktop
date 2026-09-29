@@ -1,7 +1,8 @@
 #include "Document.h"
+
+#include "ConsoleManager.h"
 #include "Scene.h"
 #include "UndoRedo.h"
-#include "ConsoleManager.h"
 
 Document::Document(const std::string& documentName) {
     documentName_ = documentName;

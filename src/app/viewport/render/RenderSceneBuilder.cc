@@ -1,14 +1,13 @@
 #include "RenderSceneBuilder.h"
 
-#include "ViewportStyle.h"
-
 #include <utility>
 #include <vector>
 
+#include "../../../core/Scene.h"
 #include "AxisTexts.h"
 #include "OverlayModel.h"
 #include "RenderScene.h"
-#include "Scene.h"
+#include "ViewportStyle.h"
 #include "objects/Objects.h"
 
 using namespace core;

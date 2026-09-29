@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "../../core/Document.h"
+#include "../../core/DocumentManager.h"
 #include "../editor/CommandConsole.h"
 #include "../platform/IViewportHost.h"
 #include "../platform/QtViewportHost.h"
@@ -9,8 +11,6 @@
 #include "../viewport/ViewportController.h"
 #include "../viewport/render/RenderSceneBuilder.h"
 #include "ConsoleManager.h"
-#include "Document.h"
-#include "DocumentManager.h"
 #include "OpenGL2dRenderer.h"
 #include "Transaction.h"
 #include "UndoRedo.h"

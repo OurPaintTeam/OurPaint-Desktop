@@ -1,7 +1,7 @@
 #include "ViewportController.h"
 
-#include "Document.h"
-#include "Scene.h"
+#include "../../core/Document.h"
+#include "../../core/Scene.h"
 #include "UndoRedo.h"
 
 ViewportController::ViewportController(Camera2D& camera,

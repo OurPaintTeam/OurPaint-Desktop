@@ -3,13 +3,13 @@
 
 #include <string>
 
+#include "../../core/DocumentManager.h"
 #include "../editor/EditorSession.h"
 #include "../editor/tools/ToolId.h"
 #include "../platform/IPlatformRuntime.h"
 #include "../platform/IViewportHost.h"
 #include "../platform/QtViewportHost.h"
 #include "../project/DocumentView.h"
-#include "DocumentManager.h"
 #include "Lib/Core/ProjectManager.h"
 
 class UIController {

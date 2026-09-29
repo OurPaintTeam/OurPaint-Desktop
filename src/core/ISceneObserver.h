@@ -1,7 +1,7 @@
 #ifndef OURPAINT_HEADERS_SCENE_OBSERVER_H_
 #define OURPAINT_HEADERS_SCENE_OBSERVER_H_
 
-#include "Scene.h"
+#include "src/Scene.h"
 
 class ISceneObserver {
 public:

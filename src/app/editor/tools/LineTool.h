@@ -1,9 +1,9 @@
 #ifndef OURPAINT_APPLICATION_LINE_TOOL_H_
 #define OURPAINT_APPLICATION_LINE_TOOL_H_
 
+#include "../../../core/DocumentManager.h"
 #include "../../viewport/OverlayModel.h"
 #include "Camera2D.h"
-#include "DocumentManager.h"
 #include "IInteractionTool.h"
 
 class LineTool : public IInteractionTool {

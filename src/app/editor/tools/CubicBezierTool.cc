@@ -1,13 +1,13 @@
 #include "CubicBezierTool.h"
 
+#include "../../../core/Document.h"
+#include "../../../core/DocumentManager.h"
+#include "../../../core/Scene.h"
+#include "Camera2D.h"
 #include "ConsoleManager.h"
-#include "Document.h"
-#include "DocumentManager.h"
-#include "Scene.h"
 #include "Transaction.h"
 #include "UndoRedo.h"
 #include "objects/Objects.h"
-#include "Camera2D.h"
 
 CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera)
     : firstPoint_X(0), firstPoint_Y(0), document_(document), camera_(camera) {}
