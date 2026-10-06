@@ -21,7 +21,7 @@ public:
         int minPixelSpacing = 80;
         int marginPixels = 40;
         int tickSize = 6;
-        int precision = 6;
+        int precision = 6;  // Maximum fractional digits; labels also respect the tick step.
         Color textColor;
     } textConfig;
 
@@ -41,10 +41,10 @@ public:
     const GridInfo& getGridInfo() const { return gridInfo_; }
 
 private:
-    float niceStep(float roughStep) const;
+    double niceStep(double roughStep) const;
 
-    static std::vector<float> computeMarks(float min, float max, float step);
-    std::string formatValue(float value) const;
+    static std::vector<double> computeMarks(double min, double max, double step);
+    std::string formatValue(double value, double step) const;
 
     GridInfo gridInfo_;
 

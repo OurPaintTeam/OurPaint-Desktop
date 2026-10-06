@@ -1,54 +1,38 @@
 #ifndef OURPAINT_APPLICATION_DIMENSION_TOOL_H_
 #define OURPAINT_APPLICATION_DIMENSION_TOOL_H_
 
-#include "../../../core/Document.h"
-#include "../../viewport/OverlayModel.h"
-#include "../../viewport/picking/Cpu2dPicker.h"
-#include "Camera2D.h"
+#include <span>
+#include <vector>
+
+#include "../../../core/sketch/SketchTypes.h"
+#include "../ConstraintRequest.h"
 #include "IInteractionTool.h"
-#include "objects/Objects.h"
+
+class ConstraintActions;
+class Cpu2dPicker;
+class OverlayModel;
 
 class DimensionTool : public IInteractionTool {
 public:
-    explicit DimensionTool(Document& document,
-                        Camera2D& camera,
-                        Cpu2dPicker& picker,
-                        OverlayModel& overlay);
+    DimensionTool(ConstraintActions& actions, Cpu2dPicker& picker, OverlayModel& overlay);
+
+    void begin(const ConstraintRequest& request, std::span<const core::sketch::GeometryRef> initialRefs = {});
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;
     void onKey(const input::KeyEvent& e) override;
     bool cancel() override;
 
-    void setDimension(double value);
-
-    bool tryApplyDimensionToObject(ID id);
-    bool tryApplyDimensionToTwoObjects(ID id1, ID id2);
-
 private:
-    enum class Step {
-        WaitingFirstInput,
-        WaitingSecondInput,
-        WaitingThirdInput
-    };
+    void handleRef(const core::sketch::GeometryRef& ref);
+    void resetInputs();
 
-    glm::dvec2 screenToWorld(double x, double y) const;
-    void reset();
-
-private:
-    Document& document_;
-    Camera2D& camera_;
+    ConstraintActions& actions_;
     Cpu2dPicker& picker_;
     OverlayModel& overlay_;
 
-    std::vector<glm::dvec2> points_;
-    std::vector<ID> objects_;
-
-    glm::dvec2 lastPos_{};
-
-    Step step_ = Step::WaitingFirstInput;
-
-    double dimension_ = 1.0;
+    ConstraintRequest request_{ConstraintAction::Dimension, std::nullopt};
+    std::vector<core::sketch::GeometryRef> refs_;
 };
 
-#endif // ! OURPAINT_APPLICATION_DIMENSION_TOOL_H_
+#endif  // ! OURPAINT_APPLICATION_DIMENSION_TOOL_H_

@@ -29,7 +29,7 @@ public:
 
     Camera2D camera2D_;
     OverlayModel overlay_;
-    EditorSession editorSession_;
+    SketchEditor editorSession_;
     ViewportController viewportController_;
 };
 

@@ -4,7 +4,7 @@
 #include <string>
 
 #include "../../core/DocumentManager.h"
-#include "../editor/EditorSession.h"
+#include "../editor/SketchEditor.h"
 #include "../editor/tools/ToolId.h"
 #include "../platform/IPlatformRuntime.h"
 #include "../platform/IViewportHost.h"
@@ -21,7 +21,8 @@ public:
                  QtViewportHost& host);
     ~UIController() = default;
 
-    void selectTool(ToolId tool, double value = 0.0);
+    void selectTool(ToolId tool);
+    void requestConstraint(const ConstraintRequest& request, const std::string& tabName = {});
 
     // Console
     void executeConsoleCommand(std::string str);

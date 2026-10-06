@@ -11,7 +11,8 @@ add_executable(ourpaint
         viewport/ViewportController.cc
         ui/QtMainWindowBinder.cc
         ui/UIController.cc
-        editor/EditorSession.cc
+        editor/SketchEditor.cc
+        editor/ConstraintActions.cc
         editor/tools/PointTool.cc
         editor/tools/LineTool.cc
         editor/tools/CircleTool.cc
@@ -19,6 +20,7 @@ add_executable(ourpaint
         editor/tools/CubicBezierTool.cc
         editor/tools/ArcTool.cc
         editor/tools/DimensionTool.cc
+        editor/tools/ConstraintTool.cc
         viewport/picking/Cpu2dPicker.cc
         viewport/SelectionModel.cc
         editor/CommandConsole.cc

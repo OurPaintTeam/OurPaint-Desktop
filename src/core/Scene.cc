@@ -1,4 +1,4 @@
-#include "src/Scene.h"
+#include "Scene.h"
 
 #include "DSU.h"
 #include "ISceneObserver.h"

@@ -21,20 +21,7 @@ enum class ToolId {
     ArcByDiameter,
     ArcByThreePoints,
 
-    CubicBezier,
-
-    ConstraintDimension,
-
-    ConstraintPointLineDistance,
-    ConstraintPointOnLine,
-    ConstraintPointPointDistance,
-    ConstraintCoincidentPoints,
-    ConstraintLineCircleDistance,
-    ConstraintLineOnCircle,
-    ConstraintLineInCircle,
-    ConstraintParallelLines,
-    ConstraintPerpendicularLines,
-    ConstraintAngleBetweenLines
+    CubicBezier
 };
 
 #endif // ! OURPAINT_APPLICATION_TOOL_ID_H_

@@ -4,23 +4,25 @@
 #include <optional>
 #include <vector>
 
-#include "../../../core/Scene.h"
 #include "Camera2D.h"
+#include "Sketch.h"
+
+using namespace core;
 
 struct PickResult {
-    core::ID id;
-    core::ObjType type;
+    sketch::GeometryRef ref;
 };
 
 class Cpu2dPicker {
 public:
-    explicit Cpu2dPicker(core::Scene& scene, Camera2D& camera);
+    explicit Cpu2dPicker(sketch::Sketch& sketch, Camera2D& camera);
 
-    std::vector<core::ID> pickInRectAtScreenLogical(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
-    std::vector<core::ID> pickInRectAtScreenFramebuffer(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
-    std::vector<core::ID> pickInRectAtWorld(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
+    std::vector<sketch::GeometryRef> pickInRectAtScreenLogical(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
+    std::vector<sketch::GeometryRef> pickInRectAtScreenFramebuffer(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
+    std::vector<sketch::GeometryRef> pickInRectAtWorld(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
 
     std::optional<PickResult> pickAtScreenLogical(double screenX, double screenY) const;
+    std::optional<PickResult> pickCurveAtScreenLogical(double screenX, double screenY) const;
     std::optional<PickResult> pickPointAtScreenLogical(double screenX, double screenY) const;
     std::optional<PickResult> pickLineAtScreenLogical(double screenX, double screenY) const;
     std::optional<PickResult> pickCircleAtScreenLogical(double screenX, double screenY) const;
@@ -40,13 +42,13 @@ private:
     std::optional<PickResult> pickPointAt(double worldX, double worldY) const;
     std::optional<PickResult> pickLineAt(double worldX, double worldY) const;
     std::optional<PickResult> pickCircleAt(double worldX, double worldY) const;
+    std::optional<PickResult> pickArcAt(double worldX, double worldY) const;
 
-    std::vector<core::ID> pickInRect(double worldMinX, double worldMinY, double worldMaxX, double worldMaxY) const;
+    std::vector<sketch::GeometryRef> pickInRect(double worldMinX, double worldMinY, double worldMaxX, double worldMaxY) const;
 
-    static bool lineIntersectsRectFast(double x1, double y1, double x2, double y2,
-                            double xMin, double yMin, double xMax, double yMax);
+    static bool lineIntersectsRectFast(double x1, double y1, double x2, double y2, double xMin, double yMin, double xMax, double yMax);
 
-    core::Scene& scene_;
+    sketch::Sketch& sketch_;
     Camera2D& camera_;
 };
 

@@ -1,32 +1,39 @@
 #ifndef OURPAINT_APPLICATION_SELECTION_MODEL_H_
 #define OURPAINT_APPLICATION_SELECTION_MODEL_H_
 
-#include "objects/ID.h"
+#include <functional>
+#include <unordered_set>
 #include <vector>
 
-using namespace core;
+#include "SketchTypes.h"
 
 class SelectionModel {
+    using GeometryRef = core::sketch::GeometryRef;
+
 public:
     bool empty() const;
 
-    bool contains(ID id) const;
+    bool contains(GeometryRef ref) const;
 
     void clear();
 
-    void replace(ID id);
-    void replace(const std::vector<ID>& ids);
+    void replace(GeometryRef ref);
+    void replace(const std::vector<GeometryRef>& refs);
 
-    void add(ID id);
-    void add(const std::vector<ID>& ids);
+    void add(GeometryRef ref);
+    void add(const std::vector<GeometryRef>& refs);
 
-    void toggle(ID id);
+    void toggle(GeometryRef ref);
 
-    const std::vector<ID>& items() const;
+    const std::vector<GeometryRef>& items() const;
 
 private:
-    std::vector<ID> items_;
-    std::unordered_set<ID> set_;
+    struct RefHash {
+        std::size_t operator()(GeometryRef ref) const noexcept { return std::hash<int64_t>{}(ref.entity.get()) * 4 + static_cast<std::size_t>(ref.sub); }
+    };
+    // Whole and point sub-elements remain independently selectable.
+    std::vector<GeometryRef> items_;
+    std::unordered_set<GeometryRef, RefHash> set_;
 };
 
-#endif // ! OURPAINT_APPLICATION_SELECTION_MODEL_H_
+#endif  // ! OURPAINT_APPLICATION_SELECTION_MODEL_H_

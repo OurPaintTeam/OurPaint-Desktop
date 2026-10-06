@@ -2,7 +2,7 @@
 #define OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 
 #include "../../core/Document.h"
-#include "../editor/EditorSession.h"
+#include "../editor/SketchEditor.h"
 #include "../platform/IViewportHost.h"
 #include "../platform/InputEvents.h"
 #include "AxisTexts.h"
@@ -18,7 +18,7 @@ class ViewportController : public IViewportController {
 public:
     ViewportController(Camera2D& camera,
                        OverlayModel& overlay,
-                       EditorSession& session,
+                       SketchEditor& session,
                        Document& document);
 
     bool onResize     (const input::ResizeEvent& e)      override;
@@ -35,7 +35,7 @@ public:
 private:
     Camera2D& camera2D_;
     OverlayModel& overlay_;
-    EditorSession& editorSession_;
+    SketchEditor& editorSession_;
     Document& document_;
 
     AxisTexts axisTexts_;

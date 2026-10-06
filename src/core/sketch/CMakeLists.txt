@@ -1,0 +1,40 @@
+option(OURPAINT_SKETCH_WITH_DCM "Build the DCM Sketch backend" ON)
+option(OURPAINT_SKETCH_WITH_SOLVESPACE "Build the SolveSpace Sketch backend" ON)
+set(OURPAINT_SKETCH_DEFAULT_BACKEND "DCM" CACHE STRING "Default Sketch backend: DCM or SolveSpace")
+set_property(CACHE OURPAINT_SKETCH_DEFAULT_BACKEND PROPERTY STRINGS DCM SolveSpace)
+
+if(NOT OURPAINT_SKETCH_WITH_DCM AND NOT OURPAINT_SKETCH_WITH_SOLVESPACE)
+    message(FATAL_ERROR "Sketch requires at least one enabled backend.")
+endif()
+if(OURPAINT_SKETCH_DEFAULT_BACKEND STREQUAL "DCM")
+    if(NOT OURPAINT_SKETCH_WITH_DCM)
+        message(FATAL_ERROR "The default DCM Sketch backend is disabled.")
+    endif()
+    set(sketch_default_solvespace 0)
+elseif(OURPAINT_SKETCH_DEFAULT_BACKEND STREQUAL "SolveSpace")
+    if(NOT OURPAINT_SKETCH_WITH_SOLVESPACE)
+        message(FATAL_ERROR "The default SolveSpace Sketch backend is disabled.")
+    endif()
+    set(sketch_default_solvespace 1)
+else()
+    message(FATAL_ERROR "OURPAINT_SKETCH_DEFAULT_BACKEND must be DCM or SolveSpace.")
+endif()
+
+# Keep Sketch independent of the legacy Core/Scene target and its consumers.
+add_library(ourpaint_sketch STATIC Sketch.cc)
+add_library(OurPaint::Sketch ALIAS ourpaint_sketch)
+target_compile_features(ourpaint_sketch PUBLIC cxx_std_20)
+target_include_directories(ourpaint_sketch PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
+target_compile_definitions(ourpaint_sketch PRIVATE
+    OURPAINT_SKETCH_WITH_DCM=$<BOOL:${OURPAINT_SKETCH_WITH_DCM}>
+    OURPAINT_SKETCH_WITH_SOLVESPACE=$<BOOL:${OURPAINT_SKETCH_WITH_SOLVESPACE}>
+    OURPAINT_SKETCH_DEFAULT_SOLVESPACE=${sketch_default_solvespace}
+)
+if(OURPAINT_SKETCH_WITH_DCM)
+    target_sources(ourpaint_sketch PRIVATE backends/DcmSketchBackend.cc)
+    target_link_libraries(ourpaint_sketch PRIVATE OurPaintDCM)
+endif()
+if(OURPAINT_SKETCH_WITH_SOLVESPACE)
+    target_sources(ourpaint_sketch PRIVATE backends/SolveSpaceSketchBackend.cc)
+    target_link_libraries(ourpaint_sketch PRIVATE OurPaint::SolveSpace)
+endif()

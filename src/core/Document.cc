@@ -1,29 +1,11 @@
 #include "Document.h"
-
-#include "ConsoleManager.h"
-#include "Scene.h"
-#include "UndoRedo.h"
+#include "Sketch.h"
 
 Document::Document(const std::string& documentName) {
     documentName_ = documentName;
-    scene_ = new core::Scene();
-    undoRedo_ = new UndoRedo::UndoRedoManager(100);
-    commandManager_ = new CommandManager();
-
-    commandManager_->registerFactory(new PointFactory(*scene_));
-    commandManager_->registerFactory(new LineFactory(*scene_));
-    commandManager_->registerFactory(new CircleFactory(*scene_));
-    commandManager_->registerFactory(new ArcFactory(*scene_));
-    commandManager_->registerFactory(new ReqFactory(*scene_));
-    commandManager_->registerFactory(new DelFactory(*scene_));
-    commandManager_->registerFactory(new ClearFactory(scene_));
-    commandManager_->registerFactory(new CubicBezierFactory(*scene_));
+    sketch_ = std::move(core::sketch::Sketch::create(core::sketch::BackendKind::SolveSpace).value());
 }
-Document::~Document() {
-    delete scene_;
-    delete undoRedo_;
-    delete commandManager_;
-}
+Document::~Document() {}
 
 std::string& Document::name() {
     isDirty_ = true;
@@ -41,28 +23,13 @@ const std::string& Document::path() const {
     return filePath_;
 }
 
-core::Scene& Document::scene() {
+core::sketch::Sketch& Document::sketch() {
     isDirty_ = true;
-    return *scene_;
-}
-const core::Scene& Document::scene() const {
-    return *scene_;
+    return *sketch_;
 }
 
-UndoRedo::UndoRedoManager& Document::undoRedoManager() {
-    isDirty_ = true;
-    return *undoRedo_;
-}
-const UndoRedo::UndoRedoManager& Document::undoRedoManager() const {
-    return *undoRedo_;
-}
-
-CommandManager& Document::commandManager() {
-    isDirty_ = true;
-    return *commandManager_;
-}
-const CommandManager& Document::commandManager() const {
-    return *commandManager_;
+const core::sketch::Sketch& Document::sketch() const {
+    return *sketch_;
 }
 
 bool Document::isDirty() const {

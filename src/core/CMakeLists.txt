@@ -1,3 +1,5 @@
+add_subdirectory(sketch)
+
 add_library(ourpaint_core
         # /saveload/
         saveload/FileOurP.h
@@ -18,44 +20,45 @@ add_library(ourpaint_core
         objects/BoundBox.cc
 
         # /UndoRedo/
-        UndoRedo/commands/Add/CommandAddObject.cc
-        UndoRedo/commands/Delete/CommandDeleteObject.cc
-        UndoRedo/commands/CommandAddRequirement.cc
-        UndoRedo/commands/CommandDeleteRequirement.cc
-        UndoRedo/commands/CommandMove.cc
-        UndoRedo/commands/CommandClear.cc
-        UndoRedo/Transaction.cc
-        UndoRedo/UndoRedoTemplate.cc
-        UndoRedo/UndoRedo.cc
-        UndoRedo/ConsoleManager.cc
-        UndoRedo/UndoRedoTemplate.h
+#        UndoRedo/commands/Add/CommandAddObject.cc
+#        UndoRedo/commands/Delete/CommandDeleteObject.cc
+#        UndoRedo/commands/CommandAddRequirement.cc
+#        UndoRedo/commands/CommandDeleteRequirement.cc
+#        UndoRedo/commands/CommandMove.cc
+#        UndoRedo/commands/CommandClear.cc
+#        UndoRedo/Transaction.cc
+#        UndoRedo/UndoRedoTemplate.cc
+#        UndoRedo/UndoRedo.cc
+#        UndoRedo/ConsoleManager.cc
+#        UndoRedo/UndoRedoTemplate.h
 
 
         # /
-        ISceneObserver.h
+#        ISceneObserver.h
         ExceptionGuard.h
         Document.h
         DocumentManager.h
-        Scene.h
-        Scene.cc
+#        Scene.h
+#        Scene.cc
         Document.cc
         DocumentManager.cc
         saveload/DocumentSaveLoad.cc
 )
 
-target_include_directories(ourpaint_core
-        PUBLIC
-        src
+target_include_directories(ourpaint_core PUBLIC
+        /
         saveload
-        UndoRedo
-        UndoRedo/commands
-        UndoRedo/commands/Add
-        UndoRedo/commands/Delete
+        sketch
+#        UndoRedo
+#        UndoRedo/commands
+#        UndoRedo/commands/Add
+#        UndoRedo/commands/Delete
 )
 target_link_libraries(ourpaint_core
     PUBLIC
         nlohmann_json::nlohmann_json
         OurPaintDCM
+        ourpaint_sketch
 )
 
 

@@ -106,17 +106,18 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                           controller_.closeApplication();
                       });*/
 
-    // Tools - constrains
-    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this, &window](const QString& tabName, UI::ConstraintType _t1) {
-        switch (_t1) {
+    // Tools - constraints
+    QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this](const QString& tabName, UI::ConstraintType type) {
+        switch (type) {
             case UI::ConstraintType::Distance: {
                 auto* prompt = new UI::ParameterInputWidget("Input:", nullptr);
-                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, prompt](const QString& parameter) {
-                    if (parameter.isEmpty()) {
+                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, tabName](const QString& parameter) {
+                    bool valid = false;
+                    const double value = parameter.toDouble(&valid);
+                    if (!valid) {
                         return;
                     }
-                    controller_.selectTool(ToolId::ConstraintDimension, parameter.toDouble());
-                    prompt->deleteLater();
+                    controller_.requestConstraint({ConstraintAction::Dimension, value}, tabName.toStdString());
                 });
 
                 prompt->move(200, 200);
@@ -124,22 +125,35 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                 break;
             }
             case UI::ConstraintType::Tangent:
-                controller_.selectTool(ToolId::ConstraintPointOnLine);
+                controller_.requestConstraint({ConstraintAction::Tangent, std::nullopt}, tabName.toStdString());
                 break;
             case UI::ConstraintType::Coincident:
-                controller_.selectTool(ToolId::ConstraintCoincidentPoints);
+                controller_.requestConstraint({ConstraintAction::Coincident, std::nullopt}, tabName.toStdString());
+                break;
+            case UI::ConstraintType::Horizontal:
+                controller_.requestConstraint({ConstraintAction::Horizontal, std::nullopt}, tabName.toStdString());
+                break;
+            case UI::ConstraintType::Vertical:
+                controller_.requestConstraint({ConstraintAction::Vertical, std::nullopt}, tabName.toStdString());
                 break;
             case UI::ConstraintType::Parallel:
-                controller_.selectTool(ToolId::ConstraintParallelLines);
+                controller_.requestConstraint({ConstraintAction::Parallel, std::nullopt}, tabName.toStdString());
                 break;
             case UI::ConstraintType::Perpendicular:
-                controller_.selectTool(ToolId::ConstraintPerpendicularLines);
+                controller_.requestConstraint({ConstraintAction::Perpendicular, std::nullopt}, tabName.toStdString());
                 break;
+            case UI::ConstraintType::Equal:
+                controller_.requestConstraint({ConstraintAction::Equal, std::nullopt}, tabName.toStdString());
+                break;
+            case UI::ConstraintType::FixUnfix:
+                controller_.requestConstraint({ConstraintAction::Fix, std::nullopt}, tabName.toStdString());
+                break;
+            case UI::ConstraintType::Concentric:
             case UI::ConstraintType::Collinear:
-                controller_.selectTool(ToolId::ConstraintAngleBetweenLines);
-                break;
+            case UI::ConstraintType::Midpoint:
+            case UI::ConstraintType::Symmetric:
             default:
-                break;
+                return;
         }
     });
 

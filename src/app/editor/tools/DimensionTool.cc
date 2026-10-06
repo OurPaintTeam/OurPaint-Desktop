@@ -1,122 +1,65 @@
 #include "DimensionTool.h"
 
-#include "../../../core/Document.h"
+#include <utility>
 
-DimensionTool::DimensionTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
-    : document_(document), camera_(camera), picker_(picker), overlay_(overlay) {}
+#include "../../viewport/OverlayModel.h"
+#include "../../viewport/picking/Cpu2dPicker.h"
+#include "../ConstraintActions.h"
 
-void DimensionTool::onMouseMove(const input::MouseMoveEvent& e) {
-    (void)e;
+DimensionTool::DimensionTool(ConstraintActions& actions, Cpu2dPicker& picker, OverlayModel& overlay) : actions_(actions), picker_(picker), overlay_(overlay) {}
+
+void DimensionTool::begin(const ConstraintRequest& request, std::span<const core::sketch::GeometryRef> initialRefs) {
+    request_ = request;
+    refs_.assign(initialRefs.begin(), initialRefs.end());
+    overlay_.constraintRefs_ = refs_;
 }
+
+void DimensionTool::onMouseMove(const input::MouseMoveEvent& e) { (void)e; }
 
 void DimensionTool::onMouseButton(const input::MouseButtonEvent& e) {
-    if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
+    if (e.button != input::MouseButton::Left || e.action != input::MouseButtonAction::Press) {
         return;
     }
 
-    std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
-    if (!pickRes.has_value()) {
+    const auto pick = request_.action == ConstraintAction::Angle ? picker_.pickLineAtScreenLogical(e.x, e.y) : picker_.pickAtScreenLogical(e.x, e.y);
+    if (!pick) {
         return;
     }
 
-    ID pickedId = pickRes->id;
-
-    if (pickRes->type == ObjType::ET_LINE) {
-        tryApplyDimensionToObject(pickedId);
-        return;
-    }
-
-    if (pickRes->type != ObjType::ET_POINT) {
-        return;
-    }
-
-    if (step_ == Step::WaitingFirstInput) {
-        objects_.push_back(pickedId);
-        step_ = Step::WaitingSecondInput;
-        return;
-    }
-
-    if (step_ == Step::WaitingSecondInput) {
-        tryApplyDimensionToTwoObjects(objects_[0], pickedId);
-        return;
-    }
+    handleRef(pick->ref);
 }
 
-void DimensionTool::onKey(const input::KeyEvent& e) {
-    (void)e;
-}
+void DimensionTool::onKey(const input::KeyEvent& e) { (void)e; }
 
 bool DimensionTool::cancel() {
-    reset();
-    return true;
+    const bool handled = !refs_.empty();
+    resetInputs();
+    return handled;
 }
 
-glm::dvec2 DimensionTool::screenToWorld(double x, double y) const {
-    return camera_.screenLogicalToWorld({x, y});
+void DimensionTool::handleRef(const core::sketch::GeometryRef& ref) {
+    auto candidateRefs = refs_;
+    candidateRefs.push_back(ref);
+    const auto preparation = actions_.prepare(request_, candidateRefs);
+
+    switch (preparation.state) {
+        case ConstraintPreparation::State::NeedsMoreInput:
+            refs_ = std::move(candidateRefs);
+            overlay_.constraintRefs_ = refs_;
+            return;
+        case ConstraintPreparation::State::Ready:
+            if (!preparation.definition || !actions_.apply(*preparation.definition)) {
+                return;
+            }
+            resetInputs();
+            return;
+        case ConstraintPreparation::State::InvalidSelection:
+        case ConstraintPreparation::State::Unsupported:
+            return;
+    }
 }
 
-void DimensionTool::setDimension(double value) {
-    dimension_ = value;
-
-    const std::vector<ID> objects = overlay_.selection_.model.items();
-
-    if (objects.size() == 1) {
-        tryApplyDimensionToObject(objects[0]);
-        return;
-    }
-
-    if (objects.size() == 2) {
-        tryApplyDimensionToTwoObjects(objects[0], objects[1]);
-        return;
-    }
-}
-
-bool DimensionTool::tryApplyDimensionToObject(ID id) {
-    Scene& scene = document_.scene();
-    ObjectData line = scene.getObjectData(id);
-
-    if (line.et != ObjType::ET_LINE) {
-        return false;
-    }
-
-    if (line.subObjects.size() < 2) {
-        return false;
-    }
-
-    ID p1 = line.subObjects[0];
-    ID p2 = line.subObjects[1];
-
-    return tryApplyDimensionToTwoObjects(p1, p2);
-}
-
-bool DimensionTool::tryApplyDimensionToTwoObjects(ID id1, ID id2) {
-    if (id1 == id2) {
-        return false;
-    }
-
-    Scene& scene = document_.scene();
-
-    ObjectData od1 = scene.getObjectData(id1);
-    ObjectData od2 = scene.getObjectData(id2);
-
-    if (od1.et != ObjType::ET_POINT || od2.et != ObjType::ET_POINT) {
-        return false;
-    }
-
-    Requirement req;
-    req.type = ReqType::ET_POINTPOINTDIST;
-    req.obj1 = id1;
-    req.obj2 = id2;
-    req.param = dimension_;
-
-    scene.addRequirement(req);
-    reset();
-    return true;
-}
-
-void DimensionTool::reset() {
-    points_.clear();
-    objects_.clear();
-    overlay_.clear();
-    step_ = Step::WaitingFirstInput;
+void DimensionTool::resetInputs() {
+    refs_.clear();
+    overlay_.constraintRefs_.clear();
 }

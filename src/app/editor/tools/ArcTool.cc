@@ -1,11 +1,7 @@
 #include "ArcTool.h"
 
 #include "../../../core/Document.h"
-#include "../../../core/Scene.h"
-#include "ConsoleManager.h"
 #include "RenderScene.h"
-#include "Transaction.h"
-#include "UndoRedo.h"
 #include "objects/Objects.h"
 
 ArcTool::ArcTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
@@ -23,7 +19,7 @@ void ArcTool::setMode(Mode mode) {
 void ArcTool::reset() {
     points_.clear();
     step_ = Step::WaitingFirstInput;
-    overlay_.clear();
+    overlay_.clearPreview();
 }
 
 void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {

@@ -1,24 +1,79 @@
 #include "Cpu2dPicker.h"
 
-#include "objects/Objects.h"
+#include <algorithm>
+#include <cmath>
+#include <numbers>
 
-Cpu2dPicker::Cpu2dPicker(core::Scene& scene, Camera2D& camera) : scene_(scene), camera_(camera) {}
+namespace {
+
+bool pointInRect(sketch::Vec2 point, double xmin, double ymin, double xmax, double ymax) {
+    return point.x >= xmin && point.x <= xmax && point.y >= ymin && point.y <= ymax;
+}
+
+bool angleInArc(const sketch::Arc2& arc, sketch::Vec2 point, double tolerance = 1e-12) {
+    const double tau = 2 * std::numbers::pi;
+    const auto positiveAngle = [tau](double angle) {
+        angle = std::fmod(angle, tau);
+        return angle < 0 ? angle + tau : angle;
+    };
+    const double start = std::atan2(arc.start.y - arc.center.y, arc.start.x - arc.center.x);
+    const double end = std::atan2(arc.end.y - arc.center.y, arc.end.x - arc.center.x);
+    const double angle = std::atan2(point.y - arc.center.y, point.x - arc.center.x);
+    const double relative = positiveAngle(angle - start);
+    return relative <= positiveAngle(end - start) + tolerance || relative >= tau - tolerance;
+}
+
+bool arcIntersectsRect(const sketch::Arc2& arc, double xmin, double ymin, double xmax, double ymax) {
+    if (pointInRect(arc.start, xmin, ymin, xmax, ymax) || pointInRect(arc.end, xmin, ymin, xmax, ymax)) {
+        return true;
+    }
+    const double radius = std::hypot(arc.start.x - arc.center.x, arc.start.y - arc.center.y);
+    if (!std::isfinite(radius) || radius <= 0) {
+        return false;
+    }
+    const auto hits = [&](sketch::Vec2 point) { return pointInRect(point, xmin, ymin, xmax, ymax) && angleInArc(arc, point); };
+    for (double x : {xmin, xmax}) {
+        const double dx = x - arc.center.x;
+        if (std::abs(dx) <= radius) {
+            const double ratio = dx / radius;
+            const double dy = radius * std::sqrt(std::max(0.0, 1 - ratio * ratio));
+            if (hits({x, arc.center.y - dy}) || hits({x, arc.center.y + dy})) {
+                return true;
+            }
+        }
+    }
+    for (double y : {ymin, ymax}) {
+        const double dy = y - arc.center.y;
+        if (std::abs(dy) <= radius) {
+            const double ratio = dy / radius;
+            const double dx = radius * std::sqrt(std::max(0.0, 1 - ratio * ratio));
+            if (hits({arc.center.x - dx, y}) || hits({arc.center.x + dx, y})) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+}  // namespace
+
+Cpu2dPicker::Cpu2dPicker(sketch::Sketch& sketch, Camera2D& camera) : sketch_(sketch), camera_(camera) {}
 
 // Pick in rect
 
-std::vector<core::ID> Cpu2dPicker::pickInRectAtScreenLogical(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
+std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtScreenLogical(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
     glm::dvec2 worldP1 = camera_.screenLogicalToWorld({screenMinX, screenMinY});
     glm::dvec2 worldP2 = camera_.screenLogicalToWorld({screenMaxX, screenMaxY});
     return pickInRect(worldP1.x, worldP1.y, worldP2.x, worldP2.y);
 }
 
-std::vector<core::ID> Cpu2dPicker::pickInRectAtScreenFramebuffer(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
+std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtScreenFramebuffer(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
     glm::dvec2 worldP1 = camera_.screenFramebufferToWorld({screenMinX, screenMinY});
     glm::dvec2 worldP2 = camera_.screenFramebufferToWorld({screenMaxX, screenMaxY});
     return pickInRect(worldP1.x, worldP1.y, worldP2.x, worldP2.y);
 }
 
-std::vector<core::ID> Cpu2dPicker::pickInRectAtWorld(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
+std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtWorld(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
     return pickInRect(screenMinX, screenMinY, screenMaxX, screenMaxY);
 }
 
@@ -32,6 +87,17 @@ std::optional<PickResult> Cpu2dPicker::pickAtScreenLogical(double screenX, doubl
 std::optional<PickResult> Cpu2dPicker::pickPointAtScreenLogical(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
     return pickPointAt(world.x, world.y);
+}
+
+std::optional<PickResult> Cpu2dPicker::pickCurveAtScreenLogical(double screenX, double screenY) const {
+    const glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
+    if (const auto line = pickLineAt(world.x, world.y)) {
+        return line;
+    }
+    if (const auto circle = pickCircleAt(world.x, world.y)) {
+        return circle;
+    }
+    return pickArcAt(world.x, world.y);
 }
 
 std::optional<PickResult> Cpu2dPicker::pickLineAtScreenLogical(double screenX, double screenY) const {
@@ -88,70 +154,54 @@ std::optional<PickResult> Cpu2dPicker::pickCircleAtWorld(double worldX, double w
 
 // Private
 
-std::vector<core::ID> Cpu2dPicker::pickInRect(double worldMinX, double worldMinY, double worldMaxX, double worldMaxY) const {
-    glm::dvec2 p1 = {worldMinX, worldMinY};
-    glm::dvec2 p2 = {worldMaxX, worldMaxY};
+std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRect(double worldMinX, double worldMinY, double worldMaxX, double worldMaxY) const {
+    const double rx1 = std::min(worldMinX, worldMaxX);
+    const double ry1 = std::min(worldMinY, worldMaxY);
+    const double rx2 = std::max(worldMinX, worldMaxX);
+    const double ry2 = std::max(worldMinY, worldMaxY);
 
-    double rx1 = std::min(p1.x, p2.x);
-    double ry1 = std::min(p1.y, p2.y);
-    double rx2 = std::max(p1.x, p2.x);
-    double ry2 = std::max(p1.y, p2.y);
+    auto result = sketch_.entities();
+    auto points = sketch_.pointElements();
+    if (!result || !points) {
+        return {};
+    }
 
-    std::vector<core::ID> res;
+    std::vector<sketch::GeometryRef> selected;
+    for (const auto& point : points.value()) {
+        if (pointInRect(point.position, rx1, ry1, rx2, ry2)) {
+            selected.push_back(point.ref);
+        }
+    }
+    for (const auto& entity : result.value()) {
+        if (const auto* line = std::get_if<sketch::Line2>(&entity.geometry)) {
+            if (lineIntersectsRectFast(line->start.x, line->start.y, line->end.x, line->end.y, rx1, ry1, rx2, ry2)) {
+                selected.push_back({entity.id, sketch::SubElement::Whole});
+            }
+        } else if (const auto* circle = std::get_if<sketch::Circle2>(&entity.geometry)) {
+            const double rSq = circle->radius * circle->radius;
+            const double closestX = std::clamp(circle->center.x, rx1, rx2);
+            const double closestY = std::clamp(circle->center.y, ry1, ry2);
+            const double dx = circle->center.x - closestX;
+            const double dy = circle->center.y - closestY;
+            if (dx * dx + dy * dy > rSq) {
+                continue;
+            }
 
-    // Points
-    std::vector<core::ObjectData> points = scene_.getPoints();
-    for (const auto& p : points) {
-        const double& x = p.params[0];
-        const double& y = p.params[1];
-        if (x >= rx1 && x <= rx2 && y >= ry1 && y <= ry2) {
-            res.push_back(p.id);
+            const double farthestX = std::abs(circle->center.x - rx1) > std::abs(circle->center.x - rx2) ? rx1 : rx2;
+            const double farthestY = std::abs(circle->center.y - ry1) > std::abs(circle->center.y - ry2) ? ry1 : ry2;
+            const double dxFar = circle->center.x - farthestX;
+            const double dyFar = circle->center.y - farthestY;
+            if (dxFar * dxFar + dyFar * dyFar >= rSq) {
+                selected.push_back({entity.id, sketch::SubElement::Whole});
+            }
+        } else if (const auto* arc = std::get_if<sketch::Arc2>(&entity.geometry)) {
+            if (arcIntersectsRect(*arc, rx1, ry1, rx2, ry2)) {
+                selected.push_back({entity.id, sketch::SubElement::Whole});
+            }
         }
     }
 
-    // Lines
-    std::vector<core::ObjectData> lines_ = scene_.getLines();
-    for (const auto& l : lines_) {
-        const double& x1 = l.params[0];
-        const double& y1 = l.params[1];
-        const double& x2 = l.params[2];
-        const double& y2 = l.params[3];
-
-        if (lineIntersectsRectFast(x1, y1, x2, y2, rx1, ry1, rx2, ry2)) {
-            res.push_back(l.id);
-        }
-    }
-
-    // Circles
-    std::vector<core::ObjectData> circles_ = scene_.getCircles();
-    for (const auto& c : circles_) {
-        const double& cx = c.params[0];
-        const double& cy = c.params[1];
-        const double& radius = c.params[2];
-        const double rSq = radius * radius;
-
-        double closestX = std::max(rx1, std::min(cx, rx2));
-        double closestY = std::max(ry1, std::min(cy, ry2));
-        double dx = cx - closestX;
-        double dy = cy - closestY;
-        double distToRectSq = dx * dx + dy * dy;
-
-        if (distToRectSq > rSq) {
-            continue;
-        }
-
-        double farthestX = (std::abs(cx - rx1) > std::abs(cx - rx2)) ? rx1 : rx2;
-        double farthestY = (std::abs(cy - ry1) > std::abs(cy - ry2)) ? ry1 : ry2;
-        double dxFar = cx - farthestX;
-        double dyFar = cy - farthestY;
-        double distFarSq = dxFar * dxFar + dyFar * dyFar;
-
-        if (distFarSq > rSq) {
-            res.push_back(c.id);
-        }
-    }
-
-    return res;
+    return selected;
 }
 
 std::optional<PickResult> Cpu2dPicker::pickAt(double worldX, double worldY) const {
@@ -170,102 +220,100 @@ std::optional<PickResult> Cpu2dPicker::pickAt(double worldX, double worldY) cons
         return c;
     }
 
-    return std::nullopt;
+    return pickArcAt(worldX, worldY);
 }
 
 std::optional<PickResult> Cpu2dPicker::pickPointAt(double worldX, double worldY) const {
-    glm::dvec2 v = {worldX, worldY};
-    double eps = 0.05 / (camera_.zoom() / 100.0);
-
-    std::vector<core::ObjectData> points = scene_.getPoints();
-    for (const auto& p : points) {
-        PickResult res;
-        const double& x = p.params[0];
-        const double& y = p.params[1];
-        if (std::abs(x - v.x) < eps && std::abs(y - v.y) < eps) {
-            res.type = core::ObjType::ET_POINT;
-            res.id = p.id;
-            return res;
+    const double eps = 0.05 / (camera_.zoom() / 100.0);
+    auto result = sketch_.pointElements();
+    if (!result) {
+        return {};
+    }
+    for (const auto& point : result.value()) {
+        if (std::abs(point.position.x - worldX) < eps && std::abs(point.position.y - worldY) < eps) {
+            return PickResult{point.ref};
         }
     }
-
     return std::nullopt;
 }
 
 std::optional<PickResult> Cpu2dPicker::pickLineAt(double worldX, double worldY) const {
-    glm::dvec2 v = {worldX, worldY};
-    double eps = 0.05 / (camera_.zoom() / 100.0);
+    const double eps = 0.05 / (camera_.zoom() / 100.0);
+    auto result = sketch_.lines();
+    if (!result) {
+        return {};
+    }
+    for (const auto& entity : result.value()) {
+        const auto* line = std::get_if<sketch::Line2>(&entity.geometry);
+        if (!line) {
+            continue;
+        }
 
-    std::vector<core::ObjectData> lines_ = scene_.getLines();
-    for (const auto& l : lines_) {
-        PickResult res;
-
-        const double& x1 = l.params[0];
-        const double& y1 = l.params[1];
-        const double& x2 = l.params[2];
-        const double& y2 = l.params[3];
-
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-
-        double px = v.x - x1;
-        double py = v.y - y1;
-
-        double cross = std::abs(dx * py - dy * px);
-
-        double len = std::sqrt(dx*dx + dy*dy);
+        const double dx = line->end.x - line->start.x;
+        const double dy = line->end.y - line->start.y;
+        const double px = worldX - line->start.x;
+        const double py = worldY - line->start.y;
+        const double cross = std::abs(dx * py - dy * px);
+        const double len = std::hypot(dx, dy);
         if (len < 1e-9) {
-            if (std::abs(v.x - x1) < eps && std::abs(v.y - y1) < eps) {
-                res.type = core::ObjType::ET_LINE;
-                res.id = l.id;
-                return res;
+            if (std::abs(worldX - line->start.x) < eps && std::abs(worldY - line->start.y) < eps) {
+                return PickResult{{entity.id, sketch::SubElement::Whole}};
             }
             continue;
         }
 
-        double dist = cross / len;
-
+        const double dist = cross / len;
         if (dist < eps) {
-            double minX = std::min(x1, x2) - eps;
-            double maxX = std::max(x1, x2) + eps;
-            double minY = std::min(y1, y2) - eps;
-            double maxY = std::max(y1, y2) + eps;
-
-            if (v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) {
-                res.type = core::ObjType::ET_LINE;
-                res.id = l.id;
-                return res;
+            const double minX = std::min(line->start.x, line->end.x) - eps;
+            const double maxX = std::max(line->start.x, line->end.x) + eps;
+            const double minY = std::min(line->start.y, line->end.y) - eps;
+            const double maxY = std::max(line->start.y, line->end.y) + eps;
+            if (worldX >= minX && worldX <= maxX && worldY >= minY && worldY <= maxY) {
+                return PickResult{{entity.id, sketch::SubElement::Whole}};
             }
         }
     }
-
     return std::nullopt;
 }
 
 std::optional<PickResult> Cpu2dPicker::pickCircleAt(double worldX, double worldY) const {
-    glm::dvec2 v = {worldX, worldY};
-    double eps = 0.05 / (camera_.zoom() / 100.0);
+    const double eps = 0.05 / (camera_.zoom() / 100.0);
+    auto result = sketch_.circles();
+    if (!result) {
+        return {};
+    }
+    for (const auto& entity : result.value()) {
+        const auto* circle = std::get_if<sketch::Circle2>(&entity.geometry);
+        if (!circle) {
+            continue;
+        }
 
-    std::vector<core::ObjectData> circles_ = scene_.getCircles();
-    for (const auto& c : circles_) {
-        PickResult res;
-
-        const double& x = c.params[0];
-        const double& y = c.params[1];
-        const double& r = c.params[2];
-        double dx = v.x - x;
-        double dy = v.y - y;
-        double d = sqrt(dx*dx + dy*dy);
-        if (d > r - eps && d < r + eps) {
-            res.type = core::ObjType::ET_CIRCLE;
-            res.id = c.id;
-            return res;
+        const double dx = worldX - circle->center.x;
+        const double dy = worldY - circle->center.y;
+        const double distance = std::hypot(dx, dy);
+        if (distance > circle->radius - eps && distance < circle->radius + eps) {
+            return PickResult{{entity.id, sketch::SubElement::Whole}};
         }
     }
-
     return std::nullopt;
 }
 
+std::optional<PickResult> Cpu2dPicker::pickArcAt(double worldX, double worldY) const {
+    const double eps = 0.05 / (camera_.zoom() / 100.0);
+    auto result = sketch_.arcs();
+    if (!result) {
+        return std::nullopt;
+    }
+    for (const auto& entity : result.value()) {
+        const auto& arc = std::get<sketch::Arc2>(entity.geometry);
+        const double radius = std::hypot(arc.start.x - arc.center.x, arc.start.y - arc.center.y);
+        const double distance = std::hypot(worldX - arc.center.x, worldY - arc.center.y);
+        if (radius > 0 && std::abs(distance - radius) < eps && angleInArc(arc, {worldX, worldY}, eps / radius)) {
+            return PickResult{{entity.id, sketch::SubElement::Whole}};
+        }
+    }
+    return std::nullopt;
+}
 
 bool Cpu2dPicker::lineIntersectsRectFast(double x1, double y1, double x2, double y2,
                             double xmin, double ymin, double xmax, double ymax) {
