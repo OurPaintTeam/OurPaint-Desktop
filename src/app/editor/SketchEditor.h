@@ -1,5 +1,5 @@
-#ifndef OURPAINT_APPLICATION_EDITORSESSION_H_
-#define OURPAINT_APPLICATION_EDITORSESSION_H_
+#ifndef OURPAINT_APPLICATION_SKETCH_EDITOR_H_
+#define OURPAINT_APPLICATION_SKETCH_EDITOR_H_
 
 #include "../../core/DocumentManager.h"
 #include "../viewport/OverlayModel.h"
@@ -16,10 +16,10 @@
 #include "tools/PointTool.h"
 #include "tools/ToolId.h"
 
-class EditorSession {
+class SketchEditor {
 public:
-    EditorSession(Document& document, Camera2D& camera, OverlayModel& overlay);
-    ~EditorSession();
+    SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay);
+    ~SketchEditor();
 
     void select(ToolId id, double value = 0.0);
     IInteractionTool* activeTool();
@@ -44,4 +44,4 @@ private:
     DimensionTool dimensionTool_;
 };
 
-#endif // ! OURPAINT_APPLICATION_EDITORSESSION_
+#endif // ! OURPAINT_APPLICATION_SKETCH_EDITOR_H_

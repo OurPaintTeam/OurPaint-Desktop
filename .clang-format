@@ -4,4 +4,6 @@ IndentWidth: 4 # 2
 AccessModifierOffset: -4 # -1
 ColumnLimit: 160 # 80
 Standard: c++20
-
+InsertBraces: true
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortBlocksOnASingleLine: false

@@ -1,4 +1,4 @@
-#include "EditorSession.h"
+#include "SketchEditor.h"
 
 #include "../../core/Document.h"
 #include "tools/CircleTool.h"
@@ -6,7 +6,7 @@
 #include "tools/LineTool.h"
 #include "tools/PointTool.h"
 
-EditorSession::EditorSession(Document& document, Camera2D& camera, OverlayModel& overlay)
+SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay)
     : document_(document),
       camera_(camera),
       overlay_(overlay),
@@ -21,9 +21,9 @@ EditorSession::EditorSession(Document& document, Camera2D& camera, OverlayModel&
     activeTool_ = &cursorTool_;
 }
 
-EditorSession::~EditorSession() {}
+SketchEditor::~SketchEditor() {}
 
-void EditorSession::select(ToolId id, double value) {
+void SketchEditor::select(ToolId id, double value) {
     activeTool_->cancel();
     switch (id) {
         case ToolId::Cursor:
@@ -127,7 +127,7 @@ void EditorSession::select(ToolId id, double value) {
     }
 }
 
-IInteractionTool* EditorSession::activeTool() {
+IInteractionTool* SketchEditor::activeTool() {
     return activeTool_;
 }
 
