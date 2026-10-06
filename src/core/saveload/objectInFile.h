@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "objects/GeometricObjects.h"
+#include "../objects/GeometricObjects.h"
 /*
 class objectInFile {
     unsigned int id;
