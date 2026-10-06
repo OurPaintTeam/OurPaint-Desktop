@@ -4,10 +4,6 @@
 #include <cmath>
 
 #include "../../../core/Document.h"
-#include "../../../core/Scene.h"
-#include "ConsoleManager.h"
-#include "Transaction.h"
-#include "UndoRedo.h"
 
 CircleTool::CircleTool(Document& document,
                        Camera2D& camera,
@@ -203,7 +199,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if (!obj.has_value()) {
                     return;
                 }
-                objects_.push_back(obj.value().id);
+                objects_.push_back(obj.value().ref.entity);
                 points_.push_back(cursor);
                 step_ = Step::WaitingSecondInput;
             }
@@ -215,31 +211,31 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if (!obj.has_value()) {
                     return;
                 }
-                Scene& scene = document_.scene();
-                ObjectData od1 = scene.getObjectData(objects_[0]);
-                ObjectData od2 = scene.getObjectData(obj.value().id);
-
-                if (od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_POINT) {
-
-                }
-                else if (od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_LINE) {
-
-                }
-                else if (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_CIRCLE) {
-
-                }
-                else if ((od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_LINE) ||
-                         (od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_POINT)) {
-
-                }
-                else if ((od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_CIRCLE) ||
-                         (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_POINT)) {
-
-                }
-                else if ((od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_CIRCLE) ||
-                         (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_LINE)) {
-
-                }
+                // Scene& scene = document_.scene();
+                // ObjectData od1 = scene.getObjectData(objects_[0]);
+                // ObjectData od2 = scene.getObjectData(obj.value().id);
+                //
+                // if (od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_POINT) {
+                //
+                // }
+                // else if (od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_LINE) {
+                //
+                // }
+                // else if (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_CIRCLE) {
+                //
+                // }
+                // else if ((od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_LINE) ||
+                //          (od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_POINT)) {
+                //
+                // }
+                // else if ((od1.et == ObjType::ET_POINT && od2.et == ObjType::ET_CIRCLE) ||
+                //          (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_POINT)) {
+                //
+                // }
+                // else if ((od1.et == ObjType::ET_LINE && od2.et == ObjType::ET_CIRCLE) ||
+                //          (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_LINE)) {
+                //
+                // }
                 reset();
 
                 // const glm::dvec2& click1 = points_[0];
@@ -332,8 +328,7 @@ CircleTool::Circle CircleTool::buildCircleFromThreePoints(const glm::dvec2& p0, 
 }
 
 void CircleTool::pushCircleToModel(const Circle& c) const {
-    Transaction* txn = document_.commandManager().invoke("CIRCLE", {c.cx, c.cy, c.r});
-    document_.undoRedoManager().push(std::move(*txn));
+    document_.sketch().addCircle({c.cx, c.cy}, c.r);
 }
 
 

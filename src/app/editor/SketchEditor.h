@@ -5,9 +5,11 @@
 #include "../viewport/OverlayModel.h"
 #include "../viewport/picking/Cpu2dPicker.h"
 #include "Camera2D.h"
+#include "ConstraintActions.h"
 #include "RenderScene.h"
 #include "tools/ArcTool.h"
 #include "tools/CircleTool.h"
+#include "tools/ConstraintTool.h"
 #include "tools/CubicBezierTool.h"
 #include "tools/CursorTool.h"
 #include "tools/DimensionTool.h"
@@ -21,7 +23,9 @@ public:
     SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay);
     ~SketchEditor();
 
-    void select(ToolId id, double value = 0.0);
+    void select(ToolId id);
+    void requestConstraint(const ConstraintRequest& request);
+    void onKey(const input::KeyEvent& e);
     IInteractionTool* activeTool();
 
 private:
@@ -30,7 +34,7 @@ private:
     OverlayModel& overlay_;
 
     Cpu2dPicker picker_;
-
+    ConstraintActions constraintActions_;
 
     IInteractionTool* activeTool_;
 
@@ -41,6 +45,7 @@ private:
     CircleTool circleTool_;
     ArcTool arcTool_;
     CubicBezierTool bezierTool_;
+    ConstraintTool constraintTool_;
     DimensionTool dimensionTool_;
 };
 

@@ -7,9 +7,13 @@ namespace render { class RenderScene; }
 class AxisTexts;
 namespace app { struct ViewportStyle; }
 
+#include "Document.h"
+
+using namespace core;
+
 class RenderSceneBuilder {
 public:
-    RenderSceneBuilder(const core::Scene& scene,
+    RenderSceneBuilder(Document& document,
                        const OverlayModel& overlay,
                        AxisTexts& axis,
                        const app::ViewportStyle& style,
@@ -36,7 +40,8 @@ private:
     void buildAxisText();
 
 private:
-    const core::Scene& scene_;
+    Document& document_;
+    sketch::Sketch& sketch_;
     const OverlayModel& overlay_;
     AxisTexts& axis_;
     const app::ViewportStyle& style_;

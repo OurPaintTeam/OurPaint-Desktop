@@ -10,7 +10,6 @@
 #include "../../viewport/picking/Cpu2dPicker.h"
 #include "Camera2D.h"
 #include "IInteractionTool.h"
-#include "objects/Objects.h"
 
 class CircleTool : public IInteractionTool {
 public:
@@ -62,7 +61,7 @@ private:
     Step step_ = Step::WaitingFirstInput;
 
     std::vector<glm::dvec2> points_;
-    std::vector<ID> objects_;
+    std::vector<sketch::EntityId> objects_;
 
     Document& document_;
     Camera2D& camera_;

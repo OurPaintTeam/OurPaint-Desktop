@@ -2,11 +2,7 @@
 
 #include "../../../core/Document.h"
 #include "../../../core/DocumentManager.h"
-#include "../../../core/Scene.h"
 #include "Camera2D.h"
-#include "ConsoleManager.h"
-#include "Transaction.h"
-#include "UndoRedo.h"
 #include "objects/Objects.h"
 
 CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera)
@@ -48,8 +44,8 @@ void CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
         }
         else {
             glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
-            UndoRedo::Transaction* txn = document_.commandManager().invoke("BEZIER", {firstPoint_X , firstPoint_Y, v.x, v.y});
-            document_.undoRedoManager().push(std::move(*txn));
+            //UndoRedo::Transaction* txn = document_.commandManager().invoke("BEZIER", {firstPoint_X , firstPoint_Y, v.x, v.y});
+            //document_.undoRedoManager().push(std::move(*txn));
 
             state_ = State::WaitingFirstPoint;
 

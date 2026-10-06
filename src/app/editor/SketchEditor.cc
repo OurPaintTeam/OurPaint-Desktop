@@ -10,20 +10,22 @@ SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& o
     : document_(document),
       camera_(camera),
       overlay_(overlay),
-      picker_(document_.scene(), camera_),
-      cursorTool_(document_, camera_, picker_, overlay_),
+      picker_(document_.sketch(), camera_),
+      constraintActions_(document_.sketch()),
+      cursorTool_(document_, camera_, picker_, overlay_, constraintActions_),
       pointTool_(document_, camera_),
       lineTool_(document_, camera_, overlay_),
       circleTool_(document_, camera_, picker_, overlay_),
       arcTool_(document_, camera_, picker_, overlay_),
       bezierTool_(document_, camera_),
-      dimensionTool_(document_, camera_, picker_, overlay_) {
+      constraintTool_(constraintActions_, picker_, overlay_),
+      dimensionTool_(constraintActions_, picker_, overlay_) {
     activeTool_ = &cursorTool_;
 }
 
 SketchEditor::~SketchEditor() {}
 
-void SketchEditor::select(ToolId id, double value) {
+void SketchEditor::select(ToolId id) {
     activeTool_->cancel();
     switch (id) {
         case ToolId::Cursor:
@@ -43,12 +45,6 @@ void SketchEditor::select(ToolId id, double value) {
             break;
         case ToolId::InfiniteLine:
 
-            break;
-
-
-        case ToolId::ConstraintDimension:
-            dimensionTool_.setDimension(value);
-            activeTool_ = &dimensionTool_;
             break;
 
 
@@ -93,42 +89,74 @@ void SketchEditor::select(ToolId id, double value) {
 
         case ToolId::CubicBezier:
             activeTool_ = &bezierTool_;
-
-        case ToolId::ConstraintPointLineDistance:
-
-            break;
-        case ToolId::ConstraintPointOnLine:
-
-            break;
-        case ToolId::ConstraintPointPointDistance:
-
-            break;
-        case ToolId::ConstraintCoincidentPoints:
-
-            break;
-        case ToolId::ConstraintLineCircleDistance:
-
-            break;
-        case ToolId::ConstraintLineOnCircle:
-
-            break;
-        case ToolId::ConstraintLineInCircle:
-
-            break;
-        case ToolId::ConstraintParallelLines:
-
-            break;
-        case ToolId::ConstraintPerpendicularLines:
-
-            break;
-        case ToolId::ConstraintAngleBetweenLines:
-
             break;
     }
 }
 
-IInteractionTool* SketchEditor::activeTool() {
-    return activeTool_;
+void SketchEditor::requestConstraint(const ConstraintRequest& request) {
+    const auto refs = overlay_.selection_.model.items();
+    const auto prepared = constraintActions_.prepare(request, refs);
+    switch (prepared.state) {
+        case ConstraintPreparation::State::Ready:
+            if (!prepared.definition || !constraintActions_.apply(*prepared.definition)) {
+                return;
+            }
+            return;
+        case ConstraintPreparation::State::NeedsMoreInput:
+            activeTool_->cancel();
+            if (request.action == ConstraintAction::Dimension || request.action == ConstraintAction::Angle) {
+                dimensionTool_.begin(request, refs);
+                activeTool_ = &dimensionTool_;
+            } else {
+                constraintTool_.begin(request, refs);
+                activeTool_ = &constraintTool_;
+            }
+            return;
+        case ConstraintPreparation::State::InvalidSelection:
+        case ConstraintPreparation::State::Unsupported:
+            return;
+    }
 }
 
+void SketchEditor::onKey(const input::KeyEvent& e) {
+    if (e.action == input::KeyAction::Press && e.key == input::KeyCode::Escape) {
+        if (e.isAutoRepeat) {
+            return;
+        }
+        if (!activeTool_->cancel()) {
+            select(ToolId::Cursor);
+        }
+        return;
+    }
 
+    if (e.action == input::KeyAction::Press && e.modifiers == input::Modifiers::None && !e.isAutoRepeat) {
+        std::optional<ConstraintAction> action;
+        switch (e.key) {
+            case input::KeyCode::Num4:
+                action = ConstraintAction::Coincident;
+                break;
+            case input::KeyCode::Num5:
+                action = ConstraintAction::Horizontal;
+                break;
+            case input::KeyCode::Num6:
+                action = ConstraintAction::Vertical;
+                break;
+            case input::KeyCode::Num8:
+                action = ConstraintAction::Parallel;
+                break;
+            case input::KeyCode::Num9:
+                action = ConstraintAction::Perpendicular;
+                break;
+            default:
+                break;
+        }
+        if (action) {
+            requestConstraint({*action, std::nullopt});
+            return;
+        }
+    }
+
+    activeTool_->onKey(e);
+}
+
+IInteractionTool* SketchEditor::activeTool() { return activeTool_; }

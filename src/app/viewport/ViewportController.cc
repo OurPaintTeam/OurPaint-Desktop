@@ -1,12 +1,9 @@
 #include "ViewportController.h"
-
 #include "../../core/Document.h"
-#include "../../core/Scene.h"
-#include "UndoRedo.h"
 
 ViewportController::ViewportController(Camera2D& camera,
                                        OverlayModel& overlay,
-                                       EditorSession& editorSession_,
+                                       SketchEditor& editorSession_,
                                        Document& document)
     :   camera2D_(camera),
         overlay_(overlay),
@@ -14,7 +11,7 @@ ViewportController::ViewportController(Camera2D& camera,
         document_(document),
         axisTexts_(camera2D_),
         viewportStyle_(app::ViewportStyle::makeDefault()),
-        builder_(document_.scene(), overlay_, axisTexts_, viewportStyle_, renderScene_),
+        builder_(document_, overlay_, axisTexts_, viewportStyle_, renderScene_),
         renderScene_(),
         renderer_() {}
 
@@ -72,28 +69,22 @@ bool ViewportController::onWheel(const input::WheelEvent& e) {
 }
 
 bool ViewportController::onKey(const input::KeyEvent& e) {
-    // escape
-    if (e.key == input::KeyCode::Escape && e.action == input::KeyAction::Press) {
-        editorSession_.select(ToolId::Cursor);
-        return true;
-    }
-
-    UndoRedo::UndoRedoManager& mgr = document_.undoRedoManager();
+    //UndoRedo::UndoRedoManager& mgr = document_.undoRedoManager();
     // redo
     if (e.key == input::KeyCode::Z &&
              input::has_flag(e.modifiers, input::Modifiers::Ctrl) &&
              input::has_flag(e.modifiers, input::Modifiers::Shift) &&
              e.action == input::KeyAction::Press) {
-        mgr.redo();
+        //mgr.redo();
     }
     // undo
     else if (e.key == input::KeyCode::Z &&
         input::has_flag(e.modifiers, input::Modifiers::Ctrl) &&
         e.action == input::KeyAction::Press) {
-        mgr.undo();
+        //mgr.undo();
     }
 
-    editorSession_.activeTool()->onKey(e);
+    editorSession_.onKey(e);
 
     requestRedraw();
     return true;

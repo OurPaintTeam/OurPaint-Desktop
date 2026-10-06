@@ -3,10 +3,10 @@
 
 #define GL_GLEXT_PROTOTYPES
 
-#include "ui/QtMainWindowBinder.h"
-#include "editor/EditorSession.h"
+#include "editor/SketchEditor.h"
 #include "project/DocumentView.h"
 #include "project/Project.h"
+#include "ui/QtMainWindowBinder.h"
 
 class DocumentManager;
 

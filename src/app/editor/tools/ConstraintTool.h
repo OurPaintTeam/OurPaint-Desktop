@@ -1,5 +1,5 @@
-#ifndef OURPAINT_APPLICATION_DIMENSION_TOOL_H_
-#define OURPAINT_APPLICATION_DIMENSION_TOOL_H_
+#ifndef OURPAINT_APPLICATION_CONSTRAINT_TOOL_H_
+#define OURPAINT_APPLICATION_CONSTRAINT_TOOL_H_
 
 #include <span>
 #include <vector>
@@ -12,9 +12,9 @@ class ConstraintActions;
 class Cpu2dPicker;
 class OverlayModel;
 
-class DimensionTool : public IInteractionTool {
+class ConstraintTool : public IInteractionTool {
 public:
-    DimensionTool(ConstraintActions& actions, Cpu2dPicker& picker, OverlayModel& overlay);
+    ConstraintTool(ConstraintActions& actions, Cpu2dPicker& picker, OverlayModel& overlay);
 
     void begin(const ConstraintRequest& request, std::span<const core::sketch::GeometryRef> initialRefs = {});
 
@@ -31,8 +31,8 @@ private:
     Cpu2dPicker& picker_;
     OverlayModel& overlay_;
 
-    ConstraintRequest request_{ConstraintAction::Dimension, std::nullopt};
+    ConstraintRequest request_{ConstraintAction::Coincident, std::nullopt};
     std::vector<core::sketch::GeometryRef> refs_;
 };
 
-#endif  // ! OURPAINT_APPLICATION_DIMENSION_TOOL_H_
+#endif  // ! OURPAINT_APPLICATION_CONSTRAINT_TOOL_H_

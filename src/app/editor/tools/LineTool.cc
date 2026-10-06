@@ -5,9 +5,6 @@
 #include "../../../core/Document.h"
 #include "../../../core/DocumentManager.h"
 #include "../../../core/Scene.h"
-#include "ConsoleManager.h"
-#include "Transaction.h"
-#include "UndoRedo.h"
 #include "objects/Objects.h"
 
 LineTool::LineTool(Document& document, Camera2D& camera, OverlayModel& overlay)
@@ -17,31 +14,7 @@ void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
-    // std::ostringstream oss;
-    // oss << std::fixed << std::setprecision(3)
-    //     << std::setw(10) << v.x
-    //     << " "
-    //     << std::setw(10) << v.y;
-    // overlay_.pos = oss.str();
-    // overlay_.posX = 1.5 * e.x - 150;
-    // overlay_.posY = 1.5 * -e.y + 650;
-
-
     if (state_ == State::WaitingSecondPoint) {
-        // glm::dvec2 startPoint = {renderData_.overlay.points[0].x, renderData_.overlay.points[0].y};
-        // glm::dvec2 endPoint = v;
-        // glm::dvec2 midPoint = (startPoint + endPoint) / 2.0;
-        // glm::dvec2 midScreen = camera_.worldToScreen(midPoint);
-        // int posX = midScreen.x;
-        // int posY = midScreen.y;
-        // double length = glm::distance(startPoint, endPoint);
-        // std::ostringstream oss2;
-        // oss2 << std::fixed << std::setprecision(3) << length;
-        // overlay_.lp = oss2.str();
-        // overlay_.lpX = 1.5 * posX - 150;
-        // overlay_.lpY = 1.5 * -posY + 650;
-
-
         if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
             glm::dvec2 delta = v - firstPoint_;
 
@@ -85,8 +58,7 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
                     v.x = firstPoint_.x; // Lock to vertical
                 }
             }
-            UndoRedo::Transaction* txn = document_.commandManager().invoke("LINE", {firstPoint_.x, firstPoint_.y, v.x, v.y});
-            document_.undoRedoManager().push(std::move(*txn));
+            document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y});
 
             // std::ostringstream oss;
             // oss << std::fixed << std::setprecision(3)
@@ -99,7 +71,7 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             state_ = State::WaitingFirstPoint;
 
-            overlay_.clear();
+            overlay_.clearPreview();
         }
     }
 }
@@ -137,7 +109,7 @@ void LineTool::onKey(const input::KeyEvent& e) {
 
 bool LineTool::cancel() {
     if (state_ == State::WaitingSecondPoint) {
-        overlay_.clear();
+        overlay_.clearPreview();
         state_ = State::WaitingFirstPoint;
         return true;
     }

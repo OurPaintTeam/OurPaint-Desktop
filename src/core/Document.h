@@ -2,9 +2,7 @@
 #define OURPAINT_HEADERS_DOCUMENT_H_
 
 #include <string>
-namespace core { class Scene;}
-namespace UndoRedo { class UndoRedoManager; }
-class CommandManager;
+#include "sketch/Sketch.h"
 
 class Document {
 public:
@@ -17,14 +15,8 @@ public:
     std::string& path();
     const std::string& path() const;
 
-    core::Scene& scene();
-    const core::Scene& scene() const;
-
-    UndoRedo::UndoRedoManager& undoRedoManager();
-    const UndoRedo::UndoRedoManager& undoRedoManager() const;
-
-    CommandManager& commandManager();
-    const CommandManager& commandManager() const;
+    core::sketch::Sketch& sketch();
+    const core::sketch::Sketch& sketch() const;
 
     bool isDirty() const;
 
@@ -33,9 +25,7 @@ private:
     std::string documentName_{};
     bool isDirty_ = false;
 
-    core::Scene* scene_;
-    UndoRedo::UndoRedoManager* undoRedo_;
-    CommandManager* commandManager_;
+    std::unique_ptr<core::sketch::Sketch> sketch_;
 };
 
 

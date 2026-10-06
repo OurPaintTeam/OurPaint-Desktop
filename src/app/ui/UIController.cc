@@ -10,10 +10,7 @@
 #include "../viewport/AxisTexts.h"
 #include "../viewport/ViewportController.h"
 #include "../viewport/render/RenderSceneBuilder.h"
-#include "ConsoleManager.h"
 #include "OpenGL2dRenderer.h"
-#include "Transaction.h"
-#include "UndoRedo.h"
 
 UIController::UIController(std::vector<DocumentView*>& views,
                            DocumentManager& manager,
@@ -27,10 +24,25 @@ UIController::UIController(std::vector<DocumentView*>& views,
       activeTabName_({}),
       viewportHost_(host) {}
 
-void UIController::selectTool(ToolId tool, double value) {
+void UIController::selectTool(ToolId tool) {
     for (auto& view : views_) {
         if (view->document().name() == activeTabName_) {
-            view->editorSession_.select(tool, value);
+            view->editorSession_.select(tool);
+            view->viewportController_.requestRedraw();
+            viewportHost_.requestRedraw();
+            return;
+        }
+    }
+}
+
+void UIController::requestConstraint(const ConstraintRequest& request, const std::string& tabName) {
+    const auto& name = tabName.empty() ? activeTabName_ : tabName;
+    for (auto& view : views_) {
+        if (view->document().name() == name) {
+            view->editorSession_.requestConstraint(request);
+            view->viewportController_.requestRedraw();
+            viewportHost_.requestRedraw();
+            return;
         }
     }
 }
@@ -38,10 +50,10 @@ void UIController::selectTool(ToolId tool, double value) {
 void UIController::executeConsoleCommand(std::string str) {
     try {
         Document* document = manager_.at(activeIndex_);
-        UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
-        CommandManager& cm = document->commandManager();
-        Transaction* txn = cm.invoke(str);
-        urm.push(std::move(*txn));
+        // UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
+        // CommandManager& cm = document->commandManager();
+        // Transaction* txn = cm.invoke(str);
+        // urm.push(std::move(*txn));
 
         for (const auto& view : views_) {
             if (view->document_.name() == activeTabName_) {

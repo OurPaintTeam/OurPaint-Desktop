@@ -79,16 +79,26 @@ public:
     std::vector<Line> lines_;
     std::vector<Circle> circles_;
     std::vector<Arc> arcs_;
+    // Pending tool operands do not change the shared user selection.
+    std::vector<core::sketch::GeometryRef> constraintRefs_;
 
-    void clear() {
-        selection_.model.clear();
-        selectionRect_.reset();
+    void clearPreview() {
         points_.clear();
         lines_.clear();
         circles_.clear();
+        arcs_.clear();
+        constraintRefs_.clear();
     }
 
+    void clearSelection() {
+        selection_.model.clear();
+        selectionRect_.reset();
+    }
 
+    void clear() {
+        clearPreview();
+        clearSelection();
+    }
 
     // TODO
     std::string pos;

@@ -1,5 +1,7 @@
 #include "RenderSceneBuilder.h"
 
+#include <algorithm>
+#include <cmath>
 #include <utility>
 #include <vector>
 
@@ -84,6 +86,11 @@ render::Rect makeRect(double xMin, double yMin, double xMax, double yMax) {
     };
 }
 
+render::Arc makeArc(const sketch::Arc2& arc) {
+    return makeArc(arc.center.x, arc.center.y, std::hypot(arc.start.x - arc.center.x, arc.start.y - arc.center.y),
+                   std::atan2(arc.start.y - arc.center.y, arc.start.x - arc.center.x), std::atan2(arc.end.y - arc.center.y, arc.end.x - arc.center.x));
+}
+
 render::DrawLayer makeWorldLayer(std::string name, int order) {
     render::DrawLayer layer;
     layer.name = std::move(name);
@@ -148,12 +155,14 @@ void appendBezierPolyline(const ObjectData& od, std::vector<render::Line>& outLi
 
 } // namespace
 
-RenderSceneBuilder::RenderSceneBuilder(const Scene& scene,
+RenderSceneBuilder::RenderSceneBuilder(Document& document,
                                        const OverlayModel& overlay,
                                        AxisTexts& axis,
                                        const app::ViewportStyle& style,
                                        render::RenderScene& renderScene)
-    : scene_(scene),
+    :
+      document_(document),
+      sketch_(document.sketch()),
       overlay_(overlay),
       axis_(axis),
       style_(style),
@@ -207,21 +216,21 @@ void RenderSceneBuilder::buildBaseObjects() {
     render::CircleBatch circles;
     circles.stroke = style_.baseCircle;
 
-    for (const ObjectData& l : scene_.getLines()) {
-        lines.lines.push_back(makeLine(
-            l.params[0],
-            l.params[1],
-            l.params[2],
-            l.params[3]
-        ));
+    render::ArcBatch arcs;
+    arcs.stroke = style_.baseCircle;
+    auto result = sketch_.entities();
+    if (!result) {
+        return;
     }
 
-    for (const ObjectData& c : scene_.getCircles()) {
-        circles.circles.push_back(makeCircle(
-            c.params[0],
-            c.params[1],
-            c.params[2]
-        ));
+    for (const auto& entity : result.value()) {
+        if (const auto* line = std::get_if<sketch::Line2>(&entity.geometry)) {
+            lines.lines.push_back(makeLine(line->start.x, line->start.y, line->end.x, line->end.y));
+        } else if (const auto* circle = std::get_if<sketch::Circle2>(&entity.geometry)) {
+            circles.circles.push_back(makeCircle(circle->center.x, circle->center.y, circle->radius));
+        } else if (const auto* arc = std::get_if<sketch::Arc2>(&entity.geometry)) {
+            arcs.arcs.push_back(makeArc(*arc));
+        }
     }
 
     if (!lines.lines.empty()) {
@@ -230,6 +239,10 @@ void RenderSceneBuilder::buildBaseObjects() {
 
     if (!circles.circles.empty()) {
         layer.circleBatches.push_back(std::move(circles));
+    }
+
+    if (!arcs.arcs.empty()) {
+        layer.arcBatches.push_back(std::move(arcs));
     }
 
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
@@ -241,13 +254,12 @@ void RenderSceneBuilder::buildBaseMarkers() {
     render::MarkerBatch markers;
     markers.style = style_.baseMarker;
 
-    for (const ObjectData& p : scene_.getPoints()) {
-        markers.markers.push_back(makeMarker(p.params[0], p.params[1]));
+    auto result = sketch_.pointElements();
+    if (!result) {
+        return;
     }
-
-    for (const ObjectData& c : scene_.getCircles()) {
-        // Keep old behavior: circle center is also rendered as a marker.
-        markers.markers.push_back(makeMarker(c.params[0], c.params[1]));
+    for (const auto& point : result.value()) {
+        markers.markers.push_back(makeMarker(point.position.x, point.position.y));
     }
 
     if (!markers.markers.empty()) {
@@ -258,50 +270,50 @@ void RenderSceneBuilder::buildBaseMarkers() {
 }
 
 void RenderSceneBuilder::buildBezierCurves() {
-    render::DrawLayer layer = makeWorldLayer("bezier_curves", kGeometryOrder);
-
-    render::LineBatch curves;
-    curves.style = style_.baseLine;
-
-    for (const ObjectData& bezier : scene_.getBeziers()) {
-        appendBezierPolyline(bezier, curves.lines);
-    }
-
-    if (!curves.lines.empty()) {
-        layer.lineBatches.push_back(std::move(curves));
-    }
-
-    pushLayerIfNotEmpty(renderScene_, std::move(layer));
+    // render::DrawLayer layer = makeWorldLayer("bezier_curves", kGeometryOrder);
+    //
+    // render::LineBatch curves;
+    // curves.style = style_.baseLine;
+    //
+    // for (const ObjectData& bezier : scene_.getBeziers()) {
+    //     appendBezierPolyline(bezier, curves.lines);
+    // }
+    //
+    // if (!curves.lines.empty()) {
+    //     layer.lineBatches.push_back(std::move(curves));
+    // }
+    //
+    // pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }
 
 void RenderSceneBuilder::buildBezierHandles() {
-    render::DrawLayer layer = makeWorldLayer("bezier_handles", kSpecialOrder);
-
-    render::LineBatch handles;
-    handles.style = style_.specialLine;
-
-    for (const ObjectData& od : scene_.getBeziers()) {
-        const double p0x = od.params[0];
-        const double p0y = od.params[1];
-
-        const double p3x = od.params[2];
-        const double p3y = od.params[3];
-
-        const double p1x = od.params[4];
-        const double p1y = od.params[5];
-
-        const double p2x = od.params[6];
-        const double p2y = od.params[7];
-
-        handles.lines.push_back(makeLine(p0x, p0y, p1x, p1y));
-        handles.lines.push_back(makeLine(p3x, p3y, p2x, p2y));
-    }
-
-    if (!handles.lines.empty()) {
-        layer.lineBatches.push_back(std::move(handles));
-    }
-
-    pushLayerIfNotEmpty(renderScene_, std::move(layer));
+    // render::DrawLayer layer = makeWorldLayer("bezier_handles", kSpecialOrder);
+    //
+    // render::LineBatch handles;
+    // handles.style = style_.specialLine;
+    //
+    // for (const ObjectData& od : scene_.getBeziers()) {
+    //     const double p0x = od.params[0];
+    //     const double p0y = od.params[1];
+    //
+    //     const double p3x = od.params[2];
+    //     const double p3y = od.params[3];
+    //
+    //     const double p1x = od.params[4];
+    //     const double p1y = od.params[5];
+    //
+    //     const double p2x = od.params[6];
+    //     const double p2y = od.params[7];
+    //
+    //     handles.lines.push_back(makeLine(p0x, p0y, p1x, p1y));
+    //     handles.lines.push_back(makeLine(p3x, p3y, p2x, p2y));
+    // }
+    //
+    // if (!handles.lines.empty()) {
+    //     layer.lineBatches.push_back(std::move(handles));
+    // }
+    //
+    // pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }
 
 void RenderSceneBuilder::buildOverlayObjects() {
@@ -384,22 +396,32 @@ void RenderSceneBuilder::buildSelectedObjects() {
     render::CircleBatch circles;
     circles.stroke = style_.selectedCircle;
 
-    for (const auto& id : overlay_.selection_.model.items()) {
-        const ObjectData od = scene_.getObjectData(id);
+    render::ArcBatch arcs;
+    arcs.stroke = style_.selectedCircle;
 
-        if (od.et == ObjType::ET_LINE) {
-            lines.lines.push_back(makeLine(
-                od.params[0],
-                od.params[1],
-                od.params[2],
-                od.params[3]
-            ));
-        } else if (od.et == ObjType::ET_CIRCLE) {
-            circles.circles.push_back(makeCircle(
-                od.params[0],
-                od.params[1],
-                od.params[2]
-            ));
+    auto refs = overlay_.selection_.model.items();
+    for (const auto& ref : overlay_.constraintRefs_) {
+        if (!overlay_.selection_.model.contains(ref)) {
+            refs.push_back(ref);
+        }
+    }
+    for (const auto& ref : refs) {
+        if (ref.sub != sketch::SubElement::Whole) {
+            continue;
+        }
+        auto result = sketch_.entity(ref.entity);
+        if (!result) {
+            continue;
+        }
+
+        const auto& entity = result.value();
+
+        if (const auto* line = std::get_if<sketch::Line2>(&entity.geometry)) {
+            lines.lines.push_back(makeLine(line->start.x, line->start.y, line->end.x, line->end.y));
+        } else if (const auto* circle = std::get_if<sketch::Circle2>(&entity.geometry)) {
+            circles.circles.push_back(makeCircle(circle->center.x, circle->center.y, circle->radius));
+        } else if (const auto* arc = std::get_if<sketch::Arc2>(&entity.geometry)) {
+            arcs.arcs.push_back(makeArc(*arc));
         }
     }
 
@@ -411,6 +433,10 @@ void RenderSceneBuilder::buildSelectedObjects() {
         layer.circleBatches.push_back(std::move(circles));
     }
 
+    if (!arcs.arcs.empty()) {
+        layer.arcBatches.push_back(std::move(arcs));
+    }
+
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }
 
@@ -420,11 +446,14 @@ void RenderSceneBuilder::buildSelectedMarkers() {
     render::MarkerBatch markers;
     markers.style = style_.selectedMarker;
 
-    for (const auto& id : overlay_.selection_.model.items()) {
-        const ObjectData od = scene_.getObjectData(id);
-
-        if (od.et == ObjType::ET_POINT) {
-            markers.markers.push_back(makeMarker(od.params[0], od.params[1]));
+    auto result = sketch_.pointElements();
+    if (!result) {
+        return;
+    }
+    for (const auto& point : result.value()) {
+        if (overlay_.selection_.model.contains(point.ref) ||
+            std::find(overlay_.constraintRefs_.begin(), overlay_.constraintRefs_.end(), point.ref) != overlay_.constraintRefs_.end()) {
+            markers.markers.push_back(makeMarker(point.position.x, point.position.y));
         }
     }
 

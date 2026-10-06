@@ -156,18 +156,18 @@ void CommandConsole::parseReqInput(const QString& text) const {
 
     overlayModel_.selection_.model.clear();
 
-    std::vector<ID> ids;
+    std::vector<core::sketch::GeometryRef> refs;
 
     for (int i = 2; i < parts.size(); ++i) {
         bool ok = false;
         const int id = parts[i].toInt(&ok);
 
         if (ok) {
-            ids.push_back(ID(id));
+            refs.push_back({core::sketch::EntityId(id), core::sketch::SubElement::Whole});
         }
     }
 
-    overlayModel_.selection_.model.add(ids);
+    overlayModel_.selection_.model.add(refs);
 
     host_.requestRedraw();
 }
