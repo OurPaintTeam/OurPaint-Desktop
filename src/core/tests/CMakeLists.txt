@@ -19,12 +19,14 @@ endfunction()
 
 # Tests
 add_ourpaint_test(ObjectsGTEST ObjectsGTEST.cc)
-add_ourpaint_test(SceneGTEST SceneGTEST.cc)
 add_ourpaint_test(UndoRedoGTEST UndoRedoTests.cc)
 add_ourpaint_test(ObjectInJsonTest ObjectInJsonGTEST.cc)
 add_ourpaint_test(ComponentTest ComponentTest.cc)
 add_ourpaint_test(RequirementJsonTest requirementInJsonGTEST.cc)
 add_ourpaint_test(MoveTest MoveGTEST.cc)
+
+add_ourpaint_test(SketchGTEST SketchGTEST.cc)
+target_link_libraries(SketchGTEST PRIVATE OurPaint::Sketch)
 
 # Build explicitly to verify the public SolveSpace C API include and link boundary.
 add_executable(SolveSpaceLinkSmoke EXCLUDE_FROM_ALL SolveSpaceLinkSmoke.cpp)
