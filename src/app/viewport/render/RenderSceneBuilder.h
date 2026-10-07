@@ -8,6 +8,7 @@ class AxisTexts;
 namespace app { struct ViewportStyle; }
 
 #include "Document.h"
+#include "Camera2D.h"
 
 using namespace core;
 
@@ -17,7 +18,8 @@ public:
                        const OverlayModel& overlay,
                        AxisTexts& axis,
                        const app::ViewportStyle& style,
-                       render::RenderScene& renderScene);
+                       render::RenderScene& renderScene,
+                       const Camera2D& camera);
 
     void rebuild();
 
@@ -39,6 +41,8 @@ private:
     void buildSelectionRectangle();
     void buildAxisText();
 
+    void buildConstraintsMarkers();
+
 private:
     Document& document_;
     sketch::Sketch& sketch_;
@@ -46,6 +50,7 @@ private:
     AxisTexts& axis_;
     const app::ViewportStyle& style_;
     render::RenderScene& renderScene_;
+    const Camera2D& camera_;
 };
 
 #endif // ! OURPAINT_APPLICATION_RENDER_SCENE_BUILDER_H_
