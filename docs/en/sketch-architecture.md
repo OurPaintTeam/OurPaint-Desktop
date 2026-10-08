@@ -39,6 +39,9 @@ undo/redo, clipboard integration, document management, and persistence remain
 outside it. Core can therefore serve a future WebAssembly implementation. This
 boundary keeps App tools independent of backend handles.
 
+App's derived viewport marker model and its shared rendering/picking contract
+are described in [Constraint visualization](constraint-visualization.md).
+
 Calls on one instance, including const queries and destruction, must be
 externally serialized. Returned geometry, vectors, diagnostics, and snapshots
 own their data and survive later edits or Sketch destruction. Editing a returned

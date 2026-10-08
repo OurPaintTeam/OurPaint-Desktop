@@ -8,6 +8,7 @@ add_executable(ourpaint
         platform/QtPlatformRuntime.cc
         platform/QtViewportHost.cc
         viewport/render/RenderSceneBuilder.cc
+        viewport/constraints/ConstraintLayout.cc
         viewport/ViewportController.cc
         ui/QtMainWindowBinder.cc
         ui/UIController.cc

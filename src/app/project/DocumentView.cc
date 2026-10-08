@@ -6,8 +6,10 @@ DocumentView::DocumentView(Document& document, IViewportHost& host)
       host_(host),
       camera2D_(),
       overlay_(),
+      viewportStyle_(app::ViewportStyle::makeDefault()),
+      constraintLayout_(),
       editorSession_(document_, camera2D_, overlay_),
-      viewportController_(camera2D_, overlay_, editorSession_, document_) {}
+      viewportController_(camera2D_, overlay_, editorSession_, document_, viewportStyle_, constraintLayout_) {}
 
 Document& DocumentView::document() noexcept {
     return document_;
