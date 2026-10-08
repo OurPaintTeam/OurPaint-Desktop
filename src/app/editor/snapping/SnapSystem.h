@@ -1,198 +1,110 @@
 #ifndef OURPAINT_APP_SNAP_SYSTEM_H_
 #define OURPAINT_APP_SNAP_SYSTEM_H_
-#include <cstdint>
+
 #include <optional>
 #include <span>
-#include <variant>
 #include <vector>
 
+#include "SnapTypes.h"
+#include "objects/GeometricObjects.h"
+#include "objects/ID.h"
+#include "sketch/SketchTypes.h"
+
+namespace core::sketch {
+class Sketch;
+}
 
 namespace snap {
-struct Point {
-    double x = 0.0;
-    double y = 0.0;
-};
 
-using ObjectId = std::uint64_t;
-
-struct Line {
-    Point start;
-    Point end;
-};
-
-struct Circle {
-    Point center;
-    double radius = 0.0;
-};
-
-struct Arc {
-    Point center;
-
-    double radius = 0.0;
-
-    double startAngle = 0.0;
-    double endAngle = 0.0;
-};
-
-using Geometry = std::variant<Point, Line, Circle, Arc>;
-
-struct Object {
-    ObjectId id;
-    Geometry geometry;
-};
-
-enum class ToolType {
-    Select,
-
-    Point,
-    Line,
-    Circle,
-    Arc,
-
-    Move,
-    Rotate,
-    Scale
-};
-
-enum class SnapType {
-    None,  // Нет snap
-
-    Point,  // Точка
-
-    Intersection,          // Пересечение объектов
-    ExtendedIntersection,  // Пересечение продолжений объектов
-
-    // Фиксированный угол относительно
-    // координатных осей.
-    AxisAngle,
-
-    // Фиксированный угол относительно
-    // существующего объекта.
-    ObjectAngle,
-
-    Tangent,  // Касание / касательная
-
-    Midpoint  // Середина отрезка
-};
-
-enum class DrawState
-{
-    Idle,       // Ничего не начато
-
-    FirstPoint, // Первый клик уже сделан
-    SecondPoint // Ожидается второй клик
-};
-
+/// Запрос на поиск позиционной привязки.
 struct SnapRequest {
-    // Положение логического курсора
-    Point cursor;
+    // Положение логического курсора.
+    core::sketch::Vec2 cursor;
 
-    // Все объекты сцены и их ID
-    std::span<const Object> objects;
+    // ID объектов, которые нельзя использовать.
+    std::span<const core::ID> excludedObjects;
 
-    // ID объектов, которые нельзя использовать
-    std::span<const ObjectId> excludedObjects;
-
-    // Тип активного инструмента
+    // Тип активного инструмента.
     ToolType tool;
 
-    // Состояние отрисовки инструмента (1 / 2 нажатие)
+    // Состояние отрисовки инструмента.
     DrawState drawState;
 };
 
+/// Дополнительное ограничение, накладываемое привязкой.
 struct SnapConstraint {
-    // Угол привязки.
-    //
-    // AxisAngle:
-    //     относительно координатной оси.
-    //
-    // ObjectAngle:
-    //     относительно направления объекта.
+    // Угол привязки:
+    // AxisAngle   — относительно координатной оси;
+    // ObjectAngle — относительно направления объекта.
     double angle = 0.0;
 
-    // Объект, относительно которого
-    // рассчитывается угол.
-    //
-    // Используется для ObjectAngle.
-    ObjectId objectId{};
+    // Объекты, задающие направление угла.
+    std::vector<core::ID> objectIds{};
 };
 
+/// Результат поиска позиционной привязки.
 struct SnapResult {
-    // Был ли найден snap
+    // Был ли найден snap.
     bool snapped = false;
 
-    // Координаты точки snap
+    // Расстояние от курсора до точки snap (для UI и отладки).
+    double distance = 0.0;
+
+    // Оценка кандидата для выбора лучшего.
+    // Пока совпадает с distance; далее — с учётом типа и приоритетов.
+    double score = 0.0;
+
+    // Координаты точки привязки.
     Point point{};
 
-    // Вид snap
+    // Тип найденного snap.
     SnapType type = SnapType::None;
 
-    // Реальные объекты, участвующие в snap
-    //
-    // Point:
-    //     { objectId }
-    //
-    // Intersection:
-    //     { lineA, lineB }
-    //
-    // ExtendedIntersection:
-    //     { lineA, lineB }
-    //
-    // ObjectAngle:
-    //     { sourceObject }
-    std::vector<ObjectId> objectIds;
+    // Реальные объекты Sketch, участвующие в snap:
+    // Point        — { pointId }
+    // Intersection — { lineAId, lineBId }
+    // Tangent      — { circleId, lineId }
+    // ObjectAngle  — { objectId }
+    std::vector<core::ID> objectIds;
 
-    // Виртуальная геометрия:
-    // продолжения, направляющие и т.д.
-    std::vector<Line> guideLines;
+    // Виртуальная геометрия для визуализации привязки
+    // (продолжения, направляющие, перпендикуляры).
+    // НЕ объекты Sketch.
+    std::vector<core::sketch::SketchGeometry> guideLines;
 
-    // Виртуальный объект для визуализации
-    // результата snap.
-    std::optional<Object> previewObject;
+    // Виртуальный объект предпросмотра результата.
+    std::optional<core::sketch::SketchGeometry> previewObject;
 
     // Дополнительные параметры snap.
     std::optional<SnapConstraint> constraint;
 };
 
-
+/// Система поиска позиционных привязок.
 class SnapSystem {
 public:
-    SnapResult getSnapCandidate(
-        const SnapRequest& request
-    ) const;
+    explicit SnapSystem(const core::sketch::Sketch& sketch) : sketch_(sketch) {}
+
+    SnapResult getSnapCandidate(const SnapRequest& request) const;
 
 private:
-    struct SnapCandidate {
-        Point point;
-        double distance = 0.0;
+    const core::sketch::Sketch& sketch_;
 
-        SnapType type = SnapType::None;
+    // Поиск ближайшей самостоятельной точки.
+    std::optional<SnapResult> findPointCandidate(const SnapRequest& request) const;
 
-        std::vector<ObjectId> objectIds;
+    // Поиск ближайшей середины отрезка.
+    std::optional<SnapResult> findMidpointCandidate(const SnapRequest& request) const;
 
-        std::vector<Line> guideLines;
+    // Поиск пересечения двух отрезков.
+    std::optional<SnapResult> findIntersectionCandidate(const SnapRequest& request) const;
 
-        std::optional<Object> previewObject;
+    // Поиск пересечения продолжений двух отрезков.
+    std::optional<SnapResult> findExtendedIntersectionCandidate(const SnapRequest& request) const;
 
-        std::optional<SnapConstraint> constraint;
-    };
-
-private:
-    std::optional<SnapCandidate> findPointCandidate(
-        const SnapRequest& request
-    ) const;
-
-    static bool isExcluded(
-        ObjectId objectId,
-        std::span<const ObjectId> excludedObjects
-    );
-
-    static SnapResult makeResult(
-        const SnapCandidate& candidate
-    );
+    // Проверяет, находится ли объект в списке исключений.
+    static bool isExcluded(core::ID objectId, std::span<const core::ID> excludedObjects);
 };
 
+}  // namespace snap
 
-} // namespace snap
-
-#endif  // ! OURPAINT_APP_SNAP_SYSTEM_H_
+#endif  // OURPAINT_APP_SNAP_SYSTEM_H_
