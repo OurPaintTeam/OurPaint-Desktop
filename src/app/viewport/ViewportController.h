@@ -19,7 +19,9 @@ public:
     ViewportController(Camera2D& camera,
                        OverlayModel& overlay,
                        SketchEditor& session,
-                       Document& document);
+                       Document& document,
+                       const app::ViewportStyle& style,
+                       app::ConstraintLayout& constraintLayout);
 
     bool onResize     (const input::ResizeEvent& e)      override;
     bool onMouseMove  (const input::MouseMoveEvent& e)   override;
@@ -33,15 +35,18 @@ public:
     void setContinuousRedraw(bool enable);
 
 private:
+    void updateConstraintLayout();
+
     Camera2D& camera2D_;
     OverlayModel& overlay_;
     SketchEditor& editorSession_;
     Document& document_;
+    app::ConstraintLayout& constraintLayout_;
 
     AxisTexts axisTexts_;
-    app::ViewportStyle viewportStyle_;
-    RenderSceneBuilder builder_;
+    const app::ViewportStyle& viewportStyle_;
     render::RenderScene renderScene_;
+    RenderSceneBuilder builder_;
     render::OpenGL2dRenderer renderer_;
 
     double lastX_ = 0.0;

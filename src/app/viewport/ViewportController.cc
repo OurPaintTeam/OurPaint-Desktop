@@ -1,23 +1,28 @@
 #include "ViewportController.h"
 #include "../../core/Document.h"
+#include "constraints/ConstraintLayout.h"
 
 ViewportController::ViewportController(Camera2D& camera,
                                        OverlayModel& overlay,
                                        SketchEditor& editorSession_,
-                                       Document& document)
+                                       Document& document,
+                                       const app::ViewportStyle& style,
+                                       app::ConstraintLayout& constraintLayout)
     :   camera2D_(camera),
         overlay_(overlay),
         editorSession_(editorSession_),
         document_(document),
+        constraintLayout_(constraintLayout),
         axisTexts_(camera2D_),
-        viewportStyle_(app::ViewportStyle::makeDefault()),
-        builder_(document_, overlay_, axisTexts_, viewportStyle_, renderScene_, camera),
+        viewportStyle_(style),
         renderScene_(),
+        builder_(document_, overlay_, axisTexts_, viewportStyle_, renderScene_, camera, constraintLayout_),
         renderer_() {}
 
 bool ViewportController::onResize(const input::ResizeEvent& e) {
     camera2D_.setViewport(e.width, e.height, e.devicePixelRatio);
-    renderer_.resize(e.width * e.devicePixelRatio,e.height * e.devicePixelRatio);
+    renderer_.resize(camera2D_.wFramebuffer(), camera2D_.hFramebuffer());
+    updateConstraintLayout();
     return true;
 }
 
@@ -32,18 +37,16 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
     lastX_ = e.x;
     lastY_ = e.y;
 
+    updateConstraintLayout();
     editorSession_.activeTool()->onMouseMove(e);
-
-    builder_.rebuild();
 
     requestRedraw();
     return true;
 }
 
 bool ViewportController::onMouseButton(const input::MouseButtonEvent& e) {
+    updateConstraintLayout();
     editorSession_.activeTool()->onMouseButton(e);
-
-    builder_.rebuild();
 
     requestRedraw();
     return true;
@@ -64,6 +67,7 @@ bool ViewportController::onWheel(const input::WheelEvent& e) {
         camera2D_.zoomAtScreenLogical(factor, {e.x, e.y});
     }
 
+    updateConstraintLayout();
     requestRedraw();
     return true;
 }
@@ -84,6 +88,7 @@ bool ViewportController::onKey(const input::KeyEvent& e) {
         //mgr.undo();
     }
 
+    updateConstraintLayout();
     editorSession_.onKey(e);
 
     requestRedraw();
@@ -95,8 +100,13 @@ void ViewportController::render() {
         renderer_.initialize();
         _ini = true;
     }
+    updateConstraintLayout();
     builder_.rebuild();
     renderer_.render(renderScene_, camera2D_);
+}
+
+void ViewportController::updateConstraintLayout() {
+    constraintLayout_.rebuild(document_.sketch(), camera2D_, viewportStyle_.constraintMarker);
 }
 
 void ViewportController::requestRedraw() {

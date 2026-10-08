@@ -10,6 +10,7 @@
 #include "OverlayModel.h"
 #include "RenderScene.h"
 #include "ViewportStyle.h"
+#include "../constraints/ConstraintLayout.h"
 #include "objects/Objects.h"
 
 using namespace core;
@@ -162,7 +163,8 @@ RenderSceneBuilder::RenderSceneBuilder(Document& document,
                                        AxisTexts& axis,
                                        const app::ViewportStyle& style,
                                        render::RenderScene& renderScene,
-                                       const Camera2D& camera)
+                                       const Camera2D& camera,
+                                       const app::ConstraintLayout& constraintLayout)
     :
       document_(document),
       sketch_(document.sketch()),
@@ -170,7 +172,8 @@ RenderSceneBuilder::RenderSceneBuilder(Document& document,
       axis_(axis),
       style_(style),
       renderScene_(renderScene),
-      camera_(camera) {}
+      camera_(camera),
+      constraintLayout_(constraintLayout) {}
 
 void RenderSceneBuilder::rebuild() {
     renderScene_.clear();
@@ -511,69 +514,19 @@ void RenderSceneBuilder::buildAxisText() {
 void RenderSceneBuilder::buildConstraintsMarkers() {
     render::DrawLayer layer = makeScreenLayer("constraints", kConstraints);
 
-    const auto& result = sketch_.constraints();
-    if (!result) {
-        return;
+    render::LineBatch linesBatch;
+    linesBatch.style = style_.constraintMarker.stroke;
+    const double dpr = camera_.viewport().devicePixelRatio;
+    const double height = camera_.hFramebuffer();
+    linesBatch.style.widthPx *= static_cast<float>(dpr);
+    if (linesBatch.style.edgeSoftnessPx) {
+        *linesBatch.style.edgeSoftnessPx *= static_cast<float>(dpr);
     }
 
-    render::LineBatch linesBatch;
-    linesBatch.style.color = render::Color(1.0, 127.0 / 255.0, 39.0 / 255.0);
-    linesBatch.style.edgeSoftnessPx = 1.5;
-
-    for (const auto& constraint : result.value()) {
-        if (constraint.definition.type == sketch::ConstraintType::Parallel) {
-            if (constraint.definition.refs.size() != 2) {
-                continue;
-            }
-            const auto& id1 = constraint.definition.refs[0].entity;
-            const auto& id2 = constraint.definition.refs[1].entity;
-
-            const auto& result1 = sketch_.entity(id1);
-            const auto& result2 = sketch_.entity(id2);
-            if (!result1 || !result2) {
-                continue;
-            }
-
-            for (const auto& ent : {result1.value(), result2.value()}) {
-                if (const auto* line = std::get_if<sketch::Line2>(&ent.geometry)) {
-                    const auto Aw = glm::dvec2(line->start.x, line->start.y);
-                    const auto Bw = glm::dvec2(line->end.x, line->end.y);
-
-                    glm::dvec2 v = Bw - Aw;
-                    const double v_len = glm::length(v);
-                    if (v_len < 1e-12) {
-                        return;
-                    }
-                    v /= v_len;
-
-                    const glm::dvec2 n = {-v.y, v.x};
-
-                    const double zoom = camera_.zoom();
-                    constexpr double offset_px = 5.0;
-                    constexpr double length_px = 30.0;
-
-                    const double d_world = offset_px / zoom;
-                    const double L_world = length_px / zoom;
-                    const double half    = L_world * 0.5;
-
-                    const glm::dvec2 mid_orig = (Aw + Bw) * 0.5;
-                    const double height = camera_.hFramebuffer();
-
-                    auto pushOffsetLine = [&](double side) {
-                        const glm::dvec2 mid_new = mid_orig + side * d_world * n;
-                        const glm::dvec2 Aw2 = mid_new - half * v;
-                        const glm::dvec2 Bw2 = mid_new + half * v;
-
-                        const auto A = camera_.worldToScreenFramebuffer(Aw2);
-                        const auto B = camera_.worldToScreenFramebuffer(Bw2);
-
-                        linesBatch.lines.push_back(makeLine(A.x, height - A.y, B.x, height - B.y));
-                    };
-
-                    pushOffsetLine(+1.0);
-                    pushOffsetLine(-1.0);
-                }
-            }
+    // Layout uses logical pixels with a top-left origin; Screen layers use framebuffer pixels with a bottom-left origin.
+    for (const auto& marker : constraintLayout_.markers()) {
+        for (const auto& stroke : marker.strokes) {
+            linesBatch.lines.push_back(makeLine(stroke.start.x * dpr, height - stroke.start.y * dpr, stroke.end.x * dpr, height - stroke.end.y * dpr));
         }
     }
 
@@ -583,6 +536,3 @@ void RenderSceneBuilder::buildConstraintsMarkers() {
 
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }
-
-
-

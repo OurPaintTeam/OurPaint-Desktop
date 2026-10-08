@@ -40,6 +40,12 @@ ViewportStyle ViewportStyle::makeDefault() {
     }
 
     {
+        style.constraintMarker.stroke.color = {1.0f, 127.0f / 255.0f, 39.0f / 255.0f, 1.0f};
+        style.constraintMarker.stroke.widthPx = 1.0f;
+        style.constraintMarker.stroke.edgeSoftnessPx = 1.5f;
+    }
+
+    {
         // base circle
         style.baseCircle.color = {0.0f, 0.0f, 0.0f, 1.0f};
         style.baseCircle.widthPx = 0.0f;
