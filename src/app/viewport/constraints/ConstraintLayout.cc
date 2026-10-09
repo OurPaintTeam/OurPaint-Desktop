@@ -28,8 +28,8 @@ struct LineMarkers {
 bool finite(glm::dvec2 point) { return std::isfinite(point.x) && std::isfinite(point.y); }
 
 bool validStyle(const ConstraintMarkerStyle& style) {
-    for (double dimension : {style.lengthPx, style.offsetPx, style.hatchLengthPx, style.hatchSpacingPx, style.minGapPx, style.hitTolerancePx,
-                             static_cast<double>(style.stroke.widthPx)}) {
+    for (double dimension : {style.lengthPx, style.offsetPx, style.hatchLengthPx, style.hatchSpacingPx,
+                             style.minGapPx, style.hitTolerancePx, static_cast<double>(style.stroke.widthPx)}) {
         if (!std::isfinite(dimension) || dimension < 0.0) {
             return false;
         }
@@ -55,6 +55,8 @@ size_t expectedRefCount(sketch::ConstraintType type) {
 std::vector<ConstraintMarkerSegment> makeGlyph(sketch::ConstraintType type, glm::dvec2 tangent, glm::dvec2 normal, const ConstraintMarkerStyle& style) {
     std::vector<ConstraintMarkerSegment> strokes;
     const double halfLength = style.lengthPx * 0.5;
+
+
     if (type == sketch::ConstraintType::Parallel) {
         strokes.reserve(2);
         for (double side : {-1.0, 1.0}) {
@@ -64,6 +66,7 @@ std::vector<ConstraintMarkerSegment> makeGlyph(sketch::ConstraintType type, glm:
         return strokes;
     }
 
+
     if (type == sketch::ConstraintType::Perpendicular) {
         const auto center = style.offsetPx * normal;
         strokes.reserve(2);
@@ -72,17 +75,27 @@ std::vector<ConstraintMarkerSegment> makeGlyph(sketch::ConstraintType type, glm:
         return strokes;
     }
 
+
     // H/V glyphs retain their semantic orientation, even during an unsolved edit.
-    const glm::dvec2 axis = type == sketch::ConstraintType::Horizontal ? glm::dvec2{1.0, 0.0} : glm::dvec2{0.0, 1.0};
-    const glm::dvec2 hatchSide{axis.y, -axis.x};
-    const auto center = style.offsetPx * normal;
+    const bool isHorizontal = (type == sketch::ConstraintType::Horizontal);
+    const glm::dvec2 axis = isHorizontal ? glm::dvec2{1.0, 0.0} : glm::dvec2{0.0, 1.0};
+    const auto center = -style.offsetPx * normal;
     strokes.reserve(4);
     strokes.push_back({center - halfLength * axis, center + halfLength * axis});
-    const auto hatch = (axis + hatchSide) * (style.hatchLengthPx / std::sqrt(2.0));
+
+    // hatchSide is axis rotated 90° counter-clockwise.
+    const glm::dvec2 hatchSide{-axis.y, axis.x};
+    const auto hatch = (-axis + hatchSide) * (style.hatchLengthPx / std::sqrt(2.0));
+
+    // Shift the row of three hatches along the axis.
+    const auto hatchShift = (style.hatchSpacingPx / 3.0) * axis;
+
     for (int i = -1; i <= 1; ++i) {
-        const auto start = center + static_cast<double>(i) * style.hatchSpacingPx * axis;
+        const auto start = center + static_cast<double>(i) * style.hatchSpacingPx * axis + hatchShift;
         strokes.push_back({start, start + hatch});
     }
+
+
     return strokes;
 }
 
