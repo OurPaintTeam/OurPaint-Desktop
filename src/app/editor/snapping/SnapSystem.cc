@@ -50,9 +50,9 @@ std::optional<SnapResult> SnapSystem::findPointCandidate(const SnapRequest& requ
     for (const auto& entity : points) {
         const core::ID objectId(entity.id.get());
 
-        if (isExcluded(objectId, request.excludedObjects)) {
+        /*if (isExcluded(objectId, request.excludedObjects)) {
             continue;
-        }
+        }*/
 
         const auto& pointGeometry = std::get<core::sketch::Point2>(entity.geometry);
         const auto point = pointGeometry.position;
@@ -100,9 +100,9 @@ std::optional<SnapResult> SnapSystem::findMidpointCandidate(const SnapRequest& r
     for (const auto& entity : lines) {
         const core::ID objectId(entity.id.get());
 
-        if (isExcluded(objectId, request.excludedObjects)) {
+        /*if (isExcluded(objectId, request.excludedObjects)) {
             continue;
-        }
+        }*/
 
         const auto* lineGeometry = std::get_if<core::sketch::Line2>(&entity.geometry);
         if (!lineGeometry) {
@@ -158,9 +158,9 @@ std::optional<SnapResult> SnapSystem::findIntersectionCandidate(const SnapReques
     for (std::size_t i = 0; i < lines.size(); ++i) {
         const core::ID idA(lines[i].id.get());
 
-        if (isExcluded(idA, request.excludedObjects)) {
+        /*if (isExcluded(idA, request.excludedObjects)) {
             continue;
-        }
+        }*/
 
         const auto* geomA = std::get_if<core::sketch::Line2>(&lines[i].geometry);
         if (!geomA) {
@@ -170,9 +170,10 @@ std::optional<SnapResult> SnapSystem::findIntersectionCandidate(const SnapReques
         for (std::size_t j = i + 1; j < lines.size(); ++j) {
             const core::ID idB(lines[j].id.get());
 
+            /*
             if (isExcluded(idB, request.excludedObjects)) {
                 continue;
-            }
+            }*/
 
             const auto* geomB = std::get_if<core::sketch::Line2>(&lines[j].geometry);
             if (!geomB) {
@@ -229,9 +230,10 @@ std::optional<SnapResult> SnapSystem::findExtendedIntersectionCandidate(const Sn
     for (std::size_t i = 0; i < lines.size(); ++i) {
         const core::ID idA(lines[i].id.get());
 
+        /*
         if (isExcluded(idA, request.excludedObjects)) {
             continue;
-        }
+        }*/
 
         const auto* geomA = std::get_if<core::sketch::Line2>(&lines[i].geometry);
         if (!geomA) {
@@ -241,9 +243,9 @@ std::optional<SnapResult> SnapSystem::findExtendedIntersectionCandidate(const Sn
         for (std::size_t j = i + 1; j < lines.size(); ++j) {
             const core::ID idB(lines[j].id.get());
 
-            if (isExcluded(idB, request.excludedObjects)) {
+            /*if (isExcluded(idB, request.excludedObjects)) {
                 continue;
-            }
+            }*/
 
             const auto* geomB = std::get_if<core::sketch::Line2>(&lines[j].geometry);
             if (!geomB) {

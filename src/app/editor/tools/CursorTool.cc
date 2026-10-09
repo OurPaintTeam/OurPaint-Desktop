@@ -14,10 +14,27 @@
 #include "Document.h"
 
 CursorTool::CursorTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay, ConstraintActions& constraintActions)
-    : document_(document), sketch_(document.sketch()), camera_(camera), picker_(picker), overlay_(overlay), constraintActions_(constraintActions), data_() {}
+    : document_(document), sketch_(document.sketch()), camera_(camera), picker_(picker), overlay_(overlay), constraintActions_(constraintActions), data_(),snap_(sketch_) {}
 
 void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
+
+
+
+    {
+        snap::SnapRequest request{
+            // Положение логического курсора.
+            {e.x, e.y},
+            snap::ToolType::Select,
+            snap::DrawState::Idle
+        };
+
+        snap::SnapResult snap_result = snap_.getSnapCandidate(request);
+        snap_result.point
+        overlay_.selection_.model.add({});
+    }
+
+
 
     if (input::has_flag(e.buttons, input::MouseButton::Left)) {
         if (state_ == State::DraggingSelection) {

@@ -21,9 +21,6 @@ struct SnapRequest {
     // Положение логического курсора.
     core::sketch::Vec2 cursor;
 
-    // ID объектов, которые нельзя использовать.
-    std::span<const core::ID> excludedObjects;
-
     // Тип активного инструмента.
     ToolType tool;
 
