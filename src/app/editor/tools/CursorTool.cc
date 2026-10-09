@@ -22,18 +22,60 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
 
 
     {
+        overlay_.selection_.model.clear();
+
         snap::SnapRequest request{
-            // Положение логического курсора.
-            {e.x, e.y},
+            core::sketch::Vec2{v.x, v.y},
             snap::ToolType::Select,
             snap::DrawState::Idle
         };
 
-        snap::SnapResult snap_result = snap_.getSnapCandidate(request);
-        snap_result.point
-        overlay_.selection_.model.add({});
-    }
+        const auto snap_result = snap_.getSnapCandidate(request);
 
+        if (snap_result.snapped) {
+            if (snap_result.type == snap::SnapType::Point &&
+                !snap_result.objectIds.empty()) {
+
+                // Используем исходную ссылку на точку или подэлемент.
+                const auto& ref = snap_result.objectIds.front();
+
+                overlay_.selection_.model.add(ref);
+                }
+        }
+
+        qDebug() << "=== SNAP ===";
+        qDebug() << "  type     :" << static_cast<int>(snap_result.type);
+        qDebug() << "  snapped  :" << snap_result.snapped;
+        qDebug() << "  score    :" << snap_result.score;
+        qDebug() << "  distance :" << snap_result.distance;
+        qDebug() << "  point    :"
+                 << snap_result.point.x << "," << snap_result.point.y;
+        qDebug() << "  cursor   :"
+                 << request.cursor.x << "," << request.cursor.y;
+
+        // Выводим все точки и характерные точки геометрии.
+        const auto elementsResult = sketch_.pointElements(
+            core::sketch::PointElementScope::All);
+
+        if (elementsResult) {
+            const auto& elements = elementsResult.value();
+
+            qDebug() << "=== POINT ELEMENTS (" << elements.size() << ") ===";
+
+            for (const auto& element : elements) {
+                qDebug() << "  entityId =" << element.ref.entity.get()
+                         << " sub =" << static_cast<int>(element.ref.sub)
+                         << " pos =("
+                         << element.position.x << ","
+                         << element.position.y << ")";
+            }
+        } else {
+            qDebug() << "pointElements() failed:"
+                     << static_cast<int>(elementsResult.error().code)
+                     << QString::fromStdString(
+                            elementsResult.error().message);
+        }
+    }
 
 
     if (input::has_flag(e.buttons, input::MouseButton::Left)) {
