@@ -59,8 +59,19 @@ public:
     Capabilities capabilities() const override {
         Capabilities result;
         result.entities.fill(true);
-        for (auto type : {ConstraintType::Coincident, ConstraintType::Horizontal, ConstraintType::Vertical, ConstraintType::Parallel,
-                          ConstraintType::Perpendicular, ConstraintType::Distance, ConstraintType::Length, ConstraintType::Angle, ConstraintType::Fix}) {
+        for (auto type : {ConstraintType::Coincident,
+                          ConstraintType::Horizontal,
+                          ConstraintType::Vertical,
+                          ConstraintType::Parallel,
+                          ConstraintType::Perpendicular,
+                          ConstraintType::Tangent,
+                          ConstraintType::Equal,
+                          ConstraintType::Distance,
+                          ConstraintType::Length,
+                          ConstraintType::Radius,
+                          ConstraintType::Diameter,
+                          ConstraintType::Angle,
+                          ConstraintType::Fix}) {
             result.constraints[static_cast<size_t>(type)] = true;
         }
         result.updateEntities = result.removeEntities = result.updateConstraints = result.removeConstraints = true;
