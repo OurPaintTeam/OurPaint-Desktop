@@ -10,7 +10,7 @@
 LineTool::LineTool(Document& document, Camera2D& camera, OverlayModel& overlay)
     : document_(document), camera_(camera), overlay_(overlay) {}
 
-void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
+std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
@@ -31,10 +31,11 @@ void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
         overlay_.points_[0].x = v.x;
         overlay_.points_[0].y = v.y;
     }
+    return std::nullopt;
 }
 
 
-void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
+std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
@@ -58,7 +59,7 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
                     v.x = firstPoint_.x; // Lock to vertical
                 }
             }
-            document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y});
+            auto report = ActionReport::creation(ActionKind::CreateLine, document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y}));
 
             // std::ostringstream oss;
             // oss << std::fixed << std::setprecision(3)
@@ -72,11 +73,13 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
             state_ = State::WaitingFirstPoint;
 
             overlay_.clearPreview();
+            return report;
         }
     }
+    return std::nullopt;
 }
 
-void LineTool::onKey(const input::KeyEvent& e) {
+std::optional<ActionReport> LineTool::onKey(const input::KeyEvent& e) {
     if (input::has_flag(e.modifiers, input::Modifiers::Shift) &&
         e.action == input::KeyAction::Press &&
         state_ == State::WaitingSecondPoint) {
@@ -104,15 +107,15 @@ void LineTool::onKey(const input::KeyEvent& e) {
         overlay_.points_[0].x = v.x;
         overlay_.points_[0].y = v.y;
     }
-
+    return std::nullopt;
 }
 
-bool LineTool::cancel() {
+ToolCancellation LineTool::cancel() {
     if (state_ == State::WaitingSecondPoint) {
         overlay_.clearPreview();
         state_ = State::WaitingFirstPoint;
-        return true;
+        return {true, std::nullopt};
     }
-    return false;
+    return {};
 }
 

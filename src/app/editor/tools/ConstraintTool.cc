@@ -15,11 +15,14 @@ void ConstraintTool::begin(const ConstraintRequest& request, std::span<const cor
     overlay_.constraintRefs_ = refs_;
 }
 
-void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) { (void)e; }
+std::optional<ActionReport> ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
+    (void)e;
+    return std::nullopt;
+}
 
-void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
+std::optional<ActionReport> ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button != input::MouseButton::Left || e.action != input::MouseButtonAction::Press) {
-        return;
+        return std::nullopt;
     }
 
     std::optional<PickResult> pick;
@@ -43,21 +46,24 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             break;
     }
     if (!pick) {
-        return;
+        return std::nullopt;
     }
 
-    handleRef(pick->ref);
+    return handleRef(pick->ref);
 }
 
-void ConstraintTool::onKey(const input::KeyEvent& e) { (void)e; }
+std::optional<ActionReport> ConstraintTool::onKey(const input::KeyEvent& e) {
+    (void)e;
+    return std::nullopt;
+}
 
-bool ConstraintTool::cancel() {
+ToolCancellation ConstraintTool::cancel() {
     const bool handled = !refs_.empty();
     resetInputs();
-    return handled;
+    return {handled, std::nullopt};
 }
 
-void ConstraintTool::handleRef(const core::sketch::GeometryRef& ref) {
+std::optional<ActionReport> ConstraintTool::handleRef(const core::sketch::GeometryRef& ref) {
     auto candidateRefs = refs_;
     candidateRefs.push_back(ref);
     const auto preparation = actions_.prepare(request_, candidateRefs);
@@ -66,17 +72,24 @@ void ConstraintTool::handleRef(const core::sketch::GeometryRef& ref) {
         case ConstraintPreparation::State::NeedsMoreInput:
             refs_ = std::move(candidateRefs);
             overlay_.constraintRefs_ = refs_;
-            return;
-        case ConstraintPreparation::State::Ready:
-            if (!preparation.definition || !actions_.apply(*preparation.definition)) {
-                return;
+            return std::nullopt;
+        case ConstraintPreparation::State::Ready: {
+            if (!preparation.definition) {
+                return ConstraintActions::rejectedReport(preparation);
             }
-            resetInputs();
-            return;
+            auto report = actions_.apply(*preparation.definition);
+            // A failed solve does not undo insertion. Unknown partial edits must
+            // also release pending input so a retry cannot insert it twice.
+            if (report.change != ModelChange::Unchanged) {
+                resetInputs();
+            }
+            return report;
+        }
         case ConstraintPreparation::State::InvalidSelection:
         case ConstraintPreparation::State::Unsupported:
-            return;
+            return ConstraintActions::rejectedReport(preparation);
     }
+    return std::nullopt;
 }
 
 void ConstraintTool::resetInputs() {

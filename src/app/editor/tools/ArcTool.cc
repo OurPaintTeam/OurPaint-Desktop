@@ -22,7 +22,7 @@ void ArcTool::reset() {
     overlay_.clearPreview();
 }
 
-void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
+std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
     switch (mode_) {
@@ -30,7 +30,7 @@ void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
             if (step_ == Step::WaitingThirdInput) {
                 Arc ca = buildArcFromThreePoints(points_[0], points_[1], cursor);
                 if (!ca.valid) {
-                    return;
+                    return std::nullopt;
                 }
                 if (!overlay_.arcs_.empty()) {
                     overlay_.arcs_[0].r = ca.r;
@@ -48,11 +48,12 @@ void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
             }
             break;
     }
+    return std::nullopt;
 }
 
-void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
+std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
-        return;
+        return std::nullopt;
     }
 
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
@@ -81,19 +82,21 @@ void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
             break;
     }
+    return std::nullopt;
 }
 
-void ArcTool::onKey(const input::KeyEvent& e) {
+std::optional<ActionReport> ArcTool::onKey(const input::KeyEvent& e) {
     (void)e;
+    return std::nullopt;
 }
 
-bool ArcTool::cancel() {
+ToolCancellation ArcTool::cancel() {
     if (points_.empty()) {
-        return false;
+        return {};
     }
 
     reset();
-    return true;
+    return {true, std::nullopt};
 }
 
 glm::dvec2 ArcTool::screenToWorld(double x, double y) const {

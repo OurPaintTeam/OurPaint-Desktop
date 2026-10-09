@@ -38,7 +38,7 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
     lastY_ = e.y;
 
     updateConstraintLayout();
-    editorSession_.activeTool()->onMouseMove(e);
+    editorSession_.onMouseMove(e);
 
     requestRedraw();
     return true;
@@ -46,7 +46,7 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
 
 bool ViewportController::onMouseButton(const input::MouseButtonEvent& e) {
     updateConstraintLayout();
-    editorSession_.activeTool()->onMouseButton(e);
+    editorSession_.onMouseButton(e);
 
     requestRedraw();
     return true;

@@ -3,7 +3,19 @@
 
 #include <optional>
 
-enum class ConstraintAction { Coincident, Horizontal, Vertical, Parallel, Perpendicular, Tangent, Equal, Fix, Dimension, Angle };
+enum class ConstraintAction {
+    Coincident,
+    Horizontal,
+    Vertical,
+    Parallel,
+    Perpendicular,
+    Tangent,
+    Equal,
+    Fix,
+    Dimension,
+    Angle,
+    Unsupported
+};
 
 struct ConstraintRequest {
     ConstraintAction action = ConstraintAction::Coincident;

@@ -207,7 +207,16 @@ TEST_P(ConstraintActionsBehavior, ApplyingCoincidencePreservesMidpointPlacementA
 
     ConstraintActions actions(*sketch_);
     const auto countBefore = sketch_->constraintCount();
-    ASSERT_TRUE(actions.apply(*prepared.definition));
+    const auto report = actions.apply(*prepared.definition);
+    EXPECT_EQ(report.action, ActionKind::ApplyConstraint);
+    EXPECT_EQ(report.change, ModelChange::Changed);
+    EXPECT_EQ(report.requestedConstraints, 1);
+    ASSERT_EQ(report.constraintIds.size(), 1);
+    EXPECT_TRUE(sketch_->constraint(report.constraintIds[0]));
+    EXPECT_FALSE(report.operationError);
+    EXPECT_FALSE(report.solveError);
+    ASSERT_TRUE(report.solve);
+    EXPECT_EQ(report.solve->status, SolveStatus::Converged);
     EXPECT_EQ(sketch_->constraintCount(), countBefore + 1);
     const auto firstPosition = sketch_->pointPosition(first);
     const auto secondPosition = sketch_->pointPosition(second);
@@ -226,7 +235,12 @@ TEST_P(ConstraintActionsBehavior, ApplyingPerpendicularAddsConstraintAndSolves) 
 
     ConstraintActions actions(*sketch_);
     const auto countBefore = sketch_->constraintCount();
-    ASSERT_TRUE(actions.apply(*prepared.definition));
+    const auto report = actions.apply(*prepared.definition);
+    EXPECT_EQ(report.change, ModelChange::Changed);
+    ASSERT_EQ(report.constraintIds.size(), 1);
+    EXPECT_TRUE(sketch_->constraint(report.constraintIds[0]));
+    ASSERT_TRUE(report.solve);
+    EXPECT_EQ(report.solve->status, SolveStatus::Converged);
     EXPECT_EQ(sketch_->constraintCount(), countBefore + 1);
     const auto first = sketch_->entity(line_.entity);
     const auto second = sketch_->entity(otherLine_.entity);
@@ -239,6 +253,74 @@ TEST_P(ConstraintActionsBehavior, ApplyingPerpendicularAddsConstraintAndSolves) 
     const double lengths = std::hypot(directionA.x, directionA.y) * std::hypot(directionB.x, directionB.y);
     ASSERT_GT(lengths, 0);
     EXPECT_NEAR(directionA.x * directionB.x + directionA.y * directionB.y, 0, 1e-6 * lengths);
+}
+
+TEST_P(ConstraintActionsBehavior, RejectionsPreserveSelectionAndValueReasonsWithoutMutation) {
+    const auto invalidValue = prepare(ConstraintAction::Dimension, {line_}, -1.0);
+    EXPECT_EQ(invalidValue.rejection, ActionRejection::InvalidValue);
+    const auto invalidSelection = prepare(ConstraintAction::Horizontal, {point_});
+    EXPECT_EQ(invalidSelection.rejection, ActionRejection::InvalidSelection);
+    const auto unsupported = prepare(ConstraintAction::Unsupported);
+    EXPECT_EQ(unsupported.state, PreparationState::Unsupported);
+    EXPECT_EQ(unsupported.rejection, ActionRejection::Unsupported);
+
+    const auto missing = prepare(ConstraintAction::Horizontal, {{EntityId(9999), SubElement::Whole}});
+    ASSERT_TRUE(missing.error);
+    EXPECT_EQ(missing.error->code, ErrorCode::NotFound);
+    const auto report = ConstraintActions::rejectedReport(missing);
+    EXPECT_EQ(report.change, ModelChange::Unchanged);
+    EXPECT_TRUE(report.constraintIds.empty());
+    EXPECT_FALSE(report.solve);
+    ASSERT_TRUE(report.operationError);
+    EXPECT_EQ(report.operationError->code, missing.error->code);
+    EXPECT_EQ(report.operationError->message, missing.error->message);
+    EXPECT_EQ(sketch_->constraintCount(), 0);
+}
+
+TEST_P(ConstraintActionsBehavior, ApplicationPreflightFailureDoesNotClaimInsertionOrSolving) {
+    ConstraintActions actions(*sketch_);
+    const ConstraintDefinition invalid{ConstraintType::Coincident, {point_}, std::nullopt, std::nullopt};
+    const auto report = actions.apply(invalid);
+    EXPECT_EQ(report.change, ModelChange::Unchanged);
+    EXPECT_TRUE(report.constraintIds.empty());
+    ASSERT_TRUE(report.operationError);
+    EXPECT_EQ(report.operationError->code, ErrorCode::InvalidArgument);
+    EXPECT_FALSE(report.solve);
+    EXPECT_FALSE(report.solveError);
+    EXPECT_EQ(sketch_->constraintCount(), 0);
+}
+
+TEST_P(ConstraintActionsBehavior, FailedConvergenceRetainsConfirmedConstraintInsertion) {
+    const auto point = sketch_->addPoint({0, 0});
+    ASSERT_TRUE(point);
+    const GeometryRef ref{point.value(), SubElement::Whole};
+    ConstraintActions actions(*sketch_);
+    const auto first = actions.apply({ConstraintType::Fix, {ref}, std::nullopt, Vec2{0, 0}});
+    ASSERT_EQ(first.constraintIds.size(), 1);
+    const auto countBefore = sketch_->constraintCount();
+
+    const auto report = actions.apply({ConstraintType::Fix, {ref}, std::nullopt, Vec2{1, 1}});
+    EXPECT_EQ(report.change, ModelChange::Changed);
+    EXPECT_FALSE(report.operationError);
+    EXPECT_FALSE(report.solveError);
+    ASSERT_TRUE(report.solve);
+    EXPECT_EQ(report.solve->status, SolveStatus::Failed);
+    ASSERT_EQ(report.constraintIds.size(), 1);
+    const auto inserted = sketch_->constraint(report.constraintIds[0]);
+    ASSERT_TRUE(inserted);
+    EXPECT_EQ(inserted.value().definition.fixedPosition, (std::optional<Vec2>{{1, 1}}));
+    EXPECT_EQ(sketch_->constraintCount(), countBefore + 1);
+}
+
+TEST(ConstraintActionsReports, FailedReadOnlyPreparationKeepsModelUnchanged) {
+    ConstraintPreparation preparation{PreparationState::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection,
+                                      SketchError{ErrorCode::BackendFailure, "Read-only geometry query failed"}};
+    const auto report = ConstraintActions::rejectedReport(preparation);
+    EXPECT_EQ(report.change, ModelChange::Unchanged);
+    ASSERT_TRUE(report.operationError);
+    EXPECT_EQ(report.operationError->code, ErrorCode::BackendFailure);
+    EXPECT_TRUE(report.constraintIds.empty());
+    EXPECT_FALSE(report.solve);
 }
 
 INSTANTIATE_TEST_SUITE_P(AvailableBackends, ConstraintActionsBehavior, testing::ValuesIn(Sketch::availableBackends()),

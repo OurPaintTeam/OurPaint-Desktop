@@ -26,7 +26,7 @@ SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& o
 SketchEditor::~SketchEditor() {}
 
 void SketchEditor::select(ToolId id) {
-    activeTool_->cancel();
+    cancelActiveTool();
     switch (id) {
         case ToolId::Cursor:
             activeTool_ = &cursorTool_;
@@ -98,12 +98,15 @@ void SketchEditor::requestConstraint(const ConstraintRequest& request) {
     const auto prepared = constraintActions_.prepare(request, refs);
     switch (prepared.state) {
         case ConstraintPreparation::State::Ready:
-            if (!prepared.definition || !constraintActions_.apply(*prepared.definition)) {
-                return;
+            if (prepared.definition) {
+                if (activeTool_ == &cursorTool_) {
+                    cancelActiveTool();
+                }
+                deliver(constraintActions_.apply(*prepared.definition));
             }
             return;
         case ConstraintPreparation::State::NeedsMoreInput:
-            activeTool_->cancel();
+            cancelActiveTool();
             if (request.action == ConstraintAction::Dimension || request.action == ConstraintAction::Angle) {
                 dimensionTool_.begin(request, refs);
                 activeTool_ = &dimensionTool_;
@@ -114,6 +117,7 @@ void SketchEditor::requestConstraint(const ConstraintRequest& request) {
             return;
         case ConstraintPreparation::State::InvalidSelection:
         case ConstraintPreparation::State::Unsupported:
+            deliver(ConstraintActions::rejectedReport(prepared));
             return;
     }
 }
@@ -123,7 +127,7 @@ void SketchEditor::onKey(const input::KeyEvent& e) {
         if (e.isAutoRepeat) {
             return;
         }
-        if (!activeTool_->cancel()) {
+        if (!cancelActiveTool().handled) {
             select(ToolId::Cursor);
         }
         return;
@@ -156,7 +160,59 @@ void SketchEditor::onKey(const input::KeyEvent& e) {
         }
     }
 
-    activeTool_->onKey(e);
+    if (activeTool_ == &cursorTool_ && e.action == input::KeyAction::Press && !e.isAutoRepeat &&
+        (e.key == input::KeyCode::Delete || (e.key == input::KeyCode::V && e.modifiers == input::Modifiers::Ctrl))) {
+        cancelActiveTool();
+    }
+    deliver(activeTool_->onKey(e));
 }
 
 IInteractionTool* SketchEditor::activeTool() { return activeTool_; }
+
+void SketchEditor::onMouseMove(const input::MouseMoveEvent& e) {
+    deliver(activeTool_->onMouseMove(e));
+}
+
+void SketchEditor::onMouseButton(const input::MouseButtonEvent& e) {
+    deliver(activeTool_->onMouseButton(e));
+}
+
+void SketchEditor::setReportCallback(ReportCallback callback) {
+    reportCallback_ = std::move(callback);
+}
+
+void SketchEditor::deliver(const std::optional<ActionReport>& report) {
+    if (report && reportCallback_) {
+        reportCallback_(*report);
+    }
+}
+
+ToolCancellation SketchEditor::cancelActiveTool() {
+    auto cancelled = activeTool_->cancel();
+    deliver(cancelled.report);
+    return cancelled;
+}
+
+void SketchEditor::endInteraction() {
+    if (activeTool_ == &cursorTool_) {
+        cancelActiveTool();
+    }
+}
+
+void SketchEditor::switchSolverBackend(core::sketch::BackendKind backend) {
+    if (std::as_const(document_).sketch().backendKind() == backend) {
+        return;
+    }
+    // End a gesture before migrating its model, retaining any edits made so far.
+    cancelActiveTool();
+    ActionReport report{ActionKind::SwitchBackend};
+    report.backend = backend;
+    const auto switched = document_.sketch().switchBackend(backend);
+    if (switched) {
+        report.change = ModelChange::Changed;
+    } else {
+        // Sketch stages the replacement and preserves the old backend on error.
+        report.operationError = switched.error();
+    }
+    deliver(report);
+}

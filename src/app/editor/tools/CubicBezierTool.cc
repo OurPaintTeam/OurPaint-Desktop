@@ -8,7 +8,7 @@
 CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera)
     : firstPoint_X(0), firstPoint_Y(0), document_(document), camera_(camera) {}
 
-void CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) {
+std::optional<ActionReport> CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) {
     if (state_ == State::WaitingSecondPoint) {
         glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
         // renderData_.overlay.lines[0].x2 = v.x;
@@ -26,9 +26,10 @@ void CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) {
         // renderData_.overlay.points[3].y = y0 + 2.0 * (v.y - y0) / 3.0;
 
     }
+    return std::nullopt;
 }
 
-void CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
+std::optional<ActionReport> CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         if (state_ == State::WaitingFirstPoint) {
             glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
@@ -52,18 +53,19 @@ void CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
             // overlay.clear();
         }
     }
+    return std::nullopt;
 }
 
-void CubicBezierTool::onKey(const input::KeyEvent& e) {
-
+std::optional<ActionReport> CubicBezierTool::onKey(const input::KeyEvent& e) {
+    return std::nullopt;
 }
 
-bool CubicBezierTool::cancel() {
+ToolCancellation CubicBezierTool::cancel() {
     if (state_ == State::WaitingSecondPoint) {
         // renderData_.overlay.clear();
         state_ = State::WaitingFirstPoint;
-        return true;
+        return {true, std::nullopt};
     }
-    return false;
+    return {};
 }
 

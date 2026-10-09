@@ -1,6 +1,9 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
+#include <memory>
+#include <vector>
+
 #define GL_GLEXT_PROTOTYPES
 
 #include "editor/SketchEditor.h"
@@ -28,26 +31,26 @@ private:
 
 private:
     // Core (UndoRedoManager, CommandSystem, Scene)
-    DocumentManager* documentManager_;
+    DocumentManager* documentManager_ = nullptr;
 
     // Platform
-    IPlatformRuntime* platformRuntime_;
+    IPlatformRuntime* platformRuntime_ = nullptr;
 
     // Host
-    IViewportHost* host_;
+    IViewportHost* host_ = nullptr;
 
     // Controllers
-    UIController* uiController_;
+    UIController* uiController_ = nullptr;
 
     // Core observer
     //UIObserver* uiObserver_;
 
     // Application
-    std::vector<DocumentView*> views_;
+    std::vector<std::unique_ptr<DocumentView>> views_;
 
     // UI
-    UI::ProjectManager* projectManager_;
-    QtMainWindowBinder* binder_;
+    UI::ProjectManager* projectManager_ = nullptr;
+    QtMainWindowBinder* binder_ = nullptr;
 
     //app::Project* project_;
 };

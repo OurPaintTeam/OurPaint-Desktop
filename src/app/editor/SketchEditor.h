@@ -1,6 +1,8 @@
 #ifndef OURPAINT_APPLICATION_SKETCH_EDITOR_H_
 #define OURPAINT_APPLICATION_SKETCH_EDITOR_H_
 
+#include <functional>
+
 #include "../../core/DocumentManager.h"
 #include "../viewport/OverlayModel.h"
 #include "../viewport/picking/Cpu2dPicker.h"
@@ -24,11 +26,23 @@ public:
     ~SketchEditor();
 
     void select(ToolId id);
+    void endInteraction();
     void requestConstraint(const ConstraintRequest& request);
+    void switchSolverBackend(core::sketch::BackendKind backend);
+    void onMouseMove(const input::MouseMoveEvent& e);
+    void onMouseButton(const input::MouseButtonEvent& e);
     void onKey(const input::KeyEvent& e);
     IInteractionTool* activeTool();
 
+    // Synchronous, borrowed delivery. The UI owner must disconnect before it or
+    // the originating Document is destroyed; reports are never queued here.
+    using ReportCallback = std::function<void(const ActionReport&)>;
+    void setReportCallback(ReportCallback callback);
+
 private:
+    void deliver(const std::optional<ActionReport>& report);
+    ToolCancellation cancelActiveTool();
+
     Document& document_;
     Camera2D& camera_;
     OverlayModel& overlay_;
@@ -37,6 +51,7 @@ private:
     ConstraintActions constraintActions_;
 
     IInteractionTool* activeTool_;
+    ReportCallback reportCallback_;
 
     // Tools
     CursorTool cursorTool_;

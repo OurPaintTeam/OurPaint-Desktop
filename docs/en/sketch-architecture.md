@@ -136,8 +136,13 @@ displacement since press) through dragPoints once, rather than updating geometry
 and then calling solve. This keeps targets stable after solver projection and
 allows partial arc dragging without submitting a noncircular geometry update.
 A single Circle Whole selection edits the radius and calls solve; Circle Center
-drags the center instead. Solve diagnostics are checked for convergence. Release
-and cancellation discard gesture targets; cancellation does not restore geometry.
+drags the center instead. Solve diagnostics are checked for convergence. The first
+failed step stops further mutation until release/cancellation; one gesture report
+retains the failure and any geometry changes. Detached entity queries at the first
+actual step and at gesture end identify changes (including solver movement of
+unselected geometry) and suppress successful unchanged gestures. They are not
+rollback snapshots and are not performed on every mouse move. Release and
+cancellation discard gesture targets; cancellation does not restore geometry.
 Shift rectangle selection combines the initial selection
 with the current rectangle hits, without retaining hits from earlier rectangles.
 
@@ -169,17 +174,62 @@ Line-only relations pick whole lines; Equal/Tangent pick whole curves without
 endpoint priority. Coincident/Fix pick point elements, while Dimension retains
 point priority so choosing a line endpoint creates a point-distance input.
 
-ConstraintActions applies coincidence with Midpoint placement, checks insertion
-and solve diagnostics, and returns on failure. Transactions, rollback and
-undo/redo remain unimplemented; a failed application can retain model changes.
+ConstraintActions applies coincidence with Midpoint placement and returns an
+owning App `ActionReport`. Preparation preserves typed rejection reasons and
+owning Core query/support errors. Confirmed insertion IDs remain separate from
+solve diagnostics/errors: a failed solve does not undo insertion. Both interaction
+tools clear pending references after confirmed or potentially partial insertion,
+so solver failure cannot leave an inserted constraint pending for an accidental
+retry. Transactions, rollback and undo/redo remain unimplemented; failed edits
+can retain model changes.
 The FixUnfix toolbar button currently creates point Fix only; unfix is not
-implemented. Buttons for relations absent from the public Core API remain
-inactive operations, and exact adapter support controls Equal/Tangent execution.
+implemented. Buttons for relations absent from the public Core API report
+unsupported operations, and exact adapter support controls Equal/Tangent execution.
 Toolbar visual activation is still controlled by the UI submodule independently
 of successful application or the editor's active mode.
 
 OverlayModel separates `clearPreview()` from `clearSelection()`. Tool preview
 cleanup preserves shared selection; `clear()` explicitly clears both.
+
+### Action reporting and UI notifications
+
+`src/app/editor/ActionReport.h` is a small detached outcome value, not a command
+or event bus. It owns the operation kind, requested batch counts, confirmed
+entity/constraint IDs, rejection reason, operation error, solve error and optional
+`SolveDiagnostics`. `ModelChange` distinguishes Unchanged, Changed and
+PotentiallyChanged. Ordinary backend mutation failure is conservatively potentially
+changed; read-only preparation errors are unchanged. Confirmed insertion stays
+changed even if subsequent solving fails. Backend switching uses Sketch's staged
+transfer guarantee and therefore remains unchanged on any reported error. It
+does not implicitly solve or claim convergence.
+
+Tool mouse/key handlers return `std::optional<ActionReport>`; previews, partial
+input, empty deletion/paste and unchanged successful dragging return no report.
+Cancellation returns a handled flag and an optional completed gesture report.
+ViewportController routes mouse events through SketchEditor, which delivers all
+tool, keyboard, toolbar and backend-switch reports through one synchronous
+callback. Ready toolbar/key constraints use the same ConstraintActions path as
+interactive tools and Alt-click coincidence. Batch deletion/paste returns one
+summary; paste retains confirmed entity IDs and each confirmed constraint ID
+even if a later insertion/solve fails. Sketch does not expose successful-prefix
+IDs for a failed entity batch, so reports do not invent those IDs.
+
+`src/app/ui/ActionReportPresenter` owns translation and message formatting and
+calls the existing text-based `UI::ProjectManager::addNotification`. For example,
+confirmed insertion with failed diagnostics reads “Constraint added, but the
+solver did not converge.” Convergence is never described as fully constrained;
+missing diagnostics remain unavailable. Core and tools contain no notification
+widgets or Qt values. Technical error messages remain owned by the report.
+
+Application owns DocumentViews with `unique_ptr`. Each editor callback borrows
+UIController and its originating Document only for synchronous delivery. The
+presenter reads that document's current name at delivery instead of the active
+tab and includes it in the text for the notification API's shared-window fallback.
+UIController disconnects callbacks and removes viewport sinks before close
+or shutdown destroys views; closing drops pending feedback rather than routing
+it to another document. Parameter dialogs retain a document identity and resolve
+only live views, so renames keep the request associated and closed views receive
+no delayed edit. The binder is destroyed before UIController during shutdown.
 
 ## Backend creation and capabilities
 
