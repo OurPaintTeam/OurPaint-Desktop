@@ -151,6 +151,11 @@ void placeMarkers(LineMarkers& line, const ConstraintMarkerStyle& style, std::ve
     }
 }
 
+bool glyphIsEntityAgnostic(sketch::ConstraintType type) {
+    return type == sketch::ConstraintType::Parallel ||
+           type == sketch::ConstraintType::Perpendicular;
+}
+
 }  // namespace
 
 void ConstraintLayout::rebuild(const sketch::Sketch& sketch, const Camera2D& camera, const ConstraintMarkerStyle& style) {
@@ -210,9 +215,10 @@ void ConstraintLayout::rebuild(const sketch::Sketch& sketch, const Camera2D& cam
                 continue;
             }
             auto& line = found->second;
-            if (definition.type == sketch::ConstraintType::Parallel) {
-                const auto existing =
-                    std::find_if(line.markers.begin(), line.markers.end(), [](const auto& marker) { return marker.type == sketch::ConstraintType::Parallel; });
+            if (glyphIsEntityAgnostic(definition.type)) {
+                const auto existing = std::find_if(
+                    line.markers.begin(), line.markers.end(),
+                    [type = definition.type](const auto& marker) { return marker.type == type; });
                 if (existing != line.markers.end()) {
                     existing->constraints.push_back(constraint.id);
                     continue;
