@@ -12,17 +12,16 @@ namespace snap {
 SnapResult SnapSystem::getSnapCandidate(const SnapRequest& request) const {
     std::optional<SnapResult> best;
 
-    // Выбираем кандидата с минимальным score.
-    auto consider = [&best](std::optional<SnapResult> c) {
-        if (!c) {
+    auto consider = [&best](std::optional<SnapResult> candidate) {
+        if (!candidate) {
             return;
         }
-        if (!best || c->score < best->score) {
-            best = std::move(c);
+
+        if (!best || candidate->score < best->score) {
+            best = std::move(candidate);
         }
     };
 
-    // От дешёвых стратегий к дорогим.
     consider(findPointCandidate(request));
     consider(findMidpointCandidate(request));
     consider(findIntersectionCandidate(request));
@@ -33,31 +32,30 @@ SnapResult SnapSystem::getSnapCandidate(const SnapRequest& request) const {
 
 // ==================== Point ====================
 
-std::optional<SnapResult> SnapSystem::findPointCandidate(const SnapRequest& request) const {
-    const auto pointsResult = sketch_.points();
+std::optional<SnapResult> SnapSystem::findPointCandidate(
+    const SnapRequest& request) const {
 
-    if (!pointsResult) {
+    const auto elementsResult = sketch_.pointElements(
+        core::sketch::PointElementScope::All);
+
+    if (!elementsResult) {
         return std::nullopt;
     }
 
-    const auto& points = pointsResult.value();
+    const auto& elements = elementsResult.value();
 
     std::optional<SnapResult> bestCandidate;
     double bestScore = std::numeric_limits<double>::max();
 
-    const core::sketch::Vec2 cursor{request.cursor.x, request.cursor.y};
+    const core::sketch::Vec2 cursor{
+        request.cursor.x,
+        request.cursor.y
+    };
 
-    for (const auto& entity : points) {
-        const core::ID objectId(entity.id.get());
+    for (const auto& element : elements) {
+        const auto& position = element.position;
 
-        /*if (isExcluded(objectId, request.excludedObjects)) {
-            continue;
-        }*/
-
-        const auto& pointGeometry = std::get<core::sketch::Point2>(entity.geometry);
-        const auto point = pointGeometry.position;
-
-        const double distance = geometry::distance(cursor, point);
+        const double distance = geometry::distance(cursor, position);
         const double score = distance;
 
         if (score >= bestScore) {
@@ -69,10 +67,12 @@ std::optional<SnapResult> SnapSystem::findPointCandidate(const SnapRequest& requ
         candidate.snapped = true;
         candidate.distance = distance;
         candidate.score = score;
-        candidate.point = Point{point.x, point.y};
+        candidate.point = Point{position.x, position.y};
         candidate.type = SnapType::Point;
 
-        candidate.objectIds.push_back(objectId);
+        // Сохраняем ссылку именно на точку/подэлемент,
+        // а не только ID родительской геометрии.
+        candidate.objectIds.push_back(element.ref);
 
         bestScore = score;
         bestCandidate = std::move(candidate);
@@ -83,7 +83,9 @@ std::optional<SnapResult> SnapSystem::findPointCandidate(const SnapRequest& requ
 
 // ==================== Midpoint ====================
 
-std::optional<SnapResult> SnapSystem::findMidpointCandidate(const SnapRequest& request) const {
+std::optional<SnapResult> SnapSystem::findMidpointCandidate(
+    const SnapRequest& request) const {
+
     const auto linesResult = sketch_.lines();
 
     if (!linesResult) {
@@ -95,21 +97,21 @@ std::optional<SnapResult> SnapSystem::findMidpointCandidate(const SnapRequest& r
     std::optional<SnapResult> bestCandidate;
     double bestScore = std::numeric_limits<double>::max();
 
-    const core::sketch::Vec2 cursor{request.cursor.x, request.cursor.y};
+    const core::sketch::Vec2 cursor{
+        request.cursor.x,
+        request.cursor.y
+    };
 
     for (const auto& entity : lines) {
-        const core::ID objectId(entity.id.get());
+        const auto* lineGeometry =
+            std::get_if<core::sketch::Line2>(&entity.geometry);
 
-        /*if (isExcluded(objectId, request.excludedObjects)) {
-            continue;
-        }*/
-
-        const auto* lineGeometry = std::get_if<core::sketch::Line2>(&entity.geometry);
         if (!lineGeometry) {
             continue;
         }
 
         const auto mid = geometry::midpoint(*lineGeometry);
+
         if (!mid) {
             continue;
         }
@@ -129,7 +131,12 @@ std::optional<SnapResult> SnapSystem::findMidpointCandidate(const SnapRequest& r
         candidate.point = Point{mid->x, mid->y};
         candidate.type = SnapType::Midpoint;
 
-        candidate.objectIds.push_back(objectId);
+        // Середина не является Start/End подэлементом,
+        // поэтому указываем родительскую линию целиком.
+        candidate.objectIds.push_back({
+            entity.id,
+            core::sketch::SubElement::Whole
+        });
 
         bestScore = score;
         bestCandidate = std::move(candidate);
@@ -140,7 +147,9 @@ std::optional<SnapResult> SnapSystem::findMidpointCandidate(const SnapRequest& r
 
 // ==================== Intersection ====================
 
-std::optional<SnapResult> SnapSystem::findIntersectionCandidate(const SnapRequest& request) const {
+std::optional<SnapResult> SnapSystem::findIntersectionCandidate(
+    const SnapRequest& request) const {
+
     const auto linesResult = sketch_.lines();
 
     if (!linesResult) {
@@ -152,36 +161,30 @@ std::optional<SnapResult> SnapSystem::findIntersectionCandidate(const SnapReques
     std::optional<SnapResult> bestCandidate;
     double bestScore = std::numeric_limits<double>::max();
 
-    const core::sketch::Vec2 cursor{request.cursor.x, request.cursor.y};
+    const core::sketch::Vec2 cursor{
+        request.cursor.x,
+        request.cursor.y
+    };
 
     // O(N^2)
     for (std::size_t i = 0; i < lines.size(); ++i) {
-        const core::ID idA(lines[i].id.get());
+        const auto* geomA =
+            std::get_if<core::sketch::Line2>(&lines[i].geometry);
 
-        /*if (isExcluded(idA, request.excludedObjects)) {
-            continue;
-        }*/
-
-        const auto* geomA = std::get_if<core::sketch::Line2>(&lines[i].geometry);
         if (!geomA) {
             continue;
         }
 
         for (std::size_t j = i + 1; j < lines.size(); ++j) {
-            const core::ID idB(lines[j].id.get());
+            const auto* geomB =
+                std::get_if<core::sketch::Line2>(&lines[j].geometry);
 
-            /*
-            if (isExcluded(idB, request.excludedObjects)) {
-                continue;
-            }*/
-
-            const auto* geomB = std::get_if<core::sketch::Line2>(&lines[j].geometry);
             if (!geomB) {
                 continue;
             }
 
-            // Пересечение именно отрезков.
             const auto hit = geometry::intersectSegments(*geomA, *geomB);
+
             if (!hit) {
                 continue;
             }
@@ -201,7 +204,17 @@ std::optional<SnapResult> SnapSystem::findIntersectionCandidate(const SnapReques
             candidate.point = Point{hit->x, hit->y};
             candidate.type = SnapType::Intersection;
 
-            candidate.objectIds = {idA, idB};
+            // Пересечение задаётся двумя участвующими линиями.
+            candidate.objectIds = {
+                {
+                    lines[i].id,
+                    core::sketch::SubElement::Whole
+                },
+                {
+                    lines[j].id,
+                    core::sketch::SubElement::Whole
+                }
+            };
 
             bestScore = score;
             bestCandidate = std::move(candidate);
@@ -213,7 +226,9 @@ std::optional<SnapResult> SnapSystem::findIntersectionCandidate(const SnapReques
 
 // ==================== ExtendedIntersection ====================
 
-std::optional<SnapResult> SnapSystem::findExtendedIntersectionCandidate(const SnapRequest& request) const {
+std::optional<SnapResult> SnapSystem::findExtendedIntersectionCandidate(
+    const SnapRequest& request) const {
+
     const auto linesResult = sketch_.lines();
 
     if (!linesResult) {
@@ -225,40 +240,34 @@ std::optional<SnapResult> SnapSystem::findExtendedIntersectionCandidate(const Sn
     std::optional<SnapResult> bestCandidate;
     double bestScore = std::numeric_limits<double>::max();
 
-    const core::sketch::Vec2 cursor{request.cursor.x, request.cursor.y};
+    const core::sketch::Vec2 cursor{
+        request.cursor.x,
+        request.cursor.y
+    };
 
     for (std::size_t i = 0; i < lines.size(); ++i) {
-        const core::ID idA(lines[i].id.get());
+        const auto* geomA =
+            std::get_if<core::sketch::Line2>(&lines[i].geometry);
 
-        /*
-        if (isExcluded(idA, request.excludedObjects)) {
-            continue;
-        }*/
-
-        const auto* geomA = std::get_if<core::sketch::Line2>(&lines[i].geometry);
         if (!geomA) {
             continue;
         }
 
         for (std::size_t j = i + 1; j < lines.size(); ++j) {
-            const core::ID idB(lines[j].id.get());
+            const auto* geomB =
+                std::get_if<core::sketch::Line2>(&lines[j].geometry);
 
-            /*if (isExcluded(idB, request.excludedObjects)) {
-                continue;
-            }*/
-
-            const auto* geomB = std::get_if<core::sketch::Line2>(&lines[j].geometry);
             if (!geomB) {
                 continue;
             }
 
-            // Пересечение именно отрезков — уже покрыто обычной привязкой.
+            // Пересечение отрезков уже обрабатывается выше.
             if (geometry::intersectSegments(*geomA, *geomB)) {
                 continue;
             }
 
-            // Пересечение бесконечных прямых.
             const auto ext = geometry::intersectLines(*geomA, *geomB);
+
             if (!ext) {
                 continue;
             }
@@ -280,12 +289,29 @@ std::optional<SnapResult> SnapSystem::findExtendedIntersectionCandidate(const Sn
             candidate.point = Point{hit.x, hit.y};
             candidate.type = SnapType::ExtendedIntersection;
 
-            candidate.objectIds = {idA, idB};
+            candidate.objectIds = {
+                {
+                    lines[i].id,
+                    core::sketch::SubElement::Whole
+                },
+                {
+                    lines[j].id,
+                    core::sketch::SubElement::Whole
+                }
+            };
 
-            // Виртуальные продолжения для визуализации.
-            // Отрезки от начал до точки пересечения — это и есть продолжения.
-            candidate.guideLines.push_back(core::sketch::Line2{.start = ext->startA, .end = hit});
-            candidate.guideLines.push_back(core::sketch::Line2{.start = ext->startB, .end = hit});
+            // Виртуальные направляющие для визуализации.
+            candidate.guideLines.push_back(
+                core::sketch::Line2{
+                    .start = ext->startA,
+                    .end = hit
+                });
+
+            candidate.guideLines.push_back(
+                core::sketch::Line2{
+                    .start = ext->startB,
+                    .end = hit
+                });
 
             bestScore = score;
             bestCandidate = std::move(candidate);
@@ -293,18 +319,6 @@ std::optional<SnapResult> SnapSystem::findExtendedIntersectionCandidate(const Sn
     }
 
     return bestCandidate;
-}
-
-// ==================== Helpers ====================
-
-bool SnapSystem::isExcluded(const core::ID objectId, const std::span<const core::ID> excludedObjects) {
-    for (const auto excludedId : excludedObjects) {
-        if (excludedId == objectId) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 }  // namespace snap

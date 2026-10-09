@@ -7,7 +7,6 @@
 
 #include "SnapTypes.h"
 #include "objects/GeometricObjects.h"
-#include "objects/ID.h"
 #include "sketch/SketchTypes.h"
 
 namespace core::sketch {
@@ -36,7 +35,7 @@ struct SnapConstraint {
     double angle = 0.0;
 
     // Объекты, задающие направление угла.
-    std::vector<core::ID> objectIds{};
+    std::vector<core::sketch::GeometryRef> objectIds{};
 };
 
 /// Результат поиска позиционной привязки.
@@ -62,7 +61,7 @@ struct SnapResult {
     // Intersection — { lineAId, lineBId }
     // Tangent      — { circleId, lineId }
     // ObjectAngle  — { objectId }
-    std::vector<core::ID> objectIds;
+    std::vector<core::sketch::GeometryRef> objectIds;
 
     // Виртуальная геометрия для визуализации привязки
     // (продолжения, направляющие, перпендикуляры).
@@ -97,9 +96,6 @@ private:
 
     // Поиск пересечения продолжений двух отрезков.
     std::optional<SnapResult> findExtendedIntersectionCandidate(const SnapRequest& request) const;
-
-    // Проверяет, находится ли объект в списке исключений.
-    static bool isExcluded(core::ID objectId, std::span<const core::ID> excludedObjects);
 };
 
 }  // namespace snap
