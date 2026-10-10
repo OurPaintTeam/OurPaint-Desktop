@@ -5,23 +5,24 @@
 
 PointTool::PointTool(Document& document, Camera2D& camera) : document_(document), camera_(camera) {}
 
-void PointTool::onMouseMove(const input::MouseMoveEvent& e) {
-
+std::optional<ActionReport> PointTool::onMouseMove(const input::MouseMoveEvent& e) {
+    return std::nullopt;
 }
 
-void PointTool::onMouseButton(const input::MouseButtonEvent& e) {
+std::optional<ActionReport> PointTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
-        document_.sketch().addPoint({ v.x, v.y });
+        return ActionReport::creation(ActionKind::CreatePoint, document_.sketch().addPoint({v.x, v.y}));
     }
+    return std::nullopt;
 }
 
-void PointTool::onKey(const input::KeyEvent& e) {
-
+std::optional<ActionReport> PointTool::onKey(const input::KeyEvent& e) {
+    return std::nullopt;
 }
 
-bool PointTool::cancel() {
-    return false;
+ToolCancellation PointTool::cancel() {
+    return {};
 }
 
 

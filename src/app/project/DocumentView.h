@@ -12,6 +12,8 @@
 #include "Camera2D.h"
 #include "IRenderer.h"
 
+// Application owns each view. Document and viewport host outlive it; UIController
+// disconnects synchronous editor callbacks and the viewport sink before removal.
 class DocumentView {
 public:
     explicit DocumentView(Document& document, IViewportHost& host);

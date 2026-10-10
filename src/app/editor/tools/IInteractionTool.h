@@ -2,18 +2,19 @@
 #define OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
 
 #include "../../platform/InputEvents.h"
+#include "../ActionReport.h"
 
 class IInteractionTool {
 public:
     virtual ~IInteractionTool() = default;
 
-    virtual void onMouseMove(const input::MouseMoveEvent& e) = 0;
-    virtual void onMouseButton(const input::MouseButtonEvent& e) = 0;
-    virtual void onKey(const input::KeyEvent& e) = 0;
+    virtual std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) = 0;
+    virtual std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) = 0;
+    virtual std::optional<ActionReport> onKey(const input::KeyEvent& e) = 0;
 
-    // true => cancel handled by tool
-    // false => nothing to cancel, caller may switch tool
-    virtual bool cancel() = 0;
+    // Pending input is discarded, not rolled back. A gesture may return its
+    // outcome here; handled=false allows the editor to exit an empty tool.
+    virtual ToolCancellation cancel() = 0;
 };
 
 #endif // ! OURPAINT_APPLICATION_IINTERACTIONTOOL_H_

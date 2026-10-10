@@ -16,18 +16,19 @@ class CursorTool : public IInteractionTool {
 public:
     explicit CursorTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay, ConstraintActions& constraintActions);
 
-    void onMouseMove(const input::MouseMoveEvent& e) override;
-    void onMouseButton(const input::MouseButtonEvent& e) override;
-    void onKey(const input::KeyEvent& e) override;
-    bool cancel() override;
+    std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
+    std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
+    std::optional<ActionReport> onKey(const input::KeyEvent& e) override;
+    ToolCancellation cancel() override;
 
 private:
     void copySelection();
-    void pasteSelection();
+    std::optional<ActionReport> pasteSelection();
     sketch::Status prepareDragSelection(std::span<const sketch::GeometryRef> refs);
     sketch::Result<sketch::SolveDiagnostics> moveSelection(sketch::Vec2 offset);
+    std::optional<ActionReport> finishDrag();
 
-    bool tryApplyPointOnPointNearCursor(double xLogic, double yLogic);
+    ActionReport tryApplyPointOnPointNearCursor(double xLogic, double yLogic);
 
     enum class State {
         Idle,
@@ -50,7 +51,11 @@ private:
 
     std::vector<sketch::GeometryRef> marqueeBaseSelection_;
     std::vector<sketch::DragRequest> dragTargets_;
-
+    std::optional<ActionReport> dragReport_;
+    // Detached geometry is used only to recognize an unchanged gesture, never for rollback.
+    std::optional<std::vector<sketch::SketchEntity>> dragInitialEntities_;
+    bool dragAttempted_ = false;
+    bool dragStopped_ = false;
 
     glm::dvec2 lastCursorWorldPos_{};
     glm::dvec2 copiedPos_{};

@@ -1,6 +1,8 @@
 #ifndef OURPAINT_APPLICATION_UI_CONTROLLER_H_
 #define OURPAINT_APPLICATION_UI_CONTROLLER_H_
 
+#include <functional>
+#include <memory>
 #include <string>
 
 #include "../../core/DocumentManager.h"
@@ -11,18 +13,24 @@
 #include "../platform/QtViewportHost.h"
 #include "../project/DocumentView.h"
 #include "Lib/Core/ProjectManager.h"
+#include "ActionReportPresenter.h"
 
 class UIController {
 public:
-    UIController(std::vector<DocumentView*>& views,
+    UIController(std::vector<std::unique_ptr<DocumentView>>& views,
                  DocumentManager& manager,
                  IPlatformRuntime& platformRuntime,
                  UI::ProjectManager& projectManager,
                  QtViewportHost& host);
-    ~UIController() = default;
+    ~UIController();
 
-    void selectTool(ToolId tool);
+    void selectTool(ToolId tool, const std::string& tabName = {});
     void requestConstraint(const ConstraintRequest& request, const std::string& tabName = {});
+    // Intended for binder-owned parameter dialogs. Resolves a live originating
+    // document on invocation, including renames; a closed view receives nothing.
+    std::function<void(const ConstraintRequest&)> constraintRequestHandler(const std::string& tabName);
+    void switchSolverBackend(const std::string& tabName);
+    void updateSolverBackend(const std::string& tabName);
 
     // Console
     void executeConsoleCommand(std::string str);
@@ -47,18 +55,21 @@ public:
     void closeApplication();
 
 private:
-    std::vector<DocumentView*>& views_;
+    DocumentView* findView(const std::string& name) const;
+
+    std::vector<std::unique_ptr<DocumentView>>& views_;
     DocumentManager& manager_;
     IPlatformRuntime& platformRuntime_;
     QtViewportHost& viewportHost_;
     UI::ProjectManager& projectManager_;
+    ActionReportPresenter reportPresenter_;
 
 
     std::unordered_map<std::string, int> indicesMap_;
     std::unordered_map<ViewportController*, int> controllerMap_;
     std::unordered_set<std::string> set_;
     std::string activeTabName_;
-    int activeIndex_;
+    int activeIndex_ = -1;
 };
 
 #endif // ! OURPAINT_APPLICATION_UI_CONTROLLER_H_

@@ -41,6 +41,7 @@ size_t expectedRefCount(sketch::ConstraintType type) {
     switch (type) {
         case sketch::ConstraintType::Horizontal:
         case sketch::ConstraintType::Vertical:
+        case sketch::ConstraintType::Fix:
             return 1;
         case sketch::ConstraintType::Parallel:
         case sketch::ConstraintType::Perpendicular:
@@ -75,6 +76,14 @@ std::vector<ConstraintMarkerSegment> makeGlyph(sketch::ConstraintType type, glm:
         return strokes;
     }
 
+    if (type == sketch::ConstraintType::Fix) {
+        constexpr double k = 0.7071067811865476;   // sqrt(2)/2
+        const glm::dvec2 d1{ k,  k};
+        const glm::dvec2 d2{ k, -k};
+        strokes.push_back({-halfLength * d1, halfLength * d1});
+        strokes.push_back({-halfLength * d2, halfLength * d2});
+        return strokes;
+    }
 
     // H/V glyphs retain their semantic orientation, even during an unsolved edit.
     const bool isHorizontal = (type == sketch::ConstraintType::Horizontal);
@@ -94,7 +103,6 @@ std::vector<ConstraintMarkerSegment> makeGlyph(sketch::ConstraintType type, glm:
         const auto start = center + static_cast<double>(i) * style.hatchSpacingPx * axis + hatchShift;
         strokes.push_back({start, start + hatch});
     }
-
 
     return strokes;
 }

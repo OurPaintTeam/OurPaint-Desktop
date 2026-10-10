@@ -8,7 +8,12 @@
 #include "../../core/sketch/Sketch.h"
 
 namespace {
-enum class RefKind { Invalid, Point, Line, Circular };
+enum class RefKind {
+    Invalid,
+    Point,
+    Line,
+    Circular
+};
 
 RefKind classifyRef(const core::sketch::SketchEntity& entity, core::sketch::SubElement sub) {
     using core::sketch::EntityKind;
@@ -43,18 +48,21 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
     using core::sketch::ConstraintType;
     using State = ConstraintPreparation::State;
 
+    if (request.action == ConstraintAction::Unsupported) {
+        return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
+    }
     const bool dimensional = request.action == ConstraintAction::Dimension || request.action == ConstraintAction::Angle;
     if (request.value.has_value() != dimensional) {
-        return {State::InvalidSelection, std::nullopt};
+        return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidValue};
     }
     if (dimensional && (!std::isfinite(*request.value) || *request.value < 0)) {
-        return {State::InvalidSelection, std::nullopt};
+        return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidValue};
     }
     if (request.action == ConstraintAction::Angle && *request.value > std::numbers::pi) {
-        return {State::InvalidSelection, std::nullopt};
+        return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidValue};
     }
     if (refs.size() > 2 || (refs.size() == 2 && refs[0] == refs[1])) {
-        return {State::InvalidSelection, std::nullopt};
+        return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection};
     }
 
     core::sketch::ConstraintDefinition definition;
@@ -95,16 +103,16 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
             definition.type = ConstraintType::Angle;
             break;
         default:
-            return {State::InvalidSelection, std::nullopt};
+            return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
     }
 
     const auto capabilities = sketch_.capabilities();
     if (request.action == ConstraintAction::Dimension) {
         if (!capabilities.supports(ConstraintType::Length) && !capabilities.supports(ConstraintType::Distance)) {
-            return {State::Unsupported, std::nullopt};
+            return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
         }
     } else if (!capabilities.supports(definition.type)) {
-        return {State::Unsupported, std::nullopt};
+        return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
     }
     if (refs.empty()) {
         return {State::NeedsMoreInput, std::nullopt};
@@ -114,11 +122,11 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
     for (size_t i = 0; i < refs.size(); ++i) {
         const auto entity = sketch_.entity(refs[i].entity);
         if (!entity) {
-            return {State::InvalidSelection, std::nullopt};
+            return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection, entity.error()};
         }
         kinds[i] = classifyRef(entity.value(), refs[i].sub);
         if (kinds[i] == RefKind::Invalid) {
-            return {State::InvalidSelection, std::nullopt};
+            return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection};
         }
     }
 
@@ -126,11 +134,11 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         definition.type = ConstraintType::Length;
         requiredRefs = 1;
         if (*request.value == 0) {
-            return {State::InvalidSelection, std::nullopt};
+            return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidValue};
         }
     }
     if (refs.size() > requiredRefs) {
-        return {State::InvalidSelection, std::nullopt};
+        return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection};
     }
 
     // Check partial selections here; Core validates the complete definition below.
@@ -160,10 +168,10 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
             break;
     }
     if (!compatible) {
-        return {State::InvalidSelection, std::nullopt};
+        return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection};
     }
     if (!capabilities.supports(definition.type)) {
-        return {State::Unsupported, std::nullopt};
+        return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
     }
     if (refs.size() < requiredRefs) {
         return {State::NeedsMoreInput, std::nullopt};
@@ -173,27 +181,59 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
     if (definition.type == ConstraintType::Fix) {
         const auto position = sketch_.pointPosition(refs[0]);
         if (!position) {
-            return {State::InvalidSelection, std::nullopt};
+            return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidGeometry, position.error()};
         }
         definition.fixedPosition = position.value();
     }
     const auto supported = sketch_.supportsConstraint(definition);
     if (!supported) {
-        return {supported.error().code == core::sketch::ErrorCode::Unsupported ? State::Unsupported : State::InvalidSelection, std::nullopt};
+        const bool unsupported = supported.error().code == core::sketch::ErrorCode::Unsupported;
+        return {unsupported ? State::Unsupported : State::InvalidSelection, std::nullopt,
+                unsupported ? ActionRejection::Unsupported : ActionRejection::InvalidSelection, supported.error()};
     }
     return {State::Ready, std::move(definition)};
 }
 
-bool ConstraintActions::apply(const core::sketch::ConstraintDefinition& definition) {
-    if (!sketch_.supportsConstraint(definition)) {
-        return false;
+ActionReport ConstraintActions::rejectedReport(const ConstraintPreparation& preparation) {
+    ActionReport report{ActionKind::ApplyConstraint};
+    report.requestedConstraints = 1;
+    report.rejection = preparation.rejection;
+    if (report.rejection == ActionRejection::None) {
+        switch (preparation.state) {
+            case ConstraintPreparation::State::Unsupported:
+                report.rejection = ActionRejection::Unsupported;
+                break;
+            case ConstraintPreparation::State::NeedsMoreInput:
+                report.rejection = ActionRejection::InsufficientTargets;
+                break;
+            default:
+                report.rejection = ActionRejection::InvalidSelection;
+                break;
+        }
+    }
+    // Preparation only queries Sketch, even when a backend query fails.
+    report.operationError = preparation.error;
+    return report;
+}
+
+ActionReport ConstraintActions::apply(const core::sketch::ConstraintDefinition& definition) {
+    ActionReport report{ActionKind::ApplyConstraint};
+    report.requestedConstraints = 1;
+    const auto supported = sketch_.supportsConstraint(definition);
+    if (!supported) {
+        report.operationError = supported.error();
+        report.rejection = supported.error().code == core::sketch::ErrorCode::Unsupported ? ActionRejection::Unsupported : ActionRejection::InvalidSelection;
+        return report;
     }
     const auto added = definition.type == core::sketch::ConstraintType::Coincident
                            ? sketch_.addCoincident(definition.refs[0], definition.refs[1], core::sketch::CoincidentPlacement::Midpoint)
                            : sketch_.addConstraint(definition);
     if (!added) {
-        return false;
+        report.mutationFailed(added.error());
+        return report;
     }
-    const auto solved = sketch_.solve();
-    return solved && solved.value().status == core::sketch::SolveStatus::Converged;
+    report.change = ModelChange::Changed;
+    report.constraintIds.push_back(added.value());
+    report.recordSolve(sketch_.solve());
+    return report;
 }

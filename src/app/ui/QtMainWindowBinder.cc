@@ -3,6 +3,8 @@
 #include <QDir>
 #include <QFile>
 
+#include <limits>
+
 #include "InputWidget.h"
 #include "PainterWidget.h"
 #include "ParameterInputWidget.h"
@@ -106,18 +108,23 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                           controller_.closeApplication();
                       });*/
 
+    QObject::connect(&window, &UI::ProjectManager::solverBackendSwitchRequested, this, [this](const QString& tabName) {
+        controller_.switchSolverBackend(tabName.toStdString());
+    });
+    QObject::connect(&window, &UI::ProjectManager::solverBackendStateRequested, this, [this](const QString& tabName) {
+        controller_.updateSolverBackend(tabName.toStdString());
+    });
+
     // Tools - constraints
     QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this](const QString& tabName, UI::ConstraintType type) {
         switch (type) {
             case UI::ConstraintType::Distance: {
                 auto* prompt = new UI::ParameterInputWidget("Input:", nullptr);
-                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, tabName](const QString& parameter) {
+                const auto request = controller_.constraintRequestHandler(tabName.toStdString());
+                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [request](const QString& parameter) {
                     bool valid = false;
                     const double value = parameter.toDouble(&valid);
-                    if (!valid) {
-                        return;
-                    }
-                    controller_.requestConstraint({ConstraintAction::Dimension, value}, tabName.toStdString());
+                    request({ConstraintAction::Dimension, valid ? value : std::numeric_limits<double>::quiet_NaN()});
                 });
 
                 prompt->move(200, 200);
@@ -153,6 +160,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
             case UI::ConstraintType::Midpoint:
             case UI::ConstraintType::Symmetric:
             default:
+                controller_.requestConstraint({ConstraintAction::Unsupported, std::nullopt}, tabName.toStdString());
                 return;
         }
     });
@@ -161,20 +169,20 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](const QString tabName, UI::PrimitiveType _t1) {
         switch (_t1) {
             case UI::PrimitiveType::Point:
-                controller_.selectTool(ToolId::Point);
+                controller_.selectTool(ToolId::Point, tabName.toStdString());
                 break;
 
             case UI::PrimitiveType::CubicBezier:
-                controller_.selectTool(ToolId::CubicBezier);
+                controller_.selectTool(ToolId::CubicBezier, tabName.toStdString());
                 break;
             case UI::PrimitiveType::Line:
-                controller_.selectTool(ToolId::Line);
+                controller_.selectTool(ToolId::Line, tabName.toStdString());
                 break;
             case UI::PrimitiveType::Polyline:
-                controller_.selectTool(ToolId::Polyline);
+                controller_.selectTool(ToolId::Polyline, tabName.toStdString());
                 break;
             case UI::PrimitiveType::InfiniteLine:
-                controller_.selectTool(ToolId::InfiniteLine);
+                controller_.selectTool(ToolId::InfiniteLine, tabName.toStdString());
                 break;
             case UI::PrimitiveType::LineSettings:
                 // controller_.selectTool(ToolId::);
@@ -182,36 +190,36 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
 
             case UI::PrimitiveType::CircleByRadius:
-                controller_.selectTool(ToolId::CircleByRadius);
+                controller_.selectTool(ToolId::CircleByRadius, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleByDiameter:
-                controller_.selectTool(ToolId::CircleByDiameter);
+                controller_.selectTool(ToolId::CircleByDiameter, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleByTwoPoints:
-                controller_.selectTool(ToolId::CircleByTwoPoints);
+                controller_.selectTool(ToolId::CircleByTwoPoints, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleByThreePoints:
-                controller_.selectTool(ToolId::CircleByThreePoints);
+                controller_.selectTool(ToolId::CircleByThreePoints, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleTangentTwoLines:
-                controller_.selectTool(ToolId::CircleTangentTwoLines);
+                controller_.selectTool(ToolId::CircleTangentTwoLines, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleTangentThreeLines:
-                controller_.selectTool(ToolId::CircleTangentThreeLines);
+                controller_.selectTool(ToolId::CircleTangentThreeLines, tabName.toStdString());
                 break;
 
 
             case UI::PrimitiveType::ArcByRadius:
-                controller_.selectTool(ToolId::ArcByThreePoints);
+                controller_.selectTool(ToolId::ArcByThreePoints, tabName.toStdString());
                 break;
             case UI::PrimitiveType::ArcByDiameter:
-                controller_.selectTool(ToolId::ArcByThreePoints);
+                controller_.selectTool(ToolId::ArcByThreePoints, tabName.toStdString());
                 break;
             case UI::PrimitiveType::ArcThreePoints:
-                controller_.selectTool(ToolId::ArcByThreePoints);
+                controller_.selectTool(ToolId::ArcByThreePoints, tabName.toStdString());
                 break;
             case UI::PrimitiveType::ArcSettings:
-                controller_.selectTool(ToolId::ArcByThreePoints);
+                controller_.selectTool(ToolId::ArcByThreePoints, tabName.toStdString());
                 break;
             default:
                 break;
@@ -221,7 +229,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     // Tools - cursor/size
     QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](const QString& tabName, UI::ToolsType _t1) {
         if (_t1 == UI::ToolsType::Cursor) {
-            controller_.selectTool(ToolId::Cursor);
+            controller_.selectTool(ToolId::Cursor, tabName.toStdString());
         }
     });
 }

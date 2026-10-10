@@ -18,13 +18,13 @@ public:
 
     void begin(const ConstraintRequest& request, std::span<const core::sketch::GeometryRef> initialRefs = {});
 
-    void onMouseMove(const input::MouseMoveEvent& e) override;
-    void onMouseButton(const input::MouseButtonEvent& e) override;
-    void onKey(const input::KeyEvent& e) override;
-    bool cancel() override;
+    std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
+    std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
+    std::optional<ActionReport> onKey(const input::KeyEvent& e) override;
+    ToolCancellation cancel() override;
 
 private:
-    void handleRef(const core::sketch::GeometryRef& ref);
+    std::optional<ActionReport> handleRef(const core::sketch::GeometryRef& ref);
     void resetInputs();
 
     ConstraintActions& actions_;

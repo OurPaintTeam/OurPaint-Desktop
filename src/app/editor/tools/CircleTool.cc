@@ -21,7 +21,7 @@ void CircleTool::setMode(Mode mode) {
 }
 
 
-void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
+std::optional<ActionReport> CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
     switch (mode_) {
@@ -69,7 +69,8 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
             break;
         case Mode::ThreePoints:
             if (step_ == Step::WaitingThirdInput) {
-                Circle c = buildCircleFromThreePoints(points_[0], points_[1], cursor);
+                const auto circle = buildCircleFromThreePoints(points_[0], points_[1], cursor);
+                const Circle c = circle.value_or(Circle{0.0, 0.0, 0.0});
 
                 if (!overlay_.circles_.empty()) {
                     overlay_.circles_[0].r = c.r;
@@ -93,6 +94,7 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
             //handleTangentThreeLinesMove(cursor);
             break;
     }
+    return std::nullopt;
 }
 
 bool intersectLines(
@@ -113,9 +115,9 @@ bool intersectLines(
     return true;
 }
 
-void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
+std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
-        return;
+        return std::nullopt;
     }
 
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
@@ -133,8 +135,9 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 double cx = points_[0].x;
                 double cy = points_[0].y;
                 double r = glm::distance(cursor, points_[0]);
-                pushCircleToModel({cx, cy, r});
+                auto report = pushCircleToModel({cx, cy, r});
                 reset();
+                return report;
             }
             break;
         case Mode::CenterDiameter:
@@ -150,8 +153,9 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 double cy = points_[0].y;
                 double diameter = glm::distance(cursor, points_[0]);
                 double r = diameter / 2.0;
-                pushCircleToModel({cx, cy, r});
+                auto report = pushCircleToModel({cx, cy, r});
                 reset();
+                return report;
             }
             break;
         case Mode::DiameterTwoPoints:
@@ -169,8 +173,9 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 glm::dvec2 center = (a + b) * 0.5;
                 double r = glm::distance(a, b) * 0.5;
 
-                pushCircleToModel({center.x, center.y, r});
+                auto report = pushCircleToModel({center.x, center.y, r});
                 reset();
+                return report;
             }
             break;
         case Mode::ThreePoints:
@@ -188,16 +193,25 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 step_ = Step::WaitingThirdInput;
             }
             else if (step_ == Step::WaitingThirdInput) {
-                Circle c = buildCircleFromThreePoints(points_[0], points_[1], cursor);
-                pushCircleToModel(c);
+                const auto circle = buildCircleFromThreePoints(points_[0], points_[1], cursor);
+                ActionReport report{ActionKind::CreateCircle};
+                report.requestedEntities = 1;
+                if (circle) {
+                    report = pushCircleToModel(*circle);
+                } else {
+                    report.rejection = ActionRejection::InvalidGeometry;
+                    report.operationError = core::sketch::SketchError{core::sketch::ErrorCode::InvalidArgument,
+                                                                     "Three circle points are collinear or almost collinear"};
+                }
                 reset();
+                return report;
             }
             break;
         case Mode::TangentTwoObjectsRadius:
             if (step_ == Step::WaitingFirstInput) {
                 auto obj = picker_.pickAtScreenLogical(e.x, e.y);
                 if (!obj.has_value()) {
-                    return;
+                    return std::nullopt;
                 }
                 objects_.push_back(obj.value().ref.entity);
                 points_.push_back(cursor);
@@ -206,10 +220,10 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
             else if (step_ == Step::WaitingSecondInput) {
                 auto obj = picker_.pickAtScreenLogical(e.x, e.y);
                 if (!obj.has_value()) {
-                    return;
+                    return std::nullopt;
                 }
                 if (!obj.has_value()) {
-                    return;
+                    return std::nullopt;
                 }
                 // Scene& scene = document_.scene();
                 // ObjectData od1 = scene.getObjectData(objects_[0]);
@@ -270,19 +284,21 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
         case Mode::TangentThreeObjects:
             break;
     }
+    return std::nullopt;
 }
 
-void CircleTool::onKey(const input::KeyEvent& e) {
+std::optional<ActionReport> CircleTool::onKey(const input::KeyEvent& e) {
     (void)e;
+    return std::nullopt;
 }
 
-bool CircleTool::cancel() {
+ToolCancellation CircleTool::cancel() {
     if (points_.empty()) {
-        return false;
+        return {};
     }
 
     reset();
-    return true;
+    return {true, std::nullopt};
 }
 
 glm::dvec2 CircleTool::screenToWorld(double x, double y) const {
@@ -297,7 +313,7 @@ void CircleTool::reset() {
     overlay_.points_.clear();
 }
 
-CircleTool::Circle CircleTool::buildCircleFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2) {
+std::optional<CircleTool::Circle> CircleTool::buildCircleFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2) {
     double det = p0.x * (p1.y - p2.y) +
                  p1.x * (p2.y - p0.y) +
                  p2.x * (p0.y - p1.y);
@@ -305,7 +321,7 @@ CircleTool::Circle CircleTool::buildCircleFromThreePoints(const glm::dvec2& p0, 
     const double eps = 1e-10;
     if (std::abs(det) < eps) {
         // points are collinear or almost collinear
-        return {0.0, 0.0, 0.0};
+        return std::nullopt;
     }
 
     double a2 = p0.x * p0.x + p0.y * p0.y;
@@ -327,8 +343,8 @@ CircleTool::Circle CircleTool::buildCircleFromThreePoints(const glm::dvec2& p0, 
     return Circle{ux, uy, r};
 }
 
-void CircleTool::pushCircleToModel(const Circle& c) const {
-    document_.sketch().addCircle({c.cx, c.cy}, c.r);
+ActionReport CircleTool::pushCircleToModel(const Circle& c) const {
+    return ActionReport::creation(ActionKind::CreateCircle, document_.sketch().addCircle({c.cx, c.cy}, c.r));
 }
 
 

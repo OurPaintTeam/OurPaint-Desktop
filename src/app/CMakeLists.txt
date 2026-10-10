@@ -12,6 +12,7 @@ add_executable(ourpaint
         viewport/ViewportController.cc
         ui/QtMainWindowBinder.cc
         ui/UIController.cc
+        ui/ActionReportPresenter.cc
         editor/SketchEditor.cc
         editor/ConstraintActions.cc
         editor/snapping/SnapSystem.cc

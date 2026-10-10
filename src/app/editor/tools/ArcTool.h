@@ -21,10 +21,10 @@ public:
 
     void setMode(Mode mode);
 
-    void onMouseMove(const input::MouseMoveEvent& e) override;
-    void onMouseButton(const input::MouseButtonEvent& e) override;
-    void onKey(const input::KeyEvent& e) override;
-    bool cancel() override;
+    std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
+    std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
+    std::optional<ActionReport> onKey(const input::KeyEvent& e) override;
+    ToolCancellation cancel() override;
 
 private:
     glm::dvec2 screenToWorld(double x, double y) const;

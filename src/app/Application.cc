@@ -44,10 +44,12 @@ int Application::exec() {
 }
 
 Application::~Application() {
-    delete documentManager_;
-    delete platformRuntime_;
-    delete host_;
-    delete uiController_;
-    delete projectManager_;
     delete binder_;
+    // Disconnect editor callbacks and viewport sinks while their owners live.
+    delete uiController_;
+    views_.clear();
+    delete projectManager_;
+    delete documentManager_;
+    // The platform runtime owns host_, including its OpenGL contexts.
+    delete platformRuntime_;
 }
