@@ -14,7 +14,6 @@ TEST(SnapSystem, FindsSinglePoint) {
     std::unique_ptr<Sketch> sketch = std::move(sketchResult.value());
 
     const auto pointIdResult = sketch->addPoint(Vec2{10.0, 20.0});
-
     ASSERT_TRUE(pointIdResult);
 
     const auto pointId = pointIdResult.value();
@@ -23,22 +22,23 @@ TEST(SnapSystem, FindsSinglePoint) {
 
     SnapRequest request{};
     request.cursor = Vec2{10.4, 19.7};
+    request.tool = ToolType::Point;
+    request.drawState = DrawState::Idle;
 
     const SnapResult result = system.getSnapCandidate(request);
 
-    EXPECT_TRUE(result.snapped);
-    EXPECT_EQ(result.type, SnapType::Point);
+    ASSERT_TRUE(result.snapped);
+    EXPECT_EQ(result.type, SnapKind::StandalonePoint);
 
-    EXPECT_DOUBLE_EQ(result.point.x, 10.0);
-    EXPECT_DOUBLE_EQ(result.point.y, 20.0);
+    EXPECT_DOUBLE_EQ(result.point.position.x, 10.0);
+    EXPECT_DOUBLE_EQ(result.point.position.y, 20.0);
 
-    EXPECT_NEAR(result.distance, 0.5, 1e-9);
+    ASSERT_EQ(result.objects.size(), 1u);
 
-    ASSERT_EQ(result.objectIds.size(), 1u);
+    const auto& ref = result.objects.front();
 
-    const core::ID objectId(pointId.get());
-
-    EXPECT_EQ(result.objectIds.front(), objectId);
+    EXPECT_EQ(ref.entity, pointId);
+    EXPECT_EQ(ref.sub, SubElement::Whole);
 }
 
 TEST(SnapSystem, EmptySketch) {
@@ -51,14 +51,14 @@ TEST(SnapSystem, EmptySketch) {
 
     SnapRequest request{};
     request.cursor = Vec2{10.0, 20.0};
+    request.tool = ToolType::Point;
+    request.drawState = DrawState::Idle;
 
     const SnapResult result = system.getSnapCandidate(request);
 
     EXPECT_FALSE(result.snapped);
-    EXPECT_EQ(result.type, SnapType::None);
+    EXPECT_EQ(result.type, SnapKind::None);
 
-    EXPECT_TRUE(result.objectIds.empty());
+    EXPECT_TRUE(result.objects.empty());
     EXPECT_TRUE(result.guideLines.empty());
-    EXPECT_FALSE(result.previewObject.has_value());
-    EXPECT_FALSE(result.constraint.has_value());
 }
