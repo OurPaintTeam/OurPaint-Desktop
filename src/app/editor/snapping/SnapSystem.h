@@ -15,87 +15,71 @@ class Sketch;
 
 namespace snap {
 
-/// Запрос на поиск позиционной привязки.
+// Запрос на поиск привязки.
 struct SnapRequest {
-    // Положение логического курсора.
     core::sketch::Vec2 cursor;
-
-    // Тип активного инструмента.
     ToolType tool;
-
-    // Состояние отрисовки инструмента.
     DrawState drawState;
+
+    // Опорная точка, если инструмент уже задал первую точку.
+    std::vector<core::sketch::Point2> anchors;
 };
 
-/// Дополнительное ограничение, накладываемое привязкой.
-struct SnapConstraint {
-    // Угол привязки:
-    // AxisAngle   — относительно координатной оси;
-    // ObjectAngle — относительно направления объекта.
+// Дополнительное угловое ограничение.
+struct SnapConstraintAngle {
     double angle = 0.0;
-
-    // Объекты, задающие направление угла.
-    std::vector<core::sketch::GeometryRef> objectIds{};
+    std::vector<core::sketch::GeometryRef> objects{};
 };
 
-/// Результат поиска позиционной привязки.
+// Результат поиска привязки.
 struct SnapResult {
-    // Был ли найден snap.
     bool snapped = false;
+    core::sketch::Point2 point;
+    SnapKind type = SnapKind::None;
 
-    // Расстояние от курсора до точки snap (для UI и отладки).
-    double distance = 0.0;
-
-    // Оценка кандидата для выбора лучшего.
-    // Пока совпадает с distance; далее — с учётом типа и приоритетов.
-    double score = 0.0;
-
-    // Координаты точки привязки.
-    Point point{};
-
-    // Тип найденного snap.
-    SnapType type = SnapType::None;
-
-    // Реальные объекты Sketch, участвующие в snap:
-    // Point        — { pointId }
-    // Intersection — { lineAId, lineBId }
-    // Tangent      — { circleId, lineId }
-    // ObjectAngle  — { objectId }
-    std::vector<core::sketch::GeometryRef> objectIds;
-
-    // Виртуальная геометрия для визуализации привязки
-    // (продолжения, направляющие, перпендикуляры).
-    // НЕ объекты Sketch.
-    std::vector<core::sketch::SketchGeometry> guideLines;
-
-    // Виртуальный объект предпросмотра результата.
-    std::optional<core::sketch::SketchGeometry> previewObject;
-
-    // Дополнительные параметры snap.
-    std::optional<SnapConstraint> constraint;
+    std::vector<core::sketch::GeometryRef> objects;
+    std::vector<core::sketch::Line2> guideLines;
 };
 
-/// Система поиска позиционных привязок.
+// Правила поиска для текущего инструмента и состояния.
+struct SnapRule {
+    SnapMask mask = SnapMask::None;
+
+    // Максимальное расстояние поиска в координатах курсора.
+    double maxRadius = 0.0;
+};
+
+// Кандидат до преобразования в публичный результат.
+struct SnapCandidate {
+    SnapResult result;
+    double distanceSquared = 0.0;
+    int priority = 0;
+};
+
 class SnapSystem {
-public:
-    explicit SnapSystem(const core::sketch::Sketch& sketch) : sketch_(sketch) {}
-
-    SnapResult getSnapCandidate(const SnapRequest& request) const;
-
 private:
     const core::sketch::Sketch& sketch_;
 
-    // Поиск ближайшей самостоятельной точки.
-    std::optional<SnapResult> findPointCandidate(const SnapRequest& request) const;
+public:
+    explicit SnapSystem(const core::sketch::Sketch& sketch);
+    SnapResult getSnapCandidate(const SnapRequest& request) const;
 
-    // Поиск ближайшей середины отрезка.
-    std::optional<SnapResult> findMidpointCandidate(const SnapRequest& request) const;
+private:
+    static SnapRule ruleFor(ToolType tool, DrawState state);
 
-    // Поиск пересечения двух отрезков.
-    std::optional<SnapResult> findIntersectionCandidate(const SnapRequest& request) const;
+    SnapResult parser(const SnapRequest& request) const;
 
-    // Поиск пересечения продолжений двух отрезков.
-    std::optional<SnapResult> findExtendedIntersectionCandidate(const SnapRequest& request) const;
+    std::optional<SnapCandidate> findBestStandalonePoint(const SnapRequest& request, const SnapRule& rule) const;
+
+    std::optional<SnapCandidate> findBestLineCandidate(const SnapRequest& request, const SnapRule& rule) const;
+
+    std::optional<SnapCandidate> findBestCircleCandidate(const SnapRequest& request, const SnapRule& rule) const;
+
+    std::optional<SnapCandidate> findBestIntersection(const SnapRequest& request, const SnapRule& rule) const;
+
+    static bool isAllowed(SnapKind kind, double distance, const SnapRule& rule);
+
+    static bool isBetterCandidate(const SnapCandidate& candidate, const SnapCandidate& current);
 };
 
 }  // namespace snap

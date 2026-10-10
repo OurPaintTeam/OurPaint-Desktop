@@ -1,5 +1,7 @@
 #include "CursorTool.h"
 
+#include <QDebug>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -52,53 +54,30 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
         snap::SnapRequest request{
             core::sketch::Vec2{v.x, v.y},
             snap::ToolType::Select,
-            snap::DrawState::Idle
+            snap::DrawState::Idle,
+            {}
         };
 
         const auto snap_result = snap_.getSnapCandidate(request);
 
-        if (snap_result.snapped) {
-            if (snap_result.type == snap::SnapType::Point &&
-                !snap_result.objectIds.empty()) {
+        if (snap_result.snapped && !snap_result.objects.empty()) {
+            const auto& ref = snap_result.objects.front();
 
-                // Используем исходную ссылку на точку или подэлемент.
-                const auto& ref = snap_result.objectIds.front();
+            switch (snap_result.type) {
+                case snap::SnapKind::StandalonePoint:
+                case snap::SnapKind::LineEndpoint:
+                case snap::SnapKind::LineMidpoint:
+                case snap::SnapKind::LineBody:
+                case snap::SnapKind::CircleBody:
+                case snap::SnapKind::CircleCentre:
+                case snap::SnapKind::Intersection:
+                case snap::SnapKind::ExtendedIntersection:
+                    overlay_.selection_.model.add(ref);
+                    break;
 
-                overlay_.selection_.model.add(ref);
-                }
-        }
-
-        qDebug() << "=== SNAP ===";
-        qDebug() << "  type     :" << static_cast<int>(snap_result.type);
-        qDebug() << "  snapped  :" << snap_result.snapped;
-        qDebug() << "  score    :" << snap_result.score;
-        qDebug() << "  distance :" << snap_result.distance;
-        qDebug() << "  point    :"
-                 << snap_result.point.x << "," << snap_result.point.y;
-        qDebug() << "  cursor   :"
-                 << request.cursor.x << "," << request.cursor.y;
-
-        // Выводим все точки и характерные точки геометрии.
-        const auto elementsResult = sketch_.pointElements(
-            core::sketch::PointElementScope::All);
-
-        if (elementsResult) {
-            const auto& elements = elementsResult.value();
-
-            qDebug() << "=== POINT ELEMENTS (" << elements.size() << ") ===";
-
-            for (const auto& element : elements) {
-                qDebug() << "  entityId =" << element.ref.entity.get()
-                         << " sub =" << static_cast<int>(element.ref.sub)
-                         << " pos =("
-                         << element.position.x << ","
-                         << element.position.y << ")";
+                default:
+                    break;
             }
-        } else {
-            qDebug() << "pointElements() failed:"
-                     << static_cast<int>(elementsResult.error().code)
-                     << QString::fromStdString(
-                            elementsResult.error().message);
         }
     }
 
