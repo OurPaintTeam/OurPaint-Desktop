@@ -108,6 +108,12 @@ QString ActionReportPresenter::text(const ActionReport& report) {
                           ? QCoreApplication::translate("SketchActions", "Circle creation could not be confirmed.")
                           : QCoreApplication::translate("SketchActions", "Circle creation failed.");
             break;
+        case ActionKind::CreateArc:
+            message = !report.entityIds.empty() ? QCoreApplication::translate("SketchActions", "Arc created.")
+                      : report.change == ModelChange::PotentiallyChanged
+                          ? QCoreApplication::translate("SketchActions", "Arc creation could not be confirmed.")
+                          : QCoreApplication::translate("SketchActions", "Arc creation failed.");
+            break;
         case ActionKind::ApplyConstraint:
             if (!report.constraintIds.empty()) {
                 if (solveFailed) {

@@ -8,7 +8,17 @@
 
 #include "../../core/sketch/SketchTypes.h"
 
-enum class ActionKind { CreatePoint, CreateLine, CreateCircle, ApplyConstraint, Delete, Paste, Drag, SwitchBackend };
+enum class ActionKind {
+    CreatePoint,
+    CreateLine,
+    CreateCircle,
+    CreateArc,
+    ApplyConstraint,
+    Delete,
+    Paste,
+    Drag,
+    SwitchBackend
+};
 enum class ModelChange { Unchanged, Changed, PotentiallyChanged };
 enum class ActionRejection { None, InvalidSelection, InvalidValue, Unsupported, InsufficientTargets, InvalidGeometry };
 
