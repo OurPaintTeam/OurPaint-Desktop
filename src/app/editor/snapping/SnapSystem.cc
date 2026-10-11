@@ -256,7 +256,17 @@ SnapRule SnapSystem::ruleFor(ToolType tool, DrawState state) {
     SnapRule rule;
     rule.maxRadius = kDefaultSnapRadius;
 
-    constexpr M commonPosition = M::StandalonePoint | M::LineEndpoint | M::LineMidpoint | M::LineBody | M::CircleBody | M::CircleCentre | M::Intersection;
+    constexpr M commonPosition =
+    M::StandalonePoint |
+    M::LineEndpoint |
+    M::LineMidpoint |
+    M::LineBody |
+    M::CircleBody |
+    M::CircleCentre |
+    M::Intersection |
+    M::ArcBody |
+    M::ArcEndpoint |
+    M::ArcCentre;
 
     switch (tool) {
         case ToolType::Select:
@@ -333,6 +343,10 @@ SnapResult SnapSystem::parser(const SnapRequest& request) const {
         consider(findBestIntersection(request, rule));
     }
 
+    if (hasSnap(rule.mask, SnapMask::ArcBody) || hasSnap(rule.mask, SnapMask::ArcEndpoint) || hasSnap(rule.mask, SnapMask::ArcCentre)) {
+        consider(findBestArcCandidate(request, rule));
+    }
+
     return best ? best->result : SnapResult{};
 }
 
@@ -366,6 +380,12 @@ bool SnapSystem::isAllowed(SnapKind kind, double candidateDistance, const SnapRu
             return hasSnap(rule.mask, SnapMask::Parallel);
         case SnapKind::Perpendicular:
             return hasSnap(rule.mask, SnapMask::Perpendicular);
+        case SnapKind::ArcBody:
+            return hasSnap(rule.mask, SnapMask::ArcBody);
+        case SnapKind::ArcEndpoint:
+            return hasSnap(rule.mask, SnapMask::ArcEndpoint);
+        case SnapKind::ArcCentre:
+            return hasSnap(rule.mask, SnapMask::ArcCentre);
         case SnapKind::Angle:
         case SnapKind::None:
         default:
@@ -638,6 +658,56 @@ std::optional<SnapCandidate> SnapSystem::findBestIntersection(const SnapRequest&
                 });
             }
         }
+    }
+
+    return best;
+}
+
+std::optional<SnapCandidate> SnapSystem::findBestArcCandidate(const SnapRequest& request, const SnapRule& rule) const {
+    const bool allowBody = hasSnap(rule.mask, SnapMask::ArcBody);
+    const bool allowEndpoint = hasSnap(rule.mask, SnapMask::ArcEndpoint);
+    const bool allowCentre = hasSnap(rule.mask, SnapMask::ArcCentre);
+
+    if (!allowBody && !allowEndpoint && !allowCentre) {
+        return std::nullopt;
+    }
+
+    auto arcsResult = sketch_.arcs();
+    if (!arcsResult) {
+        return std::nullopt;
+    }
+
+    const auto& arcs = arcsResult.value();
+    std::optional<SnapCandidate> best;
+
+    const auto consider = [&](const auto& nearest, SnapKind kind, int priority) {
+        if (!nearest) {
+            return;
+        }
+
+        const double candidateDistance = distance(request.cursor, nearest->point);
+
+        if (!isAllowed(kind, candidateDistance, rule)) {
+            return;
+        }
+
+        auto candidate = makeCandidate(nearest->point, kind, candidateDistance, priority, {nearest->source});
+
+        if (!best || isBetterCandidate(candidate, *best)) {
+            best = std::move(candidate);
+        }
+    };
+
+    if (allowEndpoint) {
+        consider(geometry::findNearestArcEndpoint(request.cursor, arcs), SnapKind::ArcEndpoint, kEndpointPriority);
+    }
+
+    if (allowCentre) {
+        consider(geometry::findNearestArcCenter(request.cursor, arcs), SnapKind::ArcCentre, kCircleCentrePriority);
+    }
+
+    if (allowBody) {
+        consider(geometry::findNearestArcBody(request.cursor, arcs), SnapKind::ArcBody, kGeometryBodyPriority);
     }
 
     return best;

@@ -369,6 +369,107 @@ inline void intersectCircles(
     }
 }
 
+
+inline bool isFinite(const Arc2& arc) {
+    return isFinite(arc.center) &&
+           isFinite(arc.start) &&
+           isFinite(arc.end);
+}
+
+inline double normalizeAngle(double angle) {
+    constexpr double TWO_PI = 2.0 * std::numbers::pi;
+
+    angle = std::fmod(angle, TWO_PI);
+    if (angle < 0.0) {
+        angle += TWO_PI;
+    }
+
+    return angle;
+}
+
+// Положительный угол против часовой стрелки от start до end.
+inline double arcSweep(const Arc2& arc) {
+    const double startAngle = std::atan2(
+        arc.start.y - arc.center.y,
+        arc.start.x - arc.center.x);
+
+    const double endAngle = std::atan2(
+        arc.end.y - arc.center.y,
+        arc.end.x - arc.center.x);
+
+    return normalizeAngle(endAngle - startAngle);
+}
+
+// Ближайшая точка на дуге.
+// Если проекция курсора на окружность находится за пределами
+// углового диапазона дуги, ближайшей точкой будет её конец.
+inline std::optional<Vec2> closestPointOnArc(
+    const Vec2& cursor,
+    const Arc2& arc)
+{
+    if (!isFinite(cursor) || !isFinite(arc)) {
+        return std::nullopt;
+    }
+
+    const double startRadius = std::sqrt(
+        distanceSquared(arc.center, arc.start));
+
+    const double endRadius = std::sqrt(
+        distanceSquared(arc.center, arc.end));
+
+    if (startRadius <= EPSILON || endRadius <= EPSILON) {
+        return std::nullopt;
+    }
+
+    const double radiusScale =
+        std::max({1.0, startRadius, endRadius});
+
+    if (std::abs(startRadius - endRadius) >
+        EPSILON * radiusScale) {
+        return std::nullopt;
+    }
+
+    const double sweep = arcSweep(arc);
+
+    // Нулевая дуга не является корректной дугой.
+    if (sweep <= EPSILON ||
+        sweep >= 2.0 * std::numbers::pi - EPSILON) {
+        return std::nullopt;
+    }
+
+    const Vec2 offset = subtract(cursor, arc.center);
+    const double cursorRadiusSquared = lengthSquared(offset);
+
+    // В центре направление проекции неоднозначно.
+    // В качестве ближайшей точки выбираем начало дуги.
+    if (cursorRadiusSquared <= EPSILON * EPSILON) {
+        return arc.start;
+    }
+
+    const double startAngle = std::atan2(
+        arc.start.y - arc.center.y,
+        arc.start.x - arc.center.x);
+
+    const double cursorAngle = std::atan2(offset.y, offset.x);
+    const double angleFromStart =
+        normalizeAngle(cursorAngle - startAngle);
+
+    if (angleFromStart <= sweep) {
+        const double radius = (startRadius + endRadius) * 0.5;
+
+        return Vec2{
+            arc.center.x + radius * std::cos(cursorAngle),
+            arc.center.y + radius * std::sin(cursorAngle)
+        };
+    }
+
+    return distanceSquared(cursor, arc.start) <=
+                   distanceSquared(cursor, arc.end)
+        ? std::optional<Vec2>{arc.start}
+        : std::optional<Vec2>{arc.end};
+}
+
+
 } // namespace detail
 
 // 1. Расстояние между двумя точками.
@@ -623,6 +724,105 @@ findNearestExtendedLineIntersection(
                 GeometryRef{entities[i].id, SubElement::Whole},
                 GeometryRef{entities[j].id, SubElement::Whole});
         }
+    }
+
+    return best;
+}
+
+// --------------------ARC------------------------------
+
+// 8. Ближайшая точка на теле дуги.
+inline std::optional<PointCandidate> findNearestArcBody(
+    const Vec2& cursor,
+    std::span<const SketchEntity> entities)
+{
+    if (!detail::isFinite(cursor)) {
+        return std::nullopt;
+    }
+
+    std::optional<PointCandidate> best;
+
+    for (const auto& entity : entities) {
+        const auto* arc = std::get_if<Arc2>(&entity.geometry);
+
+        if (!arc) {
+            continue;
+        }
+
+        const auto nearest = detail::closestPointOnArc(cursor, *arc);
+        if (!nearest) {
+            continue;
+        }
+
+        detail::consider(
+            best,
+            PointCandidate{
+                *nearest,
+                detail::distanceSquared(cursor, *nearest),
+                GeometryRef{entity.id, SubElement::Whole}
+            });
+    }
+
+    return best;
+}
+
+// 9. Ближайший конец дуги.
+inline std::optional<PointCandidate> findNearestArcEndpoint(
+    const Vec2& cursor,
+    std::span<const SketchEntity> entities)
+{
+    if (!detail::isFinite(cursor)) {
+        return std::nullopt;
+    }
+
+    std::optional<PointCandidate> best;
+
+    for (const auto& entity : entities) {
+        const auto* arc = std::get_if<Arc2>(&entity.geometry);
+
+        if (!arc || !detail::isFinite(*arc)) {
+            continue;
+        }
+
+        detail::consider(
+            best,
+            cursor,
+            arc->start,
+            GeometryRef{entity.id, SubElement::Start});
+
+        detail::consider(
+            best,
+            cursor,
+            arc->end,
+            GeometryRef{entity.id, SubElement::End});
+    }
+
+    return best;
+}
+
+// 10. Ближайший центр дуги.
+inline std::optional<PointCandidate> findNearestArcCenter(
+    const Vec2& cursor,
+    std::span<const SketchEntity> entities)
+{
+    if (!detail::isFinite(cursor)) {
+        return std::nullopt;
+    }
+
+    std::optional<PointCandidate> best;
+
+    for (const auto& entity : entities) {
+        const auto* arc = std::get_if<Arc2>(&entity.geometry);
+
+        if (!arc || !detail::isFinite(*arc)) {
+            continue;
+        }
+
+        detail::consider(
+            best,
+            cursor,
+            arc->center,
+            GeometryRef{entity.id, SubElement::Center});
     }
 
     return best;

@@ -77,6 +77,8 @@ private:
 
     std::optional<SnapCandidate> findBestIntersection(const SnapRequest& request, const SnapRule& rule) const;
 
+    std::optional<SnapCandidate> findBestArcCandidate(const SnapRequest& request, const SnapRule& rule) const;
+
     static bool isAllowed(SnapKind kind, double distance, const SnapRule& rule);
 
     static bool isBetterCandidate(const SnapCandidate& candidate, const SnapCandidate& current);

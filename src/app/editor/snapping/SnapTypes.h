@@ -31,6 +31,10 @@ enum class SnapKind {
     CircleBody,
     CircleCentre,
 
+    ArcBody,
+    ArcCentre,
+    ArcEndpoint,
+
     Intersection,
     ExtendedIntersection,
 
@@ -50,40 +54,34 @@ enum class DrawState {
 
 // Маска доступных привязок.
 enum class SnapMask : std::uint32_t {
-    None            = 0,
+    None = 0,
 
     StandalonePoint = 1u << 0,
-    LineEndpoint    = 1u << 1,
-    LineMidpoint    = 1u << 2,
-    LineBody        = 1u << 3,
+    LineEndpoint = 1u << 1,
+    LineMidpoint = 1u << 2,
+    LineBody = 1u << 3,
 
-    CircleBody      = 1u << 4,
-    CircleCentre    = 1u << 5,
+    CircleBody = 1u << 4,
+    CircleCentre = 1u << 5,
 
-    Intersection         = 1u << 6,
+    Intersection = 1u << 6,
     ExtendedIntersection = 1u << 7,
 
-    Horizontal    = 1u << 8,
-    Vertical      = 1u << 9,
-    Parallel      = 1u << 10,
+    Horizontal = 1u << 8,
+    Vertical = 1u << 9,
+    Parallel = 1u << 10,
     Perpendicular = 1u << 11,
-    Angle         = 1u << 12
+    Angle = 1u << 12,
+
+    ArcBody = 1u << 13,
+    ArcCentre = 1u << 14,
+    ArcEndpoint = 1u << 15
 };
 
 // Операторы для SnapMask.
-constexpr SnapMask operator|(SnapMask a, SnapMask b) noexcept {
-    return static_cast<SnapMask>(
-        static_cast<std::uint32_t>(a) |
-        static_cast<std::uint32_t>(b)
-    );
-}
+constexpr SnapMask operator|(SnapMask a, SnapMask b) noexcept { return static_cast<SnapMask>(static_cast<std::uint32_t>(a) | static_cast<std::uint32_t>(b)); }
 
-constexpr SnapMask operator&(SnapMask a, SnapMask b) noexcept {
-    return static_cast<SnapMask>(
-        static_cast<std::uint32_t>(a) &
-        static_cast<std::uint32_t>(b)
-    );
-}
+constexpr SnapMask operator&(SnapMask a, SnapMask b) noexcept { return static_cast<SnapMask>(static_cast<std::uint32_t>(a) & static_cast<std::uint32_t>(b)); }
 
 constexpr SnapMask& operator|=(SnapMask& a, SnapMask b) noexcept {
     a = a | b;
@@ -96,27 +94,14 @@ constexpr SnapMask& operator&=(SnapMask& a, SnapMask b) noexcept {
 }
 
 // Проверяет, включён ли конкретный тип привязки.
-constexpr bool hasSnap(SnapMask mask, SnapMask flag) noexcept {
-    return (mask & flag) != SnapMask::None;
-}
+constexpr bool hasSnap(SnapMask mask, SnapMask flag) noexcept { return (mask & flag) != SnapMask::None; }
 
 // Все позиционные привязки.
-constexpr SnapMask Position =
-    SnapMask::StandalonePoint |
-    SnapMask::LineEndpoint |
-    SnapMask::LineMidpoint |
-    SnapMask::LineBody |
-    SnapMask::CircleBody |
-    SnapMask::CircleCentre |
-    SnapMask::Intersection |
-    SnapMask::ExtendedIntersection;
+constexpr SnapMask Position = SnapMask::StandalonePoint | SnapMask::LineEndpoint | SnapMask::LineMidpoint | SnapMask::LineBody | SnapMask::CircleBody |
+                              SnapMask::CircleCentre | SnapMask::Intersection | SnapMask::ExtendedIntersection | SnapMask::ArcBody | SnapMask::ArcCentre |
+                              SnapMask::ArcEndpoint;
 
-constexpr SnapMask Direction =
-    SnapMask::Horizontal |
-    SnapMask::Vertical |
-    SnapMask::Parallel |
-    SnapMask::Perpendicular |
-    SnapMask::Angle;
+constexpr SnapMask Direction = SnapMask::Horizontal | SnapMask::Vertical | SnapMask::Parallel | SnapMask::Perpendicular | SnapMask::Angle;
 
 constexpr SnapMask All = Position | Direction;
 
@@ -127,13 +112,7 @@ constexpr SnapMask defaultSnapMask(ToolType tool) noexcept {
     switch (tool) {
         case ToolType::Select:
         case ToolType::Move:
-            return M::StandalonePoint
-                | M::LineEndpoint
-                | M::LineMidpoint
-                | M::LineBody
-                | M::CircleBody
-                | M::CircleCentre
-                | M::Intersection;
+            return M::StandalonePoint | M::LineEndpoint | M::LineMidpoint | M::LineBody | M::CircleBody | M::CircleCentre | M::Intersection;
 
         case ToolType::Point:
         case ToolType::Line:
@@ -143,14 +122,11 @@ constexpr SnapMask defaultSnapMask(ToolType tool) noexcept {
 
         case ToolType::Rotate:
         case ToolType::Scale:
-            return M::StandalonePoint
-                | M::LineEndpoint
-                | M::CircleCentre
-                | M::Intersection;
+            return M::StandalonePoint | M::LineEndpoint | M::CircleCentre | M::Intersection;
 
         default:
             return M::None;
     }
 }
 
-} // namespace snap
+}  // namespace snap

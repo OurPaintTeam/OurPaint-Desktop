@@ -70,6 +70,9 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
                 case snap::SnapKind::LineBody:
                 case snap::SnapKind::CircleBody:
                 case snap::SnapKind::CircleCentre:
+                case snap::SnapKind::ArcBody:
+                case snap::SnapKind::ArcCentre:
+                case snap::SnapKind::ArcEndpoint:
                 case snap::SnapKind::Intersection:
                 case snap::SnapKind::ExtendedIntersection:
                     overlay_.selection_.model.add(ref);
