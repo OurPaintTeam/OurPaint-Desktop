@@ -448,6 +448,11 @@ private:
                     add(du::RequirementDescriptor::pointPointDist(descriptor.pointIds.at(0), descriptor.pointIds.at(1), dcmParameter(definition)));
                     break;
                 }
+                case ConstraintType::Equal: {
+                    const auto descriptor = figure(whole(0));
+                    add(du::RequirementDescriptor::equalLength(whole(0), whole(1)));
+                    break;
+                }
                 case ConstraintType::Angle:
                     add(du::RequirementDescriptor::lineLineAngle(whole(0), whole(1), dcmParameter(definition)));
                     break;

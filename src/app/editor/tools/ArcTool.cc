@@ -74,11 +74,25 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
                 step_ = Step::WaitingThirdInput;
             }
             else if (step_ == Step::WaitingThirdInput) {
-                //Document* document = documentManager_.getActiveDocument();
-                //UndoRedo::Transaction* txn = document->commandManager().invoke("ARC", {firstPoint_X, firstPoint_Y, r});
-                //document->undoRedoManager().push(std::move(*txn));
+                points_.push_back(cursor);
+                Arc a = buildArcFromThreePoints(points_[0], points_[1], points_[2]);
 
+                sketch::Vec2 center = {a.cx, a.cy};
+
+                sketch::Vec2 start = {
+                    a.cx + a.r * std::cos(a.startAngle),
+                    a.cy + a.r * std::sin(a.startAngle)
+                };
+
+                sketch::Vec2 end = {
+                    a.cx + a.r * std::cos(a.endAngle),
+                    a.cy + a.r * std::sin(a.endAngle)
+                };
+
+                auto report = ActionReport::creation(ActionKind::CreateArc,
+                                            document_.sketch().addArc(center, start, end));
                 reset();
+                return report;
             }
             break;
     }
