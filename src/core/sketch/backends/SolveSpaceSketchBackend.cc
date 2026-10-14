@@ -223,7 +223,11 @@ public:
         if (constraints_.contains(constraint.id)) return Status::failure(ErrorCode::InvalidArgument, "Duplicate constraint ID.");
         auto support = supportsConstraint(constraint.definition);
         if (!support) return support;
-        if (!canAllocate(2, 1, 1)) return exhausted();
+        const auto type = constraint.definition.type;
+        const bool projected = type == ConstraintType::HorizontalDistance || type == ConstraintType::VerticalDistance;
+        if (!canAllocate(projected ? 4 : 2, projected ? 3 : 1, 1)) {
+            return exhausted();
+        }
         ConstraintRecord record;
         record.definition = constraint.definition;
         record.handle = nextConstraint_++;
@@ -237,7 +241,11 @@ public:
         if (found == constraints_.end()) return Status::failure(ErrorCode::NotFound, "Constraint not found.");
         auto support = supportsConstraint(constraint.definition);
         if (!support) return support;
-        if (!canAllocate(2, 1, 0)) return exhausted();
+        const auto type = constraint.definition.type;
+        const bool projected = type == ConstraintType::HorizontalDistance || type == ConstraintType::VerticalDistance;
+        if (!canAllocate(projected ? 4 : 2, projected ? 3 : 1, 0)) {
+            return exhausted();
+        }
         ConstraintRecord replacement;
         replacement.definition = constraint.definition;
         replacement.handle = found->second.handle;
@@ -452,6 +460,20 @@ private:
                 result.ptA = nativeEntities_.get(first).point[0];
                 result.ptB = nativeEntities_.get(first).point[1];
                 break;
+            case ConstraintType::HorizontalDistance:
+            case ConstraintType::VerticalDistance: {
+                result.type = SLVS_C_PROJ_PT_DISTANCE;
+                result.ptA = pointHandle(definition.refs[0]);
+                result.ptB = pointHandle(definition.refs[1]);
+                const auto origin = addPoint({0, 0}, record.owned, kFixedGroup);
+                const Vec2 axis = definition.type == ConstraintType::HorizontalDistance ? Vec2{1, 0} : Vec2{0, 1};
+                const auto end = addPoint(axis, record.owned, kFixedGroup);
+                result.entityA = nextEntity_++;
+                // SolveSpace's line vector points from its second endpoint to its first.
+                nativeEntities_.add(Slvs_MakeLineSegment(result.entityA, kFixedGroup, kWorkplane, end, origin));
+                record.owned.entities.push_back(result.entityA);
+                break;
+            }
             case ConstraintType::Radius:
             case ConstraintType::Diameter:
                 result.type = SLVS_C_DIAMETER;

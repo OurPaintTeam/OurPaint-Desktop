@@ -7,6 +7,7 @@
 #include <numbers>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "../editor/ConstraintActions.h"
 #include "sketch/Sketch.h"
@@ -91,6 +92,31 @@ TEST_P(ConstraintActionsBehavior, BinaryConstraintDistinguishesIncompleteAndInva
     EXPECT_EQ(prepare(ConstraintAction::Coincident, {line_}).state, PreparationState::InvalidSelection);
 }
 
+TEST_P(ConstraintActionsBehavior, HVDistanceChoosesDominantAxisAndOrdersPointsIndependentlyOfClicks) {
+    const auto vertical = prepare(ConstraintAction::HVDistance, {end_, start_}, 7.0);
+    ASSERT_EQ(vertical.state, PreparationState::Ready);
+    ASSERT_TRUE(vertical.definition);
+    EXPECT_EQ(vertical.definition->type, ConstraintType::VerticalDistance);
+    EXPECT_EQ(vertical.definition->refs, (std::vector<GeometryRef>{start_, end_}));
+    EXPECT_EQ(vertical.definition->value, 7.0);
+
+    const auto horizontal = prepare(ConstraintAction::HVDistance, {point_, end_}, 7.0);
+    ASSERT_EQ(horizontal.state, PreparationState::Ready);
+    ASSERT_TRUE(horizontal.definition);
+    EXPECT_EQ(horizontal.definition->type, ConstraintType::HorizontalDistance);
+    EXPECT_EQ(horizontal.definition->refs, (std::vector<GeometryRef>{end_, point_}));
+
+    const GeometryRef center{circle_.entity, SubElement::Center};
+    const auto diagonal = prepare(ConstraintAction::HVDistance, {start_, center}, 0.0);
+    ASSERT_EQ(diagonal.state, PreparationState::Ready);
+    ASSERT_TRUE(diagonal.definition);
+    EXPECT_EQ(diagonal.definition->type, ConstraintType::HorizontalDistance);
+    EXPECT_EQ(prepare(ConstraintAction::HVDistance, {}, 7.0).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::HVDistance, {start_}, 7.0).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::HVDistance, {line_}, 7.0).state, PreparationState::InvalidSelection);
+    EXPECT_EQ(prepare(ConstraintAction::HVDistance, {start_, start_}, 7.0).state, PreparationState::InvalidSelection);
+}
+
 TEST_P(ConstraintActionsBehavior, UnaryConstraintsRequireExactArityAndValidReferences) {
     EXPECT_EQ(prepare(ConstraintAction::Horizontal).state, PreparationState::NeedsMoreInput);
     EXPECT_EQ(prepare(ConstraintAction::Horizontal, {line_}).state, PreparationState::Ready);
@@ -106,11 +132,13 @@ TEST_P(ConstraintActionsBehavior, UnaryConstraintsRequireExactArityAndValidRefer
 
 TEST_P(ConstraintActionsBehavior, ValuesAreRequiredOnlyForDimensionsAndRespectTheirRanges) {
     EXPECT_EQ(prepare(ConstraintAction::Dimension).state, PreparationState::InvalidSelection);
+    EXPECT_EQ(prepare(ConstraintAction::HVDistance, {start_, end_}).state, PreparationState::InvalidSelection);
     EXPECT_EQ(prepare(ConstraintAction::Angle, {line_, otherLine_}).state, PreparationState::InvalidSelection);
     EXPECT_EQ(prepare(ConstraintAction::Horizontal, {line_}, 5.0).state, PreparationState::InvalidSelection);
 
     for (double value : {-1.0, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN()}) {
         EXPECT_EQ(prepare(ConstraintAction::Dimension, {line_}, value).state, PreparationState::InvalidSelection);
+        EXPECT_EQ(prepare(ConstraintAction::HVDistance, {start_, end_}, value).state, PreparationState::InvalidSelection);
         EXPECT_EQ(prepare(ConstraintAction::Angle, {line_, otherLine_}, value).state, PreparationState::InvalidSelection);
     }
     EXPECT_EQ(prepare(ConstraintAction::Dimension, {line_}, 0.0).state, PreparationState::InvalidSelection);

@@ -3,7 +3,7 @@
 
 Document::Document(const std::string& documentName) {
     documentName_ = documentName;
-    sketch_ = std::move(core::sketch::Sketch::create(core::sketch::BackendKind::SolveSpace).value());
+    sketch_ = std::move(core::sketch::Sketch::create(core::sketch::BackendKind::Dcm).value());
 }
 Document::~Document() {}
 

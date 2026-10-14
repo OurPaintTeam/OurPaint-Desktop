@@ -308,6 +308,8 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             count = 1;
             break;
         case ConstraintType::Distance:
+        case ConstraintType::HorizontalDistance:
+        case ConstraintType::VerticalDistance:
         case ConstraintType::Angle:
             count = 2;
             dimensional = true;
@@ -335,7 +337,8 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         if (!std::isfinite(v) || v < 0) {
             return invalid("Dimensions must be finite and nonnegative");
         }
-        if (type != ConstraintType::Distance && type != ConstraintType::Angle && v == 0) {
+        if (type != ConstraintType::Distance && type != ConstraintType::HorizontalDistance && type != ConstraintType::VerticalDistance &&
+            type != ConstraintType::Angle && v == 0) {
             return invalid("This dimension must be positive");
         }
         if (type == ConstraintType::Angle && v > std::numbers::pi) {
@@ -365,6 +368,8 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
     switch (type) {
         case ConstraintType::Coincident:
         case ConstraintType::Distance:
+        case ConstraintType::HorizontalDistance:
+        case ConstraintType::VerticalDistance:
             valid = points[0] && points[1];
             break;
         case ConstraintType::Horizontal:

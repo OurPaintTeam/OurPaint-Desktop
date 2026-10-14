@@ -157,7 +157,9 @@ enum class ConstraintType {
     Radius,
     Diameter,
     Angle,
-    Fix
+    Fix,
+    HorizontalDistance,
+    VerticalDistance
 };
 
 // Coincident/Distance use two point-like refs: Point Whole, Line Start/End,
@@ -167,6 +169,8 @@ enum class ConstraintType {
 // line and circular curve or two circular curves (external tangency).
 // Angle is unsigned [0, pi] between directed lines. Length/Radius/Diameter are
 // positive; Distance is nonnegative. Only dimensional kinds take value.
+// HorizontalDistance/VerticalDistance use two point-like refs and constrain
+// the second coordinate minus the first along X/Y to a nonnegative value.
 // Fix uses one point-like ref and explicit fixedPosition, preserving its target
 // across edits, failed solves and backend transfers.
 struct ConstraintDefinition {
@@ -188,7 +192,7 @@ enum class BackendKind {
 // Unsupported operations never mutate the model.
 struct Capabilities {
     std::array<bool, 4> entities{};
-    std::array<bool, 13> constraints{};
+    std::array<bool, 15> constraints{};
     bool updateEntities = false;
     bool removeEntities = false;
     bool updateConstraints = false;

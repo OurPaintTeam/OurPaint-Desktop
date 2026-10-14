@@ -24,7 +24,10 @@ std::optional<ActionReport> DimensionTool::onMouseButton(const input::MouseButto
         return std::nullopt;
     }
 
-    const auto pick = request_.action == ConstraintAction::Angle ? picker_.pickLineAtScreenLogical(e.x, e.y) : picker_.pickAtScreenLogical(e.x, e.y);
+    const auto pick = request_.action == ConstraintAction::Angle ? picker_.pickLineAtScreenLogical(e.x, e.y)
+                      : request_.action == ConstraintAction::HVDistance ? picker_.pickPointAtScreenLogical(e.x, e.y)
+                                                                        : picker_.pickAtScreenLogical(e.x, e.y);
+
     if (!pick) {
         return std::nullopt;
     }
