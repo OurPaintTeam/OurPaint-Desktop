@@ -29,4 +29,4 @@ add_ourpaint_test(ConstraintToolsGTEST
     ../../render/render/Camera2D.cc
 )
 target_link_libraries(ConstraintToolsGTEST PRIVATE OurPaint::Sketch glm::glm)
-target_include_directories(ConstraintToolsGTEST PRIVATE ../../render/render)
+target_include_directories(ConstraintToolsGTEST PRIVATE ../../core/sketch ../../render/render)

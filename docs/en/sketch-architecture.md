@@ -427,6 +427,7 @@ Unexpected/missing fields are InvalidArgument.
 | Horizontal, Vertical | One whole line |
 | Parallel, Perpendicular | Two whole lines |
 | Distance | Two point-like refs; finite nonnegative length including zero |
+| HorizontalDistance, VerticalDistance | Two point-like refs; second-minus-first X/Y coordinate equals a finite nonnegative value, including zero |
 | Length | One whole line; finite positive length |
 | Angle | Two whole directed lines; unsigned finite angle in `[0, pi]` radians |
 | Equal | Two whole lines, or two whole circular curves (Circle/Arc) |
@@ -533,7 +534,7 @@ The adapter uses updatePoints in DRAG mode for the complete target batch, then
 restores GLOBAL mode without another solve. It checks residuals and geometry after solve/drag using backend-owned
 coordinates. Normalized orientation residuals reject collapsed lines falsely
 satisfying Horizontal/Vertical. This read-only traversal has native lookup costs,
-not coordinate synchronization. Radians translate to native degree-based equations.
+not coordinate synchronization. DCM's native angle equations also use radians.
 
 SolveSpace owns persistent Slvs_Param, Slvs_Entity, and Slvs_Constraint records,
 including private fixed anchors. Process-global Slvs_Add* convenience calls have
@@ -575,6 +576,7 @@ destroying the source.
 | Geometry batches; point queries/scopes | Supported | Supported |
 | Coincident, Horizontal, Vertical, Parallel, Perpendicular | Supported | Supported |
 | Distance, Length, Angle, point-like Fix | Supported | Supported |
+| HorizontalDistance, VerticalDistance | Supported | Supported |
 | Equal line lengths/circular radii; Radius/Diameter | Unsupported | Supported |
 | Whole-curve Tangent | Unsupported | Unsupported |
 | Constraint update/remove; solve; point-like drag | Supported | Supported |
@@ -586,6 +588,13 @@ Neither adapter supports arbitrary whole-curve Fix, rigid whole-entity/group dra
 point-on-curve coincidence, or edit transactions. libslvs endpoint-specific arc
 tangency does not implement the public whole-curve external contract. DCM limits
 constraints to translations with established semantics.
+
+The ToolBar exposes Distance, H/V Distance, and Angle through App's DimensionTool.
+H/V Distance selects two point-like references, picks X when `abs(dx) >= abs(dy)`
+and Y otherwise, and orders the references along the positive chosen axis. The
+stored constraint retains that axis across subsequent geometry edits. Angle
+selects two whole directed lines; the UI accepts degrees and App converts to
+radians before preparing the constraint.
 
 ## Architecture assessment and follow-up proposals
 

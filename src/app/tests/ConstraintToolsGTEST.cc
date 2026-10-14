@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -207,6 +208,42 @@ TEST_P(ConstraintToolsBehavior, PreviewAndEmptyEventsStaySilent) {
     EXPECT_FALSE(tool().onMouseButton(rightPress));
     EXPECT_TRUE(overlay_.constraintRefs_.empty());
     EXPECT_EQ(sketch_->constraintCount(), 0);
+}
+
+TEST_P(ConstraintToolsBehavior, DimensionToolPicksPointsForHVDistanceAndWholeLinesForAngle) {
+    const auto firstLine = sketch_->addLine({-2, 0}, {-1, 1});
+    const auto secondLine = sketch_->addLine({2, 0}, {3, 0.5});
+    ASSERT_TRUE(firstLine);
+    ASSERT_TRUE(secondLine);
+
+    dimensionTool_->begin({ConstraintAction::HVDistance, 4.0});
+    // Whole-line hits must not become operands for a point coordinate dimension.
+    EXPECT_FALSE(dimensionTool_->onMouseButton(pressAt({-1.5, 0.5})));
+    EXPECT_TRUE(overlay_.constraintRefs_.empty());
+    EXPECT_FALSE(dimensionTool_->onMouseButton(pressAt({-2, 0})));
+    const auto distance = dimensionTool_->onMouseButton(pressAt({2, 0}));
+    ASSERT_TRUE(distance);
+    ASSERT_EQ(distance->constraintIds.size(), 1);
+    const auto projected = sketch_->constraint(distance->constraintIds[0]);
+    ASSERT_TRUE(projected);
+    EXPECT_EQ(projected.value().definition.type, ConstraintType::HorizontalDistance);
+    EXPECT_TRUE(overlay_.constraintRefs_.empty());
+
+    dimensionTool_->begin({ConstraintAction::Angle, std::numbers::pi / 2});
+    // Endpoint clicks also hit standalone points, but Angle must select whole lines.
+    EXPECT_FALSE(dimensionTool_->onMouseButton(pressAt({-2, 0})));
+    const GeometryRef firstRef{firstLine.value(), SubElement::Whole};
+    const GeometryRef secondRef{secondLine.value(), SubElement::Whole};
+    EXPECT_EQ(overlay_.constraintRefs_, (std::vector<GeometryRef>{firstRef}));
+    const auto angle = dimensionTool_->onMouseButton(pressAt({2, 0}));
+    ASSERT_TRUE(angle);
+    ASSERT_EQ(angle->constraintIds.size(), 1);
+    const auto inserted = sketch_->constraint(angle->constraintIds[0]);
+    ASSERT_TRUE(inserted);
+    EXPECT_EQ(inserted.value().definition.type, ConstraintType::Angle);
+    EXPECT_EQ(inserted.value().definition.refs, (std::vector<GeometryRef>{firstRef, secondRef}));
+    EXPECT_EQ(inserted.value().definition.value, std::numbers::pi / 2);
+    EXPECT_TRUE(overlay_.constraintRefs_.empty());
 }
 
 std::vector<ToolParameter> toolParameters() {

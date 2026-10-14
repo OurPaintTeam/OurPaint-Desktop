@@ -451,6 +451,52 @@ TEST_P(SketchBehavior, UpdatingDimensionPreservesIdentityAndChangesSolvedLength)
     EXPECT_EQ(constraint.value().definition.value, 8);
 }
 
+TEST_P(SketchBehavior, AxisDistancesConstrainOnlyTheirCoordinateAndSupportUpdateAndRemoval) {
+    for (const auto type : {ConstraintType::HorizontalDistance, ConstraintType::VerticalDistance}) {
+        const bool horizontal = type == ConstraintType::HorizontalDistance;
+        const auto first = sketch_->addPoint({1, 2});
+        const auto second = sketch_->addPoint({4, 6});
+        ASSERT_TRUE(first);
+        ASSERT_TRUE(second);
+        const GeometryRef a{first.value(), SubElement::Whole};
+        const GeometryRef b{second.value(), SubElement::Whole};
+        ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {a}, std::nullopt, Vec2{1, 2}}));
+        ConstraintDefinition definition{type, {a, b}, 7.0, std::nullopt};
+        ASSERT_TRUE(sketch_->supportsConstraint(definition));
+        const auto distance = sketch_->addConstraint(definition);
+        ASSERT_TRUE(distance);
+        const auto solved = sketch_->solve();
+        ASSERT_TRUE(solved);
+        EXPECT_EQ(solved.value().status, SolveStatus::Converged);
+        const auto position = sketch_->pointPosition(b);
+        ASSERT_TRUE(position);
+        EXPECT_NEAR(horizontal ? position.value().x : position.value().y, horizontal ? 8.0 : 9.0, 1e-6);
+        EXPECT_NEAR(horizontal ? position.value().y : position.value().x, horizontal ? 6.0 : 4.0, 1e-6);
+
+        definition.value = 0.0;
+        ASSERT_TRUE(sketch_->updateConstraint(distance.value(), definition));
+        const auto updatedSolve = sketch_->solve();
+        ASSERT_TRUE(updatedSolve);
+        EXPECT_EQ(updatedSolve.value().status, SolveStatus::Converged);
+        const auto updated = sketch_->pointPosition(b);
+        ASSERT_TRUE(updated);
+        EXPECT_NEAR(horizontal ? updated.value().x : updated.value().y, horizontal ? 1.0 : 2.0, 1e-6);
+        EXPECT_NEAR(horizontal ? updated.value().y : updated.value().x, horizontal ? 6.0 : 4.0, 1e-6);
+        const auto queried = sketch_->constraint(distance.value());
+        ASSERT_TRUE(queried);
+        EXPECT_EQ(queried.value().definition.type, type);
+        EXPECT_EQ(queried.value().definition.value, 0.0);
+        ASSERT_TRUE(sketch_->removeConstraint(distance.value()));
+        ASSERT_TRUE(sketch_->updateEntity(second.value(), Point2{{4, 6}}));
+        const auto afterRemoval = sketch_->solve();
+        ASSERT_TRUE(afterRemoval);
+        EXPECT_EQ(afterRemoval.value().status, SolveStatus::Converged);
+        const auto freePosition = sketch_->pointPosition(b);
+        ASSERT_TRUE(freePosition);
+        EXPECT_EQ(freePosition.value(), (Vec2{4, 6}));
+    }
+}
+
 TEST_P(SketchBehavior, AngleUsesRadiansBetweenDirectedLines) {
     auto a = sketch_->addLine({0, 0}, {4, 0});
     auto b = sketch_->addLine({0, 0}, {3, 3});

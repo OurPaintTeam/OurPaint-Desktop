@@ -2,8 +2,8 @@
 
 #include <QDir>
 #include <QFile>
-
 #include <limits>
+#include <numbers>
 
 #include "InputWidget.h"
 #include "PainterWidget.h"
@@ -118,13 +118,22 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     // Tools - constraints
     QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this](const QString& tabName, UI::ConstraintType type) {
         switch (type) {
-            case UI::ConstraintType::Distance: {
-                auto* prompt = new UI::ParameterInputWidget("Input:", nullptr);
+            case UI::ConstraintType::Distance:
+            case UI::ConstraintType::HVDistance:
+            case UI::ConstraintType::Angle: {
+                const auto action = type == UI::ConstraintType::Angle        ? ConstraintAction::Angle
+                                    : type == UI::ConstraintType::HVDistance ? ConstraintAction::HVDistance
+                                                                             : ConstraintAction::Dimension;
+                const QString promptText = action == ConstraintAction::Angle        ? tr("Angle (degrees):")
+                                           : action == ConstraintAction::HVDistance ? tr("H/V Distance:")
+                                                                                    : tr("Distance:");
+                auto* prompt = new UI::ParameterInputWidget(promptText, nullptr);
                 const auto request = controller_.constraintRequestHandler(tabName.toStdString());
-                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [request](const QString& parameter) {
+                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [request, action](const QString& parameter) {
                     bool valid = false;
                     const double value = parameter.toDouble(&valid);
-                    request({ConstraintAction::Dimension, valid ? value : std::numeric_limits<double>::quiet_NaN()});
+                    const double scale = action == ConstraintAction::Angle ? std::numbers::pi / 180.0 : 1.0;
+                    request({action, valid ? value * scale : std::numeric_limits<double>::quiet_NaN()});
                 });
 
                 prompt->move(200, 200);

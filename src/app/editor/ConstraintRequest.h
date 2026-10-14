@@ -13,6 +13,7 @@ enum class ConstraintAction {
     Equal,
     Fix,
     Dimension,
+    HVDistance,
     Angle,
     Unsupported
 };
