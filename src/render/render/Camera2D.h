@@ -83,7 +83,7 @@ public:
 private:
     Viewport2D viewport_;
 
-    glm::dvec2 center_{0.0, 0.0};
+    glm::dvec2 center_{4.45, 1.7};
 
     // Logical pixels per world unit
     double zoom_ = 100.0;

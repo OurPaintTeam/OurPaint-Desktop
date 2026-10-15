@@ -25,6 +25,9 @@ add_ourpaint_test(ComponentTest ComponentTest.cc)
 add_ourpaint_test(RequirementJsonTest requirementInJsonGTEST.cc)
 add_ourpaint_test(MoveTest MoveGTEST.cc)
 
+add_ourpaint_test(GeometryAlgorithmTest GeometryAlgorithmsGTEST.cc)
+target_link_libraries(GeometryAlgorithmTest PRIVATE OurPaint::Sketch)
+
 add_ourpaint_test(SketchGTEST SketchGTEST.cc)
 target_link_libraries(SketchGTEST PRIVATE OurPaint::Sketch)
 

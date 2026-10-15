@@ -6,6 +6,7 @@
 #include "../../viewport/picking/Cpu2dPicker.h"
 #include "Camera2D.h"
 #include "IInteractionTool.h"
+#include "snapping/SnapSystem.h"
 
 using namespace core;
 
@@ -65,6 +66,8 @@ private:
         sketch::Vec2 center;
     };
     ClipboardFragment data_;
+
+    snap::SnapSystem snap_;
 };
 
 #endif // ! OURPAINT_APPLICATION_CURSOR_TOOL_H_

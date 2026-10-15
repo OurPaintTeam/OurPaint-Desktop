@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <iostream>
 #include <limits>
 #include <map>
 #include <numeric>
@@ -38,11 +39,158 @@ bool sameGeometry(const sketch::SketchGeometry& first, const sketch::SketchGeome
 }  // namespace
 
 CursorTool::CursorTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay, ConstraintActions& constraintActions)
-    : document_(document), sketch_(document.sketch()), camera_(camera), picker_(picker), overlay_(overlay), constraintActions_(constraintActions), data_() {}
+    : document_(document),
+      sketch_(document.sketch()),
+      camera_(camera),
+      picker_(picker),
+      overlay_(overlay),
+      constraintActions_(constraintActions),
+      data_(),
+      snap_(sketch_) {}
 
 std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
+
+    /*{
+        overlay_.selection_.model.clear();
+
+        // snap::SnapRequest request{camera_.zoom(), core::sketch::Vec2{v.x, v.y}, snap::ToolType::Line, snap::DrawState::FirstPoint,
+        // {sketch::Point2{1.0,1.0}}};
+        snap::SnapRequest request{camera_.zoom(), core::sketch::Vec2{v.x, v.y}, snap::ToolType::Point, snap::DrawState::Idle, {sketch::Point2{1.0, 1.0}}};
+
+        const auto snap_result = snap_.getSnapCandidate(request);
+        if (snap_result.snapped) {
+            switch (snap_result.type) {
+                case snap::SnapKind::StandalonePoint:
+                    std::cout << "StandalonePoint" << std::endl;
+                    if (!snap_result.objects.empty()) {
+                        const auto& ref = snap_result.objects.front();
+                        overlay_.selection_.model.add(ref);
+                    }
+                    break;
+                case snap::SnapKind::LineEndpoint:
+                    std::cout << "LineEndpoint" << std::endl;
+                    if (!snap_result.objects.empty()) {
+                        const auto& ref = snap_result.objects.front();
+                        overlay_.selection_.model.add(ref);
+                    }
+                    break;
+                case snap::SnapKind::LineBody: {
+                    std::cout << "LineBody" << std::endl;
+                    // auto result =sketch_.addPoint(snap_result.point.position);
+                    if (!snap_result.objects.empty()) {
+                        const auto& ref = snap_result.objects.front();
+                        overlay_.selection_.model.add(ref);
+                    }
+                    break;
+                }
+                case snap::SnapKind::CircleBody:
+                    std::cout << "CircleBody" << std::endl;
+                    if (!snap_result.objects.empty()) {
+                        const auto& ref = snap_result.objects.front();
+                        overlay_.selection_.model.add(ref);
+                    }
+                    break;
+                case snap::SnapKind::CircleCentre:
+                    std::cout << "CircleCentre" << std::endl;
+                    if (!snap_result.objects.empty()) {
+                        const auto& ref = snap_result.objects.front();
+                        overlay_.selection_.model.add(ref);
+                    }
+                    break;
+                case snap::SnapKind::ArcBody:
+                    std::cout << "ArcBody" << std::endl;
+                    if (!snap_result.objects.empty()) {
+                        const auto& ref = snap_result.objects.front();
+                        overlay_.selection_.model.add(ref);
+                    }
+                    break;
+                case snap::SnapKind::ArcCentre:
+                    std::cout << "ArcCentre" << std::endl;
+                    if (!snap_result.objects.empty()) {
+                        const auto& ref = snap_result.objects.front();
+                        overlay_.selection_.model.add(ref);
+                    }
+                    break;
+                case snap::SnapKind::ArcEndpoint:
+                    std::cout << "ArcEndpoint" << std::endl;
+                    if (!snap_result.objects.empty()) {
+                        const auto& ref = snap_result.objects.front();
+                        overlay_.selection_.model.add(ref);
+                    }
+                    break;
+                case snap::SnapKind::LineMidpoint: {
+                    std::cout << "LineMidpoint" << std::endl;
+                    std::cout << snap_result.point.position.x << " " << snap_result.point.position.y << std::endl;
+
+                    // snap_result.objects
+                    auto result = sketch_.addPoint(snap_result.point.position);
+
+                    break;
+                }
+                case snap::SnapKind::Intersection: {
+                    std::cout << "Intersection" << std::endl;
+                    std::cout << snap_result.point.position.x << " " << snap_result.point.position.y << std::endl;
+
+                    // snap_result.objects
+                    auto result = sketch_.addPoint(snap_result.point.position);
+
+                    if (result) {
+                        sketch::EntityId pointId = result.value();
+                        //  auto status = sketch_.removeEntity(pointId);
+                    }
+                    break;
+                }
+                case snap::SnapKind::ExtendedIntersection: {
+                    std::cout << "ExtendedIntersection" << std::endl;
+                    std::cout << snap_result.point.position.x << " " << snap_result.point.position.y << std::endl;
+
+                    auto result = sketch_.addPoint(snap_result.point.position);
+                    break;
+                }
+                case snap::SnapKind::VirtualIntersection: {
+                    std::cout << "VirtualIntersection" << std::endl;
+                    std::cout << snap_result.point.position.x << " " << snap_result.point.position.y << std::endl;
+
+                    // snap_result.objects
+                    auto result = sketch_.addPoint(snap_result.point.position);
+
+                    if (result) {
+                        sketch::EntityId pointId = result.value();
+                        //  auto status = sketch_.removeEntity(pointId);
+                    }
+                    break;
+                }
+                case snap::SnapKind::Parallel: {
+                    std::cout << "Parallel" << std::endl;
+                    std::cout << snap_result.point.position.x << " " << snap_result.point.position.y << std::endl;
+                    auto result = sketch_.addPoint(snap_result.point.position);
+                    break;
+                }
+                case snap::SnapKind::Horizontal: {
+                    std::cout << "Horizontal" << std::endl;
+                    std::cout << snap_result.point.position.x << " " << snap_result.point.position.y << std::endl;
+                    auto result = sketch_.addPoint(snap_result.point.position);
+                    break;
+                }
+                case snap::SnapKind::Perpendicular: {
+                    std::cout << "Perpendicular" << std::endl;
+                    std::cout << snap_result.point.position.x << " " << snap_result.point.position.y << std::endl;
+                    auto result = sketch_.addPoint(snap_result.point.position);
+                    break;
+                }
+                case snap::SnapKind::Vertical: {
+                    std::cout << "Vertical" << std::endl;
+                    std::cout << snap_result.point.position.x << " " << snap_result.point.position.y << std::endl;
+                    auto result = sketch_.addPoint(snap_result.point.position);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }*/
 
     if (input::has_flag(e.buttons, input::MouseButton::Left)) {
         if (state_ == State::DraggingSelection) {

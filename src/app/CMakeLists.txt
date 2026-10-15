@@ -15,6 +15,7 @@ add_executable(ourpaint
         ui/ActionReportPresenter.cc
         editor/SketchEditor.cc
         editor/ConstraintActions.cc
+        editor/snapping/SnapSystem.cc
         editor/tools/PointTool.cc
         editor/tools/LineTool.cc
         editor/tools/CircleTool.cc
