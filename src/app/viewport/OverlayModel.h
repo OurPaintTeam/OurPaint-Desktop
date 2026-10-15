@@ -3,9 +3,11 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "SelectionModel.h"
+#include "SnapFeedback.h"
 
 class OverlayModel {
 public:
@@ -82,6 +84,13 @@ public:
     // Pending tool operands do not change the shared user selection.
     std::vector<core::sketch::GeometryRef> constraintRefs_;
 
+    // Replaces the complete hint without touching tool preview or user selection.
+    void setSnapFeedback(app::SnapFeedback feedback) { snapFeedback_ = std::move(feedback); }
+
+    const std::optional<app::SnapFeedback>& snapFeedback() const noexcept { return snapFeedback_; }
+
+    void clearSnap() { snapFeedback_.reset(); }
+
     void clearPreview() {
         points_.clear();
         lines_.clear();
@@ -98,16 +107,11 @@ public:
     void clear() {
         clearPreview();
         clearSelection();
+        clearSnap();
     }
 
-    // TODO
-    std::string pos;
-    int posX{};
-    int posY{};
-
-    std::string lp;
-    int lpX{};
-    int lpY{};
+private:
+    std::optional<app::SnapFeedback> snapFeedback_;
 };
 
 #endif // ! OURPAINT_APPLICATION_OVERLAY_MODEL_H_

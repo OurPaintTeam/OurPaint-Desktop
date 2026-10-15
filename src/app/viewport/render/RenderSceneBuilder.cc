@@ -9,6 +9,7 @@
 #include "AxisTexts.h"
 #include "OverlayModel.h"
 #include "RenderScene.h"
+#include "SnapFeedbackBuilder.h"
 #include "ViewportStyle.h"
 #include "../constraints/ConstraintLayout.h"
 #include "objects/Objects.h"
@@ -196,6 +197,13 @@ void RenderSceneBuilder::rebuild() {
     buildAxisText();
 
     buildConstraintsMarkers();
+    buildSnapFeedback();
+}
+
+void RenderSceneBuilder::buildSnapFeedback() {
+    if (const auto& feedback = overlay_.snapFeedback()) {
+        app::appendSnapFeedback(*feedback, sketch_, camera_, style_.snapFeedback, renderScene_);
+    }
 }
 
 void RenderSceneBuilder::buildGrid() {

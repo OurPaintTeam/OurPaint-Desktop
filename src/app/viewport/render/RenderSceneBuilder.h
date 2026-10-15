@@ -46,6 +46,7 @@ private:
     void buildAxisText();
 
     void buildConstraintsMarkers();
+    void buildSnapFeedback();
 
 private:
     Document& document_;
