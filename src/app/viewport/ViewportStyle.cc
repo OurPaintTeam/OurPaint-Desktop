@@ -46,6 +46,24 @@ ViewportStyle ViewportStyle::makeDefault() {
     }
 
     {
+        style.snapFeedback.marker.color = {0.8f, 0.1f, 0.6f, 1.0f};
+        style.snapFeedback.marker.widthPx = 1.5f;
+        style.snapFeedback.marker.edgeSoftnessPx = 1.0f;
+
+        style.snapFeedback.referencePoint.color = style.snapFeedback.marker.color;
+        style.snapFeedback.referencePoint.radius = 3.0f;
+        style.snapFeedback.referencePoint.edgeSoftnessPx = 1.0f;
+
+        style.snapFeedback.referenceCurve.color = style.snapFeedback.marker.color;
+        style.snapFeedback.referenceCurve.widthPx = 2.0f;
+        style.snapFeedback.referenceCurve.edgeSoftnessPx = 1.0f;
+
+        style.snapFeedback.guide.color = {0.6f, 0.2f, 0.6f, 0.8f};
+        style.snapFeedback.guide.widthPx = 1.0f;
+        style.snapFeedback.guide.edgeSoftnessPx = 1.0f;
+    }
+
+    {
         // base circle
         style.baseCircle.color = {0.0f, 0.0f, 0.0f, 1.0f};
         style.baseCircle.widthPx = 0.0f;

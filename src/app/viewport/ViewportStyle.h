@@ -2,6 +2,7 @@
 #define OURPAINT_RENDER_VIEWPORTSTYLE_H_
 
 #include "RenderScene.h"
+#include "SnapFeedbackStyle.h"
 #include "constraints/ConstraintMarkerStyle.h"
 
 namespace app {
@@ -19,6 +20,7 @@ struct ViewportStyle {
     StrokeStyle specialLine;
 
     ConstraintMarkerStyle constraintMarker;
+    SnapFeedbackStyle snapFeedback;
 
     StrokeStyle baseCircle;
     StrokeStyle selectedCircle;

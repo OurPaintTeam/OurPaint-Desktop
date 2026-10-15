@@ -33,3 +33,12 @@ add_ourpaint_test(ConstraintToolsGTEST
 )
 target_link_libraries(ConstraintToolsGTEST PRIVATE OurPaint::Sketch glm::glm)
 target_include_directories(ConstraintToolsGTEST PRIVATE ../../core/sketch ../../render/render)
+
+add_ourpaint_test(SnapFeedbackGTEST
+    SnapFeedbackGTEST.cc
+    ../viewport/render/SnapFeedbackBuilder.cc
+    ../viewport/SelectionModel.cc
+    ../../render/render/Camera2D.cc
+)
+target_link_libraries(SnapFeedbackGTEST PRIVATE OurPaint::Sketch glm::glm)
+target_include_directories(SnapFeedbackGTEST PRIVATE ../../core/sketch ../../render/render)
