@@ -7,6 +7,7 @@
 #include "SnapTypes.h"
 #include "sketch/SketchTypes.h"
 
+class Camera2D;
 namespace core::sketch {
 class Sketch;
 }
@@ -18,14 +19,11 @@ namespace snap {
 // Tool and draw state define which snaps are allowed.
 // =============================================================================
 struct SnapRequest {
-    /// Current view zoom.
-    double zoom = 1.0;
-
     /// Cursor position in sketch (world) coordinates.
     core::sketch::Vec2 cursor;
 
     /// Active tool.
-    ToolType tool = ToolType::Select;
+    ToolType tool;
 
     /// Tool draw state (Idle / FirstPoint / SecondPoint).
     DrawState drawState = DrawState::Idle;
@@ -33,6 +31,8 @@ struct SnapRequest {
     /// Points already committed by the tool (e.g. first point of a line).
     /// If empty — directional snaps are not activated.
     std::vector<core::sketch::Point2> anchors;
+
+    std::vector<core::sketch::GeometryRef> forbiddenObjects;
 };
 
 // =============================================================================
@@ -99,9 +99,11 @@ struct SnapCandidate {
 class SnapSystem {
 private:
     const core::sketch::Sketch& sketch_;
+    const Camera2D& camera_;
+    double zoom_ = 1.0;
 
 public:
-    explicit SnapSystem(const core::sketch::Sketch& sketch);
+    explicit SnapSystem(const core::sketch::Sketch& sketch,const Camera2D& camera);
     SnapResult getSnapCandidate(const SnapRequest& request) const;
 
 private:

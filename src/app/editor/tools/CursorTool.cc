@@ -46,7 +46,7 @@ CursorTool::CursorTool(Document& document, Camera2D& camera, Cpu2dPicker& picker
       overlay_(overlay),
       constraintActions_(constraintActions),
       data_(),
-      snap_(sketch_) {}
+      snap_(sketch_, camera_) {}
 
 std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
@@ -54,12 +54,12 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
 
     {
         // проверка направлений
-        // snap::SnapRequest request{camera_.zoom(), core::sketch::Vec2{v.x, v.y}, snap::ToolType::Line, snap::DrawState::FirstPoint,
-        // {sketch::Point2{1.0, 1.0}}};
+        snap::SnapRequest request{core::sketch::Vec2{v.x, v.y}, snap::ToolType::Line, snap::DrawState::FirstPoint,
+        {sketch::Point2{1.0, 1.0}},{}};
 
         // без направлений
-        snap::SnapRequest request{camera_.zoom(), core::sketch::Vec2{v.x, v.y}, snap::ToolType::Point, snap::DrawState::Idle,
-        {sketch::Point2{1.0, 1.0}}};
+        // snap::SnapRequest request{ core::sketch::Vec2{v.x, v.y}, snap::ToolType::Point, snap::DrawState::Idle,
+        // {sketch::Point2{1.0, 1.0}},{}};
         const auto snap_result = snap_.getSnapCandidate(request);
 
         if (snap_result.snapped) {

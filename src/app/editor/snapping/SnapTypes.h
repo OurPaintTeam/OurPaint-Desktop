@@ -6,8 +6,6 @@ namespace snap {
 
 // Active editor tool.
 enum class ToolType {
-    Select,
-
     Point,
     Line,
     Circle,
@@ -163,7 +161,6 @@ constexpr SnapMask defaultSnapMask(ToolType tool) noexcept {
     using M = SnapMask;
 
     switch (tool) {
-        case ToolType::Select:
         case ToolType::Move:
             return M::StandalonePoint | M::LineEndpoint | M::LineBody | M::CircleBody | M::CircleCentre | M::ArcBody | M::ArcCentre | M::ArcEndpoint;
 

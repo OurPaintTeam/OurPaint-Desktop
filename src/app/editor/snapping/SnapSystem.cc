@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Algorithms.h"
+#include "Camera2D.h"
 #include "sketch/Sketch.h"
 #include "sketch/SketchTypes.h"
 
@@ -73,7 +74,9 @@ bool SnapSystem::isBetterCandidate(const SnapCandidate& candidate, const SnapCan
     return candidateDistance < currentDistance;
 }
 
-SnapSystem::SnapSystem(const core::sketch::Sketch& sketch) : sketch_(sketch) {}
+SnapSystem::SnapSystem(const core::sketch::Sketch& sketch,const Camera2D& camera) : sketch_(sketch), camera_(camera) {
+    zoom_ = camera_.zoom();
+}
 
 SnapResult SnapSystem::getSnapCandidate(const SnapRequest& request) const { return parser(request); }
 
@@ -89,10 +92,6 @@ SnapRule SnapSystem::ruleFor(ToolType tool, DrawState state) {
                                  M::ArcBody | M::ArcEndpoint | M::ArcCentre | M::ExtendedIntersection | M::VirtualIntersection;
 
     switch (tool) {
-        case ToolType::Select:
-            // Selection itself should be handled by object picking.
-            return {commonPosition, kDefaultSnapRadiusPixels, kDefaultSnapRadiusPixels};
-            break;
 
         case ToolType::Move:
             rule.mask = commonPosition;
@@ -138,7 +137,7 @@ SnapResult SnapSystem::parser(const SnapRequest& request) const {
     // SnapRequest defaults to 1.0; use the same safe fallback if a caller passes
     // zero, a negative value, NaN, or infinity. The view integration should still
     // pass its actual world-to-screen scale for exact pixel tolerance.
-    const double zoom = (std::isfinite(request.zoom) && request.zoom > 1e-9) ? request.zoom : 1.0;
+    const double zoom = (std::isfinite(zoom_) && zoom_ > 1e-9) ? zoom_ : 1.0;
     rule.maxRadius /= zoom;
     rule.priorityRadius /= zoom;
 
