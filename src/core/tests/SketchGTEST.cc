@@ -49,6 +49,27 @@ void expectGeometry(const SketchGeometry& actual, const SketchGeometry& expected
         actual);
 }
 
+void expectSnapshot(const SketchSnapshot& actual, const SketchSnapshot& expected) {
+    EXPECT_EQ(actual.lastEntityId, expected.lastEntityId);
+    EXPECT_EQ(actual.lastConstraintId, expected.lastConstraintId);
+    ASSERT_EQ(actual.entities.size(), expected.entities.size());
+    for (size_t i = 0; i < actual.entities.size(); ++i) {
+        EXPECT_EQ(actual.entities[i].id, expected.entities[i].id);
+        EXPECT_EQ(actual.entities[i].construction, expected.entities[i].construction);
+        expectGeometry(actual.entities[i].geometry, expected.entities[i].geometry);
+    }
+    ASSERT_EQ(actual.constraints.size(), expected.constraints.size());
+    for (size_t i = 0; i < actual.constraints.size(); ++i) {
+        EXPECT_EQ(actual.constraints[i].id, expected.constraints[i].id);
+        const auto& definition = actual.constraints[i].definition;
+        const auto& expectedDefinition = expected.constraints[i].definition;
+        EXPECT_EQ(definition.type, expectedDefinition.type);
+        EXPECT_EQ(definition.refs, expectedDefinition.refs);
+        EXPECT_EQ(definition.value, expectedDefinition.value);
+        EXPECT_EQ(definition.fixedPosition, expectedDefinition.fixedPosition);
+    }
+}
+
 ConstraintDefinition horizontal(EntityId line) {
     return {
         ConstraintType::Horizontal,
@@ -977,29 +998,20 @@ TEST_P(SketchBehavior, SeparateSketchesDoNotShareGeometryOrConstraintState) {
     EXPECT_TRUE(sketch_->entity(first.value()));
 }
 
-TEST_P(SketchBehavior, RuntimeBackendSwitchPreservesPublicIdentityAndGeometry) {
-    auto line = sketch_->addLine({1, 2}, {5, 2});
+TEST_P(SketchBehavior, SwitchingToDcmIsNoOpAndPreservesUnsolvedState) {
+    auto line = sketch_->addLine({1, 2}, {5, 4});
     auto circle = sketch_->addCircle({8, 9}, 3);
     ASSERT_TRUE(line);
     ASSERT_TRUE(circle);
     auto relation = sketch_->addConstraint(horizontal(line.value()));
     ASSERT_TRUE(relation);
-    for (BackendKind backend : Sketch::availableBackends()) {
-        ASSERT_TRUE(sketch_->switchBackend(backend));
-        EXPECT_EQ(sketch_->backendKind(), backend);
-        auto queried = sketch_->entity(line.value());
-        auto queriedCircle = sketch_->entity(circle.value());
-        auto queriedConstraint = sketch_->constraint(relation.value());
-        ASSERT_TRUE(queried);
-        ASSERT_TRUE(queriedCircle);
-        ASSERT_TRUE(queriedConstraint);
-        expectGeometry(queried.value().geometry, Line2{{1, 2}, {5, 2}});
-        expectGeometry(queriedCircle.value().geometry, Circle2{{8, 9}, 3});
-        EXPECT_EQ(queriedConstraint.value().definition.refs, horizontal(line.value()).refs);
-        auto solved = sketch_->solve();
-        ASSERT_TRUE(solved);
-        EXPECT_EQ(solved.value().status, SolveStatus::Converged);
-    }
+    auto before = sketch_->snapshot();
+    ASSERT_TRUE(before);
+    ASSERT_TRUE(sketch_->switchBackend(BackendKind::Dcm));
+    EXPECT_EQ(sketch_->backendKind(), BackendKind::Dcm);
+    auto after = sketch_->snapshot();
+    ASSERT_TRUE(after);
+    expectSnapshot(after.value(), before.value());
     auto next = sketch_->addPoint({0, 0});
     ASSERT_TRUE(next);
     EXPECT_GT(next.value().get(), circle.value().get());
@@ -1309,7 +1321,7 @@ TEST_P(SketchBehavior, GeometryBatchesPrevalidateAllInputsAndRejectDuplicateTarg
     EXPECT_EQ(sketch_->entityCount(), 1U);
     EXPECT_EQ(after.value().lastEntityId, state.value().lastEntityId);
     EXPECT_EQ(after.value().lastConstraintId, state.value().lastConstraintId);
-    // Both current adapters support every geometry kind; no valid creation input
+    // DCM supports every geometry kind; no valid creation input
     // exercises Unsupported. Unsupported constraint behavior is covered above.
 }
 
@@ -1354,7 +1366,7 @@ TEST_P(SketchBehavior, BatchUpdatesDeferSolvingAndDefineCoincidentProposalOrder)
     ASSERT_TRUE(sketch_->updateEntities(updates));
     expectGeometry(sketch_->entity(ids[2]).value().geometry, updates[2].geometry);
     expectPosition(sketch_->pointPosition({ids[0], SubElement::Whole}).value(), {5, 6});
-    expectPosition(sketch_->pointPosition({ids[1], SubElement::Whole}).value(), GetParam() == BackendKind::Dcm ? Vec2{5, 6} : Vec2{2, 3});
+    expectPosition(sketch_->pointPosition({ids[1], SubElement::Whole}).value(), {5, 6});
     auto solved = sketch_->solve();
     ASSERT_TRUE(solved);
     ASSERT_EQ(solved.value().status, SolveStatus::Converged);
@@ -1365,8 +1377,8 @@ TEST_P(SketchBehavior, BatchUpdatesDeferSolvingAndDefineCoincidentProposalOrder)
     ASSERT_EQ(solved.value().status, SolveStatus::Converged);
     const std::array<EntityUpdate, 2> fixedUpdates{{{ids[0], Point2{{7, 8}}, std::nullopt}, {ids[1], Point2{{9, 10}}, std::nullopt}}};
     ASSERT_TRUE(sketch_->updateEntities(fixedUpdates));
-    expectPosition(sketch_->pointPosition({ids[0], SubElement::Whole}).value(), GetParam() == BackendKind::Dcm ? Vec2{1, 1} : Vec2{7, 8});
-    expectPosition(sketch_->pointPosition({ids[1], SubElement::Whole}).value(), GetParam() == BackendKind::Dcm ? Vec2{1, 1} : Vec2{9, 10});
+    expectPosition(sketch_->pointPosition({ids[0], SubElement::Whole}).value(), {1, 1});
+    expectPosition(sketch_->pointPosition({ids[1], SubElement::Whole}).value(), {1, 1});
     solved = sketch_->solve();
     ASSERT_TRUE(solved);
     ASSERT_EQ(solved.value().status, SolveStatus::Converged);
@@ -1384,12 +1396,11 @@ TEST_P(SketchBehavior, MixedCurveBatchProposalsRespectCoincidentReferenceOrder) 
     const std::array<EntityUpdate, 3> updates{
         {{ids[2], Arc2{{1, 1}, {3, 1}, {1, 3}}, std::nullopt}, {ids[1], Circle2{{4, 4}, 2}, std::nullopt}, {ids[0], Line2{{5, 6}, {7, 6}}, std::nullopt}}};
     ASSERT_TRUE(sketch_->updateEntities(updates));
-    const bool projected = GetParam() == BackendKind::Dcm;
     expectPosition(sketch_->pointPosition({ids[0], SubElement::Start}).value(), {5, 6});
-    expectPosition(sketch_->pointPosition({ids[1], SubElement::Center}).value(), projected ? Vec2{5, 6} : Vec2{4, 4});
-    expectPosition(sketch_->pointPosition({ids[2], SubElement::Center}).value(), projected ? Vec2{5, 6} : Vec2{1, 1});
+    expectPosition(sketch_->pointPosition({ids[1], SubElement::Center}).value(), {5, 6});
+    expectPosition(sketch_->pointPosition({ids[2], SubElement::Center}).value(), {5, 6});
     // Intrinsic circularity is deferred, too: the projected DCM arc now has
-    // unequal radii. Both adapters retain the endpoint proposals without solve.
+    // unequal radii. The endpoint proposals remain unchanged without solve.
     expectPosition(sketch_->pointPosition({ids[2], SubElement::Start}).value(), {3, 1});
     expectPosition(sketch_->pointPosition({ids[2], SubElement::End}).value(), {1, 3});
     EXPECT_EQ(sketch_->entityCount(), 3U);
@@ -1463,47 +1474,49 @@ TEST_P(SketchBehavior, BatchIdCapacityIsCheckedBeforeAllocationAndClearDoesNotRe
 }
 
 INSTANTIATE_TEST_SUITE_P(AvailableBackends, SketchBehavior, testing::ValuesIn(Sketch::availableBackends()),
-                         [](const testing::TestParamInfo<BackendKind>& info) { return info.param == BackendKind::Dcm ? "DCM" : "SolveSpace"; });
+                         [](const testing::TestParamInfo<BackendKind>&) { return "DCM"; });
 
-TEST(SketchConfiguration, DefaultBackendIsAvailableAndConstructible) {
-    const auto available = Sketch::availableBackends();
-    EXPECT_FALSE(available.empty());
-    EXPECT_NE(std::find(available.begin(), available.end(), Sketch::defaultBackend()), available.end());
+TEST(SketchConfiguration, DcmIsTheOnlyAvailableAndDefaultBackend) {
+    EXPECT_EQ(Sketch::availableBackends(), (std::vector<BackendKind>{BackendKind::Dcm}));
+    EXPECT_EQ(Sketch::defaultBackend(), BackendKind::Dcm);
     auto created = Sketch::create();
     ASSERT_TRUE(created);
-    EXPECT_EQ(created.value()->backendKind(), Sketch::defaultBackend());
-    for (BackendKind backend : {BackendKind::Dcm, BackendKind::SolveSpace}) {
-        if (std::find(available.begin(), available.end(), backend) == available.end()) {
-            expectError(Sketch::create(backend), ErrorCode::Unsupported);
-        }
-    }
+    EXPECT_EQ(created.value()->backendKind(), BackendKind::Dcm);
+    auto explicitDcm = Sketch::create(BackendKind::Dcm);
+    ASSERT_TRUE(explicitDcm);
+    EXPECT_EQ(explicitDcm.value()->backendKind(), BackendKind::Dcm);
+    expectError(Sketch::create(static_cast<BackendKind>(99)), ErrorCode::InvalidArgument);
 }
 
-TEST(SketchStateTransfer, UnsupportedMigrationPreservesSourceBackendAndState) {
-    const auto available = Sketch::availableBackends();
-    if (std::find(available.begin(), available.end(), BackendKind::Dcm) == available.end() ||
-        std::find(available.begin(), available.end(), BackendKind::SolveSpace) == available.end()) {
-        GTEST_SKIP() << "Requires both backends";
-    }
-    auto created = Sketch::create(BackendKind::SolveSpace);
+TEST(SketchStateTransfer, InvalidBackendKindPreservesDcmStateAndIdWatermarks) {
+    auto created = Sketch::create();
     ASSERT_TRUE(created);
     auto& sketch = *created.value();
-    auto circle = sketch.addCircle({2, 3}, 4);
-    ASSERT_TRUE(circle);
-    ConstraintDefinition radius{ConstraintType::Radius, {{circle.value(), SubElement::Whole}}, 4.0, std::nullopt};
-    auto relation = sketch.addConstraint(radius);
+    auto line = sketch.addEntity(Line2{{1, 2}, {5, 4}}, true);
+    auto discarded = sketch.addPoint({8, 9});
+    ASSERT_TRUE(line);
+    ASSERT_TRUE(discarded);
+    auto relation = sketch.addConstraint(horizontal(line.value()));
+    auto discardedRelation = sketch.addConstraint(horizontal(line.value()));
     ASSERT_TRUE(relation);
-    expectError(sketch.switchBackend(BackendKind::Dcm), ErrorCode::Unsupported);
-    EXPECT_EQ(sketch.backendKind(), BackendKind::SolveSpace);
-    auto queried = sketch.entity(circle.value());
-    auto queriedConstraint = sketch.constraint(relation.value());
-    ASSERT_TRUE(queried);
-    ASSERT_TRUE(queriedConstraint);
-    expectGeometry(queried.value().geometry, Circle2{{2, 3}, 4});
-    EXPECT_EQ(queriedConstraint.value().definition.type, ConstraintType::Radius);
-    auto solved = sketch.solve();
-    ASSERT_TRUE(solved);
-    EXPECT_EQ(solved.value().status, SolveStatus::Converged);
+    ASSERT_TRUE(discardedRelation);
+    ASSERT_TRUE(sketch.removeEntity(discarded.value()));
+    ASSERT_TRUE(sketch.removeConstraint(discardedRelation.value()));
+    auto before = sketch.snapshot();
+    ASSERT_TRUE(before);
+    for (BackendKind requested : {static_cast<BackendKind>(99), static_cast<BackendKind>(-1)}) {
+        expectError(sketch.switchBackend(requested), ErrorCode::InvalidArgument);
+        EXPECT_EQ(sketch.backendKind(), BackendKind::Dcm);
+        auto after = sketch.snapshot();
+        ASSERT_TRUE(after);
+        expectSnapshot(after.value(), before.value());
+    }
+    auto next = sketch.addPoint({10, 11});
+    auto nextRelation = sketch.addConstraint(horizontal(line.value()));
+    ASSERT_TRUE(next);
+    ASSERT_TRUE(nextRelation);
+    EXPECT_EQ(next.value().get(), before.value().lastEntityId + 1);
+    EXPECT_EQ(nextRelation.value().get(), before.value().lastConstraintId + 1);
 }
 
 }  // namespace

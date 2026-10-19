@@ -20,7 +20,7 @@ add_ourpaint_test(CursorToolGTEST
     ../../render/render/Camera2D.cc
 )
 target_link_libraries(CursorToolGTEST PRIVATE OurPaint::Sketch glm::glm)
-target_include_directories(CursorToolGTEST PRIVATE ../../core/sketch ../../render/render)
+target_include_directories(CursorToolGTEST PRIVATE ../editor ../../core/sketch ../../render/render)
 
 add_ourpaint_test(ConstraintToolsGTEST
     ConstraintToolsGTEST.cc

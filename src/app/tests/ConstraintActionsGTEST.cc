@@ -16,10 +16,10 @@ namespace {
 using namespace core::sketch;
 using PreparationState = ConstraintPreparation::State;
 
-class ConstraintActionsBehavior : public testing::TestWithParam<BackendKind> {
+class ConstraintActionsBehavior : public testing::Test {
 protected:
     void SetUp() override {
-        auto created = Sketch::create(GetParam());
+        auto created = Sketch::create();
         ASSERT_TRUE(created);
         sketch_ = std::move(created.value());
 
@@ -50,7 +50,7 @@ protected:
     GeometryRef line_, otherLine_, point_, circle_, arc_, start_, end_;
 };
 
-TEST_P(ConstraintActionsBehavior, DimensionDistinguishesWholeLineFromItsEndpoints) {
+TEST_F(ConstraintActionsBehavior, DimensionDistinguishesWholeLineFromItsEndpoints) {
     const auto length = prepare(ConstraintAction::Dimension, {line_}, 7.0);
     ASSERT_EQ(length.state, PreparationState::Ready);
     ASSERT_TRUE(length.definition);
@@ -77,7 +77,7 @@ TEST_P(ConstraintActionsBehavior, DimensionDistinguishesWholeLineFromItsEndpoint
     EXPECT_EQ(prepare(ConstraintAction::Dimension, {circle_}, 7.0).state, PreparationState::InvalidSelection);
 }
 
-TEST_P(ConstraintActionsBehavior, BinaryConstraintDistinguishesIncompleteAndInvalidSelections) {
+TEST_F(ConstraintActionsBehavior, BinaryConstraintDistinguishesIncompleteAndInvalidSelections) {
     EXPECT_EQ(prepare(ConstraintAction::Perpendicular).state, PreparationState::NeedsMoreInput);
     EXPECT_EQ(prepare(ConstraintAction::Perpendicular, {line_}).state, PreparationState::NeedsMoreInput);
     EXPECT_EQ(prepare(ConstraintAction::Perpendicular, {line_, otherLine_}).state, PreparationState::Ready);
@@ -92,7 +92,7 @@ TEST_P(ConstraintActionsBehavior, BinaryConstraintDistinguishesIncompleteAndInva
     EXPECT_EQ(prepare(ConstraintAction::Coincident, {line_}).state, PreparationState::InvalidSelection);
 }
 
-TEST_P(ConstraintActionsBehavior, HVDistanceChoosesDominantAxisAndOrdersPointsIndependentlyOfClicks) {
+TEST_F(ConstraintActionsBehavior, HVDistanceChoosesDominantAxisAndOrdersPointsIndependentlyOfClicks) {
     const auto vertical = prepare(ConstraintAction::HVDistance, {end_, start_}, 7.0);
     ASSERT_EQ(vertical.state, PreparationState::Ready);
     ASSERT_TRUE(vertical.definition);
@@ -117,7 +117,7 @@ TEST_P(ConstraintActionsBehavior, HVDistanceChoosesDominantAxisAndOrdersPointsIn
     EXPECT_EQ(prepare(ConstraintAction::HVDistance, {start_, start_}, 7.0).state, PreparationState::InvalidSelection);
 }
 
-TEST_P(ConstraintActionsBehavior, UnaryConstraintsRequireExactArityAndValidReferences) {
+TEST_F(ConstraintActionsBehavior, UnaryConstraintsRequireExactArityAndValidReferences) {
     EXPECT_EQ(prepare(ConstraintAction::Horizontal).state, PreparationState::NeedsMoreInput);
     EXPECT_EQ(prepare(ConstraintAction::Horizontal, {line_}).state, PreparationState::Ready);
     EXPECT_EQ(prepare(ConstraintAction::Vertical, {line_}).state, PreparationState::Ready);
@@ -130,7 +130,7 @@ TEST_P(ConstraintActionsBehavior, UnaryConstraintsRequireExactArityAndValidRefer
     EXPECT_EQ(prepare(ConstraintAction::Coincident, {{point_.entity, SubElement::Start}}).state, PreparationState::InvalidSelection);
 }
 
-TEST_P(ConstraintActionsBehavior, ValuesAreRequiredOnlyForDimensionsAndRespectTheirRanges) {
+TEST_F(ConstraintActionsBehavior, ValuesAreRequiredOnlyForDimensionsAndRespectTheirRanges) {
     EXPECT_EQ(prepare(ConstraintAction::Dimension).state, PreparationState::InvalidSelection);
     EXPECT_EQ(prepare(ConstraintAction::HVDistance, {start_, end_}).state, PreparationState::InvalidSelection);
     EXPECT_EQ(prepare(ConstraintAction::Angle, {line_, otherLine_}).state, PreparationState::InvalidSelection);
@@ -149,7 +149,7 @@ TEST_P(ConstraintActionsBehavior, ValuesAreRequiredOnlyForDimensionsAndRespectTh
     EXPECT_EQ(prepare(ConstraintAction::Angle, {line_}, std::numbers::pi / 2).state, PreparationState::NeedsMoreInput);
 }
 
-TEST_P(ConstraintActionsBehavior, FixCapturesCurrentPositionOfStandalonePointsAndCurveElements) {
+TEST_F(ConstraintActionsBehavior, FixCapturesCurrentPositionOfStandalonePointsAndCurveElements) {
     const auto fixedPoint = prepare(ConstraintAction::Fix, {point_});
     ASSERT_EQ(fixedPoint.state, PreparationState::Ready);
     ASSERT_TRUE(fixedPoint.definition);
@@ -164,7 +164,7 @@ TEST_P(ConstraintActionsBehavior, FixCapturesCurrentPositionOfStandalonePointsAn
     EXPECT_EQ(*fixedEnd.definition->fixedPosition, (Vec2{3, 4}));
 }
 
-TEST_P(ConstraintActionsBehavior, EqualityAndTangencyRespectBackendCapabilities) {
+TEST_F(ConstraintActionsBehavior, EqualityAndTangencyRespectSolverCapabilities) {
     const auto capabilities = sketch_->capabilities();
     if (capabilities.supports(ConstraintType::Equal)) {
         EXPECT_EQ(prepare(ConstraintAction::Equal, {line_}).state, PreparationState::NeedsMoreInput);
@@ -182,7 +182,7 @@ TEST_P(ConstraintActionsBehavior, EqualityAndTangencyRespectBackendCapabilities)
     }
 }
 
-TEST_P(ConstraintActionsBehavior, PreparationDoesNotMoveGeometryAddConstraintsOrConsumeIds) {
+TEST_F(ConstraintActionsBehavior, PreparationDoesNotMoveGeometryAddConstraintsOrConsumeIds) {
     const auto before = sketch_->snapshot();
     const auto pointsBefore = sketch_->pointElements();
     ASSERT_TRUE(before);
@@ -222,7 +222,7 @@ TEST_P(ConstraintActionsBehavior, PreparationDoesNotMoveGeometryAddConstraintsOr
     EXPECT_EQ(addedPoint.value().get(), before.value().lastEntityId + 1);
 }
 
-TEST_P(ConstraintActionsBehavior, ApplyingCoincidencePreservesMidpointPlacementAndSolves) {
+TEST_F(ConstraintActionsBehavior, ApplyingCoincidencePreservesMidpointPlacementAndSolves) {
     const auto a = sketch_->addPoint({0, 0});
     const auto b = sketch_->addPoint({6, 8});
     ASSERT_TRUE(a);
@@ -256,7 +256,7 @@ TEST_P(ConstraintActionsBehavior, ApplyingCoincidencePreservesMidpointPlacementA
     EXPECT_NEAR(secondPosition.value().y, 4, 1e-6);
 }
 
-TEST_P(ConstraintActionsBehavior, ApplyingPerpendicularAddsConstraintAndSolves) {
+TEST_F(ConstraintActionsBehavior, ApplyingPerpendicularAddsConstraintAndSolves) {
     const auto prepared = prepare(ConstraintAction::Perpendicular, {line_, otherLine_});
     ASSERT_EQ(prepared.state, PreparationState::Ready);
     ASSERT_TRUE(prepared.definition);
@@ -283,7 +283,7 @@ TEST_P(ConstraintActionsBehavior, ApplyingPerpendicularAddsConstraintAndSolves) 
     EXPECT_NEAR(directionA.x * directionB.x + directionA.y * directionB.y, 0, 1e-6 * lengths);
 }
 
-TEST_P(ConstraintActionsBehavior, RejectionsPreserveSelectionAndValueReasonsWithoutMutation) {
+TEST_F(ConstraintActionsBehavior, RejectionsPreserveSelectionAndValueReasonsWithoutMutation) {
     const auto invalidValue = prepare(ConstraintAction::Dimension, {line_}, -1.0);
     EXPECT_EQ(invalidValue.rejection, ActionRejection::InvalidValue);
     const auto invalidSelection = prepare(ConstraintAction::Horizontal, {point_});
@@ -305,7 +305,7 @@ TEST_P(ConstraintActionsBehavior, RejectionsPreserveSelectionAndValueReasonsWith
     EXPECT_EQ(sketch_->constraintCount(), 0);
 }
 
-TEST_P(ConstraintActionsBehavior, ApplicationPreflightFailureDoesNotClaimInsertionOrSolving) {
+TEST_F(ConstraintActionsBehavior, ApplicationPreflightFailureDoesNotClaimInsertionOrSolving) {
     ConstraintActions actions(*sketch_);
     const ConstraintDefinition invalid{ConstraintType::Coincident, {point_}, std::nullopt, std::nullopt};
     const auto report = actions.apply(invalid);
@@ -318,7 +318,7 @@ TEST_P(ConstraintActionsBehavior, ApplicationPreflightFailureDoesNotClaimInserti
     EXPECT_EQ(sketch_->constraintCount(), 0);
 }
 
-TEST_P(ConstraintActionsBehavior, FailedConvergenceRetainsConfirmedConstraintInsertion) {
+TEST_F(ConstraintActionsBehavior, FailedConvergenceRetainsConfirmedConstraintInsertion) {
     const auto point = sketch_->addPoint({0, 0});
     ASSERT_TRUE(point);
     const GeometryRef ref{point.value(), SubElement::Whole};
@@ -351,6 +351,4 @@ TEST(ConstraintActionsReports, FailedReadOnlyPreparationKeepsModelUnchanged) {
     EXPECT_FALSE(report.solve);
 }
 
-INSTANTIATE_TEST_SUITE_P(AvailableBackends, ConstraintActionsBehavior, testing::ValuesIn(Sketch::availableBackends()),
-                         [](const testing::TestParamInfo<BackendKind>& info) { return info.param == BackendKind::Dcm ? "DCM" : "SolveSpace"; });
 }  // namespace

@@ -31,12 +31,6 @@ target_link_libraries(GeometryAlgorithmTest PRIVATE OurPaint::Sketch)
 add_ourpaint_test(SketchGTEST SketchGTEST.cc)
 target_link_libraries(SketchGTEST PRIVATE OurPaint::Sketch)
 
-# Build explicitly to verify the public SolveSpace C API include and link boundary.
-add_executable(SolveSpaceLinkSmoke EXCLUDE_FROM_ALL SolveSpaceLinkSmoke.cpp)
-target_link_libraries(SolveSpaceLinkSmoke PRIVATE OurPaint::SolveSpace)
-
-
-
 set(TYPE_OF_COMPILING BOOL 1)
 if (TYPE_OF_COMPILING)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

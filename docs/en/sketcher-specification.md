@@ -80,7 +80,7 @@ Evidence covers Siemens NX, SOLIDWORKS, CATIA, PTC Creo, Inventor, Fusion, Onsha
 
 Sources span named releases and rolling help. CATIA includes a Dassault-hosted feature note and vendor-authored help on a third-party mirror with uncertain release/access; this evidence is weaker than current official documentation. Absence of evidence means **not verified**, not absent. Scholarly surveys identify concepts and research directions, not guarantees that one algorithm works for every sketch.
 
-**Naming:** OurPaint's DCM adapter integrates **OurPaintDCM**. Siemens **D-Cubed 2D DCM** is a separate commercial component, cited as design-space evidence; its features must not be attributed to OurPaintDCM. Source summaries and original proposals are distinguished throughout.
+**Naming:** OurPaint's Sketch integrates **OurPaintDCM** directly. Siemens **D-Cubed 2D DCM** is a separate commercial component, cited as design-space evidence; its features must not be attributed to OurPaintDCM. Source summaries and original proposals are distinguished throughout.
 
 ## Part A — Long-term capability model
 
@@ -261,7 +261,7 @@ Two defensible designs are analytic conic records with rational evaluation/conve
 
 **SK-GEO-010 — Exact and approximate provenance [Contract].** Geometry shall record representation family independently from provenance and accuracy: authored analytic/freeform data, exact locus-preserving conversion, generated evaluation or bounded approximation. A spline is not inherently approximate; rational splines can represent conics exactly. Exact conversion does not imply exact arithmetic or exact topological closure after rounding.
 
-**SK-GEO-011 — Unsupported but preserved [Contract].** Loading or switching to a backend that cannot solve an entity shall not delete or tessellate that entity. A recognized neutral entity can remain viewable and preserved with an explicit unsolved/read-only status. Unknown future records require preservation or an explicit unsupported-version refusal, never silent omission.
+**SK-GEO-011 — Unsupported but preserved [Contract].** Loading geometry that DCM cannot solve shall not delete or tessellate that geometry. A recognized neutral entity can remain viewable and preserved with an explicit unsolved/read-only status. Unknown future records require preservation or an explicit unsupported-version refusal, never silent omission.
 
 ## 6. Creation tools and authoring workflows
 
@@ -1325,7 +1325,7 @@ diagnostic / conflict / qualified-subset
 
 **SK-CAP-005 — No fake fallback [Contract].** Do not approximate an unsupported ellipse as a circle, spline tangency as a control-polygon angle, or a general offset as a scaled spline. A geometry approximation is an explicit new design operation with its own error and association policy.
 
-**SK-CAP-006 — Backend switching [Contract].** Preflight the complete neutral definition. Preserve all data and IDs; reject the switch or install a clearly restricted/unsolved session when requirements are unmet. Switching shall not remove constraints, convert driving to driven, or silently change branch intent.
+**SK-CAP-006 — Neutral-state loading and replacement [Contract].** Preflight the complete neutral definition before loading or replacing state in the DCM session. Preserve all data and IDs; reject the operation or install a clearly restricted/unsolved session when requirements are unmet. Loading or replacement shall not remove constraints, convert driving to driven, or silently change branch intent.
 
 **SK-CAP-007 — Conformance tier [Contract].** An adapter may be available without meeting a complete product tier. A claimed configuration/tier shall advertise its end-to-end semantic scope and verification evidence. Each adapter shall meet the subset it advertises; reduced diagnostics, unsupported forms and measurement-only support shall remain visible. Required default tiers are delivery decisions in Part C.
 
@@ -1355,16 +1355,14 @@ Inspection covered the current working tree, including ongoing uncommitted chang
 
 | Inspected file | Observed design | Implication                                                                                                            |
 |---|---|------------------------------------------------------------------------------------------------------------------------|
-| `src/core/sketch/Sketch.h`, `Sketch.cc` | Sketch owns IDs/policy/backend lifetime; backend owns live geometry; neutral detached query values | Good public encapsulation; insufficient independence of long-term model storage                                        |
+| `src/core/sketch/Sketch.h`, `Sketch.cc` | Sketch owns public IDs/policy and a private `Impl`; its DCM manager owns live geometry; neutral detached query values | Good public encapsulation; long-term model storage still depends on DCM                                               |
 | `src/core/sketch/SketchTypes.h` | Point/line/circle/arc variant; typed IDs; construction flag; coarse capabilities and exact preflight; two solve outcomes | Useful foundation; needs richer reference, state, diagnostic, and geometry semantics                                   |
-| `src/core/sketch/backends/ISketchBackend.h` | CRUD, queries, counts, construction metadata, constraints, solve and drag in one backend interface | This is both a model-store abstraction and a solver adapter, not just a numerical boundary                             |
-| `DcmSketchBackend.cc` | OurPaintDCM owns coordinates; private ID maps and intrinsic arc relation; diagnostics intentionally limited | Do not equate its status/reporting with Siemens D-Cubed                                                                |
-| `SolveSpaceSketchBackend.cc` | Owned libslvs records; private handles; current adapter rejects the public whole-curve tangency form | Native SolveSpace feature support and public OurPaint constraint semantics differ                                      |
-| `src/core/Document.h`, `Document.cc` | Document owns one Sketch and currently selects SolveSpace | Future feature/support/dependency context belongs around Sketch                                                        |
+| `Sketch::Impl` in `Sketch.cc` | Direct ownership of OurPaintDCM, private ID maps and an intrinsic arc circularity relation; diagnostics intentionally limited | DCM is the only solver; native handles stay private; do not equate its reporting with Siemens D-Cubed                   |
+| `src/core/Document.h`, `Document.cc` | Document owns one Sketch and creates it with DCM | Future feature/support/dependency context belongs around Sketch                                                        |
 | `src/app/editor/tools/CursorTool.cc` and architecture documentation | Neutral selections and absolute drag targets; cancel currently discards gesture state without restoring geometry | Preserve neutral selection; add transactional gesture semantics                                                        |
-| `docs/en/sketch-architecture.md` | Explicit backend-authoritative storage and possible failed-iterate exposure | This specification proposes a deliberate future change; existing document remains current implementation documentation |
+| `docs/en/sketch-architecture.md` | Explicit DCM-authoritative storage and possible failed-iterate exposure | This specification proposes a deliberate future change; existing document remains current implementation documentation |
 
-The current backend-authoritative arrangement is one viable ownership model, but the broader capability map requires explicit answers for unsupported definitions, rollback, persistence, editing and neutral consumers. These can be supplied around an authoritative backend; they are not inherently impossible. The alternatives below compare the costs and guarantees rather than treating coordinate duplication itself as a defect.
+The current DCM-authoritative arrangement is one viable ownership model, but the broader capability map requires explicit answers for unsupported definitions, rollback, persistence, editing and neutral consumers. These can be supplied around DCM as the authoritative store. The alternatives below compare future ownership costs and guarantees within the single DCM integration; they do not require additional solver backends.
 
 ### Ownership alternatives: A, B and C
 
@@ -1376,7 +1374,7 @@ The current backend-authoritative arrangement is one viable ownership model, but
 | Undo | Backend/neutral checkpoints with documented restore | Neutral snapshots/deltas and transactions | Accepted checkpoint plus speculative-session discard |
 | Failed solve | Protect/restore prior accepted state; native queries must avoid failed iterates | Reject candidate without mutating accepted realization | Trial remains private; prior published state survives |
 | Unsupported geometry | Side storage/passthrough or backend becomes a general repository | Preserved without solver support | Preserved neutrally; only supported subset compiled |
-| Backend switch | Export/import preflight and representation conversion burden | Recompile same neutral semantics | Finish/discard session and start another from accepted state |
+| Explicit state replacement / session rebuild | Export/import preflight and representation conversion burden | Recompile same neutral semantics into DCM | Finish/discard the DCM session and rebuild from accepted state |
 | External references | Neutral association layer plus native prescription | Neutral bindings and evaluated source snapshots | Same bindings, incrementally synchronized into session |
 | Derived topology | Detached accepted export can feed independent topology | Accepted neutral snapshot is natural input | Only published accepted snapshots, never mutable trial buffers |
 | Performance | Efficient native mutation; export cost for other consumers | Translation/duplication cost; dirty updates/cache reuse mitigate | Less copying during gestures; lifecycle/synchronization more involved |
@@ -1401,9 +1399,9 @@ Document / feature graph / units / history / support-plane providers
         |           |                |
    Edit planner  Parameter eval   Solver session
         |                            |
-  Geometry services          ISketchSolverBackend
-        |                      /           \
-  Planar arrangement       OurPaintDCM   SolveSpace
+  Geometry services             OurPaintDCM
+        |
+  Planar arrangement
         |
   Profiles / region selection resolution
 
@@ -1417,7 +1415,7 @@ This is a responsibility diagram, not a requirement for eleven libraries, public
 
 **SK-ARC-002 — Controlled numerical duplication [ADR candidate].** Native sessions/caches may duplicate coefficients as numerical representations. Synchronization should be directional and revisioned: accepted intent into compilation/session, validated candidates back into accepted state. Hybrid sessions may publish deltas instead of whole-model copies; no hidden bidirectional mutation.
 
-**SK-ARC-003 — Backend scope [ADR candidate].** The solver adapter should translate solve semantics, own native resources/private maps, update/rebuild sessions, solve/drag and map diagnostics/results. Profiles, edit migration policy, annotations, provider rebinding, persistence and cursor inference should have independent owners even if implementation code is initially colocated.
+**SK-ARC-003 — DCM integration scope [ADR candidate].** The private DCM integration in Sketch should translate solve semantics, own native resources/private maps, update/rebuild sessions, solve/drag and map diagnostics/results. Profiles, edit migration policy, annotations, provider rebinding, persistence and cursor inference should have independent owners even if implementation code is initially colocated.
 
 **SK-ARC-004 — Accepted state [ADR candidate].** Authored changes, trial numerical state and last accepted realization should remain distinguishable. Snapshot, delta or copy-on-write rollback is an implementation choice. Consumers should not receive arbitrary failed native iterates as ordinary accepted geometry.
 
@@ -1443,14 +1441,14 @@ This is a responsibility diagram, not a requirement for eleven libraries, public
 
 **SK-ARC-007 — Stable semantic subreferences [ADR candidate].** Public endpoint/control/fit/site identities should be distinct from private pole indices and role aliases such as Start/End. Reverse, split, knot and conversion operations should explicitly map persistent identities and changing aliases.
 
-**SK-ARC-008 — Backend execution context [ADR candidate].** Adapters should declare session ownership, concurrency, global scratch state and resource lifecycle. Serialize native global-state use where required. Public Core interfaces should remain portable and should not require Qt, OS events, or renderer types.
+**SK-ARC-008 — DCM execution context [ADR candidate].** The DCM integration should declare session ownership, concurrency, global scratch state and resource lifecycle. Serialize native global-state use where required. Public Core interfaces should remain portable and should not require Qt, OS events, or renderer types.
 
 ### 26.4 Conditional migration if B/C is adopted
 
 1. Preserve existing public IDs, value queries, common validation, and exact support preflight.
 2. Establish neutral definition/accepted-state records and transaction semantics for current point/line/circle/arc types.
-3. Convert existing adapters into sessions compiled from that model, preserving their incremental mappings where practical.
-4. Replace broad backend CRUD/query responsibility with synchronization and candidate-result operations. Keep the public facade stable where semantics are unchanged.
+3. Convert the private DCM integration into a session compiled from that model, preserving incremental mappings where practical.
+4. Replace direct DCM model-storage responsibility with synchronization and candidate-result operations. Keep the public facade stable where semantics are unchanged.
 5. Introduce geometry services and a small arrangement/profile implementation over current primitives.
 6. Route tools through edit plans and gesture transactions; add richer references/dimensions and advanced geometry incrementally.
 
@@ -1458,7 +1456,7 @@ A separately approved implementation task should reconcile `sketch-architecture.
 
 ### Architecture conclusions and limits
 
-`Sketch`, `ISketchBackend`, `DcmBackend` and `SolveSpaceBackend` are not enough names to express every responsibility, but they may remain a small public facade if the internal boundaries are clear. Renaming an interface does not solve ownership. A solver boundary should accept a neutral solve model of geometry, parameters, semantic relations and references and publish validated realization/analysis, with no authority to trim, choose regions, heal gaps, rebind sources or rewrite dimensions.
+`Sketch` can remain a small public facade while its private `Impl` owns DCM directly. Internal responsibility boundaries do not require a solver-backend interface. Under the proposed B/C ownership semantics, the DCM integration should accept a neutral solve model of geometry, parameters, semantic relations and references and publish validated realization/analysis, with no authority to trim, choose regions, heal gaps, rebind sources or rewrite dimensions.
 
 The recommended decomposition need not create a library/interface/object per box. Start with explicit values, small services and session ownership. Avoid prematurely committing to a giant `ICurve`, mandatory asynchronous work, universal event bus, distributed registry or B-Rep kernel. Advanced geometry, fitting recipes and solving may cooperate in outer evaluation loops; those loops must declare who owns structural changes, convergence and accepted-state validation.
 
@@ -1473,7 +1471,7 @@ The recommended decomposition need not create a library/interface/object per box
 | Persistent entities, intent, IDs | Sketch model | Native solver handles, screen state |
 | Curve representation and jets | Geometry representation | Constraint solving, selecting which fragment to delete |
 | Semantic constraint validation | Constraint model/compiler | Guessing user intent from the cursor |
-| Numerical equation solve, rank analysis | Solver adapter/backend | Profile creation, external source naming |
+| Numerical equation solve, rank analysis | Private Sketch/DCM integration | Profile creation, external source naming |
 | Intersections, closest points, length | Computational geometry | Writing constraints or undo history |
 | Split/trim/extend/fillet plan | Editing service | Direct renderer calls, undocumented constraint deletion |
 | Incidence, half-edges, face walks | Planar topology | Changing authored geometry to repair a gap |
@@ -1492,9 +1490,9 @@ The recommended decomposition need not create a library/interface/object per box
 
 **SK-BND-003 — Reuse without coupling [Boundary recommendation].** All consumers shall use the same source/provenance definitions. Rendering may tessellate curves; Solid may convert them; neither owns the meaning of a sketch reference or entity.
 
-### What does not belong in ISketchBackend
+### What does not belong in the DCM integration
 
-Curve-curve intersections, closest-point search, offsets, restriction/extension, tolerant arrangements, profile extraction, shape tessellation, creation recipes, dimension labels, source rebinding, undo policy and cursor snapping are not intrinsically solver responsibilities. A library may happen to implement some of them; access should be through their semantic service boundary, not because every backend must emulate that library's entire modeling application.
+Curve-curve intersections, closest-point search, offsets, restriction/extension, tolerant arrangements, profile extraction, shape tessellation, creation recipes, dimension labels, source rebinding, undo policy and cursor snapping are not intrinsically solver responsibilities. A library may happen to implement some of them; access should be through their semantic service boundary without requiring the numerical solver to reproduce an entire modeling application.
 
 Conversely, geometry services do not decide which constraints a trim should delete; the editor owns that policy. Topology does not heal authored gaps; it reports interpretation/uncertainty. The reference provider does not decide whether an ellipse-center dimension should become a spline control dimension after a type change. UI supplies intent and presentation, not a second geometric truth.
 
@@ -1514,7 +1512,7 @@ Staging is secondary to the target model. These slices are provisional and may b
 
 ### Foundation / M0
 
-Establish observable contracts with representative analytic entities; inventory both existing adapters and their exact semantics. Decide authority A/B/C before expanding interfaces. Exercise rollback, cancellation, unsupported-form preservation, parameter/site identity and consumer snapshots. Geometry query and profile boundaries can be tested with small analytic fixtures without selecting a full future kernel.
+Establish observable contracts with representative analytic entities; inventory the direct DCM integration and its exact semantics. Decide authority A/B/C before expanding interfaces. Exercise rollback, cancellation, unsupported-form preservation, parameter/site identity and consumer snapshots. Geometry query and profile boundaries can be tested with small analytic fixtures without selecting a full future kernel.
 
 **SK-MIL-001 — M0 exit [Delivery gate].** A representative sketch can be created, constrained, solved, dragged, cancelled, serialized and read by neutral consumers, with exact unsupported-form reporting and private native handles. The authority/accepted-state model and capability/diagnostic contracts are documented; the limited implemented subset is explicit. This is a foundation gate, not the complete product taxonomy.
 
@@ -1558,8 +1556,8 @@ These gates define a testable delivery target. They are not execution results. T
 
 | Acceptance ID | Setup / action | Required observable result | Requirements exercised |
 |---|---|---|---|
-| SK-ACC-010 Neutral persistence | Save a dimensioned sketch, reopen, switch to another supporting adapter | Stable IDs, expressions, units, roles, branch choices and geometry within policy; no native IDs in file | GEO-001/006, ROB-014, CAP-006 |
-| SK-ACC-011 Unsupported switch | Include a constraint absent from target adapter, attempt switch | Definition untouched; exact unsupported form reported; no dropped constraints | PRN-005, CAP-001/006 |
+| SK-ACC-010 Neutral persistence | Save a dimensioned sketch, reopen and rebuild its DCM session | Stable IDs, expressions, units, roles, branch choices and geometry within policy; no native IDs in file | GEO-001/006, ROB-014, CAP-006 |
+| SK-ACC-011 Unsupported state replacement | Attempt to load a neutral definition containing a constraint unsupported by DCM | Definition untouched; exact unsupported form reported; no dropped constraints | PRN-005, CAP-001/006 |
 | SK-ACC-012 Solver failure isolation | Add an impossible length to a fixed segment, then cancel | Conflict/nonconvergence qualified; last accepted geometry preserved; cancel restores complete prior state | SOL-003/006/008, DRG-001 |
 | SK-ACC-013 DOF completeness | Free point, free segment, free circle in disconnected components | Generic total DOF 2+4+3=9 at regular nondegenerate state; correct free entities; fixed frame not counted | SOL-004 |
 | SK-ACC-014 Fully defined rectangle | Coincident corners, H/V, anchored corner, width and height | Zero local DOF with satisfied residuals; ordinary drag does not move it; driven diagonal changes after width edit | CON, DIM-001, DRG-006 |
@@ -1610,8 +1608,8 @@ A supported form is complete only when its semantics, capability answer, persist
 
 | Question / risk | Why it matters | Recommended next decision or experiment |
 |---|---|---|
-| Neutral model transition cost | Existing adapters are authoritative stores; replacing ownership changes failure and query semantics | Write an architecture decision record comparing neutral authority versus a separate neutral store adapter; prototype current primitives and cancellation first |
-| M1 backend feature gap | Current public tangency forms are not supported by either adapter as a complete M1 contract; OurPaintDCM analysis is limited | Inventory exact native/library support, choose exact lowerings and adapter work; designate a conformance-qualified configuration rather than promise backend parity |
+| Neutral model transition cost | DCM currently owns live geometry inside `Sketch::Impl`; replacing ownership changes failure and query semantics | Write an architecture decision record comparing neutral authority with the current direct DCM ownership; prototype current primitives and cancellation first |
+| M1 solver feature gap | Current DCM integration does not establish a complete M1 tangency contract; OurPaintDCM analysis is limited | Inventory exact native/library support, choose exact lowerings and DCM integration work; designate a conformance-qualified configuration |
 | Geometry library strategy | Analytic queries are small; reliable rational-spline arrangements and offsets are much larger | Benchmark a bounded corpus with existing math facilities and candidate kernels; assess footprint, licensing, portability and maintenance before dependency approval |
 | Tolerance model | Solve residuals, clustering, approximate intersections, and future B-Rep tolerances must fit one budget | Adopt explicit units and a normal-size envelope; stress translation/scale invariance; publish unresolved cases |
 | Native arc representation | Current center/start/end trial state can violate circularity; direction conventions vary | Choose canonical public orientation and validity rules; adapters own intrinsic equations and conversion |
@@ -1748,7 +1746,7 @@ Sources were consulted on 2026-10-03. Links attached to claims identify the evid
 | FC3 | [FreeCAD developer news, Point-on-Spline][FC3], January 2023 |
 | SS1 | [SolveSpace reference manual][SS1]: primitive/spline workflow, split constraint loss and DOF visualization |
 | SS2 | [SolveSpace technology][SS2]: equation solving, under-constrained motion and initial-state dependence |
-| SS3 | [SolveSpace library interface][SS3]: embedding scope; pinned repository headers remain authority for current integration |
+| SS3 | [SolveSpace library interface][SS3]: external comparative evidence about embedding scope; SolveSpace is not a project dependency |
 | DC1 | [Siemens D-Cubed 2D DCM][DC1]: industrial constraint/spline/diagnostic scope, distinct from OurPaintDCM |
 | DC2 | [Siemens D-Cubed 2D DCM v71][DC2]: G3 and scalable-set examples; advanced reference only |
 | DC3 | [Siemens D-Cubed components technical sheet][DC3]: separate Profile Geometry Manager and constraint manager roles |

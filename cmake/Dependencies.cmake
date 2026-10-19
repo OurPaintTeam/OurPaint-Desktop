@@ -68,5 +68,3 @@ FetchContent_Declare(
     GIT_TAG        1.0.3
 )
 FetchContent_MakeAvailable(glm)
-
-include(${CMAKE_CURRENT_LIST_DIR}/SolveSpace.cmake)

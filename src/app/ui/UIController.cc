@@ -1,6 +1,5 @@
 #include "UIController.h"
 
-#include <algorithm>
 #include <iostream>
 #include <utility>
 
@@ -71,38 +70,6 @@ std::function<void(const ConstraintRequest&)> UIController::constraintRequestHan
             }
         }
     };
-}
-
-void UIController::updateSolverBackend(const std::string& tabName) {
-    const auto* view = findView(tabName);
-    if (!view) {
-        return;
-    }
-    const Document* document = &view->document();
-
-    using core::sketch::BackendKind;
-    using core::sketch::Sketch;
-    const auto current = document->sketch().backendKind();
-    const auto next = current == BackendKind::Dcm ? BackendKind::SolveSpace : BackendKind::Dcm;
-    const auto available = Sketch::availableBackends();
-    const bool canSwitch = std::find(available.begin(), available.end(), next) != available.end();
-    projectManager_.setSolverBackend(QString::fromStdString(tabName), current == BackendKind::Dcm ? QStringLiteral("DCM") : QStringLiteral("SS"),
-                                    canSwitch);
-}
-
-void UIController::switchSolverBackend(const std::string& tabName) {
-    auto* view = findView(tabName);
-    if (!view) {
-        return;
-    }
-
-    using core::sketch::BackendKind;
-    const auto current = std::as_const(view->document()).sketch().backendKind();
-    const auto next = current == BackendKind::Dcm ? BackendKind::SolveSpace : BackendKind::Dcm;
-    view->editorSession_.switchSolverBackend(next);
-    updateSolverBackend(tabName);
-    view->viewportController_.requestRedraw();
-    viewportHost_.requestRedraw();
 }
 
 void UIController::executeConsoleCommand(std::string str) {
@@ -219,7 +186,6 @@ void UIController::createFile(const std::string& fileName) {
 
     // this should be in the end
     projectManager_.addTabSlot(fileName.data());
-    updateSolverBackend(fileName);
 }
 
 void UIController::setActiveFile(const std::string& fileName) {
@@ -235,7 +201,6 @@ void UIController::setActiveFile(const std::string& fileName) {
     activeTabName_ = fileName;
     int index = indicesMap_[fileName];
     viewportHost_.setActiveController(index);
-    updateSolverBackend(fileName);
 }
 
 void UIController::removeFile(const std::string& fileName) {

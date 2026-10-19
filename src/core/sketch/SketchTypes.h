@@ -17,7 +17,7 @@
 namespace core::sketch {
 
 // Typed wrappers reuse Core's ID value semantics. Zero is invalid. IDs are local
-// to a Sketch lineage, never reused, and survive snapshots/backend migration.
+// to a Sketch lineage, never reused, and survive snapshot replacement.
 template <class Tag>
 class SketchId {
 public:
@@ -153,13 +153,14 @@ enum class ConstraintType {
     Tangent,
     Equal,
     Distance,
+    HorizontalDistance,
+    VerticalDistance,
     Length,
     Radius,
     Diameter,
     Angle,
     Fix,
-    HorizontalDistance,
-    VerticalDistance
+    Concentric
 };
 
 // Coincident/Distance use two point-like refs: Point Whole, Line Start/End,
@@ -172,7 +173,7 @@ enum class ConstraintType {
 // HorizontalDistance/VerticalDistance use two point-like refs and constrain
 // the second coordinate minus the first along X/Y to a nonnegative value.
 // Fix uses one point-like ref and explicit fixedPosition, preserving its target
-// across edits, failed solves and backend transfers.
+// across edits, failed solves and snapshot replacement.
 struct ConstraintDefinition {
     ConstraintType type = ConstraintType::Coincident;
     std::vector<GeometryRef> refs;
@@ -183,16 +184,12 @@ struct SketchConstraint {
     ConstraintId id;
     ConstraintDefinition definition;
 };
-enum class BackendKind {
-    Dcm,
-    SolveSpace
-};
 
 // Type support is coarse; supportsConstraint checks the actual ref combination.
 // Unsupported operations never mutate the model.
 struct Capabilities {
     std::array<bool, 4> entities{};
-    std::array<bool, 15> constraints{};
+    std::array<bool, 16> constraints{};
     bool updateEntities = false;
     bool removeEntities = false;
     bool updateConstraints = false;

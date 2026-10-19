@@ -108,13 +108,6 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                           controller_.closeApplication();
                       });*/
 
-    QObject::connect(&window, &UI::ProjectManager::solverBackendSwitchRequested, this, [this](const QString& tabName) {
-        controller_.switchSolverBackend(tabName.toStdString());
-    });
-    QObject::connect(&window, &UI::ProjectManager::solverBackendStateRequested, this, [this](const QString& tabName) {
-        controller_.updateSolverBackend(tabName.toStdString());
-    });
-
     // Tools - constraints
     QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this](const QString& tabName, UI::ConstraintType type) {
         switch (type) {
@@ -165,9 +158,17 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                 controller_.requestConstraint({ConstraintAction::Fix, std::nullopt}, tabName.toStdString());
                 break;
             case UI::ConstraintType::Concentric:
+                controller_.requestConstraint({ConstraintAction::Concentric, std::nullopt}, tabName.toStdString());
+                break;
             case UI::ConstraintType::Collinear:
+                controller_.requestConstraint({ConstraintAction::Collinear, std::nullopt}, tabName.toStdString());
+                break;
             case UI::ConstraintType::Midpoint:
+                controller_.requestConstraint({ConstraintAction::Midpoint, std::nullopt}, tabName.toStdString());
+                break;
             case UI::ConstraintType::Symmetric:
+                controller_.requestConstraint({ConstraintAction::Symmetric, std::nullopt}, tabName.toStdString());
+                break;
             default:
                 controller_.requestConstraint({ConstraintAction::Unsupported, std::nullopt}, tabName.toStdString());
                 return;

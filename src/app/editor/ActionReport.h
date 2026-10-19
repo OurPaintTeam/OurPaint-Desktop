@@ -16,8 +16,7 @@ enum class ActionKind {
     ApplyConstraint,
     Delete,
     Paste,
-    Drag,
-    SwitchBackend
+    Drag
 };
 enum class ModelChange { Unchanged, Changed, PotentiallyChanged };
 enum class ActionRejection { None, InvalidSelection, InvalidValue, Unsupported, InsufficientTargets, InvalidGeometry };
@@ -35,11 +34,10 @@ struct ActionReport {
     std::optional<core::sketch::SketchError> operationError = std::nullopt;
     std::optional<core::sketch::SketchError> solveError = std::nullopt;
     std::optional<core::sketch::SolveDiagnostics> solve = std::nullopt;
-    std::optional<core::sketch::BackendKind> backend = std::nullopt;
 
-    // Ordinary Sketch mutations promise no rollback for backend/numerical errors.
-    // Read-only preparation and staged backend switching must explicitly retain
-    // Unchanged on failure instead of using this helper.
+    // Ordinary Sketch mutations promise no rollback for solver/numerical errors.
+    // Read-only preparation must explicitly retain Unchanged on failure instead
+    // of using this helper.
     void mutationFailed(const core::sketch::SketchError& error) {
         operationError = error;
         if (error.code == core::sketch::ErrorCode::BackendFailure || error.code == core::sketch::ErrorCode::SolveFailure) {

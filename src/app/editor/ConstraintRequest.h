@@ -15,6 +15,10 @@ enum class ConstraintAction {
     Dimension,
     HVDistance,
     Angle,
+    Concentric,
+    Collinear,
+    Midpoint,
+    Symmetric,
     Unsupported
 };
 

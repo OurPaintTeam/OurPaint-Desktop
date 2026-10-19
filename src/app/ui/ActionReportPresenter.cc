@@ -14,7 +14,7 @@ QString failureReason(const ActionReport& report) {
             case ErrorCode::NotFound:
                 return QCoreApplication::translate("SketchActions", "The selected geometry no longer exists.");
             case ErrorCode::BackendFailure:
-                return QCoreApplication::translate("SketchActions", "The solver backend reported an error.");
+                return QCoreApplication::translate("SketchActions", "The solver reported an error.");
             case ErrorCode::SolveFailure:
                 return QCoreApplication::translate("SketchActions", "The solver failed.");
             default:
@@ -45,9 +45,9 @@ QString failureReason(const ActionReport& report) {
         case ErrorCode::NotFound:
             return QCoreApplication::translate("SketchActions", "The selected geometry no longer exists.");
         case ErrorCode::Unsupported:
-            return QCoreApplication::translate("SketchActions", "This operation is not supported by the selected solver.");
+            return QCoreApplication::translate("SketchActions", "This operation is not supported by the solver.");
         case ErrorCode::BackendFailure:
-            return QCoreApplication::translate("SketchActions", "The solver backend reported an error.");
+            return QCoreApplication::translate("SketchActions", "The solver reported an error.");
         case ErrorCode::SolveFailure:
             return QCoreApplication::translate("SketchActions", "The solver failed.");
     }
@@ -151,14 +151,6 @@ QString ActionReportPresenter::text(const ActionReport& report) {
         case ActionKind::Drag:
             message = failed || solveFailed || report.solveError ? QCoreApplication::translate("SketchActions", "Drag stopped.")
                                                                  : QCoreApplication::translate("SketchActions", "Geometry moved.");
-            break;
-        case ActionKind::SwitchBackend:
-            if (failed) {
-                message = QCoreApplication::translate("SketchActions", "Solver could not be switched.");
-            } else {
-                const QString backend = report.backend == core::sketch::BackendKind::Dcm ? QStringLiteral("DCM") : QStringLiteral("SolveSpace");
-                message = QCoreApplication::translate("SketchActions", "Solver switched to %1.").arg(backend);
-            }
             break;
     }
 

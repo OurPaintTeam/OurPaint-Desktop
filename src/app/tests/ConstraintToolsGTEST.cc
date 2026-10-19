@@ -5,7 +5,6 @@
 #include <numbers>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -21,12 +20,11 @@ namespace {
 using namespace core::sketch;
 
 enum class ConstraintToolKind { Relation, Dimension };
-using ToolParameter = std::tuple<BackendKind, ConstraintToolKind>;
 
-class ConstraintToolsBehavior : public testing::TestWithParam<ToolParameter> {
+class ConstraintToolsBehavior : public testing::TestWithParam<ConstraintToolKind> {
 protected:
     void SetUp() override {
-        auto created = Sketch::create(std::get<0>(GetParam()));
+        auto created = Sketch::create();
         ASSERT_TRUE(created);
         sketch_ = std::move(created.value());
         const auto first = sketch_->addPoint({-2, 0});
@@ -45,7 +43,7 @@ protected:
         overlay_.selection_.model.replace(first_);
     }
 
-    bool isDimension() const { return std::get<1>(GetParam()) == ConstraintToolKind::Dimension; }
+    bool isDimension() const { return GetParam() == ConstraintToolKind::Dimension; }
 
     IInteractionTool& tool() {
         if (isDimension()) {
@@ -246,18 +244,8 @@ TEST_P(ConstraintToolsBehavior, DimensionToolPicksPointsForHVDistanceAndWholeLin
     EXPECT_TRUE(overlay_.constraintRefs_.empty());
 }
 
-std::vector<ToolParameter> toolParameters() {
-    std::vector<ToolParameter> parameters;
-    for (const auto backend : Sketch::availableBackends()) {
-        parameters.emplace_back(backend, ConstraintToolKind::Relation);
-        parameters.emplace_back(backend, ConstraintToolKind::Dimension);
-    }
-    return parameters;
-}
-
-INSTANTIATE_TEST_SUITE_P(AvailableBackendsAndTools, ConstraintToolsBehavior, testing::ValuesIn(toolParameters()),
-                         [](const testing::TestParamInfo<ToolParameter>& info) {
-                             const std::string backend = std::get<0>(info.param) == BackendKind::Dcm ? "DCM" : "SolveSpace";
-                             return backend + (std::get<1>(info.param) == ConstraintToolKind::Relation ? "Relation" : "Dimension");
+INSTANTIATE_TEST_SUITE_P(Tools, ConstraintToolsBehavior, testing::Values(ConstraintToolKind::Relation, ConstraintToolKind::Dimension),
+                         [](const testing::TestParamInfo<ConstraintToolKind>& info) {
+                             return std::string(info.param == ConstraintToolKind::Relation ? "Relation" : "Dimension");
                          });
 }  // namespace

@@ -106,6 +106,9 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         case ConstraintAction::Angle:
             definition.type = ConstraintType::Angle;
             break;
+        case ConstraintAction::Concentric:
+            definition.type = ConstraintType::Concentric;
+            break;
         default:
             return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
     }
@@ -156,9 +159,13 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         case ConstraintType::Distance:
         case ConstraintType::HorizontalDistance:
         case ConstraintType::VerticalDistance:
-        case ConstraintType::Fix:
             compatible = kinds[0] == RefKind::Point && (refs.size() == 1 || kinds[1] == RefKind::Point);
             break;
+        case ConstraintType::Concentric:
+        case ConstraintType::Fix: {
+            compatible = true;
+            break;
+        }
         case ConstraintType::Horizontal:
         case ConstraintType::Vertical:
         case ConstraintType::Length:
@@ -206,13 +213,13 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
             std::swap(definition.refs[0], definition.refs[1]);
         }
     }
-    if (definition.type == ConstraintType::Fix) {
-        const auto position = sketch_.pointPosition(refs[0]);
-        if (!position) {
-            return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidGeometry, position.error()};
-        }
-        definition.fixedPosition = position.value();
-    }
+    // if (definition.type == ConstraintType::Fix) {
+    //     const auto position = sketch_.pointPosition(refs[0]);
+    //     if (!position) {
+    //         return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidGeometry, position.error()};
+    //     }
+    //     definition.fixedPosition = position.value();
+    // }
     const auto supported = sketch_.supportsConstraint(definition);
     if (!supported) {
         const bool unsupported = supported.error().code == core::sketch::ErrorCode::Unsupported;
@@ -239,7 +246,7 @@ ActionReport ConstraintActions::rejectedReport(const ConstraintPreparation& prep
                 break;
         }
     }
-    // Preparation only queries Sketch, even when a backend query fails.
+    // Preparation only queries Sketch, even when a solver query fails.
     report.operationError = preparation.error;
     return report;
 }
