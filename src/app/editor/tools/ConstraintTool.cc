@@ -37,8 +37,15 @@ std::optional<ActionReport> ConstraintTool::onMouseButton(const input::MouseButt
         case ConstraintAction::Fix:
             pick = picker_.pickPointAtScreenLogical(e.x, e.y);
             break;
+        case ConstraintAction::Symmetric:
+            pick = picker_.pickPointAtScreenLogical(e.x, e.y);
+            if (!pick) {
+                pick = picker_.pickLineAtScreenLogical(e.x, e.y);
+            }
+            break;
         case ConstraintAction::Equal:
         case ConstraintAction::Tangent:
+        case ConstraintAction::Concentric:
             pick = picker_.pickCurveAtScreenLogical(e.x, e.y);
             break;
         default:

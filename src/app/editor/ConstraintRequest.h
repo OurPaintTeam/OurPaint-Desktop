@@ -15,9 +15,11 @@ enum class ConstraintAction {
     Dimension,
     HVDistance,
     Angle,
+    // Select two whole circles or arcs, in either order.
     Concentric,
     Collinear,
     Midpoint,
+    // Select two points and an axis line in any order, or three points with the center last.
     Symmetric,
     Unsupported
 };

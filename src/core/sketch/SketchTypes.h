@@ -160,7 +160,8 @@ enum class ConstraintType {
     Diameter,
     Angle,
     Fix,
-    Concentric
+    Concentric,
+    Symmetric
 };
 
 // Coincident/Distance use two point-like refs: Point Whole, Line Start/End,
@@ -174,6 +175,10 @@ enum class ConstraintType {
 // the second coordinate minus the first along X/Y to a nonnegative value.
 // Fix uses one point-like ref and explicit fixedPosition, preserving its target
 // across edits, failed solves and snapshot replacement.
+// Symmetric uses three distinct refs: two point-like refs followed by a whole
+// line axis or a point-like center. It takes neither value nor fixedPosition.
+// Concentric uses two distinct whole Circle/Arc refs in any combination,
+// equating their centers. It takes neither value nor fixedPosition.
 struct ConstraintDefinition {
     ConstraintType type = ConstraintType::Coincident;
     std::vector<GeometryRef> refs;
@@ -189,7 +194,7 @@ struct SketchConstraint {
 // Unsupported operations never mutate the model.
 struct Capabilities {
     std::array<bool, 4> entities{};
-    std::array<bool, 16> constraints{};
+    std::array<bool, 17> constraints{};
     bool updateEntities = false;
     bool removeEntities = false;
     bool updateConstraints = false;

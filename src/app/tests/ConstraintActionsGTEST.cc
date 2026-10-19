@@ -19,9 +19,7 @@ using PreparationState = ConstraintPreparation::State;
 class ConstraintActionsBehavior : public testing::Test {
 protected:
     void SetUp() override {
-        auto created = Sketch::create();
-        ASSERT_TRUE(created);
-        sketch_ = std::move(created.value());
+        sketch_ = std::make_unique<Sketch>();
 
         const auto line = sketch_->addLine({0, 0}, {3, 4});
         const auto otherLine = sketch_->addLine({10, 0}, {12, 3});
@@ -90,6 +88,126 @@ TEST_F(ConstraintActionsBehavior, BinaryConstraintDistinguishesIncompleteAndInva
     EXPECT_EQ(prepare(ConstraintAction::Coincident, {start_, end_}).state, PreparationState::Ready);
     EXPECT_EQ(prepare(ConstraintAction::Coincident, {start_, start_}).state, PreparationState::InvalidSelection);
     EXPECT_EQ(prepare(ConstraintAction::Coincident, {line_}).state, PreparationState::InvalidSelection);
+}
+
+TEST_F(ConstraintActionsBehavior, ConcentricAcceptsWholeCircularPairsAndPartialInput) {
+    const auto otherCircle = sketch_->addCircle({-5, -5}, 3);
+    const auto otherArc = sketch_->addArc({-4, 10}, {-1, 10}, {-4, 13});
+    ASSERT_TRUE(otherCircle);
+    ASSERT_TRUE(otherArc);
+    const GeometryRef circle{otherCircle.value(), SubElement::Whole};
+    const GeometryRef arc{otherArc.value(), SubElement::Whole};
+    EXPECT_EQ(prepare(ConstraintAction::Concentric).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Concentric, {circle_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Concentric, {arc_}).state, PreparationState::NeedsMoreInput);
+    for (const auto& refs : {std::vector<GeometryRef>{circle_, circle}, std::vector<GeometryRef>{circle, circle_}, std::vector<GeometryRef>{arc_, arc},
+                             std::vector<GeometryRef>{arc, arc_}, std::vector<GeometryRef>{circle_, arc_}, std::vector<GeometryRef>{arc_, circle_}}) {
+        const auto prepared = ConstraintActions(*sketch_).prepare({ConstraintAction::Concentric, std::nullopt}, refs);
+        ASSERT_EQ(prepared.state, PreparationState::Ready);
+        ASSERT_TRUE(prepared.definition);
+        EXPECT_EQ(prepared.definition->type, ConstraintType::Concentric);
+        EXPECT_EQ(prepared.definition->refs, refs);
+        EXPECT_FALSE(prepared.definition->value);
+        EXPECT_FALSE(prepared.definition->fixedPosition);
+    }
+}
+
+TEST_F(ConstraintActionsBehavior, ConcentricRejectsNonWholeCircularReferencesWithoutMutation) {
+    const auto before = sketch_->snapshot();
+    const auto pointsBefore = sketch_->pointElements();
+    ASSERT_TRUE(before);
+    ASSERT_TRUE(pointsBefore);
+    const GeometryRef circleCenter{circle_.entity, SubElement::Center};
+    const GeometryRef arcCenter{arc_.entity, SubElement::Center};
+    const GeometryRef arcStart{arc_.entity, SubElement::Start};
+    const GeometryRef arcEnd{arc_.entity, SubElement::End};
+    for (const auto& refs :
+         {std::vector<GeometryRef>{point_}, std::vector<GeometryRef>{line_}, std::vector<GeometryRef>{start_}, std::vector<GeometryRef>{end_},
+          std::vector<GeometryRef>{circleCenter}, std::vector<GeometryRef>{arcCenter}, std::vector<GeometryRef>{arcStart}, std::vector<GeometryRef>{arcEnd},
+          std::vector<GeometryRef>{circle_, point_}, std::vector<GeometryRef>{point_, arc_}, std::vector<GeometryRef>{circle_, line_},
+          std::vector<GeometryRef>{line_, arc_}, std::vector<GeometryRef>{circle_, circleCenter}, std::vector<GeometryRef>{arcEnd, circle_},
+          std::vector<GeometryRef>{circle_, circle_}, std::vector<GeometryRef>{arc_, arc_}, std::vector<GeometryRef>{circle_, arc_, point_}}) {
+        const auto prepared = ConstraintActions(*sketch_).prepare({ConstraintAction::Concentric, std::nullopt}, refs);
+        EXPECT_EQ(prepared.state, PreparationState::InvalidSelection);
+        EXPECT_EQ(prepared.rejection, ActionRejection::InvalidSelection);
+        EXPECT_FALSE(prepared.definition);
+    }
+    EXPECT_EQ(prepare(ConstraintAction::Concentric, {circle_, arc_}, 1.0).rejection, ActionRejection::InvalidValue);
+    EXPECT_EQ(prepare(ConstraintAction::Concentric, {circle_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Concentric, {circle_, arc_}).state, PreparationState::Ready);
+    const auto missing = prepare(ConstraintAction::Concentric, {circle_, {EntityId(9999), SubElement::Whole}});
+    EXPECT_EQ(missing.state, PreparationState::InvalidSelection);
+    ASSERT_TRUE(missing.error);
+    EXPECT_EQ(missing.error->code, ErrorCode::NotFound);
+
+    const auto after = sketch_->snapshot();
+    const auto pointsAfter = sketch_->pointElements();
+    ASSERT_TRUE(after);
+    ASSERT_TRUE(pointsAfter);
+    EXPECT_EQ(after.value().lastEntityId, before.value().lastEntityId);
+    EXPECT_EQ(after.value().lastConstraintId, before.value().lastConstraintId);
+    EXPECT_EQ(after.value().entities.size(), before.value().entities.size());
+    EXPECT_EQ(after.value().constraints.size(), before.value().constraints.size());
+    EXPECT_DOUBLE_EQ(std::get<Circle2>(after.value().entities[3].geometry).radius, std::get<Circle2>(before.value().entities[3].geometry).radius);
+    ASSERT_EQ(pointsAfter.value().size(), pointsBefore.value().size());
+    for (size_t i = 0; i < pointsBefore.value().size(); ++i) {
+        EXPECT_EQ(pointsAfter.value()[i].ref, pointsBefore.value()[i].ref);
+        EXPECT_EQ(pointsAfter.value()[i].position, pointsBefore.value()[i].position);
+    }
+    const auto prepared = prepare(ConstraintAction::Concentric, {circle_, arc_});
+    ASSERT_TRUE(prepared.definition);
+    const auto added = sketch_->addConstraint(*prepared.definition);
+    ASSERT_TRUE(added);
+    EXPECT_EQ(added.value().get(), before.value().lastConstraintId + 1);
+}
+
+TEST_F(ConstraintActionsBehavior, SymmetricNormalizesAxisAtAnySelectionPosition) {
+    for (const auto& refs : {std::vector<GeometryRef>{otherLine_, start_, point_}, std::vector<GeometryRef>{start_, otherLine_, point_},
+                             std::vector<GeometryRef>{start_, point_, otherLine_}}) {
+        const auto prepared = ConstraintActions(*sketch_).prepare({ConstraintAction::Symmetric, std::nullopt}, refs);
+        ASSERT_EQ(prepared.state, PreparationState::Ready);
+        ASSERT_TRUE(prepared.definition);
+        EXPECT_EQ(prepared.definition->type, ConstraintType::Symmetric);
+        EXPECT_EQ(prepared.definition->refs, (std::vector<GeometryRef>{start_, point_, otherLine_}));
+        EXPECT_FALSE(prepared.definition->value);
+        EXPECT_FALSE(prepared.definition->fixedPosition);
+    }
+}
+
+TEST_F(ConstraintActionsBehavior, SymmetricKeepsLastPointAsCenterAndAcceptsCurvePointElements) {
+    const GeometryRef circleCenter{circle_.entity, SubElement::Center};
+    const GeometryRef arcEnd{arc_.entity, SubElement::End};
+    const auto prepared = prepare(ConstraintAction::Symmetric, {start_, arcEnd, circleCenter});
+    ASSERT_EQ(prepared.state, PreparationState::Ready);
+    ASSERT_TRUE(prepared.definition);
+    EXPECT_EQ(prepared.definition->type, ConstraintType::Symmetric);
+    EXPECT_EQ(prepared.definition->refs, (std::vector<GeometryRef>{start_, arcEnd, circleCenter}));
+    EXPECT_FALSE(prepared.definition->value);
+    EXPECT_FALSE(prepared.definition->fixedPosition);
+}
+
+TEST_F(ConstraintActionsBehavior, SymmetricDistinguishesPartialInputFromInvalidSelections) {
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {point_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {line_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {start_, point_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {line_, point_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {point_, line_}).state, PreparationState::NeedsMoreInput);
+
+    for (const auto& refs :
+         {std::vector<GeometryRef>{line_, otherLine_}, std::vector<GeometryRef>{line_, point_, otherLine_}, std::vector<GeometryRef>{start_, start_},
+          std::vector<GeometryRef>{start_, start_, point_}, std::vector<GeometryRef>{start_, point_, start_}, std::vector<GeometryRef>{point_, start_, start_},
+          std::vector<GeometryRef>{circle_}, std::vector<GeometryRef>{start_, point_, arc_}, std::vector<GeometryRef>{start_, end_, point_, otherLine_}}) {
+        const auto prepared = ConstraintActions(*sketch_).prepare({ConstraintAction::Symmetric, std::nullopt}, refs);
+        EXPECT_EQ(prepared.state, PreparationState::InvalidSelection);
+        EXPECT_EQ(prepared.rejection, ActionRejection::InvalidSelection);
+        EXPECT_FALSE(prepared.definition);
+    }
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {start_, end_, point_}, 1.0).rejection, ActionRejection::InvalidValue);
+    const auto missing = prepare(ConstraintAction::Symmetric, {start_, point_, {EntityId(9999), SubElement::Whole}});
+    EXPECT_EQ(missing.state, PreparationState::InvalidSelection);
+    ASSERT_TRUE(missing.error);
+    EXPECT_EQ(missing.error->code, ErrorCode::NotFound);
 }
 
 TEST_F(ConstraintActionsBehavior, HVDistanceChoosesDominantAxisAndOrdersPointsIndependentlyOfClicks) {
@@ -195,6 +313,10 @@ TEST_F(ConstraintActionsBehavior, PreparationDoesNotMoveGeometryAddConstraintsOr
     EXPECT_EQ(prepare(ConstraintAction::Dimension, {line_}, 9.0).state, PreparationState::Ready);
     EXPECT_EQ(prepare(ConstraintAction::Parallel, {line_}).state, PreparationState::NeedsMoreInput);
     EXPECT_EQ(prepare(ConstraintAction::Horizontal, {point_}).state, PreparationState::InvalidSelection);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {start_, point_, otherLine_}).state, PreparationState::Ready);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {start_, point_, end_}).state, PreparationState::Ready);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {point_, otherLine_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Symmetric, {line_, otherLine_}).state, PreparationState::InvalidSelection);
     if (!sketch_->capabilities().supports(ConstraintType::Tangent)) {
         EXPECT_EQ(prepare(ConstraintAction::Tangent).state, PreparationState::Unsupported);
     }
@@ -281,6 +403,39 @@ TEST_F(ConstraintActionsBehavior, ApplyingPerpendicularAddsConstraintAndSolves) 
     const double lengths = std::hypot(directionA.x, directionA.y) * std::hypot(directionB.x, directionB.y);
     ASSERT_GT(lengths, 0);
     EXPECT_NEAR(directionA.x * directionB.x + directionA.y * directionB.y, 0, 1e-6 * lengths);
+}
+
+TEST_F(ConstraintActionsBehavior, ApplyingSymmetricConfirmsStoredDefinitionAndSolve) {
+    const auto first = sketch_->addPoint({-2, 1});
+    const auto second = sketch_->addPoint({2, 1});
+    const auto center = sketch_->addPoint({0, 1});
+    ASSERT_TRUE(first);
+    ASSERT_TRUE(second);
+    ASSERT_TRUE(center);
+    const std::vector<GeometryRef> refs{{first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}, {center.value(), SubElement::Whole}};
+    const auto prepared = ConstraintActions(*sketch_).prepare({ConstraintAction::Symmetric, std::nullopt}, refs);
+    ASSERT_EQ(prepared.state, PreparationState::Ready);
+    ASSERT_TRUE(prepared.definition);
+    const auto before = sketch_->snapshot();
+    ASSERT_TRUE(before);
+
+    const auto report = ConstraintActions(*sketch_).apply(*prepared.definition);
+    EXPECT_EQ(report.action, ActionKind::ApplyConstraint);
+    EXPECT_EQ(report.change, ModelChange::Changed);
+    EXPECT_EQ(report.requestedConstraints, 1);
+    ASSERT_EQ(report.constraintIds.size(), 1);
+    EXPECT_EQ(report.constraintIds[0].get(), before.value().lastConstraintId + 1);
+    EXPECT_FALSE(report.operationError);
+    EXPECT_FALSE(report.solveError);
+    ASSERT_TRUE(report.solve);
+    EXPECT_EQ(report.solve->status, SolveStatus::Converged);
+    EXPECT_EQ(sketch_->constraintCount(), before.value().constraints.size() + 1);
+    const auto inserted = sketch_->constraint(report.constraintIds[0]);
+    ASSERT_TRUE(inserted);
+    EXPECT_EQ(inserted.value().definition.type, ConstraintType::Symmetric);
+    EXPECT_EQ(inserted.value().definition.refs, refs);
+    EXPECT_FALSE(inserted.value().definition.value);
+    EXPECT_FALSE(inserted.value().definition.fixedPosition);
 }
 
 TEST_F(ConstraintActionsBehavior, RejectionsPreserveSelectionAndValueReasonsWithoutMutation) {

@@ -100,7 +100,7 @@ public:
         for (auto type : {ConstraintType::Coincident, ConstraintType::Horizontal, ConstraintType::Vertical, ConstraintType::Parallel,
                           ConstraintType::Perpendicular, ConstraintType::Tangent, ConstraintType::Equal, ConstraintType::Distance,
                           ConstraintType::HorizontalDistance, ConstraintType::VerticalDistance, ConstraintType::Length, ConstraintType::Radius,
-                          ConstraintType::Diameter, ConstraintType::Angle, ConstraintType::Fix, ConstraintType::Concentric}) {
+                          ConstraintType::Diameter, ConstraintType::Angle, ConstraintType::Fix, ConstraintType::Concentric, ConstraintType::Symmetric}) {
             result.constraints[static_cast<size_t>(type)] = true;
         }
         result.updateEntities = result.removeEntities = result.updateConstraints = result.removeConstraints = true;
@@ -476,9 +476,25 @@ private:
         const auto add = [&](const du::RequirementDescriptor& descriptor) { record.requirements.push_back(manager_.addRequirement(descriptor)); };
         try {
             switch (definition.type) {
-                case ConstraintType::Coincident:
-                    add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
+                case ConstraintType::Coincident: {
+                    const auto handle1 = entities_.at(definition.refs[0].entity).handle;
+                    const auto descriptor1 = figure(handle1);
+                    const auto handle2 = entities_.at(definition.refs[1].entity).handle;
+                    const auto descriptor2 = figure(handle2);
+
+                    if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_POINT2D) {
+                        add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
+                    } else if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_LINE) {
+                        add(du::RequirementDescriptor::pointOnLine(pointAt(0), whole(1)));
+                    } else if (descriptor1.type == du::FigureType::ET_LINE && descriptor2.type == du::FigureType::ET_POINT2D) {
+                        add(du::RequirementDescriptor::pointOnPoint(whole(1), pointAt(0)));
+                    } else if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_CIRCLE) {
+                        add(du::RequirementDescriptor::pointOnCircle(pointAt(0), whole(1)));
+                    } else if (descriptor1.type == du::FigureType::ET_CIRCLE && descriptor2.type == du::FigureType::ET_POINT2D) {
+                        add(du::RequirementDescriptor::pointOnCircle(whole(1), pointAt(0)));
+                    }
                     break;
+                }
                 case ConstraintType::Horizontal:
                     add(du::RequirementDescriptor::horizontal(whole(0)));
                     break;
@@ -546,9 +562,21 @@ private:
                     // add(du::RequirementDescriptor::arcLineTangent());
                     break;
                 }
-                case ConstraintType::Distance:
-                    add(du::RequirementDescriptor::pointPointDist(pointAt(0), pointAt(1), dcmParameter(definition)));
+                case ConstraintType::Distance: {
+                    const auto handle1 = entities_.at(definition.refs[0].entity).handle;
+                    const auto descriptor1 = figure(handle1);
+                    const auto handle2 = entities_.at(definition.refs[1].entity).handle;
+                    const auto descriptor2 = figure(handle2);
+                    double dist = dcmParameter(definition);
+                    if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_POINT2D) {
+                        add(du::RequirementDescriptor::pointPointDist(pointAt(0), pointAt(1), dist));
+                    } else if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_LINE) {
+                        add(du::RequirementDescriptor::pointLineDist(whole(0), whole(1), dist));
+                    } else if (descriptor1.type == du::FigureType::ET_LINE && descriptor2.type == du::FigureType::ET_POINT2D) {
+                        add(du::RequirementDescriptor::pointLineDist(whole(1), whole(0), dist));
+                    }
                     break;
+                }
                 case ConstraintType::HorizontalDistance:
                     // TODO
                     // add(du::RequirementDescriptor::pointPointHorizontalDist(pointAt(0), pointAt(1), *definition.value));
@@ -592,21 +620,18 @@ private:
                     }
                     break;
                 }
-                case ConstraintType::Concentric: {
-                    const auto handle1 = entities_.at(definition.refs[0].entity).handle;
-                    const auto descriptor1 = figure(handle1);
-                    const auto handle2 = entities_.at(definition.refs[1].entity).handle;
-                    const auto descriptor2 = figure(handle2);
-
-                    if (descriptor1.type == du::FigureType::ET_CIRCLE && descriptor2.type == du::FigureType::ET_CIRCLE) {
-                        add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
-                    } else if (descriptor1.type == du::FigureType::ET_ARC && descriptor2.type == du::FigureType::ET_ARC) {
-                        add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
-                    } else if (descriptor1.type == du::FigureType::ET_CIRCLE && descriptor2.type == du::FigureType::ET_ARC) {
-                        add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
-                    } else if (descriptor1.type == du::FigureType::ET_ARC && descriptor2.type == du::FigureType::ET_CIRCLE) {
-                        add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
+                case ConstraintType::Symmetric:
+                    if (entities_.at(definition.refs[2].entity).kind == EntityKind::Line && definition.refs[2].sub == SubElement::Whole) {
+                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(0), pointAt(1), whole(2)));
+                    } else {
+                        add(du::RequirementDescriptor::symmetricAboutPoint(pointAt(0), pointAt(1), pointAt(2)));
                     }
+                    break;
+                case ConstraintType::Concentric: {
+                    const auto first = pointHandle({definition.refs[0].entity, SubElement::Center});
+                    const auto second = pointHandle({definition.refs[1].entity, SubElement::Center});
+                    add(du::RequirementDescriptor::pointOnPoint(first, second));
+                    break;
                 }
                 default:
                     throw std::logic_error("Unsupported constraint passed DCM preflight");
@@ -666,6 +691,11 @@ private:
                         return false;
                     }
                     break;
+                case ConstraintType::Concentric:
+                    if (!near(length(subtract(point({refs[0].entity, SubElement::Center}), point({refs[1].entity, SubElement::Center}))), 0)) {
+                        return false;
+                    }
+                    break;
                 case ConstraintType::Distance:
                     if (!near(length(subtract(point(refs[0]), point(refs[1]))), *definition.value)) {
                         return false;
@@ -676,6 +706,28 @@ private:
                     const auto delta = subtract(point(refs[1]), point(refs[0]));
                     const double component = definition.type == ConstraintType::HorizontalDistance ? delta.x : delta.y;
                     if (!near(component, *definition.value)) {
+                        return false;
+                    }
+                    break;
+                }
+                case ConstraintType::Symmetric: {
+                    const auto first = point(refs[0]);
+                    const auto second = point(refs[1]);
+                    const Vec2 midpoint{std::midpoint(first.x, second.x), std::midpoint(first.y, second.y)};
+                    if (entities_.at(refs[2].entity).kind == EntityKind::Line && refs[2].sub == SubElement::Whole) {
+                        const auto axis = figure(entities_.at(refs[2].entity).handle);
+                        const auto direction = lineVector(refs[2]);
+                        const double axisLength = length(direction);
+                        if (!(axisLength > 0) || !std::isfinite(axisLength)) {
+                            return false;
+                        }
+                        const Vec2 unit{direction.x / axisLength, direction.y / axisLength};
+                        const auto delta = subtract(second, first);
+                        const auto offset = subtract(midpoint, {axis.coords.at(0), axis.coords.at(1)});
+                        if (!near(delta.x * unit.x + delta.y * unit.y, 0) || !near(offset.x * unit.y - offset.y * unit.x, 0)) {
+                            return false;
+                        }
+                    } else if (!near(length(subtract(midpoint, point(refs[2]))), 0)) {
                         return false;
                     }
                     break;
@@ -938,12 +990,16 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         case ConstraintType::Perpendicular:
         case ConstraintType::Tangent:
         case ConstraintType::Equal:
+        case ConstraintType::Concentric:
             count = 2;
             break;
         case ConstraintType::Horizontal:
         case ConstraintType::Vertical:
         case ConstraintType::Fix:
             count = 1;
+            break;
+        case ConstraintType::Symmetric:
+            count = 3;
             break;
         case ConstraintType::Distance:
         case ConstraintType::HorizontalDistance:
@@ -964,8 +1020,12 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
     if (definition.refs.size() != count) {
         return invalid("Wrong number of constraint references");
     }
-    if (count == 2 && definition.refs[0] == definition.refs[1]) {
-        return invalid("A constraint needs distinct references");
+    for (size_t i = 0; i < count; ++i) {
+        for (size_t j = i + 1; j < count; ++j) {
+            if (definition.refs[i] == definition.refs[j]) {
+                return invalid("A constraint needs distinct references");
+            }
+        }
     }
     if (definition.value.has_value() != dimensional) {
         return invalid("Unexpected or missing dimension value");
@@ -986,11 +1046,17 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
     // if (definition.fixedPosition.has_value() != (type == ConstraintType::Fix)) {
     //     return invalid("Only Fix requires a fixed position");
     // }
+    if (type == ConstraintType::Symmetric && definition.fixedPosition) {
+        return invalid("Symmetric does not take a fixed position");
+    }
+    if (type == ConstraintType::Concentric && definition.fixedPosition) {
+        return invalid("Concentric does not take a fixed position");
+    }
     if (definition.fixedPosition && !finite(*definition.fixedPosition)) {
         return invalid("Fixed position must be finite");
     }
 
-    std::array<bool, 2> points{}, lines{}, circles{};
+    std::array<bool, 3> points{}, lines{}, circles{};
     for (size_t i = 0; i < count; ++i) {
         const auto& ref = definition.refs[i];
         auto target = entity(ref.entity);
@@ -1005,10 +1071,20 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
     bool valid = false;
     switch (type) {
         case ConstraintType::Coincident:
+            valid = (points[0] && points[1]) ||
+                    (points[0] && lines[1]) ||
+                    (points[1] && lines[0]) ||
+                    (points[0] && circles[1]) ||
+                    (points[1] && circles[0]);
+            break;
         case ConstraintType::Distance:
         case ConstraintType::HorizontalDistance:
         case ConstraintType::VerticalDistance:
-            valid = points[0] && points[1];
+            valid = (points[0] && points[1]) ||
+                    (points[0] && lines[1]) ||
+                    (points[1] && lines[0]) ||
+                    (points[0] && circles[1]) ||
+                    (points[1] && circles[0]);
             break;
         case ConstraintType::Horizontal:
         case ConstraintType::Vertical:
@@ -1030,8 +1106,14 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         case ConstraintType::Diameter:
             valid = circles[0];
             break;
+        case ConstraintType::Concentric:
+            valid = circles[0] && circles[1];
+            break;
         case ConstraintType::Fix:
             valid = points[0] || lines[0] || circles[0];
+            break;
+        case ConstraintType::Symmetric:
+            valid = points[0] && points[1] && (lines[2] || points[2]);
             break;
     }
     return valid ? Status::success() : invalid("Constraint references are incompatible with its type");

@@ -171,6 +171,13 @@ line endpoints. ConstraintRequests use sketch units and radians.
 Line-only relations pick whole lines; Equal/Tangent pick whole curves without
 endpoint priority. Coincident/Fix pick point elements, while Dimension retains
 point priority so choosing a line endpoint creates a point-distance input.
+Concentric selects two whole circular curves (Circle/Arc), including mixed pairs;
+point elements, centers and lines are rejected. Curve picking keeps endpoints
+and centers from replacing the intended whole-curve operands.
+Symmetric accepts two point elements and one whole axis line in any selection
+order, or three point elements with the center selected last. Partial selections
+remain pending until the third distinct reference is supplied. Interactive picking
+prefers point elements, then whole lines; click a line interior to select an axis.
 
 ConstraintActions applies coincidence with Midpoint placement and returns an
 owning App `ActionReport`. Preparation preserves typed rejection reasons and
@@ -402,13 +409,15 @@ Status before the one explicit solve.
 
 ConstraintDefinition contains type, refs, optional dimension value, and optional
 fixedPosition. References must exist and match these forms. Two-reference
-constraints require distinct GeometryRefs even when coordinates coincide. Only
+constraints require distinct GeometryRefs even when coordinates coincide;
+Symmetric requires all three references to be distinct. Only
 dimensional types accept value; only Fix requires finite fixedPosition.
 Unexpected/missing fields are InvalidArgument.
 
 | Constraint | References and values |
 | --- | --- |
 | Coincident | Two point-like refs |
+| Concentric | Two distinct whole Circle/Arc refs in any combination; equal centers, independent radii; no value or fixedPosition |
 | Horizontal, Vertical | One whole line |
 | Parallel, Perpendicular | Two whole lines |
 | Distance | Two point-like refs; finite nonnegative length including zero |
@@ -419,10 +428,11 @@ Unexpected/missing fields are InvalidArgument.
 | Radius, Diameter | One whole circular curve; finite positive length |
 | Tangent | Whole line/circular curve, or two circular curves; external tangency contract currently unsupported by DCM |
 | Fix | One point-like ref with explicit finite fixedPosition; target survives edits, failed solves, and transfer |
+| Symmetric | Two point-like refs followed by a whole axis line or a point-like center; no value or fixedPosition |
 
 | Function | Result, errors, side effects, and cost |
 | --- | --- |
-| `supportsConstraint(definition) const` | Status; validates fields/refs, then exact support. InvalidArgument/NotFound/Unsupported/native query failures. At most two entity reads; no mutation |
+| `supportsConstraint(definition) const` | Status; validates fields/refs, then exact support. InvalidArgument/NotFound/Unsupported/native query failures. At most three entity reads; no mutation |
 | `addConstraint(definition)` | Result of ConstraintId; preflights/capacity-checks, allocates ID, installs equations/private resources. No solve; allocated ID remains consumed after DCM failure |
 | `addCoincident(a, b, placement = CoincidentPlacement::Midpoint)` | Result of ConstraintId; prepares the selected coincidence groups, then inserts Coincident. No numerical solve. Preserve delegates to ordinary addConstraint |
 | `updateConstraint(id, definition)` | Status; existing ID, valid supported replacement, and update capability required. Retains public ID; may replace only translated equations/anchors, no numerical solve |
@@ -554,6 +564,8 @@ destroying the source.
 | Point/Line/Circle/Arc CRUD; metadata, counts, clear | Supported |
 | Geometry batches; point queries/scopes | Supported |
 | Coincident, Horizontal, Vertical, Parallel, Perpendicular | Supported |
+| Concentric for Circle/Circle, Circle/Arc and Arc/Arc | Supported through coincidence of the owned center points |
+| Symmetric about an explicit line or point | Supported; horizontal and vertical axes use line entities |
 | Distance, HorizontalDistance, VerticalDistance, Length, Angle, point-like Fix | Supported |
 | Equal line lengths/circular radii; Radius/Diameter | Unsupported |
 | Whole-curve Tangent | Unsupported |
