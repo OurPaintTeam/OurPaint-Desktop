@@ -477,22 +477,61 @@ private:
         try {
             switch (definition.type) {
                 case ConstraintType::Coincident: {
-                    const auto handle1 = entities_.at(definition.refs[0].entity).handle;
-                    const auto descriptor1 = figure(handle1);
-                    const auto handle2 = entities_.at(definition.refs[1].entity).handle;
-                    const auto descriptor2 = figure(handle2);
+                    auto kind1 = entities_.at(definition.refs[0].entity).kind;
+                    auto id1 = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt1 = definition.refs[0].sub;
 
-                    if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_POINT2D) {
-                        add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
-                    } else if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_LINE) {
-                        add(du::RequirementDescriptor::pointOnLine(pointAt(0), whole(1)));
-                    } else if (descriptor1.type == du::FigureType::ET_LINE && descriptor2.type == du::FigureType::ET_POINT2D) {
-                        add(du::RequirementDescriptor::pointOnPoint(whole(1), pointAt(0)));
-                    } else if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_CIRCLE) {
-                        add(du::RequirementDescriptor::pointOnCircle(pointAt(0), whole(1)));
-                    } else if (descriptor1.type == du::FigureType::ET_CIRCLE && descriptor2.type == du::FigureType::ET_POINT2D) {
-                        add(du::RequirementDescriptor::pointOnCircle(whole(1), pointAt(0)));
+                    auto kind2 = entities_.at(definition.refs[1].entity).kind;
+                    auto id2 = entities_.at(definition.refs[1].entity).handle;
+                    auto type_subEt2 = definition.refs[1].sub;
+
+                    if (type_subEt1 != SubElement::Whole) {
+                        if (type_subEt2 != SubElement::Whole) {
+                            add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
+                        } else {
+                            if (kind2 == EntityKind::Line) {
+                                add(du::RequirementDescriptor::pointOnLine(pointAt(0), id2));
+                            } else if (kind2 == EntityKind::Circle) {
+                                add(du::RequirementDescriptor::pointOnCircle(pointAt(0), id2));
+                            } else if (kind2 == EntityKind::Arc) {
+                                // TODO
+                                //add(du::RequirementDescriptor::pointOnArc(p_id1, id2));
+                            }
+                        }
+                    } else {
+                        if (type_subEt2 != SubElement::Whole) {
+                            if (kind1 == EntityKind::Line) {
+                                add(du::RequirementDescriptor::pointOnLine(pointAt(1), id1));
+                            } else if (kind1 == EntityKind::Circle) {
+                                add(du::RequirementDescriptor::pointOnCircle(pointAt(1), id1));
+                            } else if (kind1 == EntityKind::Arc) {
+                                // TODO
+                                //add(du::RequirementDescriptor::pointOnArc(pointAt(1), id1));
+                            }
+                        } else {
+                            if (kind1 == EntityKind::Point) {
+                                if (kind2 == EntityKind::Point) {
+                                    add(du::RequirementDescriptor::pointOnPoint(id1, id2));
+                                } else if (kind2 == EntityKind::Line) {
+                                    add(du::RequirementDescriptor::pointOnLine(id1, id2));
+                                } else if (kind2 == EntityKind::Circle) {
+                                    add(du::RequirementDescriptor::pointOnCircle(id1, id2));
+                                } else if (kind2 == EntityKind::Arc) {
+                                    // TODO
+                                    //add(du::RequirementDescriptor::pointOnArc(id1, id2));
+                                }
+
+                            } else if (kind1 == EntityKind::Line && kind2 == EntityKind::Point) {
+                                add(du::RequirementDescriptor::pointOnLine(id2, id1));
+                            } else if (kind1 == EntityKind::Circle && kind2 == EntityKind::Point) {
+                                add(du::RequirementDescriptor::pointOnCircle(id2, id1));
+                            } else if (kind1 == EntityKind::Arc && kind2 == EntityKind::Point) {
+                                // TODO
+                                //add(du::RequirementDescriptor::pointOnArc(id2, id1));
+                            }
+                        }
                     }
+
                     break;
                 }
                 case ConstraintType::Horizontal:
