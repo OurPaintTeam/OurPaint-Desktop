@@ -460,6 +460,63 @@ TEST_F(ConstraintActionsBehavior, ApplyingPerpendicularAddsConstraintAndSolves) 
     EXPECT_NEAR(directionA.x * directionB.x + directionA.y * directionB.y, 0, 1e-6 * lengths);
 }
 
+TEST(ConstraintActionsTangency, ApplyingTangentSelectsAndStoresLineSideInEitherReferenceOrder) {
+    for (const double y : {1.0, -1.0}) {
+        for (const bool reversed : {false, true}) {
+            Sketch sketch;
+            const auto line = sketch.addLine({-3, 0}, {3, 0});
+            const auto circle = sketch.addCircle({0, y}, 1);
+            ASSERT_TRUE(line);
+            ASSERT_TRUE(circle);
+            std::vector<GeometryRef> refs{{line.value(), SubElement::Whole}, {circle.value(), SubElement::Whole}};
+            if (reversed) {
+                std::swap(refs[0], refs[1]);
+            }
+            ConstraintActions actions(sketch);
+            const auto prepared = actions.prepare({ConstraintAction::Tangent, std::nullopt}, refs);
+            ASSERT_EQ(prepared.state, PreparationState::Ready);
+            ASSERT_TRUE(prepared.definition);
+            EXPECT_FALSE(prepared.definition->tangencyBranch);
+
+            const auto report = actions.apply(*prepared.definition);
+            EXPECT_EQ(report.change, ModelChange::Changed);
+            ASSERT_EQ(report.constraintIds.size(), 1);
+            ASSERT_TRUE(report.solve);
+            EXPECT_EQ(report.solve->status, SolveStatus::Converged);
+            const auto inserted = sketch.constraint(report.constraintIds[0]);
+            ASSERT_TRUE(inserted);
+            EXPECT_EQ(inserted.value().definition.refs, refs);
+            EXPECT_EQ(inserted.value().definition.tangencyBranch, y > 0 ? TangencyBranch::PositiveSide : TangencyBranch::NegativeSide);
+        }
+    }
+}
+
+TEST(ConstraintActionsTangency, ApplyingNestedCircleTangentStoresContainmentInEitherReferenceOrder) {
+    for (const bool reversed : {false, true}) {
+        Sketch sketch;
+        const auto outer = sketch.addCircle({0, 0}, 3);
+        const auto inner = sketch.addCircle({1, 0}, 2);
+        ASSERT_TRUE(outer);
+        ASSERT_TRUE(inner);
+        std::vector<GeometryRef> refs{{outer.value(), SubElement::Whole}, {inner.value(), SubElement::Whole}};
+        if (reversed) {
+            std::swap(refs[0], refs[1]);
+        }
+        ConstraintActions actions(sketch);
+        const auto prepared = actions.prepare({ConstraintAction::Tangent, std::nullopt}, refs);
+        ASSERT_EQ(prepared.state, PreparationState::Ready);
+        ASSERT_TRUE(prepared.definition);
+        const auto report = actions.apply(*prepared.definition);
+        EXPECT_EQ(report.change, ModelChange::Changed);
+        ASSERT_EQ(report.constraintIds.size(), 1);
+        ASSERT_TRUE(report.solve);
+        EXPECT_EQ(report.solve->status, SolveStatus::Converged);
+        const auto inserted = sketch.constraint(report.constraintIds[0]);
+        ASSERT_TRUE(inserted);
+        EXPECT_EQ(inserted.value().definition.tangencyBranch, reversed ? TangencyBranch::SecondContainsFirst : TangencyBranch::FirstContainsSecond);
+    }
+}
+
 TEST_F(ConstraintActionsBehavior, ApplyingSymmetricConfirmsStoredDefinitionAndSolve) {
     const auto first = sketch_->addPoint({-2, 1});
     const auto second = sketch_->addPoint({2, 1});

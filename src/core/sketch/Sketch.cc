@@ -75,6 +75,73 @@ using detail::pointLike;
 
 bool validKind(EntityKind kind) { return static_cast<size_t>(kind) < 4; }
 
+Circle2 supportCircle(const SketchGeometry& geometry) {
+    if (const auto* circle = std::get_if<Circle2>(&geometry)) {
+        return *circle;
+    }
+    const auto& arc = std::get<Arc2>(geometry);
+    return {arc.center, distance(arc.start, arc.center)};
+}
+
+std::optional<double> signedLineDistance(const Line2& line, Vec2 center) {
+    // Normalize before taking the cross product, using wider intermediates for
+    // finite coordinates whose products would overflow double.
+    const long double dx = static_cast<long double>(line.end.x) - line.start.x;
+    const long double dy = static_cast<long double>(line.end.y) - line.start.y;
+    const long double size = std::hypot(dx, dy);
+    if (!(size > 0) || !std::isfinite(size)) {
+        return std::nullopt;
+    }
+    const double result = static_cast<double>((static_cast<long double>(center.y) - line.start.y) * (dx / size) -
+                                              (static_cast<long double>(center.x) - line.start.x) * (dy / size));
+    return std::isfinite(result) ? std::optional<double>(result) : std::nullopt;
+}
+
+TangencyBranch initialTangencyBranch(const SketchGeometry& first, const SketchGeometry& second) {
+    const auto* line = std::get_if<Line2>(&first);
+    const auto* otherLine = std::get_if<Line2>(&second);
+    if (line || otherLine) {
+        const auto circle = supportCircle(line ? second : first);
+        return signedLineDistance(line ? *line : *otherLine, circle.center).value() < 0 ? TangencyBranch::NegativeSide : TangencyBranch::PositiveSide;
+    }
+    const auto a = supportCircle(first), b = supportCircle(second);
+    const long double separation = std::hypot(static_cast<long double>(b.center.x) - a.center.x, static_cast<long double>(b.center.y) - a.center.y);
+    const long double external = static_cast<long double>(a.radius) + b.radius;
+    const long double internal = std::abs(static_cast<long double>(a.radius) - b.radius);
+    if (a.radius == b.radius || std::abs(separation - external) <= std::abs(separation - internal)) {
+        return TangencyBranch::External;
+    }
+    return a.radius > b.radius ? TangencyBranch::FirstContainsSecond : TangencyBranch::SecondContainsFirst;
+}
+
+Status validateTangency(const SketchGeometry& first, const SketchGeometry& second, std::optional<TangencyBranch> branch) {
+    for (const auto* geometry : {&first, &second}) {
+        if (!validateGeometry(*geometry, true)) {
+            return invalid("Tangency needs finite nondegenerate supporting curves");
+        }
+    }
+    const auto* line = std::get_if<Line2>(&first);
+    const auto* otherLine = std::get_if<Line2>(&second);
+    if (line || otherLine) {
+        if (!signedLineDistance(line ? *line : *otherLine, supportCircle(line ? second : first).center)) {
+            return invalid("Tangency needs a finite signed center-to-line distance");
+        }
+        if (branch && *branch != TangencyBranch::PositiveSide && *branch != TangencyBranch::NegativeSide) {
+            return invalid("Line tangency needs a positive or negative side branch");
+        }
+    } else if (branch) {
+        const auto a = supportCircle(first), b = supportCircle(second);
+        if (*branch != TangencyBranch::External && *branch != TangencyBranch::FirstContainsSecond && *branch != TangencyBranch::SecondContainsFirst) {
+            return invalid("Circular tangency needs an external or containment branch");
+        }
+        if ((*branch == TangencyBranch::FirstContainsSecond && a.radius <= b.radius) ||
+            (*branch == TangencyBranch::SecondContainsFirst && b.radius <= a.radius)) {
+            return invalid("The containing curve must have a strictly larger radius");
+        }
+    }
+    return Status::success();
+}
+
 }  // namespace
 
 // All live coordinates reside in this stable-address manager. Records contain
@@ -251,7 +318,7 @@ public:
         if (!supported) {
             return supported;
         }
-        return checkedStatus([&] { constraints_.emplace(constraint.id, addHandles(constraint.definition)); });
+        return checkedStatus([&] { constraints_.emplace(constraint.id, addHandles(resolveDefinition(constraint.definition))); });
     }
 
     Status updateConstraint(const SketchConstraint& constraint) {
@@ -266,6 +333,10 @@ public:
         return checkedStatus([&] {
             const auto& previous = it->second.definition;
             const auto& next = constraint.definition;
+            if (previous.type == ConstraintType::Tangent && next.type == ConstraintType::Tangent && previous.refs == next.refs) {
+                updateTangencyBranch(it->second, *next.tangencyBranch);
+                return;
+            }
             if (previous.type == next.type && previous.refs == next.refs && next.value) {
                 manager_.updateRequirementParam(it->second.requirements.front(), dcmParameter(next));
                 it->second.definition = next;
@@ -273,7 +344,7 @@ public:
             }
             // DCM cannot retarget a requirement. Replace just its translated
             // records, preserving the public ID and the rest of the live model.
-            auto replacement = addHandles(next);
+            auto replacement = addHandles(resolveDefinition(next));
             removeHandles(it->second);
             it->second = std::move(replacement);
         });
@@ -354,14 +425,14 @@ public:
         return checked<SolveDiagnostics>([&] {
             const bool converged = manager_.solve();
             SolveDiagnostics result;
-            // TODO
-            // result.status = converged && constraintsSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
-            result.status = true ? SolveStatus::Converged : SolveStatus::Failed;
+            // The existing general diagnostics workaround remains in place;
+            // tangency additionally checks its saved branch and support geometry.
+            result.status = (!hasTangencies() || converged) && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
             return result;
         });
     }
 
-    Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests) {
+    Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests, DragOptions options) {
         return checked<SolveDiagnostics>([&] {
             std::vector<du::PointUpdateDescriptor> updates;
             updates.reserve(requests.size());
@@ -376,13 +447,15 @@ public:
                 dcm::DCMManager& manager;
                 ~RestoreMode() { manager.setSolveMode(du::SolveMode::GLOBAL); }
             } restore{manager_};
+            if (options.tangency == TangencyDragPolicy::SwitchLineSide) {
+                prepareTangencyDrag(updates, options.sideSwitchTolerance);
+            }
             manager_.setSolveMode(du::SolveMode::DRAG);
             manager_.updatePoints(updates);
             SolveDiagnostics result;
 
-            // TODO
-            // result.status = constraintsSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
-            result.status = true ? SolveStatus::Converged : SolveStatus::Failed;
+            const bool repaired = retryTangencyDrag(updates);
+            result.status = repaired && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
 
             return result;
         });
@@ -470,6 +543,146 @@ private:
         return definition.value.value();
     }
 
+    void prepareTangencyDrag(const std::vector<du::PointUpdateDescriptor>& updates, double tolerance) {
+        struct Probe {
+            ConstraintId id;
+            Line2 line;
+            Vec2 center;
+        };
+        std::vector<Probe> probes;
+        const auto lineAndCircle = [&](const ConstraintDefinition& definition) {
+            const auto first = readEntity(definition.refs[0].entity, entities_.at(definition.refs[0].entity)).geometry;
+            const auto second = readEntity(definition.refs[1].entity, entities_.at(definition.refs[1].entity)).geometry;
+            const bool firstLine = std::holds_alternative<Line2>(first);
+            return std::pair{std::get<Line2>(firstLine ? first : second), supportCircle(firstLine ? second : first)};
+        };
+        for (const auto& [id, record] : constraints_) {
+            const auto branch = record.definition.tangencyBranch;
+            if (record.definition.type == ConstraintType::Tangent && (branch == TangencyBranch::PositiveSide || branch == TangencyBranch::NegativeSide)) {
+                const auto [line, circle] = lineAndCircle(record.definition);
+                probes.push_back({id, line, circle.center});
+            }
+        }
+        if (probes.empty()) {
+            return;
+        }
+        // Project Fix/coincidence in GLOBAL mode without a numerical solve.
+        // Testing the raw cursor against solved geometry would never cross a
+        // saved side, and testing unprojected targets could flip fixed geometry.
+        manager_.setSolveMode(du::SolveMode::GLOBAL);
+        manager_.updatePoints(updates);
+        for (const auto& probe : probes) {
+            auto& record = constraints_.at(probe.id);
+            const auto [line, circle] = lineAndCircle(record.definition);
+            if (line.start == probe.line.start && line.end == probe.line.end && circle.center == probe.center) {
+                continue;
+            }
+            const auto separation = signedLineDistance(line, circle.center);
+            const double lineLength = distance(line.start, line.end);
+            if (!separation || !std::isfinite(lineLength) || !(lineLength > 0)) {
+                continue;
+            }
+            const double threshold = std::max(tolerance, 1e-9 * (1.0 + circle.radius));
+            if (*separation > threshold && record.definition.tangencyBranch == TangencyBranch::NegativeSide) {
+                updateTangencyBranch(record, TangencyBranch::PositiveSide);
+            } else if (*separation < -threshold && record.definition.tangencyBranch == TangencyBranch::PositiveSide) {
+                updateTangencyBranch(record, TangencyBranch::NegativeSide);
+            }
+        }
+    }
+
+    bool tangentSatisfied(const ConstraintDefinition& definition) const {
+        const auto first = readEntity(definition.refs[0].entity, entities_.at(definition.refs[0].entity)).geometry;
+        const auto second = readEntity(definition.refs[1].entity, entities_.at(definition.refs[1].entity)).geometry;
+        for (const auto* geometry : {&first, &second}) {
+            if (!validateGeometry(*geometry, true)) {
+                return false;
+            }
+            if (const auto* arc = std::get_if<Arc2>(geometry); arc && !near(distance(arc->end, arc->center), distance(arc->start, arc->center))) {
+                return false;
+            }
+        }
+        const auto branch = definition.tangencyBranch;
+        const auto* line = std::get_if<Line2>(&first);
+        const auto* otherLine = std::get_if<Line2>(&second);
+        if (line || otherLine) {
+            const auto circle = supportCircle(line ? second : first);
+            const auto separation = signedLineDistance(line ? *line : *otherLine, circle.center);
+            return separation && near(*separation, branch == TangencyBranch::PositiveSide ? circle.radius : -circle.radius);
+        }
+        const auto a = supportCircle(first), b = supportCircle(second);
+        if (branch == TangencyBranch::External) {
+            return near(distance(a.center, b.center), a.radius + b.radius);
+        }
+        if (branch == TangencyBranch::FirstContainsSecond) {
+            return a.radius > b.radius && near(distance(a.center, b.center), a.radius - b.radius);
+        }
+        return branch == TangencyBranch::SecondContainsFirst && b.radius > a.radius && near(distance(a.center, b.center), b.radius - a.radius);
+    }
+
+    bool tangenciesSatisfied() const {
+        return std::all_of(constraints_.begin(), constraints_.end(), [&](const auto& item) {
+            const auto& definition = item.second.definition;
+            return definition.type != ConstraintType::Tangent || tangentSatisfied(definition);
+        });
+    }
+
+    bool retryTangencyDrag(const std::vector<du::PointUpdateDescriptor>& updates) {
+        std::set<dcm::ComponentID> touched;
+        for (const auto& update : updates) {
+            if (const auto component = manager_.getComponentForFigure(update.pointId)) {
+                touched.insert(*component);
+            }
+        }
+        std::set<dcm::ComponentID> retry;
+        for (const auto& [id, record] : constraints_) {
+            const auto& definition = record.definition;
+            if (definition.type == ConstraintType::Tangent && !tangentSatisfied(definition)) {
+                const auto component = manager_.getComponentForFigure(entities_.at(definition.refs[0].entity).handle);
+                if (component && touched.contains(*component)) {
+                    retry.insert(*component);
+                }
+            }
+        }
+        bool converged = true;
+        for (const auto component : retry) {
+            // Native DRAG can lock an infeasible center while other variables
+            // remain free. Retry this component without cursor locks, so an
+            // unreachable target does not stop motion through the side dead band.
+            if (!manager_.solve(component)) {
+                converged = false;
+            }
+        }
+        return converged;
+    }
+
+    bool hasTangencies() const {
+        return std::any_of(constraints_.begin(), constraints_.end(), [](const auto& item) { return item.second.definition.type == ConstraintType::Tangent; });
+    }
+
+    ConstraintDefinition resolveDefinition(ConstraintDefinition definition) const {
+        if (definition.type == ConstraintType::Tangent && !definition.tangencyBranch) {
+            const auto first = readEntity(definition.refs[0].entity, entities_.at(definition.refs[0].entity)).geometry;
+            const auto second = readEntity(definition.refs[1].entity, entities_.at(definition.refs[1].entity)).geometry;
+            definition.tangencyBranch = initialTangencyBranch(first, second);
+        }
+        return definition;
+    }
+
+    void updateTangencyBranch(ConstraintRecord& record, TangencyBranch branch) {
+        const auto& refs = record.definition.refs;
+        if (entities_.at(refs[0].entity).kind == EntityKind::Line || entities_.at(refs[1].entity).kind == EntityKind::Line) {
+            manager_.updateLineCircleTangencySide(record.requirements.front(),
+                                                  branch == TangencyBranch::PositiveSide ? du::TangencySide::POSITIVE : du::TangencySide::NEGATIVE);
+        } else {
+            const auto kind = branch == TangencyBranch::External              ? du::CircleTangencyKind::EXTERNAL
+                              : branch == TangencyBranch::FirstContainsSecond ? du::CircleTangencyKind::FIRST_CONTAINS_SECOND
+                                                                              : du::CircleTangencyKind::SECOND_CONTAINS_FIRST;
+            manager_.updateCircleCircleTangencyKind(record.requirements.front(), kind);
+        }
+        record.definition.tangencyBranch = branch;
+    }
+
     ConstraintRecord addHandles(const ConstraintDefinition& definition) {
         ConstraintRecord record{definition, {}, std::nullopt};
         const auto whole = [&](size_t index) { return entities_.at(definition.refs.at(index).entity).handle; };
@@ -548,58 +761,18 @@ private:
                     add(du::RequirementDescriptor::lineLinePerpendicular(whole(0), whole(1)));
                     break;
                 case ConstraintType::Tangent: {
-                    const auto handle1 = entities_.at(definition.refs[0].entity).handle;
-                    const auto descriptor1 = figure(handle1);
-                    const auto handle2 = entities_.at(definition.refs[1].entity).handle;
-                    const auto descriptor2 = figure(handle2);
-
-                    if ((descriptor1.type == du::FigureType::ET_CIRCLE && descriptor2.type == du::FigureType::ET_CIRCLE) ||
-                        (descriptor1.type == du::FigureType::ET_ARC && descriptor2.type == du::FigureType::ET_ARC)) {
-                        double cx1 = descriptor1.coords[0];
-                        double cy1 = descriptor1.coords[1];
-                        double r1 = descriptor1.radius.value();
-
-                        double cx2 = descriptor2.coords[0];
-                        double cy2 = descriptor2.coords[1];
-                        double r2 = descriptor2.radius.value();
-
-                        const double dx = cx2 - cx1;
-                        const double dy = cy2 - cy1;
-                        const double d = std::hypot(dx, dy);
-
-                        const double dExternal = r1 + r2;
-                        const double dFirstContains = std::abs(r1 - r2);
-
-                        const double errExternal = std::abs(d - dExternal);
-                        const double errInternal = std::abs(d - dFirstContains);
-
-                        du::CircleTangencyKind kind;
-                        if (errExternal <= errInternal) {
-                            kind = du::CircleTangencyKind::EXTERNAL;
-                        } else if (r1 >= r2) {
-                            kind = du::CircleTangencyKind::FIRST_CONTAINS_SECOND;
-                        } else {
-                            kind = du::CircleTangencyKind::SECOND_CONTAINS_FIRST;
-                        }
-
-                        if (descriptor1.type == du::FigureType::ET_CIRCLE) {
-                            add(du::RequirementDescriptor::circleCircleTangent(whole(0), whole(1), kind));
-                        } else {
-                            // TODO
-                            // add(du::RequirementDescriptor::arcArcTangent(whole(0), whole(1), kind));
-                        }
+                    const auto branch = definition.tangencyBranch.value();
+                    const bool firstLine = entities_.at(definition.refs[0].entity).kind == EntityKind::Line;
+                    const bool secondLine = entities_.at(definition.refs[1].entity).kind == EntityKind::Line;
+                    if (firstLine || secondLine) {
+                        const auto side = branch == TangencyBranch::PositiveSide ? du::TangencySide::POSITIVE : du::TangencySide::NEGATIVE;
+                        add(du::RequirementDescriptor::lineCircleTangent(whole(firstLine ? 0 : 1), whole(firstLine ? 1 : 0), side));
+                    } else {
+                        const auto kind = branch == TangencyBranch::External              ? du::CircleTangencyKind::EXTERNAL
+                                          : branch == TangencyBranch::FirstContainsSecond ? du::CircleTangencyKind::FIRST_CONTAINS_SECOND
+                                                                                          : du::CircleTangencyKind::SECOND_CONTAINS_FIRST;
+                        add(du::RequirementDescriptor::circleCircleTangent(whole(0), whole(1), kind));
                     }
-
-                    else if (descriptor1.type == du::FigureType::ET_LINE && descriptor2.type == du::FigureType::ET_CIRCLE) {
-                        add(du::RequirementDescriptor::lineCircleTangent(whole(0), whole(1), OurPaintDCM::Utils::TangencySide::POSITIVE));
-                        // add(du::RequirementDescriptor::lineCircleTangent(whole(0), whole(1), OurPaintDCM::Utils::TangencySide::NEGATIVE));
-                    } else if (descriptor1.type == du::FigureType::ET_CIRCLE && descriptor2.type == du::FigureType::ET_LINE) {
-                        add(du::RequirementDescriptor::lineCircleTangent(whole(0), whole(1), OurPaintDCM::Utils::TangencySide::POSITIVE));
-
-                        // add(du::RequirementDescriptor::lineCircleTangent(whole(0), whole(1), OurPaintDCM::Utils::TangencySide::NEGATIVE));
-                    }
-
-                    // add(du::RequirementDescriptor::arcLineTangent());
                     break;
                 }
                 case ConstraintType::Distance: {
@@ -731,6 +904,11 @@ private:
             switch (definition.type) {
                 case ConstraintType::Coincident:
                     if (!near(length(subtract(point(refs[0]), point(refs[1]))), 0)) {
+                        return false;
+                    }
+                    break;
+                case ConstraintType::Tangent:
+                    if (!tangentSatisfied(definition)) {
                         return false;
                     }
                     break;
@@ -1108,11 +1286,18 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
     if (type == ConstraintType::Midpoint && definition.fixedPosition) {
         return invalid("Midpoint does not take a fixed position");
     }
+    if (type == ConstraintType::Tangent && definition.fixedPosition) {
+        return invalid("Tangent does not take a fixed position");
+    }
+    if (type != ConstraintType::Tangent && definition.tangencyBranch) {
+        return invalid("Only Tangent takes a tangency branch");
+    }
     if (definition.fixedPosition && !finite(*definition.fixedPosition)) {
         return invalid("Fixed position must be finite");
     }
 
     std::array<bool, 3> points{}, lines{}, circles{};
+    std::array<SketchGeometry, 3> geometries;
     for (size_t i = 0; i < count; ++i) {
         const auto& ref = definition.refs[i];
         auto target = entity(ref.entity);
@@ -1123,6 +1308,9 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         points[i] = pointLike(kind, ref.sub);
         lines[i] = kind == EntityKind::Line && ref.sub == SubElement::Whole;
         circles[i] = (kind == EntityKind::Circle || kind == EntityKind::Arc) && ref.sub == SubElement::Whole;
+        if (type == ConstraintType::Tangent) {
+            geometries[i] = target.value().geometry;
+        }
     }
     bool valid = false;
     switch (type) {
@@ -1175,7 +1363,10 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             valid = points[0] && points[1] && (lines[2] || points[2]);
             break;
     }
-    return valid ? Status::success() : invalid("Constraint references are incompatible with its type");
+    if (!valid) {
+        return invalid("Constraint references are incompatible with its type");
+    }
+    return type == ConstraintType::Tangent ? validateTangency(geometries[0], geometries[1], definition.tangencyBranch) : Status::success();
 }
 
 Status Sketch::supportsConstraint(const ConstraintDefinition& definition) const {
@@ -1300,14 +1491,19 @@ Status Sketch::updateConstraint(ConstraintId id, const ConstraintDefinition& def
     if (!current) {
         return Status::failure(current.error().code, current.error().message);
     }
-    auto valid = supportsConstraint(definition);
+    auto resolved = definition;
+    const auto& previous = current.value().definition;
+    if (resolved.type == ConstraintType::Tangent && previous.type == ConstraintType::Tangent && resolved.refs == previous.refs && !resolved.tangencyBranch) {
+        resolved.tangencyBranch = previous.tangencyBranch;
+    }
+    auto valid = supportsConstraint(resolved);
     if (!valid) {
         return valid;
     }
     if (!capabilities().updateConstraints) {
         return Status::failure(ErrorCode::Unsupported, "Constraint updates are unsupported");
     }
-    return impl_->updateConstraint({id, definition});
+    return impl_->updateConstraint({id, resolved});
 }
 
 Status Sketch::removeConstraint(ConstraintId id) {
@@ -1387,11 +1583,15 @@ Result<SolveDiagnostics> Sketch::solve() {
     return impl_->solve();
 }
 
-Result<SolveDiagnostics> Sketch::drag(const DragRequest& request) {
-    return dragPoints(std::span<const DragRequest>(&request, 1));
+Result<SolveDiagnostics> Sketch::drag(const DragRequest& request, DragOptions options) {
+    return dragPoints(std::span<const DragRequest>(&request, 1), options);
 }
 
-Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> requests) {
+Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> requests, DragOptions options) {
+    if ((options.tangency != TangencyDragPolicy::Preserve && options.tangency != TangencyDragPolicy::SwitchLineSide) ||
+        !std::isfinite(options.sideSwitchTolerance) || options.sideSwitchTolerance < 0) {
+        return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Invalid tangency drag options");
+    }
     if (requests.empty()) {
         return Result<SolveDiagnostics>::success(SolveDiagnostics{});
     }
@@ -1414,7 +1614,7 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
     if (!capabilities().drag) {
         return Result<SolveDiagnostics>::failure(ErrorCode::Unsupported, "Dragging is unsupported");
     }
-    return impl_->dragPoints(requests);
+    return impl_->dragPoints(requests, options);
 }
 
 Result<SketchSnapshot> Sketch::snapshot() const {

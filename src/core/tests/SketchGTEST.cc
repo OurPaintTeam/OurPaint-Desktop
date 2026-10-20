@@ -67,6 +67,7 @@ void expectSnapshot(const SketchSnapshot& actual, const SketchSnapshot& expected
         EXPECT_EQ(definition.refs, expectedDefinition.refs);
         EXPECT_EQ(definition.value, expectedDefinition.value);
         EXPECT_EQ(definition.fixedPosition, expectedDefinition.fixedPosition);
+        EXPECT_EQ(definition.tangencyBranch, expectedDefinition.tangencyBranch);
     }
 }
 
@@ -814,24 +815,27 @@ TEST_P(SketchBehavior, InconsistentFixConstraintsReportFailedConvergence) {
     EXPECT_TRUE(sketch_->constraint(b.value()));
 }
 
-TEST_P(SketchBehavior, UnsupportedConstraintIsStructuredAndDoesNotMutate) {
+TEST_P(SketchBehavior, SupportsTangentCreationAndUpdatingPreservesConstraintIdentity) {
     auto line = sketch_->addLine({0, 1}, {3, 1});
     auto circle = sketch_->addCircle({0, 0}, 1);
     ASSERT_TRUE(line);
     ASSERT_TRUE(circle);
     ConstraintDefinition tangent{ConstraintType::Tangent, {{line.value(), SubElement::Whole}, {circle.value(), SubElement::Whole}}, std::nullopt, std::nullopt};
-    EXPECT_FALSE(sketch_->capabilities().supports(ConstraintType::Tangent));
-    expectError(sketch_->supportsConstraint(tangent), ErrorCode::Unsupported);
-    expectError(sketch_->addConstraint(tangent), ErrorCode::Unsupported);
+    EXPECT_TRUE(sketch_->capabilities().supports(ConstraintType::Tangent));
+    ASSERT_TRUE(sketch_->supportsConstraint(tangent));
+    ASSERT_TRUE(sketch_->addConstraint(tangent));
     auto relation = sketch_->addConstraint(horizontal(line.value()));
     ASSERT_TRUE(relation);
-    expectError(sketch_->updateConstraint(relation.value(), tangent), ErrorCode::Unsupported);
+    ASSERT_TRUE(sketch_->updateConstraint(relation.value(), tangent));
     auto queried = sketch_->constraint(relation.value());
     ASSERT_TRUE(queried);
-    EXPECT_EQ(queried.value().definition.type, ConstraintType::Horizontal);
+    EXPECT_EQ(queried.value().id, relation.value());
+    EXPECT_EQ(queried.value().definition.type, ConstraintType::Tangent);
+    EXPECT_EQ(queried.value().definition.refs, tangent.refs);
+    EXPECT_EQ(queried.value().definition.tangencyBranch, TangencyBranch::NegativeSide);
     auto all = sketch_->constraints();
     ASSERT_TRUE(all);
-    EXPECT_EQ(all.value().size(), 1U);
+    EXPECT_EQ(all.value().size(), 2U);
 }
 
 TEST_P(SketchBehavior, DeletedEntityAndConstraintIdsAreNeverReused) {

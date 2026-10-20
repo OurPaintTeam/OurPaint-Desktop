@@ -95,9 +95,12 @@ public:
     // queryable model, not rollback. solve/drag do not change identities/topology;
     // failed convergence may retain an iterate, and is reported in diagnostics.
     Result<SolveDiagnostics> solve();
-    Result<SolveDiagnostics> drag(const DragRequest& request);
+    // SwitchLineSide explicitly permits editing saved line/circular tangency
+    // branches from hard-projected requested targets before numerical solving.
+    // Other branches and ordinary solve/update calls preserve the saved choice.
+    Result<SolveDiagnostics> drag(const DragRequest& request, DragOptions options = {});
     // Prevalidate all point targets, then solve them together. Empty input is a no-op.
-    Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests);
+    Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests, DragOptions options = {});
 
     Result<SketchSnapshot> snapshot() const;
     // Stages a fresh DCM model, then swaps only on complete success. No solve is

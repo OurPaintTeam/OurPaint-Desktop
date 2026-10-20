@@ -36,6 +36,11 @@ bool sameGeometry(const sketch::SketchGeometry& first, const sketch::SketchGeome
         },
         first);
 }
+
+bool sameConstraint(const sketch::ConstraintDefinition& first, const sketch::ConstraintDefinition& second) {
+    return first.type == second.type && first.refs == second.refs && first.value == second.value && first.fixedPosition == second.fixedPosition &&
+           first.tangencyBranch == second.tangencyBranch;
+}
 }  // namespace
 
 CursorTool::CursorTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay, ConstraintActions& constraintActions)
@@ -211,6 +216,13 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
                         return std::nullopt;
                     }
                     dragInitialEntities_ = std::move(entities.value());
+                    auto constraints = sketch_.constraints();
+                    if (!constraints) {
+                        dragReport_->operationError = constraints.error();
+                        dragStopped_ = true;
+                        return std::nullopt;
+                    }
+                    dragInitialConstraints_ = std::move(constraints.value());
                 }
                 auto result = sketch_.entity(refs[0].entity);
                 if (!result) {
@@ -252,8 +264,8 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
                     dragReport_->change = ModelChange::Changed;
                     dragReport_->recordSolve(dragged);
                     if (dragged.value().status != sketch::SolveStatus::Converged) {
-                        dragStopped_ = true;
-                        return std::nullopt;
+                        //dragStopped_ = true;
+                        //return std::nullopt;
                     }
                 }
                 lastPos_ = v;
@@ -513,11 +525,12 @@ ToolCancellation CursorTool::cancel() {
 std::optional<ActionReport> CursorTool::finishDrag() {
     auto report = std::move(dragReport_);
     dragReport_.reset();
-    if (report && dragAttempted_ && dragInitialEntities_) {
+    if (report && dragAttempted_ && dragInitialEntities_ && dragInitialConstraints_) {
         const auto entities = sketch_.entities();
-        if (!entities) {
+        const auto constraints = sketch_.constraints();
+        if (!entities || !constraints) {
             if (!report->operationError) {
-                report->operationError = entities.error();
+                report->operationError = !entities ? entities.error() : constraints.error();
             }
             if (report->change != ModelChange::Unchanged) {
                 report->change = ModelChange::PotentiallyChanged;
@@ -531,14 +544,26 @@ std::optional<ActionReport> CursorTool::finishDrag() {
                     report->entityIds.push_back(current[i].id);
                 }
             }
+            const auto& initialConstraints = *dragInitialConstraints_;
+            const auto& currentConstraints = constraints.value();
+            for (size_t i = 0; i < currentConstraints.size(); ++i) {
+                if (i >= initialConstraints.size() || currentConstraints[i].id != initialConstraints[i].id ||
+                    !sameConstraint(currentConstraints[i].definition, initialConstraints[i].definition)) {
+                    report->constraintIds.push_back(currentConstraints[i].id);
+                }
+            }
             // Drag retains topology. Comparing once also catches solver movement
-            // of unselected entities without a full-model query on every move.
+            // and tangency branch changes without full-model queries on every move.
             if (report->change != ModelChange::PotentiallyChanged) {
-                report->change = report->entityIds.empty() && current.size() == initial.size() ? ModelChange::Unchanged : ModelChange::Changed;
+                report->change = report->entityIds.empty() && report->constraintIds.empty() && current.size() == initial.size() &&
+                                         currentConstraints.size() == initialConstraints.size()
+                                     ? ModelChange::Unchanged
+                                     : ModelChange::Changed;
             }
         }
     }
     dragInitialEntities_.reset();
+    dragInitialConstraints_.reset();
     dragAttempted_ = false;
     dragStopped_ = false;
     if (report && report->change == ModelChange::Unchanged && !report->operationError && !report->solveError &&
@@ -582,7 +607,7 @@ sketch::Result<sketch::SolveDiagnostics> CursorTool::moveSelection(sketch::Vec2 
         request.target.x += offset.x;
         request.target.y += offset.y;
     }
-    return sketch_.dragPoints(requests);
+    return sketch_.dragPoints(requests, {sketch::TangencyDragPolicy::SwitchLineSide, camera_.screenLogicalToWorld(4.0)});
 }
 
 ActionReport CursorTool::tryApplyPointOnPointNearCursor(double xLogic, double yLogic) {

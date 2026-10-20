@@ -223,6 +223,116 @@ TEST_F(CursorToolReports, CancellingADragDeliversItsOutcomeAndRetainsGeometry) {
     EXPECT_FALSE(repeated.report);
 }
 
+class CursorToolTangency : public CursorToolReports {
+protected:
+    void SetUp() override {
+        CursorToolReports::SetUp();
+        const auto line = sketch().addLine({-3, 0}, {3, 0});
+        const auto circle = sketch().addCircle({0, 1}, 1);
+        ASSERT_TRUE(line);
+        ASSERT_TRUE(circle);
+        line_ = {line.value(), SubElement::Whole};
+        circle_ = {circle.value(), SubElement::Whole};
+        center_ = {circle.value(), SubElement::Center};
+        ASSERT_TRUE(sketch().addConstraint({ConstraintType::Fix, {line_}, std::nullopt, std::nullopt}));
+        const auto tangent = sketch().addConstraint({ConstraintType::Tangent, {line_, circle_}, std::nullopt, std::nullopt});
+        ASSERT_TRUE(tangent);
+        tangent_ = tangent.value();
+        const auto solved = sketch().solve();
+        ASSERT_TRUE(solved);
+        ASSERT_EQ(solved.value().status, SolveStatus::Converged);
+    }
+
+    void keepRadiusOne() {
+        const auto reference = sketch().addCircle({10, 10}, 1);
+        ASSERT_TRUE(reference);
+        const GeometryRef ref{reference.value(), SubElement::Whole};
+        ASSERT_TRUE(sketch().addConstraint({ConstraintType::Fix, {ref}, std::nullopt, std::nullopt}));
+        ASSERT_TRUE(sketch().addConstraint({ConstraintType::Equal, {circle_, ref}, std::nullopt, std::nullopt}));
+    }
+
+    GeometryRef line_, circle_, center_;
+    ConstraintId tangent_;
+};
+
+TEST_F(CursorToolTangency, DragCrossingRespectsPixelDeadzoneAndReportsChangedTangencyBranch) {
+    camera_.setZoom(200);
+    ASSERT_NO_FATAL_FAILURE(keepRadiusOne());
+    EXPECT_FALSE(button({0, 1}, input::MouseButtonAction::Press));
+    // Two logical pixels beyond the line stay inside the four-pixel switch deadzone.
+    EXPECT_FALSE(move({0, -0.01}, true));
+    const auto withinDeadzone = sketch().constraint(tangent_);
+    ASSERT_TRUE(withinDeadzone);
+    EXPECT_EQ(withinDeadzone.value().definition.tangencyBranch, TangencyBranch::PositiveSide);
+    EXPECT_FALSE(move({0, -1}, true));
+    const auto report = button({0, -1}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->action, ActionKind::Drag);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    EXPECT_EQ(report->entityIds, (std::vector<EntityId>{circle_.entity}));
+    EXPECT_EQ(report->constraintIds, (std::vector<ConstraintId>{tangent_}));
+    ASSERT_TRUE(report->solve);
+    EXPECT_EQ(report->solve->status, SolveStatus::Converged);
+    const auto tangent = sketch().constraint(tangent_);
+    ASSERT_TRUE(tangent);
+    EXPECT_EQ(tangent.value().definition.tangencyBranch, TangencyBranch::NegativeSide);
+    const auto center = sketch().pointPosition(center_);
+    ASSERT_TRUE(center);
+    EXPECT_NEAR(center.value().y, -1, 1e-6);
+    EXPECT_FALSE(button({0, -1}, input::MouseButtonAction::Release));
+}
+
+TEST_F(CursorToolTangency, CircleRadiusDragKeepsSavedLineSide) {
+    EXPECT_FALSE(button({0, 2}, input::MouseButtonAction::Press));
+    EXPECT_FALSE(move({0, 3}, true));
+    const auto report = button({0, 3}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    EXPECT_TRUE(report->constraintIds.empty());
+    ASSERT_TRUE(report->solve);
+    EXPECT_EQ(report->solve->status, SolveStatus::Converged);
+    const auto tangent = sketch().constraint(tangent_);
+    ASSERT_TRUE(tangent);
+    EXPECT_EQ(tangent.value().definition.tangencyBranch, TangencyBranch::PositiveSide);
+    const auto circle = sketch().entity(circle_.entity);
+    ASSERT_TRUE(circle);
+    const auto& geometry = std::get<Circle2>(circle.value().geometry);
+    EXPECT_NEAR(geometry.radius, 2, 1e-6);
+    EXPECT_NEAR(geometry.center.y, 2, 1e-6);
+}
+
+TEST_F(CursorToolTangency, CancellationRetainsAndReportsSwitchedSide) {
+    ASSERT_NO_FATAL_FAILURE(keepRadiusOne());
+    EXPECT_FALSE(button({0, 1}, input::MouseButtonAction::Press));
+    EXPECT_FALSE(move({0, -1}, true));
+    const auto cancellation = tool_->cancel();
+    EXPECT_TRUE(cancellation.handled);
+    ASSERT_TRUE(cancellation.report);
+    EXPECT_EQ(cancellation.report->change, ModelChange::Changed);
+    EXPECT_EQ(cancellation.report->constraintIds, (std::vector<ConstraintId>{tangent_}));
+    const auto tangent = sketch().constraint(tangent_);
+    ASSERT_TRUE(tangent);
+    EXPECT_EQ(tangent.value().definition.tangencyBranch, TangencyBranch::NegativeSide);
+    EXPECT_FALSE(tool_->cancel().report);
+}
+
+TEST_F(CursorToolTangency, BranchOnlyConstraintChangeDuringDragProducesSummary) {
+    ASSERT_TRUE(sketch().addConstraint({ConstraintType::Fix, {circle_}, std::nullopt, std::nullopt}));
+    EXPECT_FALSE(button({0, 1}, input::MouseButtonAction::Press));
+    EXPECT_FALSE(move({0, 2}, true));
+    const auto tangent = sketch().constraint(tangent_);
+    ASSERT_TRUE(tangent);
+    auto definition = tangent.value().definition;
+    definition.tangencyBranch = TangencyBranch::NegativeSide;
+    ASSERT_TRUE(sketch().updateConstraint(tangent_, definition));
+
+    const auto report = button({0, 2}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    EXPECT_TRUE(report->entityIds.empty());
+    EXPECT_EQ(report->constraintIds, (std::vector<ConstraintId>{tangent_}));
+}
+
 TEST_F(CursorToolReports, CursorCoincidenceReportsInsufficientTargetsAndConfirmedInsertion) {
     const auto missing = button({0, 0}, input::MouseButtonAction::Press, input::Modifiers::Alt);
     ASSERT_TRUE(missing);

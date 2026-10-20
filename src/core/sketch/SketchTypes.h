@@ -165,11 +165,15 @@ enum class ConstraintType {
     Midpoint
 };
 
+// Positive/negative sides refer to the left/right of Line Start -> End.
+// Containment follows the order of the two circular references.
+enum class TangencyBranch { PositiveSide, NegativeSide, External, FirstContainsSecond, SecondContainsFirst };
+
 // Coincident/Distance use two point-like refs: Point Whole, Line Start/End,
 // Circle Center, Arc Start/End/Center. Horizontal/Vertical/Length use one whole
 // line. Parallel/Perpendicular/Angle use two whole lines. Equal uses two lines or
 // two circular curves; Radius/Diameter use one circular curve. Tangent uses a
-// line and circular curve or two circular curves (external tangency).
+// line and circular curve or two circular curves, on their full supports.
 // Angle is unsigned [0, pi] between directed lines. Length/Radius/Diameter are
 // positive; Distance is nonnegative. Only dimensional kinds take value.
 // HorizontalDistance/VerticalDistance use two point-like refs and constrain
@@ -188,6 +192,10 @@ struct ConstraintDefinition {
     std::vector<GeometryRef> refs;
     std::optional<double> value;
     std::optional<Vec2> fixedPosition;
+    // Tangent only. Omission selects the nearest admissible branch on creation;
+    // stored/query/snapshot definitions retain the resolved branch explicitly.
+    // An update with unchanged refs and no branch preserves the previous one.
+    std::optional<TangencyBranch> tangencyBranch = std::nullopt;
 };
 struct SketchConstraint {
     ConstraintId id;
@@ -232,6 +240,13 @@ struct SolveDiagnostics {
 struct DragRequest {
     GeometryRef point;
     Vec2 target;
+};
+enum class TangencyDragPolicy { Preserve, SwitchLineSide };
+struct DragOptions {
+    TangencyDragPolicy tangency = TangencyDragPolicy::Preserve;
+    // Sketch units. A requested center must cross this distance beyond the line
+    // before changing side. Ambiguous/degenerate proposed lines retain the branch.
+    double sideSwitchTolerance = 0;
 };
 // Detached O(N) transfer value, never a second live model. Contains unsolved
 // current geometry, explicit targets and ID watermarks, but no solver caches.

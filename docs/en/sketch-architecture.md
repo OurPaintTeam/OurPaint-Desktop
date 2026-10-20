@@ -133,6 +133,14 @@ deduplicated. Every move sends absolute targets (initial positions plus cursor
 displacement since press) through dragPoints once, rather than updating geometry
 and then calling solve. This keeps targets stable after solver projection and
 allows partial arc dragging without submitting a noncircular geometry update.
+CursorTool explicitly requests `TangencyDragPolicy::SwitchLineSide`, with a
+four-logical-pixel side-switch tolerance converted to sketch units at the current
+view scale. Crossing the supporting line beyond that band can switch an affected
+line/circular-curve tangency side. This App policy uses requested positions after
+Fix/coincidence projection and before the drag solve; it is separate from Core's
+default branch-preserving policy. It does not switch internal/external circle
+tangency. A changed tangency branch counts as a model change even when final
+coordinates are unchanged.
 A single Circle Whole selection edits the radius and calls solve; Circle Center
 drags the center instead. Solve diagnostics are checked for convergence. The first
 failed step stops further mutation until release/cancellation; one gesture report
@@ -171,6 +179,11 @@ line endpoints. ConstraintRequests use sketch units and radians.
 Line-only relations pick whole lines; Equal/Tangent pick whole curves without
 endpoint priority. Coincident/Fix pick point elements, while Dimension retains
 point priority so choosing a line endpoint creates a point-distance input.
+Tangent accepts a whole line and Circle/Arc in either selection order, or any
+pair of Circle/Arc curves. Creation chooses the initial branch from their current
+geometry and stores it in Core. This relation applies to the complete supporting
+line/circles: it does not join endpoints or limit contact to the selected segment
+or arc span.
 Concentric selects two whole circular curves (Circle/Arc), including mixed pairs;
 point elements, centers and lines are rejected. Curve picking keeps endpoints
 and centers from replacing the intended whole-curve operands.
@@ -413,8 +426,9 @@ Status before the one explicit solve.
 
 ## Constraint API
 
-ConstraintDefinition contains type, refs, optional dimension value, and optional
-fixedPosition. References must exist and match these forms. Two-reference
+ConstraintDefinition contains type, refs, optional dimension value, optional
+fixedPosition, and optional `TangencyBranch tangencyBranch`. References must
+exist and match these forms. Two-reference
 constraints require distinct GeometryRefs even when coordinates coincide;
 Symmetric requires all three references to be distinct. Only
 dimensional types accept value; only Fix requires finite fixedPosition.
@@ -433,9 +447,37 @@ Unexpected/missing fields are InvalidArgument.
 | Angle | Two whole directed lines; unsigned finite angle in `[0, pi]` radians |
 | Equal | Two whole lines, or two whole circular curves (Circle/Arc) |
 | Radius, Diameter | One whole circular curve; finite positive length |
-| Tangent | Whole line/circular curve, or two circular curves; external tangency contract currently unsupported by DCM |
+| Tangent | Whole line and Circle/Arc in either order, or any two whole Circle/Arc curves; optional compatible tangencyBranch; complete supporting curves |
 | Fix | One point-like ref with explicit finite fixedPosition; target survives edits, failed solves, and transfer |
 | Symmetric | Two point-like refs followed by a whole axis line or a point-like center; no value or fixedPosition |
+
+`TangencyBranch` is a Core value, independent of DCM. `PositiveSide` and
+`NegativeSide` apply to a line and circular curve. Positive means the circular
+center is left of the directed line from Start to End; negative means right.
+The sign is `cross(end - start, center - start) / length(end - start)`, regardless
+of operand selection order. `External`, `FirstContainsSecond` and
+`SecondContainsFirst` apply to two circular curves; containment follows the
+stored reference order. A containing curve must have a strictly larger radius.
+
+When creation omits tangencyBranch, Core resolves and stores one from current
+geometry. A line uses the signed center distance, with PositiveSide as the
+deterministic choice on the line. Two circular curves choose the nearest
+admissible tangency distance: the radius sum for external, or the absolute radius
+difference for internal. Ties choose External, and equal radii exclude internal
+tangency. Arc centers and radii come from their supporting circles.
+
+Queries and snapshots expose the resolved branch. Rebuilding translated
+requirements preserves it. An update with unchanged references and an omitted
+branch retains the current branch; changed references trigger initial inference
+again. An explicit branch changes that intent without a numerical solve.
+Incompatible branches and tangencyBranch on a non-Tangent definition are invalid.
+
+DCM's generic `lineCircleTangent(line, circularCurve, side)` and
+`circleCircleTangent(first, second, kind)` cover Circle/Arc combinations. The
+former applies to the infinite supporting line and the latter to complete
+supporting circles. Contact outside the segment or arc span is permitted, and
+endpoint coincidence requires a separate relation. Finite-domain/endpoint
+tangency is not provided by this API.
 
 Midpoint maps directly to DCM's `pointAtMidpoint(pointId, lineId)`, with two
 independent linear coordinate equations. The point may be standalone or a curve
@@ -516,9 +558,12 @@ coordinates are not reseeded by this placement policy.
 ## Solve and drag
 
 solve() returns Result of SolveDiagnostics. Unsupported capability fails before
-mutation. DCM errors may produce BackendFailure. The current implementation calls
-DCM's solve but unconditionally sets a successful result's status to
-SolveStatus::Converged under an existing TODO; it does not verify convergence.
+mutation. DCM errors may produce BackendFailure. For sketches containing Tangent,
+native solve failure or a failed tangency validation produces SolveStatus::Failed.
+Validation checks each saved tangency branch, regular supporting geometry and
+equal endpoint radii for participating arcs. General convergence reporting remains
+incomplete: without Tangent, the existing TODO reports Converged after a native
+call without establishing convergence of every constraint family.
 Solving retains public topology/IDs but can alter unconstrained coordinates.
 Failed attempts can retain their iterate, including invalid/degenerate geometry;
 queries expose it.
@@ -527,7 +572,7 @@ drag(const DragRequest&) performs one synchronous best-effort step on a
 point-like reference toward finite target. Nonfinite target, nonpositive ID, or
 incompatible sub-element is InvalidArgument; absent entity NotFound; disabled
 drag Unsupported. Results/errors match solve. Coordinates change without public
-ID/topology changes or persistent constraints, and failed iterates can remain.
+ID/topology changes or creating persistent constraints, and failed iterates can remain.
 Target is a preference, not a guaranteed coordinate. There is no gesture session,
 cancellation, or history in Core. Do not call solve after drag: drag already
 solves with the selected coordinates preferred, while an ordinary solve has no
@@ -541,6 +586,32 @@ Empty input is a no-op with default diagnostics; it does not solve a dirty sketc
 Whole curves must be expanded to their point elements by the caller. This is
 best-effort simultaneous point dragging, not a rigid group transformation.
 
+Both drag entry points accept optional `DragOptions`. Their default
+`TangencyDragPolicy::Preserve` keeps stored tangency branches.
+`SwitchLineSide` permits only line/circular-curve side changes, with a finite
+nonnegative `sideSwitchTolerance` in sketch units; the default tolerance is zero.
+Core first applies the requested point targets without solving, including native
+Fix/coincidence projection. It then examines affected supporting lines and
+circular centers. Only a signed distance beyond the opposite side's tolerance
+band changes the stored side. The effective band is
+`max(sideSwitchTolerance, 1e-9 * (1 + radius))`. Degenerate proposed lines retain
+their branch; valid short lines use the same side test. The complete target batch
+receives a native drag solve. This avoids deciding from coordinates already
+projected back onto the old tangency branch. Whole-curve motion and center/endpoint targets share that
+path. Circle/circle containment and external/internal branches remain unchanged.
+SwitchLineSide is an explicit caller policy; no mouse or screen units enter Core.
+Branch edits have the same ordinary-edit failure semantics as geometry edits:
+there is no gesture rollback or undo transaction.
+
+Native drag may temporarily lock a requested center that cannot satisfy tangency,
+for example inside the side-switch band with a fixed or equal radius. After the
+batch, each touched component with an unsatisfied Tangent receives at most one
+retry without the temporary cursor locks. This is a component solve, with no
+global solve or full model reconstruction. It allows the result to stop short of
+an unreachable cursor while preserving hard conditions. A failed retry or remaining
+tangency violation reports Failed. Retry cost depends on the affected components;
+the ordinary path does not pay for another solve when their tangencies are satisfied.
+
 Optional degreesOfFreedom, conflictingConstraints, and redundantConstraints
 mean unavailable when absent, not zero DOF or an empty diagnosis. Diagnostics use
 public constraint IDs. Failure to converge alone is not proof of conflicts.
@@ -550,13 +621,15 @@ and drag cost; there is no fixed linear-time bound.
 DCM uses its stable-address manager incrementally. Bare DCM arcs require a
 private equal-radius equation. Whole-sketch DOF/conflict/redundancy diagnosis is
 not exposed because it omits unconstrained/eliminated variables. Native drag
-discards convergence; solve can report success for inconsistent fixed systems.
+discards its convergence result.
 Impl uses updatePoints in DRAG mode for the complete target batch, then restores
-GLOBAL mode without another solve, including on exceptions. Like solve(),
-dragPoints() currently reports Converged unconditionally after a successful
-native call. The existing residual/geometry validation helper is not used by
-either result path. Consumers still check Result and diagnostics.status, but the
-current Converged value cannot establish that the constraints are satisfied.
+GLOBAL mode after any required component retries, including on exceptions. Like solve(),
+dragPoints() validates saved tangency branches, regular support geometry and arc
+endpoint radii; a failed retry or tangency violation produces Failed. The general residual/geometry
+validation helper remains unused by both result paths. Consumers still check
+Result and diagnostics.status, but Converged does not establish satisfaction of
+every other constraint family. Failed side switches may retain the changed branch
+and seeded geometry; no rollback was added.
 DCM's native angle equations also use radians.
 
 ## Snapshots and state replacement
@@ -594,7 +667,7 @@ destroying the source.
 | Midpoint of a finite line segment | Supported through native pointAtMidpoint; point-like ref first, whole line second |
 | Distance, HorizontalDistance, VerticalDistance, Length, Angle, point-like Fix | Supported |
 | Equal line lengths/circular radii; Radius/Diameter | Unsupported |
-| Whole-curve Tangent | Unsupported |
+| Whole-curve Tangent | Supported for line/Circle/Arc and every pair of circular curves; saved side or external/containment branch, complete supporting curves |
 | Constraint update/remove; solve; point-like drag | Supported; see current convergence-reporting limitation above |
 | Snapshot/replacement | Supported for valid DCM definitions |
 | Whole-sketch DOF, diagnosed conflicts/redundancy | Unavailable |
