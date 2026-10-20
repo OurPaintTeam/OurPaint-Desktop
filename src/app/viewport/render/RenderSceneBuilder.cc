@@ -117,46 +117,6 @@ void pushLayerIfNotEmpty(render::RenderScene& scene, render::DrawLayer&& layer) 
     }
 }
 
-double cubicBezier(double p0, double p1, double p2, double p3, double t) {
-    const double u = 1.0 - t;
-
-    return u * u * u * p0
-         + 3.0 * u * u * t * p1
-         + 3.0 * u * t * t * p2
-         + t * t * t * p3;
-}
-
-void appendBezierPolyline(const ObjectData& od, std::vector<render::Line>& outLines) {
-    const double p0x = od.params[0];
-    const double p0y = od.params[1];
-
-    const double p3x = od.params[2];
-    const double p3y = od.params[3];
-
-    const double p1x = od.params[4];
-    const double p1y = od.params[5];
-
-    const double p2x = od.params[6];
-    const double p2y = od.params[7];
-
-    constexpr int kSegments = 100;
-
-    double previousX = cubicBezier(p0x, p1x, p2x, p3x, 0.0);
-    double previousY = cubicBezier(p0y, p1y, p2y, p3y, 0.0);
-
-    for (int i = 1; i <= kSegments; ++i) {
-        const double t = static_cast<double>(i) / static_cast<double>(kSegments);
-
-        const double x = cubicBezier(p0x, p1x, p2x, p3x, t);
-        const double y = cubicBezier(p0y, p1y, p2y, p3y, t);
-
-        outLines.push_back(makeLine(previousX, previousY, x, y));
-
-        previousX = x;
-        previousY = y;
-    }
-}
-
 } // namespace
 
 RenderSceneBuilder::RenderSceneBuilder(Document& document,
@@ -198,12 +158,6 @@ void RenderSceneBuilder::rebuild() {
 
     buildConstraintsMarkers();
     buildSnapFeedback();
-}
-
-void RenderSceneBuilder::buildSnapFeedback() {
-    if (const auto& feedback = overlay_.snapFeedback()) {
-        app::appendSnapFeedback(*feedback, sketch_, camera_, style_.snapFeedback, renderScene_);
-    }
 }
 
 void RenderSceneBuilder::buildGrid() {
@@ -544,3 +498,10 @@ void RenderSceneBuilder::buildConstraintsMarkers() {
 
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }
+
+void RenderSceneBuilder::buildSnapFeedback() {
+    if (const auto& feedback = overlay_.snapFeedback()) {
+        app::appendSnapFeedback(*feedback, sketch_, camera_, style_.snapFeedback, renderScene_);
+    }
+}
+
