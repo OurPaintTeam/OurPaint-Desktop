@@ -17,7 +17,7 @@
 namespace core::sketch {
 
 // Typed wrappers reuse Core's ID value semantics. Zero is invalid. IDs are local
-// to a Sketch lineage, never reused, and survive snapshots/backend migration.
+// to a Sketch lineage, never reused, and survive snapshot replacement.
 template <class Tag>
 class SketchId {
 public:
@@ -153,46 +153,60 @@ enum class ConstraintType {
     Tangent,
     Equal,
     Distance,
+    HorizontalDistance,
+    VerticalDistance,
     Length,
     Radius,
     Diameter,
     Angle,
     Fix,
-    HorizontalDistance,
-    VerticalDistance
+    Concentric,
+    Symmetric,
+    Midpoint
 };
+
+// Positive/negative sides refer to the left/right of Line Start -> End.
+// Containment follows the order of the two circular references.
+enum class TangencyBranch { PositiveSide, NegativeSide, External, FirstContainsSecond, SecondContainsFirst };
 
 // Coincident/Distance use two point-like refs: Point Whole, Line Start/End,
 // Circle Center, Arc Start/End/Center. Horizontal/Vertical/Length use one whole
 // line. Parallel/Perpendicular/Angle use two whole lines. Equal uses two lines or
 // two circular curves; Radius/Diameter use one circular curve. Tangent uses a
-// line and circular curve or two circular curves (external tangency).
+// line and circular curve or two circular curves, on their full supports.
 // Angle is unsigned [0, pi] between directed lines. Length/Radius/Diameter are
 // positive; Distance is nonnegative. Only dimensional kinds take value.
 // HorizontalDistance/VerticalDistance use two point-like refs and constrain
 // the second coordinate minus the first along X/Y to a nonnegative value.
 // Fix uses one point-like ref and explicit fixedPosition, preserving its target
-// across edits, failed solves and backend transfers.
+// across edits, failed solves and snapshot replacement.
+// Symmetric uses three distinct refs: two point-like refs followed by a whole
+// line axis or a point-like center. It takes neither value nor fixedPosition.
+// Concentric uses two distinct whole Circle/Arc refs in any combination,
+// equating their centers. It takes neither value nor fixedPosition.
+// Midpoint uses a point-like ref followed by a whole finite line segment,
+// constraining the point to (start + end) / 2. No value or fixedPosition.
+// Curve midpoint measures are not implied by this segment-only relation.
 struct ConstraintDefinition {
     ConstraintType type = ConstraintType::Coincident;
     std::vector<GeometryRef> refs;
     std::optional<double> value;
     std::optional<Vec2> fixedPosition;
+    // Tangent only. Omission selects the nearest admissible branch on creation;
+    // stored/query/snapshot definitions retain the resolved branch explicitly.
+    // An update with unchanged refs and no branch preserves the previous one.
+    std::optional<TangencyBranch> tangencyBranch = std::nullopt;
 };
 struct SketchConstraint {
     ConstraintId id;
     ConstraintDefinition definition;
-};
-enum class BackendKind {
-    Dcm,
-    SolveSpace
 };
 
 // Type support is coarse; supportsConstraint checks the actual ref combination.
 // Unsupported operations never mutate the model.
 struct Capabilities {
     std::array<bool, 4> entities{};
-    std::array<bool, 15> constraints{};
+    std::array<bool, 18> constraints{};
     bool updateEntities = false;
     bool removeEntities = false;
     bool updateConstraints = false;
@@ -226,6 +240,13 @@ struct SolveDiagnostics {
 struct DragRequest {
     GeometryRef point;
     Vec2 target;
+};
+enum class TangencyDragPolicy { Preserve, SwitchLineSide };
+struct DragOptions {
+    TangencyDragPolicy tangency = TangencyDragPolicy::Preserve;
+    // Sketch units. A requested center must cross this distance beyond the line
+    // before changing side. Ambiguous/degenerate proposed lines retain the branch.
+    double sideSwitchTolerance = 0;
 };
 // Detached O(N) transfer value, never a second live model. Contains unsolved
 // current geometry, explicit targets and ID watermarks, but no solver caches.

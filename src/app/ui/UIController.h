@@ -29,8 +29,6 @@ public:
     // Intended for binder-owned parameter dialogs. Resolves a live originating
     // document on invocation, including renames; a closed view receives nothing.
     std::function<void(const ConstraintRequest&)> constraintRequestHandler(const std::string& tabName);
-    void switchSolverBackend(const std::string& tabName);
-    void updateSolverBackend(const std::string& tabName);
 
     // Console
     void executeConsoleCommand(std::string str);

@@ -52,8 +52,9 @@ private:
     std::vector<sketch::GeometryRef> marqueeBaseSelection_;
     std::vector<sketch::DragRequest> dragTargets_;
     std::optional<ActionReport> dragReport_;
-    // Detached geometry is used only to recognize an unchanged gesture, never for rollback.
+    // Detached values recognize an unchanged gesture; they are never used for rollback.
     std::optional<std::vector<sketch::SketchEntity>> dragInitialEntities_;
+    std::optional<std::vector<sketch::SketchConstraint>> dragInitialConstraints_;
     bool dragAttempted_ = false;
     bool dragStopped_ = false;
 

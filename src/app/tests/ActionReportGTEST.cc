@@ -37,7 +37,7 @@ TEST(ActionReports, PreflightRejectionOwnsItsErrorAndLeavesTheModelUnchanged) {
     EXPECT_FALSE(message.contains(QStringLiteral("may have changed")));
 }
 
-TEST(ActionReports, BackendMutationFailureDoesNotClaimConfirmedCreation) {
+TEST(ActionReports, SolverMutationFailureDoesNotClaimConfirmedCreation) {
     const auto report = ActionReport::creation(ActionKind::CreateCircle, Result<EntityId>::failure(ErrorCode::BackendFailure, "Insertion failed"));
     EXPECT_EQ(report.change, ModelChange::PotentiallyChanged);
     EXPECT_TRUE(report.entityIds.empty());
@@ -142,18 +142,7 @@ TEST(ActionReports, BatchDeletionProducesOneSummaryAndEmptyActionsStaySilent) {
     EXPECT_TRUE(ActionReportPresenter::text(ActionReport{ActionKind::Drag}).isEmpty());
 }
 
-TEST(ActionReports, StagedBackendFailureKeepsItsUnchangedGuarantee) {
-    ActionReport report{ActionKind::SwitchBackend};
-    report.backend = BackendKind::SolveSpace;
-    report.operationError = SketchError{ErrorCode::BackendFailure, "Candidate backend could not load state"};
-    EXPECT_EQ(report.change, ModelChange::Unchanged);
-    const auto message = ActionReportPresenter::text(report);
-    EXPECT_TRUE(message.contains(QStringLiteral("Solver could not be switched.")));
-    EXPECT_FALSE(message.contains(QStringLiteral("may have changed")));
-    EXPECT_FALSE(message.contains(QStringLiteral("Solver switched to")));
-}
-
-TEST(ActionReports, PreparationErrorsDescribeMissingGeometryAndBackendFailure) {
+TEST(ActionReports, PreparationErrorsDescribeMissingGeometryAndSolverFailure) {
     ActionReport report{ActionKind::ApplyConstraint};
     report.rejection = ActionRejection::InvalidSelection;
     report.operationError = SketchError{ErrorCode::NotFound, "The selected entity was removed"};
@@ -163,7 +152,7 @@ TEST(ActionReports, PreparationErrorsDescribeMissingGeometryAndBackendFailure) {
 
     report.operationError = SketchError{ErrorCode::BackendFailure, "Entity query failed"};
     const auto failedQuery = ActionReportPresenter::text(report);
-    EXPECT_TRUE(failedQuery.contains(QStringLiteral("The solver backend reported an error.")));
+    EXPECT_TRUE(failedQuery.contains(QStringLiteral("The solver reported an error.")));
     EXPECT_FALSE(failedQuery.contains(QStringLiteral("Select compatible geometry")));
     EXPECT_FALSE(failedQuery.contains(QStringLiteral("may have changed")));
 }

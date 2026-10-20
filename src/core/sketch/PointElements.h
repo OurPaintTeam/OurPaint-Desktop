@@ -1,7 +1,7 @@
-#ifndef PARAMSCAD_CORE_SKETCH_BACKENDS_POINT_ELEMENTS_H_
-#define PARAMSCAD_CORE_SKETCH_BACKENDS_POINT_ELEMENTS_H_
+#ifndef OURPAINT_CORE_SKETCH_POINT_ELEMENTS_H_
+#define OURPAINT_CORE_SKETCH_POINT_ELEMENTS_H_
 
-#include "../SketchTypes.h"
+#include "SketchTypes.h"
 
 namespace core::sketch::detail {
 

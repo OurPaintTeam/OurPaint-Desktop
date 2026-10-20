@@ -8,6 +8,3 @@
 	url = https://github.com/OurPaintTeam/OurPaint-Desktop-UI.git
 	branch = main
 
-[submodule "solvespace"]
-	path = third_party/solvespace
-	url = https://github.com/solvespace/solvespace.git

@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -10,15 +9,10 @@
 namespace {
 using namespace core::sketch;
 
-class CursorToolReports : public testing::TestWithParam<BackendKind> {
+class CursorToolReports : public testing::Test {
 protected:
     void SetUp() override {
-        const auto backends = Sketch::availableBackends();
-        if (std::find(backends.begin(), backends.end(), BackendKind::SolveSpace) == backends.end()) {
-            GTEST_SKIP() << "Document currently constructs the SolveSpace backend";
-        }
         document_ = std::make_unique<Document>();
-        ASSERT_TRUE(document_->sketch().switchBackend(GetParam()));
         camera_.setViewport(800, 600);
         picker_ = std::make_unique<Cpu2dPicker>(document_->sketch(), camera_);
         actions_ = std::make_unique<ConstraintActions>(document_->sketch());
@@ -50,13 +44,13 @@ protected:
     std::unique_ptr<CursorTool> tool_;
 };
 
-TEST_P(CursorToolReports, EmptyDeletionAndPasteRemainSilent) {
+TEST_F(CursorToolReports, EmptyDeletionAndPasteRemainSilent) {
     EXPECT_FALSE(key(input::KeyCode::Delete));
     EXPECT_FALSE(key(input::KeyCode::V, input::Modifiers::Ctrl));
     EXPECT_EQ(sketch().entityCount(), 0);
 }
 
-TEST_P(CursorToolReports, BatchDeletionReportsEachOwnerOnceAndCascadesConstraints) {
+TEST_F(CursorToolReports, BatchDeletionReportsEachOwnerOnceAndCascadesConstraints) {
     const auto line = sketch().addLine({0, 0}, {3, 4});
     const auto point = sketch().addPoint({6, 8});
     ASSERT_TRUE(line);
@@ -80,7 +74,7 @@ TEST_P(CursorToolReports, BatchDeletionReportsEachOwnerOnceAndCascadesConstraint
     EXPECT_FALSE(key(input::KeyCode::Delete));
 }
 
-TEST_P(CursorToolReports, RejectedDeletionPreservesTheOriginalErrorAndModel) {
+TEST_F(CursorToolReports, RejectedDeletionPreservesTheOriginalErrorAndModel) {
     const auto point = sketch().addPoint({0, 0});
     ASSERT_TRUE(point);
     overlay_.selection_.model.replace(GeometryRef{EntityId(9999), SubElement::Whole});
@@ -93,7 +87,7 @@ TEST_P(CursorToolReports, RejectedDeletionPreservesTheOriginalErrorAndModel) {
     EXPECT_TRUE(sketch().entity(point.value()));
 }
 
-TEST_P(CursorToolReports, PasteReportsConfirmedEntityAndConstraintIdsInOneOutcome) {
+TEST_F(CursorToolReports, PasteReportsConfirmedEntityAndConstraintIdsInOneOutcome) {
     const auto first = sketch().addEntity(Point2{{0, 0}}, true);
     const auto second = sketch().addPoint({3, 4});
     ASSERT_TRUE(first);
@@ -127,7 +121,7 @@ TEST_P(CursorToolReports, PasteReportsConfirmedEntityAndConstraintIdsInOneOutcom
     EXPECT_EQ(pastedConstraint.value().definition.refs[1].entity, report->entityIds[1]);
 }
 
-TEST_P(CursorToolReports, PasteRetainsConfirmedInsertionsWhenTheSolverDoesNotConverge) {
+TEST_F(CursorToolReports, PasteRetainsConfirmedInsertionsWhenTheSolverDoesNotConverge) {
     const auto point = sketch().addPoint({0, 0});
     ASSERT_TRUE(point);
     const GeometryRef ref{point.value(), SubElement::Whole};
@@ -151,40 +145,7 @@ TEST_P(CursorToolReports, PasteRetainsConfirmedInsertionsWhenTheSolverDoesNotCon
     EXPECT_TRUE(sketch().constraint(report->constraintIds[1]));
 }
 
-TEST_P(CursorToolReports, PasteRetainsCreatedObjectsWhenACopiedConstraintBecomesUnsupported) {
-    if (GetParam() != BackendKind::SolveSpace) {
-        GTEST_SKIP() << "A supported source backend is required to copy Equal";
-    }
-    const auto backends = Sketch::availableBackends();
-    if (std::find(backends.begin(), backends.end(), BackendKind::Dcm) == backends.end()) {
-        GTEST_SKIP() << "The unsupported destination backend is not compiled";
-    }
-    const auto first = sketch().addLine({0, 0}, {3, 4});
-    const auto second = sketch().addLine({10, 0}, {13, 4});
-    ASSERT_TRUE(first);
-    ASSERT_TRUE(second);
-    const auto equal =
-        sketch().addConstraint({ConstraintType::Equal, {{first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}}, std::nullopt, std::nullopt});
-    ASSERT_TRUE(equal);
-    overlay_.selection_.model.replace(std::vector<GeometryRef>{{first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}});
-    EXPECT_FALSE(key(input::KeyCode::C, input::Modifiers::Ctrl));
-    ASSERT_TRUE(sketch().removeConstraint(equal.value()));
-    ASSERT_TRUE(sketch().switchBackend(BackendKind::Dcm));
-
-    const auto report = key(input::KeyCode::V, input::Modifiers::Ctrl);
-    ASSERT_TRUE(report);
-    EXPECT_EQ(report->change, ModelChange::Changed);
-    EXPECT_EQ(report->requestedEntities, 2);
-    EXPECT_EQ(report->requestedConstraints, 1);
-    EXPECT_EQ(report->entityIds.size(), 2);
-    EXPECT_TRUE(report->constraintIds.empty());
-    ASSERT_TRUE(report->operationError);
-    EXPECT_EQ(report->operationError->code, ErrorCode::Unsupported);
-    EXPECT_FALSE(report->solve);
-    EXPECT_EQ(sketch().entityCount(), 4);
-}
-
-TEST_P(CursorToolReports, DragProducesOneSummaryOnReleaseAndNoReportsDuringMoves) {
+TEST_F(CursorToolReports, DragProducesOneSummaryOnReleaseAndNoReportsDuringMoves) {
     const auto point = sketch().addPoint({0, 0});
     ASSERT_TRUE(point);
     EXPECT_FALSE(button({0, 0}, input::MouseButtonAction::Press));
@@ -204,7 +165,7 @@ TEST_P(CursorToolReports, DragProducesOneSummaryOnReleaseAndNoReportsDuringMoves
     EXPECT_FALSE(button({2, 1}, input::MouseButtonAction::Release));
 }
 
-TEST_P(CursorToolReports, NoDisplacementAndUnchangedFixedPointGesturesRemainSilent) {
+TEST_F(CursorToolReports, NoDisplacementAndUnchangedFixedPointGesturesRemainSilent) {
     const auto point = sketch().addPoint({0, 0});
     ASSERT_TRUE(point);
     EXPECT_FALSE(button({0, 0}, input::MouseButtonAction::Press));
@@ -224,7 +185,7 @@ TEST_P(CursorToolReports, NoDisplacementAndUnchangedFixedPointGesturesRemainSile
     EXPECT_EQ(position.value(), (Vec2{0, 0}));
 }
 
-TEST_P(CursorToolReports, FailedCircleDragStopsFurtherMutationAndReportsOnceAtRelease) {
+TEST_F(CursorToolReports, FailedCircleDragStopsFurtherMutationAndReportsOnceAtRelease) {
     const auto circle = sketch().addCircle({0, 0}, 2);
     ASSERT_TRUE(circle);
     EXPECT_FALSE(button({2, 0}, input::MouseButtonAction::Press));
@@ -243,7 +204,7 @@ TEST_P(CursorToolReports, FailedCircleDragStopsFurtherMutationAndReportsOnceAtRe
     EXPECT_FALSE(button({3, 0}, input::MouseButtonAction::Release));
 }
 
-TEST_P(CursorToolReports, CancellingADragDeliversItsOutcomeAndRetainsGeometry) {
+TEST_F(CursorToolReports, CancellingADragDeliversItsOutcomeAndRetainsGeometry) {
     const auto point = sketch().addPoint({0, 0});
     ASSERT_TRUE(point);
     EXPECT_FALSE(button({0, 0}, input::MouseButtonAction::Press));
@@ -262,7 +223,117 @@ TEST_P(CursorToolReports, CancellingADragDeliversItsOutcomeAndRetainsGeometry) {
     EXPECT_FALSE(repeated.report);
 }
 
-TEST_P(CursorToolReports, CursorCoincidenceReportsInsufficientTargetsAndConfirmedInsertion) {
+class CursorToolTangency : public CursorToolReports {
+protected:
+    void SetUp() override {
+        CursorToolReports::SetUp();
+        const auto line = sketch().addLine({-3, 0}, {3, 0});
+        const auto circle = sketch().addCircle({0, 1}, 1);
+        ASSERT_TRUE(line);
+        ASSERT_TRUE(circle);
+        line_ = {line.value(), SubElement::Whole};
+        circle_ = {circle.value(), SubElement::Whole};
+        center_ = {circle.value(), SubElement::Center};
+        ASSERT_TRUE(sketch().addConstraint({ConstraintType::Fix, {line_}, std::nullopt, std::nullopt}));
+        const auto tangent = sketch().addConstraint({ConstraintType::Tangent, {line_, circle_}, std::nullopt, std::nullopt});
+        ASSERT_TRUE(tangent);
+        tangent_ = tangent.value();
+        const auto solved = sketch().solve();
+        ASSERT_TRUE(solved);
+        ASSERT_EQ(solved.value().status, SolveStatus::Converged);
+    }
+
+    void keepRadiusOne() {
+        const auto reference = sketch().addCircle({10, 10}, 1);
+        ASSERT_TRUE(reference);
+        const GeometryRef ref{reference.value(), SubElement::Whole};
+        ASSERT_TRUE(sketch().addConstraint({ConstraintType::Fix, {ref}, std::nullopt, std::nullopt}));
+        ASSERT_TRUE(sketch().addConstraint({ConstraintType::Equal, {circle_, ref}, std::nullopt, std::nullopt}));
+    }
+
+    GeometryRef line_, circle_, center_;
+    ConstraintId tangent_;
+};
+
+TEST_F(CursorToolTangency, DragCrossingRespectsPixelDeadzoneAndReportsChangedTangencyBranch) {
+    camera_.setZoom(200);
+    ASSERT_NO_FATAL_FAILURE(keepRadiusOne());
+    EXPECT_FALSE(button({0, 1}, input::MouseButtonAction::Press));
+    // Two logical pixels beyond the line stay inside the four-pixel switch deadzone.
+    EXPECT_FALSE(move({0, -0.01}, true));
+    const auto withinDeadzone = sketch().constraint(tangent_);
+    ASSERT_TRUE(withinDeadzone);
+    EXPECT_EQ(withinDeadzone.value().definition.tangencyBranch, TangencyBranch::PositiveSide);
+    EXPECT_FALSE(move({0, -1}, true));
+    const auto report = button({0, -1}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->action, ActionKind::Drag);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    EXPECT_EQ(report->entityIds, (std::vector<EntityId>{circle_.entity}));
+    EXPECT_EQ(report->constraintIds, (std::vector<ConstraintId>{tangent_}));
+    ASSERT_TRUE(report->solve);
+    EXPECT_EQ(report->solve->status, SolveStatus::Converged);
+    const auto tangent = sketch().constraint(tangent_);
+    ASSERT_TRUE(tangent);
+    EXPECT_EQ(tangent.value().definition.tangencyBranch, TangencyBranch::NegativeSide);
+    const auto center = sketch().pointPosition(center_);
+    ASSERT_TRUE(center);
+    EXPECT_NEAR(center.value().y, -1, 1e-6);
+    EXPECT_FALSE(button({0, -1}, input::MouseButtonAction::Release));
+}
+
+TEST_F(CursorToolTangency, CircleRadiusDragKeepsSavedLineSide) {
+    EXPECT_FALSE(button({0, 2}, input::MouseButtonAction::Press));
+    EXPECT_FALSE(move({0, 3}, true));
+    const auto report = button({0, 3}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    EXPECT_TRUE(report->constraintIds.empty());
+    ASSERT_TRUE(report->solve);
+    EXPECT_EQ(report->solve->status, SolveStatus::Converged);
+    const auto tangent = sketch().constraint(tangent_);
+    ASSERT_TRUE(tangent);
+    EXPECT_EQ(tangent.value().definition.tangencyBranch, TangencyBranch::PositiveSide);
+    const auto circle = sketch().entity(circle_.entity);
+    ASSERT_TRUE(circle);
+    const auto& geometry = std::get<Circle2>(circle.value().geometry);
+    EXPECT_NEAR(geometry.radius, 2, 1e-6);
+    EXPECT_NEAR(geometry.center.y, 2, 1e-6);
+}
+
+TEST_F(CursorToolTangency, CancellationRetainsAndReportsSwitchedSide) {
+    ASSERT_NO_FATAL_FAILURE(keepRadiusOne());
+    EXPECT_FALSE(button({0, 1}, input::MouseButtonAction::Press));
+    EXPECT_FALSE(move({0, -1}, true));
+    const auto cancellation = tool_->cancel();
+    EXPECT_TRUE(cancellation.handled);
+    ASSERT_TRUE(cancellation.report);
+    EXPECT_EQ(cancellation.report->change, ModelChange::Changed);
+    EXPECT_EQ(cancellation.report->constraintIds, (std::vector<ConstraintId>{tangent_}));
+    const auto tangent = sketch().constraint(tangent_);
+    ASSERT_TRUE(tangent);
+    EXPECT_EQ(tangent.value().definition.tangencyBranch, TangencyBranch::NegativeSide);
+    EXPECT_FALSE(tool_->cancel().report);
+}
+
+TEST_F(CursorToolTangency, BranchOnlyConstraintChangeDuringDragProducesSummary) {
+    ASSERT_TRUE(sketch().addConstraint({ConstraintType::Fix, {circle_}, std::nullopt, std::nullopt}));
+    EXPECT_FALSE(button({0, 1}, input::MouseButtonAction::Press));
+    EXPECT_FALSE(move({0, 2}, true));
+    const auto tangent = sketch().constraint(tangent_);
+    ASSERT_TRUE(tangent);
+    auto definition = tangent.value().definition;
+    definition.tangencyBranch = TangencyBranch::NegativeSide;
+    ASSERT_TRUE(sketch().updateConstraint(tangent_, definition));
+
+    const auto report = button({0, 2}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    EXPECT_TRUE(report->entityIds.empty());
+    EXPECT_EQ(report->constraintIds, (std::vector<ConstraintId>{tangent_}));
+}
+
+TEST_F(CursorToolReports, CursorCoincidenceReportsInsufficientTargetsAndConfirmedInsertion) {
     const auto missing = button({0, 0}, input::MouseButtonAction::Press, input::Modifiers::Alt);
     ASSERT_TRUE(missing);
     EXPECT_EQ(missing->change, ModelChange::Unchanged);
@@ -284,7 +355,7 @@ TEST_P(CursorToolReports, CursorCoincidenceReportsInsufficientTargetsAndConfirme
     EXPECT_EQ(sketch().constraintCount(), 1);
 }
 
-TEST_P(CursorToolReports, FailedCoincidenceSolveDoesNotPermitRetryToInsertTheSamePair) {
+TEST_F(CursorToolReports, FailedCoincidenceSolveDoesNotPermitRetryToInsertTheSamePair) {
     const auto first = sketch().addPoint({0, 0});
     const auto second = sketch().addPoint({6, 0});
     ASSERT_TRUE(first);
@@ -307,6 +378,4 @@ TEST_P(CursorToolReports, FailedCoincidenceSolveDoesNotPermitRetryToInsertTheSam
     EXPECT_EQ(sketch().constraintCount(), count);
 }
 
-INSTANTIATE_TEST_SUITE_P(AvailableBackends, CursorToolReports, testing::ValuesIn(Sketch::availableBackends()),
-                         [](const testing::TestParamInfo<BackendKind>& info) { return info.param == BackendKind::Dcm ? "DCM" : "SolveSpace"; });
 }  // namespace

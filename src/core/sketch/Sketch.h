@@ -4,33 +4,26 @@
 #include "SketchTypes.h"
 
 namespace core::sketch {
-namespace detail {
-class ISketchBackend;
-}
-
 // Sketch is a self-contained parametric 2D geometric model operating in its own
 // local 2D coordinate system. It provides the stable OurPaint API for creating,
 // modifying, constraining, solving, manipulating, querying and diagnosing sketch
-// geometry independently of the concrete sketch backend.
+// geometry without exposing DCM types.
 //
-// Exactly one owned backend holds all current geometry/constraints. Sketch owns
-// policy, identity allocation and backend lifetime only. It is neither a render
+// Sketch directly owns one DCM model through its private implementation, together
+// with public identities, metadata and validation policy. It is neither a render
 // scene nor UI/selection/history/document/3D placement state; a future SketchFeature
 // can associate it with a support and placement transform.
 // Calls on one instance must be externally serialized. Query results own their
 // data and remain valid after edits/destruction. No borrowed solver pointers.
 class Sketch {
 public:
-    static BackendKind defaultBackend();
-    static std::vector<BackendKind> availableBackends();
-    static Result<std::unique_ptr<Sketch>> create(BackendKind backend = defaultBackend());
+    Sketch();
     ~Sketch();
     Sketch(const Sketch&) = delete;
     Sketch& operator=(const Sketch&) = delete;
 
-    BackendKind backendKind() const;
     Capabilities capabilities() const;
-    // Common validation and exact backend support preflight without editing.
+    // Common validation and exact DCM support preflight without editing.
     Status supportsConstraint(const ConstraintDefinition& definition) const;
 
     Result<EntityId> addEntity(const SketchGeometry& geometry, bool construction = false);
@@ -62,7 +55,7 @@ public:
     Result<std::vector<EntityId>> addEntities(std::span<const EntityCreation> entities);
     Status updateEntities(std::span<const EntityUpdate> entities);
     Status removeEntities(std::span<const EntityId> ids);
-    // Clears public and private model records in place, retaining backend and IDs.
+    // Clears public and private model records in place, retaining DCM and IDs.
     Status clear();
     Result<ConstraintId> addConstraint(const ConstraintDefinition& definition);
     // Prepare both coincidence groups before insertion, without numerical solving.
@@ -77,9 +70,9 @@ public:
 
     Result<SketchEntity> entity(EntityId id) const;
     Result<SketchConstraint> constraint(ConstraintId id) const;
-    // Coarse queries cost one backend dispatch, not one dispatch per coordinate.
+    // Coarse queries read the DCM model in one pass.
     Result<std::vector<SketchEntity>> entities() const;
-    // Ascending public ID order. Backends scan metadata and copy matching values.
+    // Ascending public ID order. Queries scan metadata and copy matching values.
     Result<std::vector<SketchEntity>> entities(EntityKind kind) const;
     // points() contains standalone Point entities, not curve endpoints/centers.
     Result<std::vector<SketchEntity>> points() const { return entities(EntityKind::Point); }
@@ -102,24 +95,26 @@ public:
     // queryable model, not rollback. solve/drag do not change identities/topology;
     // failed convergence may retain an iterate, and is reported in diagnostics.
     Result<SolveDiagnostics> solve();
-    Result<SolveDiagnostics> drag(const DragRequest& request);
+    // SwitchLineSide explicitly permits editing saved line/circular tangency
+    // branches from hard-projected requested targets before numerical solving.
+    // Other branches and ordinary solve/update calls preserve the saved choice.
+    Result<SolveDiagnostics> drag(const DragRequest& request, DragOptions options = {});
     // Prevalidate all point targets, then solve them together. Empty input is a no-op.
-    Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests);
+    Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests, DragOptions options = {});
 
     Result<SketchSnapshot> snapshot() const;
-    // Stages a fresh backend, then swaps only on complete success. No solve is
+    // Stages a fresh DCM model, then swaps only on complete success. No solve is
     // implicit. Recreation is limited to explicit state transfer. Import
     // retains this instance's ID high watermarks as well, preventing ID reuse.
     // Unsolved unequal arc radii can transfer; nonfinite/degenerate failed
-    // iterates are rejected without replacing the current backend.
+    // iterates are rejected without replacing the current model.
     Status replaceState(const SketchSnapshot& snapshot);
-    Status switchBackend(BackendKind backend);
 
 private:
-    explicit Sketch(std::unique_ptr<detail::ISketchBackend> backend);
+    class Impl;
     Status validateConstraint(const ConstraintDefinition& definition) const;
-    Status installState(const SketchSnapshot& snapshot, BackendKind backend);
-    std::unique_ptr<detail::ISketchBackend> backend_;
+    Status installState(const SketchSnapshot& snapshot);
+    std::unique_ptr<Impl> impl_;
     core::IDGenerator entityIds_;
     core::IDGenerator constraintIds_;
 };

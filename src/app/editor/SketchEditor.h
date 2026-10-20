@@ -28,7 +28,6 @@ public:
     void select(ToolId id);
     void endInteraction();
     void requestConstraint(const ConstraintRequest& request);
-    void switchSolverBackend(core::sketch::BackendKind backend);
     void onMouseMove(const input::MouseMoveEvent& e);
     void onMouseButton(const input::MouseButtonEvent& e);
     void onKey(const input::KeyEvent& e);

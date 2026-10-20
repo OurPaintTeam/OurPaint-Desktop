@@ -31,11 +31,17 @@ target_link_libraries(GeometryAlgorithmTest PRIVATE OurPaint::Sketch)
 add_ourpaint_test(SketchGTEST SketchGTEST.cc)
 target_link_libraries(SketchGTEST PRIVATE OurPaint::Sketch)
 
-# Build explicitly to verify the public SolveSpace C API include and link boundary.
-add_executable(SolveSpaceLinkSmoke EXCLUDE_FROM_ALL SolveSpaceLinkSmoke.cpp)
-target_link_libraries(SolveSpaceLinkSmoke PRIVATE OurPaint::SolveSpace)
+add_ourpaint_test(SymmetricGTEST SymmetricGTEST.cc)
+target_link_libraries(SymmetricGTEST PRIVATE OurPaint::Sketch)
 
+add_ourpaint_test(ConcentricGTEST ConcentricGTEST.cc)
+target_link_libraries(ConcentricGTEST PRIVATE OurPaint::Sketch)
 
+add_ourpaint_test(MidpointGTEST MidpointGTEST.cc)
+target_link_libraries(MidpointGTEST PRIVATE OurPaint::Sketch)
+
+add_ourpaint_test(TangentGTEST TangentGTEST.cc)
+target_link_libraries(TangentGTEST PRIVATE OurPaint::Sketch)
 
 set(TYPE_OF_COMPILING BOOL 1)
 if (TYPE_OF_COMPILING)

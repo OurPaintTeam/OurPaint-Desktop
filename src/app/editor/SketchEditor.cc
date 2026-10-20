@@ -198,21 +198,3 @@ void SketchEditor::endInteraction() {
         cancelActiveTool();
     }
 }
-
-void SketchEditor::switchSolverBackend(core::sketch::BackendKind backend) {
-    if (std::as_const(document_).sketch().backendKind() == backend) {
-        return;
-    }
-    // End a gesture before migrating its model, retaining any edits made so far.
-    cancelActiveTool();
-    ActionReport report{ActionKind::SwitchBackend};
-    report.backend = backend;
-    const auto switched = document_.sketch().switchBackend(backend);
-    if (switched) {
-        report.change = ModelChange::Changed;
-    } else {
-        // Sketch stages the replacement and preserves the old backend on error.
-        report.operationError = switched.error();
-    }
-    deliver(report);
-}

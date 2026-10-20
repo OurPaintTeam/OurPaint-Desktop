@@ -149,7 +149,7 @@ Camera2D остаётся зависимостью App/view adapter. Для ра
 - Переносимая часть: C++20, стандартная библиотека, нейтральные типы `Vec2`, `SketchGeometry`, EntityId/GeometryRef из существующего [SketchTypes.h](../../src/core/sketch/SketchTypes.h).
 - App: Sketch public API, состояние инструмента, selection/hover metadata и snapshot вида.
 - Presentation: OverlayModel, ViewportStyle, RenderSceneBuilder и обычные render primitives.
-- Никаких обращений Snap к OurPaintDCM/libslvs, private handles или `ISketchBackend`.
+- Snap использует публичные нейтральные запросы Sketch; менеджер OurPaintDCM и его нативные дескрипторы остаются приватными внутри `Sketch::Impl`.
 - Никакой новой сторонней библиотеки для enum mask, small vector, basic intersection или signal/event bus.
 - Не редактировать UI/DCM submodules ради этой архитектуры без отдельной необходимости.
 

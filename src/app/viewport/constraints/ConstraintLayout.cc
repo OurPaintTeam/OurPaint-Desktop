@@ -7,6 +7,7 @@
 
 #include "../../../core/sketch/Sketch.h"
 #include "Camera2D.h"
+#include "ConstraintActions.h"
 #include "ConstraintMarkerStyle.h"
 
 namespace app {
@@ -161,7 +162,8 @@ void placeMarkers(LineMarkers& line, const ConstraintMarkerStyle& style, std::ve
 
 bool glyphIsEntityAgnostic(sketch::ConstraintType type) {
     return type == sketch::ConstraintType::Parallel ||
-           type == sketch::ConstraintType::Perpendicular;
+           type == sketch::ConstraintType::Perpendicular ||
+               type == sketch::ConstraintType::Vertical || type == sketch::ConstraintType::Horizontal;
 }
 
 }  // namespace
