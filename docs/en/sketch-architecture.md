@@ -179,6 +179,12 @@ order, or three point elements with the center selected last. Partial selections
 remain pending until the third distinct reference is supplied. Interactive picking
 prefers point elements, then whole lines; click a line interior to select an axis.
 
+Midpoint accepts one point-like reference and one whole line in either selection
+order. App stores them as point then segment. With a point pending, picking
+prefers whole lines; with a line pending, it prefers point elements. A ready
+preselection applies through the same ConstraintActions path as interactive input.
+The existing Midpoint toolbar signal is routed through QtMainWindowBinder.
+
 ConstraintActions applies coincidence with Midpoint placement and returns an
 owning App `ActionReport`. Preparation preserves typed rejection reasons and
 owning Core query/support errors. Confirmed insertion IDs remain separate from
@@ -418,6 +424,7 @@ Unexpected/missing fields are InvalidArgument.
 | --- | --- |
 | Coincident | Two point-like refs |
 | Concentric | Two distinct whole Circle/Arc refs in any combination; equal centers, independent radii; no value or fixedPosition |
+| Midpoint | Point-like ref followed by one whole finite line segment; `p = (start + end) / 2`; no value or fixedPosition |
 | Horizontal, Vertical | One whole line |
 | Parallel, Perpendicular | Two whole lines |
 | Distance | Two point-like refs; finite nonnegative length including zero |
@@ -429,6 +436,24 @@ Unexpected/missing fields are InvalidArgument.
 | Tangent | Whole line/circular curve, or two circular curves; external tangency contract currently unsupported by DCM |
 | Fix | One point-like ref with explicit finite fixedPosition; target survives edits, failed solves, and transfer |
 | Symmetric | Two point-like refs followed by a whole axis line or a point-like center; no value or fixedPosition |
+
+Midpoint maps directly to DCM's `pointAtMidpoint(pointId, lineId)`, with two
+independent linear coordinate equations. The point may be standalone or a curve
+endpoint/center. Constraint updates, removal, entity deletion and snapshot transfer
+use the ordinary constraint lifecycle. Core still rejects zero-length line inputs
+on creation, update and state transfer, even though DCM's midpoint equations
+permit a collapsed segment. Referring to the segment's own endpoint is allowed
+algebraically and can collapse it during solve; the convergence-reporting
+limitation described below remains applicable.
+
+This is a persistent segment relation. It differs from the initial placement
+policy `CoincidentPlacement::Midpoint` and from a snap-only midpoint. The
+[sketcher specification, SK-CON-018](sketcher-specification.md#92-geometric-relations)
+also describes explicitly named half-parameter, half-sweep and half-length sites;
+these measures can differ on curves and are not supported by this relation.
+Three-point affine midpoint can already be expressed as Symmetric about a point,
+with the midpoint as its third reference. A full circle has no unique midpoint
+without a selected finite interval and traversal.
 
 | Function | Result, errors, side effects, and cost |
 | --- | --- |
@@ -566,6 +591,7 @@ destroying the source.
 | Coincident, Horizontal, Vertical, Parallel, Perpendicular | Supported |
 | Concentric for Circle/Circle, Circle/Arc and Arc/Arc | Supported through coincidence of the owned center points |
 | Symmetric about an explicit line or point | Supported; horizontal and vertical axes use line entities |
+| Midpoint of a finite line segment | Supported through native pointAtMidpoint; point-like ref first, whole line second |
 | Distance, HorizontalDistance, VerticalDistance, Length, Angle, point-like Fix | Supported |
 | Equal line lengths/circular radii; Radius/Diameter | Unsupported |
 | Whole-curve Tangent | Unsupported |

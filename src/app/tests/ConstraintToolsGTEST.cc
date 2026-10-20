@@ -340,6 +340,108 @@ TEST_F(ConcentricConstraintToolBehavior, PreselectedArcCanBeCompletedByCircleOut
     EXPECT_TRUE(overlay_.constraintRefs_.empty());
 }
 
+class MidpointConstraintToolBehavior : public testing::Test {
+protected:
+    void SetUp() override {
+        const auto line = sketch_.addLine({-1, 1}, {1, 1});
+        const auto point = sketch_.addPoint({-2, -1});
+        const auto circle = sketch_.addCircle({2, -1}, 0.5);
+        ASSERT_TRUE(line);
+        ASSERT_TRUE(point);
+        ASSERT_TRUE(circle);
+        line_ = {line.value(), SubElement::Whole};
+        point_ = {point.value(), SubElement::Whole};
+        circleCenter_ = {circle.value(), SubElement::Center};
+        camera_.setViewport(1000, 1000, 2);
+        camera_.setZoom(100);
+        overlay_.selection_.model.replace(point_);
+    }
+
+    input::MouseButtonEvent pressAt(Vec2 world) const {
+        const auto screen = camera_.worldToScreenLogical({world.x, world.y});
+        return {screen.x, screen.y, input::MouseButton::Left, input::MouseButtonAction::Press, input::MouseButton::Left};
+    }
+
+    Sketch sketch_;
+    Camera2D camera_;
+    OverlayModel overlay_;
+    ConstraintActions actions_{sketch_};
+    Cpu2dPicker picker_{sketch_, camera_};
+    ConstraintTool tool_{actions_, picker_, overlay_};
+    GeometryRef line_, point_, circleCenter_;
+};
+
+TEST_F(MidpointConstraintToolBehavior, PointThenLineEndpointPicksWholeLineAndPreservesRejectedInput) {
+    tool_.begin({ConstraintAction::Midpoint, std::nullopt});
+    EXPECT_FALSE(tool_.onMouseButton(pressAt({2.5, -1})));
+    EXPECT_TRUE(overlay_.constraintRefs_.empty());
+    EXPECT_FALSE(tool_.onMouseButton(pressAt({-2, -1})));
+    EXPECT_EQ(overlay_.constraintRefs_, (std::vector<GeometryRef>{point_}));
+    EXPECT_EQ(sketch_.constraintCount(), 0);
+
+    const auto rejected = tool_.onMouseButton(pressAt({-2, -1}));
+    ASSERT_TRUE(rejected);
+    EXPECT_EQ(rejected->change, ModelChange::Unchanged);
+    EXPECT_EQ(rejected->rejection, ActionRejection::InvalidSelection);
+    EXPECT_TRUE(rejected->constraintIds.empty());
+    EXPECT_FALSE(rejected->solve);
+    EXPECT_EQ(overlay_.constraintRefs_, (std::vector<GeometryRef>{point_}));
+    EXPECT_EQ(sketch_.constraintCount(), 0);
+
+    const auto report = tool_.onMouseButton(pressAt({-1, 1}));
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    ASSERT_EQ(report->constraintIds.size(), 1);
+    const auto inserted = sketch_.constraint(report->constraintIds[0]);
+    ASSERT_TRUE(inserted);
+    EXPECT_EQ(inserted.value().definition.type, ConstraintType::Midpoint);
+    EXPECT_EQ(inserted.value().definition.refs, (std::vector<GeometryRef>{point_, line_}));
+    ASSERT_TRUE(report->solve);
+    EXPECT_EQ(report->solve->status, SolveStatus::Converged);
+    EXPECT_EQ(sketch_.constraintCount(), 1);
+    EXPECT_TRUE(overlay_.constraintRefs_.empty());
+    EXPECT_EQ(overlay_.selection_.model.items(), (std::vector<GeometryRef>{point_}));
+    EXPECT_FALSE(tool_.cancel().handled);
+}
+
+TEST_F(MidpointConstraintToolBehavior, LineFirstCanBeCompletedByCircleCenter) {
+    tool_.begin({ConstraintAction::Midpoint, std::nullopt});
+    EXPECT_FALSE(tool_.onMouseButton(pressAt({0.5, 1})));
+    EXPECT_EQ(overlay_.constraintRefs_, (std::vector<GeometryRef>{line_}));
+    const auto report = tool_.onMouseButton(pressAt({2, -1}));
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    ASSERT_EQ(report->constraintIds.size(), 1);
+    const auto inserted = sketch_.constraint(report->constraintIds[0]);
+    ASSERT_TRUE(inserted);
+    EXPECT_EQ(inserted.value().definition.type, ConstraintType::Midpoint);
+    EXPECT_EQ(inserted.value().definition.refs, (std::vector<GeometryRef>{circleCenter_, line_}));
+    ASSERT_TRUE(report->solve);
+    EXPECT_EQ(report->solve->status, SolveStatus::Converged);
+    EXPECT_TRUE(overlay_.constraintRefs_.empty());
+}
+
+TEST_F(MidpointConstraintToolBehavior, PreselectedPointCompletesAtLineEndpointAndCancellationDiscardsInput) {
+    const std::vector<GeometryRef> initial{point_};
+    tool_.begin({ConstraintAction::Midpoint, std::nullopt}, initial);
+    EXPECT_EQ(overlay_.constraintRefs_, initial);
+    const auto cancellation = tool_.cancel();
+    EXPECT_TRUE(cancellation.handled);
+    EXPECT_FALSE(cancellation.report);
+    EXPECT_TRUE(overlay_.constraintRefs_.empty());
+    EXPECT_EQ(sketch_.constraintCount(), 0);
+
+    tool_.begin({ConstraintAction::Midpoint, std::nullopt}, initial);
+    const auto report = tool_.onMouseButton(pressAt({1, 1}));
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    ASSERT_EQ(report->constraintIds.size(), 1);
+    const auto inserted = sketch_.constraint(report->constraintIds[0]);
+    ASSERT_TRUE(inserted);
+    EXPECT_EQ(inserted.value().definition.refs, (std::vector<GeometryRef>{point_, line_}));
+    EXPECT_TRUE(overlay_.constraintRefs_.empty());
+}
+
 class SymmetricConstraintToolBehavior : public testing::Test {
 protected:
     void SetUp() override {

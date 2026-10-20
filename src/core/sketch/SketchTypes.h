@@ -161,7 +161,8 @@ enum class ConstraintType {
     Angle,
     Fix,
     Concentric,
-    Symmetric
+    Symmetric,
+    Midpoint
 };
 
 // Coincident/Distance use two point-like refs: Point Whole, Line Start/End,
@@ -179,6 +180,9 @@ enum class ConstraintType {
 // line axis or a point-like center. It takes neither value nor fixedPosition.
 // Concentric uses two distinct whole Circle/Arc refs in any combination,
 // equating their centers. It takes neither value nor fixedPosition.
+// Midpoint uses a point-like ref followed by a whole finite line segment,
+// constraining the point to (start + end) / 2. No value or fixedPosition.
+// Curve midpoint measures are not implied by this segment-only relation.
 struct ConstraintDefinition {
     ConstraintType type = ConstraintType::Coincident;
     std::vector<GeometryRef> refs;
@@ -194,7 +198,7 @@ struct SketchConstraint {
 // Unsupported operations never mutate the model.
 struct Capabilities {
     std::array<bool, 4> entities{};
-    std::array<bool, 17> constraints{};
+    std::array<bool, 18> constraints{};
     bool updateEntities = false;
     bool removeEntities = false;
     bool updateConstraints = false;

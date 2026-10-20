@@ -174,6 +174,61 @@ TEST_F(ConstraintActionsBehavior, SymmetricNormalizesAxisAtAnySelectionPosition)
     }
 }
 
+TEST_F(ConstraintActionsBehavior, MidpointNormalizesEitherOrderAndAcceptsPointElements) {
+    EXPECT_EQ(prepare(ConstraintAction::Midpoint).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Midpoint, {line_}).state, PreparationState::NeedsMoreInput);
+    for (const auto point : {point_, GeometryRef{otherLine_.entity, SubElement::Start}, GeometryRef{otherLine_.entity, SubElement::End},
+                             GeometryRef{circle_.entity, SubElement::Center}, GeometryRef{arc_.entity, SubElement::Start},
+                             GeometryRef{arc_.entity, SubElement::End}, GeometryRef{arc_.entity, SubElement::Center}}) {
+        EXPECT_EQ(prepare(ConstraintAction::Midpoint, {point}).state, PreparationState::NeedsMoreInput);
+        for (const auto& refs : {std::vector<GeometryRef>{point, line_}, std::vector<GeometryRef>{line_, point}}) {
+            const auto prepared = ConstraintActions(*sketch_).prepare({ConstraintAction::Midpoint, std::nullopt}, refs);
+            ASSERT_EQ(prepared.state, PreparationState::Ready);
+            ASSERT_TRUE(prepared.definition);
+            EXPECT_EQ(prepared.definition->type, ConstraintType::Midpoint);
+            EXPECT_EQ(prepared.definition->refs, (std::vector<GeometryRef>{point, line_}));
+            EXPECT_FALSE(prepared.definition->value);
+            EXPECT_FALSE(prepared.definition->fixedPosition);
+        }
+    }
+}
+
+TEST_F(ConstraintActionsBehavior, MidpointRejectsInvalidSelectionsAndPreparationPreservesGeometry) {
+    const auto before = sketch_->snapshot();
+    const auto pointsBefore = sketch_->pointElements();
+    ASSERT_TRUE(before);
+    ASSERT_TRUE(pointsBefore);
+    for (const auto& refs : {std::vector<GeometryRef>{circle_}, std::vector<GeometryRef>{arc_}, std::vector<GeometryRef>{point_, start_},
+                             std::vector<GeometryRef>{line_, otherLine_}, std::vector<GeometryRef>{point_, circle_}, std::vector<GeometryRef>{arc_, line_},
+                             std::vector<GeometryRef>{point_, point_}, std::vector<GeometryRef>{line_, line_}, std::vector<GeometryRef>{point_, line_, end_},
+                             std::vector<GeometryRef>{{circle_.entity, SubElement::Start}}, std::vector<GeometryRef>{{line_.entity, SubElement::Center}}}) {
+        const auto prepared = ConstraintActions(*sketch_).prepare({ConstraintAction::Midpoint, std::nullopt}, refs);
+        EXPECT_EQ(prepared.state, PreparationState::InvalidSelection);
+        EXPECT_EQ(prepared.rejection, ActionRejection::InvalidSelection);
+        EXPECT_FALSE(prepared.definition);
+    }
+    EXPECT_EQ(prepare(ConstraintAction::Midpoint, {point_, line_}, 1.0).rejection, ActionRejection::InvalidValue);
+    const auto missing = prepare(ConstraintAction::Midpoint, {point_, {EntityId(9999), SubElement::Whole}});
+    EXPECT_EQ(missing.state, PreparationState::InvalidSelection);
+    ASSERT_TRUE(missing.error);
+    EXPECT_EQ(missing.error->code, ErrorCode::NotFound);
+    EXPECT_EQ(prepare(ConstraintAction::Midpoint, {line_, point_}).state, PreparationState::Ready);
+
+    const auto after = sketch_->snapshot();
+    const auto pointsAfter = sketch_->pointElements();
+    ASSERT_TRUE(after);
+    ASSERT_TRUE(pointsAfter);
+    EXPECT_EQ(after.value().lastEntityId, before.value().lastEntityId);
+    EXPECT_EQ(after.value().lastConstraintId, before.value().lastConstraintId);
+    EXPECT_EQ(after.value().entities.size(), before.value().entities.size());
+    EXPECT_EQ(after.value().constraints.size(), before.value().constraints.size());
+    ASSERT_EQ(pointsAfter.value().size(), pointsBefore.value().size());
+    for (size_t i = 0; i < pointsBefore.value().size(); ++i) {
+        EXPECT_EQ(pointsAfter.value()[i].ref, pointsBefore.value()[i].ref);
+        EXPECT_EQ(pointsAfter.value()[i].position, pointsBefore.value()[i].position);
+    }
+}
+
 TEST_F(ConstraintActionsBehavior, SymmetricKeepsLastPointAsCenterAndAcceptsCurvePointElements) {
     const GeometryRef circleCenter{circle_.entity, SubElement::Center};
     const GeometryRef arcEnd{arc_.entity, SubElement::End};
@@ -436,6 +491,38 @@ TEST_F(ConstraintActionsBehavior, ApplyingSymmetricConfirmsStoredDefinitionAndSo
     EXPECT_EQ(inserted.value().definition.refs, refs);
     EXPECT_FALSE(inserted.value().definition.value);
     EXPECT_FALSE(inserted.value().definition.fixedPosition);
+}
+
+TEST_F(ConstraintActionsBehavior, ApplyingMidpointStoresConstraintAndSolvesPointAtFixedSegmentCenter) {
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {start_}, std::nullopt, Vec2{0, 0}}));
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {end_}, std::nullopt, Vec2{3, 4}}));
+    const auto prepared = prepare(ConstraintAction::Midpoint, {line_, point_});
+    ASSERT_EQ(prepared.state, PreparationState::Ready);
+    ASSERT_TRUE(prepared.definition);
+    const auto before = sketch_->snapshot();
+    ASSERT_TRUE(before);
+
+    const auto report = ConstraintActions(*sketch_).apply(*prepared.definition);
+    EXPECT_EQ(report.action, ActionKind::ApplyConstraint);
+    EXPECT_EQ(report.change, ModelChange::Changed);
+    EXPECT_EQ(report.requestedConstraints, 1);
+    ASSERT_EQ(report.constraintIds.size(), 1);
+    EXPECT_EQ(report.constraintIds[0].get(), before.value().lastConstraintId + 1);
+    EXPECT_FALSE(report.operationError);
+    EXPECT_FALSE(report.solveError);
+    ASSERT_TRUE(report.solve);
+    EXPECT_EQ(report.solve->status, SolveStatus::Converged);
+    EXPECT_EQ(sketch_->constraintCount(), before.value().constraints.size() + 1);
+    const auto inserted = sketch_->constraint(report.constraintIds[0]);
+    ASSERT_TRUE(inserted);
+    EXPECT_EQ(inserted.value().definition.type, ConstraintType::Midpoint);
+    EXPECT_EQ(inserted.value().definition.refs, (std::vector<GeometryRef>{point_, line_}));
+    EXPECT_FALSE(inserted.value().definition.value);
+    EXPECT_FALSE(inserted.value().definition.fixedPosition);
+    const auto position = sketch_->pointPosition(point_);
+    ASSERT_TRUE(position);
+    EXPECT_NEAR(position.value().x, 1.5, 1e-6);
+    EXPECT_NEAR(position.value().y, 2, 1e-6);
 }
 
 TEST_F(ConstraintActionsBehavior, RejectionsPreserveSelectionAndValueReasonsWithoutMutation) {

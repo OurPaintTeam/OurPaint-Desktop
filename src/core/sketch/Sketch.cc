@@ -97,10 +97,11 @@ public:
     Capabilities capabilities() const {
         Capabilities result;
         result.entities.fill(true);
-        for (auto type : {ConstraintType::Coincident, ConstraintType::Horizontal, ConstraintType::Vertical, ConstraintType::Parallel,
-                          ConstraintType::Perpendicular, ConstraintType::Tangent, ConstraintType::Equal, ConstraintType::Distance,
-                          ConstraintType::HorizontalDistance, ConstraintType::VerticalDistance, ConstraintType::Length, ConstraintType::Radius,
-                          ConstraintType::Diameter, ConstraintType::Angle, ConstraintType::Fix, ConstraintType::Concentric, ConstraintType::Symmetric}) {
+        for (auto type :
+             {ConstraintType::Coincident, ConstraintType::Horizontal, ConstraintType::Vertical, ConstraintType::Parallel, ConstraintType::Perpendicular,
+              ConstraintType::Tangent, ConstraintType::Equal, ConstraintType::Distance, ConstraintType::HorizontalDistance, ConstraintType::VerticalDistance,
+              ConstraintType::Length, ConstraintType::Radius, ConstraintType::Diameter, ConstraintType::Angle, ConstraintType::Fix, ConstraintType::Concentric,
+              ConstraintType::Symmetric, ConstraintType::Midpoint}) {
             result.constraints[static_cast<size_t>(type)] = true;
         }
         result.updateEntities = result.removeEntities = result.updateConstraints = result.removeConstraints = true;
@@ -672,6 +673,9 @@ private:
                     add(du::RequirementDescriptor::pointOnPoint(first, second));
                     break;
                 }
+                case ConstraintType::Midpoint:
+                    add(du::RequirementDescriptor::pointAtMidpoint(pointAt(0), whole(1)));
+                    break;
                 default:
                     throw std::logic_error("Unsupported constraint passed DCM preflight");
             }
@@ -735,6 +739,15 @@ private:
                         return false;
                     }
                     break;
+                case ConstraintType::Midpoint: {
+                    const auto start = point({refs[1].entity, SubElement::Start});
+                    const auto end = point({refs[1].entity, SubElement::End});
+                    const Vec2 midpoint{std::midpoint(start.x, end.x), std::midpoint(start.y, end.y)};
+                    if (!near(length(subtract(point(refs[0]), midpoint)), 0)) {
+                        return false;
+                    }
+                    break;
+                }
                 case ConstraintType::Distance:
                     if (!near(length(subtract(point(refs[0]), point(refs[1]))), *definition.value)) {
                         return false;
@@ -1030,6 +1043,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         case ConstraintType::Tangent:
         case ConstraintType::Equal:
         case ConstraintType::Concentric:
+        case ConstraintType::Midpoint:
             count = 2;
             break;
         case ConstraintType::Horizontal:
@@ -1091,6 +1105,9 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
     if (type == ConstraintType::Concentric && definition.fixedPosition) {
         return invalid("Concentric does not take a fixed position");
     }
+    if (type == ConstraintType::Midpoint && definition.fixedPosition) {
+        return invalid("Midpoint does not take a fixed position");
+    }
     if (definition.fixedPosition && !finite(*definition.fixedPosition)) {
         return invalid("Fixed position must be finite");
     }
@@ -1147,6 +1164,9 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             break;
         case ConstraintType::Concentric:
             valid = circles[0] && circles[1];
+            break;
+        case ConstraintType::Midpoint:
+            valid = points[0] && lines[1];
             break;
         case ConstraintType::Fix:
             valid = points[0] || lines[0] || circles[0];

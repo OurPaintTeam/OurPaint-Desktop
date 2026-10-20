@@ -43,6 +43,21 @@ std::optional<ActionReport> ConstraintTool::onMouseButton(const input::MouseButt
                 pick = picker_.pickLineAtScreenLogical(e.x, e.y);
             }
             break;
+        case ConstraintAction::Midpoint: {
+            pick = picker_.pickPointAtScreenLogical(e.x, e.y);
+            auto line = picker_.pickLineAtScreenLogical(e.x, e.y);
+            if (!pick) {
+                pick = line;
+            } else if (line && !refs_.empty()) {
+                auto candidateRefs = refs_;
+                candidateRefs.push_back(pick->ref);
+                // Once a point is selected, endpoint hits must still select the target line.
+                if (actions_.prepare(request_, candidateRefs).state == ConstraintPreparation::State::InvalidSelection) {
+                    pick = line;
+                }
+            }
+            break;
+        }
         case ConstraintAction::Equal:
         case ConstraintAction::Tangent:
         case ConstraintAction::Concentric:

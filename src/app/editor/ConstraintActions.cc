@@ -118,6 +118,9 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         case ConstraintAction::Concentric:
             definition.type = ConstraintType::Concentric;
             break;
+        case ConstraintAction::Midpoint:
+            definition.type = ConstraintType::Midpoint;
+            break;
         case ConstraintAction::Symmetric:
             definition.type = ConstraintType::Symmetric;
             requiredRefs = 3;
@@ -179,6 +182,11 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         case ConstraintType::Concentric:
             compatible = kinds[0] == RefKind::Circular && (refs.size() == 1 || kinds[1] == RefKind::Circular);
             break;
+        case ConstraintType::Midpoint:
+            compatible =
+                (kinds[0] == RefKind::Point || kinds[0] == RefKind::Line) &&
+                (refs.size() == 1 || (kinds[0] == RefKind::Point && kinds[1] == RefKind::Line) || (kinds[0] == RefKind::Line && kinds[1] == RefKind::Point));
+            break;
         case ConstraintType::Fix: {
             compatible = true;
             break;
@@ -218,6 +226,9 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
     }
 
     definition.refs.assign(refs.begin(), refs.end());
+    if (request.action == ConstraintAction::Midpoint && kinds[0] == RefKind::Line) {
+        std::swap(definition.refs[0], definition.refs[1]);
+    }
     if (request.action == ConstraintAction::Symmetric) {
         // Keep the point order and move a selected axis to the last operand.
         const auto axis = std::find(kinds.begin(), kinds.end(), RefKind::Line);

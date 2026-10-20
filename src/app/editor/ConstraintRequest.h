@@ -18,6 +18,7 @@ enum class ConstraintAction {
     // Select two whole circles or arcs, in either order.
     Concentric,
     Collinear,
+    // Select a point-like element and a whole line in either order.
     Midpoint,
     // Select two points and an axis line in any order, or three points with the center last.
     Symmetric,

@@ -37,6 +37,9 @@ target_link_libraries(SymmetricGTEST PRIVATE OurPaint::Sketch)
 add_ourpaint_test(ConcentricGTEST ConcentricGTEST.cc)
 target_link_libraries(ConcentricGTEST PRIVATE OurPaint::Sketch)
 
+add_ourpaint_test(MidpointGTEST MidpointGTEST.cc)
+target_link_libraries(MidpointGTEST PRIVATE OurPaint::Sketch)
+
 set(TYPE_OF_COMPILING BOOL 1)
 if (TYPE_OF_COMPILING)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
