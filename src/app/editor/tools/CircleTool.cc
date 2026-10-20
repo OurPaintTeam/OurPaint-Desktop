@@ -143,42 +143,100 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
         cursor.y = snap_result_.point.position.y;
     }
 
+    auto applyCircleConstraints = [&](ActionReport& report, bool needsSolve) {
+        if (report.entityIds.empty()) return needsSolve;
+        const auto circleId = report.entityIds[0];
+
+        auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement circleSub) {
+            if (!snap.snapped || snap.objects.empty()) return;
+
+            core::sketch::ConstraintDefinition def;
+            def.type = core::sketch::ConstraintType::Coincident;
+            def.refs = {
+                { circleId, circleSub },
+                snap.objects[0]
+            };
+
+            if (document_.sketch().supportsConstraint(def)) {
+                auto c = document_.sketch().addConstraint(def);
+                if (c) {
+                    report.constraintIds.push_back(c.value());
+                    report.requestedConstraints++;
+                    needsSolve = true;
+                } else {
+                    report.operationError = c.error();
+                }
+            }
+        };
+
+        if (mode_ == Mode::CenterRadius || mode_ == Mode::CenterDiameter) {
+            tryAddConstraint(firstSnap_, core::sketch::SubElement::Center);
+            tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
+        }
+        else if (mode_ == Mode::DiameterTwoPoints) {
+            tryAddConstraint(firstSnap_, core::sketch::SubElement::Whole);
+            tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
+        }
+        else if (mode_ == Mode::ThreePoints) {
+            tryAddConstraint(firstSnap_, core::sketch::SubElement::Whole);
+            tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
+            tryAddConstraint(thirdSnap_, core::sketch::SubElement::Whole);
+        }
+
+        return needsSolve;
+    };
+
     switch (mode_) {
         case Mode::CenterRadius:
             if (step_ == Step::WaitingFirstInput) {
+                firstSnap_ = snap_result_;
                 points_.push_back(cursor);
                 overlay_.circles_.push_back(OverlayModel::Circle(cursor.x, cursor.y, 0.0));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
             } else if (step_ == Step::WaitingSecondInput) {
+                secondSnap_ = snap_result_;
                 double cx = points_[0].x;
                 double cy = points_[0].y;
                 double r = glm::distance(cursor, points_[0]);
+
                 auto report = pushCircleToModel({cx, cy, r});
+                bool needsSolve = applyCircleConstraints(report, false);
+                if (needsSolve) report.recordSolve(document_.sketch().solve());
+
                 reset();
                 return report;
             }
             break;
+
         case Mode::CenterDiameter:
             if (step_ == Step::WaitingFirstInput) {
+                firstSnap_ = snap_result_;
                 points_.push_back(cursor);
                 overlay_.circles_.push_back(OverlayModel::Circle(cursor.x, cursor.y, 0.0));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
             } else if (step_ == Step::WaitingSecondInput) {
+                secondSnap_ = snap_result_;
                 double cx = points_[0].x;
                 double cy = points_[0].y;
                 double diameter = glm::distance(cursor, points_[0]);
                 double r = diameter / 2.0;
+
                 auto report = pushCircleToModel({cx, cy, r});
+                bool needsSolve = applyCircleConstraints(report, false);
+                if (needsSolve) report.recordSolve(document_.sketch().solve());
+
                 reset();
                 return report;
             }
             break;
+
         case Mode::DiameterTwoPoints:
             if (step_ == Step::WaitingFirstInput) {
+                firstSnap_ = snap_result_;
                 points_.push_back(cursor);
                 overlay_.circles_.push_back(OverlayModel::Circle(cursor.x, cursor.y, 0.0));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
@@ -186,22 +244,29 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
             } else if (step_ == Step::WaitingSecondInput) {
+                secondSnap_ = snap_result_;
                 glm::dvec2 a = points_[0];
                 glm::dvec2 b = cursor;
                 glm::dvec2 center = (a + b) * 0.5;
                 double r = glm::distance(a, b) * 0.5;
 
                 auto report = pushCircleToModel({center.x, center.y, r});
+                bool needsSolve = applyCircleConstraints(report, false);
+                if (needsSolve) report.recordSolve(document_.sketch().solve());
+
                 reset();
                 return report;
             }
             break;
+
         case Mode::ThreePoints:
             if (step_ == Step::WaitingFirstInput) {
+                firstSnap_ = snap_result_;
                 points_.push_back(cursor);
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));  // first point
                 step_ = Step::WaitingSecondInput;
             } else if (step_ == Step::WaitingSecondInput) {
+                secondSnap_ = snap_result_;
                 points_.push_back(cursor);
                 overlay_.circles_.push_back(OverlayModel::Circle(cursor.x, cursor.y, 0.0));  // just init
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));         // second point
@@ -209,11 +274,15 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));         // center
                 step_ = Step::WaitingThirdInput;
             } else if (step_ == Step::WaitingThirdInput) {
+                thirdSnap_ = snap_result_;
                 const auto circle = buildCircleFromThreePoints(points_[0], points_[1], cursor);
                 ActionReport report{ActionKind::CreateCircle};
                 report.requestedEntities = 1;
+
                 if (circle) {
                     report = pushCircleToModel(*circle);
+                    bool needsSolve = applyCircleConstraints(report, false);
+                    if (needsSolve) report.recordSolve(document_.sketch().solve());
                 } else {
                     report.rejection = ActionRejection::InvalidGeometry;
                     report.operationError =
@@ -223,6 +292,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 return report;
             }
             break;
+
         case Mode::TangentTwoObjectsRadius:
             if (step_ == Step::WaitingFirstInput) {
                 auto obj = picker_.pickAtScreenLogical(e.x, e.y);

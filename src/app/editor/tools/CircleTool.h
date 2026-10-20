@@ -63,6 +63,10 @@ private:
 
     std::vector<glm::dvec2> points_;
     std::vector<sketch::EntityId> objects_;
+
+    snap::SnapResult firstSnap_;
+    snap::SnapResult secondSnap_;
+    snap::SnapResult thirdSnap_;
 };
 
 #endif // ! OURPAINT_APPLICATION_CIRCLE_TOOL_H_

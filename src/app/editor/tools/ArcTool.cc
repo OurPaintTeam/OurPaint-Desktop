@@ -86,14 +86,50 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
         cursor.y = snap_result_.point.position.y;
     }
 
+    auto applyArcConstraints = [&](ActionReport& report) -> bool {
+        if (report.entityIds.empty()) return false;
+        const auto arcId = report.entityIds[0];
+        bool needsSolve = false;
+
+        auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement arcSub) {
+            if (!snap.snapped || snap.objects.empty()) return;
+
+            core::sketch::ConstraintDefinition def;
+            def.type = core::sketch::ConstraintType::Coincident;
+            def.refs = {
+                { arcId, arcSub },
+                snap.objects[0]
+            };
+
+            if (document_.sketch().supportsConstraint(def)) {
+                auto c = document_.sketch().addConstraint(def);
+                if (c) {
+                    report.constraintIds.push_back(c.value());
+                    report.requestedConstraints++;
+                    needsSolve = true;
+                } else {
+                    report.operationError = c.error();
+                }
+            }
+        };
+
+        tryAddConstraint(firstSnap_, core::sketch::SubElement::Start);
+        tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
+        tryAddConstraint(thirdSnap_, core::sketch::SubElement::End);
+
+        return needsSolve;
+    };
+
     switch (mode_) {
         case Mode::ThreePoints:
             if (step_ == Step::WaitingFirstInput) {
+                firstSnap_ = snap_result_;
                 points_.push_back(cursor);
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
             }
             else if (step_ == Step::WaitingSecondInput) {
+                secondSnap_ = snap_result_;
                 points_.push_back(cursor);
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
@@ -102,7 +138,9 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
                 step_ = Step::WaitingThirdInput;
             }
             else if (step_ == Step::WaitingThirdInput) {
+                thirdSnap_ = snap_result_;
                 points_.push_back(cursor);
+
                 Arc a = buildArcFromThreePoints(points_[0], points_[1], points_[2]);
 
                 sketch::Vec2 center = {a.cx, a.cy};
@@ -119,6 +157,12 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
 
                 auto report = ActionReport::creation(ActionKind::CreateArc,
                                             document_.sketch().addArc(center, start, end));
+
+                bool needsSolve = applyArcConstraints(report);
+                if (needsSolve) {
+                    report.recordSolve(document_.sketch().solve());
+                }
+
                 reset();
                 return report;
             }

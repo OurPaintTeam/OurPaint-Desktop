@@ -53,6 +53,7 @@ std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e
 std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
+
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
 
         if (snap_result_.snapped) {
@@ -64,6 +65,7 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
             firstPoint_ = v;
             state_ = State::WaitingSecondPoint;
 
+            firstSnap_ = snap_result_;
 
             overlay_.points_.push_back(OverlayModel::Point(v.x, v.y));
             overlay_.points_.push_back(OverlayModel::Point(v.x, v.y));
@@ -80,7 +82,107 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
                     v.x = firstPoint_.x; // Lock to vertical
                 }
             }
-            auto report = ActionReport::creation(ActionKind::CreateLine, document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y}));
+
+            auto addResult = document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y});
+            ActionReport report = ActionReport::creation(ActionKind::CreateLine, addResult);
+
+            if (addResult) {
+                const auto lineId = addResult.value();
+                bool needsSolve = false;
+
+                auto applyPointConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement sub) {
+                    if (!snap.snapped) return;
+
+                    core::sketch::ConstraintDefinition def;
+                    bool shouldAdd = false;
+
+                    switch (snap.type) {
+                        case snap::SnapKind::StandalonePoint:
+                        case snap::SnapKind::LineEndpoint:
+                        case snap::SnapKind::CircleCentre:
+                        case snap::SnapKind::ArcEndpoint:
+                        case snap::SnapKind::ArcCentre:
+                        case snap::SnapKind::LineBody:
+                        case snap::SnapKind::CircleBody:
+                        case snap::SnapKind::ArcBody:
+                            def.type = core::sketch::ConstraintType::Coincident;
+                            def.refs = { { lineId, sub }, snap.objects[0] };
+                            shouldAdd = true;
+                            break;
+                        case snap::SnapKind::LineMidpoint:
+                            def.type = core::sketch::ConstraintType::Midpoint;
+                            def.refs = { { lineId, sub }, snap.objects[0] };
+                            shouldAdd = true;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (shouldAdd && document_.sketch().supportsConstraint(def)) {
+                        auto c = document_.sketch().addConstraint(def);
+                        if (c) {
+                            report.constraintIds.push_back(c.value());
+                            report.requestedConstraints++;
+                            needsSolve = true;
+                        } else {
+                            report.operationError = c.error();
+                        }
+                    }
+                };
+
+                applyPointConstraint(firstSnap_, core::sketch::SubElement::Start);
+
+                applyPointConstraint(snap_result_, core::sketch::SubElement::End);
+
+                if (snap_result_.snapped) {
+                    core::sketch::ConstraintDefinition dirDef;
+                    bool shouldAddDir = false;
+
+                    switch (snap_result_.type) {
+                        case snap::SnapKind::Horizontal:
+                            dirDef.type = core::sketch::ConstraintType::Horizontal;
+                            dirDef.refs = { { lineId, core::sketch::SubElement::Whole } };
+                            shouldAddDir = true;
+                            break;
+                        case snap::SnapKind::Vertical:
+                            dirDef.type = core::sketch::ConstraintType::Vertical;
+                            dirDef.refs = { { lineId, core::sketch::SubElement::Whole } };
+                            shouldAddDir = true;
+                            break;
+                        case snap::SnapKind::Parallel:
+                            dirDef.type = core::sketch::ConstraintType::Parallel;
+                            dirDef.refs = { { lineId, core::sketch::SubElement::Whole }, snap_result_.objects[0] };
+                            shouldAddDir = true;
+                            break;
+                        case snap::SnapKind::Perpendicular:
+                            dirDef.type = core::sketch::ConstraintType::Perpendicular;
+                            dirDef.refs = { { lineId, core::sketch::SubElement::Whole }, snap_result_.objects[0] };
+                            shouldAddDir = true;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (shouldAddDir && document_.sketch().supportsConstraint(dirDef)) {
+                        auto c = document_.sketch().addConstraint(dirDef);
+                        if (c) {
+                            report.constraintIds.push_back(c.value());
+                            report.requestedConstraints++;
+                            needsSolve = true;
+                        } else {
+                            report.operationError = c.error();
+                        }
+                    }
+                }
+
+                if (needsSolve) {
+                    auto solved = document_.sketch().solve();
+                    report.recordSolve(solved);
+                    if (!solved || solved.value().status != core::sketch::SolveStatus::Converged) {
+                        std::cout << "solve err in LineTool" << std::endl;
+                    }
+                }
+            }
 
             // std::ostringstream oss;
             // oss << std::fixed << std::setprecision(3)
