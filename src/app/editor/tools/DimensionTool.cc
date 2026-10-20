@@ -6,7 +6,7 @@
 #include "../../viewport/picking/Cpu2dPicker.h"
 #include "../ConstraintActions.h"
 
-DimensionTool::DimensionTool(ConstraintActions& actions, Cpu2dPicker& picker, OverlayModel& overlay) : actions_(actions), picker_(picker), overlay_(overlay) {}
+DimensionTool::DimensionTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, ConstraintActions& actions, Cpu2dPicker& picker) : IInteractionTool(document,camera,snap,overlay,picker), actions_(actions) {}
 
 void DimensionTool::begin(const ConstraintRequest& request, std::span<const core::sketch::GeometryRef> initialRefs) {
     request_ = request;

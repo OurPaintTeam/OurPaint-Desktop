@@ -10,16 +10,17 @@ SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& o
     : document_(document),
       camera_(camera),
       overlay_(overlay),
+      snap_(document_.sketch(), camera_),
       picker_(document_.sketch(), camera_),
       constraintActions_(document_.sketch()),
-      cursorTool_(document_, camera_, picker_, overlay_, constraintActions_),
-      pointTool_(document_, camera_),
-      lineTool_(document_, camera_, overlay_),
-      circleTool_(document_, camera_, picker_, overlay_),
-      arcTool_(document_, camera_, picker_, overlay_),
-      bezierTool_(document_, camera_),
-      constraintTool_(constraintActions_, picker_, overlay_),
-      dimensionTool_(constraintActions_, picker_, overlay_) {
+      cursorTool_(document_, camera_, snap_, picker_, overlay_, constraintActions_),
+      pointTool_(document_, camera_, snap_, overlay_, picker_),
+      lineTool_(document_, camera_, snap_, overlay_, picker_),
+      circleTool_(document_, camera_, snap_, picker_, overlay_),
+      arcTool_(document_, camera_, snap_, picker_, overlay_),
+      bezierTool_(document_, camera_, snap_, overlay_, picker_),
+      constraintTool_(document_, camera_, snap_, overlay_, constraintActions_, picker_),
+      dimensionTool_(document_, camera_, snap_, overlay_, constraintActions_, picker_) {
     activeTool_ = &cursorTool_;
 }
 
@@ -47,7 +48,6 @@ void SketchEditor::select(ToolId id) {
 
             break;
 
-
         case ToolId::CircleByRadius:
             circleTool_.setMode(CircleTool::Mode::CenterRadius);
             activeTool_ = &circleTool_;
@@ -73,7 +73,6 @@ void SketchEditor::select(ToolId id) {
             activeTool_ = &circleTool_;
             break;
 
-
         case ToolId::ArcByRadius:
             arcTool_.setMode(ArcTool::Mode::ThreePoints);
             activeTool_ = &arcTool_;
@@ -90,6 +89,12 @@ void SketchEditor::select(ToolId id) {
         case ToolId::CubicBezier:
             activeTool_ = &bezierTool_;
             break;
+    }
+}
+
+void SketchEditor::endInteraction() {
+    if (activeTool_ == &cursorTool_) {
+        cancelActiveTool();
     }
 }
 
@@ -121,6 +126,10 @@ void SketchEditor::requestConstraint(const ConstraintRequest& request) {
             return;
     }
 }
+
+void SketchEditor::onMouseMove(const input::MouseMoveEvent& e) { deliver(activeTool_->onMouseMove(e)); }
+
+void SketchEditor::onMouseButton(const input::MouseButtonEvent& e) { deliver(activeTool_->onMouseButton(e)); }
 
 void SketchEditor::onKey(const input::KeyEvent& e) {
     if (e.action == input::KeyAction::Press && e.key == input::KeyCode::Escape) {
@@ -169,17 +178,7 @@ void SketchEditor::onKey(const input::KeyEvent& e) {
 
 IInteractionTool* SketchEditor::activeTool() { return activeTool_; }
 
-void SketchEditor::onMouseMove(const input::MouseMoveEvent& e) {
-    deliver(activeTool_->onMouseMove(e));
-}
-
-void SketchEditor::onMouseButton(const input::MouseButtonEvent& e) {
-    deliver(activeTool_->onMouseButton(e));
-}
-
-void SketchEditor::setReportCallback(ReportCallback callback) {
-    reportCallback_ = std::move(callback);
-}
+void SketchEditor::setReportCallback(ReportCallback callback) { reportCallback_ = std::move(callback); }
 
 void SketchEditor::deliver(const std::optional<ActionReport>& report) {
     if (report && reportCallback_) {
@@ -191,10 +190,4 @@ ToolCancellation SketchEditor::cancelActiveTool() {
     auto cancelled = activeTool_->cancel();
     deliver(cancelled.report);
     return cancelled;
-}
-
-void SketchEditor::endInteraction() {
-    if (activeTool_ == &cursorTool_) {
-        cancelActiveTool();
-    }
 }

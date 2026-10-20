@@ -5,11 +5,8 @@
 
 #include "../../../core/Document.h"
 
-CircleTool::CircleTool(Document& document,
-                       Camera2D& camera,
-                       Cpu2dPicker& picker,
-                       OverlayModel& overlay)
-    : document_(document), camera_(camera), picker_(picker), overlay_(overlay) {}
+CircleTool::CircleTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
+    : IInteractionTool(document, camera, snap, overlay, picker) {}
 
 void CircleTool::setMode(Mode mode) {
     if (mode_ == mode) {
@@ -20,9 +17,31 @@ void CircleTool::setMode(Mode mode) {
     reset();
 }
 
-
 std::optional<ActionReport> CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
+
+    snap::SnapRequest request;
+
+    if (step_ == Step::WaitingFirstInput) {
+        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ToolType::Circle, snap::DrawState::Idle};
+    } else if (step_ == Step::WaitingSecondInput) {
+        request = snap::SnapRequest{
+            core::sketch::Vec2{cursor.x, cursor.y},
+            snap::ToolType::Circle,
+            snap::DrawState::FirstPoint,
+            { core::sketch::Point2{ core::sketch::Vec2{points_[0].x, points_[0].y} } }
+        };
+    } else if (step_ == Step::WaitingThirdInput) {
+        request = snap::SnapRequest{
+            core::sketch::Vec2{cursor.x, cursor.y},
+            snap::ToolType::Point,
+            snap::DrawState::FirstPoint,
+            {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}},
+                core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}
+        };
+    }
+
+    snapVisual(request);
 
     switch (mode_) {
         case Mode::CenterRadius:
@@ -87,25 +106,22 @@ std::optional<ActionReport> CircleTool::onMouseMove(const input::MouseMoveEvent&
             break;
 
         case Mode::TangentTwoObjectsRadius:
-            //handleTangentTwoLinesMove(cursor);
+            // handleTangentTwoLinesMove(cursor);
             break;
 
         case Mode::TangentThreeObjects:
-            //handleTangentThreeLinesMove(cursor);
+            // handleTangentThreeLinesMove(cursor);
             break;
     }
     return std::nullopt;
 }
 
-bool intersectLines(
-    glm::dvec2 p1, glm::dvec2 d1,
-    glm::dvec2 p2, glm::dvec2 d2,
-    glm::dvec2& out)
-{
+bool intersectLines(glm::dvec2 p1, glm::dvec2 d1, glm::dvec2 p2, glm::dvec2 d2, glm::dvec2& out) {
     double det = d1.x * d2.y - d1.y * d2.x;
 
-    if (std::abs(det) < 1e-12)
-        return false; // параллельны
+    if (std::abs(det) < 1e-12) {
+        return false;  // параллельны
+    }
 
     glm::dvec2 diff = p2 - p1;
 
@@ -120,7 +136,12 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
         return std::nullopt;
     }
 
-    const glm::dvec2 cursor = screenToWorld(e.x, e.y);
+    glm::dvec2 cursor = screenToWorld(e.x, e.y);
+
+    if (snap_result_.snapped) {
+        cursor.x = snap_result_.point.position.x;
+        cursor.y = snap_result_.point.position.y;
+    }
 
     switch (mode_) {
         case Mode::CenterRadius:
@@ -130,8 +151,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
-            }
-            else if (step_ == Step::WaitingSecondInput) {
+            } else if (step_ == Step::WaitingSecondInput) {
                 double cx = points_[0].x;
                 double cy = points_[0].y;
                 double r = glm::distance(cursor, points_[0]);
@@ -147,8 +167,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
-            }
-            else if (step_ == Step::WaitingSecondInput) {
+            } else if (step_ == Step::WaitingSecondInput) {
                 double cx = points_[0].x;
                 double cy = points_[0].y;
                 double diameter = glm::distance(cursor, points_[0]);
@@ -166,8 +185,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
-            }
-            else if (step_ == Step::WaitingSecondInput) {
+            } else if (step_ == Step::WaitingSecondInput) {
                 glm::dvec2 a = points_[0];
                 glm::dvec2 b = cursor;
                 glm::dvec2 center = (a + b) * 0.5;
@@ -181,18 +199,16 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
         case Mode::ThreePoints:
             if (step_ == Step::WaitingFirstInput) {
                 points_.push_back(cursor);
-                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y)); // first point
+                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));  // first point
                 step_ = Step::WaitingSecondInput;
-            }
-            else if (step_ == Step::WaitingSecondInput) {
+            } else if (step_ == Step::WaitingSecondInput) {
                 points_.push_back(cursor);
-                overlay_.circles_.push_back(OverlayModel::Circle(cursor.x, cursor.y, 0.0)); // just init
-                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y)); // second point
-                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y)); // third point
-                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y)); // center
+                overlay_.circles_.push_back(OverlayModel::Circle(cursor.x, cursor.y, 0.0));  // just init
+                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));         // second point
+                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));         // third point
+                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));         // center
                 step_ = Step::WaitingThirdInput;
-            }
-            else if (step_ == Step::WaitingThirdInput) {
+            } else if (step_ == Step::WaitingThirdInput) {
                 const auto circle = buildCircleFromThreePoints(points_[0], points_[1], cursor);
                 ActionReport report{ActionKind::CreateCircle};
                 report.requestedEntities = 1;
@@ -200,8 +216,8 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                     report = pushCircleToModel(*circle);
                 } else {
                     report.rejection = ActionRejection::InvalidGeometry;
-                    report.operationError = core::sketch::SketchError{core::sketch::ErrorCode::InvalidArgument,
-                                                                     "Three circle points are collinear or almost collinear"};
+                    report.operationError =
+                        core::sketch::SketchError{core::sketch::ErrorCode::InvalidArgument, "Three circle points are collinear or almost collinear"};
                 }
                 reset();
                 return report;
@@ -216,8 +232,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 objects_.push_back(obj.value().ref.entity);
                 points_.push_back(cursor);
                 step_ = Step::WaitingSecondInput;
-            }
-            else if (step_ == Step::WaitingSecondInput) {
+            } else if (step_ == Step::WaitingSecondInput) {
                 auto obj = picker_.pickAtScreenLogical(e.x, e.y);
                 if (!obj.has_value()) {
                     return std::nullopt;
@@ -301,9 +316,7 @@ ToolCancellation CircleTool::cancel() {
     return {true, std::nullopt};
 }
 
-glm::dvec2 CircleTool::screenToWorld(double x, double y) const {
-    return camera_.screenLogicalToWorld({x, y});
-}
+glm::dvec2 CircleTool::screenToWorld(double x, double y) const { return camera_.screenLogicalToWorld({x, y}); }
 
 void CircleTool::reset() {
     points_.clear();
@@ -314,9 +327,7 @@ void CircleTool::reset() {
 }
 
 std::optional<CircleTool::Circle> CircleTool::buildCircleFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2) {
-    double det = p0.x * (p1.y - p2.y) +
-                 p1.x * (p2.y - p0.y) +
-                 p2.x * (p0.y - p1.y);
+    double det = p0.x * (p1.y - p2.y) + p1.x * (p2.y - p0.y) + p2.x * (p0.y - p1.y);
 
     const double eps = 1e-10;
     if (std::abs(det) < eps) {
@@ -328,15 +339,9 @@ std::optional<CircleTool::Circle> CircleTool::buildCircleFromThreePoints(const g
     double b2 = p1.x * p1.x + p1.y * p1.y;
     double c2 = p2.x * p2.x + p2.y * p2.y;
 
-    double ux =
-        (a2 * (p1.y - p2.y) +
-         b2 * (p2.y - p0.y) +
-         c2 * (p0.y - p1.y)) / (det * 2.0);
+    double ux = (a2 * (p1.y - p2.y) + b2 * (p2.y - p0.y) + c2 * (p0.y - p1.y)) / (det * 2.0);
 
-    double uy =
-        (a2 * (p2.x - p1.x) +
-         b2 * (p0.x - p2.x) +
-         c2 * (p1.x - p0.x)) / (det * 2.0);
+    double uy = (a2 * (p2.x - p1.x) + b2 * (p0.x - p2.x) + c2 * (p1.x - p0.x)) / (det * 2.0);
 
     double r = glm::distance({ux, uy}, p0);
 
@@ -346,5 +351,3 @@ std::optional<CircleTool::Circle> CircleTool::buildCircleFromThreePoints(const g
 ActionReport CircleTool::pushCircleToModel(const Circle& c) const {
     return ActionReport::creation(ActionKind::CreateCircle, document_.sketch().addCircle({c.cx, c.cy}, c.r));
 }
-
-

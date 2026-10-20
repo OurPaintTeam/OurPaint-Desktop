@@ -6,8 +6,8 @@
 #include "../../viewport/picking/Cpu2dPicker.h"
 #include "../ConstraintActions.h"
 
-ConstraintTool::ConstraintTool(ConstraintActions& actions, Cpu2dPicker& picker, OverlayModel& overlay)
-    : actions_(actions), picker_(picker), overlay_(overlay) {}
+ConstraintTool::ConstraintTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, ConstraintActions& actions, Cpu2dPicker& picker)
+    : IInteractionTool(document,camera,snap,overlay, picker), actions_(actions) {}
 
 void ConstraintTool::begin(const ConstraintRequest& request, std::span<const core::sketch::GeometryRef> initialRefs) {
     request_ = request;

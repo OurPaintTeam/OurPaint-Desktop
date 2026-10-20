@@ -14,7 +14,7 @@ class OverlayModel;
 
 class DimensionTool : public IInteractionTool {
 public:
-    DimensionTool(ConstraintActions& actions, Cpu2dPicker& picker, OverlayModel& overlay);
+    DimensionTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, ConstraintActions& actions, Cpu2dPicker& picker);
 
     void begin(const ConstraintRequest& request, std::span<const core::sketch::GeometryRef> initialRefs = {});
 
@@ -28,8 +28,6 @@ private:
     void resetInputs();
 
     ConstraintActions& actions_;
-    Cpu2dPicker& picker_;
-    OverlayModel& overlay_;
 
     ConstraintRequest request_{ConstraintAction::Dimension, std::nullopt};
     std::vector<core::sketch::GeometryRef> refs_;

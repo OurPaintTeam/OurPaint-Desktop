@@ -16,6 +16,7 @@ public:
 public:
     explicit ArcTool(Document& document,
                      Camera2D& camera,
+                     snap::SnapSystem& snap,
                      Cpu2dPicker& picker,
                      OverlayModel& overlay);
 
@@ -50,11 +51,6 @@ private:
     Step step_ = Step::WaitingFirstInput;
 
     std::vector<glm::dvec2> points_;
-
-    Document& document_;
-    Camera2D& camera_;
-    Cpu2dPicker& picker_;
-    OverlayModel& overlay_;
 };
 
 #endif // ! OURPAINT_APPLICATION_ARC_TOOL_H_

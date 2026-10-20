@@ -4,8 +4,8 @@
 #include "RenderScene.h"
 #include "objects/Objects.h"
 
-ArcTool::ArcTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay)
-    : document_(document), camera_(camera), picker_(picker), overlay_(overlay) {}
+ArcTool::ArcTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
+    : IInteractionTool(document,camera,snap,overlay,picker){}
 
 void ArcTool::setMode(Mode mode) {
     if (mode_ == mode) {
@@ -24,6 +24,29 @@ void ArcTool::reset() {
 
 std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
+
+    snap::SnapRequest request;
+
+    if (step_ == Step::WaitingFirstInput) {
+        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ToolType::Circle, snap::DrawState::Idle};
+    } else if (step_ == Step::WaitingSecondInput) {
+        request = snap::SnapRequest{
+            core::sketch::Vec2{cursor.x, cursor.y},
+            snap::ToolType::Circle,
+            snap::DrawState::FirstPoint,
+            { core::sketch::Point2{ core::sketch::Vec2{points_[0].x, points_[0].y} } }
+        };
+    } else if (step_ == Step::WaitingThirdInput) {
+        request = snap::SnapRequest{
+            core::sketch::Vec2{cursor.x, cursor.y},
+            snap::ToolType::Point,
+            snap::DrawState::FirstPoint,
+            {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}},
+                core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}
+        };
+    }
+
+    snapVisual(request);
 
     switch (mode_) {
         case Mode::ThreePoints:
@@ -56,7 +79,12 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
         return std::nullopt;
     }
 
-    const glm::dvec2 cursor = screenToWorld(e.x, e.y);
+    glm::dvec2 cursor = screenToWorld(e.x, e.y);
+
+    if (snap_result_.snapped) {
+        cursor.x = snap_result_.point.position.x;
+        cursor.y = snap_result_.point.position.y;
+    }
 
     switch (mode_) {
         case Mode::ThreePoints:

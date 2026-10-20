@@ -45,6 +45,7 @@ private:
     Document& document_;
     Camera2D& camera_;
     OverlayModel& overlay_;
+    snap::SnapSystem snap_;
 
     Cpu2dPicker picker_;
     ConstraintActions constraintActions_;

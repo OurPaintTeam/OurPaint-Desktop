@@ -14,7 +14,7 @@ class ConstraintActions;
 
 class CursorTool : public IInteractionTool {
 public:
-    explicit CursorTool(Document& document, Camera2D& camera, Cpu2dPicker& picker, OverlayModel& overlay, ConstraintActions& constraintActions);
+    explicit CursorTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay, ConstraintActions& constraintActions);
 
     std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
     std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
@@ -38,15 +38,11 @@ private:
     };
 
     State state_ = State::Idle;
-    Document& document_;
     sketch::Sketch& sketch_;
 
-    Camera2D& camera_;
     glm::dvec2 lastPos_{};
     glm::dvec2 pressWorldPos_{};
     glm::ivec2 lastScreenPos_{};
-    Cpu2dPicker& picker_;
-    OverlayModel& overlay_;
     ConstraintActions& constraintActions_;
 
     std::vector<sketch::GeometryRef> marqueeBaseSelection_;
@@ -67,8 +63,6 @@ private:
         sketch::Vec2 center;
     };
     ClipboardFragment data_;
-
-    snap::SnapSystem snap_;
 };
 
 #endif // ! OURPAINT_APPLICATION_CURSOR_TOOL_H_

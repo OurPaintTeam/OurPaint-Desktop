@@ -7,12 +7,27 @@
 #include "../../../core/Scene.h"
 #include "objects/Objects.h"
 
-LineTool::LineTool(Document& document, Camera2D& camera, OverlayModel& overlay)
-    : document_(document), camera_(camera), overlay_(overlay) {}
+LineTool::LineTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
+    :IInteractionTool(document,camera,snap,overlay, picker) {}
 
 std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
+
+    snap::SnapRequest request;
+
+    if (state_ == State::WaitingFirstPoint) {
+         request = snap::SnapRequest{ core::sketch::Vec2{v.x, v.y}, snap::ToolType::Line, snap::DrawState::Idle};
+    }else if (state_ == State::WaitingSecondPoint) {
+        request = snap::SnapRequest {
+            core::sketch::Vec2{v.x, v.y},
+            snap::ToolType::Line,
+            snap::DrawState::FirstPoint,
+            { core::sketch::Point2{ core::sketch::Vec2{firstPoint_.x, firstPoint_.y} } }
+        };
+    }
+
+    snapVisual(request);
 
     if (state_ == State::WaitingSecondPoint) {
         if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
@@ -39,6 +54,12 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
+
+        if (snap_result_.snapped) {
+            v.x = snap_result_.point.position.x;
+            v.y = snap_result_.point.position.y;
+        }
+
         if (state_ == State::WaitingFirstPoint) {
             firstPoint_ = v;
             state_ = State::WaitingSecondPoint;

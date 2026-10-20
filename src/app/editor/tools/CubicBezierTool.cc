@@ -5,8 +5,8 @@
 #include "Camera2D.h"
 #include "objects/Objects.h"
 
-CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera)
-    : firstPoint_X(0), firstPoint_Y(0), document_(document), camera_(camera) {}
+CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
+    : firstPoint_X(0), firstPoint_Y(0), IInteractionTool(document, camera, snap, overlay,picker) {}
 
 std::optional<ActionReport> CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) {
     if (state_ == State::WaitingSecondPoint) {
