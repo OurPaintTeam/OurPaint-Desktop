@@ -100,12 +100,23 @@ SnapRule SnapSystem::ruleFor(ToolType tool, DrawState state) {
             rule.mask = commonPosition;
             break;
 
-        case ToolType::Circle:
-        case ToolType::Arc:
+        case ToolType::Circle: {
             rule.mask = commonPosition;
-            if (state == DrawState::FirstPoint || state == DrawState::SecondPoint) {
+
+            if (state == DrawState::FirstPoint ||
+                state == DrawState::SecondPoint) {
+                rule.mask &= ~M::LineMidpoint;
+                rule.mask |= M::Tangent;
+                }
+        }
+            break;
+
+        case ToolType::Arc: {
+            rule.mask = commonPosition;
+            if (state == DrawState::SecondPoint) {
                 rule.mask |= M::Tangent;
             }
+        }
             break;
 
         case ToolType::Line:

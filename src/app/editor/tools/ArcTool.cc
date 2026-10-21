@@ -5,7 +5,7 @@
 #include "objects/Objects.h"
 
 ArcTool::ArcTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
-    : IInteractionTool(document,camera,snap,overlay,picker){}
+    : IInteractionTool(document, camera, snap, overlay, picker) {}
 
 void ArcTool::setMode(Mode mode) {
     if (mode_ == mode) {
@@ -30,20 +30,16 @@ std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e)
     if (step_ == Step::WaitingFirstInput) {
         request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ToolType::Circle, snap::DrawState::Idle};
     } else if (step_ == Step::WaitingSecondInput) {
-        request = snap::SnapRequest{
-            core::sketch::Vec2{cursor.x, cursor.y},
-            snap::ToolType::Circle,
-            snap::DrawState::FirstPoint,
-            { core::sketch::Point2{ core::sketch::Vec2{points_[0].x, points_[0].y} } }
-        };
+        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y},
+                                    snap::ToolType::Circle,
+                                    snap::DrawState::FirstPoint,
+                                    {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}}};
     } else if (step_ == Step::WaitingThirdInput) {
         request = snap::SnapRequest{
             core::sketch::Vec2{cursor.x, cursor.y},
             snap::ToolType::Point,
             snap::DrawState::FirstPoint,
-            {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}},
-                core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}
-        };
+            {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}, core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}};
     }
 
     snapVisual(request);
@@ -73,7 +69,6 @@ std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e)
     }
     return std::nullopt;
 }
-
 std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
         return std::nullopt;
@@ -86,20 +81,21 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
         cursor.y = snap_result_.point.position.y;
     }
 
-    auto applyArcConstraints = [&](ActionReport& report) -> bool {
-        if (report.entityIds.empty()) return false;
+    auto applyArcConstraints = [&](ActionReport& report, const snap::SnapResult& startSnap, const snap::SnapResult& endSnap) -> bool {
+        if (report.entityIds.empty()) {
+            return false;
+        }
         const auto arcId = report.entityIds[0];
         bool needsSolve = false;
 
         auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement arcSub) {
-            if (!snap.snapped || snap.objects.empty()) return;
+            if (!snap.snapped || snap.objects.empty()) {
+                return;
+            }
 
             core::sketch::ConstraintDefinition def;
             def.type = core::sketch::ConstraintType::Coincident;
-            def.refs = {
-                { arcId, arcSub },
-                snap.objects[0]
-            };
+            def.refs = {{arcId, arcSub}, snap.objects[0]};
 
             if (document_.sketch().supportsConstraint(def)) {
                 auto c = document_.sketch().addConstraint(def);
@@ -113,9 +109,9 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
             }
         };
 
-        tryAddConstraint(firstSnap_, core::sketch::SubElement::Start);
+        tryAddConstraint(startSnap, core::sketch::SubElement::Start);
         tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
-        tryAddConstraint(thirdSnap_, core::sketch::SubElement::End);
+        tryAddConstraint(endSnap, core::sketch::SubElement::End);
 
         return needsSolve;
     };
@@ -127,17 +123,15 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
                 points_.push_back(cursor);
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
-            }
-            else if (step_ == Step::WaitingSecondInput) {
+            } else if (step_ == Step::WaitingSecondInput) {
                 secondSnap_ = snap_result_;
                 points_.push_back(cursor);
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
-                overlay_.arcs_.push_back(OverlayModel::Arc()); // just init
+                overlay_.arcs_.push_back(OverlayModel::Arc());  // just init
                 step_ = Step::WaitingThirdInput;
-            }
-            else if (step_ == Step::WaitingThirdInput) {
+            } else if (step_ == Step::WaitingThirdInput) {
                 thirdSnap_ = snap_result_;
                 points_.push_back(cursor);
 
@@ -145,20 +139,19 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
 
                 sketch::Vec2 center = {a.cx, a.cy};
 
-                sketch::Vec2 start = {
-                    a.cx + a.r * std::cos(a.startAngle),
-                    a.cy + a.r * std::sin(a.startAngle)
-                };
+                sketch::Vec2 start = {a.cx + a.r * std::cos(a.startAngle), a.cy + a.r * std::sin(a.startAngle)};
 
-                sketch::Vec2 end = {
-                    a.cx + a.r * std::cos(a.endAngle),
-                    a.cy + a.r * std::sin(a.endAngle)
-                };
+                sketch::Vec2 end = {a.cx + a.r * std::cos(a.endAngle), a.cy + a.r * std::sin(a.endAngle)};
 
-                auto report = ActionReport::creation(ActionKind::CreateArc,
-                                            document_.sketch().addArc(center, start, end));
+                auto report = ActionReport::creation(ActionKind::CreateArc, document_.sketch().addArc(center, start, end));
 
-                bool needsSolve = applyArcConstraints(report);
+                double dist0ToStart = glm::distance(points_[0], glm::dvec2(start.x, start.y));
+                double dist0ToEnd = glm::distance(points_[0], glm::dvec2(end.x, end.y));
+
+                bool isSwapped = dist0ToStart > dist0ToEnd;
+
+                bool needsSolve = applyArcConstraints(report, isSwapped ? thirdSnap_ : firstSnap_, isSwapped ? firstSnap_ : thirdSnap_);
+
                 if (needsSolve) {
                     report.recordSolve(document_.sketch().solve());
                 }
@@ -185,9 +178,7 @@ ToolCancellation ArcTool::cancel() {
     return {true, std::nullopt};
 }
 
-glm::dvec2 ArcTool::screenToWorld(double x, double y) const {
-    return camera_.screenLogicalToWorld({x, y});
-}
+glm::dvec2 ArcTool::screenToWorld(double x, double y) const { return camera_.screenLogicalToWorld({x, y}); }
 
 ArcTool::Arc ArcTool::buildArcFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2) {
     const double x0 = p0.x;
@@ -203,10 +194,7 @@ ArcTool::Arc ArcTool::buildArcFromThreePoints(const glm::dvec2& p0, const glm::d
         | x2 y2 1 |
     */
 
-    const double det =
-        x0 * (y1 - y2) +
-        x1 * (y2 - y0) +
-        x2 * (y0 - y1);
+    const double det = x0 * (y1 - y2) + x1 * (y2 - y0) + x2 * (y0 - y1);
 
     // Points are (almost) collinear -> circle is undefined
     const double eps = 1e-10;
@@ -234,15 +222,9 @@ ArcTool::Arc ArcTool::buildArcFromThreePoints(const glm::dvec2& p0, const glm::d
     from the circle equation.
     */
 
-    const double cx =
-        (s0 * (y1 - y2) +
-         s1 * (y2 - y0) +
-         s2 * (y0 - y1)) / (2.0 * det);
+    const double cx = (s0 * (y1 - y2) + s1 * (y2 - y0) + s2 * (y0 - y1)) / (2.0 * det);
 
-    const double cy =
-        (s0 * (x2 - x1) +
-         s1 * (x0 - x2) +
-         s2 * (x1 - x0)) / (2.0 * det);
+    const double cy = (s0 * (x2 - x1) + s1 * (x0 - x2) + s2 * (x1 - x0)) / (2.0 * det);
 
     // Radius
     const double r = std::hypot(x0 - cx, y0 - cy);
@@ -258,12 +240,10 @@ ArcTool::Arc ArcTool::buildArcFromThreePoints(const glm::dvec2& p0, const glm::d
     };
 
     // Convert point to polar angle relative to circle center
-    auto angleOf = [&](double x, double y) -> double {
-        return normalizeAngle(std::atan2(y - cy, x - cx));
-    };
+    auto angleOf = [&](double x, double y) -> double { return normalizeAngle(std::atan2(y - cy, x - cx)); };
 
     const double a0 = angleOf(x0, y0);
-    const double a1m = angleOf(x1, y1); // middle point
+    const double a1m = angleOf(x1, y1);  // middle point
     const double a2 = angleOf(x2, y2);
 
     double startAngle;
@@ -279,7 +259,7 @@ ArcTool::Arc ArcTool::buildArcFromThreePoints(const glm::dvec2& p0, const glm::d
     auto angleOnCCWArc = [&](double angle, double start, double end) -> bool {
         angle = normalizeAngle(angle);
         start = normalizeAngle(start);
-        end   = normalizeAngle(end);
+        end = normalizeAngle(end);
 
         if (start <= end) {
             return angle >= start && angle <= end;
@@ -297,13 +277,11 @@ ArcTool::Arc ArcTool::buildArcFromThreePoints(const glm::dvec2& p0, const glm::d
     */
     if (angleOnCCWArc(a1m, a0, a2)) {
         startAngle = a0;
-        endAngle   = a2;
+        endAngle = a2;
     } else {
         startAngle = a2;
-        endAngle   = a0;
+        endAngle = a0;
     }
 
     return {cx, cy, r, startAngle, endAngle, true};
 }
-
-

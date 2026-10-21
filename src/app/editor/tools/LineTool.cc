@@ -90,35 +90,68 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
                 const auto lineId = addResult.value();
                 bool needsSolve = false;
 
-                auto applyPointConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement sub) {
-                    if (!snap.snapped) return;
+                auto applyConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement sub) {
+                    if (!snap.snapped || snap.objects.empty()) return;
 
                     core::sketch::ConstraintDefinition def;
-                    bool shouldAdd = false;
+                    bool validType = false;
 
-                    switch (snap.type) {
-                        case snap::SnapKind::StandalonePoint:
-                        case snap::SnapKind::LineEndpoint:
-                        case snap::SnapKind::CircleCentre:
-                        case snap::SnapKind::ArcEndpoint:
-                        case snap::SnapKind::ArcCentre:
-                        case snap::SnapKind::LineBody:
-                        case snap::SnapKind::CircleBody:
-                        case snap::SnapKind::ArcBody:
-                            def.type = core::sketch::ConstraintType::Coincident;
-                            def.refs = { { lineId, sub }, snap.objects[0] };
-                            shouldAdd = true;
-                            break;
-                        case snap::SnapKind::LineMidpoint:
-                            def.type = core::sketch::ConstraintType::Midpoint;
-                            def.refs = { { lineId, sub }, snap.objects[0] };
-                            shouldAdd = true;
-                            break;
-                        default:
-                            break;
+                    if (sub == core::sketch::SubElement::Start || sub == core::sketch::SubElement::End) {
+                        switch (snap.type) {
+                            case snap::SnapKind::StandalonePoint:
+                            case snap::SnapKind::LineEndpoint:
+                            case snap::SnapKind::CircleCentre:
+                            case snap::SnapKind::ArcEndpoint:
+                            case snap::SnapKind::ArcCentre:
+                            case snap::SnapKind::LineBody:
+                            case snap::SnapKind::CircleBody:
+                            case snap::SnapKind::ArcBody:
+                                def.type = core::sketch::ConstraintType::Coincident;
+                                def.refs = { { lineId, sub }, snap.objects[0] };
+                                validType = true;
+                                break;
+                            case snap::SnapKind::LineMidpoint:
+                                def.type = core::sketch::ConstraintType::Midpoint;
+                                def.refs = { { lineId, sub }, snap.objects[0] };
+                                validType = true;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    else if (sub == core::sketch::SubElement::Whole) {
+                        switch (snap.type) {
+                            case snap::SnapKind::Tangent:
+                                def.type = core::sketch::ConstraintType::Tangent;
+                                def.refs = { { lineId, sub }, snap.objects[0] };
+                                validType = true;
+                                break;
+                            case snap::SnapKind::Horizontal:
+                                def.type = core::sketch::ConstraintType::Horizontal;
+                                def.refs = { { lineId, sub } };
+                                validType = true;
+                                break;
+                            case snap::SnapKind::Vertical:
+                                def.type = core::sketch::ConstraintType::Vertical;
+                                def.refs = { { lineId, sub } };
+                                validType = true;
+                                break;
+                            case snap::SnapKind::Parallel:
+                                def.type = core::sketch::ConstraintType::Parallel;
+                                def.refs = { { lineId, sub }, snap.objects[0] };
+                                validType = true;
+                                break;
+                            case snap::SnapKind::Perpendicular:
+                                def.type = core::sketch::ConstraintType::Perpendicular;
+                                def.refs = { { lineId, sub }, snap.objects[0] };
+                                validType = true;
+                                break;
+                            default:
+                                break;
+                        }
                     }
 
-                    if (shouldAdd && document_.sketch().supportsConstraint(def)) {
+                    if (validType && document_.sketch().supportsConstraint(def)) {
                         auto c = document_.sketch().addConstraint(def);
                         if (c) {
                             report.constraintIds.push_back(c.value());
@@ -130,50 +163,11 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
                     }
                 };
 
-                applyPointConstraint(firstSnap_, core::sketch::SubElement::Start);
+                applyConstraint(firstSnap_, core::sketch::SubElement::Start);
+                applyConstraint(snap_result_, core::sketch::SubElement::End);
 
-                applyPointConstraint(snap_result_, core::sketch::SubElement::End);
-
-                if (snap_result_.snapped) {
-                    core::sketch::ConstraintDefinition dirDef;
-                    bool shouldAddDir = false;
-
-                    switch (snap_result_.type) {
-                        case snap::SnapKind::Horizontal:
-                            dirDef.type = core::sketch::ConstraintType::Horizontal;
-                            dirDef.refs = { { lineId, core::sketch::SubElement::Whole } };
-                            shouldAddDir = true;
-                            break;
-                        case snap::SnapKind::Vertical:
-                            dirDef.type = core::sketch::ConstraintType::Vertical;
-                            dirDef.refs = { { lineId, core::sketch::SubElement::Whole } };
-                            shouldAddDir = true;
-                            break;
-                        case snap::SnapKind::Parallel:
-                            dirDef.type = core::sketch::ConstraintType::Parallel;
-                            dirDef.refs = { { lineId, core::sketch::SubElement::Whole }, snap_result_.objects[0] };
-                            shouldAddDir = true;
-                            break;
-                        case snap::SnapKind::Perpendicular:
-                            dirDef.type = core::sketch::ConstraintType::Perpendicular;
-                            dirDef.refs = { { lineId, core::sketch::SubElement::Whole }, snap_result_.objects[0] };
-                            shouldAddDir = true;
-                            break;
-                        default:
-                            break;
-                    }
-
-                    if (shouldAddDir && document_.sketch().supportsConstraint(dirDef)) {
-                        auto c = document_.sketch().addConstraint(dirDef);
-                        if (c) {
-                            report.constraintIds.push_back(c.value());
-                            report.requestedConstraints++;
-                            needsSolve = true;
-                        } else {
-                            report.operationError = c.error();
-                        }
-                    }
-                }
+                applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
+                applyConstraint(snap_result_, core::sketch::SubElement::Whole);
 
                 if (needsSolve) {
                     auto solved = document_.sketch().solve();
@@ -201,6 +195,7 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
     }
     return std::nullopt;
 }
+
 
 std::optional<ActionReport> LineTool::onKey(const input::KeyEvent& e) {
     if (input::has_flag(e.modifiers, input::Modifiers::Shift) &&

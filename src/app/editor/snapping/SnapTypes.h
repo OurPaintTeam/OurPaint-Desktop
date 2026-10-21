@@ -142,6 +142,12 @@ constexpr SnapMask& operator&=(SnapMask& a, SnapMask b) noexcept {
     return a;
 }
 
+constexpr SnapMask operator~(SnapMask a) noexcept {
+    return static_cast<SnapMask>(
+        ~static_cast<std::uint32_t>(a)
+    );
+}
+
 // Checks whether a specific snap flag is enabled.
 constexpr bool hasSnap(SnapMask mask, SnapMask flag) noexcept { return (mask & flag) != SnapMask::None; }
 

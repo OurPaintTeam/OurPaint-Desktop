@@ -21,6 +21,18 @@ std::optional<ActionReport> CircleTool::onMouseMove(const input::MouseMoveEvent&
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
     snap::SnapRequest request;
+    std::vector<core::sketch::GeometryRef> forbidden;
+
+    if (step_ != Step::WaitingFirstInput) {
+        if (firstSnap_.snapped && !firstSnap_.objects.empty()) {
+            forbidden.push_back(firstSnap_.objects[0]);
+        }
+    }
+    if (step_ == Step::WaitingThirdInput) {
+        if (secondSnap_.snapped && !secondSnap_.objects.empty()) {
+            forbidden.push_back(secondSnap_.objects[0]);
+        }
+    }
 
     if (step_ == Step::WaitingFirstInput) {
         request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ToolType::Circle, snap::DrawState::Idle};
@@ -29,15 +41,19 @@ std::optional<ActionReport> CircleTool::onMouseMove(const input::MouseMoveEvent&
             core::sketch::Vec2{cursor.x, cursor.y},
             snap::ToolType::Circle,
             snap::DrawState::FirstPoint,
-            { core::sketch::Point2{ core::sketch::Vec2{points_[0].x, points_[0].y} } }
+            { core::sketch::Point2{ core::sketch::Vec2{points_[0].x, points_[0].y} } },
+            forbidden
         };
     } else if (step_ == Step::WaitingThirdInput) {
         request = snap::SnapRequest{
             core::sketch::Vec2{cursor.x, cursor.y},
             snap::ToolType::Point,
             snap::DrawState::FirstPoint,
-            {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}},
-                core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}
+            {
+                core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}},
+                core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}
+            },
+            forbidden
         };
     }
 
@@ -130,6 +146,8 @@ bool intersectLines(glm::dvec2 p1, glm::dvec2 d1, glm::dvec2 p2, glm::dvec2 d2, 
     out = p1 + t * d1;
     return true;
 }
+
+
 std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
         return std::nullopt;
@@ -147,98 +165,73 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
         const auto circleId = report.entityIds[0];
         bool needsSolve = false;
 
-        auto tryAddCenterConstraint = [&](const snap::SnapResult& snap) {
-            if (!snap.snapped || snap.objects.empty()) return;
-
-            switch (snap.type) {
-                case snap::SnapKind::StandalonePoint:
-                case snap::SnapKind::LineEndpoint:
-                case snap::SnapKind::CircleCentre:
-                case snap::SnapKind::ArcEndpoint:
-                case snap::SnapKind::ArcCentre:
-                case snap::SnapKind::LineBody:
-                case snap::SnapKind::CircleBody:
-                case snap::SnapKind::ArcBody:
-                    break;
-                default:
-                    return;
-            }
-
-            core::sketch::ConstraintDefinition def;
-            def.type = core::sketch::ConstraintType::Coincident;
-            def.refs = {
-                { circleId, core::sketch::SubElement::Center },
-                snap.objects[0]
-            };
-
-            if (document_.sketch().supportsConstraint(def)) {
-                auto c = document_.sketch().addConstraint(def);
-                if (c) {
-                    report.constraintIds.push_back(c.value());
-                    report.requestedConstraints++;
-                    needsSolve = true;
-                } else {
-                    report.operationError = c.error();
-                }
-            }
-        };
-
-        auto tryAddBoundaryConstraint = [&](const snap::SnapResult& snap) {
+        auto applyConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement circleSub) {
             if (!snap.snapped || snap.objects.empty()) return;
 
             core::sketch::ConstraintDefinition def;
             bool validType = false;
 
-            switch (snap.type) {
-                case snap::SnapKind::StandalonePoint:
-                case snap::SnapKind::LineEndpoint:
-                case snap::SnapKind::CircleCentre:
-                case snap::SnapKind::ArcEndpoint:
-                case snap::SnapKind::ArcCentre:
+            bool isBody = (snap.type == snap::SnapKind::LineBody ||
+                           snap.type == snap::SnapKind::CircleBody ||
+                           snap.type == snap::SnapKind::ArcBody ||
+                           snap.type == snap::SnapKind::Tangent);
+
+            bool isPoint = (snap.type == snap::SnapKind::StandalonePoint ||
+                            snap.type == snap::SnapKind::LineEndpoint ||
+                            snap.type == snap::SnapKind::LineMidpoint ||
+                            snap.type == snap::SnapKind::CircleCentre ||
+                            snap.type == snap::SnapKind::ArcEndpoint ||
+                            snap.type == snap::SnapKind::ArcCentre);
+
+            if (circleSub == core::sketch::SubElement::Center) {
+                if (snap.type == snap::SnapKind::LineMidpoint) {
+                    def.type = core::sketch::ConstraintType::Midpoint;
+                    validType = true;
+                } else if (isBody || isPoint) {
                     def.type = core::sketch::ConstraintType::Coincident;
-                    def.refs = { { circleId, core::sketch::SubElement::Whole }, snap.objects[0] };
                     validType = true;
-                    break;
-
-                case snap::SnapKind::LineBody:
-                case snap::SnapKind::CircleBody:
-                case snap::SnapKind::ArcBody:
+                }
+            } else if (circleSub == core::sketch::SubElement::Whole) {
+                if (isBody) {
                     def.type = core::sketch::ConstraintType::Tangent;
-                    def.refs = { { circleId, core::sketch::SubElement::Whole }, snap.objects[0] };
                     validType = true;
-                    break;
-
-                default:
-                    break;
+                } else if (isPoint) {
+                    def.type = core::sketch::ConstraintType::Coincident;
+                    validType = true;
+                }
             }
 
-            if (validType && document_.sketch().supportsConstraint(def)) {
-                auto c = document_.sketch().addConstraint(def);
-                if (c) {
-                    report.constraintIds.push_back(c.value());
-                    report.requestedConstraints++;
-                    needsSolve = true;
-                } else {
-                    report.operationError = c.error();
+            if (validType) {
+                def.refs = { { circleId, circleSub }, snap.objects[0] };
+
+                if (document_.sketch().supportsConstraint(def)) {
+                    auto c = document_.sketch().addConstraint(def);
+                    if (c) {
+                        report.constraintIds.push_back(c.value());
+                        report.requestedConstraints++;
+                        needsSolve = true;
+                    } else {
+                        report.operationError = c.error();
+                    }
                 }
             }
         };
 
         if (mode_ == Mode::CenterRadius) {
-            tryAddCenterConstraint(firstSnap_);
-            tryAddBoundaryConstraint(secondSnap_);
+            applyConstraint(firstSnap_, core::sketch::SubElement::Center);
+            applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
         }
         else if (mode_ == Mode::CenterDiameter) {
-            tryAddCenterConstraint(firstSnap_);
+            applyConstraint(firstSnap_, core::sketch::SubElement::Center);
         }
         else if (mode_ == Mode::DiameterTwoPoints) {
-            tryAddBoundaryConstraint(firstSnap_);
-            tryAddBoundaryConstraint(secondSnap_);
+            applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
+            applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
         }
         else if (mode_ == Mode::ThreePoints) {
-            tryAddBoundaryConstraint(firstSnap_);
-            tryAddBoundaryConstraint(secondSnap_);
-            tryAddBoundaryConstraint(thirdSnap_);
+            applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
+            applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
+            applyConstraint(thirdSnap_, core::sketch::SubElement::Whole);
         }
 
         return needsSolve;
@@ -278,7 +271,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
             } else if (step_ == Step::WaitingSecondInput) {
-                secondSnap_ = snap_result_; 
+                secondSnap_ = snap_result_;
                 double cx = points_[0].x;
                 double cy = points_[0].y;
                 double diameter = glm::distance(cursor, points_[0]);
