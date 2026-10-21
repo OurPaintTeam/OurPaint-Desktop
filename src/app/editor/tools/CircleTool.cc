@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../../../core/Document.h"
+#include "Document.h"
 
 CircleTool::CircleTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
     : IInteractionTool(document, camera, snap, overlay, picker) {}

@@ -5,8 +5,8 @@
 #include <optional>
 #include <vector>
 
-#include "../../../core/Document.h"
-#include "../../viewport/OverlayModel.h"
+#include "Document.h"
+#include "../viewport/OverlayModel.h"
 #include "../../viewport/picking/Cpu2dPicker.h"
 #include "Camera2D.h"
 #include "IInteractionTool.h"

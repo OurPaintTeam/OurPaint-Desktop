@@ -138,9 +138,7 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
                 Arc a = buildArcFromThreePoints(points_[0], points_[1], points_[2]);
 
                 sketch::Vec2 center = {a.cx, a.cy};
-
                 sketch::Vec2 start = {a.cx + a.r * std::cos(a.startAngle), a.cy + a.r * std::sin(a.startAngle)};
-
                 sketch::Vec2 end = {a.cx + a.r * std::cos(a.endAngle), a.cy + a.r * std::sin(a.endAngle)};
 
                 auto report = ActionReport::creation(ActionKind::CreateArc, document_.sketch().addArc(center, start, end));
