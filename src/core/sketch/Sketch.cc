@@ -791,12 +791,10 @@ private:
                     break;
                 }
                 case ConstraintType::HorizontalDistance:
-                    // TODO
-                    // add(du::RequirementDescriptor::pointPointHorizontalDist(pointAt(0), pointAt(1), *definition.value));
+                    add(du::RequirementDescriptor::pointPointHorizontalDist(pointAt(0), pointAt(1), *definition.value));
                     break;
                 case ConstraintType::VerticalDistance:
-                    // TODO
-                    // add(du::RequirementDescriptor::pointPointVerticalDist(pointAt(0), pointAt(1), *definition.value));
+                    add(du::RequirementDescriptor::pointPointVerticalDist(pointAt(0), pointAt(1), *definition.value));
                     break;
                 case ConstraintType::Length: {
                     const auto descriptor = figure(whole(0));
