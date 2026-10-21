@@ -840,9 +840,26 @@ private:
                     add(du::RequirementDescriptor::pointOnPoint(first, second));
                     break;
                 }
-                case ConstraintType::Midpoint:
-                    add(du::RequirementDescriptor::pointAtMidpoint(pointAt(0), whole(1)));
+                case ConstraintType::Midpoint: {
+                    auto kind1 = entities_.at(definition.refs[0].entity).kind;
+                    auto id1 = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt1 = definition.refs[0].sub;
+
+                    auto kind2 = entities_.at(definition.refs[1].entity).kind;
+                    auto id2 = entities_.at(definition.refs[1].entity).handle;
+                    auto type_subEt2 = definition.refs[1].sub;
+
+                    if (kind1 == EntityKind::Line && type_subEt1 == SubElement::Whole) {
+                        add(du::RequirementDescriptor::lineLineMidpoint(whole(0), whole(1)));
+                    } else if (kind1 == EntityKind::Arc && type_subEt1 == SubElement::Whole) {
+                        add(du::RequirementDescriptor::pointAtArcMidpoint(id2, id1));
+                    } else if (kind2 == EntityKind::Arc && type_subEt2 == SubElement::Whole) {
+                        add(du::RequirementDescriptor::pointAtArcMidpoint(id1, id2));
+                    } else {
+                        add(du::RequirementDescriptor::pointAtMidpoint(pointAt(0), whole(1)));
+                    }
                     break;
+                }
                 default:
                     throw std::logic_error("Unsupported constraint passed DCM preflight");
             }
@@ -1290,7 +1307,9 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         return invalid("Fixed position must be finite");
     }
 
-    std::array<bool, 3> points{}, lines{}, circles{};
+    std::array<bool, 3> points{};
+    std::array<bool, 3> lines{};
+    std::array<bool, 3> circles{};
     std::array<SketchGeometry, 3> geometries;
     for (size_t i = 0; i < count; ++i) {
         const auto& ref = definition.refs[i];
@@ -1348,7 +1367,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             valid = circles[0] && circles[1];
             break;
         case ConstraintType::Midpoint:
-            valid = points[0] && lines[1];
+            valid = (points[0] && lines[1]) || (lines[0] && lines[1]) || (points[0] && circles[1]);
             break;
         case ConstraintType::Fix:
             valid = points[0] || lines[0] || circles[0];

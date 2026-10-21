@@ -183,9 +183,7 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
             compatible = kinds[0] == RefKind::Circular && (refs.size() == 1 || kinds[1] == RefKind::Circular);
             break;
         case ConstraintType::Midpoint:
-            compatible =
-                (kinds[0] == RefKind::Point || kinds[0] == RefKind::Line) &&
-                (refs.size() == 1 || (kinds[0] == RefKind::Point && kinds[1] == RefKind::Line) || (kinds[0] == RefKind::Line && kinds[1] == RefKind::Point));
+            compatible = true;
             break;
         case ConstraintType::Fix: {
             compatible = true;
