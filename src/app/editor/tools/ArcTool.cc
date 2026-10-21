@@ -69,6 +69,7 @@ std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e)
     }
     return std::nullopt;
 }
+
 std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
         return std::nullopt;
@@ -94,7 +95,29 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
             }
 
             core::sketch::ConstraintDefinition def;
-            def.type = core::sketch::ConstraintType::Coincident;
+
+            switch (snap.type) {
+                case snap::SnapKind::LineMidpoint:
+                    def.type = core::sketch::ConstraintType::Midpoint;
+                    break;
+
+                case snap::SnapKind::StandalonePoint:
+                case snap::SnapKind::LineEndpoint:
+                case snap::SnapKind::CircleCentre:
+                case snap::SnapKind::ArcEndpoint:
+                case snap::SnapKind::ArcCentre:
+                case snap::SnapKind::LineBody:
+                case snap::SnapKind::CircleBody:
+                case snap::SnapKind::ArcBody:
+
+                    def.type = core::sketch::ConstraintType::Coincident;
+                    break;
+                case snap::SnapKind::Tangent:
+                    break;
+                default:
+                    return;
+            }
+
             def.refs = {{arcId, arcSub}, snap.objects[0]};
 
             if (document_.sketch().supportsConstraint(def)) {
