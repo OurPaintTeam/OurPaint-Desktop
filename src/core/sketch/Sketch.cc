@@ -829,7 +829,7 @@ private:
                     } else if (descriptor.type == du::FigureType::ET_CIRCLE) {
                         add(du::RequirementDescriptor::fixCircle(whole(0)));
                     } else if (descriptor.type == du::FigureType::ET_ARC) {
-                        // add(du::RequirementDescriptor::fixArc(whole(0)));
+                        add(du::RequirementDescriptor::fixArc(whole(0)));
                     }
                     break;
                 }
