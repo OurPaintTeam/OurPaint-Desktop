@@ -100,7 +100,6 @@ class SnapSystem {
 private:
     const core::sketch::Sketch& sketch_;
     const Camera2D& camera_;
-    double zoom_ = 1.0;
 
 public:
     explicit SnapSystem(const core::sketch::Sketch& sketch,const Camera2D& camera);
@@ -118,6 +117,8 @@ private:
     std::optional<SnapCandidate> findBestCircleCandidate(const SnapRequest& request, const SnapRule& rule) const;
 
     std::optional<SnapCandidate> findBestIntersection(const SnapRequest& request, const SnapRule& rule) const;
+
+    std::optional<SnapCandidate> findBestTangentCandidate(const SnapRequest& request, const SnapRule& rule) const;
 
     std::optional<SnapCandidate> findBestDirectionalCandidate(const SnapRequest& request, const SnapRule& rule) const;
 

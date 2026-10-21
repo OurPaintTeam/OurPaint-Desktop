@@ -94,7 +94,14 @@ protected:
             case snap::SnapKind::Horizontal:
             case snap::SnapKind::Vertical:
                 feedback.glyph = app::SnapGlyph::Direction;
-                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
+                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+                break;
+
+            case snap::SnapKind::Tangent:
+                feedback.glyph = app::SnapGlyph::Point;
+                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                if (!snap_result.guideLines.empty())
+                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
                 break;
 
             default:

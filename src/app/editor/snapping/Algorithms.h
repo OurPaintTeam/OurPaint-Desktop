@@ -22,5 +22,6 @@
 #include "snapping/algorithms/SnapQuery.h"
 #include "snapping/algorithms/SnapIntersectionQuery.h"
 #include "snapping/algorithms/SnapDirectionQuery.h"
+#include "snapping/algorithms/SnapTangencyQuery.h"
 
 #endif // OURPAINT_ALGORITHMS_H

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Algorithms.h"
+#include "snapping/algorithms/SnapTangencyQuery.h"
 #include "Camera2D.h"
 #include "sketch/Sketch.h"
 #include "sketch/SketchTypes.h"
@@ -74,9 +75,7 @@ bool SnapSystem::isBetterCandidate(const SnapCandidate& candidate, const SnapCan
     return candidateDistance < currentDistance;
 }
 
-SnapSystem::SnapSystem(const core::sketch::Sketch& sketch,const Camera2D& camera) : sketch_(sketch), camera_(camera) {
-    zoom_ = camera_.zoom();
-}
+SnapSystem::SnapSystem(const core::sketch::Sketch& sketch, const Camera2D& camera) : sketch_(sketch), camera_(camera) {}
 
 SnapResult SnapSystem::getSnapCandidate(const SnapRequest& request) const { return parser(request); }
 
@@ -98,18 +97,23 @@ SnapRule SnapSystem::ruleFor(ToolType tool, DrawState state) {
             break;
 
         case ToolType::Point:
+            rule.mask = commonPosition;
+            break;
+
         case ToolType::Circle:
         case ToolType::Arc:
             rule.mask = commonPosition;
+            if (state == DrawState::FirstPoint || state == DrawState::SecondPoint) {
+                rule.mask |= M::Tangent;
+            }
             break;
 
         case ToolType::Line:
             rule.mask = commonPosition;
 
-            // FirstPoint means the first point has already been placed.
-            // Directional constraints are useful while positioning the second point.
+            // Tangency is a fallback while placing the second endpoint of a line.
             if (state == DrawState::FirstPoint) {
-                rule.mask |= Direction;
+                rule.mask |= Direction | M::Tangent;
             }
 
             break;
@@ -137,7 +141,8 @@ SnapResult SnapSystem::parser(const SnapRequest& request) const {
     // SnapRequest defaults to 1.0; use the same safe fallback if a caller passes
     // zero, a negative value, NaN, or infinity. The view integration should still
     // pass its actual world-to-screen scale for exact pixel tolerance.
-    const double zoom = (std::isfinite(zoom_) && zoom_ > 1e-9) ? zoom_ : 1.0;
+    const double currentZoom = camera_.zoom();
+    const double zoom = (std::isfinite(currentZoom) && currentZoom > 1e-9) ? currentZoom : 1.0;
     rule.maxRadius /= zoom;
     rule.priorityRadius /= zoom;
 
@@ -168,6 +173,12 @@ SnapResult SnapSystem::parser(const SnapRequest& request) const {
 
     if (hasSnap(rule.mask, SnapMask::StandalonePoint)) {
         consider(findBestStandalonePoint(request, rule));
+    }
+
+    // Tangency is queried before body snaps so a genuine body contact can be
+    // classified as Tangent; endpoint and center coincidence still wins by priority.
+    if (hasSnap(rule.mask, SnapMask::Tangent)) {
+        consider(findBestTangentCandidate(request, rule));
     }
 
     if (hasSnap(rule.mask, SnapMask::LineEndpoint) || hasSnap(rule.mask, SnapMask::LineMidpoint) || hasSnap(rule.mask, SnapMask::LineBody)) {
@@ -214,7 +225,7 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
     if (!entitiesResult) {
         return std::nullopt;
     }
-    const auto candidates = geometry::findDirectionSnaps(base, request.cursor, entitiesResult.value());
+    const auto candidates = geometry::findDirectionSnaps(base, request.cursor, entitiesResult.value(), 25.0);
     std::optional<SnapCandidate> best;
     for (const auto& direction : candidates) {
         SnapKind kind = SnapKind::None;
@@ -417,6 +428,52 @@ std::optional<SnapCandidate> SnapSystem::findBestIntersection(const SnapRequest&
         }
     }
     return best;
+}
+
+std::optional<SnapCandidate> SnapSystem::findBestTangentCandidate(const SnapRequest& request, const SnapRule& rule) const {
+    if (request.anchors.empty() || !isFinite(request.cursor)) {
+        return std::nullopt;
+    }
+    if (request.tool != ToolType::Line && request.tool != ToolType::Circle && request.tool != ToolType::Arc) {
+        return std::nullopt;
+    }
+    if (request.drawState != DrawState::FirstPoint && request.drawState != DrawState::SecondPoint) {
+        return std::nullopt;
+    }
+
+    const Vec2 anchor = request.anchors.back().position;
+    if (!isFinite(anchor)) {
+        return std::nullopt;
+    }
+    auto entitiesResult = sketch_.entities();
+    if (!entitiesResult) {
+        return std::nullopt;
+    }
+
+    std::optional<algorithms::TangencyCandidate> candidate;
+    if (request.tool == ToolType::Line && request.drawState == DrawState::FirstPoint) {
+        candidate = algorithms::findLinePlacementTangency(
+            anchor, request.cursor, entitiesResult.value(), request.forbiddenObjects, rule.maxRadius);
+    } else if ((request.tool == ToolType::Circle || request.tool == ToolType::Arc) &&
+               request.drawState == DrawState::FirstPoint) {
+        candidate = algorithms::findCurvePlacementTangency(
+            anchor, request.cursor, entitiesResult.value(), request.forbiddenObjects, rule.maxRadius);
+    }
+    if (!candidate) {
+        return std::nullopt;
+    }
+
+    const double candidateDistance = std::sqrt(std::max(0.0, candidate->distanceSquared));
+    if (!isAllowed(SnapKind::Tangent, candidateDistance, rule)) {
+        return std::nullopt;
+    }
+
+    std::vector<Line2> guides;
+    if (request.tool == ToolType::Line) {
+        guides.push_back(Line2{anchor, candidate->point});
+    }
+    return makeCandidate(candidate->point, SnapKind::Tangent, candidateDistance,
+        snapPriority(SnapKind::Tangent, request.tool, request.drawState), {candidate->object}, std::move(guides));
 }
 
 std::optional<SnapCandidate> SnapSystem::findBestArcCandidate(const SnapRequest& request, const SnapRule& rule) const {

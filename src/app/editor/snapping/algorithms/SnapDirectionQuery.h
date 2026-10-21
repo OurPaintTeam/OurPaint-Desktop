@@ -44,10 +44,10 @@ inline double angle(const Vec2& v) { return std::atan2(v.y, v.x); }
 }  // namespace detail_direction_snap
 
 // Finds direction suggestions from the line start toward the current cursor.
-// Directions are accepted within toleranceDegrees (default +/-15 degrees).
+// Directions are accepted within toleranceDegrees (default +/-25 degrees).
 // Line references are taken from existing Line2 entities; axes are always considered.
 inline std::vector<DirectionSnapCandidate> findDirectionSnaps(const Vec2& start, const Vec2& cursor, std::span<const SketchEntity> entities,
-                                                              double toleranceDegrees = 15.0) {
+                                                              double toleranceDegrees = 25.0) {
     using namespace detail_direction_snap;
     std::vector<DirectionSnapCandidate> result;
     if (!detail::isFinite(start) || !detail::isFinite(cursor) || !std::isfinite(toleranceDegrees) || toleranceDegrees < 0.0 || toleranceDegrees > 90.0) {
@@ -103,7 +103,7 @@ inline std::vector<DirectionSnapCandidate> findDirectionSnaps(const Vec2& start,
 }
 
 inline std::optional<DirectionSnapCandidate> findBestDirectionSnap(const Vec2& start, const Vec2& cursor, std::span<const SketchEntity> entities,
-                                                                   double toleranceDegrees = 15.0) {
+                                                                   double toleranceDegrees = 25.0) {
     auto candidates = findDirectionSnaps(start, cursor, entities, toleranceDegrees);
     if (candidates.empty()) {
         return std::nullopt;
