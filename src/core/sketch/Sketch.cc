@@ -708,8 +708,7 @@ private:
                             } else if (kind2 == EntityKind::Circle) {
                                 add(du::RequirementDescriptor::pointOnCircle(pointAt(0), id2));
                             } else if (kind2 == EntityKind::Arc) {
-                                // TODO
-                                //add(du::RequirementDescriptor::pointOnArc(p_id1, id2));
+                                add(du::RequirementDescriptor::pointOnArc(pointAt(0), id2));
                             }
                         }
                     } else {
@@ -719,8 +718,7 @@ private:
                             } else if (kind1 == EntityKind::Circle) {
                                 add(du::RequirementDescriptor::pointOnCircle(pointAt(1), id1));
                             } else if (kind1 == EntityKind::Arc) {
-                                // TODO
-                                //add(du::RequirementDescriptor::pointOnArc(pointAt(1), id1));
+                                add(du::RequirementDescriptor::pointOnArc(pointAt(1), id1));
                             }
                         } else {
                             if (kind1 == EntityKind::Point) {
@@ -731,8 +729,7 @@ private:
                                 } else if (kind2 == EntityKind::Circle) {
                                     add(du::RequirementDescriptor::pointOnCircle(id1, id2));
                                 } else if (kind2 == EntityKind::Arc) {
-                                    // TODO
-                                    //add(du::RequirementDescriptor::pointOnArc(id1, id2));
+                                    add(du::RequirementDescriptor::pointOnArc(id1, id2));
                                 }
 
                             } else if (kind1 == EntityKind::Line && kind2 == EntityKind::Point) {
@@ -740,8 +737,7 @@ private:
                             } else if (kind1 == EntityKind::Circle && kind2 == EntityKind::Point) {
                                 add(du::RequirementDescriptor::pointOnCircle(id2, id1));
                             } else if (kind1 == EntityKind::Arc && kind2 == EntityKind::Point) {
-                                // TODO
-                                //add(du::RequirementDescriptor::pointOnArc(id2, id1));
+                                add(du::RequirementDescriptor::pointOnArc(id2, id1));
                             }
                         }
                     }
