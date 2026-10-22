@@ -814,15 +814,17 @@ private:
                     add(du::RequirementDescriptor::lineLineAngle(whole(0), whole(1), dcmParameter(definition)));
                     break;
                 case ConstraintType::Fix: {
-                    const auto handle = entities_.at(definition.refs[0].entity).handle;
-                    const auto descriptor = figure(handle);
-                    if (descriptor.type == du::FigureType::ET_POINT2D) {
-                        add(du::RequirementDescriptor::fixPoint(whole(0)));
-                    } else if (descriptor.type == du::FigureType::ET_LINE) {
+                    auto kind = entities_.at(definition.refs[0].entity).kind;
+                    auto id = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt = definition.refs[0].sub;
+
+                    if (kind == EntityKind::Point || (type_subEt != SubElement::Whole)) {
+                        add(du::RequirementDescriptor::fixPoint(pointAt(0)));
+                    } else if (kind == EntityKind::Line) {
                         add(du::RequirementDescriptor::fixLine(whole(0)));
-                    } else if (descriptor.type == du::FigureType::ET_CIRCLE) {
+                    } else if (kind == EntityKind::Circle) {
                         add(du::RequirementDescriptor::fixCircle(whole(0)));
-                    } else if (descriptor.type == du::FigureType::ET_ARC) {
+                    } else if (kind == EntityKind::Arc) {
                         add(du::RequirementDescriptor::fixArc(whole(0)));
                     }
                     break;
