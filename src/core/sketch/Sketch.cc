@@ -865,14 +865,30 @@ private:
                     auto id2 = entities_.at(definition.refs[1].entity).handle;
                     auto type_subEt2 = definition.refs[1].sub;
 
-                    if (kind1 == EntityKind::Line && type_subEt1 == SubElement::Whole) {
+                    // p l c a lp cp ap
+
+                    // p l c a lp cp ap
+
+                    // point arc
+                    // point line
+
+                    if ((kind1 == EntityKind::Line && type_subEt1 == SubElement::Whole) &&
+                        (kind2 == EntityKind::Line && type_subEt2 == SubElement::Whole)) {
                         add(du::RequirementDescriptor::lineLineMidpoint(whole(0), whole(1)));
-                    } else if (kind1 == EntityKind::Arc && type_subEt1 == SubElement::Whole) {
-                        add(du::RequirementDescriptor::pointAtArcMidpoint(id2, id1));
-                    } else if (kind2 == EntityKind::Arc && type_subEt2 == SubElement::Whole) {
-                        add(du::RequirementDescriptor::pointAtArcMidpoint(id1, id2));
-                    } else {
-                        add(du::RequirementDescriptor::pointAtMidpoint(pointAt(0), whole(1)));
+                    } else if (kind1 == EntityKind::Point || type_subEt1 != SubElement::Whole) {
+                        if (kind2 == EntityKind::Line) {
+                            add(du::RequirementDescriptor::pointAtMidpoint(pointAt(0), whole(1)));
+                        } else if (kind2 == EntityKind::Arc) {
+                            add(du::RequirementDescriptor::pointAtArcMidpoint(pointAt(0), whole(1)));
+                        }
+                    } else if (kind1 == EntityKind::Line) {
+                        if (kind2 == EntityKind::Point || type_subEt2 != SubElement::Whole) {
+                            add(du::RequirementDescriptor::pointAtMidpoint(pointAt(1), whole(0)));
+                        }
+                    } else if (kind1 == EntityKind::Arc) {
+                        if (kind2 == EntityKind::Point || type_subEt2 != SubElement::Whole) {
+                            add(du::RequirementDescriptor::pointAtArcMidpoint(pointAt(1), whole(0)));
+                        }
                     }
                     break;
                 }
@@ -1383,7 +1399,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             valid = circles[0] && circles[1];
             break;
         case ConstraintType::Midpoint:
-            valid = (points[0] && lines[1]) || (lines[0] && lines[1]) || (points[0] && circles[1]);
+            valid = (points[0] && lines[1]) || (lines[0] && lines[1]) || (points[0] && circles[1]) || (lines[0] || circles[1]);
             break;
         case ConstraintType::Fix:
             valid = points[0] || lines[0] || circles[0];
