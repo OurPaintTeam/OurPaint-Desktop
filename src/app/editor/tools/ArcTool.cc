@@ -4,6 +4,8 @@
 #include "RenderScene.h"
 #include "objects/Objects.h"
 
+#include <variant>
+
 ArcTool::ArcTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
     : IInteractionTool(document, camera, snap, overlay, picker) {}
 
@@ -27,19 +29,21 @@ std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e)
 
     snap::SnapRequest request;
 
-    if (step_ == Step::WaitingFirstInput) {
-        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ToolType::Circle, snap::DrawState::Idle};
-    } else if (step_ == Step::WaitingSecondInput) {
-        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y},
-                                    snap::ToolType::Circle,
-                                    snap::DrawState::FirstPoint,
-                                    {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}}};
-    } else if (step_ == Step::WaitingThirdInput) {
-        request = snap::SnapRequest{
-            core::sketch::Vec2{cursor.x, cursor.y},
-            snap::ToolType::Point,
-            snap::DrawState::FirstPoint,
-            {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}, core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}};
+    if (mode_ == Mode::ThreePoints) {
+        if (step_ == Step::WaitingFirstInput) {
+            request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ActionType::Arc, snap::DrawState::Start};
+        } else if (step_ == Step::WaitingSecondInput) {
+            request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y},
+                                        snap::ActionType::Arc,
+                                        snap::DrawState::Body,
+                                        {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}}};
+        } else if (step_ == Step::WaitingThirdInput) {
+            request = snap::SnapRequest{
+                core::sketch::Vec2{cursor.x, cursor.y},
+                snap::ActionType::Arc,
+                snap::DrawState::End,
+                {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}, core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}};
+        }
     }
 
     snapVisual(request);
@@ -89,6 +93,15 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
         const auto arcId = report.entityIds[0];
         bool needsSolve = false;
 
+        auto isStandalonePoint = [&](core::sketch::EntityId id) {
+            const auto entities = document_.sketch().entities();
+            if (!entities) return false;
+            for (const auto& entity : entities.value()) {
+                if (entity.id == id) return std::holds_alternative<core::sketch::Point2>(entity.geometry);
+            }
+            return false;
+        };
+
         auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement arcSub) {
             if (!snap.snapped || snap.objects.empty()) {
                 return;
@@ -97,23 +110,39 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
             core::sketch::ConstraintDefinition def;
 
             switch (snap.type) {
-                case snap::SnapKind::LineMidpoint:
+                case snap::SnapKind::Midpoint:
                     def.type = core::sketch::ConstraintType::Midpoint;
                     break;
 
-                case snap::SnapKind::StandalonePoint:
-                case snap::SnapKind::LineEndpoint:
-                case snap::SnapKind::CircleCentre:
-                case snap::SnapKind::ArcEndpoint:
-                case snap::SnapKind::ArcCentre:
-                case snap::SnapKind::LineBody:
-                case snap::SnapKind::CircleBody:
-                case snap::SnapKind::ArcBody:
+                case snap::SnapKind::Coincident:
+                    // Arc endpoint/body to a point is Coincident. For the arc body
+                    // against another curve body, the intended relation is Tangent,
+                    // not Coincident(Whole, Whole).
+                    if (arcSub == core::sketch::SubElement::Whole &&
+                        snap.objects[0].sub == core::sketch::SubElement::Whole &&
+                        !isStandalonePoint(snap.objects[0].entity)) {
+                        def.type = core::sketch::ConstraintType::Tangent;
+                    } else {
+                        def.type = core::sketch::ConstraintType::Coincident;
+                    }
+                    break;
 
+                case snap::SnapKind::ExtendedIntersection:
+                case snap::SnapKind::Intersection:
                     def.type = core::sketch::ConstraintType::Coincident;
                     break;
+
                 case snap::SnapKind::Tangent:
+                    // Tangency is a property of the whole arc, not of an endpoint.
+                    // The caller passes SubElement::Whole only for secondSnap_
+                    // (middle point on the arc body), which is the only place
+                    // where a Tangent snap makes sense.
+                    if (arcSub != core::sketch::SubElement::Whole) {
+                        return;
+                    }
+                    def.type = core::sketch::ConstraintType::Tangent;
                     break;
+
                 default:
                     return;
             }

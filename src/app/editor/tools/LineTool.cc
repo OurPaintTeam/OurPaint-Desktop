@@ -17,12 +17,12 @@ std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e
     snap::SnapRequest request;
 
     if (state_ == State::WaitingFirstPoint) {
-         request = snap::SnapRequest{ core::sketch::Vec2{v.x, v.y}, snap::ToolType::Line, snap::DrawState::Idle};
+         request = snap::SnapRequest{ core::sketch::Vec2{v.x, v.y}, snap::ActionType::Line, snap::DrawState::Start};
     }else if (state_ == State::WaitingSecondPoint) {
         request = snap::SnapRequest {
             core::sketch::Vec2{v.x, v.y},
-            snap::ToolType::Line,
-            snap::DrawState::FirstPoint,
+            snap::ActionType::Line,
+            snap::DrawState::End,
             { core::sketch::Point2{ core::sketch::Vec2{firstPoint_.x, firstPoint_.y} } }
         };
     }
@@ -72,15 +72,21 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
             overlay_.lines_.push_back(OverlayModel::Line(v.x, v.y, v.x, v.y));
         }
         else {
+            bool shiftLocked = false;
+            core::sketch::ConstraintType shiftLockType = core::sketch::ConstraintType::Horizontal;
+
             if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
                 glm::dvec2 delta = v - firstPoint_;
 
                 // Snap to the dominant axis
                 if (std::abs(delta.x) > std::abs(delta.y)) {
                     v.y = firstPoint_.y; // Lock to horizontal
+                    shiftLockType = core::sketch::ConstraintType::Horizontal;
                 } else {
                     v.x = firstPoint_.x; // Lock to vertical
+                    shiftLockType = core::sketch::ConstraintType::Vertical;
                 }
+                shiftLocked = true;
             }
 
             auto addResult = document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y});
@@ -91,26 +97,21 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
                 bool needsSolve = false;
 
                 auto applyConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement sub) {
-                    if (!snap.snapped || snap.objects.empty()) return;
+                    if (!snap.snapped) return;
 
                     core::sketch::ConstraintDefinition def;
                     bool validType = false;
 
                     if (sub == core::sketch::SubElement::Start || sub == core::sketch::SubElement::End) {
                         switch (snap.type) {
-                            case snap::SnapKind::StandalonePoint:
-                            case snap::SnapKind::LineEndpoint:
-                            case snap::SnapKind::CircleCentre:
-                            case snap::SnapKind::ArcEndpoint:
-                            case snap::SnapKind::ArcCentre:
-                            case snap::SnapKind::LineBody:
-                            case snap::SnapKind::CircleBody:
-                            case snap::SnapKind::ArcBody:
+                            case snap::SnapKind::Coincident:
+                            case snap::SnapKind::ExtendedIntersection:
+                            case snap::SnapKind::Intersection:
                                 def.type = core::sketch::ConstraintType::Coincident;
                                 def.refs = { { lineId, sub }, snap.objects[0] };
                                 validType = true;
                                 break;
-                            case snap::SnapKind::LineMidpoint:
+                            case snap::SnapKind::Midpoint:
                                 def.type = core::sketch::ConstraintType::Midpoint;
                                 def.refs = { { lineId, sub }, snap.objects[0] };
                                 validType = true;
@@ -163,11 +164,39 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
                     }
                 };
 
+                // Shift-lock must be recorded as a real constraint on the line,
+                // otherwise solver won't know the line is meant to be H/V.
+                if (shiftLocked) {
+                    core::sketch::ConstraintDefinition def;
+                    def.type = shiftLockType;
+                    def.refs = { { lineId, core::sketch::SubElement::Whole } };
+                    if (document_.sketch().supportsConstraint(def)) {
+                        auto c = document_.sketch().addConstraint(def);
+                        if (c) {
+                            report.constraintIds.push_back(c.value());
+                            report.requestedConstraints++;
+                            needsSolve = true;
+                        } else {
+                            report.operationError = c.error();
+                        }
+                    }
+                }
+
                 applyConstraint(firstSnap_, core::sketch::SubElement::Start);
-                applyConstraint(snap_result_, core::sketch::SubElement::End);
+
+                // Shift-lock moved the endpoint off the snap point:
+                // don't pull it back with a Coincident.
+                if (!shiftLocked) {
+                    applyConstraint(snap_result_, core::sketch::SubElement::End);
+                }
 
                 applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
-                applyConstraint(snap_result_, core::sketch::SubElement::Whole);
+
+                // Shift-lock already fixed orientation: skip snapshot Whole
+                // constraints to avoid duplicate/conflicting H/V.
+                if (!shiftLocked) {
+                    applyConstraint(snap_result_, core::sketch::SubElement::Whole);
+                }
 
                 if (needsSolve) {
                     auto solved = document_.sketch().solve();

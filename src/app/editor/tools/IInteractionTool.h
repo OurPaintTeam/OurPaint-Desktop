@@ -1,5 +1,5 @@
-#ifndef OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
-#define OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
+#ifndef OURPAINT_SNAPTYPES_H_
+#define OURPAINT_SNAPTYPES_H_
 
 #include "../../platform/InputEvents.h"
 #include "../ActionReport.h"
@@ -24,7 +24,6 @@ protected:
     Cpu2dPicker& picker_;
     snap::SnapResult snap_result_;
 
-
     virtual void snapVisual(const snap::SnapRequest& request) {
         const auto snap_result = snap_.getSnapCandidate(request);
         snap_result_ = snap_result;
@@ -38,28 +37,27 @@ protected:
         feedback.position = {snap_result.point.position.x, snap_result.point.position.y};
 
         switch (snap_result.type) {
-            case snap::SnapKind::StandalonePoint:
-            case snap::SnapKind::LineBody:
-            case snap::SnapKind::CircleBody:
-            case snap::SnapKind::ArcBody:
-                feedback.glyph = app::SnapGlyph::Point;
+            case snap::SnapKind::Collinear:
+                feedback.glyph = app::SnapGlyph::Direction;
+                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+                break;
+
+            case snap::SnapKind::Coincident:
+                if (snap_result.objects.at(0).sub == core::sketch::SubElement::Center) {
+                    feedback.glyph = app::SnapGlyph::Center;
+                } else if (snap_result.objects.at(0).sub == core::sketch::SubElement::Start ||
+                    snap_result.objects.at(0).sub == core::sketch::SubElement::End ) {
+                    feedback.glyph = app::SnapGlyph::Endpoint;
+                }else if (snap_result.objects.at(0).sub == core::sketch::SubElement::Whole) {
+                    feedback.glyph = app::SnapGlyph::Point;
+                }
+
                 feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
                 break;
 
-            case snap::SnapKind::LineEndpoint:
-            case snap::SnapKind::ArcEndpoint:
-                feedback.glyph = app::SnapGlyph::Endpoint;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
-                break;
-
-            case snap::SnapKind::LineMidpoint:
+            case snap::SnapKind::Midpoint:
                 feedback.glyph = app::SnapGlyph::Midpoint;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
-                break;
-
-            case snap::SnapKind::CircleCentre:
-            case snap::SnapKind::ArcCentre:
-                feedback.glyph = app::SnapGlyph::Center;
                 feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
                 break;
 
@@ -100,8 +98,19 @@ protected:
             case snap::SnapKind::Tangent:
                 feedback.glyph = app::SnapGlyph::Point;
                 feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
-                if (!snap_result.guideLines.empty())
-                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+                if (!snap_result.guideLines.empty()) {
+                    feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+                }
+                break;
+
+            case snap::SnapKind::Angle:
+                // feedback.glyph = app::SnapGlyph::Direction;
+                // feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                // if (!snap_result.guideLines.empty())
+                //     feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+                break;
+
+            case snap::SnapKind::PerpendicularBisector:
                 break;
 
             default:
@@ -127,4 +136,4 @@ public:
     virtual ToolCancellation cancel() = 0;
 };
 
-#endif  // ! OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
+#endif  // ! OURPAINT_SNAPTYPES_H_

@@ -10,7 +10,7 @@ IInteractionTool(document,camera,snap,overlay, picker) {}
 
 std::optional<ActionReport> PointTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
-    snap::SnapRequest request{ core::sketch::Vec2{v.x, v.y}, snap::ToolType::Point, snap::DrawState::Idle};
+    snap::SnapRequest request{ core::sketch::Vec2{v.x, v.y}, snap::ActionType::Point, snap::DrawState::Start};
     snapVisual(request);
     return std::nullopt;
 }
@@ -36,11 +36,9 @@ std::optional<ActionReport> PointTool::onMouseButton(const input::MouseButtonEve
             bool shouldAddConstraint = false;
 
             switch(snap_result_.type) {
-                case snap::SnapKind::StandalonePoint:
-                case snap::SnapKind::LineEndpoint:
-                case snap::SnapKind::CircleCentre:
-                case snap::SnapKind::ArcEndpoint:
-                case snap::SnapKind::ArcCentre:
+                case snap::SnapKind::Coincident:
+                case snap::SnapKind::Intersection:
+                case snap::SnapKind::ExtendedIntersection:
                     def.type = core::sketch::ConstraintType::Coincident;
                     def.refs = {
                         { newPointId, core::sketch::SubElement::Whole },
@@ -49,18 +47,8 @@ std::optional<ActionReport> PointTool::onMouseButton(const input::MouseButtonEve
                     shouldAddConstraint = true;
                     break;
 
-                case snap::SnapKind::LineBody:
-                case snap::SnapKind::CircleBody:
-                case snap::SnapKind::ArcBody:
-                    def.type = core::sketch::ConstraintType::Coincident;
-                    def.refs = {
-                        { newPointId, core::sketch::SubElement::Whole },
-                        snap_result_.objects[0]
-                    };
-                    shouldAddConstraint = false;
-                    break;
 
-                case snap::SnapKind::LineMidpoint:
+                case snap::SnapKind::Midpoint :
                     def.type = core::sketch::ConstraintType::Midpoint;
                     def.refs = {
                         { newPointId, core::sketch::SubElement::Whole },
@@ -69,16 +57,8 @@ std::optional<ActionReport> PointTool::onMouseButton(const input::MouseButtonEve
                     shouldAddConstraint = true;
                     break;
 
-                case snap::SnapKind::Intersection:
-                case snap::SnapKind::ExtendedIntersection:
-                case snap::SnapKind::VirtualIntersection:
-                case snap::SnapKind::Tangent:
-                case snap::SnapKind::Horizontal:
-                case snap::SnapKind::Vertical:
-                case snap::SnapKind::Parallel:
-                case snap::SnapKind::Perpendicular:
-                case snap::SnapKind::Angle:
-                case snap::SnapKind::PerpendicularBisector:
+
+
                 default:
                     // Оставляем shouldAddConstraint = false
                     break;

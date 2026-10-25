@@ -49,6 +49,9 @@ CursorTool::CursorTool(Document& document, Camera2D& camera, snap::SnapSystem& s
       constraintActions_(constraintActions) {}
 
 std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
+
+    overlay_.clearSnap();
+
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
