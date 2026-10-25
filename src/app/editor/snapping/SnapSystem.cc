@@ -344,7 +344,7 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
                 kind = SnapKind::Perpendicular;
                 break;
             case geometry::DirectionSnapKind::AngleToLine:
-                kind = SnapKind::Angle;
+                kind = SnapKind::AngleToLine;
                 break;
         }
         const double directionDistance = std::sqrt(std::max(0.0, direction.distanceSquared));

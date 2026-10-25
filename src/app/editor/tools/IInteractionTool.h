@@ -103,11 +103,10 @@ protected:
                 }
                 break;
 
-            case snap::SnapKind::Angle:
-                // feedback.glyph = app::SnapGlyph::Direction;
-                // feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
-                // if (!snap_result.guideLines.empty())
-                //     feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+            case snap::SnapKind::AngleToLine:
+                 feedback.glyph = app::SnapGlyph::Point;
+                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
                 break;
 
             case snap::SnapKind::PerpendicularBisector:

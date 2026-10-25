@@ -36,7 +36,7 @@ enum class SnapKind {
     Vertical,
     Parallel,
     Perpendicular,
-    Angle,
+    AngleToLine,
     PerpendicularBisector
 };
 
@@ -53,7 +53,7 @@ enum class SnapMask : std::uint32_t {
     Vertical = 1u << 9,
     Parallel = 1u << 10,
     Perpendicular = 1u << 11,
-    Angle = 1u << 12,
+    AngleToLine = 1u << 12,
     PerpendicularBisector = 1u << 13
 };
 
@@ -75,7 +75,7 @@ constexpr SnapMask IntersectionSnaps =  SnapMask::Intersection |SnapMask::Extend
 constexpr SnapMask PointSnaps = SnapMask::Coincident | SnapMask::Midpoint | IntersectionSnaps;
 constexpr SnapMask BodySnaps = SnapMask::Coincident; // nearest point on an existing circle/arc body; no intersections or midpoint
 constexpr SnapMask Direction = SnapMask::Horizontal | SnapMask::Vertical | SnapMask::Parallel |
-    SnapMask::Perpendicular | SnapMask::Angle | SnapMask::PerpendicularBisector | SnapMask::Collinear;
+    SnapMask::Perpendicular | SnapMask::AngleToLine | SnapMask::PerpendicularBisector | SnapMask::Collinear;
 constexpr SnapMask LineEndSnaps = PointSnaps | Direction | SnapMask::Tangent;
 constexpr SnapMask CurveBodySnaps = BodySnaps | SnapMask::Tangent | IntersectionSnaps;
 constexpr SnapMask All = PointSnaps | Direction | SnapMask::Tangent;
@@ -121,7 +121,7 @@ constexpr int snapPriority(SnapKind kind, ActionType action, DrawState state) no
         case SnapKind::Perpendicular: return lineEnd ? 650 : 300;
         case SnapKind::Horizontal:
         case SnapKind::Vertical: return lineEnd ? 600 : 250;
-        case SnapKind::Angle:
+        case SnapKind::AngleToLine:
         case SnapKind::PerpendicularBisector: return 150;
     }
     return 0;

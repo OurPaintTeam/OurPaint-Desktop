@@ -13,7 +13,7 @@
 
 namespace geometry {
 
-enum class DirectionSnapKind { AxisXParallel, AxisYParallel, AxisXPerpendicular, AxisYPerpendicular, ParallelToLine, PerpendicularToLine };
+enum class DirectionSnapKind { AxisXParallel, AxisYParallel, AxisXPerpendicular, AxisYPerpendicular, ParallelToLine, PerpendicularToLine, AngleToLine };
 
 struct DirectionSnapCandidate {
     Vec2 endpoint;  // Cursor projected onto the proposed direction.
@@ -91,6 +91,16 @@ inline std::vector<DirectionSnapCandidate> findDirectionSnaps(const Vec2& start,
         const GeometryRef ref{entity.id, SubElement::Whole};
         add(d, DirectionSnapKind::ParallelToLine, ref);
         add({-d.y, d.x}, DirectionSnapKind::PerpendicularToLine, ref);
+
+        // Angular increments relative to an existing line: +/-15 degrees,
+        // then +/-30, +/-45 ... up to 165 degrees. These candidates are only
+        // meaningful when the new segment starts at the reference line's end.
+        const double baseAngle = angle(d);
+        for (int degrees = 15; degrees < 180; degrees += 15) {
+            const double delta = static_cast<double>(degrees) * std::numbers::pi / 180.0;
+            add({std::cos(baseAngle + delta), std::sin(baseAngle + delta)}, DirectionSnapKind::AngleToLine, ref);
+            add({std::cos(baseAngle - delta), std::sin(baseAngle - delta)}, DirectionSnapKind::AngleToLine, ref);
+        }
     }
 
     std::sort(result.begin(), result.end(), [](const auto& a, const auto& b) {

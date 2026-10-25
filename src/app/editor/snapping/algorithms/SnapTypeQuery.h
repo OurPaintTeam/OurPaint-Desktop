@@ -15,7 +15,7 @@ constexpr SnapMask maskForSnapKind(SnapKind kind) noexcept {
         case SnapKind::Vertical: return SnapMask::Vertical;
         case SnapKind::Parallel: return SnapMask::Parallel;
         case SnapKind::Perpendicular: return SnapMask::Perpendicular;
-        case SnapKind::Angle: return SnapMask::Angle;
+        case SnapKind::AngleToLine: return SnapMask::AngleToLine;
         case SnapKind::PerpendicularBisector: return SnapMask::PerpendicularBisector;
     }
     return SnapMask::None;
