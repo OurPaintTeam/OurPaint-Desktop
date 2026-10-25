@@ -2,6 +2,7 @@
 #define OURPAINT_APP_SNAP_SYSTEM_H_
 
 #include <optional>
+#include <cstdint>
 #include <vector>
 
 #include "SnapTypes.h"
@@ -23,16 +24,17 @@ struct SnapRequest {
     core::sketch::Vec2 cursor;
 
     /// Active tool.
-    ToolType tool;
+    ActionType action;
 
-    /// Tool draw state (Idle / FirstPoint / SecondPoint).
-    DrawState drawState = DrawState::Idle;
+    /// Current placement state.
+    DrawState drawState = DrawState::Start;
 
     /// Points already committed by the tool (e.g. first point of a line).
     /// If empty — directional snaps are not activated.
     std::vector<core::sketch::Point2> anchors;
 
     std::vector<core::sketch::GeometryRef> forbiddenObjects;
+
 };
 
 // =============================================================================
@@ -48,7 +50,7 @@ struct SnapResult {
     core::sketch::Point2 point;
 
     /// Type of the resolved candidate.
-    SnapKind type = SnapKind::None;
+    SnapKind type = SnapKind::Coincident;
 
     /// Angle (radians) for directional snaps (Angle, Parallel, etc.).
     double angle = 0.0;
@@ -78,6 +80,10 @@ struct SnapRule {
     /// Distance band within which priority decides the winner.
     /// Candidates farther than this from each other are ranked by distance only.
     double priorityRadius = 0.0;
+
+    /// Tighter screen-space limits for relation snaps that are easy to over-trigger.
+    double collinearRadius = 0.0;
+    double tangentRadius = 0.0;
 };
 
 // =============================================================================
@@ -106,7 +112,7 @@ public:
     SnapResult getSnapCandidate(const SnapRequest& request) const;
 
 private:
-    static SnapRule ruleFor(ToolType tool, DrawState state);
+    static SnapRule ruleFor(ActionType action, DrawState state);
 
     SnapResult parser(const SnapRequest& request) const;
 

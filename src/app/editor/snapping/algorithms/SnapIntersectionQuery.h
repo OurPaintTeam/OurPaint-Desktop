@@ -18,7 +18,11 @@ inline void consider(std::optional<IntersectionCandidate>& best, const Vec2& cur
     if (!isFinite(cursor) || !isFinite(point)) {
         return;
     }
-    IntersectionCandidate candidate{point, distanceSquared(cursor, point), first, second};
+    IntersectionCandidate candidate;
+    candidate.point = point;
+    candidate.distanceSquared = distanceSquared(cursor, point);
+    candidate.first = first;
+    candidate.second = second;
     if (!best || isBetter(candidate, *best)) {
         best = candidate;
     }
@@ -81,8 +85,14 @@ inline std::vector<ExtendedIntersectionCandidate> findExtendedLineIntersections(
                 return;
             }
         }
-        result.push_back(ExtendedIntersectionCandidate{point, d2, GeometryRef{firstEntity.id, SubElement::Whole},
-                                                       GeometryRef{secondEntity.id, SubElement::Whole}, std::move(firstExtension), std::move(secondExtension)});
+        ExtendedIntersectionCandidate candidate;
+        candidate.point = point;
+        candidate.distanceSquared = d2;
+        candidate.first = GeometryRef{firstEntity.id, SubElement::Whole};
+        candidate.second = GeometryRef{secondEntity.id, SubElement::Whole};
+        candidate.firstExtension = std::move(firstExtension);
+        candidate.secondExtension = std::move(secondExtension);
+        result.push_back(std::move(candidate));
     };
 
     for (std::size_t i = 0; i < entities.size(); ++i) {

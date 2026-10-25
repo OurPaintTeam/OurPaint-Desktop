@@ -20,6 +20,17 @@ inline double arcSweep(const Arc2& arc) {
     const double endAngle = std::atan2(arc.end.y - arc.center.y, arc.end.x - arc.center.x);
     return normalizeAngle(endAngle - startAngle);
 }
+inline std::optional<Vec2> arcMidpoint(const Arc2& arc) {
+    if (!isFinite(arc)) return std::nullopt;
+    const double r0 = std::sqrt(distanceSquared(arc.center, arc.start));
+    const double r1 = std::sqrt(distanceSquared(arc.center, arc.end));
+    if (r0 <= EPSILON || r1 <= EPSILON) return std::nullopt;
+    if (std::abs(r0-r1) > EPSILON * std::max({1.0, r0, r1})) return std::nullopt;
+    const double a0 = std::atan2(arc.start.y-arc.center.y, arc.start.x-arc.center.x);
+    const double a = a0 + arcSweep(arc) * 0.5;
+    const double r = (r0+r1)*0.5;
+    return Vec2{arc.center.x+r*std::cos(a), arc.center.y+r*std::sin(a)};
+}
 inline std::optional<Vec2> closestPointOnArc(const Vec2& cursor, const Arc2& arc) {
     if (!isFinite(cursor) || !isFinite(arc)) {
         return std::nullopt;

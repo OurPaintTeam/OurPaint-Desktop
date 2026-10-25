@@ -47,13 +47,9 @@ inline std::optional<TangencyCandidate> findLinePlacementTangency(
                 continue;
             }
             points = geometry::relations::pointTangenciesToCircle(anchor, cursor, circle->center, circle->radius);
-        } else if (const auto* arc = std::get_if<geometry::Arc2>(&entity.geometry)) {
-            const auto onBody = geometry::detail::closestPointOnArc(cursor, *arc);
-            if (onBody && geometry::detail::distanceSquared(cursor, *onBody) <= maxDistanceSquared) {
-                continue;
-            }
-            points = geometry::relations::pointTangenciesToArc(anchor, cursor, *arc);
         } else {
+            // Line placement tangency is intentionally supported for circles only.
+            // Arc-body proximity is handled as an ordinary point snap, not tangency.
             continue;
         }
 
@@ -70,6 +66,14 @@ inline std::optional<TangencyCandidate> findLinePlacementTangency(
                 continue;
             }
             const geometry::Vec2 projectedEndpoint{anchor.x + along * direction.x, anchor.y + along * direction.y};
+            // The tangent contact must be reached by the finite segment being
+            // drawn. Do not snap to a tangent whose contact lies beyond the cursor
+            // endpoint (an infinite-line/continuation false positive).
+            const double contactAlong = geometry::detail::dot(
+                geometry::detail::subtract(point.point, anchor), direction);
+            if (contactAlong < -geometry::EPSILON || contactAlong > along + geometry::EPSILON) {
+                continue;
+            }
             const double distanceSquared = geometry::detail::distanceSquared(cursor, projectedEndpoint);
             if (!std::isfinite(distanceSquared) || distanceSquared > maxDistanceSquared) {
                 continue;
@@ -128,6 +132,22 @@ inline std::optional<TangencyCandidate> findCurvePlacementTangency(
                     detail::distanceSquared(point, arc->end) > maxDistanceSquared) {
                     contact = point;
                 }
+            }
+        } else if (const auto* circle = std::get_if<Circle2>(&entity.geometry)) {
+            // Pairwise circle-body tangency: the contact lies on the center line.
+            // Consider the near-side (external) and far-side (internal) contacts;
+            // only the candidate close to the cursor will survive the hit test.
+            const Vec2 radial = detail::subtract(center, circle->center);
+            const double radialLength = std::hypot(radial.x, radial.y);
+            if (radialLength > EPSILON) {
+                const Vec2 unit{radial.x / radialLength, radial.y / radialLength};
+                const Vec2 nearSide{circle->center.x + unit.x * circle->radius,
+                                    circle->center.y + unit.y * circle->radius};
+                const Vec2 farSide{circle->center.x - unit.x * circle->radius,
+                                   circle->center.y - unit.y * circle->radius};
+                const Vec2* chosen = detail::distanceSquared(cursor, nearSide) <= detail::distanceSquared(cursor, farSide)
+                    ? &nearSide : &farSide;
+                contact = *chosen;
             }
         } else {
             continue;
