@@ -699,11 +699,24 @@ private:
                     auto id2 = entities_.at(definition.refs[1].entity).handle;
                     auto type_subEt2 = definition.refs[1].sub;
 
+                    // lp1 cp1 ap1
+                        // lp2 cp2 ap2
+
+                        // p2 l2 c2 a2
+
+                    // p1 l1 c1 a1
+                        // lp2 cp2 ap2
+
+                        // p2 l2 c2 a2
+
+
                     if (type_subEt1 != SubElement::Whole) {
                         if (type_subEt2 != SubElement::Whole) {
                             add(du::RequirementDescriptor::pointOnPoint(pointAt(0), pointAt(1)));
                         } else {
-                            if (kind2 == EntityKind::Line) {
+                            if (kind2 == EntityKind::Point) {
+                                add(du::RequirementDescriptor::pointOnPoint(pointAt(0), id2));
+                            } else if (kind2 == EntityKind::Line) {
                                 add(du::RequirementDescriptor::pointOnLine(pointAt(0), id2));
                             } else if (kind2 == EntityKind::Circle) {
                                 add(du::RequirementDescriptor::pointOnCircle(pointAt(0), id2));
@@ -713,7 +726,9 @@ private:
                         }
                     } else {
                         if (type_subEt2 != SubElement::Whole) {
-                            if (kind1 == EntityKind::Line) {
+                            if (kind1 == EntityKind::Point) {
+                                add(du::RequirementDescriptor::pointOnPoint(pointAt(1), id1));
+                            } else if (kind1 == EntityKind::Line) {
                                 add(du::RequirementDescriptor::pointOnLine(pointAt(1), id1));
                             } else if (kind1 == EntityKind::Circle) {
                                 add(du::RequirementDescriptor::pointOnCircle(pointAt(1), id1));
@@ -731,7 +746,6 @@ private:
                                 } else if (kind2 == EntityKind::Arc) {
                                     add(du::RequirementDescriptor::pointOnArc(id1, id2));
                                 }
-
                             } else if (kind1 == EntityKind::Line && kind2 == EntityKind::Point) {
                                 add(du::RequirementDescriptor::pointOnLine(id2, id1));
                             } else if (kind1 == EntityKind::Circle && kind2 == EntityKind::Point) {
@@ -814,15 +828,17 @@ private:
                     add(du::RequirementDescriptor::lineLineAngle(whole(0), whole(1), dcmParameter(definition)));
                     break;
                 case ConstraintType::Fix: {
-                    const auto handle = entities_.at(definition.refs[0].entity).handle;
-                    const auto descriptor = figure(handle);
-                    if (descriptor.type == du::FigureType::ET_POINT2D) {
-                        add(du::RequirementDescriptor::fixPoint(whole(0)));
-                    } else if (descriptor.type == du::FigureType::ET_LINE) {
+                    auto kind = entities_.at(definition.refs[0].entity).kind;
+                    auto id = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt = definition.refs[0].sub;
+
+                    if (kind == EntityKind::Point || (type_subEt != SubElement::Whole)) {
+                        add(du::RequirementDescriptor::fixPoint(pointAt(0)));
+                    } else if (kind == EntityKind::Line) {
                         add(du::RequirementDescriptor::fixLine(whole(0)));
-                    } else if (descriptor.type == du::FigureType::ET_CIRCLE) {
+                    } else if (kind == EntityKind::Circle) {
                         add(du::RequirementDescriptor::fixCircle(whole(0)));
-                    } else if (descriptor.type == du::FigureType::ET_ARC) {
+                    } else if (kind == EntityKind::Arc) {
                         add(du::RequirementDescriptor::fixArc(whole(0)));
                     }
                     break;
@@ -849,14 +865,30 @@ private:
                     auto id2 = entities_.at(definition.refs[1].entity).handle;
                     auto type_subEt2 = definition.refs[1].sub;
 
-                    if (kind1 == EntityKind::Line && type_subEt1 == SubElement::Whole) {
+                    // p l c a lp cp ap
+
+                    // p l c a lp cp ap
+
+                    // point arc
+                    // point line
+
+                    if ((kind1 == EntityKind::Line && type_subEt1 == SubElement::Whole) &&
+                        (kind2 == EntityKind::Line && type_subEt2 == SubElement::Whole)) {
                         add(du::RequirementDescriptor::lineLineMidpoint(whole(0), whole(1)));
-                    } else if (kind1 == EntityKind::Arc && type_subEt1 == SubElement::Whole) {
-                        add(du::RequirementDescriptor::pointAtArcMidpoint(id2, id1));
-                    } else if (kind2 == EntityKind::Arc && type_subEt2 == SubElement::Whole) {
-                        add(du::RequirementDescriptor::pointAtArcMidpoint(id1, id2));
-                    } else {
-                        add(du::RequirementDescriptor::pointAtMidpoint(pointAt(0), whole(1)));
+                    } else if (kind1 == EntityKind::Point || type_subEt1 != SubElement::Whole) {
+                        if (kind2 == EntityKind::Line) {
+                            add(du::RequirementDescriptor::pointAtMidpoint(pointAt(0), whole(1)));
+                        } else if (kind2 == EntityKind::Arc) {
+                            add(du::RequirementDescriptor::pointAtArcMidpoint(pointAt(0), whole(1)));
+                        }
+                    } else if (kind1 == EntityKind::Line) {
+                        if (kind2 == EntityKind::Point || type_subEt2 != SubElement::Whole) {
+                            add(du::RequirementDescriptor::pointAtMidpoint(pointAt(1), whole(0)));
+                        }
+                    } else if (kind1 == EntityKind::Arc) {
+                        if (kind2 == EntityKind::Point || type_subEt2 != SubElement::Whole) {
+                            add(du::RequirementDescriptor::pointAtArcMidpoint(pointAt(1), whole(0)));
+                        }
                     }
                     break;
                 }
@@ -1367,7 +1399,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             valid = circles[0] && circles[1];
             break;
         case ConstraintType::Midpoint:
-            valid = (points[0] && lines[1]) || (lines[0] && lines[1]) || (points[0] && circles[1]);
+            valid = (points[0] && lines[1]) || (lines[0] && lines[1]) || (points[0] && circles[1]) || (lines[0] || circles[1]);
             break;
         case ConstraintType::Fix:
             valid = points[0] || lines[0] || circles[0];
