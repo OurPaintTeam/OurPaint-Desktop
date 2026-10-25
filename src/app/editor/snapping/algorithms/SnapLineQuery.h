@@ -66,9 +66,8 @@ inline std::vector<LineFeatureCandidate> queryLineFeatures(
             const auto nearest = closestPointOnSegment(cursor, *line);
             if (nearest) {
                 const double d = distance(cursor, *nearest);
-                const Vec2 middle{(line->start.x + line->end.x) * 0.5, (line->start.y + line->end.y) * 0.5};
                 const bool nearAnchor = distance(cursor, line->start) <= endpointRadius ||
-                    distance(cursor, line->end) <= endpointRadius || distance(cursor, middle) <= midpointRadius;
+                    distance(cursor, line->end) <= endpointRadius;
                 if (d <= bodyRadius && !nearAnchor) append(*nearest, LineFeature::Body, whole);
             }
         }

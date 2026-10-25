@@ -21,7 +21,7 @@ using namespace core::sketch;
 
 constexpr double kDefaultSnapRadiusPixels = 5.0;
 constexpr double kEndpointSnapRadiusPixels = 11.0;
-constexpr double kMidpointSnapRadiusPixels = 11.0;
+constexpr double kMidpointSnapRadiusPixels = 15.0;
 constexpr double kCollinearSnapRadiusPixels = 20.0; // distance along the extension, in screen pixels
 constexpr double kCollinearLateralRadiusPixels = 4.5; // lateral tolerance stays narrow to avoid stealing endpoint/midpoint snaps
 constexpr double kLineBodySnapRadiusPixels = 3.5;
