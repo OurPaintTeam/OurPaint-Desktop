@@ -21,7 +21,7 @@ using namespace core::sketch;
 
 constexpr double kDefaultSnapRadiusPixels = 5.0;
 constexpr double kEndpointSnapRadiusPixels = 11.0;
-constexpr double kMidpointSnapRadiusPixels = 15.0;
+constexpr double kMidpointSnapRadiusPixels = 11.0;
 constexpr double kCollinearSnapRadiusPixels = 20.0; // distance along the extension, in screen pixels
 constexpr double kCollinearLateralRadiusPixels = 4.5; // lateral tolerance stays narrow to avoid stealing endpoint/midpoint snaps
 constexpr double kLineBodySnapRadiusPixels = 3.5;
@@ -293,6 +293,12 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
         if (it == entities.end()) return true;
         const auto* line = std::get_if<Line2>(&it->geometry);
         if (!line || !isUsableLine(*line)) return true;
+        if (candidate.kind == geometry::DirectionSnapKind::AngleToLine) {
+            const double startGap = std::min(distance(base, line->start), distance(base, line->end));
+            const double anchorTolerance = std::max(rule.endpointRadius,
+                kLineBodySnapRadiusPixels / std::max(camera_.zoom(), 1e-9));
+            return startGap > anchorTolerance;
+        }
         if (candidate.kind == geometry::DirectionSnapKind::PerpendicularToLine) {
             // Perpendicularity is valid when the new segment starts at an
             // endpoint, midpoint, or any point on the body of the reference
@@ -336,6 +342,9 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
                 break;
             case geometry::DirectionSnapKind::PerpendicularToLine:
                 kind = SnapKind::Perpendicular;
+                break;
+            case geometry::DirectionSnapKind::AngleToLine:
+                kind = SnapKind::Angle;
                 break;
         }
         const double directionDistance = std::sqrt(std::max(0.0, direction.distanceSquared));
