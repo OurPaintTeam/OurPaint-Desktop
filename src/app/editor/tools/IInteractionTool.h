@@ -1,5 +1,5 @@
-#ifndef OURPAINT_SNAPTYPES_H_
-#define OURPAINT_SNAPTYPES_H_
+#ifndef OURPAINT_IINTERACTION_TOOL_H_
+#define OURPAINT_IINTERACTION_TOOL_H_
 
 #include "../../platform/InputEvents.h"
 #include "../ActionReport.h"
@@ -136,4 +136,4 @@ public:
     virtual ToolCancellation cancel() = 0;
 };
 
-#endif  // ! OURPAINT_SNAPTYPES_H_
+#endif  // ! OURPAINT_IINTERACTION_TOOL_H_

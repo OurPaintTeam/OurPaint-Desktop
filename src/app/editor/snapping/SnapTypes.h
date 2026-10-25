@@ -1,4 +1,5 @@
-#pragma once
+#ifndef OURPAINT_SNAPTYPES_H_
+#define OURPAINT_SNAPTYPES_H_
 
 #include <cstdint>
 
@@ -127,3 +128,4 @@ constexpr int snapPriority(SnapKind kind, ActionType action, DrawState state) no
 }
 
 } // namespace snap
+#endif // OURPAINT_SNAPTYPES_H_
