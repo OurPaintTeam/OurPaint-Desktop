@@ -70,13 +70,13 @@ constexpr SnapMask operator~(SnapMask a) noexcept {
 constexpr bool hasSnap(SnapMask mask, SnapMask flag) noexcept { return (mask & flag) != SnapMask::None; }
 
 // Concrete-point snaps. Tangent is included here because it resolves to a point.
-constexpr SnapMask PointSnaps = SnapMask::Coincident | SnapMask::Midpoint | SnapMask::Intersection |
-    SnapMask::ExtendedIntersection | SnapMask::VirtualIntersection;
+constexpr SnapMask IntersectionSnaps =  SnapMask::Intersection |SnapMask::ExtendedIntersection | SnapMask::VirtualIntersection;
+constexpr SnapMask PointSnaps = SnapMask::Coincident | SnapMask::Midpoint | IntersectionSnaps;
 constexpr SnapMask BodySnaps = SnapMask::Coincident; // nearest point on an existing circle/arc body; no intersections or midpoint
 constexpr SnapMask Direction = SnapMask::Horizontal | SnapMask::Vertical | SnapMask::Parallel |
     SnapMask::Perpendicular | SnapMask::Angle | SnapMask::PerpendicularBisector | SnapMask::Collinear;
 constexpr SnapMask LineEndSnaps = PointSnaps | Direction | SnapMask::Tangent;
-constexpr SnapMask CurveBodySnaps = BodySnaps | SnapMask::Tangent;
+constexpr SnapMask CurveBodySnaps = BodySnaps | SnapMask::Tangent | IntersectionSnaps;
 constexpr SnapMask All = PointSnaps | Direction | SnapMask::Tangent;
 
 // Centralized action/state -> allowed snap kinds mapping.
