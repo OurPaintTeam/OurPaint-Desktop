@@ -18,6 +18,8 @@
 #include "geometry/intersections/ArcIntersection.h"
 #include "geometry/intersections/IntersectionDispatcher.h"
 #include "snapping/algorithms/SnapQueryTypes.h"
+#include "snapping/algorithms/SnapEntityQuery.h"
+#include "snapping/algorithms/SnapLineQuery.h"
 #include "snapping/algorithms/SnapTypeQuery.h"
 #include "snapping/algorithms/SnapQuery.h"
 #include "snapping/algorithms/SnapIntersectionQuery.h"

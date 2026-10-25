@@ -47,9 +47,11 @@ inline std::optional<TangencyCandidate> findLinePlacementTangency(
                 continue;
             }
             points = geometry::relations::pointTangenciesToCircle(anchor, cursor, circle->center, circle->radius);
+        } else if (const auto* arc = std::get_if<geometry::Arc2>(&entity.geometry)) {
+            // Tangency must be on the actual arc sweep, not merely on its full
+            // supporting circle. Endpoint neighborhoods are left to Coincident.
+            points = geometry::relations::pointTangenciesToArc(anchor, cursor, *arc);
         } else {
-            // Line placement tangency is intentionally supported for circles only.
-            // Arc-body proximity is handled as an ordinary point snap, not tangency.
             continue;
         }
 

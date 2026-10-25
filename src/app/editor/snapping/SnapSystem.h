@@ -4,6 +4,7 @@
 #include <optional>
 #include <cstdint>
 #include <vector>
+#include <cstddef>
 
 #include "SnapTypes.h"
 #include "sketch/SketchTypes.h"
@@ -76,6 +77,7 @@ struct SnapResult {
 struct SnapRule {
     SnapMask mask = SnapMask::None;
     double maxRadius = 0.0;
+    double regularRadius = 0.0;
 
     /// Distance band within which priority decides the winner.
     /// Candidates farther than this from each other are ranked by distance only.
@@ -84,6 +86,8 @@ struct SnapRule {
     /// Tighter screen-space limits for relation snaps that are easy to over-trigger.
     double collinearRadius = 0.0;
     double tangentRadius = 0.0;
+    double endpointRadius = 0.0;
+    double midpointRadius = 0.0;
 };
 
 // =============================================================================
@@ -106,6 +110,16 @@ class SnapSystem {
 private:
     const core::sketch::Sketch& sketch_;
     const Camera2D& camera_;
+
+    // Small cursor movements within the same tool/state/anchor context cycle
+    // through nearby snap alternatives instead of locking to the first result.
+    mutable bool hasPreviousQuery_ = false;
+    mutable ActionType previousAction_ = ActionType::Point;
+    mutable DrawState previousDrawState_ = DrawState::Start;
+    mutable core::sketch::Vec2 previousCursor_{};
+    mutable std::vector<core::sketch::Vec2> previousAnchors_;
+    mutable std::vector<core::sketch::GeometryRef> previousForbiddenObjects_;
+    mutable std::size_t previousCycleIndex_ = 0;
 
 public:
     explicit SnapSystem(const core::sketch::Sketch& sketch,const Camera2D& camera);
