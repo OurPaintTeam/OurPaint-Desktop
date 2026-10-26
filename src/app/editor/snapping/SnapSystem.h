@@ -1,12 +1,13 @@
 #ifndef OURPAINT_APP_SNAP_SYSTEM_H_
 #define OURPAINT_APP_SNAP_SYSTEM_H_
 
-#include <optional>
-#include <cstdint>
-#include <vector>
 #include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <vector>
 
 #include "SnapTypes.h"
+#include "geometry/GeometryTypes.h"
 #include "sketch/SketchTypes.h"
 
 class Camera2D;
@@ -111,6 +112,9 @@ private:
     const core::sketch::Sketch& sketch_;
     const Camera2D& camera_;
 
+    mutable std::optional<geometry::Vec2> directionSnapBaseAnchor_;
+    mutable double directionSnapReferenceZoom_ = 1.0;
+
     // Small cursor movements within the same tool/state/anchor context cycle
     // through nearby snap alternatives instead of locking to the first result.
     mutable bool hasPreviousQuery_ = false;
@@ -127,6 +131,7 @@ public:
 
 private:
     static SnapRule ruleFor(ActionType action, DrawState state);
+    void  onAnchorPlaced(const geometry::Vec2& position);
 
     SnapResult parser(const SnapRequest& request) const;
 

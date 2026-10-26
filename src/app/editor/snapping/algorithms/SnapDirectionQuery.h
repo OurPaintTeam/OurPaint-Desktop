@@ -47,10 +47,10 @@ inline double angle(const Vec2& v) { return std::atan2(v.y, v.x); }
 // Directions are accepted within toleranceDegrees (default +/-25 degrees).
 // Line references are taken from existing Line2 entities; axes are always considered.
 inline std::vector<DirectionSnapCandidate> findDirectionSnaps(const Vec2& start, const Vec2& cursor, std::span<const SketchEntity> entities,
-                                                              double toleranceDegrees = 25.0) {
+                                                              double toleranceDegrees = 25.0, double angleStepDegrees = 15.0) {
     using namespace detail_direction_snap;
     std::vector<DirectionSnapCandidate> result;
-    if (!detail::isFinite(start) || !detail::isFinite(cursor) || !std::isfinite(toleranceDegrees) || toleranceDegrees < 0.0 || toleranceDegrees > 90.0) {
+    if (!detail::isFinite(start) || !detail::isFinite(cursor) || !std::isfinite(toleranceDegrees) || toleranceDegrees < 0.0 || toleranceDegrees > 90.0 || !std::isfinite(angleStepDegrees) || angleStepDegrees <= 0.0 || angleStepDegrees > 90.0) {
         return result;
     }
     const Vec2 raw{cursor.x - start.x, cursor.y - start.y};
@@ -92,12 +92,11 @@ inline std::vector<DirectionSnapCandidate> findDirectionSnaps(const Vec2& start,
         add(d, DirectionSnapKind::ParallelToLine, ref);
         add({-d.y, d.x}, DirectionSnapKind::PerpendicularToLine, ref);
 
-        // Angular increments relative to an existing line: +/-15 degrees,
-        // then +/-30, +/-45 ... up to 165 degrees. These candidates are only
-        // meaningful when the new segment starts at the reference line's end.
+        // Generate angular directions at a zoom-dependent increment relative to
+        // each existing line. The SnapSystem filters topology and zoom-scaled range.
         const double baseAngle = angle(d);
-        for (int degrees = 15; degrees < 180; degrees += 15) {
-            const double delta = static_cast<double>(degrees) * std::numbers::pi / 180.0;
+        for (double degrees = angleStepDegrees; degrees < 180.0 - EPSILON; degrees += angleStepDegrees) {
+            const double delta = degrees * std::numbers::pi / 180.0;
             add({std::cos(baseAngle + delta), std::sin(baseAngle + delta)}, DirectionSnapKind::AngleToLine, ref);
             add({std::cos(baseAngle - delta), std::sin(baseAngle - delta)}, DirectionSnapKind::AngleToLine, ref);
         }
@@ -112,9 +111,22 @@ inline std::vector<DirectionSnapCandidate> findDirectionSnaps(const Vec2& start,
     return result;
 }
 
+inline double snapToNiceAngleStep(double idealStep) {
+    // Nice values, logarithmic nearest. Includes both the zoom-out branch
+    // (15, 30, 45, 60) and the zoom-in branch (15, 10, 5, 2, 1, 0.5, 0.2, 0.1).
+    constexpr double kNiceSteps[] = {0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0};
+    double best = kNiceSteps[0];
+    double bestDist = std::abs(std::log(idealStep / best));
+    for (double candidate : kNiceSteps) {
+        const double d = std::abs(std::log(idealStep / candidate));
+        if (d < bestDist) { bestDist = d; best = candidate; }
+    }
+    return best;
+}
+
 inline std::optional<DirectionSnapCandidate> findBestDirectionSnap(const Vec2& start, const Vec2& cursor, std::span<const SketchEntity> entities,
-                                                                   double toleranceDegrees = 25.0) {
-    auto candidates = findDirectionSnaps(start, cursor, entities, toleranceDegrees);
+                                                                   double toleranceDegrees = 25.0, double angleStepDegrees = 15.0) {
+    auto candidates = findDirectionSnaps(start, cursor, entities, toleranceDegrees, angleStepDegrees);
     if (candidates.empty()) {
         return std::nullopt;
     }

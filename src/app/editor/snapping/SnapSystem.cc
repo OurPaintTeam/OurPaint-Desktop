@@ -2,17 +2,18 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <numbers>
 #include <optional>
 #include <utility>
 #include <vector>
 
 #include "Algorithms.h"
-#include "snapping/algorithms/SnapTangencyQuery.h"
-#include "snapping/algorithms/SnapEntityQuery.h"
 #include "Camera2D.h"
 #include "sketch/Sketch.h"
 #include "sketch/SketchTypes.h"
+#include "snapping/algorithms/SnapEntityQuery.h"
+#include "snapping/algorithms/SnapTangencyQuery.h"
 
 namespace snap {
 namespace {
@@ -268,6 +269,11 @@ bool SnapSystem::isAllowed(SnapKind kind, double candidateDistance, const SnapRu
     return required != SnapMask::None && hasSnap(rule.mask, required);
 }
 
+void SnapSystem::onAnchorPlaced(const geometry::Vec2& position) {
+    directionSnapBaseAnchor_ = position;
+    directionSnapReferenceZoom_ = camera_.zoom();
+}
+
 std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const SnapRequest& request, const SnapRule& rule) const {
     if (request.anchors.empty() || request.action != ActionType::Line || request.drawState != DrawState::End) {
         return std::nullopt;
@@ -279,12 +285,42 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
     auto entitiesResult = sketch_.entities();
     if (!entitiesResult) return std::nullopt;
     const auto entities = algorithms::filterForbiddenEntities(entitiesResult.value(), request.forbiddenObjects);
-    // Direction constraints have deliberately different topology rules:
-    // - perpendicular: only a neighbouring segment sharing an endpoint with base;
-    // - parallel: the cursor must be close to the finite reference segment, but
-    //   no shared endpoint is required (e.g. opposite strokes of a Z).
-    // Collinearity is handled separately and must not masquerade as parallelism.
-    auto candidates = geometry::findDirectionSnaps(base, request.cursor, entities, 25.0);
+
+
+    const double zoom = std::max(camera_.zoom(), 1e-9);
+
+    if (!directionSnapBaseAnchor_ || distance(*directionSnapBaseAnchor_, base) > geometry::EPSILON) {
+        directionSnapBaseAnchor_ = base;
+        directionSnapReferenceZoom_ = zoom;
+    }
+    const double referenceZoom = std::max(directionSnapReferenceZoom_, 1e-9);
+    const double ratio = zoom / referenceZoom;
+
+    // Piecewise exponent: zoom-out uses 0.5 (gives 15/30/45/60 across a few
+    // decades), zoom-in uses 0.368 so that ratio = 833333 lands exactly on
+    // 0.1° — the full zoom-in range is useful.
+    //   ratio = 0.1   -> ideal 60
+    //   ratio = 1     -> ideal 15  (base, wherever the anchor was placed)
+    //   ratio = 833333 -> ideal 0.1
+    constexpr double kZoomInAlpha  = 0.3676;  // ln(150) / ln(833333)
+    constexpr double kZoomOutAlpha = 0.5;
+    const double alpha = (ratio >= 1.0) ? kZoomInAlpha : kZoomOutAlpha;
+    const double idealStep = 15.0 * std::pow(ratio, -alpha);
+
+    // Snap to a pretty value so the user never sees 10.4167 or 40.1878.
+    const double angleStepDegrees = geometry::snapToNiceAngleStep(idealStep);
+
+    // Tolerance: keep a free zone for coarse grids (15°, 30° ...) so the user
+    // can still draw off-grid lines. For fine grids (< 2°) quantize fully
+    // (tolerance = step/2) — sub-pixel gaps are unreachable with a mouse.
+    const double toleranceDegrees = (angleStepDegrees >= 2.0)
+        ? angleStepDegrees * 0.4
+        : angleStepDegrees * 0.5;
+
+    auto candidates = geometry::findDirectionSnaps(base, request.cursor, entities,
+                                                   toleranceDegrees, angleStepDegrees);
+    std::cout<<zoom<<" "<<angleStepDegrees<<std::endl;
+
     candidates.erase(std::remove_if(candidates.begin(), candidates.end(), [&](const auto& candidate) {
         if (!candidate.reference) return false; // global H/V axes
         const auto it = std::find_if(entities.begin(), entities.end(), [&](const auto& entity) {
@@ -294,10 +330,13 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
         const auto* line = std::get_if<Line2>(&it->geometry);
         if (!line || !isUsableLine(*line)) return true;
         if (candidate.kind == geometry::DirectionSnapKind::AngleToLine) {
-            const double startGap = std::min(distance(base, line->start), distance(base, line->end));
-            const double anchorTolerance = std::max(rule.endpointRadius,
+            // Angle-to-line constraints require a shared endpoint with the
+            // existing reference line; unlike perpendicularity, body contacts
+            // are not treated as a common vertex for this relation.
+            const double endpointGap = std::min(distance(base, line->start), distance(base, line->end));
+            const double endpointTolerance = std::max(rule.endpointRadius,
                 kLineBodySnapRadiusPixels / std::max(camera_.zoom(), 1e-9));
-            return startGap > anchorTolerance;
+            return endpointGap > endpointTolerance;
         }
         if (candidate.kind == geometry::DirectionSnapKind::PerpendicularToLine) {
             // Perpendicularity is valid when the new segment starts at an
@@ -358,14 +397,10 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
             result.objects.push_back(*direction.reference);
         }
         result.guideLines.push_back(Line2{base, direction.endpoint});
-        const bool axisDirection = direction.kind == geometry::DirectionSnapKind::AxisXParallel ||
-                                   direction.kind == geometry::DirectionSnapKind::AxisYParallel ||
-                                   direction.kind == geometry::DirectionSnapKind::AxisXPerpendicular ||
-                                   direction.kind == geometry::DirectionSnapKind::AxisYPerpendicular;
         // Parallel and perpendicular have equal priority. When both are valid,
         // candidate ranking uses geometric fit/distance rather than favoring
         // perpendicularity by kind. Axis H/V suggestions keep their own priority.
-        int priority = axisDirection ? 700 : snapPriority(kind, request.action, request.drawState);
+        int priority = snapPriority(kind, request.action, request.drawState);
         SnapCandidate candidate{std::move(result), direction.distanceSquared, priority};
         if (!best || isBetterCandidate(candidate, *best, rule.priorityRadius)) {
             best = std::move(candidate);
