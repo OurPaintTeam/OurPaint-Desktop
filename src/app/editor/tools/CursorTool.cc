@@ -447,6 +447,7 @@ std::optional<ActionReport> CursorTool::pasteSelection() {
     }
 
     overlay_.selection_.model.replace(pasted);
+    std::vector<sketch::ConstraintDefinition> defs;
     for (auto definition : data_.constraints) {
         for (auto& ref : definition.refs) {
             ref.entity = remapped.at(ref.entity);
@@ -454,13 +455,15 @@ std::optional<ActionReport> CursorTool::pasteSelection() {
         if (definition.fixedPosition) {
             translate(*definition.fixedPosition);
         }
-        const auto constraint = sketch_.addConstraint(definition);
-        if (!constraint) {
-            report.mutationFailed(constraint.error());
-            return report;
-        }
-        report.constraintIds.push_back(constraint.value());
+        defs.push_back(definition);
+        // const auto constraint = sketch_.addConstraint(definition);
+        // if (!constraint) {
+        //     report.mutationFailed(constraint.error());
+        //     return report;
+        // }
+        // report.constraintIds.push_back(constraint.value());
     }
+    sketch_.addConstraints(defs);
     const auto solved = sketch_.solve();
     report.recordSolve(solved);
     return report;

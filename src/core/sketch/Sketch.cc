@@ -1200,6 +1200,8 @@ Result<std::vector<EntityId>> Sketch::addEntities(std::span<const EntityCreation
     if (!added) {
         return Added::failure(added.error().code, added.error().message);
     }
+    push(); // TODO
+    drag_ = false; // TODO
     return Added::success(std::move(ids));
 }
 
@@ -1250,7 +1252,10 @@ Status Sketch::removeEntities(std::span<const EntityId> ids) {
     if (!capabilities().removeEntities) {
         return Status::failure(ErrorCode::Unsupported, "Entity removal is unsupported");
     }
-    return impl_->removeEntities(ids);
+    auto res = impl_->removeEntities(ids); // TODO
+    push(); // TODO
+    drag_ = false; // TODO
+    return res;
 }
 
 Status Sketch::clear() { return impl_->clear(); }
@@ -1425,19 +1430,31 @@ Status Sketch::supportsConstraint(const ConstraintDefinition& definition) const 
 }
 
 Result<ConstraintId> Sketch::addConstraint(const ConstraintDefinition& definition) {
-    auto valid = supportsConstraint(definition);
-    if (!valid) {
-        return Result<ConstraintId>::failure(valid.error().code, valid.error().message);
-    }
-    if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
-        return Result<ConstraintId>::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
-    }
-    const ConstraintId id(constraintIds_.generate().get());
-    auto result = impl_->addConstraint({id, definition});
+    auto result = addConstraints(std::span(&definition, 1));
     if (!result) {
         return Result<ConstraintId>::failure(result.error().code, result.error().message);
     }
-    return Result<ConstraintId>::success(id);
+    return Result<ConstraintId>::success(result.value());
+}
+
+Result<ConstraintId> Sketch::addConstraints(std::span<const ConstraintDefinition> definitions) {
+    for (auto& definition : definitions) {
+        auto valid = supportsConstraint(definition);
+        if (!valid) {
+            return Result<ConstraintId>::failure(valid.error().code, valid.error().message);
+        }
+        if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
+            return Result<ConstraintId>::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
+        }
+        const ConstraintId id(constraintIds_.generate().get());
+        auto result = impl_->addConstraint({id, definition});
+        if (!result) {
+            return Result<ConstraintId>::failure(result.error().code, result.error().message);
+        }
+    }
+    push(); // TODO
+    drag_ = false; // TODO
+    return Result<ConstraintId>::success(ConstraintId(-1));
 }
 
 Result<ConstraintId> Sketch::addCoincident(GeometryRef a, GeometryRef b, CoincidentPlacement placement) {
@@ -1661,6 +1678,11 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
     if (!capabilities().drag) {
         return Result<SolveDiagnostics>::failure(ErrorCode::Unsupported, "Dragging is unsupported");
     }
+    // TODO
+    if (!drag_) {
+        push();
+        drag_ = true;
+    }
     return impl_->dragPoints(requests, options);
 }
 
@@ -1725,5 +1747,47 @@ Status Sketch::installState(const SketchSnapshot& state) {
 }
 
 Status Sketch::replaceState(const SketchSnapshot& state) { return installState(state); }
+
+void Sketch::undo() {
+    if (undo_.empty()) {
+        return;
+    }
+
+    redo_.push_back(std::move(undo_.back()));
+    undo_.pop_back();
+
+    if (undo_.empty()) {
+        auto sketch = Sketch();
+        impl_.swap(sketch.impl_);
+        return;
+    }
+
+    SketchSnapshot& s = undo_.back();
+    replaceState(s);
+
+    drag_ = false;
+}
+
+void Sketch::redo() {
+    if (redo_.empty()) {
+        return;
+    }
+
+    SketchSnapshot& s = redo_.back();
+    replaceState(s);
+
+    undo_.push_back(std::move(redo_.back()));
+    redo_.pop_back();
+}
+
+void Sketch::push() {
+    redo_.clear();
+
+    if (undo_.size() >= maxSteps_) {
+        undo_.pop_front();
+    }
+
+    undo_.push_back(snapshot().value());
+}
 
 }  // namespace core::sketch
