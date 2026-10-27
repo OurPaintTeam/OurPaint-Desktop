@@ -8,7 +8,7 @@
 #include "objects/Objects.h"
 
 LineTool::LineTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
-    :IInteractionTool(document,camera,snap,overlay, picker) {}
+    : IInteractionTool(document, camera, snap, overlay, picker) {}
 
 std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
@@ -17,14 +17,12 @@ std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e
     snap::SnapRequest request;
 
     if (state_ == State::WaitingFirstPoint) {
-         request = snap::SnapRequest{ core::sketch::Vec2{v.x, v.y}, snap::ActionType::Line, snap::DrawState::Start};
-    }else if (state_ == State::WaitingSecondPoint) {
-        request = snap::SnapRequest {
-            core::sketch::Vec2{v.x, v.y},
-            snap::ActionType::Line,
-            snap::DrawState::End,
-            { core::sketch::Point2{ core::sketch::Vec2{firstPoint_.x, firstPoint_.y} } }
-        };
+        request = snap::SnapRequest{core::sketch::Vec2{v.x, v.y}, snap::ActionType::Line, snap::DrawState::Start};
+    } else if (state_ == State::WaitingSecondPoint) {
+        request = snap::SnapRequest{core::sketch::Vec2{v.x, v.y},
+                                    snap::ActionType::Line,
+                                    snap::DrawState::End,
+                                    {core::sketch::Point2{core::sketch::Vec2{firstPoint_.x, firstPoint_.y}}}};
     }
 
     snapVisual(request);
@@ -35,9 +33,9 @@ std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e
 
             // Snap to the dominant axis
             if (std::abs(delta.x) > std::abs(delta.y)) {
-                v.y = firstPoint_.y; // Lock to horizontal
+                v.y = firstPoint_.y;  // Lock to horizontal
             } else {
-                v.x = firstPoint_.x; // Lock to vertical
+                v.x = firstPoint_.x;  // Lock to vertical
             }
         }
 
@@ -49,13 +47,11 @@ std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e
     return std::nullopt;
 }
 
-
 std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
-
         if (snap_result_.snapped) {
             v.x = snap_result_.point.position.x;
             v.y = snap_result_.point.position.y;
@@ -70,8 +66,7 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
             overlay_.points_.push_back(OverlayModel::Point(v.x, v.y));
             overlay_.points_.push_back(OverlayModel::Point(v.x, v.y));
             overlay_.lines_.push_back(OverlayModel::Line(v.x, v.y, v.x, v.y));
-        }
-        else {
+        } else {
             bool shiftLocked = false;
             core::sketch::ConstraintType shiftLockType = core::sketch::ConstraintType::Horizontal;
 
@@ -80,86 +75,200 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
 
                 // Snap to the dominant axis
                 if (std::abs(delta.x) > std::abs(delta.y)) {
-                    v.y = firstPoint_.y; // Lock to horizontal
+                    v.y = firstPoint_.y;  // Lock to horizontal
                     shiftLockType = core::sketch::ConstraintType::Horizontal;
                 } else {
-                    v.x = firstPoint_.x; // Lock to vertical
+                    v.x = firstPoint_.x;  // Lock to vertical
                     shiftLockType = core::sketch::ConstraintType::Vertical;
                 }
+
                 shiftLocked = true;
             }
 
             auto addResult = document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y});
+
             ActionReport report = ActionReport::creation(ActionKind::CreateLine, addResult);
 
             if (addResult) {
                 const auto lineId = addResult.value();
                 bool needsSolve = false;
 
-                auto applyConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement sub) {
-                    if (!snap.snapped) return;
+                using SK = snap::SnapKind;
+                using CT = core::sketch::ConstraintType;
+                using SE = core::sketch::SubElement;
+                using Ref = core::sketch::GeometryRef;
 
+                // Track constraints already requested to avoid duplicates.
+                std::vector<core::sketch::ConstraintDefinition> appliedConstraints;
+
+                auto addConstraint = [&](CT type, std::vector<Ref> refs) {
                     core::sketch::ConstraintDefinition def;
-                    bool validType = false;
+                    def.type = type;
+                    def.refs = std::move(refs);
 
-                    if (sub == core::sketch::SubElement::Start || sub == core::sketch::SubElement::End) {
-                        switch (snap.type) {
-                            case snap::SnapKind::Coincident:
-                            case snap::SnapKind::ExtendedIntersection:
-                            case snap::SnapKind::Intersection:
-                                def.type = core::sketch::ConstraintType::Coincident;
-                                def.refs = { { lineId, sub }, snap.objects[0] };
-                                validType = true;
-                                break;
-                            case snap::SnapKind::Midpoint:
-                                def.type = core::sketch::ConstraintType::Midpoint;
-                                def.refs = { { lineId, sub }, snap.objects[0] };
-                                validType = true;
-                                break;
-                            default:
-                                break;
+                    // Avoid duplicate constraints generated by overlapping
+                    // primary snap objects and additional snap relations.
+                    const auto duplicate = std::find_if(appliedConstraints.begin(), appliedConstraints.end(), [&](const auto& existing) {
+                        if (existing.type != def.type || existing.refs.size() != def.refs.size()) {
+                            return false;
                         }
-                    }
-                    else if (sub == core::sketch::SubElement::Whole) {
-                        switch (snap.type) {
-                            case snap::SnapKind::Tangent:
-                                def.type = core::sketch::ConstraintType::Tangent;
-                                def.refs = { { lineId, sub }, snap.objects[0] };
-                                validType = true;
-                                break;
-                            case snap::SnapKind::Horizontal:
-                                def.type = core::sketch::ConstraintType::Horizontal;
-                                def.refs = { { lineId, sub } };
-                                validType = true;
-                                break;
-                            case snap::SnapKind::Vertical:
-                                def.type = core::sketch::ConstraintType::Vertical;
-                                def.refs = { { lineId, sub } };
-                                validType = true;
-                                break;
-                            case snap::SnapKind::Parallel:
-                                def.type = core::sketch::ConstraintType::Parallel;
-                                def.refs = { { lineId, sub }, snap.objects[0] };
-                                validType = true;
-                                break;
-                            case snap::SnapKind::Perpendicular:
-                                def.type = core::sketch::ConstraintType::Perpendicular;
-                                def.refs = { { lineId, sub }, snap.objects[0] };
-                                validType = true;
-                                break;
-                            default:
-                                break;
+
+                        for (std::size_t i = 0; i < existing.refs.size(); ++i) {
+                            if (existing.refs[i] != def.refs[i] || existing.refs[i].sub != def.refs[i].sub) {
+                                return false;
+                            }
                         }
+
+                        return true;
+                    });
+
+                    if (duplicate != appliedConstraints.end()) {
+                        return;
                     }
 
-                    if (validType && document_.sketch().supportsConstraint(def)) {
-                        auto c = document_.sketch().addConstraint(def);
-                        if (c) {
-                            report.constraintIds.push_back(c.value());
-                            report.requestedConstraints++;
-                            needsSolve = true;
-                        } else {
-                            report.operationError = c.error();
+                    if (!document_.sketch().supportsConstraint(def)) {
+                        return;
+                    }
+
+                    auto c = document_.sketch().addConstraint(def);
+
+                    if (c) {
+                        appliedConstraints.push_back(std::move(def));
+                        report.constraintIds.push_back(c.value());
+                        report.requestedConstraints++;
+                        needsSolve = true;
+                    } else {
+                        report.operationError = c.error();
+                    }
+                };
+
+                auto applyConstraint = [&](const snap::SnapResult& snap, SE sub) {
+                    if (!snap.snapped) {
+                        return;
+                    }
+
+                    const Ref lineRef{lineId, sub};
+
+                    // Process every object in the primary snap.
+                    switch (snap.type) {
+                        case SK::Coincident:
+                        case SK::Intersection:
+                        case SK::ExtendedIntersection:
+                        case SK::VirtualIntersection:
+                            if (sub == SE::Start || sub == SE::End) {
+                                for (const auto& object : snap.objects) {
+                                    addConstraint(CT::Coincident, {lineRef, object});
+                                }
+                            }
+                            break;
+
+                        case SK::Midpoint:
+                            if (sub == SE::Start || sub == SE::End) {
+                                for (const auto& object : snap.objects) {
+                                    addConstraint(CT::Midpoint, {lineRef, object});
+                                }
+                            }
+                            break;
+
+                        case SK::Tangent:
+                            if (sub == SE::Whole) {
+                                for (const auto& object : snap.objects) {
+                                    addConstraint(CT::Tangent, {lineRef, object});
+                                }
+                            }
+                            break;
+
+                        case SK::Horizontal:
+                            if (sub == SE::Whole) {
+                                addConstraint(CT::Horizontal, {lineRef});
+                            }
+                            break;
+
+                        case SK::Vertical:
+                            if (sub == SE::Whole) {
+                                addConstraint(CT::Vertical, {lineRef});
+                            }
+                            break;
+
+                        case SK::Parallel:
+                            if (sub == SE::Whole) {
+                                for (const auto& object : snap.objects) {
+                                    addConstraint(CT::Parallel, {lineRef, object});
+                                }
+                            }
+                            break;
+
+                        case SK::Perpendicular:
+                            if (sub == SE::Whole) {
+                                for (const auto& object : snap.objects) {
+                                    addConstraint(CT::Perpendicular, {lineRef, object});
+                                }
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    // Apply all simultaneous relations at the snap point.
+                    for (const auto& relation : snap.relations) {
+                        switch (relation.type) {
+                            case SK::Coincident:
+                            case SK::Intersection:
+                            case SK::ExtendedIntersection:
+                                if (sub == SE::Start || sub == SE::End) {
+                                    for (const auto& object : relation.objects) {
+                                        addConstraint(CT::Coincident, {lineRef, object});
+                                    }
+                                }
+                                break;
+
+                            case SK::Midpoint:
+                                if (sub == SE::Start || sub == SE::End) {
+                                    for (const auto& object : relation.objects) {
+                                        addConstraint(CT::Midpoint, {lineRef, object});
+                                    }
+                                }
+                                break;
+
+                            case SK::Tangent:
+                                if (sub == SE::Whole) {
+                                    for (const auto& object : relation.objects) {
+                                        addConstraint(CT::Tangent, {lineRef, object});
+                                    }
+                                }
+                                break;
+
+                            case SK::Horizontal:
+                                if (sub == SE::Whole) {
+                                    addConstraint(CT::Horizontal, {lineRef});
+                                }
+                                break;
+
+                            case SK::Vertical:
+                                if (sub == SE::Whole) {
+                                    addConstraint(CT::Vertical, {lineRef});
+                                }
+                                break;
+
+                            case SK::Parallel:
+                                if (sub == SE::Whole) {
+                                    for (const auto& object : relation.objects) {
+                                        addConstraint(CT::Parallel, {lineRef, object});
+                                    }
+                                }
+                                break;
+
+                            case SK::Perpendicular:
+                                if (sub == SE::Whole) {
+                                    for (const auto& object : relation.objects) {
+                                        addConstraint(CT::Perpendicular, {lineRef, object});
+                                    }
+                                }
+                                break;
+
+                            default:
+                                break;
                         }
                     }
                 };
@@ -169,10 +278,13 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
                 if (shiftLocked) {
                     core::sketch::ConstraintDefinition def;
                     def.type = shiftLockType;
-                    def.refs = { { lineId, core::sketch::SubElement::Whole } };
+                    def.refs = {{lineId, SE::Whole}};
+
                     if (document_.sketch().supportsConstraint(def)) {
                         auto c = document_.sketch().addConstraint(def);
+
                         if (c) {
+                            appliedConstraints.push_back(def);
                             report.constraintIds.push_back(c.value());
                             report.requestedConstraints++;
                             needsSolve = true;
@@ -182,25 +294,26 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
                     }
                 }
 
-                applyConstraint(firstSnap_, core::sketch::SubElement::Start);
+                applyConstraint(firstSnap_, SE::Start);
 
                 // Shift-lock moved the endpoint off the snap point:
                 // don't pull it back with a Coincident.
                 if (!shiftLocked) {
-                    applyConstraint(snap_result_, core::sketch::SubElement::End);
+                    applyConstraint(snap_result_, SE::End);
                 }
 
-                applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
+                applyConstraint(firstSnap_, SE::Whole);
 
                 // Shift-lock already fixed orientation: skip snapshot Whole
                 // constraints to avoid duplicate/conflicting H/V.
                 if (!shiftLocked) {
-                    applyConstraint(snap_result_, core::sketch::SubElement::Whole);
+                    applyConstraint(snap_result_, SE::Whole);
                 }
 
                 if (needsSolve) {
                     auto solved = document_.sketch().solve();
                     report.recordSolve(solved);
+
                     if (!solved || solved.value().status != core::sketch::SolveStatus::Converged) {
                         std::cout << "solve err in LineTool" << std::endl;
                     }
@@ -222,32 +335,27 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
             return report;
         }
     }
+
     return std::nullopt;
 }
 
-
 std::optional<ActionReport> LineTool::onKey(const input::KeyEvent& e) {
-    if (input::has_flag(e.modifiers, input::Modifiers::Shift) &&
-        e.action == input::KeyAction::Press &&
-        state_ == State::WaitingSecondPoint) {
-
+    if (input::has_flag(e.modifiers, input::Modifiers::Shift) && e.action == input::KeyAction::Press && state_ == State::WaitingSecondPoint) {
         glm::dvec2 v = lastCursorWorldPos_;
         glm::dvec2 delta = v - firstPoint_;
 
         // Snap to the dominant axis
         if (std::abs(delta.x) > std::abs(delta.y)) {
-            v.y = firstPoint_.y; // Lock to horizontal
+            v.y = firstPoint_.y;  // Lock to horizontal
         } else {
-            v.x = firstPoint_.x; // Lock to vertical
+            v.x = firstPoint_.x;  // Lock to vertical
         }
 
         overlay_.lines_[0].x2 = v.x;
         overlay_.lines_[0].y2 = v.y;
         overlay_.points_[0].x = v.x;
         overlay_.points_[0].y = v.y;
-    }
-    else if (e.action == input::KeyAction::Release &&
-             state_ == State::WaitingSecondPoint) {
+    } else if (e.action == input::KeyAction::Release && state_ == State::WaitingSecondPoint) {
         glm::dvec2 v = lastCursorWorldPos_;
         overlay_.lines_[0].x2 = v.x;
         overlay_.lines_[0].y2 = v.y;
@@ -265,4 +373,3 @@ ToolCancellation LineTool::cancel() {
     }
     return {};
 }
-

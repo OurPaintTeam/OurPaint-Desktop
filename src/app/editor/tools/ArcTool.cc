@@ -1,10 +1,10 @@
 #include "ArcTool.h"
 
+#include <variant>
+
 #include "../../../core/Document.h"
 #include "RenderScene.h"
 #include "objects/Objects.h"
-
-#include <variant>
 
 ArcTool::ArcTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
     : IInteractionTool(document, camera, snap, overlay, picker) {}
@@ -90,80 +90,173 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
         if (report.entityIds.empty()) {
             return false;
         }
+
         const auto arcId = report.entityIds[0];
         bool needsSolve = false;
 
+        using SK = snap::SnapKind;
+        using CT = core::sketch::ConstraintType;
+        using SE = core::sketch::SubElement;
+        using Ref = core::sketch::GeometryRef;
+
+        // Cache entities once instead of retrieving them for every object.
+        const auto entities = document_.sketch().entities();
+
         auto isStandalonePoint = [&](core::sketch::EntityId id) {
-            const auto entities = document_.sketch().entities();
-            if (!entities) return false;
-            for (const auto& entity : entities.value()) {
-                if (entity.id == id) return std::holds_alternative<core::sketch::Point2>(entity.geometry);
+            if (!entities) {
+                return false;
             }
+
+            for (const auto& entity : entities.value()) {
+                if (entity.id == id) {
+                    return std::holds_alternative<core::sketch::Point2>(entity.geometry);
+                }
+            }
+
             return false;
         };
 
-        auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement arcSub) {
-            if (!snap.snapped || snap.objects.empty()) {
+        // Avoid adding the same constraint more than once.
+        std::vector<core::sketch::ConstraintDefinition> appliedConstraints;
+
+        auto addConstraint = [&](CT type, std::vector<Ref> refs) {
+            core::sketch::ConstraintDefinition def;
+            def.type = type;
+            def.refs = std::move(refs);
+
+            const auto duplicate = std::find_if(appliedConstraints.begin(), appliedConstraints.end(), [&](const auto& existing) {
+                if (existing.type != def.type || existing.refs.size() != def.refs.size()) {
+                    return false;
+                }
+
+                for (std::size_t i = 0; i < existing.refs.size(); ++i) {
+                    if (existing.refs[i] != def.refs[i] || existing.refs[i].sub != def.refs[i].sub) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            if (duplicate != appliedConstraints.end()) {
                 return;
             }
 
-            core::sketch::ConstraintDefinition def;
+            if (!document_.sketch().supportsConstraint(def)) {
+                return;
+            }
 
-            switch (snap.type) {
-                case snap::SnapKind::Midpoint:
-                    def.type = core::sketch::ConstraintType::Midpoint;
-                    break;
+            auto c = document_.sketch().addConstraint(def);
 
-                case snap::SnapKind::Coincident:
-                    // Arc endpoint/body to a point is Coincident. For the arc body
-                    // against another curve body, the intended relation is Tangent,
-                    // not Coincident(Whole, Whole).
-                    if (arcSub == core::sketch::SubElement::Whole &&
-                        snap.objects[0].sub == core::sketch::SubElement::Whole &&
-                        !isStandalonePoint(snap.objects[0].entity)) {
-                        def.type = core::sketch::ConstraintType::Tangent;
-                    } else {
-                        def.type = core::sketch::ConstraintType::Coincident;
+            if (c) {
+                appliedConstraints.push_back(std::move(def));
+                report.constraintIds.push_back(c.value());
+                report.requestedConstraints++;
+                needsSolve = true;
+            } else {
+                report.operationError = c.error();
+            }
+        };
+
+        auto applySnapKind = [&](SK type, const std::vector<Ref>& objects, SE arcSub) {
+            const Ref arcRef{arcId, arcSub};
+
+            switch (type) {
+                case SK::Midpoint:
+                    if (arcSub == SE::Start || arcSub == SE::End) {
+                        for (const auto& object : objects) {
+                            addConstraint(CT::Midpoint, {arcRef, object});
+                        }
                     }
                     break;
 
-                case snap::SnapKind::ExtendedIntersection:
-                case snap::SnapKind::Intersection:
-                    def.type = core::sketch::ConstraintType::Coincident;
+                case SK::Coincident:
+                    // Arc endpoint/body to a point is Coincident. For the arc body
+                    // against another curve body, the intended relation is Tangent,
+                    // not Coincident(Whole, Whole).
+                    for (const auto& object : objects) {
+                        if (arcSub == SE::Whole && object.sub == SE::Whole && !isStandalonePoint(object.entity)) {
+                            addConstraint(CT::Tangent, {arcRef, object});
+                        } else {
+                            addConstraint(CT::Coincident, {arcRef, object});
+                        }
+                    }
                     break;
 
-                case snap::SnapKind::Tangent:
+                case SK::ExtendedIntersection:
+                case SK::Intersection:
+                case SK::VirtualIntersection:
+                    if (arcSub == SE::Start || arcSub == SE::End) {
+                        for (const auto& object : objects) {
+                            addConstraint(CT::Coincident, {arcRef, object});
+                        }
+                    }
+                    break;
+
+                case SK::Tangent:
                     // Tangency is a property of the whole arc, not of an endpoint.
                     // The caller passes SubElement::Whole only for secondSnap_
                     // (middle point on the arc body), which is the only place
                     // where a Tangent snap makes sense.
-                    if (arcSub != core::sketch::SubElement::Whole) {
+                    if (arcSub != SE::Whole) {
                         return;
                     }
-                    def.type = core::sketch::ConstraintType::Tangent;
+
+                    for (const auto& object : objects) {
+                        addConstraint(CT::Tangent, {arcRef, object});
+                    }
+                    break;
+
+                case SK::Parallel:
+                    if (arcSub == SE::Whole) {
+                        for (const auto& object : objects) {
+                            addConstraint(CT::Parallel, {arcRef, object});
+                        }
+                    }
+                    break;
+
+                case SK::Perpendicular:
+                    if (arcSub == SE::Whole) {
+                        for (const auto& object : objects) {
+                            addConstraint(CT::Perpendicular, {arcRef, object});
+                        }
+                    }
+                    break;
+
+                case SK::Horizontal:
+                    if (arcSub == SE::Whole) {
+                        addConstraint(CT::Horizontal, {arcRef});
+                    }
+                    break;
+
+                case SK::Vertical:
+                    if (arcSub == SE::Whole) {
+                        addConstraint(CT::Vertical, {arcRef});
+                    }
                     break;
 
                 default:
-                    return;
-            }
-
-            def.refs = {{arcId, arcSub}, snap.objects[0]};
-
-            if (document_.sketch().supportsConstraint(def)) {
-                auto c = document_.sketch().addConstraint(def);
-                if (c) {
-                    report.constraintIds.push_back(c.value());
-                    report.requestedConstraints++;
-                    needsSolve = true;
-                } else {
-                    report.operationError = c.error();
-                }
+                    break;
             }
         };
 
-        tryAddConstraint(startSnap, core::sketch::SubElement::Start);
-        tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
-        tryAddConstraint(endSnap, core::sketch::SubElement::End);
+        auto tryAddConstraint = [&](const snap::SnapResult& snap, SE arcSub) {
+            if (!snap.snapped) {
+                return;
+            }
+
+            // Process every object in the primary snap.
+            applySnapKind(snap.type, snap.objects, arcSub);
+
+            // Process all additional simultaneous relations.
+            for (const auto& relation : snap.relations) {
+                applySnapKind(relation.type, relation.objects, arcSub);
+            }
+        };
+
+        tryAddConstraint(startSnap, SE::Start);
+        tryAddConstraint(secondSnap_, SE::Whole);
+        tryAddConstraint(endSnap, SE::End);
 
         return needsSolve;
     };
@@ -211,6 +304,7 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
             }
             break;
     }
+
     return std::nullopt;
 }
 

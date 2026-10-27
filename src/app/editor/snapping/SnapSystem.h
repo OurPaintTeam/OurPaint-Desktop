@@ -44,6 +44,17 @@ struct SnapRequest {
 // Describes ONE resolved candidate: point, kind, and all geometry
 // needed for rendering and for the tool.
 // =============================================================================
+
+/// Coincident + P/P
+/// Coincident + H/V
+/// Coincident + tangent
+struct SnapRelation {
+    SnapKind type = SnapKind::Coincident;
+    double angle = 0.0;
+    std::vector<core::sketch::GeometryRef> objects;
+    std::vector<core::sketch::Line2> guideLines;
+};
+
 struct SnapResult {
     /// True if a candidate was found and accepted.
     bool snapped = false;
@@ -70,6 +81,10 @@ struct SnapResult {
     /// Auxiliary geometry drawn in a different style.
     /// Used when draw state > 0 to preview what the user is drawing.
     std::vector<core::sketch::SketchGeometry> visualObjectsTools;
+
+    /// Additional simultaneous constraints at the same resolved point.
+    /// E.g. Coincident + Parallel or Coincident + Perpendicular.
+    std::vector<SnapRelation> relations;
 };
 
 // =============================================================================
@@ -80,8 +95,8 @@ struct SnapRule {
     double maxRadius = 0.0;
     double regularRadius = 0.0;
 
-    /// Distance band within which priority decides the winner.
-    /// Candidates farther than this from each other are ranked by distance only.
+    /// Legacy distance band retained for configuration compatibility.
+    /// Candidate ranking is deterministic: priority first, then cursor distance.
     double priorityRadius = 0.0;
 
     /// Tighter screen-space limits for relation snaps that are easy to over-trigger.
@@ -112,18 +127,11 @@ private:
     const core::sketch::Sketch& sketch_;
     const Camera2D& camera_;
 
+    // Direction-step reference is retained only for angle-step scaling after
+    // the first point is placed. Snap-result cycling/locking is intentionally
+    // not stateful: every query resolves from the current cursor and geometry.
     mutable std::optional<geometry::Vec2> directionSnapBaseAnchor_;
     mutable double directionSnapReferenceZoom_ = 1.0;
-
-    // Small cursor movements within the same tool/state/anchor context cycle
-    // through nearby snap alternatives instead of locking to the first result.
-    mutable bool hasPreviousQuery_ = false;
-    mutable ActionType previousAction_ = ActionType::Point;
-    mutable DrawState previousDrawState_ = DrawState::Start;
-    mutable core::sketch::Vec2 previousCursor_{};
-    mutable std::vector<core::sketch::Vec2> previousAnchors_;
-    mutable std::vector<core::sketch::GeometryRef> previousForbiddenObjects_;
-    mutable std::size_t previousCycleIndex_ = 0;
 
 public:
     explicit SnapSystem(const core::sketch::Sketch& sketch,const Camera2D& camera);
@@ -146,6 +154,8 @@ private:
     std::optional<SnapCandidate> findBestTangentCandidate(const SnapRequest& request, const SnapRule& rule) const;
 
     std::optional<SnapCandidate> findBestDirectionalCandidate(const SnapRequest& request, const SnapRule& rule) const;
+
+    std::optional<SnapCandidate> findBestAlignmentCandidate(const SnapRequest& request, const SnapRule& rule) const;
 
     std::optional<SnapCandidate> findBestArcCandidate(const SnapRequest& request, const SnapRule& rule) const;
 

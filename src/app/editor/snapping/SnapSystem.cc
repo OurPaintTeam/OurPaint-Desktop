@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <numbers>
 #include <optional>
 #include <utility>
@@ -53,6 +52,17 @@ using geometry::detail::subtract;
 // them representable for callers that need point-like segment behavior.
 bool isUsableLine(const Line2& line) { return isFinite(line) && !geometry::detail::isDegenerate(line); }
 
+double niceBodyStepWorld(double zoom) {
+    // Aim for roughly 10 screen pixels between body attachment points, while
+    // keeping the world-space interval on a 1/2/5 decade series.
+    const double target = 10.0 / std::max(zoom, 1e-9);
+    const double exponent = std::floor(std::log10(target));
+    const double magnitude = std::pow(10.0, exponent);
+    const double normalized = target / magnitude;
+    const double nice = normalized < 1.5 ? 1.0 : (normalized < 3.5 ? 2.0 : (normalized < 7.5 ? 5.0 : 10.0));
+    return nice * magnitude;
+}
+
 bool sameRefs(const std::vector<GeometryRef>& a, const std::vector<GeometryRef>& b) {
     if (a.size() != b.size()) return false;
     for (std::size_t i = 0; i < a.size(); ++i) {
@@ -76,21 +86,14 @@ SnapCandidate makeCandidate(const Vec2& point, SnapKind kind, double candidateDi
 }  // namespace
 
 bool SnapSystem::isBetterCandidate(const SnapCandidate& candidate, const SnapCandidate& current, double priorityRadius) {
-    constexpr double epsilon = 1e-9;
-
-    // Priority is meaningful inside the screen-space priority band. This lets a
-    // real/virtual intersection beat a nearby line body or endpoint, without
-    // allowing a much farther high-priority candidate to steal the snap.
-    // priorityRadius is applied in parser() in world units (pixels / zoom).
-    // SnapCandidate intentionally stores no rule, so the standard band is
-    // enforced by candidate distance comparisons after parser() has filtered
-    // candidates to the pixel hit radius.
-    const double candidateDistance = std::sqrt(std::max(0.0, candidate.distanceSquared));
-    const double currentDistance = std::sqrt(std::max(0.0, current.distanceSquared));
-    if (std::abs(candidateDistance - currentDistance) <= priorityRadius + epsilon) {
-        return candidate.priority > current.priority;
-    }
-    return candidateDistance < currentDistance;
+    // Use the same ordering as the final candidate selection: priority first,
+    // then cursor distance. A band-based pairwise comparison is non-transitive
+    // (A can beat B, B beat C, and C beat A), which makes global selection
+    // depend on enumeration order. Keep the parameter for source compatibility
+    // with existing call sites; priorityRadius is still used by rule filtering.
+    (void)priorityRadius;
+    if (candidate.priority != current.priority) return candidate.priority > current.priority;
+    return candidate.distanceSquared < current.distanceSquared;
 }
 
 SnapSystem::SnapSystem(const core::sketch::Sketch& sketch, const Camera2D& camera) : sketch_(sketch), camera_(camera) {}
@@ -195,16 +198,16 @@ SnapResult SnapSystem::parser(const SnapRequest& request) const {
         consider(findBestDirectionalCandidate(request, rule));
     }
 
+    if (hasSnap(rule.mask, SnapMask::Alignment)) {
+        consider(findBestAlignmentCandidate(request, rule));
+    }
+
     if (candidates.empty()) {
-        hasPreviousQuery_ = false;
-        previousCycleIndex_ = 0;
         return {};
     }
 
-    // Collapse duplicate results from different query paths, then sort by the
-    // normal snap ranking. Endpoint coincidences suppress intersections and
-    // collinearity within the endpoint capture area; the endpoint is the useful
-    // semantic target when two segments share a vertex.
+    // Endpoint coincidences suppress intersections and collinearity in the
+    // endpoint capture area: the endpoint is the useful semantic target.
     const auto candidatesBeforeEndpointFiltering = candidates;
     candidates.erase(std::remove_if(candidates.begin(), candidates.end(), [&](const SnapCandidate& candidate) {
         const bool intersection = candidate.result.type == SnapKind::Intersection ||
@@ -217,8 +220,6 @@ SnapResult SnapSystem::parser(const SnapRequest& request) const {
                 return ref.sub == SubElement::Start || ref.sub == SubElement::End;
             });
             if (!endpoint) return false;
-            // Endpoint acquisition is based on cursor distance, not just the
-            // distance between two projected candidate points.
             const double endpointCursorDistance = std::sqrt(std::max(0.0, other.distanceSquared));
             if (endpointCursorDistance > rule.endpointRadius) return false;
             return intersection ? distance(other.result.point.position, candidate.result.point.position) <= rule.endpointRadius : true;
@@ -235,30 +236,56 @@ SnapResult SnapSystem::parser(const SnapRequest& request) const {
                sameRefs(a.result.objects, b.result.objects);
     }), candidates.end());
 
-    bool sameContext = hasPreviousQuery_ && previousAction_ == request.action && previousDrawState_ == request.drawState &&
-        previousAnchors_.size() == request.anchors.size() && sameRefs(previousForbiddenObjects_, request.forbiddenObjects);
-    if (sameContext) {
-        for (std::size_t i = 0; i < request.anchors.size(); ++i) {
-            if (distance(previousAnchors_[i], request.anchors[i].position) > 1e-8) { sameContext = false; break; }
+    if (candidates.empty()) return {};
+
+    // Preserve simultaneous constraints as a vector instead of forcing the
+    // caller to choose between coincidence and a directional relation. Merge
+    // a direction candidate into the coincident point when both resolve within
+    // the normal screen-space body tolerance.
+    auto best = candidates.front().result;
+    const double relationMergeRadius = std::max(rule.endpointRadius,
+        kLineBodySnapRadiusPixels / std::max(camera_.zoom(), 1e-9));
+    for (std::size_t i = 1; i < candidates.size(); ++i) {
+        const auto& other = candidates[i].result;
+        const bool relationKind = other.type == SnapKind::Parallel || other.type == SnapKind::Perpendicular ||
+            other.type == SnapKind::Horizontal || other.type == SnapKind::Vertical || other.type == SnapKind::Alignment;
+        const bool primaryCoincidence = best.type == SnapKind::Coincident || best.type == SnapKind::Midpoint ||
+            best.type == SnapKind::Alignment || best.type == SnapKind::EqualityEndLines;
+        const bool otherCoincidence = other.type == SnapKind::Coincident || other.type == SnapKind::Midpoint ||
+            other.type == SnapKind::Alignment || other.type == SnapKind::EqualityEndLines;
+
+        // Coincident + Tangent is valid only when the coincidence target and
+        // the tangent target are different geometry entities. This prevents a
+        // single curve from being reported as tangent to itself at its own
+        // coincidence point. Keep Coincident as the primary snap and preserve
+        // the tangent target in the relation payload.
+        const bool tangentOnDifferentObject = other.type == SnapKind::Tangent &&
+            best.type == SnapKind::Coincident && !best.objects.empty() && !other.objects.empty() &&
+            std::none_of(best.objects.begin(), best.objects.end(), [&](const GeometryRef& coincidentRef) {
+                return std::any_of(other.objects.begin(), other.objects.end(), [&](const GeometryRef& tangentRef) {
+                    return coincidentRef.entity == tangentRef.entity;
+                });
+            });
+
+        if ((relationKind && primaryCoincidence || tangentOnDifferentObject) &&
+            distance(best.point.position, other.point.position) <= relationMergeRadius) {
+            best.relations.push_back(SnapRelation{other.type, other.angle, other.objects, other.guideLines});
+            best.relations.insert(best.relations.end(), other.relations.begin(), other.relations.end());
+            best.guideLines.insert(best.guideLines.end(), other.guideLines.begin(), other.guideLines.end());
+        } else if (otherCoincidence && (best.type == SnapKind::Parallel || best.type == SnapKind::Perpendicular ||
+                   best.type == SnapKind::Horizontal || best.type == SnapKind::Vertical ||
+                   best.type == SnapKind::Alignment || best.type == SnapKind::EqualityEndLines) &&
+                   distance(best.point.position, other.point.position) <= relationMergeRadius) {
+            SnapResult combined = other;
+            combined.relations.push_back(SnapRelation{best.type, best.angle, best.objects, best.guideLines});
+            combined.relations.insert(combined.relations.end(), best.relations.begin(), best.relations.end());
+            combined.guideLines.insert(combined.guideLines.end(), best.guideLines.begin(), best.guideLines.end());
+            best = std::move(combined);
         }
     }
-    const double cursorDriftPixels = distance(previousCursor_, request.cursor) * zoom;
-    if (sameContext && cursorDriftPixels <= 3.0) {
-        // Keep the cycle alive for tiny cursor movements. Only advance when the
-        // cursor moved enough to indicate the user is asking for an alternative.
-        if (cursorDriftPixels > 0.75) previousCycleIndex_++;
-    } else {
-        previousCycleIndex_ = 0;
-    }
-    hasPreviousQuery_ = true;
-    previousAction_ = request.action;
-    previousDrawState_ = request.drawState;
-    previousCursor_ = request.cursor;
-    previousAnchors_.clear();
-    for (const auto& anchor : request.anchors) previousAnchors_.push_back(anchor.position);
-    previousForbiddenObjects_ = request.forbiddenObjects;
-    previousCycleIndex_ %= candidates.size();
-    return candidates[previousCycleIndex_].result;
+    // Always return the best current candidate plus any simultaneous relations.
+    // No remembered snap and no cycling to a lower-priority alternative.
+    return best;
 }
 
 bool SnapSystem::isAllowed(SnapKind kind, double candidateDistance, const SnapRule& rule) {
@@ -296,30 +323,21 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
     const double referenceZoom = std::max(directionSnapReferenceZoom_, 1e-9);
     const double ratio = zoom / referenceZoom;
 
-    // Piecewise exponent: zoom-out uses 0.5 (gives 15/30/45/60 across a few
-    // decades), zoom-in uses 0.368 so that ratio = 833333 lands exactly on
-    // 0.1° — the full zoom-in range is useful.
-    //   ratio = 0.1   -> ideal 60
-    //   ratio = 1     -> ideal 15  (base, wherever the anchor was placed)
-    //   ratio = 833333 -> ideal 0.1
+
     constexpr double kZoomInAlpha  = 0.3676;  // ln(150) / ln(833333)
     constexpr double kZoomOutAlpha = 0.5;
     const double alpha = (ratio >= 1.0) ? kZoomInAlpha : kZoomOutAlpha;
     const double idealStep = 15.0 * std::pow(ratio, -alpha);
 
-    // Snap to a pretty value so the user never sees 10.4167 or 40.1878.
+
     const double angleStepDegrees = geometry::snapToNiceAngleStep(idealStep);
 
-    // Tolerance: keep a free zone for coarse grids (15°, 30° ...) so the user
-    // can still draw off-grid lines. For fine grids (< 2°) quantize fully
-    // (tolerance = step/2) — sub-pixel gaps are unreachable with a mouse.
     const double toleranceDegrees = (angleStepDegrees >= 2.0)
         ? angleStepDegrees * 0.4
         : angleStepDegrees * 0.5;
 
     auto candidates = geometry::findDirectionSnaps(base, request.cursor, entities,
                                                    toleranceDegrees, angleStepDegrees);
-    std::cout<<zoom<<" "<<angleStepDegrees<<std::endl;
 
     candidates.erase(std::remove_if(candidates.begin(), candidates.end(), [&](const auto& candidate) {
         if (!candidate.reference) return false; // global H/V axes
@@ -393,6 +411,11 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
         result.point = Point2{direction.endpoint};
         result.type = kind;
         result.angle = std::atan2(direction.unitDirection.y, direction.unitDirection.x);
+        // The primary kind now directly expresses the geometric relation.
+        // Keep a guide line for rendering; do not overload EqualityEndLines.
+        if (kind == SnapKind::Perpendicular && direction.reference) {
+            result.relations.push_back(SnapRelation{SnapKind::Perpendicular, result.angle, {*direction.reference}, {Line2{base, direction.endpoint}}});
+        }
         if (direction.reference) {
             result.objects.push_back(*direction.reference);
         }
@@ -404,6 +427,63 @@ std::optional<SnapCandidate> SnapSystem::findBestDirectionalCandidate(const Snap
         SnapCandidate candidate{std::move(result), direction.distanceSquared, priority};
         if (!best || isBetterCandidate(candidate, *best, rule.priorityRadius)) {
             best = std::move(candidate);
+        }
+    }
+    return best;
+}
+
+std::optional<SnapCandidate> SnapSystem::findBestAlignmentCandidate(const SnapRequest& request, const SnapRule& rule) const {
+    if (!isFinite(request.cursor) || !hasSnap(rule.mask, SnapMask::Alignment)) return std::nullopt;
+    auto entitiesResult = sketch_.entities();
+    if (!entitiesResult) return std::nullopt;
+    const auto entities = algorithms::filterForbiddenEntities(entitiesResult.value(), request.forbiddenObjects);
+
+    std::optional<SnapCandidate> best;
+    const double hitRadius = rule.regularRadius;
+    const auto considerFeature = [&](const Vec2& feature, GeometryRef source) {
+        if (!isFinite(feature)) return;
+        // Alignment candidates are projections onto horizontal and vertical
+        // lines through the feature. Their hit distance is the perpendicular
+        // cursor-to-guide distance, so the feature may be far along the guide.
+        const Vec2 horizontal{request.cursor.x, feature.y};
+        const double horizontalDistance = std::abs(request.cursor.y - feature.y);
+        if (horizontalDistance <= hitRadius && isAllowed(SnapKind::Alignment, horizontalDistance, rule)) {
+            auto c = makeCandidate(horizontal, SnapKind::Alignment, horizontalDistance,
+                snapPriority(SnapKind::Alignment, request.action, request.drawState), {source},
+                {Line2{feature, horizontal}});
+            c.result.relations.push_back(SnapRelation{SnapKind::Horizontal, 0.0, {source}, {Line2{feature, horizontal}}});
+            if (!best || isBetterCandidate(c, *best, rule.priorityRadius)) best = std::move(c);
+        }
+        const Vec2 vertical{feature.x, request.cursor.y};
+        const double verticalDistance = std::abs(request.cursor.x - feature.x);
+        if (verticalDistance <= hitRadius && isAllowed(SnapKind::Alignment, verticalDistance, rule)) {
+            auto c = makeCandidate(vertical, SnapKind::Alignment, verticalDistance,
+                snapPriority(SnapKind::Alignment, request.action, request.drawState), {source},
+                {Line2{feature, vertical}});
+            c.result.relations.push_back(SnapRelation{SnapKind::Vertical, std::numbers::pi / 2.0, {source}, {Line2{feature, vertical}}});
+            if (!best || isBetterCandidate(c, *best, rule.priorityRadius)) best = std::move(c);
+        }
+    };
+
+    for (const auto& entity : entities) {
+        const GeometryRef whole{entity.id, SubElement::Whole};
+        if (const auto* line = std::get_if<Line2>(&entity.geometry)) {
+            if (!isUsableLine(*line)) continue;
+            considerFeature(line->start, {entity.id, SubElement::Start});
+            considerFeature(line->end, {entity.id, SubElement::End});
+            considerFeature(geometry::detail::midpoint(*line), whole);
+        } else if (const auto* circle = std::get_if<Circle2>(&entity.geometry)) {
+            if (!isFinite(circle->center) || !std::isfinite(circle->radius) || circle->radius <= 0.0) continue;
+            considerFeature(circle->center, {entity.id, SubElement::Center});
+            considerFeature(Vec2{circle->center.x, circle->center.y + circle->radius}, whole);
+            considerFeature(Vec2{circle->center.x, circle->center.y - circle->radius}, whole);
+        } else if (const auto* arc = std::get_if<geometry::Arc2>(&entity.geometry)) {
+            if (!geometry::detail::isFinite(*arc)) continue;
+            considerFeature(arc->start, {entity.id, SubElement::Start});
+            considerFeature(arc->end, {entity.id, SubElement::End});
+            considerFeature(arc->center, {entity.id, SubElement::Center});
+        } else if (const auto* point = std::get_if<Point2>(&entity.geometry)) {
+            considerFeature(point->position, whole);
         }
     }
     return best;
@@ -443,7 +523,8 @@ std::optional<SnapCandidate> SnapSystem::findBestLineCandidate(const SnapRequest
         request.cursor, entities,
         allowCoincident, allowMidpoint, allowCoincident,
         initialCollinear, continuationCollinear, request.anchors,
-        rule.endpointRadius, rule.midpointRadius, kLineBodySnapRadiusPixels / std::max(camera_.zoom(), 1e-9), rule.collinearRadius,
+        rule.endpointRadius, rule.midpointRadius, kLineBodySnapRadiusPixels / std::max(camera_.zoom(), 1e-9),
+        niceBodyStepWorld(std::max(camera_.zoom(), 1e-9)), rule.collinearRadius,
         kCollinearLateralRadiusPixels / std::max(camera_.zoom(), 1e-9));
 
     std::optional<SnapCandidate> best;
@@ -502,7 +583,25 @@ std::optional<SnapCandidate> SnapSystem::findBestCircleCandidate(const SnapReque
         consider(geometry::findNearestCircleCenter(request.cursor, entities), SnapKind::Coincident);
     }
     if (hasSnap(rule.mask, SnapMask::Coincident)) {
-        consider(geometry::findNearestCircleBody(request.cursor, entities), SnapKind::Coincident);
+        const double bodyStep = niceBodyStepWorld(std::max(camera_.zoom(), 1e-9));
+        for (const auto& entity : entities) {
+            const auto* circle = std::get_if<Circle2>(&entity.geometry);
+            if (!circle || !geometry::detail::isFinite(*circle) || circle->radius <= 0.0) continue;
+            const auto nearest = closestPointOnCircle(request.cursor, *circle);
+            if (!nearest) continue;
+            // Use approximately the same zoom-dependent attachment interval as
+            // line bodies, quantized along the circumference.
+            const double angle = std::atan2(nearest->y - circle->center.y, nearest->x - circle->center.x);
+            const double angularStep = bodyStep / std::max(circle->radius, bodyStep);
+            const double snappedAngle = std::round(angle / angularStep) * angularStep;
+            const Vec2 target{circle->center.x + circle->radius * std::cos(snappedAngle),
+                              circle->center.y + circle->radius * std::sin(snappedAngle)};
+            const double d = distance(request.cursor, target);
+            if (!isAllowed(SnapKind::Coincident, d, rule)) continue;
+            SnapCandidate candidate = makeCandidate(target, SnapKind::Coincident, d,
+                snapPriority(SnapKind::Coincident, request.action, request.drawState), {{entity.id, SubElement::Whole}});
+            if (!best || isBetterCandidate(candidate, *best, rule.priorityRadius)) best = std::move(candidate);
+        }
     }
     return best;
 }
@@ -671,7 +770,33 @@ std::optional<SnapCandidate> SnapSystem::findBestArcCandidate(const SnapRequest&
     }
 
     if (allowBody) {
-        consider(geometry::findNearestArcBody(request.cursor, arcs), SnapKind::Coincident, 520);
+        // Quantize attachment points along the arc by a zoom-dependent, nice
+        // world-space interval (approximately 10 screen pixels), matching line
+        // and circle body snapping. Clamp the angular step to avoid pathological
+        // values for tiny/large radii and reject quantized points outside the arc.
+        const double bodyStep = niceBodyStepWorld(std::max(camera_.zoom(), 1e-9));
+        for (const auto& entity : arcs) {
+            const auto* arc = std::get_if<geometry::Arc2>(&entity.geometry);
+            if (!arc || !geometry::detail::isFinite(*arc)) continue;
+            const double dx = arc->start.x - arc->center.x;
+            const double dy = arc->start.y - arc->center.y;
+            const double radius = std::hypot(dx, dy);
+            if (radius <= 0.0) continue;
+            const auto nearest = geometry::detail::closestPointOnArc(request.cursor, *arc);
+            if (!nearest) continue;
+            const double rawAngle = std::atan2(nearest->y - arc->center.y, nearest->x - arc->center.x);
+            const double angularStep = std::min(std::numbers::pi, bodyStep / std::max(radius, bodyStep));
+            const double snappedAngle = std::round(rawAngle / angularStep) * angularStep;
+            const Vec2 target{arc->center.x + radius * std::cos(snappedAngle),
+                              arc->center.y + radius * std::sin(snappedAngle)};
+            // Ensure the quantized point remains on the finite arc, not its full circle.
+            const auto quantized = geometry::detail::closestPointOnArc(target, *arc);
+            if (!quantized || distance(target, *quantized) > std::max(bodyStep * 0.75, 1e-8)) continue;
+            const double d = distance(request.cursor, target);
+            if (!isAllowed(SnapKind::Coincident, d, rule)) continue;
+            auto c = makeCandidate(target, SnapKind::Coincident, d, 520, {{entity.id, SubElement::Whole}});
+            if (!best || isBetterCandidate(c, *best, rule.priorityRadius)) best = std::move(c);
+        }
     }
 
     return best;

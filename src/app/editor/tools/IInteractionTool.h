@@ -39,45 +39,77 @@ protected:
         switch (snap_result.type) {
             case snap::SnapKind::Collinear:
                 feedback.glyph = app::SnapGlyph::Direction;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects};
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
                 break;
 
-            case snap::SnapKind::Coincident:
+            case snap::SnapKind::Coincident: {
                 if (snap_result.objects.at(0).sub == core::sketch::SubElement::Center) {
                     feedback.glyph = app::SnapGlyph::Center;
-                } else if (snap_result.objects.at(0).sub == core::sketch::SubElement::Start ||
-                    snap_result.objects.at(0).sub == core::sketch::SubElement::End ) {
+                } else if (snap_result.objects.at(0).sub == core::sketch::SubElement::Start || snap_result.objects.at(0).sub == core::sketch::SubElement::End) {
                     feedback.glyph = app::SnapGlyph::Endpoint;
-                }else if (snap_result.objects.at(0).sub == core::sketch::SubElement::Whole) {
+                } else if (snap_result.objects.at(0).sub == core::sketch::SubElement::Whole) {
                     feedback.glyph = app::SnapGlyph::Point;
                 }
 
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects};
+
+                for (const auto& rel : snap_result.relations) {
+                    feedback.sources.insert(feedback.sources.end(), rel.objects.begin(), rel.objects.end());
+
+                    switch (rel.type) {
+                        case snap::SnapKind::Parallel:
+                        case snap::SnapKind::Perpendicular:
+                            if (!rel.guideLines.empty()) {
+                                feedback.guides.push_back({rel.guideLines.at(0), app::SnapGuideExtent::Segment});
+                            }
+                            break;
+
+                        case snap::SnapKind::Horizontal:
+                        case snap::SnapKind::Vertical:
+                            if (!rel.guideLines.empty()) {
+                                feedback.guides.push_back({rel.guideLines.at(0), app::SnapGuideExtent::InfiniteLine});
+                            }
+                            break;
+
+                        case snap::SnapKind::Collinear:
+                            if (!rel.guideLines.empty()) {
+                                feedback.guides.push_back({rel.guideLines.at(0), app::SnapGuideExtent::InfiniteLine});
+                            }
+                            break;
+
+                        case snap::SnapKind::Tangent:
+                            if (!rel.guideLines.empty()) {
+                                feedback.guides.push_back({rel.guideLines.at(0), app::SnapGuideExtent::InfiniteLine});
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
                 break;
+            }
 
             case snap::SnapKind::Midpoint:
                 feedback.glyph = app::SnapGlyph::Midpoint;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects};
                 break;
 
             case snap::SnapKind::Intersection:
                 feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub},
-                                    {snap_result.objects.at(1).entity, snap_result.objects.at(1).sub}};
+                feedback.sources = {snap_result.objects};
                 break;
 
             case snap::SnapKind::ExtendedIntersection:
                 feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub},
-                                    {snap_result.objects.at(1).entity, snap_result.objects.at(1).sub}};
+                feedback.sources = {snap_result.objects};
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
                 break;
 
             case snap::SnapKind::VirtualIntersection:
                 feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub},
-                                    {snap_result.objects.at(1).entity, snap_result.objects.at(1).sub}};
+                feedback.sources = {snap_result.objects};
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment},
                                    {snap_result.guideLines.at(1), app::SnapGuideExtent::Segment}};
                 break;
@@ -85,7 +117,7 @@ protected:
             case snap::SnapKind::Parallel:
             case snap::SnapKind::Perpendicular:
                 feedback.glyph = app::SnapGlyph::Direction;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects};
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
                 break;
 
@@ -97,15 +129,15 @@ protected:
 
             case snap::SnapKind::Tangent:
                 feedback.glyph = app::SnapGlyph::Point;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects};
                 if (!snap_result.guideLines.empty()) {
                     feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
                 }
                 break;
 
             case snap::SnapKind::AngleToLine:
-                 feedback.glyph = app::SnapGlyph::Point;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.glyph = app::SnapGlyph::Point;
+                feedback.sources = {snap_result.objects};
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
                 break;
 

@@ -28,6 +28,8 @@ enum class SnapKind {
     Coincident,
     Midpoint,
     Collinear,
+    Alignment, // horizontal/vertical alignment through a characteristic point
+    EqualityEndLines, // deprecated legacy kind; do not emit from new algorithms
     Intersection,
     ExtendedIntersection,
     VirtualIntersection,
@@ -45,6 +47,8 @@ enum class SnapMask : std::uint32_t {
     Coincident = 1u << 0,
     Midpoint = 1u << 2,
     Collinear = 1u << 3,
+    Alignment = 1u << 14,
+    EqualityEndLines = 1u << 16,
     Intersection = 1u << 4,
     ExtendedIntersection = 1u << 5,
     VirtualIntersection = 1u << 6,
@@ -74,9 +78,9 @@ constexpr bool hasSnap(SnapMask mask, SnapMask flag) noexcept { return (mask & f
 constexpr SnapMask IntersectionSnaps =  SnapMask::Intersection |SnapMask::ExtendedIntersection | SnapMask::VirtualIntersection;
 constexpr SnapMask PointSnaps = SnapMask::Coincident | SnapMask::Midpoint | IntersectionSnaps;
 constexpr SnapMask BodySnaps = SnapMask::Coincident; // nearest point on an existing circle/arc body; no intersections or midpoint
-constexpr SnapMask Direction = SnapMask::Horizontal | SnapMask::Vertical | SnapMask::Parallel |
+constexpr SnapMask Direction = SnapMask::Horizontal | SnapMask::Vertical | SnapMask::Alignment | SnapMask::Parallel |
     SnapMask::Perpendicular | SnapMask::AngleToLine | SnapMask::PerpendicularBisector | SnapMask::Collinear;
-constexpr SnapMask LineEndSnaps = PointSnaps | Direction | SnapMask::Tangent;
+constexpr SnapMask LineEndSnaps = PointSnaps | Direction | SnapMask::Tangent | SnapMask::EqualityEndLines;
 constexpr SnapMask CurveBodySnaps = BodySnaps | SnapMask::Tangent | IntersectionSnaps;
 constexpr SnapMask All = PointSnaps | Direction | SnapMask::Tangent;
 
@@ -85,18 +89,18 @@ constexpr SnapMask snapMaskFor(ActionType action, DrawState state) noexcept {
     using M = SnapMask;
     switch (action) {
         case ActionType::Point:
-            return state == DrawState::Start ? (PointSnaps | M::Collinear) : M::None;
+            return state == DrawState::Start ? (PointSnaps | M::Collinear | M::Alignment) : M::None;
         case ActionType::Line:
-            if (state == DrawState::End) return LineEndSnaps;
-            if (state == DrawState::Start) return PointSnaps | M::Collinear;
+            if (state == DrawState::End) return LineEndSnaps | M::Alignment;
+            if (state == DrawState::Start) return PointSnaps | M::Collinear | M::Alignment;
             return M::None;
         case ActionType::Circle:
-            if (state == DrawState::Center) return PointSnaps;
-            if (state == DrawState::Body) return CurveBodySnaps;
+            if (state == DrawState::Center) return PointSnaps | M::Alignment;
+            if (state == DrawState::Body) return CurveBodySnaps | M::Alignment;
             return M::None;
         case ActionType::Arc:
-            if (state == DrawState::Center || state == DrawState::Start || state == DrawState::End) return PointSnaps;
-            if (state == DrawState::Body) return CurveBodySnaps;
+            if (state == DrawState::Center || state == DrawState::Start || state == DrawState::End) return PointSnaps | M::Alignment;
+            if (state == DrawState::Body) return CurveBodySnaps | M::Alignment;
             return M::None;
         case ActionType::Move:
             return PointSnaps | M::Tangent;
@@ -110,13 +114,15 @@ constexpr SnapMask snapMaskFor(ActionType action, DrawState state) noexcept {
 constexpr int snapPriority(SnapKind kind, ActionType action, DrawState state) noexcept {
     const bool lineEnd = action == ActionType::Line && state == DrawState::End;
     switch (kind) {
-        case SnapKind::Intersection: return 1000;
-        case SnapKind::VirtualIntersection: return 990;
-        case SnapKind::ExtendedIntersection: return 980;
-        case SnapKind::Coincident: return 820;
+        case SnapKind::Coincident: return 1000;
+        case SnapKind::Intersection: return 950;
+        case SnapKind::ExtendedIntersection: return 450;
+        case SnapKind::VirtualIntersection: return 400;
         case SnapKind::Tangent: return 800;
         case SnapKind::Midpoint: return 700;
         case SnapKind::Collinear: return lineEnd ? 275 : 225;
+        case SnapKind::Alignment: return lineEnd ? 350 : 300;
+        case SnapKind::EqualityEndLines: return lineEnd ? 275 : 225;
         case SnapKind::Parallel: return lineEnd ? 650 : 300;
         case SnapKind::Perpendicular: return lineEnd ? 650 : 300;
         case SnapKind::Horizontal:

@@ -36,9 +36,9 @@ std::optional<ActionReport> CircleTool::onMouseMove(const input::MouseMoveEvent&
     }
 
     if (step_ == Step::WaitingFirstInput) {
-        if (mode_ ==  Mode::CenterRadius || mode_ == Mode::CenterDiameter) {
+        if (mode_ == Mode::CenterRadius || mode_ == Mode::CenterDiameter) {
             request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ActionType::Circle, snap::DrawState::Center};
-        }else {
+        } else {
             request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ActionType::Circle, snap::DrawState::Body};
         }
     } else if (step_ == Step::WaitingSecondInput) {
@@ -146,7 +146,6 @@ bool intersectLines(glm::dvec2 p1, glm::dvec2 d1, glm::dvec2 p2, glm::dvec2 d2, 
     return true;
 }
 
-
 std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
         return std::nullopt;
@@ -166,63 +165,57 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
         if (report.entityIds.empty()) {
             return false;
         }
+
         const auto circleId = report.entityIds[0];
         bool needsSolve = false;
 
+        using SK = snap::SnapKind;
+        using CT = core::sketch::ConstraintType;
+        using SE = core::sketch::SubElement;
+        using Ref = core::sketch::GeometryRef;
+
+        // Cache entities once instead of fetching them for every object.
+        const auto entities = document_.sketch().entities();
+
         auto isStandalonePoint = [&](core::sketch::EntityId id) {
-            const auto entities = document_.sketch().entities();
-            if (!entities) return false;
-            for (const auto& entity : entities.value()) {
-                if (entity.id == id) return std::holds_alternative<core::sketch::Point2>(entity.geometry);
+            if (!entities) {
+                return false;
             }
+
+            for (const auto& entity : entities.value()) {
+                if (entity.id == id) {
+                    return std::holds_alternative<core::sketch::Point2>(entity.geometry);
+                }
+            }
+
             return false;
         };
 
-        auto applyConstraint = [&](const snap::SnapResult& snap, bool snapIsAtCenter) {
-            if (!snap.snapped || snap.objects.empty()) {
-                return;
-            }
+        // Prevent duplicate constraints when the same object occurs
+        // in both snap.objects and snap.relations.
+        std::vector<core::sketch::ConstraintDefinition> appliedConstraints;
 
+        auto addConstraint = [&](CT type, std::vector<Ref> refs) {
             core::sketch::ConstraintDefinition def;
-            const auto circleSub = snapIsAtCenter ? core::sketch::SubElement::Center : core::sketch::SubElement::Whole;
-            switch (snap.type) {
-                case snap::SnapKind::Coincident:
-                    // On a circle body, snapping to a standalone point is Coincident;
-                    // snapping to another curve body is a Tangent relation. Endpoint
-                    // refs remain point coincidences.
-                    if (!snapIsAtCenter && snap.objects[0].sub == core::sketch::SubElement::Whole &&
-                        !isStandalonePoint(snap.objects[0].entity)) {
-                        def.type = core::sketch::ConstraintType::Tangent;
-                    } else {
-                        def.type = core::sketch::ConstraintType::Coincident;
+            def.type = type;
+            def.refs = std::move(refs);
+
+            const auto duplicate = std::find_if(appliedConstraints.begin(), appliedConstraints.end(), [&](const auto& existing) {
+                if (existing.type != def.type || existing.refs.size() != def.refs.size()) {
+                    return false;
+                }
+
+                for (std::size_t i = 0; i < existing.refs.size(); ++i) {
+                    if (existing.refs[i].entity != def.refs[i].entity || existing.refs[i].sub != def.refs[i].sub) {
+                        return false;
                     }
-                    def.refs = {{circleId, circleSub}, snap.objects[0]};
-                    break;
+                }
 
-                case snap::SnapKind::ExtendedIntersection:
-                case snap::SnapKind::Intersection:
-                    def.type = core::sketch::ConstraintType::Coincident;
-                    def.refs = {{circleId, circleSub}, snap.objects[0]};
-                    break;
+                return true;
+            });
 
-                case snap::SnapKind::Midpoint:
-                    // "This point is the midpoint of that line": the point is the
-                    // circle's center, never the circle's body.
-                    if (!snapIsAtCenter) {
-                        return;
-                    }
-                    def.type = core::sketch::ConstraintType::Midpoint;
-                    def.refs = {{circleId, core::sketch::SubElement::Center}, snap.objects[0]};
-                    break;
-
-                case snap::SnapKind::Tangent:
-                    // Tangency is a property of the whole circle.
-                    def.type = core::sketch::ConstraintType::Tangent;
-                    def.refs = {{circleId, core::sketch::SubElement::Whole}, snap.objects[0]};
-                    break;
-
-                default:
-                    return;
+            if (duplicate != appliedConstraints.end()) {
+                return;
             }
 
             if (!document_.sketch().supportsConstraint(def)) {
@@ -230,7 +223,9 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
             }
 
             auto c = document_.sketch().addConstraint(def);
+
             if (c) {
+                appliedConstraints.push_back(std::move(def));
                 report.constraintIds.push_back(c.value());
                 report.requestedConstraints++;
                 needsSolve = true;
@@ -239,10 +234,76 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
             }
         };
 
+        auto applySnapKind = [&](SK type, const std::vector<Ref>& objects, bool snapIsAtCenter) {
+            const auto circleSub = snapIsAtCenter ? SE::Center : SE::Whole;
+
+            const Ref circleRef{circleId, circleSub};
+
+            switch (type) {
+                case SK::Coincident:
+                    // On a circle body, snapping to a standalone point is Coincident;
+                    // snapping to another curve body is a Tangent relation. Endpoint
+                    // refs remain point coincidences.
+                    for (const auto& object : objects) {
+                        if (!snapIsAtCenter && object.sub == SE::Whole && !isStandalonePoint(object.entity)) {
+                            addConstraint(CT::Tangent, {circleRef, object});
+                        } else {
+                            addConstraint(CT::Coincident, {circleRef, object});
+                        }
+                    }
+                    break;
+
+                case SK::ExtendedIntersection:
+                case SK::VirtualIntersection:
+                case SK::Intersection: {
+                    for (const auto& object : objects) {
+                        addConstraint(CT::Coincident, {circleRef, object});
+                    }
+                    break;
+                }
+
+                case SK::Midpoint:
+                    // "This point is the midpoint of that line": the point is the
+                    // circle's center, never the circle's body.
+                    if (!snapIsAtCenter) {
+                        return;
+                    }
+
+                    for (const auto& object : objects) {
+                        addConstraint(CT::Midpoint, {Ref{circleId, SE::Center}, object});
+                    }
+                    break;
+
+                case SK::Tangent:
+                    // Tangency is a property of the whole circle.
+                    for (const auto& object : objects) {
+                        addConstraint(CT::Tangent, {Ref{circleId, SE::Whole}, object});
+                    }
+                    break;
+
+                default:
+                    return;
+            }
+        };
+
+        auto applyConstraint = [&](const snap::SnapResult& snap, bool snapIsAtCenter) {
+            if (!snap.snapped) {
+                return;
+            }
+
+            // Process every object in the primary snap.
+            applySnapKind(snap.type, snap.objects, snapIsAtCenter);
+
+            // Process all additional simultaneous relations.
+            for (const auto& relation : snap.relations) {
+                applySnapKind(relation.type, relation.objects, snapIsAtCenter);
+            }
+        };
+
         if (mode_ == Mode::CenterRadius || mode_ == Mode::CenterDiameter) {
             applyConstraint(firstSnap_, true);    // center
             applyConstraint(secondSnap_, false);  // radius / diameter point
-        } else if (mode_ == Mode::DiameterTwoPoints  ) {
+        } else if (mode_ == Mode::DiameterTwoPoints) {
             applyConstraint(firstSnap_, false);
             applyConstraint(secondSnap_, false);
         } else if (mode_ == Mode::ThreePoints) {
@@ -321,6 +382,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 double r = glm::distance(a, b) * 0.5;
 
                 auto report = pushCircleToModel({center.x, center.y, r});
+
                 if (applyCircleConstraints(report)) {
                     report.recordSolve(document_.sketch().solve());
                 }
@@ -346,7 +408,9 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 step_ = Step::WaitingThirdInput;
             } else if (step_ == Step::WaitingThirdInput) {
                 thirdSnap_ = snap_result_;
+
                 const auto circle = buildCircleFromThreePoints(points_[0], points_[1], cursor);
+
                 ActionReport report{ActionKind::CreateCircle};
                 report.requestedEntities = 1;
 
@@ -360,6 +424,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                     report.operationError =
                         core::sketch::SketchError{core::sketch::ErrorCode::InvalidArgument, "Three circle points are collinear or almost collinear"};
                 }
+
                 reset();
                 return report;
             }
@@ -371,6 +436,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 if (!obj.has_value()) {
                     return std::nullopt;
                 }
+
                 objects_.push_back(obj.value().ref.entity);
                 points_.push_back(cursor);
                 step_ = Step::WaitingSecondInput;
@@ -379,9 +445,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 if (!obj.has_value()) {
                     return std::nullopt;
                 }
-                if (!obj.has_value()) {
-                    return std::nullopt;
-                }
+
                 // Scene& scene = document_.scene();
                 // ObjectData od1 = scene.getObjectData(objects_[0]);
                 // ObjectData od2 = scene.getObjectData(obj.value().id);
@@ -407,6 +471,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 //          (od1.et == ObjType::ET_CIRCLE && od2.et == ObjType::ET_LINE)) {
                 //
                 // }
+
                 reset();
 
                 // const glm::dvec2& click1 = points_[0];
@@ -438,9 +503,11 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 // std::cout << sign1 << ' ' << sign2 << '\n';
             }
             break;
+
         case Mode::TangentThreeObjects:
             break;
     }
+
     return std::nullopt;
 }
 

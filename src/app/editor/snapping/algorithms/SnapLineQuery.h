@@ -35,7 +35,7 @@ inline std::vector<LineFeatureCandidate> queryLineFeatures(
     bool endpoints, bool midpoint, bool body,
     bool collinearStart, bool collinearContinuation,
     const std::vector<core::sketch::Point2>& anchors,
-    double endpointRadius, double midpointRadius, double bodyRadius, double collinearReach,
+    double endpointRadius, double midpointRadius, double bodyRadius, double bodyStep, double collinearReach,
     double lateralRadius) {
     using namespace geometry;
     using namespace geometry::detail;
@@ -65,10 +65,23 @@ inline std::vector<LineFeatureCandidate> queryLineFeatures(
         if (body) {
             const auto nearest = closestPointOnSegment(cursor, *line);
             if (nearest) {
-                const double d = distance(cursor, *nearest);
+                Vec2 target = *nearest;
+                // Quantize body attachment by a zoom-dependent, human-friendly
+                // world-space interval. Endpoints remain exact and are handled
+                // by the endpoint query above.
+                const Vec2 direction = subtract(line->end, line->start);
+                const double len = std::sqrt(lengthSquared(direction));
+                if (bodyStep > 1e-12 && len > 1e-12) {
+                    const double t = std::clamp(dot(subtract(*nearest, line->start), direction) / (len * len), 0.0, 1.0);
+                    const double along = t * len;
+                    const double snappedAlong = std::clamp(std::round(along / bodyStep) * bodyStep, 0.0, len);
+                    target = Vec2{line->start.x + direction.x * (snappedAlong / len),
+                                  line->start.y + direction.y * (snappedAlong / len)};
+                }
+                const double d = distance(cursor, target);
                 const bool nearAnchor = distance(cursor, line->start) <= endpointRadius ||
                     distance(cursor, line->end) <= endpointRadius;
-                if (d <= bodyRadius && !nearAnchor) append(*nearest, LineFeature::Body, whole);
+                if (d <= bodyRadius && !nearAnchor) append(target, LineFeature::Body, whole);
             }
         }
 

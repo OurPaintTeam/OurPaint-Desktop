@@ -7,6 +7,8 @@ constexpr SnapMask maskForSnapKind(SnapKind kind) noexcept {
         case SnapKind::Coincident: return SnapMask::Coincident;
         case SnapKind::Midpoint: return SnapMask::Midpoint;
         case SnapKind::Collinear: return SnapMask::Collinear;
+        case SnapKind::Alignment: return SnapMask::Alignment;
+        case SnapKind::EqualityEndLines: return SnapMask::EqualityEndLines;
         case SnapKind::Intersection: return SnapMask::Intersection;
         case SnapKind::ExtendedIntersection: return SnapMask::ExtendedIntersection;
         case SnapKind::VirtualIntersection: return SnapMask::VirtualIntersection;
