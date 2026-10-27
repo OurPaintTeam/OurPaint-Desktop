@@ -807,10 +807,14 @@ private:
                     add(du::RequirementDescriptor::pointPointVerticalDist(pointAt(0), pointAt(1), *definition.value));
                     break;
                 case ConstraintType::Length: {
+                    // TODO Arc length and Nurbs length
                     const auto descriptor = figure(whole(0));
                     add(du::RequirementDescriptor::pointPointDist(descriptor.pointIds.at(0), descriptor.pointIds.at(1), dcmParameter(definition)));
                     break;
                 }
+                case ConstraintType::Angle:
+                    add(du::RequirementDescriptor::lineLineAngle(whole(0), whole(1), dcmParameter(definition)));
+                    break;
                 case ConstraintType::Equal: {
                     const auto handle1 = entities_.at(definition.refs[0].entity).handle;
                     const auto descriptor1 = figure(handle1);
@@ -824,9 +828,6 @@ private:
                     }
                     break;
                 }
-                case ConstraintType::Angle:
-                    add(du::RequirementDescriptor::lineLineAngle(whole(0), whole(1), dcmParameter(definition)));
-                    break;
                 case ConstraintType::Fix: {
                     auto kind = entities_.at(definition.refs[0].entity).kind;
                     auto id = entities_.at(definition.refs[0].entity).handle;
@@ -843,13 +844,14 @@ private:
                     }
                     break;
                 }
-                case ConstraintType::Symmetric:
+                case ConstraintType::Symmetric: {
                     if (entities_.at(definition.refs[2].entity).kind == EntityKind::Line && definition.refs[2].sub == SubElement::Whole) {
                         add(du::RequirementDescriptor::symmetricAboutLine(pointAt(0), pointAt(1), whole(2)));
                     } else {
                         add(du::RequirementDescriptor::symmetricAboutPoint(pointAt(0), pointAt(1), pointAt(2)));
                     }
                     break;
+                }
                 case ConstraintType::Concentric: {
                     const auto first = pointHandle({definition.refs[0].entity, SubElement::Center});
                     const auto second = pointHandle({definition.refs[1].entity, SubElement::Center});

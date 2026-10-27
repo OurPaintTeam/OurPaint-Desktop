@@ -10,15 +10,17 @@
 #include "Camera2D.h"
 #include "IRenderer.h"
 #include "RenderScene.h"
+#include "text/TextMeasurer.h"
 
 namespace render {
 
-class OpenGL2dRenderer : public IRenderer {
+class OpenGL2dRenderer : public IRenderer, public text::TextMeasurer {
 public:
     bool initialize() override;
     void resize(int w, int h) override;
     void shutdown() override;
     void render(const RenderScene& scene, const Camera2D& camera) override;
+    std::optional<text::TextMetrics> measureText(std::string_view text, double heightPx) const override;
 
 private:
     // Grid
@@ -120,12 +122,14 @@ private:
 
     void renderCircleBatch(
         const CircleBatch& batch,
+        CoordinateSpace coordinateSpace,
         const Camera2D& camera,
         const glm::mat4& transform
     );
 
     void renderArcBatch(
         const ArcBatch& batch,
+        CoordinateSpace coordinateSpace,
         const Camera2D& camera,
         const glm::mat4& transform
     );
@@ -153,7 +157,6 @@ private:
 
     void initRenderText();
 
-    // Keep text rendering logic unchanged for now.
     void renderText(const render::text::TextObject& textObj);
 
     struct Character {
@@ -164,6 +167,7 @@ private:
     };
 
     std::map<char, Character> Characters;
+    double textPixelHeight_ = 0.0;
 
     GLuint textProgram_ = 0;
     GLuint textVao_ = 0;

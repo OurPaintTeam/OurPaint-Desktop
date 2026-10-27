@@ -9,13 +9,28 @@
 
 using namespace core;
 
+namespace app {
+class ConstraintLayout;
+}
+
 struct PickResult {
     sketch::GeometryRef ref;
+};
+
+struct DimensionPickResult {
+    enum class Part { Label, Body };
+    sketch::ConstraintId constraint;
+    Part part;
+    glm::dvec2 labelCenter;
+    double distancePx;
 };
 
 class Cpu2dPicker {
 public:
     explicit Cpu2dPicker(sketch::Sketch& sketch, Camera2D& camera);
+
+    // Reads the rendered layout in logical pixels; the caller controls geometry-vs-dimension priority.
+    std::optional<DimensionPickResult> pickDimensionAtScreenLogical(double screenX, double screenY, const app::ConstraintLayout& layout) const;
 
     std::vector<sketch::GeometryRef> pickInRectAtScreenLogical(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
     std::vector<sketch::GeometryRef> pickInRectAtScreenFramebuffer(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;

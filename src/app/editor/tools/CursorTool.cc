@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "../../viewport/constraints/ConstraintLayout.h"
 #include "../ConstraintActions.h"
 #include "DSU.h"
 #include "Document.h"
@@ -43,10 +44,78 @@ bool sameConstraint(const sketch::ConstraintDefinition& first, const sketch::Con
 }
 }  // namespace
 
-CursorTool::CursorTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay, ConstraintActions& constraintActions)
-    : IInteractionTool(document,camera,snap,overlay,picker),
+CursorTool::CursorTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay,
+                       ConstraintActions& constraintActions, const app::ConstraintLayout& constraintLayout,
+                       app::ConstraintPresentationState& constraintPresentation)
+    : IInteractionTool(document, camera, snap, overlay, picker),
       sketch_(document.sketch()),
-      constraintActions_(constraintActions) {}
+      constraintActions_(constraintActions),
+      constraintLayout_(constraintLayout),
+      constraintPresentation_(constraintPresentation) {}
+
+std::optional<DimensionPickResult> CursorTool::pickDimension(glm::dvec2 position) const {
+    const auto hit = picker_.pickDimensionAtScreenLogical(position.x, position.y, constraintLayout_);
+    // Labels win over geometry, but a point remains reachable where a witness meets it.
+    if (hit && (hit->part == DimensionPickResult::Part::Label || !picker_.pickPointAtScreenLogical(position.x, position.y))) {
+        return hit;
+    }
+    return std::nullopt;
+}
+
+void CursorTool::beginDimensionDrag(const DimensionPickResult& hit, glm::dvec2 position) {
+    if (!sketch_.constraint(hit.constraint)) {
+        return;
+    }
+    const auto found = constraintPresentation_.labelPlacements.find(hit.constraint);
+    const auto initial = found == constraintPresentation_.labelPlacements.end() ? std::nullopt : std::optional(found->second);
+    dimensionDrag_ = DimensionDrag{hit.constraint, position, hit.labelCenter - position, initial};
+    state_ = State::PressedDimension;
+    overlay_.clearSelection();
+    overlay_.hoveredDimension = hit.constraint;
+    overlay_.draggedDimension = hit.constraint;
+}
+
+void CursorTool::updateDimensionDrag(glm::dvec2 position) {
+    if (!dimensionDrag_) {
+        return;
+    }
+    if (!sketch_.constraint(dimensionDrag_->constraint)) {
+        endDimensionDrag(false);
+        return;
+    }
+    constexpr double kDragThresholdPx = 3.0;
+    if (state_ == State::PressedDimension && glm::length(position - dimensionDrag_->pressPosition) < kDragThresholdPx) {
+        return;
+    }
+    const auto center = camera_.screenLogicalToWorld(position + dimensionDrag_->grabOffsetPx);
+    if (!std::isfinite(center.x) || !std::isfinite(center.y)) {
+        endDimensionDrag(false);
+        return;
+    }
+    constraintPresentation_.labelPlacements[dimensionDrag_->constraint] = {{center.x, center.y}};
+    state_ = State::DraggingDimension;
+}
+
+void CursorTool::endDimensionDrag(bool commit) {
+    if (!dimensionDrag_) {
+        return;
+    }
+    const auto id = dimensionDrag_->constraint;
+    if (!sketch_.constraint(id)) {
+        constraintPresentation_.labelPlacements.erase(id);
+    } else if (!commit && state_ == State::DraggingDimension) {
+        // Cancelling a presentation preview also restores the absence of an explicit placement.
+        if (dimensionDrag_->initialPlacement) {
+            constraintPresentation_.labelPlacements[id] = *dimensionDrag_->initialPlacement;
+        } else {
+            constraintPresentation_.labelPlacements.erase(id);
+        }
+    }
+    dimensionDrag_.reset();
+    overlay_.hoveredDimension.reset();
+    overlay_.draggedDimension.reset();
+    state_ = State::Idle;
+}
 
 std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
 
@@ -54,6 +123,22 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
 
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
+
+    if (dimensionDrag_) {
+        if (input::has_flag(e.buttons, input::MouseButton::Left)) {
+            updateDimensionDrag({e.x, e.y});
+        } else {
+            // Recover if mouse capture was lost and no release event reached the tool.
+            endDimensionDrag(false);
+        }
+        return std::nullopt;
+    }
+    overlay_.hoveredDimension.reset();
+    if (state_ == State::Idle && e.buttons == input::MouseButton::None && e.modifiers == input::Modifiers::None) {
+        if (const auto hit = pickDimension({e.x, e.y})) {
+            overlay_.hoveredDimension = hit->constraint;
+        }
+    }
 
     if (input::has_flag(e.buttons, input::MouseButton::Left)) {
         if (state_ == State::DraggingSelection) {
@@ -150,6 +235,8 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
 
 std::optional<ActionReport> CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
+        endDimensionDrag(false);
+        overlay_.hoveredDimension.reset();
         bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
         bool alt = input::has_flag(e.modifiers, input::Modifiers::Alt);
 
@@ -158,6 +245,13 @@ std::optional<ActionReport> CursorTool::onMouseButton(const input::MouseButtonEv
         if (alt) {
             state_ = State::Idle;
             return tryApplyPointOnPointNearCursor(e.x, e.y);
+        }
+
+        if (e.modifiers == input::Modifiers::None) {
+            if (const auto hit = pickDimension({e.x, e.y})) {
+                beginDimensionDrag(*hit, {e.x, e.y});
+                return std::nullopt;
+            }
         }
 
         if (pickRes.has_value()) {
@@ -200,6 +294,12 @@ std::optional<ActionReport> CursorTool::onMouseButton(const input::MouseButtonEv
     }
 
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Release) {
+        if (dimensionDrag_) {
+            // Use the release position even if the last mouse-move event was coalesced.
+            updateDimensionDrag({e.x, e.y});
+            endDimensionDrag(true);
+            return std::nullopt;
+        }
         return cancel().report;
     }
     return std::nullopt;
@@ -371,6 +471,9 @@ std::optional<ActionReport> CursorTool::pasteSelection() {
 
 ToolCancellation CursorTool::cancel() {
     const bool handled = state_ != State::Idle;
+    endDimensionDrag(false);
+    overlay_.hoveredDimension.reset();
+    overlay_.draggedDimension.reset();
     auto report = finishDrag();
     overlay_.selectionRect_.reset();
     marqueeBaseSelection_.clear();

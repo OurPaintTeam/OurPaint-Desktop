@@ -5,6 +5,7 @@
 
 #include "../editor/ConstraintActions.h"
 #include "../editor/tools/CursorTool.h"
+#include "../viewport/constraints/ConstraintLayout.h"
 
 namespace {
 using namespace core::sketch;
@@ -15,8 +16,9 @@ protected:
         document_ = std::make_unique<Document>();
         camera_.setViewport(800, 600);
         picker_ = std::make_unique<Cpu2dPicker>(document_->sketch(), camera_);
+        snap_ = std::make_unique<snap::SnapSystem>(document_->sketch(), camera_);
         actions_ = std::make_unique<ConstraintActions>(document_->sketch());
-        tool_ = std::make_unique<CursorTool>(*document_, camera_, *picker_, overlay_, *actions_);
+        tool_ = std::make_unique<CursorTool>(*document_, camera_, *snap_, *picker_, overlay_, *actions_, layout_, presentation_);
     }
 
     std::optional<ActionReport> key(input::KeyCode code, input::Modifiers modifiers = input::Modifiers::None) {
@@ -41,6 +43,9 @@ protected:
     OverlayModel overlay_;
     std::unique_ptr<Cpu2dPicker> picker_;
     std::unique_ptr<ConstraintActions> actions_;
+    std::unique_ptr<snap::SnapSystem> snap_;
+    app::ConstraintLayout layout_;
+    app::ConstraintPresentationState presentation_;
     std::unique_ptr<CursorTool> tool_;
 };
 

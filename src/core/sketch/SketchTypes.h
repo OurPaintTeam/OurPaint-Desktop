@@ -152,22 +152,32 @@ enum class ConstraintType {
     Perpendicular,
     Tangent,
     Equal,
-    Distance,
-    HorizontalDistance,
-    VerticalDistance,
-    Length,
-    Radius,
-    Diameter,
-    Angle,
     Fix,
     Concentric,
     Symmetric,
-    Midpoint
+    Midpoint,
+
+    // Two points, point line, point circle, point arc.
+    // line circle, line arc.
+    Distance,
+
+    HorizontalDistance, // Two points
+    VerticalDistance,   // Two points
+    Length,             // Line, Arc, Nurbs
+    Radius,             // Circle, Arc
+    Diameter,           // Circle, Arc
+    Angle               // Two lines, Arc
 };
 
 // Positive/negative sides refer to the left/right of Line Start -> End.
 // Containment follows the order of the two circular references.
-enum class TangencyBranch { PositiveSide, NegativeSide, External, FirstContainsSecond, SecondContainsFirst };
+enum class TangencyBranch {
+    PositiveSide,
+    NegativeSide,
+    External,
+    FirstContainsSecond,
+    SecondContainsFirst
+};
 
 // Coincident/Distance use two point-like refs: Point Whole, Line Start/End,
 // Circle Center, Arc Start/End/Center. Horizontal/Vertical/Length use one whole

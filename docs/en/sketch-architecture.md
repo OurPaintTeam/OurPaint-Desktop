@@ -152,6 +152,13 @@ cancellation discard gesture targets; cancellation does not restore geometry.
 Shift rectangle selection combines the initial selection
 with the current rectangle hits, without retaining hits from earlier rectangles.
 
+Dimension dragging is a separate presentation gesture in CursorTool. It picks
+the view's ConstraintLayout and updates ConstraintPresentationState label centers,
+without editing Sketch or calling solve. Release commits the placement; cancellation
+restores the previous placement or automatic layout. This presentation preview
+does not change the geometry-drag cancellation contract above. Hover and drag
+feedback use constraint IDs in OverlayModel, separate from geometry selection.
+
 ### Constraint interaction in App
 
 Toolbar requests are translated into `ConstraintRequest` values by the Qt binder

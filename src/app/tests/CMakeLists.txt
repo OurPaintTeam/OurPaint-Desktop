@@ -12,15 +12,19 @@ target_link_libraries(ActionReportGTEST PRIVATE ourpaint_core ourpaint_ui)
 
 add_ourpaint_test(CursorToolGTEST
     CursorToolGTEST.cc
+    DimensionInteractionGTEST.cc
     ../editor/tools/CursorTool.cc
     ../editor/ConstraintActions.cc
+    ../editor/snapping/SnapSystem.cc
     ../viewport/picking/Cpu2dPicker.cc
+    ../viewport/constraints/ConstraintLayout.cc
+    ../viewport/constraints/DimensionLayout.cc
     ../viewport/SelectionModel.cc
     ../../core/Document.cc
     ../../render/render/Camera2D.cc
 )
 target_link_libraries(CursorToolGTEST PRIVATE OurPaint::Sketch glm::glm)
-target_include_directories(CursorToolGTEST PRIVATE ../editor ../../core/sketch ../../render/render)
+target_include_directories(CursorToolGTEST PRIVATE ../editor ../viewport ../../core/sketch ../../render/render)
 
 add_ourpaint_test(ConstraintToolsGTEST
     ConstraintToolsGTEST.cc
@@ -42,3 +46,13 @@ add_ourpaint_test(SnapFeedbackGTEST
 )
 target_link_libraries(SnapFeedbackGTEST PRIVATE OurPaint::Sketch glm::glm)
 target_include_directories(SnapFeedbackGTEST PRIVATE ../../core/sketch ../../render/render)
+
+add_ourpaint_test(ConstraintLayoutGTEST
+    ConstraintLayoutGTEST.cc
+    DimensionLayoutGTEST.cc
+    ../viewport/constraints/ConstraintLayout.cc
+    ../viewport/constraints/DimensionLayout.cc
+    ../../render/render/Camera2D.cc
+)
+target_link_libraries(ConstraintLayoutGTEST PRIVATE OurPaint::Sketch glm::glm)
+target_include_directories(ConstraintLayoutGTEST PRIVATE ../../core/sketch ../../render/render)

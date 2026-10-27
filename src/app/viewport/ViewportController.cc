@@ -1,23 +1,22 @@
 #include "ViewportController.h"
-#include "../../core/Document.h"
+
+#include "Document.h"
 #include "constraints/ConstraintLayout.h"
 
-ViewportController::ViewportController(Camera2D& camera,
-                                       OverlayModel& overlay,
-                                       SketchEditor& editorSession_,
-                                       Document& document,
-                                       const app::ViewportStyle& style,
-                                       app::ConstraintLayout& constraintLayout)
-    :   camera2D_(camera),
-        overlay_(overlay),
-        editorSession_(editorSession_),
-        document_(document),
-        constraintLayout_(constraintLayout),
-        axisTexts_(camera2D_),
-        viewportStyle_(style),
-        renderScene_(),
-        builder_(document_, overlay_, axisTexts_, viewportStyle_, renderScene_, camera, constraintLayout_),
-        renderer_() {}
+ViewportController::ViewportController(Camera2D& camera, OverlayModel& overlay, SketchEditor& editorSession_, Document& document,
+                                       const app::ViewportStyle& style, app::ConstraintLayout& constraintLayout,
+                                       const app::ConstraintPresentationState& constraintPresentation)
+    : camera2D_(camera),
+      overlay_(overlay),
+      editorSession_(editorSession_),
+      document_(document),
+      constraintLayout_(constraintLayout),
+      constraintPresentation_(constraintPresentation),
+      axisTexts_(camera2D_),
+      viewportStyle_(style),
+      renderScene_(),
+      builder_(document_, overlay_, axisTexts_, viewportStyle_, renderScene_, camera, constraintLayout_),
+      renderer_() {}
 
 bool ViewportController::onResize(const input::ResizeEvent& e) {
     camera2D_.setViewport(e.width, e.height, e.devicePixelRatio);
@@ -106,7 +105,7 @@ void ViewportController::render() {
 }
 
 void ViewportController::updateConstraintLayout() {
-    constraintLayout_.rebuild(document_.sketch(), camera2D_, viewportStyle_.constraintMarker);
+    constraintLayout_.rebuild(document_.sketch(), camera2D_, viewportStyle_.constraintMarker, constraintPresentation_, renderer_);
 }
 
 void ViewportController::requestRedraw() {

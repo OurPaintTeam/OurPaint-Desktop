@@ -292,11 +292,11 @@ void OpenGL2dRenderer::renderLayer(const DrawLayer& layer, const Camera2D& camer
     }
 
     for (const CircleBatch& batch : layer.circleBatches) {
-        renderCircleBatch(batch, camera, transform);
+        renderCircleBatch(batch, layer.coordinateSpace, camera, transform);
     }
 
     for (const ArcBatch& batch : layer.arcBatches) {
-        renderArcBatch(batch, camera, transform);
+        renderArcBatch(batch, layer.coordinateSpace, camera, transform);
     }
 
     for (const RectBatch& batch : layer.rectBatches) {
@@ -490,6 +490,7 @@ void OpenGL2dRenderer::renderLineBatch(
 
 void OpenGL2dRenderer::renderCircleBatch(
     const CircleBatch& batch,
+    CoordinateSpace coordinateSpace,
     const Camera2D& camera,
     const glm::mat4& transform
 ) {
@@ -548,7 +549,8 @@ void OpenGL2dRenderer::renderCircleBatch(
     }
 
     if (circleZoomLoc_ >= 0) {
-        glUniform1f(circleZoomLoc_, camera.zoom());
+        // Screen-space radii are already in framebuffer pixels.
+        glUniform1f(circleZoomLoc_, coordinateSpace == CoordinateSpace::World ? camera.zoom() : 1.0f);
     }
 
     if (circleCurveHalfWidthPxLoc_ >= 0) {
@@ -575,6 +577,7 @@ void OpenGL2dRenderer::renderCircleBatch(
 
 void OpenGL2dRenderer::renderArcBatch(
     const ArcBatch& batch,
+    CoordinateSpace coordinateSpace,
     const Camera2D& camera,
     const glm::mat4& transform
 ) {
@@ -631,7 +634,7 @@ void OpenGL2dRenderer::renderArcBatch(
     }
 
     if (circleZoomLoc_ >= 0) {
-        glUniform1f(circleZoomLoc_, camera.zoom());
+        glUniform1f(circleZoomLoc_, coordinateSpace == CoordinateSpace::World ? camera.zoom() : 1.0f);
     }
 
     if (circleCurveHalfWidthPxLoc_ >= 0) {
@@ -1218,6 +1221,7 @@ void OpenGL2dRenderer::initRenderText() {
     }
 
 
+    textPixelHeight_ = face->size->metrics.y_ppem;
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
 
     for (unsigned char c = 0; c < 128; c++)
@@ -1278,87 +1282,84 @@ void OpenGL2dRenderer::initRenderText() {
     textTransformLoc_ = glGetUniformLocation(textProgram_, "uTransform");
 }
 
+std::optional<text::TextMetrics> OpenGL2dRenderer::measureText(std::string_view text, double heightPx) const {
+    if (textPixelHeight_ <= 0.0 || !std::isfinite(heightPx) || heightPx <= 0.0) {
+        return std::nullopt;
+    }
+    const double scale = heightPx / textPixelHeight_;
+    text::TextMetrics metrics;
+    for (char c : text) {
+        const auto found = Characters.find(c);
+        // The current atlas supports ASCII only. Never index missing UTF-8 bytes.
+        if (found == Characters.end()) {
+            return std::nullopt;
+        }
+        const auto& glyph = found->second;
+        metrics.width += (glyph.Advance / 64.0) * scale;
+        metrics.ascent = std::max(metrics.ascent, glyph.Bearing.y * scale);
+        metrics.descent = std::max(metrics.descent, (glyph.Size.y - glyph.Bearing.y) * scale);
+    }
+    return metrics;
+}
+
 void OpenGL2dRenderer::renderText(const text::TextObject& textObj) {
-    if (!textProgram_) {
-        std::cout << "Program not init!\n";
+    using namespace render::text;
+    const auto metrics = measureText(textObj.utf8Text, textObj.style.height);
+    const auto& placement = textObj.placement.screen;
+    if (!textProgram_ || !textObj.visible || textObj.placement.space != TextSpace::Screen || !metrics || !std::isfinite(placement.anchorPx.x) ||
+        !std::isfinite(placement.anchorPx.y) || !std::isfinite(placement.rotationRad)) {
         return;
     }
-
-    // activate corresponding render state
-    glUseProgram(textProgram_);
-    glUniform3f(glGetUniformLocation(textProgram_, "textColor"), textObj.style.r, textObj.style.g, textObj.style.b);
-
-    glm::mat4 ortho = glm::ortho(0.0f, (float)width_, 0.0f, (float)height_);
-    if (textTransformLoc_ >= 0) {
-        glUniformMatrix4fv(textTransformLoc_, 1, GL_FALSE, glm::value_ptr(ortho));
-    }
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindVertexArray(textVao_);
-
-    const std::string& text = textObj.utf8Text;
-
-    float textWidth = 0.0f;
-    float textAscent = 0.0f;
-    float textDescent = 0.0f;
-
-
-    for (char c : text) {
-        const Character& ch = Characters.at(c);
-        textWidth += (ch.Advance >> 6);
-        if (ch.Bearing.y > textAscent) textAscent = ch.Bearing.y;
-        float depth = ch.Size.y - ch.Bearing.y;
-        if (depth > textDescent) textDescent = depth;
-    }
-
-    using namespace render::text;
-
-    double x = textObj.placement.screen.anchorPx.x;
+    const double scale = textObj.style.height / textPixelHeight_;
+    // Alignment is local to the anchor, so rotating the label keeps its center fixed.
+    double x = 0.0;
     switch (textObj.style.hAlign) {
         case TextHorizontalAlign::Left:
             break;
         case TextHorizontalAlign::Center:
-            x -= textWidth * 0.5f;
+            x -= metrics->width * 0.5;
             break;
         case TextHorizontalAlign::Right:
-            x -= textWidth;
+            x -= metrics->width;
             break;
     }
 
-    double y = textObj.placement.screen.anchorPx.y;
+    double y = 0.0;
     switch (textObj.style.vAlign) {
         case TextVerticalAlign::Top:
-            y -= textAscent;
+            y -= metrics->ascent;
             break;
         case TextVerticalAlign::Middle:
-            y -= (textAscent + textDescent) * 0.5f;
+            y -= (metrics->ascent - metrics->descent) * 0.5;
             break;
         case TextVerticalAlign::Baseline:
-            // y = anchorPx.y - baseline и есть anchor
             break;
         case TextVerticalAlign::Bottom:
-            y += textDescent;
+            y += metrics->descent;
             break;
     }
 
-    for (char c : text) {
-        Character ch = Characters.at(c);
+    glUseProgram(textProgram_);
+    glUniform4f(glGetUniformLocation(textProgram_, "textColor"), textObj.style.r, textObj.style.g, textObj.style.b, textObj.style.a);
+    auto transform = glm::ortho(0.0f, static_cast<float>(width_), 0.0f, static_cast<float>(height_));
+    transform = glm::translate(transform, glm::vec3(placement.anchorPx.x, placement.anchorPx.y, 0.0));
+    transform = glm::rotate(transform, static_cast<float>(placement.rotationRad), glm::vec3(0, 0, 1));
+    if (textTransformLoc_ >= 0) {
+        glUniformMatrix4fv(textTransformLoc_, 1, GL_FALSE, glm::value_ptr(transform));
+    }
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(textVao_);
 
-        float xpos = x + ch.Bearing.x;
-        float ypos = y - (ch.Size.y - ch.Bearing.y);
+    for (char c : textObj.utf8Text) {
+        const auto& ch = Characters.at(c);
+        const float xpos = static_cast<float>(x + ch.Bearing.x * scale);
+        const float ypos = static_cast<float>(y - (ch.Size.y - ch.Bearing.y) * scale);
+        const float w = static_cast<float>(ch.Size.x * scale);
+        const float h = static_cast<float>(ch.Size.y * scale);
 
-        float w = ch.Size.x;
-        float h = ch.Size.y;
+        float vertices[6][4] = {{xpos, ypos + h, 0.0f, 0.0f}, {xpos, ypos, 0.0f, 1.0f},     {xpos + w, ypos, 1.0f, 1.0f},
 
-        float vertices[6][4] = {
-            { xpos,     ypos + h,   0.0f, 0.0f },
-            { xpos,     ypos,       0.0f, 1.0f },
-            { xpos + w, ypos,       1.0f, 1.0f },
-
-            { xpos,     ypos + h,   0.0f, 0.0f },
-            { xpos + w, ypos,       1.0f, 1.0f },
-            { xpos + w, ypos + h,   1.0f, 0.0f }
-        };
+                                {xpos, ypos + h, 0.0f, 0.0f}, {xpos + w, ypos, 1.0f, 1.0f}, {xpos + w, ypos + h, 1.0f, 0.0f}};
 
         glBindTexture(GL_TEXTURE_2D, ch.TextureID);
         glBindBuffer(GL_ARRAY_BUFFER, textQuadVbo_);
@@ -1366,11 +1367,9 @@ void OpenGL2dRenderer::renderText(const text::TextObject& textObj) {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        x += (ch.Advance >> 6);
+        x += (ch.Advance / 64.0) * scale;
     }
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-
-
