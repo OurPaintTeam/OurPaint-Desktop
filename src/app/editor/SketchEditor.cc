@@ -6,14 +6,15 @@
 #include "tools/LineTool.h"
 #include "tools/PointTool.h"
 
-SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay)
+SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
+                           app::ConstraintPresentationState& constraintPresentation)
     : document_(document),
       camera_(camera),
       overlay_(overlay),
       snap_(document_.sketch(), camera_),
       picker_(document_.sketch(), camera_),
       constraintActions_(document_.sketch()),
-      cursorTool_(document_, camera_, snap_, picker_, overlay_, constraintActions_),
+      cursorTool_(document_, camera_, snap_, picker_, overlay_, constraintActions_, constraintLayout, constraintPresentation),
       pointTool_(document_, camera_, snap_, overlay_, picker_),
       lineTool_(document_, camera_, snap_, overlay_, picker_),
       circleTool_(document_, camera_, snap_, picker_, overlay_),

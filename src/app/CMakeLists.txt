@@ -10,6 +10,7 @@ add_executable(ourpaint
         viewport/render/RenderSceneBuilder.cc
         viewport/render/SnapFeedbackBuilder.cc
         viewport/constraints/ConstraintLayout.cc
+        viewport/constraints/DimensionLayout.cc
         viewport/ViewportController.cc
         ui/QtMainWindowBinder.cc
         ui/UIController.cc

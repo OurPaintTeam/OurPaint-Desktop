@@ -14,14 +14,14 @@
 #include "ViewportStyle.h"
 #include "render/RenderSceneBuilder.h"
 
+namespace app {
+struct ConstraintPresentationState;
+}
+
 class ViewportController : public IViewportController {
 public:
-    ViewportController(Camera2D& camera,
-                       OverlayModel& overlay,
-                       SketchEditor& session,
-                       Document& document,
-                       const app::ViewportStyle& style,
-                       app::ConstraintLayout& constraintLayout);
+    ViewportController(Camera2D& camera, OverlayModel& overlay, SketchEditor& session, Document& document, const app::ViewportStyle& style,
+                       app::ConstraintLayout& constraintLayout, const app::ConstraintPresentationState& constraintPresentation);
 
     bool onResize     (const input::ResizeEvent& e)      override;
     bool onMouseMove  (const input::MouseMoveEvent& e)   override;
@@ -42,6 +42,7 @@ private:
     SketchEditor& editorSession_;
     Document& document_;
     app::ConstraintLayout& constraintLayout_;
+    const app::ConstraintPresentationState& constraintPresentation_;
 
     AxisTexts axisTexts_;
     const app::ViewportStyle& viewportStyle_;

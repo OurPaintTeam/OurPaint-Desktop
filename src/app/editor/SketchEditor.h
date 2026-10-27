@@ -22,7 +22,8 @@
 
 class SketchEditor {
 public:
-    SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay);
+    SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
+                 app::ConstraintPresentationState& constraintPresentation);
     ~SketchEditor();
 
     void select(ToolId id);

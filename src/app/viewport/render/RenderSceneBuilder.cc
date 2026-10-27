@@ -1,17 +1,19 @@
 #include "RenderSceneBuilder.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <iterator>
 #include <utility>
 #include <vector>
 
 #include "../../../core/Scene.h"
+#include "../constraints/ConstraintLayout.h"
 #include "AxisTexts.h"
 #include "OverlayModel.h"
 #include "RenderScene.h"
 #include "SnapFeedbackBuilder.h"
 #include "ViewportStyle.h"
-#include "../constraints/ConstraintLayout.h"
 #include "objects/Objects.h"
 
 using namespace core;
@@ -476,24 +478,104 @@ void RenderSceneBuilder::buildAxisText() {
 void RenderSceneBuilder::buildConstraintsMarkers() {
     render::DrawLayer layer = makeScreenLayer("constraints", kConstraints);
 
-    render::LineBatch linesBatch;
-    linesBatch.style = style_.constraintMarker.stroke;
+    struct MarkerBatches {
+        render::LineBatch lines;
+        render::CircleBatch circles;
+        render::ArcBatch arcs;
+        render::TextBatch labels;
+        std::vector<render::MarkerBatch> dots;
+    };
+    // Batch by interaction state; hover and drag use the same primitives as picking.
+    std::array<MarkerBatches, 3> batches;
+    const std::array colors{style_.constraintMarker.stroke.color, style_.constraintMarker.hoveredColor, style_.constraintMarker.draggedColor};
     const double dpr = camera_.viewport().devicePixelRatio;
     const double height = camera_.hFramebuffer();
-    linesBatch.style.widthPx *= static_cast<float>(dpr);
-    if (linesBatch.style.edgeSoftnessPx) {
-        *linesBatch.style.edgeSoftnessPx *= static_cast<float>(dpr);
+    for (size_t i = 0; i < batches.size(); ++i) {
+        auto& stroke = batches[i].lines.style;
+        stroke = style_.constraintMarker.stroke;
+        stroke.color = colors[i];
+        stroke.widthPx *= static_cast<float>(dpr);
+        if (stroke.edgeSoftnessPx) {
+            *stroke.edgeSoftnessPx *= static_cast<float>(dpr);
+        }
+        batches[i].circles.stroke = stroke;
+        batches[i].arcs.stroke = stroke;
     }
 
     // Layout uses logical pixels with a top-left origin; Screen layers use framebuffer pixels with a bottom-left origin.
     for (const auto& marker : constraintLayout_.markers()) {
+        const auto represents = [&](const auto& id) {
+            return id && std::find(marker.constraints.begin(), marker.constraints.end(), *id) != marker.constraints.end();
+        };
+        const size_t state = represents(overlay_.draggedDimension) ? 2 : represents(overlay_.hoveredDimension) ? 1 : 0;
+        auto& group = batches[state];
+        auto& linesBatch = group.lines;
+        auto& circlesBatch = group.circles;
+        auto& arcsBatch = group.arcs;
+        auto& labelsBatch = group.labels;
         for (const auto& stroke : marker.strokes) {
             linesBatch.lines.push_back(makeLine(stroke.start.x * dpr, height - stroke.start.y * dpr, stroke.end.x * dpr, height - stroke.end.y * dpr));
         }
+        for (const auto& dot : marker.dots) {
+            const float radius = static_cast<float>(dot.radiusPx * dpr);
+            auto batch =
+                std::find_if(group.dots.begin(), group.dots.end(), [radius](const render::MarkerBatch& candidate) { return candidate.style.radius == radius; });
+            if (batch == group.dots.end()) {
+                render::MarkerBatch dotsBatch;
+                dotsBatch.style = style_.constraintMarker.point;
+                if (state != 0) {
+                    dotsBatch.style.color = colors[state];
+                }
+                dotsBatch.style.radius = radius;
+                if (dotsBatch.style.edgeSoftnessPx) {
+                    *dotsBatch.style.edgeSoftnessPx *= static_cast<float>(dpr);
+                }
+                group.dots.push_back(std::move(dotsBatch));
+                batch = std::prev(group.dots.end());
+            }
+            batch->markers.push_back(makeMarker(dot.center.x * dpr, height - dot.center.y * dpr));
+        }
+        for (const auto& circle : marker.circles) {
+            circlesBatch.circles.push_back(makeCircle(circle.center.x * dpr, height - circle.center.y * dpr, circle.radiusPx * dpr));
+        }
+        for (const auto& arc : marker.arcs) {
+            // Layout angles already use the renderer's right/up basis; only the center's Y is flipped.
+            arcsBatch.arcs.push_back(makeArc(arc.center.x * dpr, height - arc.center.y * dpr, arc.radiusPx * dpr, arc.startAngle, arc.endAngle));
+        }
+        for (const auto& label : marker.labels) {
+            render::text::TextObject text;
+            text.utf8Text = label.text;
+            text.style.height = label.heightPx * dpr;
+            text.style.hAlign = render::text::TextHorizontalAlign::Center;
+            text.style.vAlign = render::text::TextVerticalAlign::Middle;
+            const auto& color = linesBatch.style.color;
+            text.style.r = color.r;
+            text.style.g = color.g;
+            text.style.b = color.b;
+            text.style.a = color.a;
+            text.placement.space = render::text::TextSpace::Screen;
+            text.placement.screen.anchorPx = {label.center.x * dpr, height - label.center.y * dpr};
+            text.placement.screen.rotationRad = -label.rotationRad;
+            labelsBatch.textObjects.push_back(std::move(text));
+        }
     }
 
-    if (!linesBatch.lines.empty()) {
-        layer.lineBatches.push_back(std::move(linesBatch));
+    for (auto& group : batches) {
+        if (!group.lines.lines.empty()) {
+            layer.lineBatches.push_back(std::move(group.lines));
+        }
+        if (!group.circles.circles.empty()) {
+            layer.circleBatches.push_back(std::move(group.circles));
+        }
+        if (!group.arcs.arcs.empty()) {
+            layer.arcBatches.push_back(std::move(group.arcs));
+        }
+        if (!group.labels.textObjects.empty()) {
+            layer.textBatches.push_back(std::move(group.labels));
+        }
+        for (auto& dots : group.dots) {
+            layer.markerBatches.push_back(std::move(dots));
+        }
     }
 
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
@@ -504,4 +586,3 @@ void RenderSceneBuilder::buildSnapFeedback() {
         app::appendSnapFeedback(*feedback, sketch_, camera_, style_.snapFeedback, renderScene_);
     }
 }
-

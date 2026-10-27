@@ -122,8 +122,9 @@ public:
     virtual std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) = 0;
     virtual std::optional<ActionReport> onKey(const input::KeyEvent& e) = 0;
 
-    // Pending input is discarded, not rolled back. A gesture may return its
-    // outcome here; handled=false allows the editor to exit an empty tool.
+    // Pending input is discarded. Geometry edits already applied to Sketch are
+    // retained; presentation previews may restore their initial state. A gesture
+    // may return its outcome; handled=false lets the editor exit an empty tool.
     virtual ToolCancellation cancel() = 0;
 };
 

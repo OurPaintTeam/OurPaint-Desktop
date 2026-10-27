@@ -3,6 +3,7 @@
 
 #include "../../../core/Document.h"
 #include "../../viewport/OverlayModel.h"
+#include "../../viewport/constraints/ConstraintPresentationState.h"
 #include "../../viewport/picking/Cpu2dPicker.h"
 #include "Camera2D.h"
 #include "IInteractionTool.h"
@@ -14,7 +15,9 @@ class ConstraintActions;
 
 class CursorTool : public IInteractionTool {
 public:
-    explicit CursorTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay, ConstraintActions& constraintActions);
+    explicit CursorTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay,
+                        ConstraintActions& constraintActions, const app::ConstraintLayout& constraintLayout,
+                        app::ConstraintPresentationState& constraintPresentation);
 
     std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
     std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
@@ -27,15 +30,14 @@ private:
     sketch::Status prepareDragSelection(std::span<const sketch::GeometryRef> refs);
     sketch::Result<sketch::SolveDiagnostics> moveSelection(sketch::Vec2 offset);
     std::optional<ActionReport> finishDrag();
+    std::optional<DimensionPickResult> pickDimension(glm::dvec2 position) const;
+    void beginDimensionDrag(const DimensionPickResult& hit, glm::dvec2 position);
+    void updateDimensionDrag(glm::dvec2 position);
+    void endDimensionDrag(bool commit);
 
     ActionReport tryApplyPointOnPointNearCursor(double xLogic, double yLogic);
 
-    enum class State {
-        Idle,
-        Pressed,
-        DraggingSelection,
-        MarqueeSelection
-    };
+    enum class State { Idle, Pressed, PressedDimension, DraggingDimension, DraggingSelection, MarqueeSelection };
 
     State state_ = State::Idle;
     sketch::Sketch& sketch_;
@@ -44,6 +46,16 @@ private:
     glm::dvec2 pressWorldPos_{};
     glm::ivec2 lastScreenPos_{};
     ConstraintActions& constraintActions_;
+    const app::ConstraintLayout& constraintLayout_;
+    app::ConstraintPresentationState& constraintPresentation_;
+
+    struct DimensionDrag {
+        sketch::ConstraintId constraint;
+        glm::dvec2 pressPosition;
+        glm::dvec2 grabOffsetPx;
+        std::optional<app::ConstraintLabelPlacement> initialPlacement;
+    };
+    std::optional<DimensionDrag> dimensionDrag_;
 
     std::vector<sketch::GeometryRef> marqueeBaseSelection_;
     std::vector<sketch::DragRequest> dragTargets_;

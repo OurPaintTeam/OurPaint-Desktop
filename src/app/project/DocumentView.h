@@ -7,6 +7,7 @@
 #include "../viewport/ViewportController.h"
 #include "../viewport/ViewportStyle.h"
 #include "../viewport/constraints/ConstraintLayout.h"
+#include "../viewport/constraints/ConstraintPresentationState.h"
 #include "../viewport/picking/Cpu2dPicker.h"
 #include "../viewport/render/RenderSceneBuilder.h"
 #include "Camera2D.h"
@@ -34,6 +35,7 @@ public:
     Camera2D camera2D_;
     OverlayModel overlay_;
     app::ViewportStyle viewportStyle_;
+    app::ConstraintPresentationState constraintPresentation_;
     app::ConstraintLayout constraintLayout_;
     SketchEditor editorSession_;
     ViewportController viewportController_;

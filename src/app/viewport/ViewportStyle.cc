@@ -8,7 +8,7 @@ ViewportStyle ViewportStyle::makeDefault() {
     {
         // base point
         style.baseMarker.color = {63.0f / 255.0f, 72.0f / 255.0f, 204.0f / 255.0f, 1.0f};
-        style.baseMarker.radius = 1.5f;
+        style.baseMarker.radius = 2.0f;
         style.baseMarker.edgeSoftnessPx = 1.5f;
 
         // selected point
@@ -41,8 +41,9 @@ ViewportStyle ViewportStyle::makeDefault() {
 
     {
         style.constraintMarker.stroke.color = {1.0f, 127.0f / 255.0f, 39.0f / 255.0f, 1.0f};
-        style.constraintMarker.stroke.widthPx = 1.0f;
+        style.constraintMarker.stroke.widthPx = 0.5f;
         style.constraintMarker.stroke.edgeSoftnessPx = 1.5f;
+        style.constraintMarker.point.color = style.constraintMarker.stroke.color;
     }
 
     {

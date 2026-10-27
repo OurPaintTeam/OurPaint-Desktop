@@ -2,9 +2,63 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numbers>
 
+#include "../constraints/ConstraintLayout.h"
+
 namespace {
+
+bool isDimension(sketch::ConstraintType type) {
+    switch (type) {
+        case sketch::ConstraintType::Distance:
+        case sketch::ConstraintType::HorizontalDistance:
+        case sketch::ConstraintType::VerticalDistance:
+        case sketch::ConstraintType::Length:
+        case sketch::ConstraintType::Radius:
+        case sketch::ConstraintType::Diameter:
+        case sketch::ConstraintType::Angle:
+            return true;
+        default:
+            return false;
+    }
+}
+
+double segmentDistance(glm::dvec2 point, const app::ConstraintMarkerSegment& segment) {
+    const auto direction = segment.end - segment.start;
+    const double lengthSquared = glm::dot(direction, direction);
+    const double t = lengthSquared > 0.0 ? std::clamp(glm::dot(point - segment.start, direction) / lengthSquared, 0.0, 1.0) : 0.0;
+    return glm::length(point - (segment.start + t * direction));
+}
+
+double arcDistance(glm::dvec2 point, const app::ConstraintArc& arc) {
+    const double tau = 2.0 * std::numbers::pi;
+    const auto positiveAngle = [tau](double angle) {
+        const double result = std::fmod(angle, tau);
+        return result < 0.0 ? result + tau : result;
+    };
+    if (!std::isfinite(arc.radiusPx) || arc.radiusPx <= 0.0 || !std::isfinite(arc.startAngle) || !std::isfinite(arc.endAngle)) {
+        return std::numeric_limits<double>::infinity();
+    }
+    const auto delta = point - arc.center;
+    const double sweep = positiveAngle(arc.endAngle - arc.startAngle);
+    const double relative = positiveAngle(std::atan2(-delta.y, delta.x) - arc.startAngle);
+    if (sweep < 1e-5 || relative <= sweep) {
+        return std::abs(glm::length(delta) - arc.radiusPx);
+    }
+    const auto endpoint = [&](double angle) { return arc.center + arc.radiusPx * glm::dvec2(std::cos(angle), -std::sin(angle)); };
+    return std::min(glm::length(point - endpoint(arc.startAngle)), glm::length(point - endpoint(arc.endAngle)));
+}
+
+double labelDistance(glm::dvec2 point, const app::ConstraintLabel& label) {
+    // Undo the label's rotation before testing its local measured rectangle.
+    const glm::dvec2 tangent{std::cos(label.rotationRad), std::sin(label.rotationRad)};
+    const glm::dvec2 normal{-tangent.y, tangent.x};
+    const auto delta = point - label.center;
+    const double dx = std::max(0.0, std::abs(glm::dot(delta, tangent)) - label.sizePx.x * 0.5);
+    const double dy = std::max(0.0, std::abs(glm::dot(delta, normal)) - label.sizePx.y * 0.5);
+    return std::hypot(dx, dy);
+}
 
 bool pointInRect(sketch::Vec2 point, double xmin, double ymin, double xmax, double ymax) {
     return point.x >= xmin && point.x <= xmax && point.y >= ymin && point.y <= ymax;
@@ -58,6 +112,44 @@ bool arcIntersectsRect(const sketch::Arc2& arc, double xmin, double ymin, double
 }  // namespace
 
 Cpu2dPicker::Cpu2dPicker(sketch::Sketch& sketch, Camera2D& camera) : sketch_(sketch), camera_(camera) {}
+
+std::optional<DimensionPickResult> Cpu2dPicker::pickDimensionAtScreenLogical(double screenX, double screenY, const app::ConstraintLayout& layout) const {
+    if (!std::isfinite(screenX) || !std::isfinite(screenY)) {
+        return std::nullopt;
+    }
+    const glm::dvec2 point{screenX, screenY};
+    std::optional<DimensionPickResult> best;
+    for (const auto& marker : layout.markers()) {
+        // Each dimension currently has one independently placed label and one owner.
+        if (!isDimension(marker.type) || marker.constraints.size() != 1 || marker.labels.size() != 1 || !std::isfinite(marker.hitRadiusPx) ||
+            marker.hitRadiusPx < 0.0) {
+            continue;
+        }
+        const auto& label = marker.labels.front();
+        if (!std::isfinite(label.center.x) || !std::isfinite(label.center.y) || !std::isfinite(label.rotationRad) || !std::isfinite(label.sizePx.x) ||
+            !std::isfinite(label.sizePx.y) || label.sizePx.x <= 0.0 || label.sizePx.y <= 0.0) {
+            continue;
+        }
+        auto part = DimensionPickResult::Part::Label;
+        double distance = labelDistance(point, label);
+        if (distance > marker.hitRadiusPx) {
+            part = DimensionPickResult::Part::Body;
+            distance = std::numeric_limits<double>::infinity();
+            for (const auto& stroke : marker.strokes) {
+                distance = std::min(distance, segmentDistance(point, stroke));
+            }
+            for (const auto& arc : marker.arcs) {
+                distance = std::min(distance, arcDistance(point, arc));
+            }
+        }
+        if (distance <= marker.hitRadiusPx &&
+            (!best || part < best->part ||
+             (part == best->part && (distance < best->distancePx || (distance == best->distancePx && marker.constraints.front() < best->constraint))))) {
+            best = DimensionPickResult{marker.constraints.front(), part, label.center, distance};
+        }
+    }
+    return best;
+}
 
 // Pick in rect
 

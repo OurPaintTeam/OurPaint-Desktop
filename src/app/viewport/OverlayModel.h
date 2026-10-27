@@ -84,6 +84,10 @@ public:
     // Pending tool operands do not change the shared user selection.
     std::vector<core::sketch::GeometryRef> constraintRefs_;
 
+    // Transient dimension feedback, separate from geometry selection and saved placement.
+    std::optional<core::sketch::ConstraintId> hoveredDimension;
+    std::optional<core::sketch::ConstraintId> draggedDimension;
+
     // Replaces the complete hint without touching tool preview or user selection.
     void setSnapFeedback(app::SnapFeedback feedback) { snapFeedback_ = std::move(feedback); }
 
@@ -108,6 +112,8 @@ public:
         clearPreview();
         clearSelection();
         clearSnap();
+        hoveredDimension.reset();
+        draggedDimension.reset();
     }
 
 private:
