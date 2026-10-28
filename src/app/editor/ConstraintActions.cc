@@ -157,8 +157,12 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         }
     }
 
-    if (request.action == ConstraintAction::Dimension && kinds[0] == RefKind::Line) {
-        definition.type = ConstraintType::Length;
+    if (request.action == ConstraintAction::Dimension) {
+        if (kinds[0] == RefKind::Line) {
+            definition.type = ConstraintType::Length;
+        } else if (kinds[0] == RefKind::Circular) {
+            definition.type = ConstraintType::Radius;
+        }
         requiredRefs = 1;
         if (*request.value == 0) {
             return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidValue};
@@ -177,6 +181,8 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         case ConstraintType::Distance:
         case ConstraintType::HorizontalDistance:
         case ConstraintType::VerticalDistance:
+        case ConstraintType::Radius:
+        case ConstraintType::Diameter:
             compatible = true;
             break;
         case ConstraintType::Concentric:

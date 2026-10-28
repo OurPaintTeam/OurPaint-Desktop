@@ -803,12 +803,16 @@ private:
                             add(du::RequirementDescriptor::pointPointDist(pointAt(0), whole(1), dist));
                         } else if (kind2 == EntityKind::Line) {
                             add(du::RequirementDescriptor::pointLineDist(pointAt(0), whole(1), dist));
+                        } else {
+                            throw std::logic_error("Unsupported constraint passed DCM preflight");
                         }
                     } else if (type_subEt2 != SubElement::Whole) {
                         if (kind1 == EntityKind::Point) {
                             add(du::RequirementDescriptor::pointPointDist(whole(0), pointAt(1), dist));
                         } else if (kind1 == EntityKind::Line) {
                             add(du::RequirementDescriptor::pointLineDist(pointAt(1), whole(0), dist));
+                        } else {
+                            throw std::logic_error("Unsupported constraint passed DCM preflight");
                         }
                     } else if (kind1 == EntityKind::Point && kind2 == EntityKind::Line) {
                         add(du::RequirementDescriptor::pointLineDist(whole(0), whole(1), dist));
@@ -829,6 +833,25 @@ private:
                     // TODO Arc length and Nurbs length
                     const auto descriptor = figure(whole(0));
                     add(du::RequirementDescriptor::pointPointDist(descriptor.pointIds.at(0), descriptor.pointIds.at(1), dcmParameter(definition)));
+                    break;
+                }
+                case ConstraintType::Radius: {
+                    auto kind = entities_.at(definition.refs[0].entity).kind;
+                    auto id = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt = definition.refs[0].sub;
+                    double r = dcmParameter(definition);
+
+                    if (kind == EntityKind::Circle) {
+                        add(du::RequirementDescriptor::circleRadius(id, r));
+                    }
+
+                    break;
+                }
+                case ConstraintType::Diameter: {
+                    auto kind1 = entities_.at(definition.refs[0].entity).kind;
+                    auto id1 = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt1 = definition.refs[0].sub;
+                    std::cout << "Diameter";
                     break;
                 }
                 case ConstraintType::Angle:
