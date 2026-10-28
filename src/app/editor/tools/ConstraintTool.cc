@@ -35,7 +35,7 @@ std::optional<ActionReport> ConstraintTool::onMouseButton(const input::MouseButt
             break;
         case ConstraintAction::Coincident:
         case ConstraintAction::Fix:
-            pick = picker_.pickPointAtScreenLogical(e.x, e.y);
+            pick = picker_.pickAtScreenLogical(e.x, e.y);
             break;
         case ConstraintAction::Symmetric:
             pick = picker_.pickPointAtScreenLogical(e.x, e.y);
