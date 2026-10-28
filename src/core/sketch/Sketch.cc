@@ -786,17 +786,36 @@ private:
                     break;
                 }
                 case ConstraintType::Distance: {
-                    const auto handle1 = entities_.at(definition.refs[0].entity).handle;
-                    const auto descriptor1 = figure(handle1);
-                    const auto handle2 = entities_.at(definition.refs[1].entity).handle;
-                    const auto descriptor2 = figure(handle2);
+                    auto kind1 = entities_.at(definition.refs[0].entity).kind;
+                    auto id1 = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt1 = definition.refs[0].sub;
+
+                    auto kind2 = entities_.at(definition.refs[1].entity).kind;
+                    auto id2 = entities_.at(definition.refs[1].entity).handle;
+                    auto type_subEt2 = definition.refs[1].sub;
+
                     double dist = dcmParameter(definition);
-                    if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_POINT2D) {
-                        add(du::RequirementDescriptor::pointPointDist(pointAt(0), pointAt(1), dist));
-                    } else if (descriptor1.type == du::FigureType::ET_POINT2D && descriptor2.type == du::FigureType::ET_LINE) {
+
+                    if (type_subEt1 != SubElement::Whole) {
+                        if (type_subEt2 != SubElement::Whole) {
+                            add(du::RequirementDescriptor::pointPointDist(pointAt(0), pointAt(1), dist));
+                        } else if (kind2 == EntityKind::Point) {
+                            add(du::RequirementDescriptor::pointPointDist(pointAt(0), whole(1), dist));
+                        } else if (kind2 == EntityKind::Line) {
+                            add(du::RequirementDescriptor::pointLineDist(pointAt(0), whole(1), dist));
+                        }
+                    } else if (type_subEt2 != SubElement::Whole) {
+                        if (kind1 == EntityKind::Point) {
+                            add(du::RequirementDescriptor::pointPointDist(whole(0), pointAt(1), dist));
+                        } else if (kind1 == EntityKind::Line) {
+                            add(du::RequirementDescriptor::pointLineDist(pointAt(1), whole(0), dist));
+                        }
+                    } else if (kind1 == EntityKind::Point && kind2 == EntityKind::Line) {
                         add(du::RequirementDescriptor::pointLineDist(whole(0), whole(1), dist));
-                    } else if (descriptor1.type == du::FigureType::ET_LINE && descriptor2.type == du::FigureType::ET_POINT2D) {
+                    } else if (kind1 == EntityKind::Line && kind2 == EntityKind::Point) {
                         add(du::RequirementDescriptor::pointLineDist(whole(1), whole(0), dist));
+                    } else {
+                        throw std::logic_error("Unsupported constraint passed DCM preflight");
                     }
                     break;
                 }
