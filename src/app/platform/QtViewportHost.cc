@@ -1,6 +1,7 @@
 #define GLAD_GL_NO_INCLUDE_H
 #include "QtViewportHost.h"
 
+#include <dwmapi.h>
 #include <glad/gl.h>
 
 #include <QDebug>
@@ -239,6 +240,7 @@ void QtViewportHost::exposeEvent(QExposeEvent*) {
         initContext();
     }
     renderFrame();
+    emit frameReady();
 }
 
 void QtViewportHost::paintEvent(QPaintEvent* ev) {
