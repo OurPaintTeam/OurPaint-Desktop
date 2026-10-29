@@ -257,6 +257,7 @@ void QtViewportHost::resizeEvent(QResizeEvent* e) {
             renderFrame();
             controller_->dirty_ = false;
         }
+          emit frameReady();
     }
 }
 
