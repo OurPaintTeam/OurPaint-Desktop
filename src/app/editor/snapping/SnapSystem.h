@@ -17,10 +17,6 @@ class Sketch;
 
 namespace snap {
 
-// =============================================================================
-// SnapRequest — input for one snap query.
-// Tool and draw state define which snaps are allowed.
-// =============================================================================
 struct SnapRequest {
     /// Cursor position in sketch (world) coordinates.
     core::sketch::Vec2 cursor;
@@ -39,11 +35,6 @@ struct SnapRequest {
 
 };
 
-// =============================================================================
-// SnapResult — output of one snap query.
-// Describes ONE resolved candidate: point, kind, and all geometry
-// needed for rendering and for the tool.
-// =============================================================================
 
 /// Coincident + P/P
 /// Coincident + H/V
@@ -87,29 +78,7 @@ struct SnapResult {
     std::vector<SnapRelation> relations;
 };
 
-// =============================================================================
-// SnapRule — search rules for the current tool and state.
-// =============================================================================
-struct SnapRule {
-    SnapMask mask = SnapMask::None;
-    double maxRadius = 0.0;
-    double regularRadius = 0.0;
 
-    /// Legacy distance band retained for configuration compatibility.
-    /// Candidate ranking is deterministic: priority first, then cursor distance.
-    double priorityRadius = 0.0;
-
-    /// Tighter screen-space limits for relation snaps that are easy to over-trigger.
-    double collinearRadius = 0.0;
-    double tangentRadius = 0.0;
-    double endpointRadius = 0.0;
-    double midpointRadius = 0.0;
-};
-
-// =============================================================================
-// SnapCandidate — internal candidate before it becomes a public SnapResult.
-// One query may produce several candidates; SnapSystem picks the best one.
-// =============================================================================
 struct SnapCandidate {
     /// Resolved candidate data.
     SnapResult result;
@@ -127,41 +96,12 @@ private:
     const core::sketch::Sketch& sketch_;
     const Camera2D& camera_;
 
-    // Direction-step reference is retained only for angle-step scaling after
-    // the first point is placed. Snap-result cycling/locking is intentionally
-    // not stateful: every query resolves from the current cursor and geometry.
-    mutable std::optional<geometry::Vec2> directionSnapBaseAnchor_;
-    mutable double directionSnapReferenceZoom_ = 1.0;
-
 public:
     explicit SnapSystem(const core::sketch::Sketch& sketch,const Camera2D& camera);
     SnapResult getSnapCandidate(const SnapRequest& request) const;
 
 private:
-    static SnapRule ruleFor(ActionType action, DrawState state);
-    void  onAnchorPlaced(const geometry::Vec2& position);
 
-    SnapResult parser(const SnapRequest& request) const;
-
-    std::optional<SnapCandidate> findBestStandalonePoint(const SnapRequest& request, const SnapRule& rule) const;
-
-    std::optional<SnapCandidate> findBestLineCandidate(const SnapRequest& request, const SnapRule& rule) const;
-
-    std::optional<SnapCandidate> findBestCircleCandidate(const SnapRequest& request, const SnapRule& rule) const;
-
-    std::optional<SnapCandidate> findBestIntersection(const SnapRequest& request, const SnapRule& rule) const;
-
-    std::optional<SnapCandidate> findBestTangentCandidate(const SnapRequest& request, const SnapRule& rule) const;
-
-    std::optional<SnapCandidate> findBestDirectionalCandidate(const SnapRequest& request, const SnapRule& rule) const;
-
-    std::optional<SnapCandidate> findBestAlignmentCandidate(const SnapRequest& request, const SnapRule& rule) const;
-
-    std::optional<SnapCandidate> findBestArcCandidate(const SnapRequest& request, const SnapRule& rule) const;
-
-    static bool isAllowed(SnapKind kind, double distance, const SnapRule& rule);
-
-    static bool isBetterCandidate(const SnapCandidate& candidate, const SnapCandidate& current, double priorityRadius);
 };
 
 }  // namespace snap

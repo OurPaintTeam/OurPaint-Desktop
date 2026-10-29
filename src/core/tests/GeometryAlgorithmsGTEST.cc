@@ -1,626 +1,261 @@
-//
-// Created by Tim on 08.10.2026.
-//
-
-#include <array>
-#include <limits>
-
 #include <gtest/gtest.h>
 
-#include "geometry/Algorithms.h"
-#include "sketch/SketchTypes.h"
+#include <cmath>
+#include <limits>
+#include <vector>
+
+#include "geometry/GeometryMath.h"
+#include "geometry/LineAlgorithms.h"
+#include "geometry/CircleAlgorithms.h"
+#include "geometry/ArcAlgorithms.h"
+#include "geometry/relations/AxisRelations.h"
+#include "geometry/relations/Parallelism.h"
+#include "geometry/relations/Perpendicularity.h"
+#include "geometry/relations/PointCurveTangency.h"
+#include "geometry/intersections/IntersectionDispatcher.h"
+#include "geometry/relations/Tangency.h"
 
 namespace {
+using namespace geometry;
+constexpr double kTol = 1e-8;
 
-using core::sketch::Circle2;
-using core::sketch::EntityId;
-using core::sketch::GeometryRef;
-using core::sketch::Line2;
-using core::sketch::Point2;
-using core::sketch::SketchEntity;
-using core::sketch::SubElement;
-using core::sketch::Vec2;
+void expectVec(const Vec2& actual, double x, double y, double tol = kTol) {
+    EXPECT_NEAR(actual.x, x, tol);
+    EXPECT_NEAR(actual.y, y, tol);
+}
+Vec2 pos(const Point2& p) { return p.position; }
 
-constexpr double EPS = 1e-9;
-
-// ============================================================
-// Distance
-// ============================================================
-
-TEST(GeometryAlgorithms, DistanceSquared) {
-    EXPECT_DOUBLE_EQ(
-        geometry::detail::distanceSquared(
-            Vec2{0.0, 0.0}, Vec2{3.0, 4.0}),
-        25.0);
+TEST(GeometryMath, DistanceAndVectorOperations) {
+    EXPECT_DOUBLE_EQ(distance(Vec2{0, 0}, Vec2{3, 4}), 5.0);
+    expectVec(detail::add({1, 2}, {3, -5}), 4, -3);
+    expectVec(detail::subtract({1, 2}, {3, -5}), -2, 7);
+    expectVec(detail::multiply({2, -3}, 2.5), 5, -7.5);
+    EXPECT_DOUBLE_EQ(detail::dot({1, 2}, {3, 4}), 11.0);
+    EXPECT_DOUBLE_EQ(detail::cross({1, 2}, {3, 4}), -2.0);
+}
+TEST(GeometryMath, MidpointAndValidityHelpers) {
+    expectVec(detail::midpoint(Line2{{-2, 4}, {6, 8}}), 2, 6);
+    EXPECT_TRUE(detail::isFinite(Vec2{1, 2}));
+    EXPECT_FALSE(detail::isFinite(Vec2{NAN, 2}));
+    EXPECT_TRUE(detail::isFinite(Line2{{0, 0}, {1, 1}}));
+    EXPECT_FALSE(detail::isFinite(Line2{{0, 0}, {INFINITY, 1}}));
+    EXPECT_TRUE(detail::isFinite(Circle2{{0, 0}, 2}));
+    EXPECT_FALSE(detail::isFinite(Circle2{{0, 0}, -1}));
+    EXPECT_TRUE(detail::isDegenerate(Line2{{1, 1}, {1, 1}}));
+    EXPECT_FALSE(detail::isDegenerate(Line2{{0, 0}, {1, 0}}));
+    EXPECT_TRUE(detail::onSegment(0.0));
+    EXPECT_TRUE(detail::onSegment(1.0));
+    EXPECT_FALSE(detail::onSegment(1.1));
 }
 
-TEST(GeometryAlgorithms, Distance) {
-    EXPECT_NEAR(
-        geometry::distance(Vec2{0.0, 0.0}, Vec2{3.0, 4.0}),
-        5.0,
-        EPS);
+TEST(LineAlgorithms, ClosestPointProjectsAndClamps) {
+    auto p = detail::closestPointOnSegment({2, 3}, Line2{{0, 0}, {4, 0}});
+    ASSERT_TRUE(p); expectVec(*p, 2, 0);
+    p = detail::closestPointOnSegment({-3, 2}, Line2{{0, 0}, {4, 0}});
+    ASSERT_TRUE(p); expectVec(*p, 0, 0);
+    p = detail::closestPointOnSegment({9, 2}, Line2{{0, 0}, {4, 0}});
+    ASSERT_TRUE(p); expectVec(*p, 4, 0);
+}
+TEST(LineAlgorithms, ClosestPointHandlesDegenerateAndNonFinite) {
+    auto p = detail::closestPointOnSegment({5, 5}, Line2{{1, 2}, {1, 2}});
+    ASSERT_TRUE(p); expectVec(*p, 1, 2);
+    EXPECT_FALSE(detail::closestPointOnSegment({NAN, 0}, Line2{{0, 0}, {1, 0}}));
+}
+TEST(LineAlgorithms, InfiniteLineIntersectionReturnsParameters) {
+    auto hit = detail::intersectLines(Line2{{0, 0}, {4, 0}}, Line2{{2, -1}, {2, 1}});
+    ASSERT_TRUE(hit); expectVec(hit->point, 2, 0);
+    EXPECT_NEAR(hit->t, 0.5, kTol);
+    EXPECT_NEAR(hit->u, 0.5, kTol);
+    EXPECT_FALSE(detail::intersectLines(Line2{{0, 0}, {4, 0}}, Line2{{0, 1}, {4, 1}}));
+    EXPECT_FALSE(detail::intersectLines(Line2{{0, 0}, {0, 0}}, Line2{{0, -1}, {0, 1}}));
 }
 
-TEST(GeometryAlgorithms, DistanceBetweenSamePoints) {
-    const Vec2 point{5.0, 7.0};
-
-    EXPECT_DOUBLE_EQ(geometry::distance(point, point), 0.0);
+TEST(CircleAlgorithms, ClosestPointOnCircle) {
+    auto p = detail::closestPointOnCircle({3, 4}, Circle2{{0, 0}, 2});
+    ASSERT_TRUE(p); expectVec(*p, 1.2, 1.6);
+    p = detail::closestPointOnCircle({0, 0}, Circle2{{0, 0}, 2});
+    ASSERT_TRUE(p); expectVec(*p, 2, 0);
+    p = detail::closestPointOnCircle({3, 4}, Circle2{{0, 0}, 0});
+    ASSERT_TRUE(p); expectVec(*p, 0, 0);
+    EXPECT_FALSE(detail::closestPointOnCircle({NAN, 0}, Circle2{{0, 0}, 1}));
 }
 
-// ============================================================
-// Closest point on segment
-// ============================================================
-
-TEST(GeometryAlgorithms, ClosestPointInsideSegment) {
-    const Line2 line{{0.0, 0.0}, {10.0, 0.0}};
-
-    const auto result =
-        geometry::detail::closestPointOnSegment(Vec2{4.0, 3.0}, line);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_NEAR(result->x, 4.0, EPS);
-    EXPECT_NEAR(result->y, 0.0, EPS);
+TEST(ArcAlgorithms, NormalizeAngleAndSweep) {
+    EXPECT_NEAR(detail::normalizeAngle(-kTol), 2 * std::acos(-1.0) - kTol, 1e-7);
+    EXPECT_NEAR(detail::normalizeAngle(2 * std::acos(-1.0) + 0.5), 0.5, kTol);
+    Arc2 arc{{0, 0}, {1, 0}, {0, 1}};
+    EXPECT_NEAR(detail::arcSweep(arc), std::acos(-1.0) / 2, kTol);
+}
+TEST(ArcAlgorithms, MidpointOnCounterClockwiseSweep) {
+    auto p = detail::arcMidpoint(Arc2{{0, 0}, {2, 0}, {0, 2}});
+    ASSERT_TRUE(p); expectVec(*p, std::sqrt(2.0), std::sqrt(2.0));
+}
+TEST(ArcAlgorithms, MidpointRejectsInvalidRadiusAndNonFinite) {
+    EXPECT_FALSE(detail::arcMidpoint(Arc2{{0, 0}, {1, 0}, {0, 2}}));
+    EXPECT_FALSE(detail::arcMidpoint(Arc2{{0, 0}, {0, 0}, {1, 0}}));
+    EXPECT_FALSE(detail::arcMidpoint(Arc2{{0, 0}, {NAN, 0}, {1, 0}}));
+}
+TEST(ArcAlgorithms, ClosestPointUsesArcInteriorOrNearestEndpoint) {
+    Arc2 arc{{0, 0}, {2, 0}, {0, 2}};
+    auto p = detail::closestPointOnArc({1, 1}, arc);
+    ASSERT_TRUE(p); expectVec(*p, std::sqrt(2.0), std::sqrt(2.0));
+    p = detail::closestPointOnArc({-3, 0}, arc);
+    ASSERT_TRUE(p); expectVec(*p, 0, 2);
+    p = detail::closestPointOnArc({0, 0}, arc);
+    ASSERT_TRUE(p); expectVec(*p, 2, 0);
+    EXPECT_FALSE(detail::closestPointOnArc({0, 0}, Arc2{{0, 0}, {1, 0}, {1, 0}}));
 }
 
-TEST(GeometryAlgorithms, ClosestPointBeforeSegment) {
-    const Line2 line{{0.0, 0.0}, {10.0, 0.0}};
-
-    const auto result =
-        geometry::detail::closestPointOnSegment(Vec2{-5.0, 3.0}, line);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_NEAR(result->x, 0.0, EPS);
-    EXPECT_NEAR(result->y, 0.0, EPS);
+TEST(LineLineIntersection, CrossesWithinSegments) {
+    auto pts = intersections::lineLine(Line2{{0, 0}, {4, 4}}, Line2{{0, 4}, {4, 0}});
+    ASSERT_EQ(pts.size(), 1u); expectVec(pos(pts[0]), 2, 2);
+}
+TEST(LineLineIntersection, RespectsSegmentModeAndEndpoints) {
+    Line2 a{{0, 0}, {1, 0}}, b{{2, -1}, {2, 1}};
+    EXPECT_TRUE(intersections::lineLine(a, b, true).empty());
+    auto pts = intersections::lineLine(a, b, false);
+    ASSERT_EQ(pts.size(), 1u); expectVec(pos(pts[0]), 2, 0);
+    pts = intersections::lineLine(Line2{{0, 0}, {1, 0}}, Line2{{1, 0}, {1, 1}});
+    ASSERT_EQ(pts.size(), 1u); expectVec(pos(pts[0]), 1, 0);
+}
+TEST(LineLineIntersection, ParallelCoincidentAndDegenerateHaveNoUniquePoint) {
+    EXPECT_TRUE(intersections::lineLine(Line2{{0, 0}, {2, 0}}, Line2{{0, 1}, {2, 1}}).empty());
+    EXPECT_TRUE(intersections::lineLine(Line2{{0, 0}, {2, 0}}, Line2{{1, 0}, {3, 0}}).empty());
+    EXPECT_TRUE(intersections::lineLine(Line2{{0, 0}, {0, 0}}, Line2{{0, -1}, {0, 1}}).empty());
+}
+TEST(LineLineIntersection, RejectsNonFiniteInput) {
+    EXPECT_TRUE(intersections::lineLine(Line2{{NAN, 0}, {1, 1}}, Line2{{0, 0}, {1, 0}}).empty());
 }
 
-TEST(GeometryAlgorithms, ClosestPointAfterSegment) {
-    const Line2 line{{0.0, 0.0}, {10.0, 0.0}};
-
-    const auto result =
-        geometry::detail::closestPointOnSegment(Vec2{15.0, 3.0}, line);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_NEAR(result->x, 10.0, EPS);
-    EXPECT_NEAR(result->y, 0.0, EPS);
+TEST(LineCircleIntersection, SecantTangentAndMiss) {
+    auto pts = intersections::lineCircle(Line2{{-2, 0}, {2, 0}}, Circle2{{0, 0}, 1});
+    ASSERT_EQ(pts.size(), 2u);
+    expectVec(pos(pts[0]), -1, 0); expectVec(pos(pts[1]), 1, 0);
+    pts = intersections::lineCircle(Line2{{-2, 1}, {2, 1}}, Circle2{{0, 0}, 1});
+    ASSERT_EQ(pts.size(), 1u); expectVec(pos(pts[0]), 0, 1);
+    EXPECT_TRUE(intersections::lineCircle(Line2{{-2, 2}, {2, 2}}, Circle2{{0, 0}, 1}).empty());
+}
+TEST(LineCircleIntersection, SegmentModeAndInvalidInput) {
+    EXPECT_TRUE(intersections::lineCircle(Line2{{2, 0}, {3, 0}}, Circle2{{0, 0}, 1}, true).empty());
+    EXPECT_EQ(intersections::lineCircle(Line2{{2, 0}, {3, 0}}, Circle2{{0, 0}, 1}, false).size(), 2u);
+    EXPECT_TRUE(intersections::lineCircle(Line2{{0, 0}, {0, 0}}, Circle2{{0, 0}, 1}).empty());
+    EXPECT_TRUE(intersections::lineCircle(Line2{{-2, 0}, {2, 0}}, Circle2{{0, 0}, -1}).empty());
 }
 
-TEST(GeometryAlgorithms, ClosestPointOnDiagonalSegment) {
-    const Line2 line{{0.0, 0.0}, {10.0, 10.0}};
-
-    const auto result =
-        geometry::detail::closestPointOnSegment(Vec2{5.0, 0.0}, line);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_NEAR(result->x, 2.5, EPS);
-    EXPECT_NEAR(result->y, 2.5, EPS);
+TEST(CircleCircleIntersection, TwoPointsTangentAndSeparate) {
+    auto pts = intersections::circleCircle(Circle2{{0, 0}, 2}, Circle2{{2, 0}, 2});
+    ASSERT_EQ(pts.size(), 2u);
+    expectVec(pos(pts[0]), 1, std::sqrt(3.0)); expectVec(pos(pts[1]), 1, -std::sqrt(3.0));
+    pts = intersections::circleCircle(Circle2{{0, 0}, 1}, Circle2{{2, 0}, 1});
+    ASSERT_EQ(pts.size(), 1u); expectVec(pos(pts[0]), 1, 0);
+    EXPECT_TRUE(intersections::circleCircle(Circle2{{0, 0}, 1}, Circle2{{3, 0}, 1}).empty());
+}
+TEST(CircleCircleIntersection, ConcentricAndContainedWithoutContact) {
+    EXPECT_TRUE(intersections::circleCircle(Circle2{{0, 0}, 2}, Circle2{{0, 0}, 1}).empty());
+    EXPECT_TRUE(intersections::circleCircle(Circle2{{0, 0}, 3}, Circle2{{1, 0}, 1}).empty());
+}
+TEST(CircleCircleIntersection, RejectsNonFiniteAndNegativeRadius) {
+    EXPECT_TRUE(intersections::circleCircle(Circle2{{NAN, 0}, 1}, Circle2{{0, 0}, 1}).empty());
+    EXPECT_TRUE(intersections::circleCircle(Circle2{{0, 0}, -1}, Circle2{{1, 0}, 1}).empty());
 }
 
-TEST(GeometryAlgorithms, ClosestPointOnDegenerateSegment) {
-    const Line2 line{{5.0, 7.0}, {5.0, 7.0}};
-
-    const auto result =
-        geometry::detail::closestPointOnSegment(Vec2{100.0, 100.0}, line);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_NEAR(result->x, 5.0, EPS);
-    EXPECT_NEAR(result->y, 7.0, EPS);
+TEST(ArcIntersection, PointOnArcChecksSweepAndRadius) {
+    Arc2 arc{{0, 0}, {1, 0}, {0, 1}};
+    EXPECT_TRUE(intersections::pointOnArc({std::sqrt(0.5), std::sqrt(0.5)}, arc));
+    EXPECT_TRUE(intersections::pointOnArc({1, 0}, arc));
+    EXPECT_FALSE(intersections::pointOnArc({-1, 0}, arc));
+    EXPECT_FALSE(intersections::pointOnArc({0.5, 0.5}, arc));
+}
+TEST(ArcIntersection, LineArcFiltersSupportingCircleIntersections) {
+    Arc2 arc{{0, 0}, {1, 0}, {0, 1}};
+    auto pts = intersections::lineArc(Line2{{-2, 0}, {2, 0}}, arc);
+    ASSERT_EQ(pts.size(), 1u); expectVec(pos(pts[0]), 1, 0);
+}
+TEST(ArcIntersection, CircleArcAndArcArc) {
+    Arc2 quarter{{0, 0}, {2, 0}, {0, 2}};
+    auto pts = intersections::circleArc(
+        Circle2{{2, 0}, 2},
+        quarter
+    );
+    ASSERT_EQ(pts.size(), 1u);
+    expectVec(pos(pts[0]), 1, std::sqrt(3.0));
+    Arc2 other{{2, 0}, {2, 2}, {0, 0}};
+    pts = intersections::arcArc(quarter, other);
+    ASSERT_EQ(pts.size(), 1u);
+    expectVec(pos(pts[0]), 1, std::sqrt(3.0));
+}
+TEST(IntersectionDispatcher, DispatchesSymmetricPairsAndVariants) {
+    Line2 line{{-2, 0}, {2, 0}};
+    Circle2 circle{{0, 0}, 1};
+    EXPECT_EQ(intersections::intersect(line, circle).size(), 2u);
+    EXPECT_EQ(intersections::intersect(circle, line).size(), 2u);
+    EXPECT_EQ(intersections::intersect(line, line, IntersectionOptions{false}).size(), 0u);
+    SketchEntity a{core::sketch::EntityId{1}, line, false};
+    SketchEntity b{core::sketch::EntityId{2}, circle, false};
+    EXPECT_EQ(intersections::intersectGeometries(a, b).size(), 2u);
 }
 
-TEST(GeometryAlgorithms, ClosestPointRejectsNonFiniteCursor) {
-    const double nan = std::numeric_limits<double>::quiet_NaN();
-    const Line2 line{{0.0, 0.0}, {10.0, 0.0}};
-
-    const auto result =
-        geometry::detail::closestPointOnSegment(Vec2{nan, 0.0}, line);
-
-    EXPECT_FALSE(result.has_value());
+TEST(AxisRelations, DetectsAxesRegardlessOfSign) {
+    EXPECT_TRUE(relations::isNearHorizontal({-1, 0.1}));
+    EXPECT_TRUE(relations::isNearVertical({0.1, -1}));
+    EXPECT_FALSE(relations::isNearHorizontal({1, 1}));
+    EXPECT_FALSE(relations::isNearVertical({1, 1}));
+    EXPECT_FALSE(relations::isNearHorizontal({0, 0}));
+    EXPECT_FALSE(relations::isNearVertical({1, 0}, -1));
+}
+TEST(AxisRelations, SnapsDirectionPreservingLengthAndSign) {
+    auto v = relations::snapDirectionToAxis({-3, 0.1}, 5.0);
+    ASSERT_TRUE(v); EXPECT_NEAR(std::hypot(v->x, v->y), std::hypot(3.0, 0.1), kTol); EXPECT_LT(v->x, 0); EXPECT_DOUBLE_EQ(v->y, 0);
+    v = relations::snapDirectionToAxis({0.1, -3}, 5.0);
+    ASSERT_TRUE(v); EXPECT_DOUBLE_EQ(v->x, 0); EXPECT_LT(v->y, 0);
+    EXPECT_FALSE(relations::snapDirectionToAxis({1, 1}, 5.0));
+    EXPECT_FALSE(relations::snapDirectionToAxis({0, 0}));
+}
+TEST(Parallelism, ParallelAntiParallelAndTolerance) {
+    EXPECT_TRUE(relations::areParallel({1, 0}, {-4, 0}));
+    EXPECT_TRUE(relations::areParallel({1, 1}, {2, 2}));
+    EXPECT_FALSE(relations::areParallel({1, 0}, {0, 1}));
+    EXPECT_FALSE(relations::areParallel({0, 0}, {1, 0}));
+    EXPECT_TRUE(relations::areParallelDegrees({1, 0}, {1, 0.001}, 1.0));
+}
+TEST(Perpendicularity, OrthogonalAndTolerance) {
+    EXPECT_TRUE(relations::arePerpendicular({1, 0}, {0, -5}));
+    EXPECT_FALSE(relations::arePerpendicular({1, 0}, {1, 1}));
+    EXPECT_FALSE(relations::arePerpendicular({0, 0}, {0, 1}));
+    EXPECT_TRUE(relations::arePerpendicularDegrees({1, 0}, {0.001, 1}, 1.0));
 }
 
-// ============================================================
-// Closest point on circle
-// ============================================================
-
-TEST(GeometryAlgorithms, ClosestPointOnCircleBoundary) {
-    const Circle2 circle{{0.0, 0.0}, 5.0};
-
-    const auto result =
-        geometry::detail::closestPointOnCircle(Vec2{10.0, 0.0}, circle);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_NEAR(result->x, 5.0, EPS);
-    EXPECT_NEAR(result->y, 0.0, EPS);
+TEST(PointCurveTangency, OutsidePointProducesTwoCircleTangencies) {
+    auto candidates = relations::pointTangenciesToCircle({-3, 0}, {0, 0}, {0, 0}, 1);
+    ASSERT_EQ(candidates.size(), 2u);
+    for (const auto& c : candidates) {
+        EXPECT_NEAR(distance(c.point, Vec2{0, 0}), 1.0, kTol);
+        EXPECT_NEAR(detail::dot(detail::subtract(c.point, Vec2{-3, 0}),
+                                detail::subtract(c.point, Vec2{0, 0})), 0.0, kTol);
+    }
+}
+TEST(PointCurveTangency, OnOrInsideCircleHasNoTangent) {
+    EXPECT_TRUE(relations::pointTangenciesToCircle({0, 0}, {0, 0}, {0, 0}, 1).empty());
+    EXPECT_TRUE(relations::pointTangenciesToCircle({0.5, 0}, {0, 0}, {0, 0}, 1).empty());
+    EXPECT_TRUE(relations::pointTangenciesToCircle({2, 0}, {0, 0}, {0, 0}, 0).empty());
+}
+TEST(PointCurveTangency, ArcTangenciesAreFilteredToSweep) {
+    Arc2 arc{{0, 0}, {1, 0}, {0, 1}};
+    auto candidates = relations::pointTangenciesToArc({-3, 0}, {0, 0}, arc);
+    for (const auto& c : candidates) EXPECT_TRUE(relations::pointOnArcSweep(c.point, arc));
 }
 
-TEST(GeometryAlgorithms, ClosestPointOnCircleFromCenter) {
-    const Circle2 circle{{2.0, 3.0}, 5.0};
-
-    const auto result =
-        geometry::detail::closestPointOnCircle(Vec2{2.0, 3.0}, circle);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_NEAR(result->x, 7.0, EPS);
-    EXPECT_NEAR(result->y, 3.0, EPS);
+TEST(Tangency, FindsLineCircleTangency) {
+    SketchEntity line{core::sketch::EntityId{1}, Line2{{-2, 1}, {2, 1}}, false};
+    SketchEntity circle{core::sketch::EntityId{2}, Circle2{{0, 0}, 1}, false};
+    std::vector<SketchEntity> entities{line, circle};
+    auto tangencies = relations::findTangencies(entities);
+    ASSERT_EQ(tangencies.size(), 1u); expectVec(tangencies[0].point, 0, 1);
 }
-
-TEST(GeometryAlgorithms, ClosestPointOnZeroRadiusCircle) {
-    const Circle2 circle{{2.0, 3.0}, 0.0};
-
-    const auto result =
-        geometry::detail::closestPointOnCircle(Vec2{10.0, 3.0}, circle);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_NEAR(result->x, 2.0, EPS);
-    EXPECT_NEAR(result->y, 3.0, EPS);
+TEST(Tangency, DoesNotTreatSecantAsTangent) {
+    SketchEntity line{core::sketch::EntityId{1}, Line2{{-2, 0}, {2, 0}}, false};
+    SketchEntity circle{core::sketch::EntityId{2}, Circle2{{0, 0}, 1}, false};
+    std::vector<SketchEntity> entities{line, circle};
+    EXPECT_TRUE(relations::findTangencies(entities).empty());
 }
-
-TEST(GeometryAlgorithms, ClosestPointOnCircleRejectsNegativeRadius) {
-    const Circle2 circle{{0.0, 0.0}, -1.0};
-
-    const auto result =
-        geometry::detail::closestPointOnCircle(Vec2{1.0, 0.0}, circle);
-
-    EXPECT_FALSE(result.has_value());
-}
-
-// ============================================================
-// Infinite line intersection
-// ============================================================
-
-TEST(GeometryAlgorithms, IntersectLines) {
-    const Line2 lineA{{0.0, 0.0}, {10.0, 10.0}};
-    const Line2 lineB{{0.0, 10.0}, {10.0, 0.0}};
-
-    const auto result = geometry::detail::intersectLines(lineA, lineB);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 5.0, EPS);
-    EXPECT_NEAR(result->point.y, 5.0, EPS);
-    EXPECT_NEAR(result->t, 0.5, EPS);
-    EXPECT_NEAR(result->u, 0.5, EPS);
-}
-
-TEST(GeometryAlgorithms, ParallelLines) {
-    const Line2 lineA{{0.0, 0.0}, {10.0, 0.0}};
-    const Line2 lineB{{0.0, 5.0}, {10.0, 5.0}};
-
-    EXPECT_FALSE(
-        geometry::detail::intersectLines(lineA, lineB).has_value());
-}
-
-TEST(GeometryAlgorithms, CoincidentLines) {
-    const Line2 lineA{{0.0, 0.0}, {10.0, 0.0}};
-    const Line2 lineB{{5.0, 0.0}, {20.0, 0.0}};
-
-    EXPECT_FALSE(
-        geometry::detail::intersectLines(lineA, lineB).has_value());
-}
-
-TEST(GeometryAlgorithms, IntersectLinesRejectsDegenerateLine) {
-    const Line2 lineA{{2.0, 2.0}, {2.0, 2.0}};
-    const Line2 lineB{{0.0, 0.0}, {10.0, 10.0}};
-
-    EXPECT_FALSE(
-        geometry::detail::intersectLines(lineA, lineB).has_value());
-}
-
-// ============================================================
-// Segment intersection
-// ============================================================
-
-TEST(GeometryAlgorithms, IntersectSegments) {
-    const Line2 segmentA{{0.0, 0.0}, {10.0, 10.0}};
-    const Line2 segmentB{{0.0, 10.0}, {10.0, 0.0}};
-
-    const auto intersection =
-        geometry::detail::intersectLines(segmentA, segmentB);
-
-    ASSERT_TRUE(intersection.has_value());
-    EXPECT_TRUE(geometry::detail::onSegment(intersection->t));
-    EXPECT_TRUE(geometry::detail::onSegment(intersection->u));
-
-    EXPECT_NEAR(intersection->point.x, 5.0, EPS);
-    EXPECT_NEAR(intersection->point.y, 5.0, EPS);
-}
-
-TEST(GeometryAlgorithms, SegmentIntersectionAtEndpoint) {
-    const Line2 segmentA{{0.0, 0.0}, {10.0, 0.0}};
-    const Line2 segmentB{{10.0, 0.0}, {10.0, 10.0}};
-
-    const auto intersection =
-        geometry::detail::intersectLines(segmentA, segmentB);
-
-    ASSERT_TRUE(intersection.has_value());
-    EXPECT_TRUE(geometry::detail::onSegment(intersection->t));
-    EXPECT_TRUE(geometry::detail::onSegment(intersection->u));
-
-    EXPECT_NEAR(intersection->point.x, 10.0, EPS);
-    EXPECT_NEAR(intersection->point.y, 0.0, EPS);
-}
-
-TEST(GeometryAlgorithms, SegmentsDoNotIntersect) {
-    const Line2 segmentA{{0.0, 0.0}, {2.0, 0.0}};
-    const Line2 segmentB{{5.0, -1.0}, {5.0, 1.0}};
-
-    const auto intersection =
-        geometry::detail::intersectLines(segmentA, segmentB);
-
-    ASSERT_TRUE(intersection.has_value());
-
-    EXPECT_FALSE(geometry::detail::onSegment(intersection->t));
-    EXPECT_TRUE(geometry::detail::onSegment(intersection->u));
-}
-
-TEST(GeometryAlgorithms, ParallelSegmentsDoNotIntersect) {
-    const Line2 segmentA{{0.0, 0.0}, {10.0, 0.0}};
-    const Line2 segmentB{{0.0, 5.0}, {10.0, 5.0}};
-
-    EXPECT_FALSE(
-        geometry::detail::intersectLines(segmentA, segmentB).has_value());
-}
-
-// ============================================================
-// Extended intersection
-// ============================================================
-
-TEST(GeometryAlgorithms, ExtendedIntersection) {
-    const Line2 segmentA{{0.0, 0.0}, {1.0, 1.0}};
-    const Line2 segmentB{{2.0, 0.0}, {3.0, -1.0}};
-
-    const auto result = geometry::detail::intersectLines(segmentA, segmentB);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 1.0, EPS);
-    EXPECT_NEAR(result->point.y, 1.0, EPS);
-
-    EXPECT_TRUE(geometry::detail::onSegment(result->t));
-    EXPECT_FALSE(geometry::detail::onSegment(result->u));
-}
-
-TEST(GeometryAlgorithms, ExtendedIntersectionAfterSegment) {
-    const Line2 segmentA{{0.0, 0.0}, {1.0, 1.0}};
-    const Line2 segmentB{{3.0, 0.0}, {4.0, -1.0}};
-
-    const auto result = geometry::detail::intersectLines(segmentA, segmentB);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 1.5, EPS);
-    EXPECT_NEAR(result->point.y, 1.5, EPS);
-
-    EXPECT_FALSE(geometry::detail::onSegment(result->t));
-    EXPECT_FALSE(geometry::detail::onSegment(result->u));
-}
-
-TEST(GeometryAlgorithms, ExtendedIntersectionBeforeSegment) {
-    const Line2 segmentA{{2.0, 2.0}, {4.0, 4.0}};
-    const Line2 segmentB{{0.0, 4.0}, {0.0, 0.0}};
-
-    const auto result = geometry::detail::intersectLines(segmentA, segmentB);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 0.0, EPS);
-    EXPECT_NEAR(result->point.y, 0.0, EPS);
-
-    EXPECT_FALSE(geometry::detail::onSegment(result->t));
-    EXPECT_TRUE(geometry::detail::onSegment(result->u));
-}
-
-TEST(GeometryAlgorithms, NoExtendedIntersectionForParallelLines) {
-    const Line2 segmentA{{0.0, 0.0}, {1.0, 0.0}};
-    const Line2 segmentB{{0.0, 5.0}, {1.0, 5.0}};
-
-    EXPECT_FALSE(
-        geometry::detail::intersectLines(segmentA, segmentB).has_value());
-}
-
-// ============================================================
-// Midpoint / line center
-// ============================================================
-
-TEST(GeometryAlgorithms, IsLineCenterWithinTolerance) {
-    const Line2 line{{0.0, 0.0}, {10.0, 4.0}};
-
-    EXPECT_TRUE(geometry::isLineCenter(Vec2{5.0, 2.0}, line, EPS));
-    EXPECT_FALSE(geometry::isLineCenter(Vec2{5.0, 3.0}, line, 0.5));
-}
-
-TEST(GeometryAlgorithms, IsLineCenterRejectsDegenerateSegment) {
-    const Line2 line{{3.0, 7.0}, {3.0, 7.0}};
-
-    EXPECT_FALSE(geometry::isLineCenter(Vec2{3.0, 7.0}, line, 1.0));
-}
-
-TEST(GeometryAlgorithms, IsLineCenterRejectsNegativeTolerance) {
-    const Line2 line{{0.0, 0.0}, {10.0, 0.0}};
-
-    EXPECT_FALSE(geometry::isLineCenter(Vec2{5.0, 0.0}, line, -1.0));
-}
-
-// ============================================================
-// Nearest standalone point
-// ============================================================
-
-TEST(GeometryAlgorithms, FindNearestStandalonePoint) {
-    const std::array<SketchEntity, 2> entities{{
-        {
-            EntityId{1},
-            Point2{{1.0, 2.0}},
-            false
-        },
-        {
-            EntityId{2},
-            Point2{{8.0, 9.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestStandalonePoint(Vec2{1.1, 2.1}, entities);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 1.0, EPS);
-    EXPECT_NEAR(result->point.y, 2.0, EPS);
-    EXPECT_NEAR(result->distanceSquared, 0.02, EPS);
-    EXPECT_EQ(result->source.entity, entities[0].id);
-    EXPECT_EQ(result->source.sub, SubElement::Whole);
-}
-
-TEST(GeometryAlgorithms, FindNearestStandalonePointIgnoresOtherGeometry) {
-    const std::array<SketchEntity, 1> entities{{
-        {
-            EntityId{1},
-            Line2{{0.0, 0.0}, {10.0, 0.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestStandalonePoint(Vec2{5.0, 1.0}, entities);
-
-    EXPECT_FALSE(result.has_value());
-}
-
-// ============================================================
-// Nearest line
-// ============================================================
-
-TEST(GeometryAlgorithms, FindNearestLineInterior) {
-    const std::array<SketchEntity, 1> entities{{
-        {
-            EntityId{1},
-            Line2{{0.0, 0.0}, {10.0, 0.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestLine(Vec2{4.0, 3.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 4.0, EPS);
-    EXPECT_NEAR(result->point.y, 0.0, EPS);
-    EXPECT_EQ(result->source.sub, SubElement::Whole);
-}
-
-TEST(GeometryAlgorithms, FindNearestLineStartEndpoint) {
-    const std::array<SketchEntity, 1> entities{{
-        {
-            EntityId{1},
-            Line2{{0.0, 0.0}, {10.0, 0.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestLine(Vec2{-2.0, 0.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(result->source.sub, SubElement::Start);
-}
-
-TEST(GeometryAlgorithms, FindNearestLineEndEndpoint) {
-    const std::array<SketchEntity, 1> entities{{
-        {
-            EntityId{1},
-            Line2{{0.0, 0.0}, {10.0, 0.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestLine(Vec2{12.0, 0.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(result->source.sub, SubElement::End);
-}
-
-// ============================================================
-// Nearest circle
-// ============================================================
-
-TEST(GeometryAlgorithms, FindNearestCircleBoundary) {
-    const std::array<SketchEntity, 1> entities{{
-        {
-            EntityId{1},
-            Circle2{{0.0, 0.0}, 5.0},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestCircle(Vec2{10.0, 0.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 5.0, EPS);
-    EXPECT_NEAR(result->point.y, 0.0, EPS);
-    EXPECT_EQ(result->source.sub, SubElement::Whole);
-}
-
-TEST(GeometryAlgorithms, FindNearestCircleCenter) {
-    const std::array<SketchEntity, 1> entities{{
-        {
-            EntityId{1},
-            Circle2{{0.0, 0.0}, 5.0},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestCircle(Vec2{0.5, 0.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 0.0, EPS);
-    EXPECT_NEAR(result->point.y, 0.0, EPS);
-    EXPECT_EQ(result->source.sub, SubElement::Center);
-}
-
-// ============================================================
-// Real intersections
-// ============================================================
-
-TEST(GeometryAlgorithms, FindNearestLineLineIntersection) {
-    const std::array<SketchEntity, 2> entities{{
-        {
-            EntityId{1},
-            Line2{{0.0, 0.0}, {10.0, 10.0}},
-            false
-        },
-        {
-            EntityId{2},
-            Line2{{0.0, 10.0}, {10.0, 0.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestIntersection(Vec2{5.0, 5.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 5.0, EPS);
-    EXPECT_NEAR(result->point.y, 5.0, EPS);
-    EXPECT_EQ(result->first.entity, entities[0].id);
-    EXPECT_EQ(result->second.entity, entities[1].id);
-}
-
-TEST(GeometryAlgorithms, FindNearestLineCircleIntersection) {
-    const std::array<SketchEntity, 2> entities{{
-        {
-            EntityId{1},
-            Line2{{-10.0, 0.0}, {10.0, 0.0}},
-            false
-        },
-        {
-            EntityId{2},
-            Circle2{{0.0, 0.0}, 5.0},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestIntersection(Vec2{4.9, 0.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 5.0, EPS);
-    EXPECT_NEAR(result->point.y, 0.0, EPS);
-}
-
-TEST(GeometryAlgorithms, FindNearestCircleCircleIntersection) {
-    const std::array<SketchEntity, 2> entities{{
-        {
-            EntityId{1},
-            Circle2{{0.0, 0.0}, 5.0},
-            false
-        },
-        {
-            EntityId{2},
-            Circle2{{8.0, 0.0}, 5.0},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestIntersection(Vec2{4.0, 3.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 4.0, EPS);
-    EXPECT_NEAR(result->point.y, 3.0, EPS);
-}
-
-TEST(GeometryAlgorithms, FindNearestIntersectionIgnoresNonIntersectingSegments) {
-    const std::array<SketchEntity, 2> entities{{
-        {
-            EntityId{1},
-            Line2{{0.0, 0.0}, {2.0, 0.0}},
-            false
-        },
-        {
-            EntityId{2},
-            Line2{{5.0, -1.0}, {5.0, 1.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestIntersection(Vec2{1.0, 1.0}, entities);
-
-    EXPECT_FALSE(result.has_value());
-}
-
-// ============================================================
-// Extended line intersections
-// ============================================================
-
-TEST(GeometryAlgorithms, FindNearestExtendedLineIntersection) {
-    const std::array<SketchEntity, 2> entities{{
-        {
-            EntityId{1},
-            Line2{{0.0, 0.0}, {1.0, 1.0}},
-            false
-        },
-        {
-            EntityId{2},
-            Line2{{2.0, 0.0}, {3.0, -1.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestExtendedLineIntersection(Vec2{1.0, 1.0}, entities);
-
-    ASSERT_TRUE(result.has_value());
-
-    EXPECT_NEAR(result->point.x, 1.0, EPS);
-    EXPECT_NEAR(result->point.y, 1.0, EPS);
-}
-
-TEST(GeometryAlgorithms, NoExtendedIntersectionForParallelLines2) {
-    const std::array<SketchEntity, 2> entities{{
-        {
-            EntityId{1},
-            Line2{{0.0, 0.0}, {1.0, 0.0}},
-            false
-        },
-        {
-            EntityId{2},
-            Line2{{0.0, 5.0}, {1.0, 5.0}},
-            false
-        }
-    }};
-
-    const auto result =
-        geometry::findNearestExtendedLineIntersection(Vec2{0.0, 0.0}, entities);
-
-    EXPECT_FALSE(result.has_value());
-}
-
-} // namespace
+}  // namespace

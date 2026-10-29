@@ -20,7 +20,6 @@
 #include "snapping/algorithms/SnapQueryTypes.h"
 #include "snapping/algorithms/SnapEntityQuery.h"
 #include "snapping/algorithms/SnapLineQuery.h"
-#include "snapping/algorithms/SnapTypeQuery.h"
 #include "snapping/algorithms/SnapQuery.h"
 #include "snapping/algorithms/SnapIntersectionQuery.h"
 #include "snapping/algorithms/SnapDirectionQuery.h"
