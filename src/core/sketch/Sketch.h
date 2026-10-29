@@ -3,6 +3,8 @@
 
 #include "SketchTypes.h"
 
+#include <deque>
+
 namespace core::sketch {
 // Sketch is a self-contained parametric 2D geometric model operating in its own
 // local 2D coordinate system. It provides the stable OurPaint API for creating,
@@ -58,6 +60,7 @@ public:
     // Clears public and private model records in place, retaining DCM and IDs.
     Status clear();
     Result<ConstraintId> addConstraint(const ConstraintDefinition& definition);
+    Result<ConstraintId> addConstraints(std::span<const ConstraintDefinition> definitions);
     // Prepare both coincidence groups before insertion, without numerical solving.
     // Midpoint moves free groups to the selected points' midpoint, or to a Fix
     // target when only one group is fixed. Fixed groups are not seeded. Other
@@ -110,6 +113,11 @@ public:
     // iterates are rejected without replacing the current model.
     Status replaceState(const SketchSnapshot& snapshot);
 
+    // TODO
+    void undo();
+    void redo();
+    void push();
+
 private:
     class Impl;
     Status validateConstraint(const ConstraintDefinition& definition) const;
@@ -117,6 +125,12 @@ private:
     std::unique_ptr<Impl> impl_;
     core::IDGenerator entityIds_;
     core::IDGenerator constraintIds_;
+
+    // TODO
+    std::deque<SketchSnapshot> undo_;
+    std::deque<SketchSnapshot> redo_;
+    int maxSteps_ = 100;
+    bool drag_ = false;
 };
 }  // namespace core::sketch
 #endif

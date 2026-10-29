@@ -2,3 +2,5 @@ build
 cmake-build-debug
 .idea
 .vs
+/build-release-static/
+/cmake-build-release/

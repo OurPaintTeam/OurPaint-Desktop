@@ -144,6 +144,7 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
         if (state_ == State::DraggingSelection) {
             const auto& refs = overlay_.selection_.model.items();
             if (!refs.empty() && !dragStopped_ && (v.x != lastPos_.x || v.y != lastPos_.y)) {
+                auto constraints = sketch_.constraints();
                 if (!dragReport_) {
                     dragReport_.emplace(ActionReport{ActionKind::Drag});
                     std::set<sketch::EntityId> owners;
@@ -158,7 +159,6 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
                         return std::nullopt;
                     }
                     dragInitialEntities_ = std::move(entities.value());
-                    auto constraints = sketch_.constraints();
                     if (!constraints) {
                         dragReport_->operationError = constraints.error();
                         dragStopped_ = true;
@@ -175,7 +175,17 @@ std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent&
                 const auto& geometry = result.value().geometry;
                 const auto* circle = std::get_if<sketch::Circle2>(&geometry);
                 const sketch::Vec2 offset{v.x - pressWorldPos_.x, v.y - pressWorldPos_.y};
-                if (refs.size() == 1 && refs[0].sub == sketch::SubElement::Whole && circle) {
+                bool c = false;
+                if (circle) {
+                    c = true;
+                    for (auto constraint : constraints.value()) {
+                        if (constraint.definition.type == sketch::ConstraintType::Radius &&
+                            constraint.definition.refs[0] == refs[0]) {
+                            c = false;
+                        }
+                    }
+                }
+                if (refs.size() == 1 && refs[0].sub == sketch::SubElement::Whole && c) {
                     const double radius = std::hypot(v.x - circle->center.x, v.y - circle->center.y);
                     if (radius == circle->radius) {
                         lastPos_ = v;
@@ -450,6 +460,7 @@ std::optional<ActionReport> CursorTool::pasteSelection() {
     }
 
     overlay_.selection_.model.replace(pasted);
+    std::vector<sketch::ConstraintDefinition> defs;
     for (auto definition : data_.constraints) {
         for (auto& ref : definition.refs) {
             ref.entity = remapped.at(ref.entity);
@@ -457,13 +468,15 @@ std::optional<ActionReport> CursorTool::pasteSelection() {
         if (definition.fixedPosition) {
             translate(*definition.fixedPosition);
         }
-        const auto constraint = sketch_.addConstraint(definition);
-        if (!constraint) {
-            report.mutationFailed(constraint.error());
-            return report;
-        }
-        report.constraintIds.push_back(constraint.value());
+        defs.push_back(definition);
+        // const auto constraint = sketch_.addConstraint(definition);
+        // if (!constraint) {
+        //     report.mutationFailed(constraint.error());
+        //     return report;
+        // }
+        // report.constraintIds.push_back(constraint.value());
     }
+    sketch_.addConstraints(defs);
     const auto solved = sketch_.solve();
     report.recordSolve(solved);
     return report;

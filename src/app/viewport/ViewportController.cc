@@ -79,12 +79,14 @@ bool ViewportController::onKey(const input::KeyEvent& e) {
              input::has_flag(e.modifiers, input::Modifiers::Shift) &&
              e.action == input::KeyAction::Press) {
         //mgr.redo();
+        document_.sketch().redo();
     }
     // undo
     else if (e.key == input::KeyCode::Z &&
         input::has_flag(e.modifiers, input::Modifiers::Ctrl) &&
         e.action == input::KeyAction::Press) {
         //mgr.undo();
+        document_.sketch().undo();
     }
 
     updateConstraintLayout();
