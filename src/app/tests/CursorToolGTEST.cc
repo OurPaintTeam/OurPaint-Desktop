@@ -49,6 +49,90 @@ protected:
     std::unique_ptr<CursorTool> tool_;
 };
 
+TEST_F(CursorToolReports, NurbsPickingSelectionAndSinglePointDragPreserveControlIndices) {
+    const NurbsCurve2 curve{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 2, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}};
+    const auto added = sketch().addEntity(curve);
+    ASSERT_TRUE(added);
+    for (size_t i = 0; i < curve.controlPoints.size(); ++i) {
+        const auto position = curve.controlPoints[i].position;
+        const auto picked = picker_->pickAtWorld(position.x, position.y);
+        ASSERT_TRUE(picked);
+        EXPECT_EQ(picked->ref, (GeometryRef{added.value(), SubElement::Control, i}));
+        overlay_.selection_.model.add(picked->ref);
+    }
+    EXPECT_EQ(overlay_.selection_.model.items().size(), 4U);
+    const GeometryRef first{added.value(), SubElement::Control, 1};
+    const GeometryRef second{added.value(), SubElement::Control, 2};
+    const auto rectangle = picker_->pickInRectAtWorld(1, -3, 5, 4);
+    EXPECT_EQ(rectangle, (std::vector<GeometryRef>{first, second}));
+    overlay_.selection_.model.replace(rectangle);
+    overlay_.selection_.model.toggle(first);
+    EXPECT_FALSE(overlay_.selection_.model.contains(first));
+    EXPECT_TRUE(overlay_.selection_.model.contains(second));
+    overlay_.selection_.model.clear();
+
+    EXPECT_FALSE(button({2, 3}, input::MouseButtonAction::Press));
+    EXPECT_EQ(overlay_.selection_.model.items(), (std::vector<GeometryRef>{first}));
+    EXPECT_FALSE(move({3, 5}, true));
+    const auto report = button({3, 5}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_EQ(report->change, ModelChange::Changed);
+    EXPECT_EQ(report->entityIds, (std::vector<EntityId>{added.value()}));
+    EXPECT_FALSE(report->operationError);
+    EXPECT_FALSE(report->solveError);
+    auto expected = curve;
+    expected.controlPoints[1].position = {3, 5};
+    const auto current = sketch().entity(added.value());
+    ASSERT_TRUE(current);
+    const auto& actual = std::get<NurbsCurve2>(current.value().geometry);
+    for (size_t i = 0; i < expected.controlPoints.size(); ++i) {
+        EXPECT_NEAR(actual.controlPoints[i].position.x, expected.controlPoints[i].position.x, 1e-6);
+        EXPECT_NEAR(actual.controlPoints[i].position.y, expected.controlPoints[i].position.y, 1e-6);
+    }
+    EXPECT_EQ(actual.weights, curve.weights);
+    EXPECT_EQ(actual.knots, curve.knots);
+}
+
+TEST_F(CursorToolReports, NurbsMultiPointAndWholeSelectionsDragEveryTargetOnce) {
+    const auto added = sketch().addEntity(NurbsCurve2{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}});
+    ASSERT_TRUE(added);
+    const GeometryRef first{added.value(), SubElement::Control, 1};
+    const GeometryRef second{added.value(), SubElement::Control, 2};
+    overlay_.selection_.model.replace(std::vector<GeometryRef>{first, second});
+    EXPECT_FALSE(button({2, 3}, input::MouseButtonAction::Press));
+    EXPECT_FALSE(move({3, 5}, true));
+    auto report = button({3, 5}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_FALSE(report->operationError);
+    EXPECT_FALSE(report->solveError);
+    const auto firstPosition = sketch().pointPosition(first);
+    const auto secondPosition = sketch().pointPosition(second);
+    ASSERT_TRUE(firstPosition);
+    ASSERT_TRUE(secondPosition);
+    EXPECT_NEAR(firstPosition.value().x, 3, 1e-6);
+    EXPECT_NEAR(firstPosition.value().y, 5, 1e-6);
+    EXPECT_NEAR(secondPosition.value().x, 5, 1e-6);
+    EXPECT_NEAR(secondPosition.value().y, 0, 1e-6);
+
+    const auto before = sketch().pointElements(added.value());
+    ASSERT_TRUE(before);
+    overlay_.selection_.model.replace(std::vector<GeometryRef>{{added.value(), SubElement::Whole}, first});
+    EXPECT_FALSE(button({3, 5}, input::MouseButtonAction::Press));
+    EXPECT_FALSE(move({5, 6}, true));
+    report = button({5, 6}, input::MouseButtonAction::Release);
+    ASSERT_TRUE(report);
+    EXPECT_FALSE(report->operationError);
+    EXPECT_FALSE(report->solveError);
+    const auto after = sketch().pointElements(added.value());
+    ASSERT_TRUE(after);
+    ASSERT_EQ(after.value().size(), before.value().size());
+    for (size_t i = 0; i < before.value().size(); ++i) {
+        EXPECT_EQ(after.value()[i].ref, before.value()[i].ref);
+        EXPECT_NEAR(after.value()[i].position.x, before.value()[i].position.x + 2, 1e-6);
+        EXPECT_NEAR(after.value()[i].position.y, before.value()[i].position.y + 1, 1e-6);
+    }
+}
+
 TEST_F(CursorToolReports, EmptyDeletionAndPasteRemainSilent) {
     EXPECT_FALSE(key(input::KeyCode::Delete));
     EXPECT_FALSE(key(input::KeyCode::V, input::Modifiers::Ctrl));

@@ -16,6 +16,7 @@ class QWidget;
 class QTimer;
 
 class QtViewportHost : public QWindow, public IViewportHost {
+    Q_OBJECT
 public:
     explicit QtViewportHost(uint32_t id, QScreen* screen = nullptr);
     ~QtViewportHost() override;
@@ -83,6 +84,8 @@ private:
 
     QTimer*              continuousTimer_  = nullptr;
     bool                 initialized_      = false;
+
+public: signals: void frameReady();
 };
 
 #endif // ! OURPAINT_RENDERING_QT_VIEWPORT_HOST_H_

@@ -29,7 +29,10 @@ public:
 
 private:
     struct RefHash {
-        std::size_t operator()(GeometryRef ref) const noexcept { return std::hash<int64_t>{}(ref.entity.get()) * 4 + static_cast<std::size_t>(ref.sub); }
+        std::size_t operator()(GeometryRef ref) const noexcept {
+            const auto ownerAndRole = std::hash<int64_t>{}(ref.entity.get()) * 31 + static_cast<std::size_t>(ref.sub);
+            return ownerAndRole * 31 + std::hash<size_t>{}(ref.index);
+        }
     };
     // Whole and point sub-elements remain independently selectable.
     std::vector<GeometryRef> items_;

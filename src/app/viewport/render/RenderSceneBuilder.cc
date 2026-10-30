@@ -1,8 +1,12 @@
 #include "RenderSceneBuilder.h"
 
+#include <../core/tinynurbs/include/tinynurbs/tinynurbs.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <glm/glm.hpp>
+#include <iostream>
 #include <iterator>
 #include <utility>
 #include <vector>
@@ -160,6 +164,8 @@ void RenderSceneBuilder::rebuild() {
 
     buildConstraintsMarkers();
     buildSnapFeedback();
+
+    testBuild();
 }
 
 void RenderSceneBuilder::buildGrid() {
@@ -585,4 +591,55 @@ void RenderSceneBuilder::buildSnapFeedback() {
     if (const auto& feedback = overlay_.snapFeedback()) {
         app::appendSnapFeedback(*feedback, sketch_, camera_, style_.snapFeedback, renderScene_);
     }
+}
+
+void RenderSceneBuilder::testBuild() {
+    auto entities = sketch_.entities(sketch::EntityKind::Nurbs);
+    if (!entities) {
+        std::cerr << "Cannot read NURBS curves: " << entities.error().message << '\n';
+        return;
+    }
+
+    render::DrawLayer layer = makeWorldLayer("nurbs_curves", kGeometryOrder);
+    render::LineBatch curves;
+    render::MarkerBatch controlMarkers;
+    curves.style = style_.baseLine;
+    controlMarkers.style = style_.baseMarker;
+
+    for (const auto& ent : entities.value()) {
+        const auto& curve = std::get<sketch::NurbsCurve2>(ent.geometry);
+        tinynurbs::RationalCurve<double> crv;
+        crv.degree = static_cast<unsigned>(curve.degree);
+        crv.knots = curve.knots;
+        crv.weights = curve.weights;
+        for (const auto& p : curve.controlPoints) {
+            crv.control_points.push_back({p.position.x, p.position.y, 0.0});
+            controlMarkers.markers.push_back(render::Marker(p.position.x, p.position.y));
+        }
+        if (!tinynurbs::curveIsValid(crv)) {
+            std::cerr << "Invalid NURBS curve: " << ent.id.get() << '\n';
+            continue;
+        }
+
+        constexpr size_t numSegments = 256;
+        const double uMin = crv.knots[crv.degree];
+        const double uMax = crv.knots[crv.control_points.size()];
+        auto previous = tinynurbs::curvePoint(crv, uMin);
+        for (size_t i = 1; i <= numSegments; ++i) {
+            const double t = std::lerp(uMin, uMax, static_cast<double>(i) / static_cast<double>(numSegments));
+            const auto current = tinynurbs::curvePoint(crv, t);
+            curves.lines.push_back(makeLine(previous.x, previous.y, current.x, current.y));
+            previous = current;
+        }
+    }
+
+    if (!curves.lines.empty()) {
+        layer.lineBatches.push_back(std::move(curves));
+    }
+
+    if (!controlMarkers.markers.empty()) {
+        layer.markerBatches.push_back(std::move(controlMarkers));
+    }
+
+    pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }

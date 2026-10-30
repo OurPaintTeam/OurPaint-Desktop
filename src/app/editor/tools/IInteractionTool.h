@@ -43,43 +43,40 @@ protected:
             case snap::SnapKind::CircleBody:
             case snap::SnapKind::ArcBody:
                 feedback.glyph = app::SnapGlyph::Point;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects.at(0)};
                 break;
 
             case snap::SnapKind::LineEndpoint:
             case snap::SnapKind::ArcEndpoint:
                 feedback.glyph = app::SnapGlyph::Endpoint;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects.at(0)};
                 break;
 
             case snap::SnapKind::LineMidpoint:
                 feedback.glyph = app::SnapGlyph::Midpoint;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects.at(0)};
                 break;
 
             case snap::SnapKind::CircleCentre:
             case snap::SnapKind::ArcCentre:
                 feedback.glyph = app::SnapGlyph::Center;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects.at(0)};
                 break;
 
             case snap::SnapKind::Intersection:
                 feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub},
-                                    {snap_result.objects.at(1).entity, snap_result.objects.at(1).sub}};
+                feedback.sources = {snap_result.objects.at(0), snap_result.objects.at(1)};
                 break;
 
             case snap::SnapKind::ExtendedIntersection:
                 feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub},
-                                    {snap_result.objects.at(1).entity, snap_result.objects.at(1).sub}};
+                feedback.sources = {snap_result.objects.at(0), snap_result.objects.at(1)};
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
                 break;
 
             case snap::SnapKind::VirtualIntersection:
                 feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub},
-                                    {snap_result.objects.at(1).entity, snap_result.objects.at(1).sub}};
+                feedback.sources = {snap_result.objects.at(0), snap_result.objects.at(1)};
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment},
                                    {snap_result.guideLines.at(1), app::SnapGuideExtent::Segment}};
                 break;
@@ -87,7 +84,7 @@ protected:
             case snap::SnapKind::Parallel:
             case snap::SnapKind::Perpendicular:
                 feedback.glyph = app::SnapGlyph::Direction;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects.at(0)};
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
                 break;
 
@@ -99,7 +96,7 @@ protected:
 
             case snap::SnapKind::Tangent:
                 feedback.glyph = app::SnapGlyph::Point;
-                feedback.sources = {{snap_result.objects.at(0).entity, snap_result.objects.at(0).sub}};
+                feedback.sources = {snap_result.objects.at(0)};
                 if (!snap_result.guideLines.empty())
                 feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
                 break;

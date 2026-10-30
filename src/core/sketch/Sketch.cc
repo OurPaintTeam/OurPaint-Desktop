@@ -60,11 +60,13 @@ Status validateGeometry(const SketchGeometry& geometry, bool transferring = fals
                 return finite(g.start) && finite(g.end) && std::isfinite(length) && length > 0;
             } else if constexpr (std::is_same_v<T, Circle2>) {
                 return finite(g.center) && std::isfinite(g.radius) && g.radius > 0;
-            } else {
+            } else if constexpr (std::is_same_v<T, Arc2>) {
                 const double a = distance(g.center, g.start);
                 const double b = distance(g.center, g.end);
                 return finite(g.center) && finite(g.start) && finite(g.end) && std::isfinite(a) && std::isfinite(b) && a > 0 && b > 0 && g.start != g.end &&
                        (transferring || std::abs(a - b) <= 1e-9 * std::max(a, b));
+            } else {
+                return true;
             }
         },
         geometry);
@@ -73,7 +75,7 @@ Status validateGeometry(const SketchGeometry& geometry, bool transferring = fals
 
 using detail::pointLike;
 
-bool validKind(EntityKind kind) { return static_cast<size_t>(kind) < 4; }
+bool validKind(EntityKind kind) { return static_cast<size_t>(kind) < std::variant_size_v<SketchGeometry>; }
 
 Circle2 supportCircle(const SketchGeometry& geometry) {
     if (const auto* circle = std::get_if<Circle2>(&geometry)) {
@@ -472,8 +474,22 @@ private:
                     return du::FigureDescriptor::line(value.start.x, value.start.y, value.end.x, value.end.y);
                 } else if constexpr (std::is_same_v<T, Circle2>) {
                     return du::FigureDescriptor::circle(value.center.x, value.center.y, value.radius);
-                } else {
+                } else if constexpr (std::is_same_v<T, Arc2>) {
                     return du::FigureDescriptor::arc(value.start.x, value.start.y, value.end.x, value.end.y, value.center.x, value.center.y);
+                } else if constexpr (std::is_same_v<T, NurbsCurve2>) {
+                    std::vector<double> coords;
+                    coords.reserve(value.controlPoints.size() * 2);
+                    for (const Point2& p : value.controlPoints) {
+                        coords.push_back(p.position.x);
+                        coords.push_back(p.position.y);
+                    }
+
+                    return du::FigureDescriptor::curve(
+                        static_cast<unsigned>(value.degree),
+                        std::move(coords),
+                        value.weights,
+                        value.knots,
+                        false);
                 }
             },
             geometry);
@@ -504,6 +520,18 @@ private:
             case du::FigureType::ET_ARC:
                 geometry = Arc2{{c.at(4), c.at(5)}, {c.at(0), c.at(1)}, {c.at(2), c.at(3)}};
                 break;
+            case du::FigureType::ET_CURVE2D: {
+                NurbsCurve2 curve;
+                curve.degree = static_cast<int>(descriptor.degree);
+                curve.weights = descriptor.weights;
+                curve.knots = descriptor.knots;
+                curve.controlPoints.reserve(c.size() / 2);
+                for (size_t i = 0; i < c.size(); i += 2) {
+                    curve.controlPoints.push_back({{c.at(i), c.at(i + 1)}});
+                }
+                geometry = std::move(curve);
+                break;
+            }
             default:
                 throw std::logic_error("Unknown DCM geometry kind");
         }
@@ -515,6 +543,9 @@ private:
         const auto descriptor = figure(handle);
         if (descriptor.type == du::FigureType::ET_POINT2D && ref.sub == SubElement::Whole) {
             return handle;
+        }
+        if (descriptor.type == du::FigureType::ET_CURVE2D && ref.sub == SubElement::Control) {
+            return descriptor.pointIds.at(ref.index);
         }
         if (ref.sub == SubElement::Start) {
             return descriptor.pointIds.at(0);
@@ -851,7 +882,6 @@ private:
                     auto kind1 = entities_.at(definition.refs[0].entity).kind;
                     auto id1 = entities_.at(definition.refs[0].entity).handle;
                     auto type_subEt1 = definition.refs[0].sub;
-                    std::cout << "Diameter";
                     break;
                 }
                 case ConstraintType::Angle:
@@ -974,10 +1004,12 @@ private:
                         return finite(value.start) && finite(value.end) && std::isfinite(size) && size > 0;
                     } else if constexpr (std::is_same_v<T, Circle2>) {
                         return finite(value.center) && std::isfinite(value.radius) && value.radius > 0;
-                    } else {
+                    } else if constexpr (std::is_same_v<T, Arc2>) {
                         const double radius = length(subtract(value.start, value.center));
                         return finite(value.center) && finite(value.start) && finite(value.end) && radius > 0 && length(subtract(value.start, value.end)) > 0 &&
                                near(length(subtract(value.end, value.center)), radius);
+                    } else {
+                        return true; // TODO
                     }
                 },
                 geometry);
@@ -1186,7 +1218,7 @@ Status Sketch::moveEntities(std::span<const EntityId> ids, Vec2 offset) {
                     translate(g.end);
                 } else if constexpr (std::is_same_v<T, Circle2>) {
                     translate(g.center);
-                } else {
+                } else if constexpr (std::is_same_v<T, Arc2>) {
                     translate(g.center);
                     translate(g.start);
                     translate(g.end);
@@ -1399,7 +1431,10 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             return Status::failure(target.error().code, target.error().message);
         }
         const auto kind = entityKind(target.value().geometry);
-        points[i] = pointLike(kind, ref.sub);
+        if (!detail::validGeometryRef(target.value().geometry, ref)) {
+            return invalid("Invalid sub-element or control point index");
+        }
+        points[i] = pointLike(target.value().geometry, ref);
         lines[i] = kind == EntityKind::Line && ref.sub == SubElement::Whole;
         circles[i] = (kind == EntityKind::Circle || kind == EntityKind::Arc) && ref.sub == SubElement::Whole;
         if (type == ConstraintType::Tangent) {
@@ -1533,11 +1568,10 @@ Result<ConstraintId> Sketch::addCoincident(GeometryRef a, GeometryRef b, Coincid
     }
 
     // Use public references to include transitive groups without solver handles.
-    using RefKey = std::pair<EntityId, SubElement>;
-    std::map<RefKey, size_t> indices;
+    std::map<GeometryRef, size_t> indices;
     DSU<size_t> groups;
     const auto index = [&](GeometryRef ref) {
-        const auto [it, inserted] = indices.emplace(RefKey{ref.entity, ref.sub}, indices.size());
+        const auto [it, inserted] = indices.emplace(ref, indices.size());
         if (inserted) {
             groups.makeSet(it->second);
         }
@@ -1582,7 +1616,7 @@ Result<ConstraintId> Sketch::addCoincident(GeometryRef a, GeometryRef b, Coincid
     for (const auto& [ref, i] : indices) {
         const size_t group = groups.find(i);
         if ((group == firstGroup && !firstFixed) || (group == secondGroup && !secondFixed)) {
-            guesses.push_back({{ref.first, ref.second}, target});
+            guesses.push_back({ref, target});
         }
     }
     const auto prepared = impl_->updatePointGuesses(guesses);
@@ -1647,10 +1681,10 @@ Result<Vec2> Sketch::pointPosition(GeometryRef ref) const {
     if (!current) {
         return Result<Vec2>::failure(current.error().code, current.error().message);
     }
-    if (!pointLike(entityKind(current.value().geometry), ref.sub)) {
+    if (!pointLike(current.value().geometry, ref)) {
         return Result<Vec2>::failure(ErrorCode::InvalidArgument, "A point-like reference is required");
     }
-    return Result<Vec2>::success(detail::geometryPointPosition(current.value().geometry, ref.sub));
+    return Result<Vec2>::success(detail::geometryPointPosition(current.value().geometry, ref));
 }
 Result<std::vector<PointElement>> Sketch::pointElements() const { return pointElements(PointElementScope::All); }
 Result<std::vector<PointElement>> Sketch::pointElements(PointElementScope scope) const {
@@ -1701,7 +1735,7 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
     if (requests.empty()) {
         return Result<SolveDiagnostics>::success(SolveDiagnostics{});
     }
-    std::set<std::pair<EntityId, SubElement>> points;
+    std::set<GeometryRef> points;
     for (const auto& request : requests) {
         if (!finite(request.target)) {
             return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Drag target must be finite");
@@ -1710,10 +1744,10 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
         if (!target) {
             return Result<SolveDiagnostics>::failure(target.error().code, target.error().message);
         }
-        if (!pointLike(entityKind(target.value().geometry), request.point.sub)) {
+        if (!pointLike(target.value().geometry, request.point)) {
             return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Drag requires a point-like reference");
         }
-        if (!points.emplace(request.point.entity, request.point.sub).second) {
+        if (!points.insert(request.point).second) {
             return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Duplicate drag point");
         }
     }

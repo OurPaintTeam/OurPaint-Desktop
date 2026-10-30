@@ -48,6 +48,20 @@ protected:
     GeometryRef line_, otherLine_, point_, circle_, arc_, start_, end_;
 };
 
+TEST_F(ConstraintActionsBehavior, NurbsControlsRemainDistinctPointOperands) {
+    const auto curve = sketch_->addEntity(NurbsCurve2{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}});
+    ASSERT_TRUE(curve);
+    const GeometryRef first{curve.value(), SubElement::Control, 1};
+    const GeometryRef second{curve.value(), SubElement::Control, 2};
+    const auto coincidence = prepare(ConstraintAction::Coincident, {first, second});
+    ASSERT_EQ(coincidence.state, PreparationState::Ready);
+    ASSERT_TRUE(coincidence.definition);
+    EXPECT_EQ(coincidence.definition->refs, (std::vector<GeometryRef>{first, second}));
+    EXPECT_EQ(prepare(ConstraintAction::Fix, {second}).state, PreparationState::Ready);
+    EXPECT_EQ(prepare(ConstraintAction::Fix, {{curve.value(), SubElement::Control, 4}}).state, PreparationState::InvalidSelection);
+    EXPECT_EQ(prepare(ConstraintAction::Fix, {{line_.entity, SubElement::Start, 1}}).state, PreparationState::InvalidSelection);
+}
+
 TEST_F(ConstraintActionsBehavior, DimensionDistinguishesWholeLineFromItsEndpoints) {
     const auto length = prepare(ConstraintAction::Dimension, {line_}, 7.0);
     ASSERT_EQ(length.state, PreparationState::Ready);

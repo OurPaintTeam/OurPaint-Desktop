@@ -239,6 +239,7 @@ void QtViewportHost::exposeEvent(QExposeEvent*) {
         initContext();
     }
     renderFrame();
+    emit frameReady();
 }
 
 void QtViewportHost::paintEvent(QPaintEvent* ev) {
@@ -256,6 +257,7 @@ void QtViewportHost::resizeEvent(QResizeEvent* e) {
             controller_->dirty_ = false;
         }
     }
+    emit frameReady();
 }
 
 void QtViewportHost::keyPressEvent(QKeyEvent* e) {
@@ -416,7 +418,7 @@ input::KeyCode QtViewportHost::toKeyCodeEnum(Qt::Key key) {
     switch (key) {
         case Qt::Key_Escape:    kc = input::KeyCode::Escape;    break;
         case Qt::Key_Tab:       kc = input::KeyCode::Tab;       break;
-        case Qt::Key_Enter:     kc = input::KeyCode::Enter;     break;
+        case Qt::Key_Return:     kc = input::KeyCode::Enter;     break; // TODO
         case Qt::Key_Space:     kc = input::KeyCode::Space;     break;
         case Qt::Key_Backspace: kc = input::KeyCode::Backspace; break;
         case Qt::Key_Delete:    kc = input::KeyCode::Delete;    break;

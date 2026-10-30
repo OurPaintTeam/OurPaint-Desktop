@@ -61,10 +61,18 @@ void expectSnapshot(const SketchSnapshot& actual, const SketchSnapshot& expected
                 } else if constexpr (std::is_same_v<Geometry, Circle2>) {
                     EXPECT_EQ(geometry.center, expectedGeometry.center);
                     EXPECT_EQ(geometry.radius, expectedGeometry.radius);
-                } else {
+                } else if constexpr (std::is_same_v<Geometry, Arc2>) {
                     EXPECT_EQ(geometry.center, expectedGeometry.center);
                     EXPECT_EQ(geometry.start, expectedGeometry.start);
                     EXPECT_EQ(geometry.end, expectedGeometry.end);
+                } else if constexpr (std::is_same_v<Geometry, NurbsCurve2>) {
+                    EXPECT_EQ(geometry.degree, expectedGeometry.degree);
+                    EXPECT_EQ(geometry.weights, expectedGeometry.weights);
+                    EXPECT_EQ(geometry.knots, expectedGeometry.knots);
+                    ASSERT_EQ(geometry.controlPoints.size(), expectedGeometry.controlPoints.size());
+                    for (size_t j = 0; j < geometry.controlPoints.size(); ++j) {
+                        EXPECT_EQ(geometry.controlPoints[j].position, expectedGeometry.controlPoints[j].position);
+                    }
                 }
             },
             entity.geometry);

@@ -77,12 +77,14 @@ public:
     Result<std::vector<SketchEntity>> entities() const;
     // Ascending public ID order. Queries scan metadata and copy matching values.
     Result<std::vector<SketchEntity>> entities(EntityKind kind) const;
-    // points() contains standalone Point entities, not curve endpoints/centers.
+    // points() contains standalone Point entities, not curve endpoints/centers/controls.
     Result<std::vector<SketchEntity>> points() const { return entities(EntityKind::Point); }
     Result<std::vector<SketchEntity>> lines() const { return entities(EntityKind::Line); }
     Result<std::vector<SketchEntity>> circles() const { return entities(EntityKind::Circle); }
     Result<std::vector<SketchEntity>> arcs() const { return entities(EntityKind::Arc); }
     Result<Vec2> pointPosition(GeometryRef ref) const;
+    // Both query forms use the same references. NURBS controls are ordered by
+    // their zero-based GeometryRef::index and belong to CurveSubElements/All.
     Result<std::vector<PointElement>> pointElements() const;
     Result<std::vector<PointElement>> pointElements(PointElementScope scope) const;
     Result<std::vector<PointElement>> pointElements(EntityId entity) const;

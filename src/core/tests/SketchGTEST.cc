@@ -40,10 +40,18 @@ void expectGeometry(const SketchGeometry& actual, const SketchGeometry& expected
             } else if constexpr (std::is_same_v<Geometry, Circle2>) {
                 expectPosition(value.center, other.center);
                 EXPECT_NEAR(value.radius, other.radius, 1e-6);
-            } else {
+            } else if constexpr (std::is_same_v<Geometry, Arc2>) {
                 expectPosition(value.center, other.center);
                 expectPosition(value.start, other.start);
                 expectPosition(value.end, other.end);
+            } else if constexpr (std::is_same_v<Geometry, NurbsCurve2>) {
+                EXPECT_EQ(value.degree, other.degree);
+                EXPECT_EQ(value.weights, other.weights);
+                EXPECT_EQ(value.knots, other.knots);
+                ASSERT_EQ(value.controlPoints.size(), other.controlPoints.size());
+                for (size_t i = 0; i < value.controlPoints.size(); ++i) {
+                    expectPosition(value.controlPoints[i].position, other.controlPoints[i].position);
+                }
             }
         },
         actual);
@@ -116,6 +124,161 @@ TEST_P(SketchBehavior, CreatesQueriesAndRemovesAllBasicEntities) {
     all = sketch_->entities();
     ASSERT_TRUE(all);
     EXPECT_TRUE(all.value().empty());
+}
+
+TEST_P(SketchBehavior, NurbsCurvesSurviveQueriesSnapshotsAndUndoRedo) {
+    ASSERT_TRUE(sketch_->addPoint({10, 20}));
+    const std::vector<NurbsCurve2> curves = {{3, {{{0, 0}}, {{1, 3}}, {{4, 3}}, {{5, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}},
+                                             {3, {{{0, 0}}, {{1, 3}}, {{2, -1}}, {{4, 3}}, {{5, 0}}}, {1, 2, 0.5, 2, 1}, {0, 0, 0, 0, 0.5, 1, 1, 1, 1}}};
+    for (const auto& curve : curves) {
+        auto added = sketch_->addEntity(curve);
+        ASSERT_TRUE(added);
+        auto queried = sketch_->entity(added.value());
+        ASSERT_TRUE(queried);
+        expectGeometry(queried.value().geometry, curve);
+    }
+
+    auto all = sketch_->entities();
+    ASSERT_TRUE(all);
+    EXPECT_EQ(all.value().size(), 3U);
+    auto filtered = sketch_->entities(EntityKind::Nurbs);
+    ASSERT_TRUE(filtered);
+    ASSERT_EQ(filtered.value().size(), curves.size());
+    for (size_t i = 0; i < curves.size(); ++i) {
+        expectGeometry(filtered.value()[i].geometry, curves[i]);
+    }
+    auto count = sketch_->entityCount(EntityKind::Nurbs);
+    ASSERT_TRUE(count);
+    EXPECT_EQ(count.value(), curves.size());
+
+    auto state = sketch_->snapshot();
+    ASSERT_TRUE(state);
+    Sketch restored;
+    ASSERT_TRUE(restored.replaceState(state.value()));
+    auto restoredState = restored.snapshot();
+    ASSERT_TRUE(restoredState);
+    expectSnapshot(restoredState.value(), state.value());
+
+    sketch_->undo();
+    auto remaining = sketch_->entities(EntityKind::Nurbs);
+    ASSERT_TRUE(remaining);
+    ASSERT_EQ(remaining.value().size(), 1U);
+    expectGeometry(remaining.value().front().geometry, curves.front());
+    sketch_->redo();
+    auto redone = sketch_->snapshot();
+    ASSERT_TRUE(redone);
+    expectSnapshot(redone.value(), state.value());
+}
+
+TEST_P(SketchBehavior, NurbsControlQueriesShareIndexedReferencesAndRespectScopes) {
+    const NurbsCurve2 curve{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 2, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}};
+    const auto standalone = sketch_->addPoint({-10, 0});
+    const auto added = sketch_->addEntity(curve);
+    ASSERT_TRUE(standalone);
+    ASSERT_TRUE(added);
+    const auto owned = sketch_->pointElements(added.value());
+    const auto scoped = sketch_->pointElements(PointElementScope::CurveSubElements);
+    const auto all = sketch_->pointElements();
+    const auto points = sketch_->pointElements(PointElementScope::StandalonePoints);
+    ASSERT_TRUE(owned);
+    ASSERT_TRUE(scoped);
+    ASSERT_TRUE(all);
+    ASSERT_TRUE(points);
+    ASSERT_EQ(owned.value().size(), 4U);
+    ASSERT_EQ(scoped.value().size(), 4U);
+    ASSERT_EQ(all.value().size(), 5U);
+    ASSERT_EQ(points.value().size(), 1U);
+    EXPECT_EQ(points.value().front().ref, (GeometryRef{standalone.value(), SubElement::Whole}));
+    for (size_t i = 0; i < curve.controlPoints.size(); ++i) {
+        const GeometryRef ref{added.value(), SubElement::Control, i};
+        EXPECT_EQ(owned.value()[i].ref, ref);
+        EXPECT_EQ(scoped.value()[i].ref, ref);
+        EXPECT_EQ(all.value()[i + 1].ref, ref);
+        expectPosition(owned.value()[i].position, curve.controlPoints[i].position);
+        expectPosition(scoped.value()[i].position, owned.value()[i].position);
+        expectPosition(all.value()[i + 1].position, owned.value()[i].position);
+        const auto position = sketch_->pointPosition(ref);
+        ASSERT_TRUE(position);
+        expectPosition(position.value(), curve.controlPoints[i].position);
+    }
+}
+
+TEST_P(SketchBehavior, DragMovesDistinctNurbsControlsWithoutChangingTheirNeighbors) {
+    const NurbsCurve2 curve{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 2, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}};
+    const auto added = sketch_->addEntity(curve);
+    ASSERT_TRUE(added);
+    const GeometryRef first{added.value(), SubElement::Control, 1};
+    const GeometryRef second{added.value(), SubElement::Control, 2};
+    const std::array<DragRequest, 2> requests{{{first, {3, 5}}, {second, {7, -4}}}};
+    const auto dragged = sketch_->dragPoints(requests);
+    ASSERT_TRUE(dragged);
+    EXPECT_EQ(dragged.value().status, SolveStatus::Converged);
+    auto expected = curve;
+    expected.controlPoints[1].position = {3, 5};
+    expected.controlPoints[2].position = {7, -4};
+    const auto current = sketch_->entity(added.value());
+    ASSERT_TRUE(current);
+    expectGeometry(current.value().geometry, expected);
+
+    const std::array<DragRequest, 2> duplicate{{{first, {20, 30}}, {first, {40, 50}}}};
+    expectError(sketch_->dragPoints(duplicate), ErrorCode::InvalidArgument);
+    expectGeometry(sketch_->entity(added.value()).value().geometry, expected);
+}
+
+TEST_P(SketchBehavior, InvalidControlIndicesAndIndexedNamedSubElementsLeaveStateUnchanged) {
+    const auto curve = sketch_->addEntity(NurbsCurve2{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}});
+    const auto point = sketch_->addPoint({10, 0});
+    const auto line = sketch_->addLine({10, 2}, {12, 2});
+    ASSERT_TRUE(curve);
+    ASSERT_TRUE(point);
+    ASSERT_TRUE(line);
+    const auto before = sketch_->snapshot();
+    ASSERT_TRUE(before);
+    const std::vector<GeometryRef> invalidRefs{
+        {curve.value(), SubElement::Control, 4}, {curve.value(), SubElement::Control, std::numeric_limits<size_t>::max()},
+        {curve.value(), SubElement::Whole, 1},   {curve.value(), SubElement::Start},
+        {point.value(), SubElement::Whole, 1},   {point.value(), SubElement::Control},
+        {line.value(), SubElement::Start, 1},    {line.value(), SubElement::Whole, 1}};
+    for (const auto ref : invalidRefs) {
+        expectError(sketch_->pointPosition(ref), ErrorCode::InvalidArgument);
+        const std::array<DragRequest, 2> requests{{{{curve.value(), SubElement::Control, 1}, {30, 30}}, {ref, {20, 20}}}};
+        expectError(sketch_->dragPoints(requests), ErrorCode::InvalidArgument);
+        const ConstraintDefinition fix{ConstraintType::Fix, {ref}, std::nullopt, Vec2{20, 20}};
+        expectError(sketch_->supportsConstraint(fix), ErrorCode::InvalidArgument);
+        expectError(sketch_->addConstraint(fix), ErrorCode::InvalidArgument);
+        expectError(sketch_->addCoincident(ref, {point.value(), SubElement::Whole}), ErrorCode::InvalidArgument);
+    }
+    const auto after = sketch_->snapshot();
+    ASSERT_TRUE(after);
+    expectSnapshot(after.value(), before.value());
+}
+
+TEST_P(SketchBehavior, CoincidenceKeepsNurbsControlGroupsSeparateAndPreservesIndicesInSnapshots) {
+    const auto curve = sketch_->addEntity(NurbsCurve2{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}});
+    const auto firstPoint = sketch_->addPoint({8, 3});
+    const auto secondPoint = sketch_->addPoint({10, -2});
+    ASSERT_TRUE(curve);
+    ASSERT_TRUE(firstPoint);
+    ASSERT_TRUE(secondPoint);
+    const GeometryRef first{curve.value(), SubElement::Control, 1};
+    const GeometryRef second{curve.value(), SubElement::Control, 2};
+    ASSERT_TRUE(sketch_->addCoincident(first, {firstPoint.value(), SubElement::Whole}));
+    ASSERT_TRUE(sketch_->addCoincident(second, {secondPoint.value(), SubElement::Whole}));
+    expectPosition(sketch_->pointPosition(first).value(), {5, 3});
+    expectPosition(sketch_->pointPosition(second).value(), {7, -2});
+    expectPosition(sketch_->pointPosition({firstPoint.value(), SubElement::Whole}).value(), {5, 3});
+    expectPosition(sketch_->pointPosition({secondPoint.value(), SubElement::Whole}).value(), {7, -2});
+
+    const auto saved = sketch_->snapshot();
+    ASSERT_TRUE(saved);
+    ASSERT_EQ(saved.value().constraints.size(), 2U);
+    EXPECT_EQ(saved.value().constraints[0].definition.refs[0], first);
+    EXPECT_EQ(saved.value().constraints[1].definition.refs[0], second);
+    Sketch restored;
+    ASSERT_TRUE(restored.replaceState(saved.value()));
+    const auto roundTrip = restored.snapshot();
+    ASSERT_TRUE(roundTrip);
+    expectSnapshot(roundTrip.value(), saved.value());
 }
 
 TEST_P(SketchBehavior, UpdatesBasicGeometryWithoutChangingIdentityOrDetachedQueries) {

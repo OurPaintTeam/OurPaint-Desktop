@@ -1,6 +1,8 @@
 #ifndef OURPAINT_APPLICATION_CUBIC_BEZIER_TOOL_H_
 #define OURPAINT_APPLICATION_CUBIC_BEZIER_TOOL_H_
 
+#include <vector>
+
 #include "../../../core/DocumentManager.h"
 #include "Camera2D.h"
 #include "IInteractionTool.h"
@@ -17,14 +19,8 @@ public:
     ToolCancellation cancel() override;
 
 private:
-    enum class State {
-        WaitingFirstPoint,
-        WaitingSecondPoint
-    };
+    std::vector<glm::dvec2> points_;
 
-    State state_ = State::WaitingFirstPoint;
-    double firstPoint_X;
-    double firstPoint_Y;
 };
 
 #endif // ! OURPAINT_APPLICATION_CUBIC_BEZIER_TOOL_H_

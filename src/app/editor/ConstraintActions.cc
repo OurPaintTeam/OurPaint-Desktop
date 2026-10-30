@@ -16,10 +16,14 @@ enum class RefKind {
     Circular
 };
 
-RefKind classifyRef(const core::sketch::SketchEntity& entity, core::sketch::SubElement sub) {
+RefKind classifyRef(const core::sketch::SketchEntity& entity, core::sketch::GeometryRef ref) {
     using core::sketch::EntityKind;
     using core::sketch::SubElement;
 
+    const auto sub = ref.sub;
+    if (sub != SubElement::Control && ref.index != 0) {
+        return RefKind::Invalid;
+    }
     switch (core::sketch::entityKind(entity.geometry)) {
         case EntityKind::Point:
             return sub == SubElement::Whole ? RefKind::Point : RefKind::Invalid;
@@ -38,6 +42,9 @@ RefKind classifyRef(const core::sketch::SketchEntity& entity, core::sketch::SubE
                 return RefKind::Circular;
             }
             return sub == SubElement::Start || sub == SubElement::End || sub == SubElement::Center ? RefKind::Point : RefKind::Invalid;
+        case EntityKind::Nurbs:
+            return sub == SubElement::Control && ref.index < std::get<core::sketch::NurbsCurve2>(entity.geometry).controlPoints.size() ? RefKind::Point
+                                                                                                                                       : RefKind::Invalid;
     }
     return RefKind::Invalid;
 }
@@ -151,7 +158,7 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         if (!entity) {
             return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection, entity.error()};
         }
-        kinds[i] = classifyRef(entity.value(), refs[i].sub);
+        kinds[i] = classifyRef(entity.value(), refs[i]);
         if (kinds[i] == RefKind::Invalid) {
             return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection};
         }

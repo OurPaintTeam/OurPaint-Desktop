@@ -8,6 +8,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -100,12 +101,22 @@ struct Arc2 {
     Vec2 start;
     Vec2 end;
 };
-using SketchGeometry = std::variant<Point2, Line2, Circle2, Arc2>;
+
+// TODO
+struct NurbsCurve2 {
+    int degree;
+    std::vector<Point2> controlPoints;
+    std::vector<double> weights;
+    std::vector<double> knots;
+};
+
+using SketchGeometry = std::variant<Point2, Line2, Circle2, Arc2, NurbsCurve2>;
 enum class EntityKind {
     Point,
     Line,
     Circle,
-    Arc
+    Arc,
+    Nurbs
 };
 inline EntityKind entityKind(const SketchGeometry& geometry) {
     return static_cast<EntityKind>(geometry.index());
@@ -130,12 +141,20 @@ struct EntityUpdate {
     std::optional<bool> construction = std::nullopt;
 };
 enum class SubElement {
-    Whole, Start, End, Center
+    Whole,
+    Start,
+    End,
+    Center,
+    Control
 };
 struct GeometryRef {
     EntityId entity;
     SubElement sub = SubElement::Whole;
+    // Zero-based control point index. Other sub-elements require zero.
+    // Stable while the control point order and count remain unchanged.
+    size_t index = 0;
     bool operator==(const GeometryRef&) const = default;
+    bool operator<(const GeometryRef& other) const { return std::tie(entity, sub, index) < std::tie(other.entity, other.sub, other.index); }
 };
 struct PointElement {
     GeometryRef ref;
@@ -215,7 +234,7 @@ struct SketchConstraint {
 // Type support is coarse; supportsConstraint checks the actual ref combination.
 // Unsupported operations never mutate the model.
 struct Capabilities {
-    std::array<bool, 4> entities{};
+    std::array<bool, 5> entities{};
     std::array<bool, 18> constraints{};
     bool updateEntities = false;
     bool removeEntities = false;

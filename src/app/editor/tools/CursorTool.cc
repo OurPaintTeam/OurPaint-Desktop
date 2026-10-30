@@ -31,8 +31,12 @@ bool sameGeometry(const sketch::SketchGeometry& first, const sketch::SketchGeome
                 return value.start == other.start && value.end == other.end;
             } else if constexpr (std::is_same_v<Geometry, sketch::Circle2>) {
                 return value.center == other.center && value.radius == other.radius;
-            } else {
+            } else if constexpr (std::is_same_v<Geometry, sketch::Arc2>) {
                 return value.center == other.center && value.start == other.start && value.end == other.end;
+            } else {
+                return value.degree == other.degree && value.weights == other.weights && value.knots == other.knots &&
+                       std::equal(value.controlPoints.begin(), value.controlPoints.end(), other.controlPoints.begin(), other.controlPoints.end(),
+                                  [](const auto& a, const auto& b) { return a.position == b.position; });
             }
         },
         first);
@@ -545,7 +549,7 @@ std::optional<ActionReport> CursorTool::finishDrag() {
 
 sketch::Status CursorTool::prepareDragSelection(std::span<const sketch::GeometryRef> refs) {
     dragTargets_.clear();
-    std::set<std::pair<sketch::EntityId, sketch::SubElement>> seen;
+    std::set<sketch::GeometryRef> seen;
     std::vector<sketch::DragRequest> targets;
     for (const auto& ref : refs) {
         auto points = sketch_.pointElements(ref.entity);
@@ -555,9 +559,9 @@ sketch::Status CursorTool::prepareDragSelection(std::span<const sketch::Geometry
         bool found = false;
         for (const auto& point : points.value()) {
             // Whole expands to all owned points; overlapping selections move each point once.
-            if (ref.sub == sketch::SubElement::Whole || point.ref == ref) {
+            if (ref == sketch::GeometryRef{ref.entity, sketch::SubElement::Whole} || point.ref == ref) {
                 found = true;
-                if (seen.emplace(point.ref.entity, point.ref.sub).second) {
+                if (seen.insert(point.ref).second) {
                     targets.push_back({point.ref, point.position});
                 }
             }
@@ -600,12 +604,11 @@ ActionReport CursorTool::tryApplyPointOnPointNearCursor(double xLogic, double yL
     }
 
     const auto& elements = points.value();
-    using RefKey = std::pair<sketch::EntityId, sketch::SubElement>;
-    std::map<RefKey, size_t> indices;
+    std::map<sketch::GeometryRef, size_t> indices;
     DSU<size_t> groups;
     for (size_t i = 0; i < elements.size(); ++i) {
         const auto& ref = elements[i].ref;
-        indices.emplace(RefKey{ref.entity, ref.sub}, i);
+        indices.emplace(ref, i);
         groups.makeSet(i);
     }
     // Public coincidence constraints define groups, including transitive links.
@@ -616,8 +619,8 @@ ActionReport CursorTool::tryApplyPointOnPointNearCursor(double xLogic, double yL
         }
         const auto& a = definition.refs[0];
         const auto& b = definition.refs[1];
-        const auto first = indices.find({a.entity, a.sub});
-        const auto second = indices.find({b.entity, b.sub});
+        const auto first = indices.find(a);
+        const auto second = indices.find(b);
         if (first != indices.end() && second != indices.end()) {
             groups.unite(first->second, second->second);
         }

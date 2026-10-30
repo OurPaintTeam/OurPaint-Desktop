@@ -53,6 +53,28 @@ protected:
     TestTextMeasurer textMeasurer_;
 };
 
+TEST_F(ConstraintLayoutBehavior, CoincidentGroupsOnDifferentNurbsControlsStaySeparate) {
+    const auto curve = sketch_->addEntity(NurbsCurve2{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}});
+    const auto firstPoint = sketch_->addPoint({2, 3});
+    const auto secondPoint = sketch_->addPoint({4, -2});
+    ASSERT_TRUE(curve);
+    ASSERT_TRUE(firstPoint);
+    ASSERT_TRUE(secondPoint);
+    const GeometryRef first{curve.value(), SubElement::Control, 1};
+    const GeometryRef second{curve.value(), SubElement::Control, 2};
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {first, {firstPoint.value(), SubElement::Whole}}}));
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {second, {secondPoint.value(), SubElement::Whole}}}));
+    rebuild();
+    const auto markers = attachedTo(curve.value());
+    ASSERT_EQ(markers.size(), 2U);
+    EXPECT_EQ(markers[0]->attachment, first);
+    EXPECT_EQ(markers[1]->attachment, second);
+    ASSERT_EQ(markers[0]->dots.size(), 1U);
+    ASSERT_EQ(markers[1]->dots.size(), 1U);
+    expectPosition(markers[0]->dots.front().center, camera_.worldToScreenLogical({2, 3}));
+    expectPosition(markers[1]->dots.front().center, camera_.worldToScreenLogical({4, -2}));
+}
+
 TEST_F(ConstraintLayoutBehavior, PreservesLineGlyphsAndCanonicalPlacementOrder) {
     // Draw the first line backwards to exercise direction-independent placement.
     const auto line = sketch_->addLine({2, 0}, {-2, 0});
