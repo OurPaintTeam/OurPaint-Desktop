@@ -38,6 +38,10 @@ TEST(DocumentManager, AdoptsTheStagedDocumentWithoutReplacingItsSketch) {
     ASSERT_TRUE(line);
     const auto constraint = sketch.addConstraint({ConstraintType::Horizontal, {{line.value(), SubElement::Whole}}, std::nullopt, std::nullopt});
     ASSERT_TRUE(constraint);
+    const auto constraints = sketch.constraints();
+    ASSERT_TRUE(constraints);
+    ASSERT_EQ(constraints.value().size(), 1U);
+    const ConstraintId constraintId = constraints.value()[0].id;
     staged->path() = "sketch.ourp";
 
     const DocumentId id = manager.openDocument(std::move(staged));
@@ -55,7 +59,7 @@ TEST(DocumentManager, AdoptsTheStagedDocumentWithoutReplacingItsSketch) {
     const auto& geometry = std::get<Line2>(entity.value().geometry);
     EXPECT_EQ(geometry.start, (Vec2{1, 2}));
     EXPECT_EQ(geometry.end, (Vec2{5, 2}));
-    EXPECT_TRUE(adopted.sketch().constraint(constraint.value()));
+    EXPECT_TRUE(adopted.sketch().constraint(constraintId));
 }
 
 TEST(DocumentManager, RejectsNullAdoptionWithoutChangingDocumentsOrConsumingAnId) {

@@ -1,6 +1,7 @@
 #include "DocumentSaveLoad.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <initializer_list>
 #include <limits>
@@ -21,11 +22,70 @@ using Decoded = CodecResult<std::unique_ptr<Document>>;
 constexpr size_t MaxCborDepth = 64;
 constexpr size_t MaxCborItems = 1'000'000;
 
+constexpr std::array<std::pair<sketch::ConstraintType, std::string_view>, 18> ConstraintNames{{
+    {sketch::ConstraintType::Coincident, "coincident"},
+    {sketch::ConstraintType::Horizontal, "horizontal"},
+    {sketch::ConstraintType::Vertical, "vertical"},
+    {sketch::ConstraintType::Parallel, "parallel"},
+    {sketch::ConstraintType::Perpendicular, "perpendicular"},
+    {sketch::ConstraintType::Tangent, "tangent"},
+    {sketch::ConstraintType::Equal, "equal"},
+    {sketch::ConstraintType::Fix, "fix"},
+    {sketch::ConstraintType::Concentric, "concentric"},
+    {sketch::ConstraintType::Symmetric, "symmetric"},
+    {sketch::ConstraintType::Midpoint, "midpoint"},
+    {sketch::ConstraintType::Distance, "distance"},
+    {sketch::ConstraintType::HorizontalDistance, "horizontal-distance"},
+    {sketch::ConstraintType::VerticalDistance, "vertical-distance"},
+    {sketch::ConstraintType::Length, "length"},
+    {sketch::ConstraintType::Radius, "radius"},
+    {sketch::ConstraintType::Diameter, "diameter"},
+    {sketch::ConstraintType::Angle, "angle"}}};
+
+constexpr std::array<std::pair<sketch::SubElement, std::string_view>, 5> SubElementNames{{
+    {sketch::SubElement::Whole, "whole"},
+    {sketch::SubElement::Start, "start"},
+    {sketch::SubElement::End, "end"},
+    {sketch::SubElement::Center, "center"},
+    {sketch::SubElement::Control, "control"}}};
+
+constexpr std::array<std::pair<sketch::TangencyBranch, std::string_view>, 5> BranchNames{{
+    {sketch::TangencyBranch::PositiveSide, "positive-side"},
+    {sketch::TangencyBranch::NegativeSide, "negative-side"},
+    {sketch::TangencyBranch::External, "external"},
+    {sketch::TangencyBranch::FirstContainsSecond, "first-contains-second"},
+    {sketch::TangencyBranch::SecondContainsFirst, "second-contains-first"}}};
+
+template <class T, size_t N>
+std::optional<std::string_view> enumName(T value, const std::array<std::pair<T, std::string_view>, N>& names) {
+    for (const auto& [candidate, name] : names) {
+        if (candidate == value) {
+            return name;
+        }
+    }
+    return std::nullopt;
+}
+
+template <class T, size_t N>
+CodecResult<T> readEnum(const Json& value, const std::array<std::pair<T, std::string_view>, N>& names, const std::string& path) {
+    if (!value.is_string()) {
+        return CodecResult<T>::failure({CodecErrorCode::InvalidSchema, path, "Expected a type name"});
+    }
+    const auto& text = value.get_ref<const std::string&>();
+    for (const auto& [candidate, name] : names) {
+        if (name == text) {
+            return CodecResult<T>::success(candidate);
+        }
+    }
+    return CodecResult<T>::failure({CodecErrorCode::UnsupportedData, path, "Unsupported type name: " + text});
+}
+
 std::string fieldPath(std::string_view parent, std::string_view field) {
     return parent == "$" ? std::string(field) : std::string(parent) + "." + std::string(field);
 }
 
-std::optional<CodecError> checkFields(const Json& object, std::initializer_list<std::string_view> fields, const std::string& path) {
+std::optional<CodecError> checkFields(const Json& object, std::initializer_list<std::string_view> fields, const std::string& path,
+                                    std::initializer_list<std::string_view> optionalFields = {}) {
     if (!object.is_object()) {
         return CodecError{CodecErrorCode::InvalidSchema, path, "Expected an object"};
     }
@@ -35,7 +95,8 @@ std::optional<CodecError> checkFields(const Json& object, std::initializer_list<
         }
     }
     for (auto it = object.begin(); it != object.end(); ++it) {
-        if (std::find(fields.begin(), fields.end(), it.key()) == fields.end()) {
+        if (std::find(fields.begin(), fields.end(), it.key()) == fields.end() &&
+            std::find(optionalFields.begin(), optionalFields.end(), it.key()) == optionalFields.end()) {
             return CodecError{CodecErrorCode::InvalidSchema, fieldPath(path, it.key()), "Unknown field"};
         }
     }
@@ -176,9 +237,6 @@ std::optional<CodecError> checkEnvelope(std::span<const uint8_t> bytes) {
         }
         if (major != 4 && major != 5) {
             return CodecError{CodecErrorCode::InvalidSchema, path, "Unsupported CBOR type in document"};
-        }
-        if (path == "constraints" && major == 4 && argument != 0) {
-            return CodecError{CodecErrorCode::UnsupportedData, path, "Constraint decoding is not supported by this codec yet"};
         }
         const size_t perElement = major == 5 ? 2 : 1;
         if (argument > (MaxCborItems - items) / perElement) {
@@ -405,6 +463,166 @@ CodecResult<sketch::SketchEntity> readEntity(const Json& record, const std::stri
 
 Json writePosition(sketch::Vec2 position) { return Json::array({position.x, position.y}); }
 
+std::optional<CodecError> checkReference(const sketch::GeometryRef& ref, const std::string& path) {
+    if (ref.entity.get() <= 0) {
+        return CodecError{CodecErrorCode::InvalidSchema, path + ".entity", "Reference entity must be a positive signed-64-bit integer"};
+    }
+    if (ref.index > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+        return CodecError{CodecErrorCode::InvalidSchema, path + ".index", "Reference index exceeds the signed-64-bit range"};
+    }
+    if (ref.sub != sketch::SubElement::Control && ref.index != 0) {
+        return CodecError{CodecErrorCode::InvalidSchema, path + ".index", "Only control references may have a nonzero index"};
+    }
+    return std::nullopt;
+}
+
+CodecResult<sketch::GeometryRef> readReference(const Json& record, const std::string& path) {
+    using Reference = CodecResult<sketch::GeometryRef>;
+    if (auto error = checkFields(record, {"entity", "sub", "index"}, path)) {
+        return Reference::failure(std::move(*error));
+    }
+    const auto entity = nonnegativeInteger(record.at("entity"));
+    if (!entity || *entity == 0) {
+        return Reference::failure({CodecErrorCode::InvalidSchema, path + ".entity", "Reference entity must be a positive signed-64-bit integer"});
+    }
+    const auto sub = readEnum(record.at("sub"), SubElementNames, path + ".sub");
+    if (!sub) {
+        return Reference::failure(sub.error());
+    }
+    const auto index = nonnegativeInteger(record.at("index"));
+    if (!index || static_cast<uint64_t>(*index) > std::numeric_limits<size_t>::max()) {
+        return Reference::failure({CodecErrorCode::InvalidSchema, path + ".index", "Reference index must fit both int64_t and size_t"});
+    }
+    const sketch::GeometryRef ref{sketch::EntityId(*entity), sub.value(), static_cast<size_t>(*index)};
+    if (auto error = checkReference(ref, path)) {
+        return Reference::failure(std::move(*error));
+    }
+    return Reference::success(ref);
+}
+
+std::optional<CodecError> checkDefinitionFields(const sketch::ConstraintDefinition& definition, const std::string& path) {
+    bool dimensional = false;
+    switch (definition.type) {
+        case sketch::ConstraintType::Distance:
+        case sketch::ConstraintType::HorizontalDistance:
+        case sketch::ConstraintType::VerticalDistance:
+        case sketch::ConstraintType::Length:
+        case sketch::ConstraintType::Radius:
+        case sketch::ConstraintType::Diameter:
+        case sketch::ConstraintType::Angle:
+            dimensional = true;
+            break;
+        default:
+            break;
+    }
+    if (definition.value.has_value() != dimensional || (definition.value && !std::isfinite(*definition.value))) {
+        return CodecError{CodecErrorCode::InvalidSchema, path + ".value", "Only dimensional constraints require a finite value"};
+    }
+    if (definition.fixedPosition && (definition.type != sketch::ConstraintType::Fix || !std::isfinite(definition.fixedPosition->x) ||
+                                     !std::isfinite(definition.fixedPosition->y))) {
+        return CodecError{CodecErrorCode::InvalidSchema, path + ".fixed-position", "Only Fix may contain a finite fixed position"};
+    }
+    // Saved tangency intent must not be re-inferred from coordinates on loading.
+    if (definition.tangencyBranch.has_value() != (definition.type == sketch::ConstraintType::Tangent)) {
+        return CodecError{CodecErrorCode::InvalidSchema, path + ".tangency-branch", "Tangent requires an explicit branch; other types cannot contain one"};
+    }
+    return std::nullopt;
+}
+
+CodecResult<sketch::SketchConstraint> readConstraint(const Json& record, const std::string& path) {
+    using Constraint = CodecResult<sketch::SketchConstraint>;
+    if (auto error = checkFields(record, {"id", "type", "refs"}, path, {"value", "fixed-position", "tangency-branch"})) {
+        return Constraint::failure(std::move(*error));
+    }
+    const auto id = nonnegativeInteger(record.at("id"));
+    if (!id || *id == 0) {
+        return Constraint::failure({CodecErrorCode::InvalidSchema, path + ".id", "Constraint ID must be a positive signed-64-bit integer"});
+    }
+    const auto type = readEnum(record.at("type"), ConstraintNames, path + ".type");
+    if (!type) {
+        return Constraint::failure(type.error());
+    }
+    if (!record.at("refs").is_array()) {
+        return Constraint::failure({CodecErrorCode::InvalidSchema, path + ".refs", "Expected an ordered reference array"});
+    }
+    sketch::ConstraintDefinition definition;
+    definition.type = type.value();
+    const auto& refs = record.at("refs");
+    definition.refs.reserve(refs.size());
+    for (size_t i = 0; i < refs.size(); ++i) {
+        const auto ref = readReference(refs[i], path + ".refs[" + std::to_string(i) + "]");
+        if (!ref) {
+            return Constraint::failure(ref.error());
+        }
+        definition.refs.push_back(ref.value());
+    }
+    if (record.contains("value")) {
+        const auto value = readNumber(record.at("value"), path + ".value");
+        if (!value) {
+            return Constraint::failure(value.error());
+        }
+        definition.value = value.value();
+    }
+    if (record.contains("fixed-position")) {
+        const auto position = readPosition(record.at("fixed-position"), path + ".fixed-position");
+        if (!position) {
+            return Constraint::failure(position.error());
+        }
+        definition.fixedPosition = position.value();
+    }
+    if (record.contains("tangency-branch")) {
+        const auto branch = readEnum(record.at("tangency-branch"), BranchNames, path + ".tangency-branch");
+        if (!branch) {
+            return Constraint::failure(branch.error());
+        }
+        definition.tangencyBranch = branch.value();
+    }
+    if (auto error = checkDefinitionFields(definition, path)) {
+        return Constraint::failure(std::move(*error));
+    }
+    return Constraint::success({sketch::ConstraintId(*id), std::move(definition)});
+}
+
+CodecResult<Json> writeConstraint(const sketch::SketchConstraint& constraint, const std::string& path) {
+    using Record = CodecResult<Json>;
+    const auto& definition = constraint.definition;
+    const auto type = enumName(definition.type, ConstraintNames);
+    if (!type) {
+        return Record::failure({CodecErrorCode::UnsupportedData, path + ".type", "Constraint type has no format name"});
+    }
+    if (auto error = checkDefinitionFields(definition, path)) {
+        return Record::failure(std::move(*error));
+    }
+    Json refs = Json::array();
+    for (size_t i = 0; i < definition.refs.size(); ++i) {
+        const auto& ref = definition.refs[i];
+        const auto refPath = path + ".refs[" + std::to_string(i) + "]";
+        if (auto error = checkReference(ref, refPath)) {
+            return Record::failure(std::move(*error));
+        }
+        const auto sub = enumName(ref.sub, SubElementNames);
+        if (!sub) {
+            return Record::failure({CodecErrorCode::UnsupportedData, refPath + ".sub", "Sub-element has no format name"});
+        }
+        refs.push_back({{"entity", ref.entity.get()}, {"sub", std::string(*sub)}, {"index", static_cast<uint64_t>(ref.index)}});
+    }
+    Json record{{"id", constraint.id.get()}, {"type", std::string(*type)}, {"refs", std::move(refs)}};
+    if (definition.value) {
+        record["value"] = *definition.value;
+    }
+    if (definition.fixedPosition) {
+        record["fixed-position"] = writePosition(*definition.fixedPosition);
+    }
+    if (definition.tangencyBranch) {
+        const auto branch = enumName(*definition.tangencyBranch, BranchNames);
+        if (!branch) {
+            return Record::failure({CodecErrorCode::UnsupportedData, path + ".tangency-branch", "Tangency branch has no format name"});
+        }
+        record["tangency-branch"] = std::string(*branch);
+    }
+    return Record::success(std::move(record));
+}
+
 Json writeGeometry(const sketch::SketchGeometry& geometry) {
     return std::visit(
         [](const auto& value) -> Json {
@@ -437,9 +655,6 @@ Encoded encodeDocument(const Document& document) {
     if (!validUtf8(document.name())) {
         return Encoded::failure({CodecErrorCode::InvalidSchema, "name", "Document name must be valid UTF-8"});
     }
-    if (document.sketch().constraintCount() != 0) {
-        return Encoded::failure({CodecErrorCode::UnsupportedData, "constraints", "Constraint encoding is not supported by this codec yet"});
-    }
     const auto snapshot = document.sketch().snapshot();
     if (!snapshot) {
         return Encoded::failure({CodecErrorCode::InvalidModel, "$", snapshot.error().message});
@@ -454,11 +669,19 @@ Encoded encodeDocument(const Document& document) {
     for (const auto& entity : snapshot.value().entities) {
         entities.push_back({{"id", entity.id.get()}, {"construction", entity.construction}, {"geometry", writeGeometry(entity.geometry)}});
     }
+    Json constraints = Json::array();
+    for (size_t i = 0; i < snapshot.value().constraints.size(); ++i) {
+        auto record = writeConstraint(snapshot.value().constraints[i], "constraints[" + std::to_string(i) + "]");
+        if (!record) {
+            return Encoded::failure(record.error());
+        }
+        constraints.push_back(std::move(record.value()));
+    }
     const Json envelope{{"format", "ourpaint-document"},
                         {"version", DocumentFormatVersion},
                         {"name", document.name()},
                         {"entities", std::move(entities)},
-                        {"constraints", Json::array()},
+                        {"constraints", std::move(constraints)},
                         {"last-entity-id", snapshot.value().lastEntityId},
                         {"last-constraint-id", snapshot.value().lastConstraintId}};
     auto bytes = Json::to_cbor(envelope);
@@ -524,6 +747,15 @@ Decoded decodeDocument(std::span<const uint8_t> bytes) {
             return Decoded::failure(entity.error());
         }
         snapshot.entities.push_back(std::move(entity.value()));
+    }
+    const auto& constraints = envelope.at("constraints");
+    snapshot.constraints.reserve(constraints.size());
+    for (size_t i = 0; i < constraints.size(); ++i) {
+        auto constraint = readConstraint(constraints[i], "constraints[" + std::to_string(i) + "]");
+        if (!constraint) {
+            return Decoded::failure(constraint.error());
+        }
+        snapshot.constraints.push_back(std::move(constraint.value()));
     }
     auto document = std::make_unique<Document>(envelope.at("name").get<std::string>());
     const auto restored = document->sketch().replaceState(snapshot);

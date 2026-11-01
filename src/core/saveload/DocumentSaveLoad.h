@@ -49,7 +49,8 @@ using DocumentBytes = std::vector<uint8_t>;
 // Synchronous in-memory codec: no file I/O, solve(), or source metadata changes.
 // The caller serializes access to the source model. Returned bytes own their data.
 // Supports version-1 Point, Line, Circle, Arc and nonperiodic NURBS records.
-// Nonempty constraints return UnsupportedData rather than being discarded.
+// Constraint records retain public IDs, complete refs, values, Fix targets and
+// explicit tangency branches. Unknown record types are rejected, never discarded.
 [[nodiscard]] CodecResult<DocumentBytes> encodeDocument(const Document& document);
 
 // Borrows input only for this call and returns a newly owned document. No caller
