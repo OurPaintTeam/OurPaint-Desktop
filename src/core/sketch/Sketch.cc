@@ -1,6 +1,7 @@
 #include "Sketch.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <exception>
 #include <limits>
@@ -163,28 +164,7 @@ class Sketch::Impl {
     };
 
 public:
-    Capabilities capabilities() const {
-        Capabilities result;
-        result.entities.fill(true);
-        for (auto type :
-             {ConstraintType::Coincident, ConstraintType::Horizontal, ConstraintType::Vertical, ConstraintType::Parallel, ConstraintType::Perpendicular,
-              ConstraintType::Tangent, ConstraintType::Equal, ConstraintType::Distance, ConstraintType::HorizontalDistance, ConstraintType::VerticalDistance,
-              ConstraintType::Length, ConstraintType::Radius, ConstraintType::Diameter, ConstraintType::Angle, ConstraintType::Fix, ConstraintType::Concentric,
-              ConstraintType::Symmetric, ConstraintType::Midpoint}) {
-            result.constraints[static_cast<size_t>(type)] = true;
-        }
-        result.updateEntities = result.removeEntities = result.updateConstraints = result.removeConstraints = true;
-        result.solve = result.drag = true;
-        // DCM's rank diagnosis counts only variables in its function system,
-        // omitting unconstrained geometry and eliminated aliases. It is not a
-        // sound whole-sketch DOF/conflict/redundancy report.
-        return result;
-    }
-
     Status supportsConstraint(const ConstraintDefinition& definition) const {
-        if (!capabilities().supports(definition.type)) {
-            return Status::failure(ErrorCode::Unsupported, "This constraint is not supported by DCM");
-        }
         for (const auto& ref : definition.refs) {
             if (!entities_.contains(ref.entity)) {
                 return Status::failure(ErrorCode::NotFound, "Constraint entity was not found");
@@ -423,6 +403,9 @@ public:
         });
     }
 
+    // DCM's rank diagnosis omits unconstrained geometry and eliminated aliases.
+    // Whole-sketch DOF/conflict/redundancy diagnostics therefore remain unavailable
+    // in both solve and drag results.
     Result<SolveDiagnostics> solve() {
         return checked<SolveDiagnostics>([&] {
             const bool converged = manager_.solve();
@@ -966,6 +949,22 @@ private:
                     }
                     break;
                 }
+                case ConstraintType::Collinear: {
+                    auto kind1 = entities_.at(definition.refs[0].entity).kind;
+                    auto id1 = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt1 = definition.refs[0].sub;
+
+                    auto kind2 = entities_.at(definition.refs[1].entity).kind;
+                    auto id2 = entities_.at(definition.refs[1].entity).handle;
+                    auto type_subEt2 = definition.refs[1].sub;
+
+                    if (kind1 == EntityKind::Line && kind2 == EntityKind::Line) {
+                        add(du::RequirementDescriptor::lineLineParallel(whole(0), whole(1)));
+                        add(du::RequirementDescriptor::pointOnLine(
+                            pointHandle({definition.refs[1].entity, SubElement::Start}), whole(0)));
+                    }
+                    break;
+                }
                 default:
                     throw std::logic_error("Unsupported constraint passed DCM preflight");
             }
@@ -1138,8 +1137,6 @@ private:
 Sketch::Sketch() : impl_(std::make_unique<Impl>()) {}
 Sketch::~Sketch() = default;
 
-Capabilities Sketch::capabilities() const { return impl_->capabilities(); }
-
 Result<EntityId> Sketch::addEntity(const SketchGeometry& geometry, bool construction) {
     const EntityCreation input{geometry, construction};
     auto result = addEntities(std::span(&input, 1));
@@ -1234,9 +1231,6 @@ Status Sketch::setConstruction(EntityId id, bool construction) {
     if (id.get() <= 0) {
         return invalid("Entity ID must be positive");
     }
-    if (!capabilities().updateEntities) {
-        return Status::failure(ErrorCode::Unsupported, "Entity updates are unsupported");
-    }
     return impl_->setConstruction(id, construction);
 }
 
@@ -1247,14 +1241,10 @@ Result<std::vector<EntityId>> Sketch::addEntities(std::span<const EntityCreation
     if (input.empty()) {
         return Added::success({});
     }
-    const auto support = capabilities();
     for (const auto& item : input) {
         auto valid = validateGeometry(item.geometry);
         if (!valid) {
             return Added::failure(valid.error().code, valid.error().message);
-        }
-        if (!support.supports(entityKind(item.geometry))) {
-            return Added::failure(ErrorCode::Unsupported, "Entity kind is unsupported");
         }
     }
     const auto remaining = std::numeric_limits<int64_t>::max() - entityIds_.getLast().get();
@@ -1303,9 +1293,6 @@ Status Sketch::updateEntities(std::span<const EntityUpdate> input) {
         }
         records.push_back({item.id, item.geometry, item.construction.value_or(current.value().construction)});
     }
-    if (!capabilities().updateEntities) {
-        return Status::failure(ErrorCode::Unsupported, "Entity updates are unsupported");
-    }
     return impl_->updateEntities(records);
 }
 
@@ -1322,9 +1309,6 @@ Status Sketch::removeEntities(std::span<const EntityId> ids) {
         if (!current) {
             return Status::failure(current.error().code, current.error().message);
         }
-    }
-    if (!capabilities().removeEntities) {
-        return Status::failure(ErrorCode::Unsupported, "Entity removal is unsupported");
     }
     auto res = impl_->removeEntities(ids); // TODO
     push(); // TODO
@@ -1346,6 +1330,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         case ConstraintType::Equal:
         case ConstraintType::Concentric:
         case ConstraintType::Midpoint:
+        case ConstraintType::Collinear:
             count = 2;
             break;
         case ConstraintType::Horizontal:
@@ -1467,6 +1452,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         case ConstraintType::Parallel:
         case ConstraintType::Perpendicular:
         case ConstraintType::Angle:
+        case ConstraintType::Collinear:
             valid = lines[0] && lines[1];
             break;
         case ConstraintType::Tangent:
@@ -1549,9 +1535,6 @@ Result<ConstraintId> Sketch::addCoincident(GeometryRef a, GeometryRef b, Coincid
     }
     if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
         return Added::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
-    }
-    if (!capabilities().updateEntities) {
-        return Added::failure(ErrorCode::Unsupported, "Coincidence placement requires point editing");
     }
     const auto first = pointPosition(a);
     const auto second = pointPosition(b);
@@ -1640,9 +1623,6 @@ Status Sketch::updateConstraint(ConstraintId id, const ConstraintDefinition& def
     if (!valid) {
         return valid;
     }
-    if (!capabilities().updateConstraints) {
-        return Status::failure(ErrorCode::Unsupported, "Constraint updates are unsupported");
-    }
     return impl_->updateConstraint({id, resolved});
 }
 
@@ -1650,9 +1630,6 @@ Status Sketch::removeConstraint(ConstraintId id) {
     auto current = constraint(id);
     if (!current) {
         return Status::failure(current.error().code, current.error().message);
-    }
-    if (!capabilities().removeConstraints) {
-        return Status::failure(ErrorCode::Unsupported, "Constraint removal is unsupported");
     }
     return impl_->removeConstraint(id);
 }
@@ -1717,9 +1694,6 @@ Result<size_t> Sketch::entityCount(EntityKind kind) const {
 size_t Sketch::constraintCount() const { return impl_->constraintCount(); }
 
 Result<SolveDiagnostics> Sketch::solve() {
-    if (!capabilities().solve) {
-        return Result<SolveDiagnostics>::failure(ErrorCode::Unsupported, "Solving is unsupported");
-    }
     return impl_->solve();
 }
 
@@ -1750,9 +1724,6 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
         if (!points.insert(request.point).second) {
             return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Duplicate drag point");
         }
-    }
-    if (!capabilities().drag) {
-        return Result<SolveDiagnostics>::failure(ErrorCode::Unsupported, "Dragging is unsupported");
     }
     // TODO
     if (!drag_) {
@@ -1798,9 +1769,6 @@ Status Sketch::installState(const SketchSnapshot& state) {
     auto candidate = Sketch();
     auto& staging = candidate;
     for (const auto& e : state.entities) {
-        if (!staging.capabilities().supports(entityKind(e.geometry))) {
-            return Status::failure(ErrorCode::Unsupported, "Snapshot contains unsupported entity kind");
-        }
         auto added = staging.impl_->addEntity(e);
         if (!added) {
             return added;

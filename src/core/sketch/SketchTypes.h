@@ -1,7 +1,6 @@
 #ifndef OURPAINT_CORE_SKETCH_TYPES_H_
 #define OURPAINT_CORE_SKETCH_TYPES_H_
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -35,7 +34,7 @@ struct ConstraintTag;
 using EntityId = SketchId<EntityTag>;
 using ConstraintId = SketchId<ConstraintTag>;
 
-// Domain/capability errors are values. Convergence and backend failures differ.
+// Validation/support errors are values. Convergence and backend failures differ.
 enum class ErrorCode {
     Unsupported,
     InvalidArgument,
@@ -175,6 +174,7 @@ enum class ConstraintType {
     Concentric,
     Symmetric,
     Midpoint,
+    Collinear,
 
     // Two points, point line, point circle, point arc.
     // line circle, line arc.
@@ -231,29 +231,6 @@ struct SketchConstraint {
     ConstraintDefinition definition;
 };
 
-// Type support is coarse; supportsConstraint checks the actual ref combination.
-// Unsupported operations never mutate the model.
-struct Capabilities {
-    std::array<bool, 5> entities{};
-    std::array<bool, 18> constraints{};
-    bool updateEntities = false;
-    bool removeEntities = false;
-    bool updateConstraints = false;
-    bool removeConstraints = false;
-    bool solve = false;
-    bool drag = false;
-    bool degreesOfFreedom = false;
-    bool conflictingConstraints = false;
-    bool redundantConstraints = false;
-    bool supports(EntityKind kind) const {
-        const auto i = static_cast<size_t>(kind);
-        return i < entities.size() && entities[i];
-    }
-    bool supports(ConstraintType type) const {
-        const auto i = static_cast<size_t>(type);
-        return i < constraints.size() && constraints[i];
-    }
-};
 enum class SolveStatus { Converged, Failed };
 // Missing diagnostics mean unavailable, not zero/an empty diagnosis. A failed
 // solve may expose its current iterate; inspect status before treating geometry

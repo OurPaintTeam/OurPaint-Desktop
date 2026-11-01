@@ -81,7 +81,6 @@ TEST(MidpointConstraint, PlacesPointAtCenterOfFixedHorizontalVerticalAndTiltedSe
     const std::array lines{Line2{{-2, 2}, {6, 2}}, Line2{{2, -2}, {2, 6}}, Line2{{-2, -1}, {6, 5}}};
     for (const auto& line : lines) {
         Sketch sketch;
-        ASSERT_TRUE(sketch.capabilities().supports(ConstraintType::Midpoint));
         const auto segment = sketch.addEntity(line);
         const auto point = sketch.addPoint({9, -4});
         ASSERT_TRUE(segment);

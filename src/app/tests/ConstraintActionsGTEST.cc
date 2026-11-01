@@ -351,22 +351,18 @@ TEST_F(ConstraintActionsBehavior, FixCapturesCurrentPositionOfStandalonePointsAn
     EXPECT_EQ(*fixedEnd.definition->fixedPosition, (Vec2{3, 4}));
 }
 
-TEST_F(ConstraintActionsBehavior, EqualityAndTangencyRespectSolverCapabilities) {
-    const auto capabilities = sketch_->capabilities();
-    if (capabilities.supports(ConstraintType::Equal)) {
-        EXPECT_EQ(prepare(ConstraintAction::Equal, {line_}).state, PreparationState::NeedsMoreInput);
-        EXPECT_EQ(prepare(ConstraintAction::Equal, {circle_}).state, PreparationState::NeedsMoreInput);
-        EXPECT_EQ(prepare(ConstraintAction::Equal, {line_, otherLine_}).state, PreparationState::Ready);
-        EXPECT_EQ(prepare(ConstraintAction::Equal, {circle_, arc_}).state, PreparationState::Ready);
-        EXPECT_EQ(prepare(ConstraintAction::Equal, {line_, circle_}).state, PreparationState::InvalidSelection);
-    } else {
-        EXPECT_EQ(prepare(ConstraintAction::Equal).state, PreparationState::Unsupported);
-        EXPECT_EQ(prepare(ConstraintAction::Equal, {line_, otherLine_}).state, PreparationState::Unsupported);
-    }
-    if (!capabilities.supports(ConstraintType::Tangent)) {
-        EXPECT_EQ(prepare(ConstraintAction::Tangent).state, PreparationState::Unsupported);
-        EXPECT_EQ(prepare(ConstraintAction::Tangent, {line_, circle_}).state, PreparationState::Unsupported);
-    }
+TEST_F(ConstraintActionsBehavior, EqualityAndTangencyValidateSelections) {
+    EXPECT_EQ(prepare(ConstraintAction::Equal).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Equal, {line_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Equal, {circle_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Equal, {line_, otherLine_}).state, PreparationState::Ready);
+    EXPECT_EQ(prepare(ConstraintAction::Equal, {circle_, arc_}).state, PreparationState::Ready);
+    EXPECT_EQ(prepare(ConstraintAction::Equal, {line_, circle_}).state, PreparationState::InvalidSelection);
+    EXPECT_EQ(prepare(ConstraintAction::Tangent).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Tangent, {line_}).state, PreparationState::NeedsMoreInput);
+    EXPECT_EQ(prepare(ConstraintAction::Tangent, {line_, circle_}).state, PreparationState::Ready);
+    EXPECT_EQ(prepare(ConstraintAction::Tangent, {circle_, arc_}).state, PreparationState::Ready);
+    EXPECT_EQ(prepare(ConstraintAction::Tangent, {line_, otherLine_}).state, PreparationState::InvalidSelection);
 }
 
 TEST_F(ConstraintActionsBehavior, PreparationDoesNotMoveGeometryAddConstraintsOrConsumeIds) {
@@ -386,9 +382,7 @@ TEST_F(ConstraintActionsBehavior, PreparationDoesNotMoveGeometryAddConstraintsOr
     EXPECT_EQ(prepare(ConstraintAction::Symmetric, {start_, point_, end_}).state, PreparationState::Ready);
     EXPECT_EQ(prepare(ConstraintAction::Symmetric, {point_, otherLine_}).state, PreparationState::NeedsMoreInput);
     EXPECT_EQ(prepare(ConstraintAction::Symmetric, {line_, otherLine_}).state, PreparationState::InvalidSelection);
-    if (!sketch_->capabilities().supports(ConstraintType::Tangent)) {
-        EXPECT_EQ(prepare(ConstraintAction::Tangent).state, PreparationState::Unsupported);
-    }
+    EXPECT_EQ(prepare(ConstraintAction::Tangent).state, PreparationState::NeedsMoreInput);
 
     const auto after = sketch_->snapshot();
     const auto pointsAfter = sketch_->pointElements();

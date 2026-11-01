@@ -24,7 +24,6 @@ public:
     Sketch(const Sketch&) = delete;
     Sketch& operator=(const Sketch&) = delete;
 
-    Capabilities capabilities() const;
     // Common validation and exact DCM support preflight without editing.
     Status supportsConstraint(const ConstraintDefinition& definition) const;
 

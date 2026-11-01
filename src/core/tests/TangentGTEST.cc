@@ -93,7 +93,6 @@ TEST(TangentConstraint, InfersSignedLineSideWithEitherRefOrderAndLineDirectionFo
                     const auto curve = sketch.addEntity(circularGeometry({0, below ? -2.0 : 2.0}, 1, arc));
                     ASSERT_TRUE(line);
                     ASSERT_TRUE(curve);
-                    ASSERT_TRUE(sketch.capabilities().supports(ConstraintType::Tangent));
                     ASSERT_TRUE(sketch.addConstraint({ConstraintType::Fix, {{line.value()}}, std::nullopt, std::nullopt}));
                     const auto definition = reverseRefs ? tangent(curve.value(), line.value()) : tangent(line.value(), curve.value());
                     ASSERT_TRUE(sketch.supportsConstraint(definition));

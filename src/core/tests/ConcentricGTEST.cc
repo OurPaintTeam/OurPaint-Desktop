@@ -93,7 +93,6 @@ TEST(ConcentricConstraint, SupportsAndSolvesEveryCircleAndArcPairing) {
     for (bool firstArc : {false, true}) {
         for (bool secondArc : {false, true}) {
             Sketch sketch;
-            ASSERT_TRUE(sketch.capabilities().supports(ConstraintType::Concentric));
             const auto anchor = sketch.addPoint({2, 3});
             const auto first = firstArc ? sketch.addArc({2, 3}, {6, 3}, {2, 7}) : sketch.addCircle({2, 3}, 4);
             const auto second = secondArc ? sketch.addArc({8, 5}, {10, 5}, {8, 7}) : sketch.addCircle({8, 5}, 2);

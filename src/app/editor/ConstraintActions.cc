@@ -128,6 +128,9 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         case ConstraintAction::Midpoint:
             definition.type = ConstraintType::Midpoint;
             break;
+        case ConstraintAction::Collinear:
+            definition.type = ConstraintType::Collinear;
+            break;
         case ConstraintAction::Symmetric:
             definition.type = ConstraintType::Symmetric;
             requiredRefs = 3;
@@ -136,18 +139,6 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
             return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
     }
 
-    const auto capabilities = sketch_.capabilities();
-    if (request.action == ConstraintAction::Dimension) {
-        if (!capabilities.supports(ConstraintType::Length) && !capabilities.supports(ConstraintType::Distance)) {
-            return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
-        }
-    } else if (request.action == ConstraintAction::HVDistance) {
-        if (!capabilities.supports(ConstraintType::HorizontalDistance) && !capabilities.supports(ConstraintType::VerticalDistance)) {
-            return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
-        }
-    } else if (!capabilities.supports(definition.type)) {
-        return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
-    }
     if (refs.empty()) {
         return {State::NeedsMoreInput, std::nullopt};
     }
@@ -183,6 +174,7 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
     bool compatible = false;
     switch (definition.type) {
         case ConstraintType::Coincident:
+        case ConstraintType::Collinear:
             compatible = true;
             break;
         case ConstraintType::Distance:
@@ -228,9 +220,6 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
     }
     if (!compatible) {
         return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidSelection};
-    }
-    if (!capabilities.supports(definition.type)) {
-        return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
     }
     if (refs.size() < requiredRefs) {
         return {State::NeedsMoreInput, std::nullopt};

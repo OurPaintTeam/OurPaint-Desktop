@@ -79,7 +79,6 @@ TEST(SymmetricConstraint, ReflectsAboutFixedHorizontalVerticalAndTiltedLines) {
     const std::array cases{Case{{{0, 2}, {4, 2}}, {1, 1}}, Case{{{2, 0}, {2, 4}}, {3, 3}}, Case{{{0, 0}, {4, 4}}, {3, 1}}};
     for (const auto& test : cases) {
         Sketch sketch;
-        ASSERT_TRUE(sketch.capabilities().supports(ConstraintType::Symmetric));
         const auto axis = sketch.addEntity(test.axis);
         const auto first = sketch.addPoint({1, 3});
         const auto second = sketch.addPoint({5, -6});
