@@ -7,6 +7,7 @@ add_library(ourpaint_document STATIC
         DocumentManager.cc
         saveload/DocumentSaveLoad.h
         saveload/DocumentSaveLoad.cc
+        saveload/CborCodec.h
 )
 target_compile_features(ourpaint_document PUBLIC cxx_std_20)
 target_include_directories(ourpaint_document PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

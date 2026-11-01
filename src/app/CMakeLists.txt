@@ -1,3 +1,13 @@
+add_library(ourpaint_project_io STATIC
+        project/Project.h
+        project/Project.cc
+        project/ProjectSaveLoad.h
+        project/ProjectSaveLoad.cc
+)
+target_compile_features(ourpaint_project_io PUBLIC cxx_std_20)
+target_include_directories(ourpaint_project_io PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/project")
+target_link_libraries(ourpaint_project_io PUBLIC ourpaint_document PRIVATE nlohmann_json::nlohmann_json)
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)

@@ -1,4 +1,5 @@
 #include "DocumentSaveLoad.h"
+#include "CborCodec.h"
 
 #include <algorithm>
 #include <array>
@@ -778,5 +779,18 @@ Decoded decodeDocument(std::span<const uint8_t> bytes) {
     }
     return Decoded::success(std::move(document));
 }
+
+namespace detail {
+
+bool isValidUtf8(std::string_view text) { return validUtf8(text); }
+
+std::optional<CodecError> checkCbor(std::span<const uint8_t> bytes) {
+    if (bytes.size() > MaxDocumentBytes) {
+        return CodecError{CodecErrorCode::LimitExceeded, "$", "Input exceeds the 64 MiB limit"};
+    }
+    return checkEnvelope(bytes);
+}
+
+}  // namespace detail
 
 }  // namespace core::persistence
