@@ -22,6 +22,10 @@ add_executable(DocumentManagerGTEST DocumentManagerGTEST.cc)
 target_link_libraries(DocumentManagerGTEST PRIVATE ourpaint_document GTest::gtest_main)
 gtest_discover_tests(DocumentManagerGTEST DISCOVERY_MODE PRE_TEST)
 
+add_executable(DocumentCodecGTEST DocumentCodecGTEST.cc)
+target_link_libraries(DocumentCodecGTEST PRIVATE ourpaint_document nlohmann_json::nlohmann_json GTest::gtest_main)
+gtest_discover_tests(DocumentCodecGTEST DISCOVERY_MODE PRE_TEST)
+
 add_ourpaint_test(ObjectsGTEST ObjectsGTEST.cc)
 add_ourpaint_test(UndoRedoGTEST UndoRedoTests.cc)
 add_ourpaint_test(ObjectInJsonTest ObjectInJsonGTEST.cc)

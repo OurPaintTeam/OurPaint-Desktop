@@ -5,10 +5,13 @@ add_library(ourpaint_document STATIC
         Document.cc
         DocumentManager.h
         DocumentManager.cc
+        saveload/DocumentSaveLoad.h
+        saveload/DocumentSaveLoad.cc
 )
 target_compile_features(ourpaint_document PUBLIC cxx_std_20)
 target_include_directories(ourpaint_document PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(ourpaint_document PUBLIC OurPaint::Sketch)
+target_link_libraries(ourpaint_document PRIVATE nlohmann_json::nlohmann_json)
 
 add_library(ourpaint_core
         # /saveload/
@@ -48,7 +51,6 @@ add_library(ourpaint_core
         ExceptionGuard.h
 #        Scene.h
 #        Scene.cc
-        saveload/DocumentSaveLoad.cc
 )
 
 target_include_directories(ourpaint_core PUBLIC
