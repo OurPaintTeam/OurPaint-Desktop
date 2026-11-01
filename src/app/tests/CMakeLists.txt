@@ -20,10 +20,9 @@ add_ourpaint_test(CursorToolGTEST
     ../viewport/constraints/ConstraintLayout.cc
     ../viewport/constraints/DimensionLayout.cc
     ../viewport/SelectionModel.cc
-    ../../core/Document.cc
     ../../render/render/Camera2D.cc
 )
-target_link_libraries(CursorToolGTEST PRIVATE OurPaint::Sketch glm::glm)
+target_link_libraries(CursorToolGTEST PRIVATE ourpaint_document glm::glm)
 target_include_directories(CursorToolGTEST PRIVATE ../editor ../viewport ../../core/sketch ../../render/render)
 
 add_ourpaint_test(ConstraintToolsGTEST
