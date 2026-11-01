@@ -51,6 +51,11 @@ using DocumentBytes = std::vector<uint8_t>;
 // Supports version-1 Point, Line, Circle, Arc and nonperiodic NURBS records.
 // Constraint records retain public IDs, complete refs, values, Fix targets and
 // explicit tangency branches. Unknown record types are rejected, never discarded.
+// Both directions enforce the 64 MiB size limit and a definite-length CBOR
+// profile: depth below 64, at most one million items including object keys,
+// UTF-8 text, finite numbers, no duplicate keys, binary strings, tags or trailing
+// bytes. Schema/resource checks precede native state replacement. Encoding checks
+// snapshot restorability in a temporary Sketch, retaining the source state.
 [[nodiscard]] CodecResult<DocumentBytes> encodeDocument(const Document& document);
 
 // Borrows input only for this call and returns a newly owned document. No caller

@@ -232,8 +232,21 @@ std::optional<CodecError> checkEnvelope(std::span<const uint8_t> bytes) {
             }
             return std::nullopt;
         }
-        if (major == 7 && (additional == 20 || additional == 21 || additional == 22 || additional == 25 || additional == 26 || additional == 27)) {
-            return std::nullopt;
+        if (major == 7) {
+            if (additional == 20 || additional == 21 || additional == 22) {
+                return std::nullopt;
+            }
+            if (additional == 25 || additional == 26 || additional == 27) {
+                // CBOR floats are IEEE 754 binary16/32/64. An all-ones exponent
+                // identifies both infinities and NaNs without constructing a DOM.
+                const uint64_t exponentMask = additional == 25 ? uint64_t{0x7c00}
+                                            : additional == 26 ? uint64_t{0x7f800000}
+                                                               : uint64_t{0x7ff0000000000000};
+                if ((argument & exponentMask) == exponentMask) {
+                    return CodecError{CodecErrorCode::InvalidSchema, path, "Expected a finite number"};
+                }
+                return std::nullopt;
+            }
         }
         if (major != 4 && major != 5) {
             return CodecError{CodecErrorCode::InvalidSchema, path, "Unsupported CBOR type in document"};
@@ -659,12 +672,6 @@ Encoded encodeDocument(const Document& document) {
     if (!snapshot) {
         return Encoded::failure({CodecErrorCode::InvalidModel, "$", snapshot.error().message});
     }
-    // A failed solver iterate must not become a document that cannot be restored.
-    sketch::Sketch validation;
-    const auto valid = validation.replaceState(snapshot.value());
-    if (!valid) {
-        return Encoded::failure({CodecErrorCode::InvalidModel, "$", valid.error().message});
-    }
     Json entities = Json::array();
     for (const auto& entity : snapshot.value().entities) {
         entities.push_back({{"id", entity.id.get()}, {"construction", entity.construction}, {"geometry", writeGeometry(entity.geometry)}});
@@ -690,6 +697,13 @@ Encoded encodeDocument(const Document& document) {
     }
     if (auto error = checkEnvelope(bytes)) {
         return Encoded::failure(std::move(*error));
+    }
+    // Reject invalid or oversized encoded data before constructing a native model.
+    // A failed solver iterate must not become a document that cannot be restored.
+    sketch::Sketch validation;
+    const auto valid = validation.replaceState(snapshot.value());
+    if (!valid) {
+        return Encoded::failure({CodecErrorCode::InvalidModel, "$", valid.error().message});
     }
     return Encoded::success(std::move(bytes));
 }
