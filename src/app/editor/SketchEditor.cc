@@ -113,7 +113,10 @@ void SketchEditor::requestConstraint(const ConstraintRequest& request) {
             return;
         case ConstraintPreparation::State::NeedsMoreInput:
             cancelActiveTool();
-            if (request.action == ConstraintAction::Dimension || request.action == ConstraintAction::HVDistance || request.action == ConstraintAction::Angle) {
+            if (request.action == ConstraintAction::Dimension ||
+                request.action == ConstraintAction::VDistance ||
+                request.action == ConstraintAction::HDistance ||
+                request.action == ConstraintAction::Angle) {
                 dimensionTool_.begin(request, refs);
                 activeTool_ = &dimensionTool_;
             } else {

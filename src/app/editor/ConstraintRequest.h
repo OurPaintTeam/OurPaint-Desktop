@@ -13,7 +13,8 @@ enum class ConstraintAction {
     Equal,
     Fix,
     Dimension,
-    HVDistance,
+    VDistance,
+    HDistance,
     Angle,
     // Select two whole circles or arcs, in either order.
     Concentric,

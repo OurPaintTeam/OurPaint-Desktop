@@ -112,14 +112,25 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this](const QString& tabName, UI::ConstraintType type) {
         switch (type) {
             case UI::ConstraintType::Distance:
-            case UI::ConstraintType::HVDistance:
+            case UI::ConstraintType::VDistance:
+            case UI::ConstraintType::HDistance:
             case UI::ConstraintType::Angle: {
-                const auto action = type == UI::ConstraintType::Angle        ? ConstraintAction::Angle
-                                    : type == UI::ConstraintType::HVDistance ? ConstraintAction::HVDistance
-                                                                             : ConstraintAction::Dimension;
-                const QString promptText = action == ConstraintAction::Angle        ? tr("Angle (degrees):")
-                                           : action == ConstraintAction::HVDistance ? tr("H/V Distance:")
-                                                                                    : tr("Distance:");
+                ConstraintAction action;
+                QString promptText;
+                if (type == UI::ConstraintType::Angle) {
+                    action = ConstraintAction::Angle;
+                    promptText = tr("Angle (degrees):");
+                } else if (type == UI::ConstraintType::VDistance) {
+                    action = ConstraintAction::VDistance;
+                    promptText = tr("Vertical Distance:");
+                } else if (type == UI::ConstraintType::HDistance) {
+                    action = ConstraintAction::HDistance;
+                    promptText = tr("Horizontal Distance:");
+                } else if (type == UI::ConstraintType::Distance) {
+                    action = ConstraintAction::Dimension;
+                    promptText = tr("Distance:");
+                }
+
                 auto* prompt = new UI::ParameterInputWidget(promptText, nullptr);
                 const auto request = controller_.constraintRequestHandler(tabName.toStdString());
                 connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [request, action](const QString& parameter) {

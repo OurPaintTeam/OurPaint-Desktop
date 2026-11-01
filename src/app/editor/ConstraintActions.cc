@@ -59,8 +59,10 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
     if (request.action == ConstraintAction::Unsupported) {
         return {State::Unsupported, std::nullopt, ActionRejection::Unsupported};
     }
-    const bool dimensional =
-        request.action == ConstraintAction::Dimension || request.action == ConstraintAction::HVDistance || request.action == ConstraintAction::Angle;
+    const bool dimensional = request.action == ConstraintAction::Dimension ||
+                             request.action == ConstraintAction::VDistance ||
+                             request.action == ConstraintAction::HDistance ||
+                             request.action == ConstraintAction::Angle;
     if (request.value.has_value() != dimensional) {
         return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidValue};
     }
@@ -116,8 +118,11 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
         case ConstraintAction::Dimension:
             definition.type = ConstraintType::Distance;
             break;
-        case ConstraintAction::HVDistance:
+        case ConstraintAction::HDistance:
             definition.type = ConstraintType::HorizontalDistance;
+            break;
+        case ConstraintAction::VDistance:
+            definition.type = ConstraintType::VerticalDistance;
             break;
         case ConstraintAction::Angle:
             definition.type = ConstraintType::Angle;
@@ -237,24 +242,11 @@ ConstraintPreparation ConstraintActions::prepare(const ConstraintRequest& reques
             std::rotate(definition.refs.begin() + axisIndex, definition.refs.begin() + axisIndex + 1, definition.refs.end());
         }
     }
-    if (request.action == ConstraintAction::HVDistance) {
-        const auto first = sketch_.pointPosition(refs[0]);
-        const auto second = sketch_.pointPosition(refs[1]);
-        if (!first || !second) {
-            return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidGeometry, !first ? first.error() : second.error()};
-        }
-        const double dx = second.value().x - first.value().x;
-        const double dy = second.value().y - first.value().y;
-        if (!std::isfinite(dx) || !std::isfinite(dy)) {
-            return {State::InvalidSelection, std::nullopt, ActionRejection::InvalidGeometry};
-        }
-        // Pick the dominant axis once. Keep its positive direction regardless of click order.
-        const bool horizontal = std::abs(dx) >= std::abs(dy);
-        definition.type = horizontal ? ConstraintType::HorizontalDistance : ConstraintType::VerticalDistance;
-        if ((horizontal ? dx : dy) < 0) {
-            std::swap(definition.refs[0], definition.refs[1]);
-        }
-    }
+    // if (request.action == ConstraintAction::VDistance) {
+    //     definition.type = ConstraintType::VerticalDistance;
+    // } else if (request.action == ConstraintAction::HDistance) {
+    //     definition.type = ConstraintType::HorizontalDistance;
+    // }
     // if (definition.type == ConstraintType::Fix) {
     //     const auto position = sketch_.pointPosition(refs[0]);
     //     if (!position) {
