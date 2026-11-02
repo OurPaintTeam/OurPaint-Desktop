@@ -10,13 +10,25 @@
 CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
     : IInteractionTool(document, camera, snap, overlay, picker) {}
 
-std::optional<ActionReport> CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) { return std::nullopt; }
+std::optional<ActionReport> CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) {
+    return std::nullopt;
+}
 
 std::optional<ActionReport> CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
         points_.push_back(v);
+
+        overlay_.nurbs_.clear();
+
         overlay_.points_.push_back(OverlayModel::Point(v.x, v.y));
+        if (points_.size() > degree) {
+            OverlayModel::Nurbs ns;
+            for (const auto& p : points_) {
+                ns.points.push_back(OverlayModel::Point(p.x, p.y));
+            }
+            overlay_.nurbs_.push_back(ns);
+        }
     }
     return std::nullopt;
 }
@@ -31,7 +43,7 @@ std::optional<ActionReport> CubicBezierTool::onKey(const input::KeyEvent& e) {
     }
 
     core::sketch::NurbsCurve2 nc;
-    nc.degree = 3;
+    nc.degree = degree;
     for (const auto& p : points_) {
         nc.controlPoints.push_back({{p.x, p.y}});
     }
@@ -51,6 +63,7 @@ std::optional<ActionReport> CubicBezierTool::onKey(const input::KeyEvent& e) {
         return std::nullopt;
     }
     points_.clear();
+    overlay_.clear();
     return std::nullopt;
 }
 

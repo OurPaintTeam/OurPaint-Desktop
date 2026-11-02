@@ -19,8 +19,8 @@ public:
     ToolCancellation cancel() override;
 
 private:
+    unsigned int degree = 3;
     std::vector<glm::dvec2> points_;
-
 };
 
 #endif // ! OURPAINT_APPLICATION_CUBIC_BEZIER_TOOL_H_

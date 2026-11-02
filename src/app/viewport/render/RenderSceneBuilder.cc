@@ -633,6 +633,40 @@ void RenderSceneBuilder::testBuild() {
         }
     }
 
+    int degree = 3;
+    for (const auto& nc : overlay_.nurbs_) {
+        tinynurbs::RationalCurve<double> crv;
+        crv.degree = static_cast<unsigned>(degree);
+
+        crv.knots.assign(degree + 1, 0.0);
+        const size_t spans = nc.points.size() - degree;
+        for (size_t i = 1; i < spans; ++i) {
+            crv.knots.push_back(static_cast<double>(i) / static_cast<double>(spans));
+        }
+        crv.knots.insert(crv.knots.end(), degree + 1, 1.0);
+
+        crv.weights.assign(nc.points.size(), 1.0);
+        for (const auto& p : nc.points) {
+            crv.control_points.push_back({p.x, p.y, 0.0});
+            controlMarkers.markers.push_back(render::Marker(p.x, p.y));
+        }
+        if (!tinynurbs::curveIsValid(crv)) {
+            std::cerr << "Invalid NURBS curve: " << '\n';
+            continue;
+        }
+
+        constexpr size_t numSegments = 256;
+        const double uMin = crv.knots[crv.degree];
+        const double uMax = crv.knots[crv.control_points.size()];
+        auto previous = tinynurbs::curvePoint(crv, uMin);
+        for (size_t i = 1; i <= numSegments; ++i) {
+            const double t = std::lerp(uMin, uMax, static_cast<double>(i) / static_cast<double>(numSegments));
+            const auto current = tinynurbs::curvePoint(crv, t);
+            curves.lines.push_back(makeLine(previous.x, previous.y, current.x, current.y));
+            previous = current;
+        }
+    }
+
     if (!curves.lines.empty()) {
         layer.lineBatches.push_back(std::move(curves));
     }
