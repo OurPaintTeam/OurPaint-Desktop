@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <random>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 #include <nlohmann/json.hpp>
@@ -19,24 +20,42 @@ using core::persistence::CodecErrorCode;
 using Encoded = core::persistence::CodecResult<std::vector<uint8_t>>;
 using Decoded = core::persistence::CodecResult<ProjectMetadata>;
 
-std::string generateProjectId() {
+std::string generateProjectId(std::string_view excluded) {
     std::random_device source;
     std::uniform_int_distribution<unsigned> byte(0, 255);
     constexpr char Hex[] = "0123456789abcdef";
     std::string id(32, '0');
-    for (size_t i = 0; i < 16; ++i) {
-        const auto value = byte(source);
-        id[2 * i] = Hex[value >> 4];
-        id[2 * i + 1] = Hex[value & 15];
+    for (unsigned attempt = 0; attempt < 16; ++attempt) {
+        for (size_t i = 0; i < 16; ++i) {
+            const auto value = byte(source);
+            id[2 * i] = Hex[value >> 4];
+            id[2 * i + 1] = Hex[value & 15];
+        }
+        if (id != excluded) {
+            return id;
+        }
     }
-    return id;
+    throw std::runtime_error("Could not generate a distinct project ID");
+}
+
+bool validRootPath(const std::filesystem::path& root) {
+    return !root.empty() && root.native().find(std::filesystem::path::value_type{}) == std::filesystem::path::string_type::npos;
+}
+
+std::filesystem::path directoryEntryPath(std::filesystem::path root) {
+    // Ignore trailing separators and dot components, without collapsing '..'
+    // across a possible symlink. This also exposes a final directory symlink.
+    while (root.has_relative_path() && (root.filename().empty() || root.filename() == ".")) {
+        root = root.parent_path();
+    }
+    return root.empty() ? std::filesystem::path(".") : root;
 }
 
 std::optional<FileError> validateProjectRoot(const std::filesystem::path& root) {
     const auto invalid = [&root](std::error_code error) -> std::optional<FileError> {
         return FileError{root, FileStage::ValidatePath, error, std::nullopt};
     };
-    if (root.empty() || root.native().find(std::filesystem::path::value_type{}) != std::filesystem::path::string_type::npos) {
+    if (!validRootPath(root)) {
         return invalid(std::make_error_code(std::errc::invalid_argument));
     }
     std::error_code error;
@@ -46,6 +65,77 @@ std::optional<FileError> validateProjectRoot(const std::filesystem::path& root) 
     }
     if (!std::filesystem::is_directory(status)) {
         return invalid(std::make_error_code(std::errc::not_a_directory));
+    }
+    return std::nullopt;
+}
+
+std::filesystem::path normalizedRoot(const std::filesystem::path& root, std::error_code& error) {
+    const auto absolute = std::filesystem::absolute(root, error);
+    if (error) {
+        return {};
+    }
+    const auto normalized = std::filesystem::weakly_canonical(absolute, error);
+    return error ? std::filesystem::path{} : directoryEntryPath(normalized);
+}
+
+std::optional<FileError> validateCopyRoot(const std::filesystem::path& source, const std::filesystem::path& destination, bool& createRoot) {
+    namespace fs = std::filesystem;
+    const auto invalid = [&destination](std::error_code error) -> std::optional<FileError> {
+        return FileError{destination, FileStage::ValidatePath, error, std::nullopt};
+    };
+    if (!validRootPath(destination) || (!source.empty() && !validRootPath(source))) {
+        return invalid(std::make_error_code(std::errc::invalid_argument));
+    }
+    std::error_code error;
+    const auto entry = directoryEntryPath(destination);
+    const auto status = fs::symlink_status(entry, error);
+    if (error && error != std::errc::no_such_file_or_directory) {
+        return invalid(error);
+    }
+    createRoot = status.type() == fs::file_type::not_found;
+    if (createRoot) {
+        const auto parent = entry.has_parent_path() ? entry.parent_path() : fs::path(".");
+        const auto parentStatus = fs::status(parent, error);
+        if (error) {
+            return invalid(error);
+        }
+        if (!fs::is_directory(parentStatus)) {
+            return invalid(std::make_error_code(std::errc::not_a_directory));
+        }
+    } else {
+        if (!fs::is_directory(status)) {
+            return invalid(std::make_error_code(std::errc::not_a_directory));
+        }
+        const auto empty = fs::is_empty(destination, error);
+        if (error) {
+            return invalid(error);
+        }
+        if (!empty) {
+            return invalid(std::make_error_code(std::errc::directory_not_empty));
+        }
+    }
+    if (!source.empty()) {
+        const auto targetRoot = normalizedRoot(destination, error);
+        if (error) {
+            return invalid(error);
+        }
+        const auto sourceRoot = normalizedRoot(source, error);
+        if (error) {
+            return invalid(error);
+        }
+        const detail::FilenameLess less;
+        if (!less(sourceRoot, targetRoot) && !less(targetRoot, sourceRoot)) {
+            return invalid(std::make_error_code(std::errc::invalid_argument));
+        }
+        if (!createRoot) {
+            const bool same = fs::equivalent(source, destination, error);
+            if (error && error != std::errc::no_such_file_or_directory) {
+                return invalid(error);
+            }
+            if (same) {
+                return invalid(std::make_error_code(std::errc::invalid_argument));
+            }
+        }
     }
     return std::nullopt;
 }
@@ -104,11 +194,14 @@ Decoded decodeProjectMetadata(std::span<const uint8_t> bytes) {
     return Decoded::success(std::move(metadata));
 }
 
-SaveReport saveProject(Project& project) {
+namespace {
+
+// adoptedId is provided only for an ordinary save of an unsaved description.
+SaveReport saveProjectImpl(const Project& project, const std::filesystem::path& root, bool copy, std::string* adoptedId) {
     SaveReport report;
-    report.root = project.root;
+    report.root = root;
     report.metadata = project.metadata;
-    const auto marker = project.root / ".ourpaint";
+    const auto marker = root / ".ourpaint";
     auto validation = validateProject(project);
     std::vector<const ProjectDocument*> documents;
     documents.reserve(project.documents.size());
@@ -123,27 +216,30 @@ SaveReport saveProject(Project& project) {
     }
     report.unprocessed.reserve(documents.size() + 1);
     for (const auto* document : documents) {
-        report.unprocessed.push_back(project.root / document->filename);
+        report.unprocessed.push_back(root / document->filename);
     }
     report.unprocessed.push_back(marker);
     if (validation) {
-        report.error = FileError{project.root, FileStage::ValidateProject, {}, std::move(validation)};
+        report.error = FileError{root, FileStage::ValidateProject, {}, std::move(validation)};
         return report;
     }
-    if (auto error = validateProjectRoot(project.root)) {
+    bool createRoot = false;
+    if (auto error = copy ? validateCopyRoot(project.root, root, createRoot) : validateProjectRoot(root)) {
         report.error = std::move(error);
         return report;
     }
-    for (const auto& path : report.unprocessed) {
-        if (auto error = detail::validateFileDestination(path)) {
-            report.error = std::move(error);
-            return report;
+    if (!createRoot) {
+        for (const auto& path : report.unprocessed) {
+            if (auto error = detail::validateFileDestination(path)) {
+                report.error = std::move(error);
+                return report;
+            }
         }
     }
-    const bool needsId = project.metadata.id.empty();
+    const bool needsId = copy || project.metadata.id.empty();
     if (needsId) {
         try {
-            report.metadata.id = generateProjectId();
+            report.metadata.id = generateProjectId(project.metadata.id);
         } catch (const std::system_error& error) {
             report.error = FileError{marker, FileStage::GenerateId, error.code(), std::nullopt};
             return report;
@@ -172,11 +268,19 @@ SaveReport saveProject(Project& project) {
     // Allocate report storage and the adopted ID before the first publication.
     // Moving paths and swapping the ID below cannot allocate after replacement.
     report.saved.reserve(prepared.size());
-    auto adoptedId = needsId ? report.metadata.id : std::string{};
+    auto idToAdopt = adoptedId ? report.metadata.id : std::string{};
+    if (createRoot) {
+        std::error_code error;
+        const bool created = std::filesystem::create_directory(directoryEntryPath(root), error);
+        if (!created) {
+            report.error = FileError{root, FileStage::CreateDirectory, error ? error : std::make_error_code(std::errc::file_exists), std::nullopt};
+            return report;
+        }
+    }
     for (size_t i = 0; i < prepared.size(); ++i) {
         auto result = detail::replaceFile(report.unprocessed[i], prepared[i]);
-        if (needsId && i + 1 == prepared.size() && result.replaced) {
-            project.metadata.id.swap(adoptedId);
+        if (adoptedId && i + 1 == prepared.size() && result.replaced) {
+            adoptedId->swap(idToAdopt);
         }
         if (!result) {
             report.error = std::move(result.error);
@@ -188,6 +292,16 @@ SaveReport saveProject(Project& project) {
     }
     report.unprocessed.clear();
     return report;
+}
+
+}  // namespace
+
+SaveReport saveProject(Project& project) {
+    return saveProjectImpl(project, project.root, false, project.metadata.id.empty() ? &project.metadata.id : nullptr);
+}
+
+SaveReport saveProjectAs(const Project& project, const std::filesystem::path& destination) {
+    return saveProjectImpl(project, destination, true, nullptr);
 }
 
 }  // namespace app

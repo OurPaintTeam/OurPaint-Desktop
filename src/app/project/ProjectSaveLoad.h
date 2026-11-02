@@ -14,7 +14,7 @@ namespace app {
 
 inline constexpr uint32_t ProjectFormatVersion = 1;
 
-enum class FileStage { ValidateProject, ValidatePath, GenerateId, Encode, CreateTemporary, Write, Flush, Close, Replace, SyncDirectory };
+enum class FileStage { ValidateProject, ValidatePath, GenerateId, Encode, CreateDirectory, CreateTemporary, Write, Flush, Close, Replace, SyncDirectory };
 
 struct FileError {
     std::filesystem::path path;
@@ -57,6 +57,13 @@ struct SaveReport {
 // even if its subsequent directory synchronization fails. Documents stay const.
 // Callers serialize model/directory access. Allocation failures may propagate.
 [[nodiscard]] SaveReport saveProject(Project& project);
+
+// Saves a copy with a distinct ID into a new or empty directory, separate from
+// the source root. For a new directory its parent must already exist. Prepares
+// all bytes before creating the directory. Source metadata/documents stay const.
+// A failure may leave a partial destination; no published files are removed.
+// Adopt the report's root/metadata as a complete copy only on success.
+[[nodiscard]] SaveReport saveProjectAs(const Project& project, const std::filesystem::path& destination);
 
 }  // namespace app
 
