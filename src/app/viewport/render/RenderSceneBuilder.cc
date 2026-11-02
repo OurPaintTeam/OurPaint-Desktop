@@ -606,6 +606,7 @@ void RenderSceneBuilder::testBuild() {
     curves.style = style_.baseLine;
     controlMarkers.style = style_.baseMarker;
 
+
     for (const auto& ent : entities.value()) {
         const auto& curve = std::get<sketch::NurbsCurve2>(ent.geometry);
         tinynurbs::RationalCurve<double> crv;
@@ -621,7 +622,7 @@ void RenderSceneBuilder::testBuild() {
             continue;
         }
 
-        constexpr size_t numSegments = 256;
+        const size_t numSegments = 128 * crv.control_points.size();
         const double uMin = crv.knots[crv.degree];
         const double uMax = crv.knots[crv.control_points.size()];
         auto previous = tinynurbs::curvePoint(crv, uMin);
@@ -655,7 +656,7 @@ void RenderSceneBuilder::testBuild() {
             continue;
         }
 
-        constexpr size_t numSegments = 256;
+        const size_t numSegments = 128 * crv.control_points.size();
         const double uMin = crv.knots[crv.degree];
         const double uMax = crv.knots[crv.control_points.size()];
         auto previous = tinynurbs::curvePoint(crv, uMin);
