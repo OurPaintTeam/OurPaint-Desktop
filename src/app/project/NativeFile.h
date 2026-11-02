@@ -27,6 +27,10 @@ struct FileReplacementResult {
 // removed on a best-effort basis. The old target is never explicitly deleted.
 [[nodiscard]] FileReplacementResult replaceFile(const std::filesystem::path& target, std::span<const uint8_t> bytes);
 
+// Reads an existing regular file with the codec's byte limit, without following
+// a final symlink. Returned bytes own their storage; no filesystem mutations.
+[[nodiscard]] FileResult<core::persistence::DocumentBytes> readFile(const std::filesystem::path& path);
+
 }  // namespace app::detail
 
 #endif  // OURPAINT_APPLICATION_NATIVE_FILE_H_

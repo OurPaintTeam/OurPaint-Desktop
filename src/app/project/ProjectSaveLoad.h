@@ -2,9 +2,12 @@
 #define OURPAINT_APPLICATION_PROJECT_SAVE_LOAD_H_
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <span>
 #include <system_error>
+#include <utility>
+#include <variant>
 #include <vector>
 
 #include "Project.h"
@@ -14,7 +17,23 @@ namespace app {
 
 inline constexpr uint32_t ProjectFormatVersion = 1;
 
-enum class FileStage { ValidateProject, ValidatePath, GenerateId, Encode, CreateDirectory, CreateTemporary, Write, Flush, Close, Replace, SyncDirectory };
+enum class FileStage {
+    ValidateProject,
+    ValidatePath,
+    GenerateId,
+    Encode,
+    CreateDirectory,
+    CreateTemporary,
+    Open,
+    Read,
+    Enumerate,
+    Decode,
+    Write,
+    Flush,
+    Close,
+    Replace,
+    SyncDirectory
+};
 
 struct FileError {
     std::filesystem::path path;
@@ -22,6 +41,39 @@ struct FileError {
     // Native errors retain their category; codec failures use codecError.
     std::error_code systemError;
     std::optional<core::persistence::CodecError> codecError;
+};
+
+// Check the active alternative before access. Allocation failures propagate.
+template <class T>
+class FileResult {
+public:
+    static FileResult success(T value) { return FileResult(std::move(value)); }
+    static FileResult failure(FileError error) { return FileResult(std::move(error)); }
+    explicit operator bool() const { return std::holds_alternative<T>(data_); }
+    T& value() { return std::get<T>(data_); }
+    const T& value() const { return std::get<T>(data_); }
+    const FileError& error() const { return std::get<FileError>(data_); }
+
+private:
+    explicit FileResult(T value) : data_(std::move(value)) {}
+    explicit FileResult(FileError error) : data_(std::move(error)) {}
+    std::variant<T, FileError> data_;
+};
+
+struct LoadedDocument {
+    std::filesystem::path filename;
+    std::unique_ptr<Document> document;
+};
+
+struct LoadedProject {
+    std::filesystem::path root;
+    ProjectMetadata metadata;
+    std::vector<LoadedDocument> documents;
+
+    // Create this description before moving documents into a DocumentManager.
+    // Its references survive that move while the manager owns the documents.
+    // Throws std::logic_error if a document slot has already been moved out.
+    [[nodiscard]] Project view() const;
 };
 
 struct SaveReport {
@@ -64,6 +116,12 @@ struct SaveReport {
 // A failure may leave a partial destination; no published files are removed.
 // Adopt the report's root/metadata as a complete copy only on success.
 [[nodiscard]] SaveReport saveProjectAs(const Project& project, const std::filesystem::path& destination);
+
+// Reads .ourpaint and regular .ourp files directly in root, in native filename
+// order. Directories/other extensions are ignored; .ourp symlinks are rejected.
+// Every file is bounded by MaxDocumentBytes. Returns only fully staged models,
+// without modifying existing documents, managers, files, paths or dirty flags.
+[[nodiscard]] FileResult<LoadedProject> loadProject(const std::filesystem::path& root);
 
 }  // namespace app
 

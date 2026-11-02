@@ -59,7 +59,7 @@ std::optional<FileError> validateProjectRoot(const std::filesystem::path& root) 
         return invalid(std::make_error_code(std::errc::invalid_argument));
     }
     std::error_code error;
-    const auto status = std::filesystem::symlink_status(root, error);
+    const auto status = std::filesystem::symlink_status(directoryEntryPath(root), error);
     if (error) {
         return invalid(error);
     }
@@ -302,6 +302,87 @@ SaveReport saveProject(Project& project) {
 
 SaveReport saveProjectAs(const Project& project, const std::filesystem::path& destination) {
     return saveProjectImpl(project, destination, true, nullptr);
+}
+
+Project LoadedProject::view() const {
+    Project result{root, metadata, {}};
+    result.documents.reserve(documents.size());
+    for (const auto& item : documents) {
+        if (!item.document) {
+            throw std::logic_error("Cannot create a project view after document adoption");
+        }
+        result.documents.push_back({item.filename, std::cref(*item.document)});
+    }
+    return result;
+}
+
+FileResult<LoadedProject> loadProject(const std::filesystem::path& root) {
+    namespace fs = std::filesystem;
+    using Loaded = FileResult<LoadedProject>;
+    if (auto error = validateProjectRoot(root)) {
+        return Loaded::failure(std::move(*error));
+    }
+    const auto marker = root / ".ourpaint";
+    auto markerBytes = detail::readFile(marker);
+    if (!markerBytes) {
+        return Loaded::failure(markerBytes.error());
+    }
+    auto metadata = decodeProjectMetadata(markerBytes.value());
+    if (!metadata) {
+        return Loaded::failure({marker, FileStage::Decode, {}, metadata.error()});
+    }
+    std::vector<fs::path> filenames;
+    std::error_code error;
+    fs::directory_iterator entries(root, error);
+    if (error) {
+        return Loaded::failure({root, FileStage::Enumerate, error, std::nullopt});
+    }
+    const detail::FilenameLess less;
+    const fs::path extension(".ourp");
+    const fs::directory_iterator end;
+    for (; entries != end; entries.increment(error)) {
+        if (error) {
+            return Loaded::failure({root, FileStage::Enumerate, error, std::nullopt});
+        }
+        const auto filename = entries->path().filename();
+        const auto suffix = filename.extension();
+        if (less(suffix, extension) || less(extension, suffix)) {
+            continue;
+        }
+        const auto status = entries->symlink_status(error);
+        if (error) {
+            return Loaded::failure({entries->path(), FileStage::Enumerate, error, std::nullopt});
+        }
+        if (fs::is_directory(status)) {
+            continue;
+        }
+        if (!fs::is_regular_file(status)) {
+            return Loaded::failure({entries->path(), FileStage::ValidatePath, std::make_error_code(std::errc::invalid_argument), std::nullopt});
+        }
+        filenames.push_back(filename);
+    }
+    if (error) {
+        return Loaded::failure({root, FileStage::Enumerate, error, std::nullopt});
+    }
+    std::sort(filenames.begin(), filenames.end(), less);
+    LoadedProject staged{root, std::move(metadata.value()), {}};
+    staged.documents.reserve(filenames.size());
+    for (const auto& filename : filenames) {
+        const auto path = root / filename;
+        auto bytes = detail::readFile(path);
+        if (!bytes) {
+            return Loaded::failure(bytes.error());
+        }
+        auto document = core::persistence::decodeDocument(bytes.value());
+        if (!document) {
+            return Loaded::failure({path, FileStage::Decode, {}, document.error()});
+        }
+        staged.documents.push_back({filename, std::move(document.value())});
+    }
+    if (auto error = validateProject(staged.view())) {
+        return Loaded::failure({root, FileStage::ValidateProject, {}, std::move(error)});
+    }
+    return Loaded::success(std::move(staged));
 }
 
 }  // namespace app

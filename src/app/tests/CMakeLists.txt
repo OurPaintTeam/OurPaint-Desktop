@@ -1,6 +1,10 @@
 enable_testing()
 include(GoogleTest)
 
+add_executable(ProjectSaveLoadGTEST ProjectSaveLoadGTEST.cc)
+target_link_libraries(ProjectSaveLoadGTEST PRIVATE ourpaint_project_io GTest::gtest_main)
+gtest_discover_tests(ProjectSaveLoadGTEST DISCOVERY_MODE PRE_TEST)
+
 add_ourpaint_test(ConstraintActionsGTEST ConstraintActionsGTEST.cc ../editor/ConstraintActions.cc)
 target_link_libraries(ConstraintActionsGTEST PRIVATE OurPaint::Sketch)
 

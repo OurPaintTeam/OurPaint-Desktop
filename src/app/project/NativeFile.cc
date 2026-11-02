@@ -1,7 +1,9 @@
 #include "NativeFile.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
+#include <cstddef>
 #include <string>
 #include <utility>
 
@@ -11,6 +13,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
@@ -268,6 +271,86 @@ FileReplacementResult replaceFile(const fs::path& target, std::span<const uint8_
     }
 #endif
     return {std::nullopt, true};
+}
+
+FileResult<core::persistence::DocumentBytes> readFile(const fs::path& path) {
+    using ReadResult = FileResult<core::persistence::DocumentBytes>;
+    const auto fail = [&path](FileStage stage, std::error_code error) {
+        return ReadResult::failure({path, stage, error, std::nullopt});
+    };
+    const auto tooLarge = [&path]() {
+        core::persistence::CodecError error{core::persistence::CodecErrorCode::LimitExceeded, "$", "Input exceeds the 64 MiB limit"};
+        return ReadResult::failure({path, FileStage::Read, {}, std::move(error)});
+    };
+    if (auto error = validateFileDestination(path)) {
+        return ReadResult::failure(std::move(*error));
+    }
+#ifdef _WIN32
+    const auto handle = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+                                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
+#else
+    NativeHandle handle;
+    do {
+        handle = ::open(path.c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
+    } while (handle == InvalidHandle && errno == EINTR);
+#endif
+    if (handle == InvalidHandle) {
+        return fail(FileStage::Open, lastError());
+    }
+    FileHandle input(handle);
+    uint64_t size = 0;
+#ifdef _WIN32
+    BY_HANDLE_FILE_INFORMATION info{};
+    if (!GetFileInformationByHandle(handle, &info)) {
+        return fail(FileStage::Read, lastError());
+    }
+    if (info.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) {
+        return fail(FileStage::ValidatePath, std::make_error_code(std::errc::invalid_argument));
+    }
+    size = (uint64_t{info.nFileSizeHigh} << 32) | info.nFileSizeLow;
+#else
+    struct stat info {};
+    if (::fstat(handle, &info) != 0) {
+        return fail(FileStage::Read, lastError());
+    }
+    if (!S_ISREG(info.st_mode) || info.st_size < 0) {
+        return fail(FileStage::ValidatePath, std::make_error_code(std::errc::invalid_argument));
+    }
+    size = static_cast<uint64_t>(info.st_size);
+#endif
+    if (size > core::persistence::MaxDocumentBytes) {
+        return tooLarge();
+    }
+    core::persistence::DocumentBytes bytes;
+    bytes.reserve(static_cast<size_t>(size));
+    std::array<uint8_t, 64 * 1024> buffer;
+    for (;;) {
+#ifdef _WIN32
+        DWORD count = 0;
+        if (!ReadFile(handle, buffer.data(), static_cast<DWORD>(buffer.size()), &count, nullptr)) {
+            return fail(FileStage::Read, lastError());
+        }
+#else
+        const auto count = ::read(handle, buffer.data(), buffer.size());
+        if (count < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return fail(FileStage::Read, lastError());
+        }
+#endif
+        if (count == 0) {
+            break;
+        }
+        if (static_cast<size_t>(count) > core::persistence::MaxDocumentBytes - bytes.size()) {
+            return tooLarge();
+        }
+        bytes.insert(bytes.end(), buffer.begin(), buffer.begin() + static_cast<std::ptrdiff_t>(count));
+    }
+    if (const auto error = input.close()) {
+        return fail(FileStage::Close, error);
+    }
+    return ReadResult::success(std::move(bytes));
 }
 
 }  // namespace app::detail

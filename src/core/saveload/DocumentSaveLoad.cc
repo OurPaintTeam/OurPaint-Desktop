@@ -23,7 +23,7 @@ using Decoded = CodecResult<std::unique_ptr<Document>>;
 constexpr size_t MaxCborDepth = 64;
 constexpr size_t MaxCborItems = 1'000'000;
 
-constexpr std::array<std::pair<sketch::ConstraintType, std::string_view>, 18> ConstraintNames{{
+constexpr std::array<std::pair<sketch::ConstraintType, std::string_view>, 19> ConstraintNames{{
     {sketch::ConstraintType::Coincident, "coincident"},
     {sketch::ConstraintType::Horizontal, "horizontal"},
     {sketch::ConstraintType::Vertical, "vertical"},
@@ -35,6 +35,7 @@ constexpr std::array<std::pair<sketch::ConstraintType, std::string_view>, 18> Co
     {sketch::ConstraintType::Concentric, "concentric"},
     {sketch::ConstraintType::Symmetric, "symmetric"},
     {sketch::ConstraintType::Midpoint, "midpoint"},
+    {sketch::ConstraintType::Collinear, "collinear"},
     {sketch::ConstraintType::Distance, "distance"},
     {sketch::ConstraintType::HorizontalDistance, "horizontal-distance"},
     {sketch::ConstraintType::VerticalDistance, "vertical-distance"},

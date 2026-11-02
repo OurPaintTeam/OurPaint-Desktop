@@ -91,6 +91,7 @@ std::vector<ConstraintCase> constraintCases() {
             {"concentric", {ConstraintType::Concentric, {circle, otherCircle}, std::nullopt, std::nullopt}},
             {"symmetric", {ConstraintType::Symmetric, {point, otherPoint, line}, std::nullopt, std::nullopt}},
             {"midpoint", {ConstraintType::Midpoint, {point, line}, std::nullopt, std::nullopt}},
+            {"collinear", {ConstraintType::Collinear, {line, otherLine}, std::nullopt, std::nullopt}},
             {"distance", {ConstraintType::Distance, {{EntityId(3), SubElement::Start}, {EntityId(4), SubElement::End}}, 5, std::nullopt}},
             {"horizontal-distance", {ConstraintType::HorizontalDistance, {point, otherPoint}, 0, std::nullopt}},
             {"vertical-distance", {ConstraintType::VerticalDistance, {point, otherPoint}, 4, std::nullopt}},
