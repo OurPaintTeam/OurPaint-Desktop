@@ -3,6 +3,8 @@ add_library(ourpaint_project_io STATIC
         project/Project.cc
         project/ProjectSaveLoad.h
         project/ProjectSaveLoad.cc
+        project/NativeFile.h
+        project/NativeFile.cc
 )
 target_compile_features(ourpaint_project_io PUBLIC cxx_std_20)
 target_include_directories(ourpaint_project_io PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/project")

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <system_error>
 #include <vector>
 
 #include "Project.h"
@@ -12,6 +13,16 @@
 namespace app {
 
 inline constexpr uint32_t ProjectFormatVersion = 1;
+
+enum class FileStage { ValidatePath, CreateTemporary, Write, Flush, Close, Replace, SyncDirectory };
+
+struct FileError {
+    std::filesystem::path path;
+    FileStage stage;
+    // Native errors retain their category; codec failures use codecError.
+    std::error_code systemError;
+    std::optional<core::persistence::CodecError> codecError;
+};
 
 // No value means valid. Empty IDs are allowed only for unsaved descriptions
 // when allowEmptyId is true. These checks perform no filesystem operations.
