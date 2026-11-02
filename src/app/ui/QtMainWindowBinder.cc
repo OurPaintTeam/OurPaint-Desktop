@@ -7,7 +7,6 @@
 #include <QCloseEvent>
 #include <QKeySequence>
 #include <QStyle>
-#include <QToolButton>
 #include <iostream>
 #include <limits>
 #include <numbers>
@@ -17,7 +16,6 @@
 #include "ToolsType.h"
 #include "ProjectMenu.h"
 #include "ProjectWindow.h"
-#include "TopBarProject.h"
 
 QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController& controller, QObject* parent)
     : QObject(parent), window_(window), controller_(controller) {
@@ -314,12 +312,6 @@ void QtMainWindowBinder::installProjectActions() {
             menu->addSeparator();
             menu->addAction(save);
             menu->addAction(saveAs);
-        }
-        if (auto* bar = projectWindow->findChild<UI::TopBarProject*>()) {
-            auto* button = new QToolButton(bar);
-            button->setDefaultAction(save);
-            button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-            bar->addLeftWidget(button);
         }
     }
 }
