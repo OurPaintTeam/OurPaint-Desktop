@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "../../core/DocumentManager.h"
 #include "../editor/SketchEditor.h"
@@ -12,6 +13,7 @@
 #include "../platform/IViewportHost.h"
 #include "../platform/QtViewportHost.h"
 #include "../project/DocumentView.h"
+#include "../project/ProjectSaveLoad.h"
 #include "Lib/Core/ProjectManager.h"
 #include "ActionReportPresenter.h"
 
@@ -34,13 +36,16 @@ public:
     void executeConsoleCommand(std::string str);
 
     // Project / Window
-    void openProjectInNewWindow();
-    void createProjectInNewWindow();
+    void openProjectInNewWindow(const QString& path = {});
+    void createProjectInNewWindow(const QString& path = {});
 
-    void openProjectInCurrentWindow();
-    void createProjectInCurrentWindow();
+    bool openProjectInCurrentWindow(const QString& path = {});
+    bool createProjectInCurrentWindow(const QString& path = {});
+    bool saveProject();
+    bool saveProjectAs();
+    bool confirmClose();
 
-    void openFile();
+    void openFile(const QString& path = {});
 
     void createFile(const std::string& fileName);
     void setActiveFile(const std::string& fileName);
@@ -54,6 +59,14 @@ public:
 
 private:
     DocumentView* findView(const std::string& name) const;
+    void attachDocument(DocumentId id, const std::string& tabName);
+    void installProject(app::LoadedProject loaded);
+    bool confirmProjectChange();
+    void endInteractions();
+    void updateProjectData();
+    void presentReport(DocumentId id, const ActionReport& report);
+    std::string uniqueTabName(const std::string& preferred) const;
+    std::filesystem::path nextFilename(DocumentId id) const;
 
     std::vector<std::unique_ptr<DocumentView>>& views_;
     DocumentManager& manager_;
@@ -61,13 +74,13 @@ private:
     QtViewportHost& viewportHost_;
     UI::ProjectManager& projectManager_;
     ActionReportPresenter reportPresenter_;
-
-
+    app::Project project_{{}, {{}, "Untitled"}, {}};
+    bool projectModified_ = true;
+    // Document IDs and viewport indices have different lifetimes and domains.
+    std::unordered_map<std::string, DocumentId> documentIds_;
     std::unordered_map<std::string, int> indicesMap_;
     std::unordered_map<ViewportController*, int> controllerMap_;
-    std::unordered_set<std::string> set_;
     std::string activeTabName_;
-    int activeIndex_ = -1;
 };
 
 #endif // ! OURPAINT_APPLICATION_UI_CONTROLLER_H_

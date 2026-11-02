@@ -26,6 +26,8 @@ add_executable(ourpaint
         viewport/ViewportController.cc
         ui/QtMainWindowBinder.cc
         ui/UIController.cc
+        ui/ProjectPersistence.cc
+        ui/QtPath.h
         ui/ActionReportPresenter.cc
         editor/SketchEditor.cc
         editor/ConstraintActions.cc
@@ -51,6 +53,7 @@ set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
 
 target_link_libraries(ourpaint PRIVATE
         ourpaint_core
+        ourpaint_project_io
         ourpaint_render
         ourpaint_ui
 )

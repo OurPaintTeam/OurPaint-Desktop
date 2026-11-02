@@ -2,16 +2,28 @@
 
 #include <QDir>
 #include <QFile>
+#include <QAction>
+#include <QApplication>
+#include <QCloseEvent>
+#include <QKeySequence>
+#include <QStyle>
+#include <QToolButton>
+#include <iostream>
 #include <limits>
 #include <numbers>
 
 #include "InputWidget.h"
-#include "PainterWidget.h"
 #include "ParameterInputWidget.h"
 #include "ToolsType.h"
+#include "ProjectMenu.h"
+#include "ProjectWindow.h"
+#include "TopBarProject.h"
 
 QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController& controller, QObject* parent)
     : QObject(parent), window_(window), controller_(controller) {
+    installProjectActions();
+
+    connect(&window, &UI::ProjectManager::saveFullProjectTriggered, this, [this]() { invoke([this]() { controller_.saveProject(); }); });
     // Console
     QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered, this, [this](const QString& tabName, const QString& str) {
         try {
@@ -56,19 +68,24 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 
     // --- Open project in new window ---
-    QObject::connect(&window, &UI::ProjectManager::openNewWindowOpenProjectTriggered, this, [this]() { controller_.openProjectInNewWindow(); });
+    QObject::connect(&window, &UI::ProjectManager::openNewWindowOpenProjectTriggered, this,
+                     [this](const QString& path) { invoke([this, path]() { controller_.openProjectInNewWindow(path); }); });
 
     // --- Create project in new window ---
-    QObject::connect(&window, &UI::ProjectManager::openNewWindowCreateProjectTriggered, this, [this]() { controller_.createProjectInNewWindow(); });
+    QObject::connect(&window, &UI::ProjectManager::openNewWindowCreateProjectTriggered, this,
+                     [this](const QString& path) { invoke([this, path]() { controller_.createProjectInNewWindow(path); }); });
 
     // --- Open project in this window ---
-    QObject::connect(&window, &UI::ProjectManager::openProjectThisWindowTriggered, this, [this]() { controller_.openProjectInCurrentWindow(); });
+    QObject::connect(&window, &UI::ProjectManager::openProjectThisWindowTriggered, this,
+                     [this](const QString& path) { invoke([this, path]() { controller_.openProjectInCurrentWindow(path); }); });
 
     // --- Create project in this window ---
-    QObject::connect(&window, &UI::ProjectManager::createProjectThisWindowTriggered, this, [this]() { controller_.createProjectInCurrentWindow(); });
+    QObject::connect(&window, &UI::ProjectManager::createProjectThisWindowTriggered, this,
+                     [this](const QString& path) { invoke([this, path]() { controller_.createProjectInCurrentWindow(path); }); });
 
     // --- Open file ---
-    QObject::connect(&window, &UI::ProjectManager::openFileTriggered, this, [this]() { controller_.openFile(); });
+    QObject::connect(&window, &UI::ProjectManager::openFileTriggered, this,
+                     [this](const QString& path) { invoke([this, path]() { controller_.openFile(path); }); });
 
     // --- Rename tab ---
     QObject::connect(&window, &UI::ProjectManager::renameTabTriggered, this, [this](const QString& oldName, const QString& newName) {
@@ -85,7 +102,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     // --- Create file ---
     QObject::connect(&window, &UI::ProjectManager::createFileTriggered, this, [this](const QString& fileName) {
         std::cout << "create file triggered: " << fileName.toStdString() << '\n';
-        controller_.createFile(fileName.toStdString());
+        invoke([this, fileName]() { controller_.createFile(fileName.toStdString()); });
     });
 
     // --- Set active file
@@ -253,4 +270,56 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
             controller_.selectTool(ToolId::Cursor, tabName.toStdString());
         }
     });
+}
+
+void QtMainWindowBinder::invoke(const std::function<void()>& action) {
+    try {
+        action();
+    } catch (const std::exception& error) {
+        window_.addNotification(tr("The operation failed: %1").arg(QString::fromUtf8(error.what())));
+    }
+}
+
+bool QtMainWindowBinder::eventFilter(QObject* watched, QEvent* event) {
+    if (event->type() == QEvent::Close) {
+        try {
+            if (controller_.confirmClose()) {
+                return false;
+            }
+        } catch (const std::exception& error) {
+            window_.addNotification(tr("The operation failed: %1").arg(QString::fromUtf8(error.what())));
+        }
+        static_cast<QCloseEvent*>(event)->ignore();
+        return true;
+    }
+    return QObject::eventFilter(watched, event);
+}
+
+void QtMainWindowBinder::installProjectActions() {
+    for (auto* widget : QApplication::topLevelWidgets()) {
+        auto* projectWindow = qobject_cast<UI::ProjectWindow*>(widget);
+        if (!projectWindow) {
+            continue;
+        }
+        projectWindow->installEventFilter(this);
+        auto* save = new QAction(projectWindow->style()->standardIcon(QStyle::SP_DialogSaveButton), tr("Save project"), this);
+        save->setShortcut(QKeySequence::Save);
+        auto* saveAs = new QAction(tr("Save project as..."), this);
+        saveAs->setShortcut(QKeySequence::SaveAs);
+        projectWindow->addAction(save);
+        projectWindow->addAction(saveAs);
+        connect(save, &QAction::triggered, this, [this]() { invoke([this]() { controller_.saveProject(); }); });
+        connect(saveAs, &QAction::triggered, this, [this]() { invoke([this]() { controller_.saveProjectAs(); }); });
+        if (auto* menu = projectWindow->findChild<UI::ProjectMenu*>()) {
+            menu->addSeparator();
+            menu->addAction(save);
+            menu->addAction(saveAs);
+        }
+        if (auto* bar = projectWindow->findChild<UI::TopBarProject*>()) {
+            auto* button = new QToolButton(bar);
+            button->setDefaultAction(save);
+            button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+            bar->addLeftWidget(button);
+        }
+    }
 }

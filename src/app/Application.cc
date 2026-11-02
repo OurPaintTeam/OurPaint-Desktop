@@ -1,5 +1,7 @@
 #include "Application.h"
 
+#include <QCoreApplication>
+
 #include "../core/DocumentManager.h"
 #include "../core/Scene.h"
 #include "App/CustomConsole.h"
@@ -32,9 +34,23 @@ void Application::init(int& argc, char** argv) {
 
     uiController_ = new UIController(views_, *documentManager_,  *platformRuntime_, *projectManager_, *qt_host);
 
-    uiController_->createFile("default");
-
     binder_ = new QtMainWindowBinder(*projectManager_, *uiController_);
+
+    const auto arguments = QCoreApplication::arguments();
+    bool opened = false;
+    try {
+        if (arguments.size() == 3 && arguments[1] == QStringLiteral("--open-project")) {
+            opened = uiController_->openProjectInCurrentWindow(arguments[2]);
+        } else if (arguments.size() == 3 && arguments[1] == QStringLiteral("--create-project")) {
+            opened = uiController_->createProjectInCurrentWindow(arguments[2]);
+        }
+    } catch (const std::exception& error) {
+        projectManager_->addNotification(QCoreApplication::translate("ProjectPersistence", "Could not open the project: %1")
+                                             .arg(QString::fromUtf8(error.what())));
+    }
+    if (!opened) {
+        uiController_->createFile("default");
+    }
 
     //project_ = new app::Project("new project");
 }

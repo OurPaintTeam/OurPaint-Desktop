@@ -1,6 +1,8 @@
 #include "UIController.h"
 
+#include <algorithm>
 #include <iostream>
+#include <stdexcept>
 #include <utility>
 
 #include "../../core/Document.h"
@@ -34,8 +36,13 @@ UIController::~UIController() {
 }
 
 DocumentView* UIController::findView(const std::string& name) const {
+    const auto entry = documentIds_.find(name);
+    if (entry == documentIds_.end()) {
+        return nullptr;
+    }
+    const Document* document = manager_.at(entry->second);
     for (const auto& view : views_) {
-        if (view->document().name() == name) {
+        if (&view->document() == document) {
             return view.get();
         }
     }
@@ -60,12 +67,12 @@ void UIController::requestConstraint(const ConstraintRequest& request, const std
 }
 
 std::function<void(const ConstraintRequest&)> UIController::constraintRequestHandler(const std::string& tabName) {
-    const auto* view = findView(tabName.empty() ? activeTabName_ : tabName);
-    const Document* origin = view ? &view->document() : nullptr;
+    const auto entry = documentIds_.find(tabName.empty() ? activeTabName_ : tabName);
+    const DocumentId origin = entry == documentIds_.end() ? InvalidDocumentId : entry->second;
     return [this, origin](const ConstraintRequest& request) {
-        for (const auto& candidate : views_) {
-            if (&candidate->document() == origin) {
-                requestConstraint(request, candidate->document().name());
+        for (const auto& [name, id] : documentIds_) {
+            if (id == origin && findView(name)) {
+                requestConstraint(request, name);
                 return;
             }
         }
@@ -74,86 +81,25 @@ std::function<void(const ConstraintRequest&)> UIController::constraintRequestHan
 
 void UIController::executeConsoleCommand(std::string str) {
     try {
-        Document* document = manager_.at(activeIndex_);
+        const auto entry = documentIds_.find(activeTabName_);
+        Document* document = entry == documentIds_.end() ? nullptr : manager_.at(entry->second);
         // UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
         // CommandManager& cm = document->commandManager();
         // Transaction* txn = cm.invoke(str);
         // urm.push(std::move(*txn));
 
-        for (const auto& view : views_) {
-            if (view->document_.name() == activeTabName_) {
-                viewportHost_.requestRedraw();
-            }
+        if (document) {
+            viewportHost_.requestRedraw();
         }
     }catch (const std::exception& e) {
         throw std::runtime_error(e.what());
     }
 }
 
-#include <cstdlib>
-#include <string>
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <unistd.h>
-#endif
-
-std::string getExecutablePath() {
-#ifdef _WIN32
-    char buffer[MAX_PATH];
-    GetModuleFileNameA(NULL, buffer, MAX_PATH);
-    return std::string(buffer);
-#else
-    char buffer[1024];
-    ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer)-1);
-    if (len != -1) {
-        buffer[len] = '\0';
-        return std::string(buffer);
-    }
-    return "";
-#endif
-}
-
-#ifdef _WIN32
-void UIController::openProjectInNewWindow() {
-    std::string path = getExecutablePath();
-
-    STARTUPINFOA si;
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    PROCESS_INFORMATION pi;
-
-    if (CreateProcessA(NULL, (LPSTR)path.c_str(), NULL, NULL,
-                      FALSE, DETACHED_PROCESS, NULL, NULL, &si, &pi)) {
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-    }
-}
-#endif
-
-#ifdef __linux__
-void UIController::openProjectInNewWindow() {
-    std::string path = getExecutablePath();
-
-    pid_t pid = fork();
-    if (pid == 0) {
-        setsid();
-        execl(path.c_str(), path.c_str(), NULL);
-        exit(0);
-    }
-}
-#endif
-
-void UIController::createProjectInNewWindow() {}
-
-void UIController::openProjectInCurrentWindow() {}
-
-void UIController::createProjectInCurrentWindow() {}
-
-void UIController::openFile() {}
-
-
 void UIController::createFile(const std::string& fileName) {
+    if (fileName.empty()) {
+        return;
+    }
     if (findView(fileName)) {
         setActiveFile(fileName);
         return;
@@ -161,31 +107,65 @@ void UIController::createFile(const std::string& fileName) {
     if (auto* previous = findView(activeTabName_)) {
         previous->editorSession_.endInteraction();
     }
-    activeTabName_ = fileName;
-    DocumentId id;
-    if (set_.contains(fileName)) {
-        id = manager_.findIdByName(fileName);
-    } else {
-        id = manager_.createNewDocument(fileName);
+    const auto existing = documentIds_.find(fileName);
+    if (existing != documentIds_.end()) {
+        attachDocument(existing->second, fileName);
+        return;
     }
+    const auto id = manager_.createNewDocument(fileName);
+    try {
+        const auto filename = nextFilename(id);
+        project_.documents.push_back({filename, std::cref(*manager_.at(id))});
+        attachDocument(id, fileName);
+        projectModified_ = true;
+    } catch (...) {
+        std::erase_if(project_.documents, [this, id](const auto& item) { return &item.document.get() == manager_.at(id); });
+        manager_.closeDocument(id);
+        throw;
+    }
+}
 
+void UIController::attachDocument(DocumentId id, const std::string& tabName) {
     auto view = std::make_unique<DocumentView>(*manager_.at(id), viewportHost_);
-    Document* origin = &view->document();
-    view->editorSession_.setReportCallback([this, origin](const ActionReport& report) { reportPresenter_.present(*origin, report); });
-
-    //projectManager_.setCommandConsoleEngine(view.commandConsole_);
-    int index = viewportHost_.setEventSink(&view->viewportController_);
-    if (index >= 0) {
-        activeIndex_ = index;
-        indicesMap_[fileName] = index;
-        controllerMap_[&view->viewportController_] = index;
+    view->editorSession_.setReportCallback([this, id](const ActionReport& report) { presentReport(id, report); });
+    const int index = viewportHost_.addController(&view->viewportController_);
+    if (index < 0) {
+        throw std::runtime_error("Could not create a viewport for the document");
     }
+    auto* controller = &view->viewportController_;
+    const bool registered = documentIds_.contains(tabName);
+    const auto previous = activeTabName_;
+    try {
+        documentIds_[tabName] = id;
+        indicesMap_[tabName] = index;
+        controllerMap_[controller] = index;
+        views_.push_back(std::move(view));
+        projectManager_.addTabSlot(QString::fromStdString(tabName));
+        setActiveFile(tabName);
+    } catch (...) {
+        viewportHost_.removeController(controller);
+        std::erase_if(views_, [controller](const auto& candidate) { return &candidate->viewportController_ == controller; });
+        indicesMap_.erase(tabName);
+        controllerMap_.erase(controller);
+        if (!registered) {
+            documentIds_.erase(tabName);
+        }
+        projectManager_.deleteTabSlot(QString::fromStdString(tabName));
+        activeTabName_ = previous;
+        throw;
+    }
+}
 
-    views_.push_back(std::move(view));
-    set_.insert(fileName);
-
-    // this should be in the end
-    projectManager_.addTabSlot(fileName.data());
+void UIController::presentReport(DocumentId id, const ActionReport& report) {
+    if (report.change != ModelChange::Unchanged) {
+        projectModified_ = true;
+    }
+    for (const auto& [name, documentId] : documentIds_) {
+        if (documentId == id) {
+            reportPresenter_.present(name, report);
+            return;
+        }
+    }
 }
 
 void UIController::setActiveFile(const std::string& fileName) {
@@ -201,18 +181,20 @@ void UIController::setActiveFile(const std::string& fileName) {
     activeTabName_ = fileName;
     int index = indicesMap_[fileName];
     viewportHost_.setActiveController(index);
+    projectManager_.setActiveTabNameProject(QString::fromStdString(fileName));
+    viewportHost_.requestRedraw();
 }
 
 void UIController::removeFile(const std::string& fileName) {
+    const auto* target = findView(fileName);
     for (auto it = views_.begin(); it != views_.end(); ++it) {
-        if ((*it)->document_.name() == fileName) {
+        if (it->get() == target) {
             (*it)->editorSession_.setReportCallback({});
             const auto removed = controllerMap_.find(&(*it)->viewportController_);
             const int removedIndex = removed == controllerMap_.end() ? -1 : removed->second;
             viewportHost_.removeController(&(*it)->viewportController_);
             controllerMap_.erase(&(*it)->viewportController_);
             views_.erase(it);
-            set_.erase(fileName);
             indicesMap_.erase(fileName);
             if (removedIndex >= 0) {
                 for (auto& [name, index] : indicesMap_) {
@@ -227,10 +209,10 @@ void UIController::removeFile(const std::string& fileName) {
                 }
             }
             if (activeTabName_ == fileName) {
-                activeTabName_ = views_.empty() ? std::string{} : views_.front()->document().name();
-                activeIndex_ = activeTabName_.empty() ? -1 : indicesMap_.at(activeTabName_);
-            } else if (indicesMap_.contains(activeTabName_)) {
-                activeIndex_ = indicesMap_.at(activeTabName_);
+                activeTabName_ = indicesMap_.empty() ? std::string{} : indicesMap_.begin()->first;
+            }
+            if (!activeTabName_.empty()) {
+                setActiveFile(activeTabName_);
             }
             return;
         }
@@ -239,19 +221,25 @@ void UIController::removeFile(const std::string& fileName) {
 
 void UIController::renameTab(const std::string& oldName, const std::string& newName) {
     auto* view = findView(oldName);
-    if (!view || (oldName != newName && findView(newName))) {
+    if (!view) {
+        return;
+    }
+    if (newName.empty() || (oldName != newName && documentIds_.contains(newName))) {
+        projectManager_.renameTabSlot(QString::fromStdString(newName), QString::fromStdString(oldName));
         return;
     }
     int index = indicesMap_[oldName];
     indicesMap_.erase(oldName);
     indicesMap_[newName] = index;
+    const auto id = documentIds_.at(oldName);
+    documentIds_.erase(oldName);
+    documentIds_[newName] = id;
     view->document().name() = newName;
-    set_.erase(oldName);
-    set_.insert(newName);
+    projectModified_ = true;
     if (activeTabName_ == oldName) {
         activeTabName_ = newName;
     }
-    projectManager_.renameTabSlot(QString(oldName.data()), QString(newName.data()));
+    projectManager_.renameTabSlot(QString::fromStdString(oldName), QString::fromStdString(newName));
 }
 
 void UIController::renameProject() {}

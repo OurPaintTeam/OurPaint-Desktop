@@ -1,5 +1,8 @@
 #include "ActionReportPresenter.h"
 
+#include "../project/ProjectSaveLoad.h"
+#include "QtPath.h"
+
 #include <QCoreApplication>
 
 #include "../../core/Document.h"
@@ -72,10 +75,76 @@ QString pasteSummary(const ActionReport& report) {
 
 ActionReportPresenter::ActionReportPresenter(UI::ProjectManager& manager) : manager_(manager) {}
 
+namespace {
+
+QString fileErrorText(const app::FileError& error) {
+    QString message;
+    using app::FileStage;
+    switch (error.stage) {
+        case FileStage::ValidateProject:
+            message = QCoreApplication::translate("ProjectPersistence", "The project data is invalid.");
+            break;
+        case FileStage::ValidatePath:
+            message = QCoreApplication::translate("ProjectPersistence", "This file or folder cannot be used.");
+            break;
+        case FileStage::GenerateId:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not create a project identifier.");
+            break;
+        case FileStage::Encode:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not prepare a document for saving.");
+            break;
+        case FileStage::CreateDirectory:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not create the project folder.");
+            break;
+        case FileStage::Open:
+        case FileStage::Read:
+        case FileStage::Enumerate:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not read the file or project folder.");
+            break;
+        case FileStage::Decode:
+            message = QCoreApplication::translate("ProjectPersistence", "The file is damaged or uses an unsupported format.");
+            break;
+        default:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not finish saving the file.");
+            break;
+    }
+    message += QStringLiteral("\n") + app::ui::pathText(error.path);
+    if (error.codecError) {
+        message += QStringLiteral("\n") + QString::fromStdString(error.codecError->message);
+    }
+    if (error.systemError) {
+        message += QStringLiteral("\n") + QString::fromLocal8Bit(error.systemError.message().c_str());
+    }
+    return message;
+}
+
+}  // namespace
+
+void ActionReportPresenter::present(const app::FileError& error) const { manager_.addNotification(fileErrorText(error)); }
+
+void ActionReportPresenter::present(const app::SaveReport& report) const {
+    if (report) {
+        manager_.addNotification(QCoreApplication::translate("ProjectPersistence", "Project saved to %1.").arg(app::ui::pathText(report.root)));
+        return;
+    }
+    QString text = fileErrorText(*report.error);
+    text += QCoreApplication::translate("ProjectPersistence", "\nSaved files: %1. Not attempted: %2.")
+                .arg(static_cast<qulonglong>(report.saved.size()))
+                .arg(static_cast<qulonglong>(report.unprocessed.size()));
+    if (report.failedFileReplaced) {
+        text += QCoreApplication::translate("ProjectPersistence", "\nThe file already contains the new data, but saving could not be fully confirmed.");
+    }
+    manager_.addNotification(text);
+}
+
 void ActionReportPresenter::present(const Document& document, const ActionReport& report) const {
+    present(document.name(), report);
+}
+
+void ActionReportPresenter::present(const std::string& tabName, const ActionReport& report) const {
     const QString message = text(report);
     if (!message.isEmpty()) {
-        const QString name = QString::fromStdString(document.name());
+        const QString name = QString::fromStdString(tabName);
         // The existing API falls back to a shared window for non-detached tabs.
         // Keep the origin visible even when another tab is active there.
         manager_.addNotification(name, QCoreApplication::translate("SketchActions", "%1: %2").arg(name, message));
