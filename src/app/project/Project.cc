@@ -3,27 +3,14 @@
 #include <algorithm>
 #include <set>
 
+#include "NativeFile.h"
 #include "saveload/CborCodec.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 namespace app {
 namespace {
 
 using core::persistence::CodecError;
 using core::persistence::CodecErrorCode;
-
-struct FilenameLess {
-    bool operator()(const std::filesystem::path& first, const std::filesystem::path& second) const {
-#ifdef _WIN32
-        return CompareStringOrdinal(first.c_str(), -1, second.c_str(), -1, TRUE) == CSTR_LESS_THAN;
-#else
-        return first.native() < second.native();
-#endif
-    }
-};
 
 bool validFilename(const std::filesystem::path& filename) {
     if (filename.empty() || filename.has_parent_path() || filename.filename() != filename) {
@@ -48,7 +35,7 @@ bool validFilename(const std::filesystem::path& filename) {
     }
     const auto extension = filename.extension();
     const std::filesystem::path expected(".ourp");
-    const FilenameLess less;
+    const detail::FilenameLess less;
     return !less(extension, expected) && !less(expected, extension);
 }
 
@@ -75,7 +62,7 @@ std::optional<CodecError> validateProject(const Project& project) {
         error->field = "metadata." + error->field;
         return error;
     }
-    std::set<std::filesystem::path, FilenameLess> filenames;
+    std::set<std::filesystem::path, detail::FilenameLess> filenames;
     for (size_t i = 0; i < project.documents.size(); ++i) {
         const auto& filename = project.documents[i].filename;
         const auto field = "documents[" + std::to_string(i) + "].filename";

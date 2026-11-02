@@ -14,7 +14,7 @@ namespace app {
 
 inline constexpr uint32_t ProjectFormatVersion = 1;
 
-enum class FileStage { ValidatePath, CreateTemporary, Write, Flush, Close, Replace, SyncDirectory };
+enum class FileStage { ValidateProject, ValidatePath, GenerateId, Encode, CreateTemporary, Write, Flush, Close, Replace, SyncDirectory };
 
 struct FileError {
     std::filesystem::path path;
@@ -22,6 +22,20 @@ struct FileError {
     // Native errors retain their category; codec failures use codecError.
     std::error_code systemError;
     std::optional<core::persistence::CodecError> codecError;
+};
+
+struct SaveReport {
+    std::filesystem::path root;
+    // Prospective metadata; a failed report is not a complete saved project.
+    ProjectMetadata metadata;
+    // Paths are root / filename. Files enter saved only after synchronization.
+    std::vector<std::filesystem::path> saved;
+    std::optional<FileError> error;
+    // All intended files on a preparation failure; otherwise only files after
+    // the failed file. The failed file itself is identified by error.path.
+    std::vector<std::filesystem::path> unprocessed;
+    bool failedFileReplaced = false;
+    explicit operator bool() const { return !error; }
 };
 
 // No value means valid. Empty IDs are allowed only for unsaved descriptions
@@ -35,6 +49,14 @@ struct FileError {
 // generate IDs, change metadata, access documents or perform file I/O.
 [[nodiscard]] core::persistence::CodecResult<std::vector<uint8_t>> encodeProjectMetadata(const ProjectMetadata& metadata);
 [[nodiscard]] core::persistence::CodecResult<ProjectMetadata> decodeProjectMetadata(std::span<const uint8_t> bytes);
+
+// Synchronous save into an existing directory. Prepares all bytes and validates
+// every destination before mutation, writes in native filename order, marker
+// last. Stops on the first failure; this is not a transaction across files.
+// An empty project ID is generated and adopted once the marker is replaced,
+// even if its subsequent directory synchronization fails. Documents stay const.
+// Callers serialize model/directory access. Allocation failures may propagate.
+[[nodiscard]] SaveReport saveProject(Project& project);
 
 }  // namespace app
 

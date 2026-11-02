@@ -5,6 +5,11 @@
 
 namespace app::detail {
 
+// The same ordering is used for filename uniqueness and publication order.
+struct FilenameLess {
+    bool operator()(const std::filesystem::path& first, const std::filesystem::path& second) const;
+};
+
 // Internal synchronous file operations, not a public persistence backend.
 struct FileReplacementResult {
     std::optional<FileError> error;

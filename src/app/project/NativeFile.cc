@@ -172,6 +172,14 @@ std::error_code flush(NativeHandle handle) {
 
 }  // namespace
 
+bool FilenameLess::operator()(const fs::path& first, const fs::path& second) const {
+#ifdef _WIN32
+    return CompareStringOrdinal(first.c_str(), -1, second.c_str(), -1, TRUE) == CSTR_LESS_THAN;
+#else
+    return first.native() < second.native();
+#endif
+}
+
 std::optional<FileError> validateFileDestination(const fs::path& target) {
     const auto invalid = [&target](std::error_code error) -> std::optional<FileError> {
         return FileError{target, FileStage::ValidatePath, error, std::nullopt};
