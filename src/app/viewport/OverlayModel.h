@@ -69,6 +69,12 @@ public:
         Color color;
     };
 
+    struct Nurbs {
+        std::vector<Point> points;
+        OverlayType type;
+        Color color;
+    };
+
     struct {
         SelectionModel model;
         OverlayType type;
@@ -81,6 +87,7 @@ public:
     std::vector<Line> lines_;
     std::vector<Circle> circles_;
     std::vector<Arc> arcs_;
+    std::vector<Nurbs> nurbs_;
     // Pending tool operands do not change the shared user selection.
     std::vector<core::sketch::GeometryRef> constraintRefs_;
 
@@ -100,6 +107,7 @@ public:
         lines_.clear();
         circles_.clear();
         arcs_.clear();
+        nurbs_.clear();
         constraintRefs_.clear();
     }
 
