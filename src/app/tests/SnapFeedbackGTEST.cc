@@ -140,9 +140,7 @@ TEST(SnapFeedbackOwnership, PreviewAndSelectionCleanupPreserveSnapUntilFullClean
 class SnapFeedbackRendering : public testing::Test {
 protected:
     void SetUp() override {
-        auto created = Sketch::create();
-        ASSERT_TRUE(created);
-        sketch_ = std::move(created.value());
+        sketch_ = std::make_unique<Sketch>();
         camera_.setViewport(800, 600);
         camera_.setZoom(100);
     }

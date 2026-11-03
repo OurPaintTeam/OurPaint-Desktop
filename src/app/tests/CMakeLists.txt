@@ -1,15 +1,16 @@
-enable_testing()
-include(GoogleTest)
-
-add_executable(ProjectSaveLoadGTEST ProjectSaveLoadGTEST.cc)
-target_link_libraries(ProjectSaveLoadGTEST PRIVATE ourpaint_project_io GTest::gtest_main)
-gtest_discover_tests(ProjectSaveLoadGTEST DISCOVERY_MODE PRE_TEST)
+add_ourpaint_test(ProjectSaveLoadGTEST ProjectSaveLoadGTEST.cc)
+target_link_libraries(ProjectSaveLoadGTEST PRIVATE ourpaint_project_io)
 
 add_ourpaint_test(ConstraintActionsGTEST ConstraintActionsGTEST.cc ../editor/ConstraintActions.cc)
 target_link_libraries(ConstraintActionsGTEST PRIVATE OurPaint::Sketch)
 
-add_ourpaint_test(SnapServiceGTEST.cc SnapServiceGTEST.cc ../editor/snapping/SnapSystem.cc)
-target_link_libraries(SnapServiceGTEST.cc PRIVATE OurPaint::Sketch)
+add_ourpaint_test(SnapServiceGTEST
+    SnapServiceGTEST.cc
+    ../editor/snapping/SnapSystem.cc
+    ../../render/render/Camera2D.cc
+)
+target_link_libraries(SnapServiceGTEST PRIVATE OurPaint::Sketch glm::glm)
+target_include_directories(SnapServiceGTEST PRIVATE ../../render/render)
 
 add_ourpaint_test(ActionReportGTEST ActionReportGTEST.cc ../ui/ActionReportPresenter.cc)
 target_link_libraries(ActionReportGTEST PRIVATE ourpaint_core ourpaint_ui)
