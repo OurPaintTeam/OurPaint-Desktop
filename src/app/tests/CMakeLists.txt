@@ -6,11 +6,12 @@ target_link_libraries(ConstraintActionsGTEST PRIVATE OurPaint::Sketch)
 
 add_ourpaint_test(SnapServiceGTEST
     SnapServiceGTEST.cc
+    SnapQueriesGTEST.cc
     ../editor/snapping/SnapSystem.cc
     ../../render/render/Camera2D.cc
 )
 target_link_libraries(SnapServiceGTEST PRIVATE OurPaint::Sketch glm::glm)
-target_include_directories(SnapServiceGTEST PRIVATE ../../render/render)
+target_include_directories(SnapServiceGTEST PRIVATE ../editor ../../render/render)
 
 add_ourpaint_test(ActionReportGTEST ActionReportGTEST.cc ../ui/ActionReportPresenter.cc)
 target_link_libraries(ActionReportGTEST PRIVATE ourpaint_core ourpaint_ui)
