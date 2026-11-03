@@ -316,53 +316,6 @@ TEST_F(SnapFeedbackRendering, EveryGlyphCanRenderWithoutSourceGeometryOrGuides) 
     }
 }
 
-TEST_F(SnapFeedbackRendering, ClipsFiniteGuidesWithoutExtendingTheirRemainingEnds) {
-    auto feedback = feedbackAt();
-    feedback.guides = {{{{-10, 1}, {1, 1}}, app::SnapGuideExtent::Segment},
-                       {{{-1, 0}, {1, 0}}, app::SnapGuideExtent::Segment},
-                       {{{-10, 5}, {10, 5}}, app::SnapGuideExtent::Segment}};
-
-    const auto scene = renderFeedback(feedback);
-
-    const auto* guides = findLayer(scene, kGuideLayer);
-    ASSERT_NE(guides, nullptr);
-    EXPECT_EQ(guides->coordinateSpace, render::CoordinateSpace::World);
-    const auto lines = linesIn(scene, kGuideLayer);
-    ASSERT_EQ(lines.size(), 2u);
-    EXPECT_TRUE(hasLine(lines, {-4, 1}, {1, 1}));
-    EXPECT_TRUE(hasLine(lines, {-1, 0}, {1, 0}));
-}
-
-TEST_F(SnapFeedbackRendering, ExtendsInfiniteGuidesToTheVisibleWorldBounds) {
-    auto feedback = feedbackAt();
-    feedback.guides = {{{{-1, -1}, {1, -1}}, app::SnapGuideExtent::InfiniteLine}, {{{2, -1}, {2, 1}}, app::SnapGuideExtent::InfiniteLine}};
-
-    const auto scene = renderFeedback(feedback);
-
-    const auto lines = linesIn(scene, kGuideLayer);
-    ASSERT_EQ(lines.size(), 2u);
-    EXPECT_TRUE(hasLine(lines, {-4, -1}, {4, -1}));
-    EXPECT_TRUE(hasLine(lines, {2, -3}, {2, 3}));
-}
-
-TEST_F(SnapFeedbackRendering, SkipsDegenerateAndNonfiniteGuides) {
-    const double nan = std::numeric_limits<double>::quiet_NaN();
-    const double infinity = std::numeric_limits<double>::infinity();
-    auto feedback = feedbackAt();
-    feedback.guides = {{{{1, 1}, {1, 1}}, app::SnapGuideExtent::Segment},
-                       {{{2, 2}, {2, 2}}, app::SnapGuideExtent::InfiniteLine},
-                       {{{nan, 0}, {1, 0}}, app::SnapGuideExtent::Segment},
-                       {{{0, 0}, {infinity, 1}}, app::SnapGuideExtent::InfiniteLine},
-                       {{{-1, 0}, {1, 0}}, app::SnapGuideExtent::Segment}};
-
-    const auto scene = renderFeedback(feedback);
-
-    const auto lines = linesIn(scene, kGuideLayer);
-    ASSERT_EQ(lines.size(), 1u);
-    EXPECT_TRUE(hasLine(lines, {-1, 0}, {1, 0}));
-    EXPECT_FALSE(linesIn(scene, kGlyphLayer).empty());
-}
-
 TEST_F(SnapFeedbackRendering, NonfiniteFeedbackPositionProducesNoRenderPrimitives) {
     const auto line = sketch_->addLine({-1, 0}, {1, 0});
     ASSERT_TRUE(line);

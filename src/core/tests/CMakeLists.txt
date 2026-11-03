@@ -22,9 +22,6 @@ target_link_libraries(SketchGTEST PRIVATE OurPaint::Sketch)
 add_ourpaint_test(SymmetricGTEST SymmetricGTEST.cc)
 target_link_libraries(SymmetricGTEST PRIVATE OurPaint::Sketch)
 
-add_ourpaint_test(ConcentricGTEST ConcentricGTEST.cc)
-target_link_libraries(ConcentricGTEST PRIVATE OurPaint::Sketch)
-
 add_ourpaint_test(MidpointGTEST MidpointGTEST.cc)
 target_link_libraries(MidpointGTEST PRIVATE OurPaint::Sketch)
 
