@@ -457,15 +457,6 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     return;
                 }
             }
-
-            pushConstraint();
-
-            refs_.clear();
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
             break;
         }
         case ToolId::HorizontalDistance: {
@@ -530,15 +521,6 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             if (!constraintType_.has_value()) {
                 constraintType_ = sketch::ConstraintType::VerticalDistance;
             }
-
-            pushConstraint();
-
-            refs_.clear();
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
             break;
         }
         case ToolId::Coincident: {
@@ -567,6 +549,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 coincidentMidpoint_ = false;
             }
             pushCoincident();
+            return;
             break;
         }
         case ToolId::Horizontal: {
@@ -621,6 +604,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 refs_.clear();
                 overlay_.selection_.model.clear();
             }
+            return;
             break;
         }
         case ToolId::Angle: {
@@ -695,15 +679,6 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             if (!constraintType_.has_value()) {
                 constraintType_ = sketch::ConstraintType::Perpendicular;
             }
-
-            pushConstraint();
-
-            refs_.clear();
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
             break;
         }
         case ToolId::Tangent: {
@@ -792,15 +767,6 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     overlay_.selection_.model.clear();
                 }
             }
-
-            pushConstraint();
-
-            refs_.clear();
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
             break;
         }
         case ToolId::Equal: {
@@ -886,14 +852,6 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     overlay_.selection_.model.clear();
                 }
             }
-            pushConstraint();
-
-            refs_.clear();
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
             break;
         }
         case ToolId::Fix: {
@@ -922,6 +880,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             overlay_.clearPreview();
             overlay_.selection_.model.clear();
             constraintType_.reset();
+            return;
             break;
         }
         case ToolId::Concentric: {
@@ -1010,15 +969,6 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     overlay_.selection_.model.clear();
                 }
             }
-
-            pushConstraint();
-
-            refs_.clear();
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
             break;
         }
         case ToolId::Midpoint: {
@@ -1130,15 +1080,6 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     overlay_.selection_.model.clear();
                 }
             }
-
-            pushConstraint();
-
-            refs_.clear();
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
             break;
         }
         case ToolId::Symmetric: {
@@ -1278,21 +1219,20 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     overlay_.selection_.model.clear();
                 }
             }
-
-            pushConstraint();
-
-            refs_.clear();
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
             break;
         }
         default: {
             return;
         }
     }
+
+    pushConstraint();
+
+    refs_.clear();
+    sketch_.solve();
+    overlay_.clearPreview();
+    overlay_.selection_.model.clear();
+    constraintType_.reset();
 }
 
 void ConstraintTool::onKey(const input::KeyEvent& e) {
