@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.26)
 project(ourpaint)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,10 +8,13 @@ set(CMAKE_AUTOMOC OFF)
 set(CMAKE_AUTOUIC OFF)
 set(CMAKE_AUTORCC OFF)
 
+enable_testing()
+
 add_subdirectory(third_party)
 add_subdirectory(src/app)
 add_subdirectory(src/core)
 include(cmake/Dependencies.cmake)
+include(cmake/OurPaintTests.cmake)
 add_subdirectory(src/core/tests)
 add_subdirectory(src/app/tests)
 add_subdirectory(src/render/render)

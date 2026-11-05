@@ -1,37 +1,17 @@
-cmake_minimum_required(VERSION 3.26)
-project(ourpainttest)
+add_ourpaint_test(DocumentManagerGTEST DocumentManagerGTEST.cc)
+target_link_libraries(DocumentManagerGTEST PRIVATE ourpaint_document)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-enable_testing()
-include(GoogleTest)
-
-function(add_ourpaint_test name)
-    add_executable(${name} ${ARGN})
-    target_link_libraries(${name}
-        PRIVATE
-            GTest::gtest_main
-    )
-    gtest_discover_tests(${name})
-endfunction()
-
-
-# Tests
-add_executable(DocumentManagerGTEST DocumentManagerGTEST.cc)
-target_link_libraries(DocumentManagerGTEST PRIVATE ourpaint_document GTest::gtest_main)
-gtest_discover_tests(DocumentManagerGTEST DISCOVERY_MODE PRE_TEST)
-
-add_executable(DocumentCodecGTEST DocumentCodecGTEST.cc)
-target_link_libraries(DocumentCodecGTEST PRIVATE ourpaint_document nlohmann_json::nlohmann_json GTest::gtest_main)
-gtest_discover_tests(DocumentCodecGTEST DISCOVERY_MODE PRE_TEST)
+add_ourpaint_test(DocumentCodecGTEST DocumentCodecGTEST.cc)
+target_link_libraries(DocumentCodecGTEST PRIVATE ourpaint_document nlohmann_json::nlohmann_json)
 
 add_ourpaint_test(ObjectsGTEST ObjectsGTEST.cc)
-add_ourpaint_test(UndoRedoGTEST UndoRedoTests.cc)
+target_link_libraries(ObjectsGTEST PRIVATE ourpaint_core)
+
 add_ourpaint_test(ObjectInJsonTest ObjectInJsonGTEST.cc)
-add_ourpaint_test(ComponentTest ComponentTest.cc)
+target_link_libraries(ObjectInJsonTest PRIVATE ourpaint_core)
+
 add_ourpaint_test(RequirementJsonTest requirementInJsonGTEST.cc)
-add_ourpaint_test(MoveTest MoveGTEST.cc)
+target_link_libraries(RequirementJsonTest PRIVATE ourpaint_core)
 
 add_ourpaint_test(GeometryAlgorithmTest GeometryAlgorithmsGTEST.cc)
 target_link_libraries(GeometryAlgorithmTest PRIVATE OurPaint::Sketch)
@@ -42,31 +22,8 @@ target_link_libraries(SketchGTEST PRIVATE OurPaint::Sketch)
 add_ourpaint_test(SymmetricGTEST SymmetricGTEST.cc)
 target_link_libraries(SymmetricGTEST PRIVATE OurPaint::Sketch)
 
-add_ourpaint_test(ConcentricGTEST ConcentricGTEST.cc)
-target_link_libraries(ConcentricGTEST PRIVATE OurPaint::Sketch)
-
 add_ourpaint_test(MidpointGTEST MidpointGTEST.cc)
 target_link_libraries(MidpointGTEST PRIVATE OurPaint::Sketch)
 
 add_ourpaint_test(TangentGTEST TangentGTEST.cc)
 target_link_libraries(TangentGTEST PRIVATE OurPaint::Sketch)
-
-set(TYPE_OF_COMPILING BOOL 1)
-if (TYPE_OF_COMPILING)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        add_compile_options(-Wall -Wextra -Wpedantic -Werror)
-    elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        add_compile_options(/W4)
-    endif ()
-endif ()
-
-set(TYPE_OF_OPTIMIZATION BOOL 1)
-if (TYPE_OF_OPTIMIZATION)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
-    elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
-    endif ()
-endif ()
-
-

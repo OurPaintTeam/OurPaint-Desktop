@@ -1,0 +1,46 @@
+name: Desktop CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux / ${{ matrix.build_type }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install Qt and OpenGL development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            qt6-base-dev libqt6opengl6-dev qt6-svg-dev libgl1-mesa-dev
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build desktop and OurPaint tests
+        run: cmake --build build --target ourpaint ourpaint_tests --parallel 2
+
+      - name: Run OurPaint tests
+        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^ourpaint$' --output-on-failure --no-tests=error --parallel 2

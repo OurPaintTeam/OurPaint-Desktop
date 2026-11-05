@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "../editor/snapping/SnapSystem.h"
+#include "Camera2D.h"
 #include "sketch/Sketch.h"
 #include "sketch/SketchTypes.h"
 
@@ -8,17 +9,16 @@ using namespace core::sketch;
 using namespace snap;
 
 TEST(SnapSystem, FindsSinglePoint) {
-    auto sketchResult = Sketch::create();
-    ASSERT_TRUE(sketchResult);
+    Sketch sketch;
+    Camera2D camera;
+    camera.setZoom(1.0);
 
-    std::unique_ptr<Sketch> sketch = std::move(sketchResult.value());
-
-    const auto pointIdResult = sketch->addPoint(Vec2{10.0, 20.0});
+    const auto pointIdResult = sketch.addPoint(Vec2{10.0, 20.0});
     ASSERT_TRUE(pointIdResult);
 
     const auto pointId = pointIdResult.value();
 
-    SnapSystem system(*sketch);
+    SnapSystem system(sketch, camera);
 
     SnapRequest request{};
     request.cursor = Vec2{10.4, 19.7};
@@ -42,12 +42,9 @@ TEST(SnapSystem, FindsSinglePoint) {
 }
 
 TEST(SnapSystem, EmptySketch) {
-    auto sketchResult = Sketch::create();
-    ASSERT_TRUE(sketchResult);
-
-    std::unique_ptr<Sketch> sketch = std::move(sketchResult.value());
-
-    SnapSystem system(*sketch);
+    Sketch sketch;
+    Camera2D camera;
+    SnapSystem system(sketch, camera);
 
     SnapRequest request{};
     request.cursor = Vec2{10.0, 20.0};
