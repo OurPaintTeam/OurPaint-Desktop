@@ -397,6 +397,13 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     bool secondIsPoint = std::holds_alternative<sketch::Point2>(ent2.geometry) || refs_[1].sub != sketch::SubElement::Whole;
                     bool secondIsLine  = std::holds_alternative<sketch::Line2>(ent2.geometry);
 
+                    if (!firstIsPoint || !secondIsPoint) { // case: point line distance where point is subpoint this line
+                        if (ent1.id == ent2.id) {
+                            refs_.pop_back();
+                            return;
+                        }
+                    }
+
                     if ((firstIsPoint && secondIsPoint) ||
                         (firstIsPoint && secondIsLine) ||
                         (firstIsLine && secondIsPoint)) {
