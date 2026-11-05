@@ -24,6 +24,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     connect(&window, &UI::ProjectManager::saveFullProjectTriggered, this, [this]() { invoke([this]() { controller_.saveProject(); }); });
     // Console
     QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered, this, [this](const QString& tabName, const QString& str) {
+        (void)tabName;
         try {
             controller_.executeConsoleCommand(str.toStdString());
         } catch (const std::exception& e) {
@@ -130,29 +131,28 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
             case UI::ConstraintType::VDistance:
             case UI::ConstraintType::HDistance:
             case UI::ConstraintType::Angle: {
-                ConstraintAction action;
+                ToolId constraintType;
                 QString promptText;
                 if (type == UI::ConstraintType::Angle) {
-                    action = ConstraintAction::Angle;
+                    constraintType = ToolId::Angle;
                     promptText = tr("Angle (degrees):");
                 } else if (type == UI::ConstraintType::VDistance) {
-                    action = ConstraintAction::VDistance;
+                    constraintType = ToolId::VerticalDistance;
                     promptText = tr("Vertical Distance:");
                 } else if (type == UI::ConstraintType::HDistance) {
-                    action = ConstraintAction::HDistance;
+                    constraintType = ToolId::HorizontalDistance;
                     promptText = tr("Horizontal Distance:");
                 } else if (type == UI::ConstraintType::Distance) {
-                    action = ConstraintAction::Dimension;
+                    constraintType = ToolId::Distance;
                     promptText = tr("Distance:");
                 }
 
                 auto* prompt = new UI::ParameterInputWidget(promptText, nullptr);
-                const auto request = controller_.constraintRequestHandler(tabName.toStdString());
-                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [request, action](const QString& parameter) {
+                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, tabName, constraintType](const QString& parameter) {
                     bool valid = false;
                     const double value = parameter.toDouble(&valid);
-                    const double scale = action == ConstraintAction::Angle ? std::numbers::pi / 180.0 : 1.0;
-                    request({action, valid ? value * scale : std::numeric_limits<double>::quiet_NaN()});
+                    const double scale = constraintType == ToolId::Angle ? std::numbers::pi / 180.0 : 1.0;
+                    controller_.selectTool(constraintType, valid ? value * scale : std::numeric_limits<double>::quiet_NaN(), tabName.toStdString());
                 });
 
                 prompt->move(200, 200);
@@ -160,43 +160,42 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                 break;
             }
             case UI::ConstraintType::Tangent:
-                controller_.requestConstraint({ConstraintAction::Tangent, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Tangent, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Coincident:
-                controller_.requestConstraint({ConstraintAction::Coincident, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Coincident, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Horizontal:
-                controller_.requestConstraint({ConstraintAction::Horizontal, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Horizontal, std::nullopt,  tabName.toStdString());
                 break;
             case UI::ConstraintType::Vertical:
-                controller_.requestConstraint({ConstraintAction::Vertical, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Vertical, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Parallel:
-                controller_.requestConstraint({ConstraintAction::Parallel, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Parallel, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Perpendicular:
-                controller_.requestConstraint({ConstraintAction::Perpendicular, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Perpendicular, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Equal:
-                controller_.requestConstraint({ConstraintAction::Equal, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Equal, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::FixUnfix:
-                controller_.requestConstraint({ConstraintAction::Fix, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Fix, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Concentric:
-                controller_.requestConstraint({ConstraintAction::Concentric, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Concentric, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Collinear:
-                controller_.requestConstraint({ConstraintAction::Collinear, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Collinear, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Midpoint:
-                controller_.requestConstraint({ConstraintAction::Midpoint, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Midpoint, std::nullopt, tabName.toStdString());
                 break;
             case UI::ConstraintType::Symmetric:
-                controller_.requestConstraint({ConstraintAction::Symmetric, std::nullopt}, tabName.toStdString());
+                controller_.selectTool(ToolId::Symmetric, std::nullopt, tabName.toStdString());
                 break;
             default:
-                controller_.requestConstraint({ConstraintAction::Unsupported, std::nullopt}, tabName.toStdString());
                 return;
         }
     });
@@ -205,20 +204,20 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](const QString tabName, UI::PrimitiveType _t1) {
         switch (_t1) {
             case UI::PrimitiveType::Point:
-                controller_.selectTool(ToolId::Point, tabName.toStdString());
+                controller_.selectTool(ToolId::Point, std::nullopt, tabName.toStdString());
                 break;
 
             case UI::PrimitiveType::CubicBezier:
-                controller_.selectTool(ToolId::CubicBezier, tabName.toStdString());
+                controller_.selectTool(ToolId::CubicBezier, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::Line:
-                controller_.selectTool(ToolId::Line, tabName.toStdString());
+                controller_.selectTool(ToolId::Line, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::Polyline:
-                controller_.selectTool(ToolId::Polyline, tabName.toStdString());
+                controller_.selectTool(ToolId::Polyline, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::InfiniteLine:
-                controller_.selectTool(ToolId::InfiniteLine, tabName.toStdString());
+                controller_.selectTool(ToolId::InfiniteLine, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::LineSettings:
                 // controller_.selectTool(ToolId::);
@@ -226,36 +225,36 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
 
             case UI::PrimitiveType::CircleByRadius:
-                controller_.selectTool(ToolId::CircleByRadius, tabName.toStdString());
+                controller_.selectTool(ToolId::CircleByRadius, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleByDiameter:
-                controller_.selectTool(ToolId::CircleByDiameter, tabName.toStdString());
+                controller_.selectTool(ToolId::CircleByDiameter, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleByTwoPoints:
-                controller_.selectTool(ToolId::CircleByTwoPoints, tabName.toStdString());
+                controller_.selectTool(ToolId::CircleByTwoPoints, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleByThreePoints:
-                controller_.selectTool(ToolId::CircleByThreePoints, tabName.toStdString());
+                controller_.selectTool(ToolId::CircleByThreePoints, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleTangentTwoLines:
-                controller_.selectTool(ToolId::CircleTangentTwoLines, tabName.toStdString());
+                controller_.selectTool(ToolId::CircleTangentTwoLines, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::CircleTangentThreeLines:
-                controller_.selectTool(ToolId::CircleTangentThreeLines, tabName.toStdString());
+                controller_.selectTool(ToolId::CircleTangentThreeLines, std::nullopt, tabName.toStdString());
                 break;
 
 
             case UI::PrimitiveType::ArcByRadius:
-                controller_.selectTool(ToolId::ArcByThreePoints, tabName.toStdString());
+                controller_.selectTool(ToolId::ArcByRadius, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::ArcByDiameter:
-                controller_.selectTool(ToolId::ArcByThreePoints, tabName.toStdString());
+                controller_.selectTool(ToolId::ArcByDiameter, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::ArcThreePoints:
-                controller_.selectTool(ToolId::ArcByThreePoints, tabName.toStdString());
+                controller_.selectTool(ToolId::ArcByThreePoints, std::nullopt, tabName.toStdString());
                 break;
             case UI::PrimitiveType::ArcSettings:
-                controller_.selectTool(ToolId::ArcByThreePoints, tabName.toStdString());
+                controller_.selectTool(ToolId::ArcByThreePoints, std::nullopt, tabName.toStdString());
                 break;
             default:
                 break;
@@ -265,7 +264,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     // Tools - cursor/size
     QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](const QString& tabName, UI::ToolsType _t1) {
         if (_t1 == UI::ToolsType::Cursor) {
-            controller_.selectTool(ToolId::Cursor, tabName.toStdString());
+            controller_.selectTool(ToolId::Cursor, std::nullopt, tabName.toStdString());
         }
     });
 }

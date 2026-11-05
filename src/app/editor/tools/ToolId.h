@@ -2,9 +2,10 @@
 #define OURPAINT_APPLICATION_TOOL_ID_H_
 
 enum class ToolId {
+    // First group
     Cursor,
-    Size,
 
+    // Second group: primitives
     Point,
     Line,
     Polyline,
@@ -21,7 +22,26 @@ enum class ToolId {
     ArcByDiameter,
     ArcByThreePoints,
 
-    CubicBezier
+    CubicBezier,
+
+    // third group constraints
+    Distance,
+    HorizontalDistance,
+    VerticalDistance,
+    Angle,
+
+    Coincident,
+    Horizontal,
+    Vertical,
+    Parallel,
+    Perpendicular,
+    Tangent,
+    Equal,
+    Fix,
+    Concentric,
+    Midpoint,
+    Collinear,
+    Symmetric
 };
 
 #endif // ! OURPAINT_APPLICATION_TOOL_ID_H_

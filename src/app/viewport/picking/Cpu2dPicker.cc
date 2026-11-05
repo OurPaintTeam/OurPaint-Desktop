@@ -202,6 +202,11 @@ std::optional<PickResult> Cpu2dPicker::pickCircleAtScreenLogical(double screenX,
     return pickCircleAt(world.x, world.y);
 }
 
+std::optional<PickResult> Cpu2dPicker::pickArcAtScreenLogical(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
+    return pickArcAt(world.x, world.y);
+}
+
 // Pick at screen framebuffer
 
 std::optional<PickResult> Cpu2dPicker::pickAtScreenFramebuffer(double screenX, double screenY) const {
@@ -224,6 +229,11 @@ std::optional<PickResult> Cpu2dPicker::pickCircleAtScreenFramebuffer(double scre
     return pickCircleAt(world.x, world.y);
 }
 
+std::optional<PickResult> Cpu2dPicker::pickArcAtScreenFramebuffer(double screenX, double screenY) const {
+    glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
+    return pickArcAt(world.x, world.y);
+}
+
 // Pick at world
 
 std::optional<PickResult> Cpu2dPicker::pickAtWorld(double worldX, double worldY) const {
@@ -242,7 +252,9 @@ std::optional<PickResult> Cpu2dPicker::pickCircleAtWorld(double worldX, double w
     return pickCircleAt(worldX, worldY);
 }
 
-
+std::optional<PickResult> Cpu2dPicker::pickArcAtWorld(double worldX, double worldY) const {
+    return pickArcAt(worldX, worldY);
+}
 
 // Private
 

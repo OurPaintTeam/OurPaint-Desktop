@@ -7,30 +7,55 @@
 #include "../../../core/sketch/SketchTypes.h"
 #include "../ConstraintRequest.h"
 #include "IInteractionTool.h"
+#include "ToolId.h"
 
 class ConstraintActions;
 class Cpu2dPicker;
 class OverlayModel;
 
+namespace {
+    using namespace core;
+}
+
 class ConstraintTool : public IInteractionTool {
 public:
-    ConstraintTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, ConstraintActions& actions, Cpu2dPicker& picker);
+    ConstraintTool(Document& document,
+                   Camera2D& camera,
+                   snap::SnapSystem& snap,
+                   OverlayModel& overlay,
+                   Cpu2dPicker& picker);
 
-    void begin(const ConstraintRequest& request, std::span<const core::sketch::GeometryRef> initialRefs = {});
+    void onMouseMove(const input::MouseMoveEvent& e) override;
+    void onMouseButton(const input::MouseButtonEvent& e) override;
+    void onKey(const input::KeyEvent& e) override;
 
-    std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
-    std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
-    std::optional<ActionReport> onKey(const input::KeyEvent& e) override;
-    ToolCancellation cancel() override;
+    bool cancel() override;
+
+    void setValue(double value);
+    void setSubToolType(ToolId type);
 
 private:
-    std::optional<ActionReport> handleRef(const core::sketch::GeometryRef& ref);
-    void resetInputs();
+    void pushConstraint();
+    void pushCoincident();
 
-    ConstraintActions& actions_;
+    void pushEntityToOverlay(const sketch::GeometryRef& ref) const;
 
-    ConstraintRequest request_{ConstraintAction::Coincident, std::nullopt};
-    std::vector<core::sketch::GeometryRef> refs_;
+    void pushPointToOverlay(double x, double y) const;
+    void pushLineToOverlay(double x1, double y1, double x2, double y2) const;
+    void pushCircleToOverlay(double x, double y, double r) const;
+    void pushArcToOverlay(double x, double y, double r, double startAngle, double endAngle) const;
+
+private:
+    double value_{};
+    bool isValueSet_ = false;
+    ToolId subTool_;
+    bool isConstraintTypeSet_ = false;
+
+    std::optional<sketch::ConstraintType> constraintType_ = std::nullopt;
+    std::vector<sketch::GeometryRef> refs_;
+    bool coincidentMidpoint_ = false;
+
+    sketch::Sketch& sketch_;
 };
 
 #endif  // ! OURPAINT_APPLICATION_CONSTRAINT_TOOL_H_

@@ -5,20 +5,19 @@ add_executable(ProjectSaveLoadGTEST ProjectSaveLoadGTEST.cc)
 target_link_libraries(ProjectSaveLoadGTEST PRIVATE ourpaint_project_io GTest::gtest_main)
 gtest_discover_tests(ProjectSaveLoadGTEST DISCOVERY_MODE PRE_TEST)
 
-add_ourpaint_test(ConstraintActionsGTEST ConstraintActionsGTEST.cc ../editor/ConstraintActions.cc)
-target_link_libraries(ConstraintActionsGTEST PRIVATE OurPaint::Sketch)
+#add_ourpaint_test(ConstraintActionsGTEST ConstraintActionsGTEST.cc ../editor/ConstraintActions.cc)
+#target_link_libraries(ConstraintActionsGTEST PRIVATE OurPaint::Sketch)
 
 add_ourpaint_test(SnapServiceGTEST.cc SnapServiceGTEST.cc ../editor/snapping/SnapSystem.cc)
 target_link_libraries(SnapServiceGTEST.cc PRIVATE OurPaint::Sketch)
 
-add_ourpaint_test(ActionReportGTEST ActionReportGTEST.cc ../ui/ActionReportPresenter.cc)
-target_link_libraries(ActionReportGTEST PRIVATE ourpaint_core ourpaint_ui)
+#add_ourpaint_test(ActionReportGTEST ActionReportGTEST.cc ../ui/ActionReportPresenter.cc)
+#target_link_libraries(ActionReportGTEST PRIVATE ourpaint_core ourpaint_ui)
 
 add_ourpaint_test(CursorToolGTEST
     CursorToolGTEST.cc
     DimensionInteractionGTEST.cc
     ../editor/tools/CursorTool.cc
-    ../editor/ConstraintActions.cc
     ../editor/snapping/SnapSystem.cc
     ../viewport/picking/Cpu2dPicker.cc
     ../viewport/constraints/ConstraintLayout.cc
@@ -31,7 +30,6 @@ target_include_directories(CursorToolGTEST PRIVATE ../editor ../viewport ../../c
 
 add_ourpaint_test(ConstraintToolsGTEST
     ConstraintToolsGTEST.cc
-    ../editor/ConstraintActions.cc
     ../editor/tools/ConstraintTool.cc
     ../editor/tools/DimensionTool.cc
     ../viewport/picking/Cpu2dPicker.cc

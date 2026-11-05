@@ -37,7 +37,7 @@ public:
     app::ViewportStyle viewportStyle_;
     app::ConstraintPresentationState constraintPresentation_;
     app::ConstraintLayout constraintLayout_;
-    SketchEditor editorSession_;
+    app::SketchEditor editorSession_;
     ViewportController viewportController_;
 };
 

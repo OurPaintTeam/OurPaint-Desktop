@@ -12,7 +12,6 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "../DSU.h"
 #include "DCMManager.h"
 #include "PointElements.h"
 
@@ -164,6 +163,22 @@ class Sketch::Impl {
     };
 
 public:
+    struct ConstraintCheckpoint {
+        dcm::DCMManager::Snapshot model;
+        std::map<ConstraintId, ConstraintRecord> constraints;
+    };
+
+    Result<ConstraintCheckpoint> constraintCheckpoint() const {
+        return checked<ConstraintCheckpoint>([&] { return ConstraintCheckpoint{manager_.snapshot(), constraints_}; });
+    }
+
+    Status restoreConstraintCheckpoint(ConstraintCheckpoint& checkpoint) {
+        return checkedStatus([&] {
+            manager_.restoreSnapshot(checkpoint.model);
+            constraints_.swap(checkpoint.constraints);
+        });
+    }
+
     Status supportsConstraint(const ConstraintDefinition& definition) const {
         for (const auto& ref : definition.refs) {
             if (!entities_.contains(ref.entity)) {
@@ -228,18 +243,6 @@ public:
             for (const auto& entity : entities) {
                 entities_.at(entity.id).construction = entity.construction;
             }
-        });
-    }
-
-    Status updatePointGuesses(std::span<const PointElement> points) {
-        return checkedStatus([&] {
-            std::vector<du::PointUpdateDescriptor> updates;
-            updates.reserve(points.size());
-            for (const auto& point : points) {
-                updates.push_back({pointHandle(point.ref), point.position.x, point.position.y});
-            }
-            // Ordinary GLOBAL edits project hard groups but do not solve.
-            manager_.updatePoints(updates);
         });
     }
 
@@ -406,13 +409,28 @@ public:
     // DCM's rank diagnosis omits unconstrained geometry and eliminated aliases.
     // Whole-sketch DOF/conflict/redundancy diagnostics therefore remain unavailable
     // in both solve and drag results.
-    Result<SolveDiagnostics> solve() {
+    Result<SolveDiagnostics> solve(const SolveOptions& options) {
         return checked<SolveDiagnostics>([&] {
-            const bool converged = manager_.solve();
             SolveDiagnostics result;
-            // The existing general diagnostics workaround remains in place;
-            // tangency additionally checks its saved branch and support geometry.
-            result.status = (!hasTangencies() || converged) && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
+            bool converged;
+            if (options.pointTargets.empty()) {
+                converged = manager_.solve();
+            } else {
+                std::vector<dcm::PointTarget> targets;
+                targets.reserve(options.pointTargets.size());
+                for (const auto& target : options.pointTargets) {
+                    targets.push_back({pointHandle(target.point), target.position.x, target.position.y});
+                }
+                const auto policy = options.targetPolicy == TargetPolicy::Require ? dcm::TargetPolicy::Require : dcm::TargetPolicy::Prefer;
+                const auto solved = manager_.solveWithTargets(targets, policy);
+                converged = solved.converged;
+                result.targetsSatisfied = solved.targetsSatisfied;
+                result.usedFallback = solved.usedFallback;
+            }
+            result.status = converged && geometryValid() && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
+            if (result.status == SolveStatus::Failed && result.targetsSatisfied) {
+                result.targetsSatisfied = false;
+            }
             return result;
         });
     }
@@ -670,10 +688,6 @@ private:
         return converged;
     }
 
-    bool hasTangencies() const {
-        return std::any_of(constraints_.begin(), constraints_.end(), [](const auto& item) { return item.second.definition.type == ConstraintType::Tangent; });
-    }
-
     ConstraintDefinition resolveDefinition(ConstraintDefinition definition) const {
         if (definition.type == ConstraintType::Tangent && !definition.tangencyBranch) {
             const auto first = readEntity(definition.refs[0].entity, entities_.at(definition.refs[0].entity)).geometry;
@@ -832,6 +846,8 @@ private:
                         add(du::RequirementDescriptor::pointLineDist(whole(0), whole(1), dist));
                     } else if (kind1 == EntityKind::Line && kind2 == EntityKind::Point) {
                         add(du::RequirementDescriptor::pointLineDist(whole(1), whole(0), dist));
+                    } else if (kind1 == EntityKind::Point && kind2 == EntityKind::Point) {
+                        add(du::RequirementDescriptor::pointPointDist(whole(0), whole(1), dist));
                     } else {
                         throw std::logic_error("Unsupported constraint passed DCM preflight");
                     }
@@ -900,11 +916,37 @@ private:
                     break;
                 }
                 case ConstraintType::Symmetric: {
-                    if (entities_.at(definition.refs[2].entity).kind == EntityKind::Line && definition.refs[2].sub == SubElement::Whole) {
-                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(0), pointAt(1), whole(2)));
-                    } else {
+                    auto kind1 = entities_.at(definition.refs[0].entity).kind;
+                    auto id1 = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt1 = definition.refs[0].sub;
+
+                    auto kind2 = entities_.at(definition.refs[1].entity).kind;
+                    auto id2 = entities_.at(definition.refs[1].entity).handle;
+                    auto type_subEt2 = definition.refs[1].sub;
+
+                    auto kind3 = entities_.at(definition.refs[2].entity).kind;
+                    auto id3 = entities_.at(definition.refs[2].entity).handle;
+                    auto type_subEt3 = definition.refs[2].sub;
+
+                    bool firstIsPoint  = kind1 == EntityKind::Point || type_subEt1 != SubElement::Whole;
+                    bool firstIsLine   = kind1 == EntityKind::Line;
+
+                    bool secondIsPoint = kind2 == EntityKind::Point || type_subEt2 != SubElement::Whole;
+                    bool secondIsLine  = kind2 == EntityKind::Line;
+
+                    bool thirdIsPoint  = kind3 == EntityKind::Point || type_subEt3 != SubElement::Whole;
+                    bool thirdIsLine   = kind3 == EntityKind::Line;
+
+                    if (firstIsPoint && secondIsPoint && thirdIsPoint) {
                         add(du::RequirementDescriptor::symmetricAboutPoint(pointAt(0), pointAt(1), pointAt(2)));
+                    } else if (firstIsPoint && secondIsLine && thirdIsPoint) {
+                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(0), pointAt(2), id2));
+                    } else if (firstIsPoint && secondIsPoint && thirdIsLine) {
+                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(0), pointAt(1), id3));
+                    } else if (firstIsLine && secondIsPoint && thirdIsPoint) {
+                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(1), pointAt(2), id1));
                     }
+
                     break;
                 }
                 case ConstraintType::Concentric: {
@@ -928,6 +970,7 @@ private:
 
                     // point arc
                     // point line
+                    // line line
 
                     if ((kind1 == EntityKind::Line && type_subEt1 == SubElement::Whole) &&
                         (kind2 == EntityKind::Line && type_subEt2 == SubElement::Whole)) {
@@ -986,10 +1029,7 @@ private:
         }
     }
 
-    bool constraintsSatisfied() const {
-        // DCM can return true with no free variables even when constraints
-        // conflict. These read-only checks also reject invalid solver iterates
-        // and do not copy or synchronize a second live geometric model.
+    bool geometryValid() const {
         for (const auto& [id, record] : entities_) {
             const auto geometry = readEntity(id, record).geometry;
             const bool valid = std::visit(
@@ -1015,6 +1055,16 @@ private:
             if (!valid) {
                 return false;
             }
+        }
+        return true;
+    }
+
+    bool constraintsSatisfied() const {
+        // DCM can return true with no free variables even when constraints
+        // conflict. These read-only checks also reject invalid solver iterates
+        // and do not copy or synchronize a second live geometric model.
+        if (!geometryValid()) {
+            return false;
         }
         for (const auto& [id, record] : constraints_) {
             const auto& definition = record.definition;
@@ -1475,7 +1525,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             valid = points[0] || lines[0] || circles[0];
             break;
         case ConstraintType::Symmetric:
-            valid = points[0] && points[1] && (lines[2] || points[2]);
+            valid = true;//points[0] && points[1] && (lines[2] || points[2]);
             break;
     }
     if (!valid) {
@@ -1501,6 +1551,7 @@ Result<ConstraintId> Sketch::addConstraint(const ConstraintDefinition& definitio
 }
 
 Result<ConstraintId> Sketch::addConstraints(std::span<const ConstraintDefinition> definitions) {
+    ConstraintId lastId;
     for (auto& definition : definitions) {
         auto valid = supportsConstraint(definition);
         if (!valid) {
@@ -1514,99 +1565,76 @@ Result<ConstraintId> Sketch::addConstraints(std::span<const ConstraintDefinition
         if (!result) {
             return Result<ConstraintId>::failure(result.error().code, result.error().message);
         }
+        lastId = id;
     }
     push(); // TODO
     drag_ = false; // TODO
-    return Result<ConstraintId>::success(ConstraintId(-1));
+    return Result<ConstraintId>::success(lastId);
 }
 
-Result<ConstraintId> Sketch::addCoincident(GeometryRef a, GeometryRef b, CoincidentPlacement placement) {
-    using Added = Result<ConstraintId>;
-    const ConstraintDefinition definition{ConstraintType::Coincident, {a, b}, std::nullopt, std::nullopt};
-    if (placement == CoincidentPlacement::Preserve) {
-        return addConstraint(definition);
-    }
-    if (placement != CoincidentPlacement::Midpoint) {
-        return Added::failure(ErrorCode::InvalidArgument, "Unknown coincidence placement");
-    }
+Result<ConstraintSolveResult> Sketch::addConstraint(const ConstraintDefinition& definition, const SolveOptions& options) {
+    using Added = Result<ConstraintSolveResult>;
     const auto valid = supportsConstraint(definition);
     if (!valid) {
         return Added::failure(valid.error().code, valid.error().message);
     }
+    const auto targetsValid = validateSolveOptions(options);
+    if (!targetsValid) {
+        return Added::failure(targetsValid.error().code, targetsValid.error().message);
+    }
     if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
         return Added::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
     }
-    const auto first = pointPosition(a);
-    const auto second = pointPosition(b);
-    if (!first || !second) {
-        const auto& error = !first ? first.error() : second.error();
+    auto before = snapshot();
+    if (!before) {
+        return Added::failure(before.error().code, before.error().message);
+    }
+    auto checkpoint = impl_->constraintCheckpoint();
+    if (!checkpoint) {
+        return Added::failure(checkpoint.error().code, checkpoint.error().message);
+    }
+    const auto rollbackError = [&](const SketchError& error) {
+        const auto restored = impl_->restoreConstraintCheckpoint(checkpoint.value());
+        if (!restored) {
+            return Added::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
         return Added::failure(error.code, error.message);
-    }
-    if (!finite(first.value()) || !finite(second.value())) {
-        return Added::failure(ErrorCode::InvalidArgument, "Coincidence placement requires finite point positions");
-    }
-    const auto existing = constraints();
-    if (!existing) {
-        return Added::failure(existing.error().code, existing.error().message);
-    }
-
-    // Use public references to include transitive groups without solver handles.
-    std::map<GeometryRef, size_t> indices;
-    DSU<size_t> groups;
-    const auto index = [&](GeometryRef ref) {
-        const auto [it, inserted] = indices.emplace(ref, indices.size());
-        if (inserted) {
-            groups.makeSet(it->second);
-        }
-        return it->second;
     };
-    const size_t firstIndex = index(a);
-    const size_t secondIndex = index(b);
-    for (const auto& constraint : existing.value()) {
-        const auto& current = constraint.definition;
-        if (current.type == ConstraintType::Coincident) {
-            groups.unite(index(current.refs[0]), index(current.refs[1]));
+    // Keep allocated public IDs consumed even when the edit is rolled back.
+    const ConstraintId id(constraintIds_.generate().get());
+    const auto inserted = impl_->addConstraint({id, definition});
+    if (!inserted) {
+        return rollbackError(inserted.error());
+    }
+    const auto solved = impl_->solve(options);
+    if (!solved) {
+        return rollbackError(solved.error());
+    }
+    if (solved.value().status != SolveStatus::Converged) {
+        const auto restored = impl_->restoreConstraintCheckpoint(checkpoint.value());
+        if (!restored) {
+            return Added::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
         }
+        return Added::success({std::nullopt, solved.value()});
     }
-    const size_t firstGroup = groups.find(firstIndex);
-    const size_t secondGroup = groups.find(secondIndex);
-    if (firstGroup == secondGroup) {
-        return addConstraint(definition);
+    auto after = snapshot();
+    if (!after) {
+        return rollbackError(after.error());
     }
-
-    std::optional<Vec2> firstFixed;
-    std::optional<Vec2> secondFixed;
-    for (const auto& constraint : existing.value()) {
-        const auto& current = constraint.definition;
-        if (current.type != ConstraintType::Fix) {
-            continue;
-        }
-        const size_t group = groups.find(index(current.refs[0]));
-        if (group == firstGroup && !firstFixed) {
-            firstFixed = current.fixedPosition;
-        }
-        if (group == secondGroup && !secondFixed) {
-            secondFixed = current.fixedPosition;
-        }
+    // Record the exact pre-edit geometry, including any unrecorded solve, and
+    // the final solved state. No insertion-only or failed state enters history.
+    if (undo_.empty()) {
+        undo_.push_back(std::move(before.value()));
+    } else {
+        undo_.back() = std::move(before.value());
     }
-    if (firstFixed && secondFixed) {
-        // Preserve both anchors, leaving any conflict for explicit solving.
-        return addConstraint(definition);
+    undo_.push_back(std::move(after.value()));
+    if (undo_.size() > static_cast<size_t>(maxSteps_)) {
+        undo_.pop_front();
     }
-    const Vec2 midpoint{std::midpoint(first.value().x, second.value().x), std::midpoint(first.value().y, second.value().y)};
-    const Vec2 target = firstFixed ? *firstFixed : secondFixed ? *secondFixed : midpoint;
-    std::vector<PointElement> guesses;
-    for (const auto& [ref, i] : indices) {
-        const size_t group = groups.find(i);
-        if ((group == firstGroup && !firstFixed) || (group == secondGroup && !secondFixed)) {
-            guesses.push_back({ref, target});
-        }
-    }
-    const auto prepared = impl_->updatePointGuesses(guesses);
-    if (!prepared) {
-        return Added::failure(prepared.error().code, prepared.error().message);
-    }
-    return addConstraint(definition);
+    redo_.clear();
+    drag_ = false;
+    return Added::success({id, solved.value()});
 }
 
 Status Sketch::updateConstraint(ConstraintId id, const ConstraintDefinition& definition) {
@@ -1693,8 +1721,33 @@ Result<size_t> Sketch::entityCount(EntityKind kind) const {
 }
 size_t Sketch::constraintCount() const { return impl_->constraintCount(); }
 
-Result<SolveDiagnostics> Sketch::solve() {
-    return impl_->solve();
+Status Sketch::validateSolveOptions(const SolveOptions& options) const {
+    if (options.targetPolicy != TargetPolicy::Require && options.targetPolicy != TargetPolicy::Prefer) {
+        return invalid("Unknown target policy");
+    }
+    std::map<GeometryRef, Vec2> targets;
+    for (const auto& target : options.pointTargets) {
+        if (!finite(target.position)) {
+            return invalid("Solve target must be finite");
+        }
+        const auto position = pointPosition(target.point);
+        if (!position) {
+            return Status::failure(position.error().code, position.error().message);
+        }
+        const auto [it, inserted] = targets.emplace(target.point, target.position);
+        if (!inserted && it->second != target.position) {
+            return invalid("Conflicting targets for the same point");
+        }
+    }
+    return Status::success();
+}
+
+Result<SolveDiagnostics> Sketch::solve(const SolveOptions& options) {
+    const auto valid = validateSolveOptions(options);
+    if (!valid) {
+        return Result<SolveDiagnostics>::failure(valid.error().code, valid.error().message);
+    }
+    return impl_->solve(options);
 }
 
 Result<SolveDiagnostics> Sketch::drag(const DragRequest& request, DragOptions options) {

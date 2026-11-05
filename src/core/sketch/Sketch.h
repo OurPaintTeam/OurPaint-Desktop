@@ -59,14 +59,10 @@ public:
     // Clears public and private model records in place, retaining DCM and IDs.
     Status clear();
     Result<ConstraintId> addConstraint(const ConstraintDefinition& definition);
+    // Insert and solve as one edit. Failure restores geometry and constraints;
+    // only a converged result commits one history entry. Targets are transient.
+    Result<ConstraintSolveResult> addConstraint(const ConstraintDefinition& definition, const SolveOptions& options);
     Result<ConstraintId> addConstraints(std::span<const ConstraintDefinition> definitions);
-    // Prepare both coincidence groups before insertion, without numerical solving.
-    // Midpoint moves free groups to the selected points' midpoint, or to a Fix
-    // target when only one group is fixed. Fixed groups are not seeded. Other
-    // equations/curve validity are enforced by a later explicit solve().
-    // Preserve delegates to addConstraint. Preflight failures leave state intact;
-    // BackendFailure can retain prepared coordinates and partial insertion.
-    Result<ConstraintId> addCoincident(GeometryRef a, GeometryRef b, CoincidentPlacement placement = CoincidentPlacement::Midpoint);
     Status updateConstraint(ConstraintId id, const ConstraintDefinition& definition);
     Status removeConstraint(ConstraintId id);
 
@@ -98,7 +94,9 @@ public:
     // NotFound and Unsupported leave state unchanged. BackendFailure offers a
     // queryable model, not rollback. solve/drag do not change identities/topology;
     // failed convergence may retain an iterate, and is reported in diagnostics.
-    Result<SolveDiagnostics> solve();
+    // Require holds targets for this solve; Prefer may retry without those locks.
+    // Permanent Fix constraints always remain active.
+    Result<SolveDiagnostics> solve(const SolveOptions& options = {});
     // SwitchLineSide explicitly permits editing saved line/circular tangency
     // branches from hard-projected requested targets before numerical solving.
     // Other branches and ordinary solve/update calls preserve the saved choice.
@@ -122,6 +120,7 @@ public:
 private:
     class Impl;
     Status validateConstraint(const ConstraintDefinition& definition) const;
+    Status validateSolveOptions(const SolveOptions& options) const;
     Status installState(const SketchSnapshot& snapshot);
     std::unique_ptr<Impl> impl_;
     core::IDGenerator entityIds_;

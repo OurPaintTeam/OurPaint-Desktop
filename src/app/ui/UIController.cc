@@ -14,6 +14,7 @@
 #include "../viewport/ViewportController.h"
 #include "../viewport/render/RenderSceneBuilder.h"
 #include "OpenGL2dRenderer.h"
+#include "ToolsType.h"
 
 UIController::UIController(std::vector<std::unique_ptr<DocumentView>>& views,
                            DocumentManager& manager,
@@ -25,12 +26,12 @@ UIController::UIController(std::vector<std::unique_ptr<DocumentView>>& views,
       platformRuntime_(platformRuntime),
       viewportHost_(host),
       projectManager_(projectManager),
-      reportPresenter_(projectManager),
       activeTabName_({}) {}
 
 UIController::~UIController() {
     for (auto& view : views_) {
-        view->editorSession_.setReportCallback({});
+        view->editorSession_.setToolChangedCallback({});
+        //view->editorSession_.setReportCallback({});
         viewportHost_.removeController(&view->viewportController_);
     }
 }
@@ -49,37 +50,126 @@ DocumentView* UIController::findView(const std::string& name) const {
     return nullptr;
 }
 
-void UIController::selectTool(ToolId tool, const std::string& tabName) {
+void UIController::selectTool(ToolId tool, std::optional<double> value, const std::string& tabName) {
     if (auto* view = findView(tabName.empty() ? activeTabName_ : tabName)) {
-        view->editorSession_.select(tool);
+        view->editorSession_.selectTool(tool, value);
         view->viewportController_.requestRedraw();
         viewportHost_.requestRedraw();
     }
 }
 
-void UIController::requestConstraint(const ConstraintRequest& request, const std::string& tabName) {
-    const auto& name = tabName.empty() ? activeTabName_ : tabName;
-    if (auto* view = findView(name)) {
-        view->editorSession_.requestConstraint(request);
-        view->viewportController_.requestRedraw();
-        viewportHost_.requestRedraw();
+void UIController::presentActiveTool(DocumentId id, ToolId tool) {
+    const auto entry = std::find_if(documentIds_.begin(), documentIds_.end(), [id](const auto& item) { return item.second == id; });
+    if (entry == documentIds_.end()) {
+        return;
     }
-}
-
-std::function<void(const ConstraintRequest&)> UIController::constraintRequestHandler(const std::string& tabName) {
-    const auto entry = documentIds_.find(tabName.empty() ? activeTabName_ : tabName);
-    const DocumentId origin = entry == documentIds_.end() ? InvalidDocumentId : entry->second;
-    return [this, origin](const ConstraintRequest& request) {
-        for (const auto& [name, id] : documentIds_) {
-            if (id == origin && findView(name)) {
-                requestConstraint(request, name);
-                return;
-            }
+    const auto tabName = QString::fromStdString(entry->first);
+    const auto present = [this, &tabName, active = entry->first == activeTabName_](auto uiTool) {
+        projectManager_.setActiveToolTabWindow(tabName, uiTool);
+        if (active) {
+            projectManager_.setActiveToolProjectWindow(uiTool);
         }
     };
+
+    switch (tool) {
+        case ToolId::Cursor:
+            present(UI::ToolsType::Cursor);
+            break;
+        case ToolId::Point:
+            present(UI::PrimitiveType::Point);
+            break;
+        case ToolId::Line:
+            present(UI::PrimitiveType::Line);
+            break;
+        case ToolId::Polyline:
+            present(UI::PrimitiveType::Polyline);
+            break;
+        case ToolId::InfiniteLine:
+            present(UI::PrimitiveType::InfiniteLine);
+            break;
+        case ToolId::CircleByRadius:
+            present(UI::PrimitiveType::CircleByRadius);
+            break;
+        case ToolId::CircleByDiameter:
+            present(UI::PrimitiveType::CircleByDiameter);
+            break;
+        case ToolId::CircleByTwoPoints:
+            present(UI::PrimitiveType::CircleByTwoPoints);
+            break;
+        case ToolId::CircleByThreePoints:
+            present(UI::PrimitiveType::CircleByThreePoints);
+            break;
+        case ToolId::CircleTangentTwoLines:
+            present(UI::PrimitiveType::CircleTangentTwoLines);
+            break;
+        case ToolId::CircleTangentThreeLines:
+            present(UI::PrimitiveType::CircleTangentThreeLines);
+            break;
+        case ToolId::ArcByRadius:
+            present(UI::PrimitiveType::ArcByRadius);
+            break;
+        case ToolId::ArcByDiameter:
+            present(UI::PrimitiveType::ArcByDiameter);
+            break;
+        case ToolId::ArcByThreePoints:
+            present(UI::PrimitiveType::ArcThreePoints);
+            break;
+        case ToolId::CubicBezier:
+            present(UI::PrimitiveType::CubicBezier);
+            break;
+        case ToolId::Distance:
+            present(UI::ConstraintType::Distance);
+            break;
+        case ToolId::HorizontalDistance:
+            present(UI::ConstraintType::HDistance);
+            break;
+        case ToolId::VerticalDistance:
+            present(UI::ConstraintType::VDistance);
+            break;
+        case ToolId::Angle:
+            present(UI::ConstraintType::Angle);
+            break;
+        case ToolId::Coincident:
+            present(UI::ConstraintType::Coincident);
+            break;
+        case ToolId::Horizontal:
+            present(UI::ConstraintType::Horizontal);
+            break;
+        case ToolId::Vertical:
+            present(UI::ConstraintType::Vertical);
+            break;
+        case ToolId::Parallel:
+            present(UI::ConstraintType::Parallel);
+            break;
+        case ToolId::Perpendicular:
+            present(UI::ConstraintType::Perpendicular);
+            break;
+        case ToolId::Tangent:
+            present(UI::ConstraintType::Tangent);
+            break;
+        case ToolId::Equal:
+            present(UI::ConstraintType::Equal);
+            break;
+        case ToolId::Fix:
+            present(UI::ConstraintType::FixUnfix);
+            break;
+        case ToolId::Concentric:
+            present(UI::ConstraintType::Concentric);
+            break;
+        case ToolId::Midpoint:
+            present(UI::ConstraintType::Midpoint);
+            break;
+        case ToolId::Collinear:
+            present(UI::ConstraintType::Collinear);
+            break;
+        case ToolId::Symmetric:
+            present(UI::ConstraintType::Symmetric);
+            break;
+    }
 }
 
 void UIController::executeConsoleCommand(std::string str) {
+    (void)str;
     try {
         const auto entry = documentIds_.find(activeTabName_);
         Document* document = entry == documentIds_.end() ? nullptr : manager_.at(entry->second);
@@ -105,7 +195,7 @@ void UIController::createFile(const std::string& fileName) {
         return;
     }
     if (auto* previous = findView(activeTabName_)) {
-        previous->editorSession_.endInteraction();
+        previous->editorSession_.activeTool()->cancel();
     }
     const auto existing = documentIds_.find(fileName);
     if (existing != documentIds_.end()) {
@@ -127,7 +217,8 @@ void UIController::createFile(const std::string& fileName) {
 
 void UIController::attachDocument(DocumentId id, const std::string& tabName) {
     auto view = std::make_unique<DocumentView>(*manager_.at(id), viewportHost_);
-    view->editorSession_.setReportCallback([this, id](const ActionReport& report) { presentReport(id, report); });
+    view->editorSession_.setToolChangedCallback([this, id](ToolId tool) { presentActiveTool(id, tool); });
+    //view->editorSession_.setReportCallback([this, id](const ActionReport& report) { presentReport(id, report); });
     const int index = viewportHost_.addController(&view->viewportController_);
     if (index < 0) {
         throw std::runtime_error("Could not create a viewport for the document");
@@ -156,25 +247,14 @@ void UIController::attachDocument(DocumentId id, const std::string& tabName) {
     }
 }
 
-void UIController::presentReport(DocumentId id, const ActionReport& report) {
-    if (report.change != ModelChange::Unchanged) {
-        projectModified_ = true;
-    }
-    for (const auto& [name, documentId] : documentIds_) {
-        if (documentId == id) {
-            reportPresenter_.present(name, report);
-            return;
-        }
-    }
-}
-
 void UIController::setActiveFile(const std::string& fileName) {
-    if (!findView(fileName)) {
+    const auto* view = findView(fileName);
+    if (!view) {
         return;
     }
     if (activeTabName_ != fileName) {
         if (auto* previous = findView(activeTabName_)) {
-            previous->editorSession_.endInteraction();
+            previous->editorSession_.activeTool()->cancel();
         }
     }
 
@@ -182,6 +262,7 @@ void UIController::setActiveFile(const std::string& fileName) {
     int index = indicesMap_[fileName];
     viewportHost_.setActiveController(index);
     projectManager_.setActiveTabNameProject(QString::fromStdString(fileName));
+    presentActiveTool(documentIds_.at(fileName), view->editorSession_.activeToolId());
     viewportHost_.requestRedraw();
 }
 
@@ -189,7 +270,8 @@ void UIController::removeFile(const std::string& fileName) {
     const auto* target = findView(fileName);
     for (auto it = views_.begin(); it != views_.end(); ++it) {
         if (it->get() == target) {
-            (*it)->editorSession_.setReportCallback({});
+            (*it)->editorSession_.setToolChangedCallback({});
+            //(*it)->editorSession_.setReportCallback({});
             const auto removed = controllerMap_.find(&(*it)->viewportController_);
             const int removedIndex = removed == controllerMap_.end() ? -1 : removed->second;
             viewportHost_.removeController(&(*it)->viewportController_);

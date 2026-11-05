@@ -74,6 +74,7 @@ inline std::string to_string(ObjType el) {
             return "arc";
         case ObjType::ERROR:
             return "error";
+        default:;
     }
     return "None";
 }
@@ -119,6 +120,10 @@ inline std::string to_string(ReqType requirement) {
         case ReqType::ET_FIXLINE:
             break;
         case ReqType::ET_FIXCIRCLE:
+            break;
+        case ReqType::ET_HORIZONTAL:
+            break;
+        case ReqType::ET_VERTICAL:
             break;
     }
     return "None";

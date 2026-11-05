@@ -3,33 +3,9 @@
 
 #include <optional>
 
-enum class ConstraintAction {
-    Coincident,
-    Horizontal,
-    Vertical,
-    Parallel,
-    Perpendicular,
-    Tangent,
-    Equal,
-    Fix,
-    Dimension,
-    VDistance,
-    HDistance,
-    Angle,
-    // Select two whole circles or arcs, in either order.
-    Concentric,
-    Collinear,
-    // Select a point-like element and a whole line in either order.
-    Midpoint,
-    // Select two points and an axis line in any order, or three points with the center last.
-    Symmetric,
-    Unsupported
-};
-
 struct ConstraintRequest {
-    ConstraintAction action = ConstraintAction::Coincident;
-    // Lengths use sketch units; angles use radians.
-    std::optional<double> value;
+    core::sketch::ConstraintType type;
+    std::optional<double> value = std::nullopt;     // Lengths use Sketch units; angles use radians.
 };
 
 #endif

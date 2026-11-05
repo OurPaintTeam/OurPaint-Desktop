@@ -17,7 +17,7 @@ void CircleTool::setMode(Mode mode) {
     reset();
 }
 
-std::optional<ActionReport> CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
+void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
     snap::SnapRequest request;
@@ -129,7 +129,6 @@ std::optional<ActionReport> CircleTool::onMouseMove(const input::MouseMoveEvent&
             // handleTangentThreeLinesMove(cursor);
             break;
     }
-    return std::nullopt;
 }
 
 bool intersectLines(glm::dvec2 p1, glm::dvec2 d1, glm::dvec2 p2, glm::dvec2 d2, glm::dvec2& out) {
@@ -148,9 +147,9 @@ bool intersectLines(glm::dvec2 p1, glm::dvec2 d1, glm::dvec2 p2, glm::dvec2 d2, 
 }
 
 
-std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
+void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
-        return std::nullopt;
+        return;
     }
 
     glm::dvec2 cursor = screenToWorld(e.x, e.y);
@@ -160,82 +159,82 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
         cursor.y = snap_result_.point.position.y;
     }
 
-    auto applyCircleConstraints = [&](ActionReport& report) -> bool {
-        if (report.entityIds.empty()) return false;
-        const auto circleId = report.entityIds[0];
-        bool needsSolve = false;
-
-        auto applyConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement circleSub) {
-            if (!snap.snapped || snap.objects.empty()) return;
-
-            core::sketch::ConstraintDefinition def;
-            bool validType = false;
-
-            bool isBody = (snap.type == snap::SnapKind::LineBody ||
-                           snap.type == snap::SnapKind::CircleBody ||
-                           snap.type == snap::SnapKind::ArcBody ||
-                           snap.type == snap::SnapKind::Tangent);
-
-            bool isPoint = (snap.type == snap::SnapKind::StandalonePoint ||
-                            snap.type == snap::SnapKind::LineEndpoint ||
-                            snap.type == snap::SnapKind::LineMidpoint ||
-                            snap.type == snap::SnapKind::CircleCentre ||
-                            snap.type == snap::SnapKind::ArcEndpoint ||
-                            snap.type == snap::SnapKind::ArcCentre);
-
-            if (circleSub == core::sketch::SubElement::Center) {
-                if (snap.type == snap::SnapKind::LineMidpoint) {
-                    def.type = core::sketch::ConstraintType::Midpoint;
-                    validType = true;
-                } else if (isBody || isPoint) {
-                    def.type = core::sketch::ConstraintType::Coincident;
-                    validType = true;
-                }
-            } else if (circleSub == core::sketch::SubElement::Whole) {
-                if (isBody) {
-                    def.type = core::sketch::ConstraintType::Tangent;
-                    validType = true;
-                } else if (isPoint) {
-                    def.type = core::sketch::ConstraintType::Coincident;
-                    validType = true;
-                }
-            }
-
-            if (validType) {
-                def.refs = { { circleId, circleSub }, snap.objects[0] };
-
-                if (document_.sketch().supportsConstraint(def)) {
-                    auto c = document_.sketch().addConstraint(def);
-                    if (c) {
-                        report.constraintIds.push_back(c.value());
-                        report.requestedConstraints++;
-                        needsSolve = true;
-                    } else {
-                        report.operationError = c.error();
-                    }
-                }
-            }
-        };
-
-        if (mode_ == Mode::CenterRadius) {
-            applyConstraint(firstSnap_, core::sketch::SubElement::Center);
-            applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
-        }
-        else if (mode_ == Mode::CenterDiameter) {
-            applyConstraint(firstSnap_, core::sketch::SubElement::Center);
-        }
-        else if (mode_ == Mode::DiameterTwoPoints) {
-            applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
-            applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
-        }
-        else if (mode_ == Mode::ThreePoints) {
-            applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
-            applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
-            applyConstraint(thirdSnap_, core::sketch::SubElement::Whole);
-        }
-
-        return needsSolve;
-    };
+    // auto applyCircleConstraints = [&](ActionReport& report) -> bool {
+    //     if (report.entityIds.empty()) return false;
+    //     const auto circleId = report.entityIds[0];
+    //     bool needsSolve = false;
+    //
+    //     auto applyConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement circleSub) {
+    //         if (!snap.snapped || snap.objects.empty()) return;
+    //
+    //         core::sketch::ConstraintDefinition def;
+    //         bool validType = false;
+    //
+    //         bool isBody = (snap.type == snap::SnapKind::LineBody ||
+    //                        snap.type == snap::SnapKind::CircleBody ||
+    //                        snap.type == snap::SnapKind::ArcBody ||
+    //                        snap.type == snap::SnapKind::Tangent);
+    //
+    //         bool isPoint = (snap.type == snap::SnapKind::StandalonePoint ||
+    //                         snap.type == snap::SnapKind::LineEndpoint ||
+    //                         snap.type == snap::SnapKind::LineMidpoint ||
+    //                         snap.type == snap::SnapKind::CircleCentre ||
+    //                         snap.type == snap::SnapKind::ArcEndpoint ||
+    //                         snap.type == snap::SnapKind::ArcCentre);
+    //
+    //         if (circleSub == core::sketch::SubElement::Center) {
+    //             if (snap.type == snap::SnapKind::LineMidpoint) {
+    //                 def.type = core::sketch::ConstraintType::Midpoint;
+    //                 validType = true;
+    //             } else if (isBody || isPoint) {
+    //                 def.type = core::sketch::ConstraintType::Coincident;
+    //                 validType = true;
+    //             }
+    //         } else if (circleSub == core::sketch::SubElement::Whole) {
+    //             if (isBody) {
+    //                 def.type = core::sketch::ConstraintType::Tangent;
+    //                 validType = true;
+    //             } else if (isPoint) {
+    //                 def.type = core::sketch::ConstraintType::Coincident;
+    //                 validType = true;
+    //             }
+    //         }
+    //
+    //         if (validType) {
+    //             def.refs = { { circleId, circleSub }, snap.objects[0] };
+    //
+    //             if (document_.sketch().supportsConstraint(def)) {
+    //                 auto c = document_.sketch().addConstraint(def);
+    //                 if (c) {
+    //                     report.constraintIds.push_back(c.value());
+    //                     report.requestedConstraints++;
+    //                     needsSolve = true;
+    //                 } else {
+    //                     report.operationError = c.error();
+    //                 }
+    //             }
+    //         }
+    //     };
+    //
+    //     if (mode_ == Mode::CenterRadius) {
+    //         applyConstraint(firstSnap_, core::sketch::SubElement::Center);
+    //         applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
+    //     }
+    //     else if (mode_ == Mode::CenterDiameter) {
+    //         applyConstraint(firstSnap_, core::sketch::SubElement::Center);
+    //     }
+    //     else if (mode_ == Mode::DiameterTwoPoints) {
+    //         applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
+    //         applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
+    //     }
+    //     else if (mode_ == Mode::ThreePoints) {
+    //         applyConstraint(firstSnap_, core::sketch::SubElement::Whole);
+    //         applyConstraint(secondSnap_, core::sketch::SubElement::Whole);
+    //         applyConstraint(thirdSnap_, core::sketch::SubElement::Whole);
+    //     }
+    //
+    //     return needsSolve;
+    // };
 
     switch (mode_) {
         case Mode::CenterRadius:
@@ -252,13 +251,13 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 double cy = points_[0].y;
                 double r = glm::distance(cursor, points_[0]);
 
-                auto report = pushCircleToModel({cx, cy, r});
-                if (applyCircleConstraints(report)) {
-                    report.recordSolve(document_.sketch().solve());
-                }
+                pushCircleToModel({cx, cy, r});
+                // if (applyCircleConstraints(report)) {
+                //     report.recordSolve(document_.sketch().solve());
+                // }
 
                 reset();
-                return report;
+                // return report;
             }
             break;
 
@@ -277,13 +276,13 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 double diameter = glm::distance(cursor, points_[0]);
                 double r = diameter / 2.0;
 
-                auto report = pushCircleToModel({cx, cy, r});
-                if (applyCircleConstraints(report)) {
-                    report.recordSolve(document_.sketch().solve());
-                }
+                pushCircleToModel({cx, cy, r});
+                // if (applyCircleConstraints(report)) {
+                //     report.recordSolve(document_.sketch().solve());
+                // }
 
                 reset();
-                return report;
+                // return report;
             }
             break;
 
@@ -303,13 +302,13 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
                 glm::dvec2 center = (a + b) * 0.5;
                 double r = glm::distance(a, b) * 0.5;
 
-                auto report = pushCircleToModel({center.x, center.y, r});
-                if (applyCircleConstraints(report)) {
-                    report.recordSolve(document_.sketch().solve());
-                }
+                pushCircleToModel({center.x, center.y, r});
+                // if (applyCircleConstraints(report)) {
+                //     report.recordSolve(document_.sketch().solve());
+                // }
 
                 reset();
-                return report;
+                // return report;
             }
             break;
 
@@ -330,21 +329,11 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
             } else if (step_ == Step::WaitingThirdInput) {
                 thirdSnap_ = snap_result_;
                 const auto circle = buildCircleFromThreePoints(points_[0], points_[1], cursor);
-                ActionReport report{ActionKind::CreateCircle};
-                report.requestedEntities = 1;
 
-                if (circle) {
-                    report = pushCircleToModel(*circle);
-                    if (applyCircleConstraints(report)) {
-                        report.recordSolve(document_.sketch().solve());
-                    }
-                } else {
-                    report.rejection = ActionRejection::InvalidGeometry;
-                    report.operationError =
-                        core::sketch::SketchError{core::sketch::ErrorCode::InvalidArgument, "Three circle points are collinear or almost collinear"};
-                }
+                pushCircleToModel(*circle);
+                    // if (applyCircleConstraints(report)) {
+                    //     report.recordSolve(document_.sketch().solve());
                 reset();
-                return report;
             }
             break;
 
@@ -352,7 +341,7 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
             if (step_ == Step::WaitingFirstInput) {
                 auto obj = picker_.pickAtScreenLogical(e.x, e.y);
                 if (!obj.has_value()) {
-                    return std::nullopt;
+                    return;
                 }
                 objects_.push_back(obj.value().ref.entity);
                 points_.push_back(cursor);
@@ -360,10 +349,10 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
             } else if (step_ == Step::WaitingSecondInput) {
                 auto obj = picker_.pickAtScreenLogical(e.x, e.y);
                 if (!obj.has_value()) {
-                    return std::nullopt;
+                    return;
                 }
                 if (!obj.has_value()) {
-                    return std::nullopt;
+                    return;
                 }
                 // Scene& scene = document_.scene();
                 // ObjectData od1 = scene.getObjectData(objects_[0]);
@@ -424,21 +413,19 @@ std::optional<ActionReport> CircleTool::onMouseButton(const input::MouseButtonEv
         case Mode::TangentThreeObjects:
             break;
     }
-    return std::nullopt;
 }
 
-std::optional<ActionReport> CircleTool::onKey(const input::KeyEvent& e) {
+void CircleTool::onKey(const input::KeyEvent& e) {
     (void)e;
-    return std::nullopt;
 }
 
-ToolCancellation CircleTool::cancel() {
+bool CircleTool::cancel() {
     if (points_.empty()) {
         return {};
     }
 
     reset();
-    return {true, std::nullopt};
+    return false;
 }
 
 glm::dvec2 CircleTool::screenToWorld(double x, double y) const { return camera_.screenLogicalToWorld({x, y}); }
@@ -473,6 +460,6 @@ std::optional<CircleTool::Circle> CircleTool::buildCircleFromThreePoints(const g
     return Circle{ux, uy, r};
 }
 
-ActionReport CircleTool::pushCircleToModel(const Circle& c) const {
-    return ActionReport::creation(ActionKind::CreateCircle, document_.sketch().addCircle({c.cx, c.cy}, c.r));
+void CircleTool::pushCircleToModel(const Circle& c) const {
+    document_.sketch().addCircle({c.cx, c.cy}, c.r);
 }

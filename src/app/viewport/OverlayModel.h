@@ -16,6 +16,7 @@ public:
         Preview,
         Selection,
         Snap,
+        ConstraintHoverToObject,
     };
 
     struct Color {
@@ -37,7 +38,7 @@ public:
     struct Point {
         float x{};
         float y{};
-        OverlayType type;
+        OverlayType type = OverlayType::Preview;
         Color color;
     };
 
@@ -46,7 +47,7 @@ public:
         float cx{};
         float cy{};
         float r{};
-        OverlayType type;
+        OverlayType type = OverlayType::Preview;
         Color color;
     };
 
@@ -55,7 +56,7 @@ public:
         float y1{};
         float x2{};
         float y2{};
-        OverlayType type;
+        OverlayType type = OverlayType::Preview;
         Color color;
     };
 
@@ -65,13 +66,13 @@ public:
         float r{};
         float startAngle{};
         float endAngle{};
-        OverlayType type;
+        OverlayType type = OverlayType::Preview;
         Color color;
     };
 
     struct Nurbs {
         std::vector<Point> points;
-        OverlayType type;
+        OverlayType type = OverlayType::Preview;
         Color color;
     };
 

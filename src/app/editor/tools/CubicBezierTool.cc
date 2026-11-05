@@ -10,11 +10,9 @@
 CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
     : IInteractionTool(document, camera, snap, overlay, picker) {}
 
-std::optional<ActionReport> CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) {
-    return std::nullopt;
-}
+void CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) {}
 
-std::optional<ActionReport> CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
+void CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
         points_.push_back(v);
@@ -30,16 +28,15 @@ std::optional<ActionReport> CubicBezierTool::onMouseButton(const input::MouseBut
             overlay_.nurbs_.push_back(ns);
         }
     }
-    return std::nullopt;
 }
 
-std::optional<ActionReport> CubicBezierTool::onKey(const input::KeyEvent& e) {
+void CubicBezierTool::onKey(const input::KeyEvent& e) {
     if (e.action != input::KeyAction::Press || e.key != input::KeyCode::Enter || e.isAutoRepeat) {
-        return std::nullopt;
+        return;
     }
     if (points_.size() < 4) {
         std::cerr << "A cubic NURBS curve needs at least four control points.\n";
-        return std::nullopt;
+        return;
     }
 
     core::sketch::NurbsCurve2 nc;
@@ -60,16 +57,16 @@ std::optional<ActionReport> CubicBezierTool::onKey(const input::KeyEvent& e) {
     const auto added = document_.sketch().addEntity(nc);
     if (!added) {
         std::cerr << "Cannot add NURBS curve: " << added.error().message << '\n';
-        return std::nullopt;
+        return;
     }
     points_.clear();
     overlay_.clear();
-    return std::nullopt;
+    return;
 }
 
-ToolCancellation CubicBezierTool::cancel() {
+bool CubicBezierTool::cancel() {
     const bool handled = !points_.empty();
     points_.clear();
     overlay_.clear();
-    return {handled, std::nullopt};
+    return false;
 }

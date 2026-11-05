@@ -164,8 +164,8 @@ TEST_F(ConstraintLayoutBehavior, TransitiveCoincidentGroupHasOneDotAndAllSortedI
     const GeometryRef a{first.value(), SubElement::Whole};
     const GeometryRef b{second.value(), SubElement::Whole};
     const GeometryRef c{third.value(), SubElement::Whole};
-    const auto bc = sketch_->addCoincident(b, c, CoincidentPlacement::Preserve);
-    const auto ab = sketch_->addCoincident(a, b, CoincidentPlacement::Preserve);
+    const auto bc = sketch_->addConstraint({ConstraintType::Coincident, {b, c}});
+    const auto ab = sketch_->addConstraint({ConstraintType::Coincident, {a, b}});
     ASSERT_TRUE(bc);
     ASSERT_TRUE(ab);
 
@@ -187,8 +187,8 @@ TEST_F(ConstraintLayoutBehavior, CoincidentGroupsAtTheSamePositionStayIndependen
         ASSERT_TRUE(point);
         refs.push_back({point.value(), SubElement::Whole});
     }
-    const auto first = sketch_->addCoincident(refs[0], refs[1], CoincidentPlacement::Preserve);
-    const auto second = sketch_->addCoincident(refs[2], refs[3], CoincidentPlacement::Preserve);
+    const auto first = sketch_->addConstraint({ConstraintType::Coincident, {refs[0], refs[1]}});
+    const auto second = sketch_->addConstraint({ConstraintType::Coincident, {refs[2], refs[3]}});
     ASSERT_TRUE(first);
     ASSERT_TRUE(second);
 
@@ -264,7 +264,7 @@ TEST_F(ConstraintLayoutBehavior, CoincidentResolvesCurveEndpointsAndCenters) {
                                         {arcStart.value(), SubElement::Start},  {arcEnd.value(), SubElement::End},  {arcCenter.value(), SubElement::Center}};
     std::vector<ConstraintId> ids;
     for (const auto ref : refs) {
-        const auto coincident = sketch_->addCoincident(pointRef, ref, CoincidentPlacement::Preserve);
+        const auto coincident = sketch_->addConstraint({ConstraintType::Coincident, {pointRef, ref}});
         ASSERT_TRUE(coincident);
         ids.push_back(coincident.value());
     }
@@ -480,7 +480,7 @@ TEST_F(ConstraintLayoutBehavior, CoincidentDotRadiusAndHitAreaUseLogicalPixels) 
     const auto second = sketch_->addPoint({1, 2});
     ASSERT_TRUE(first);
     ASSERT_TRUE(second);
-    ASSERT_TRUE(sketch_->addCoincident({first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}, CoincidentPlacement::Preserve));
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {{first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}}}));
     style_.point.radius = 3.5f;
     style_.stroke.widthPx = 8;
     style_.hitTolerancePx = 6;
@@ -510,7 +510,7 @@ TEST_F(ConstraintLayoutBehavior, InvalidDimensionsOnlySuppressTheirPrimitiveFami
     ASSERT_TRUE(first);
     ASSERT_TRUE(second);
     ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Horizontal, {{line.value(), SubElement::Whole}}}));
-    ASSERT_TRUE(sketch_->addCoincident({first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}, CoincidentPlacement::Preserve));
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {{first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}}}));
     style_.lengthPx = 0;
 
     rebuild();
@@ -536,7 +536,7 @@ TEST_F(ConstraintLayoutBehavior, RebuildKeepsUserLabelPlacementSeparateFromAutom
     const auto second = sketch_->addPoint({1, 2});
     ASSERT_TRUE(first);
     ASSERT_TRUE(second);
-    const auto coincident = sketch_->addCoincident({first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}, CoincidentPlacement::Preserve);
+    const auto coincident = sketch_->addConstraint({ConstraintType::Coincident, {{first.value(), SubElement::Whole}, {second.value(), SubElement::Whole}}});
     ASSERT_TRUE(coincident);
     const Vec2 labelPosition{30, -40};
     presentation_.labelPlacements.emplace(coincident.value(), app::ConstraintLabelPlacement{labelPosition});

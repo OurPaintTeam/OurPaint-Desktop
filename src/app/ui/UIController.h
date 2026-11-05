@@ -15,7 +15,6 @@
 #include "../project/DocumentView.h"
 #include "../project/ProjectSaveLoad.h"
 #include "Lib/Core/ProjectManager.h"
-#include "ActionReportPresenter.h"
 
 class UIController {
 public:
@@ -26,11 +25,7 @@ public:
                  QtViewportHost& host);
     ~UIController();
 
-    void selectTool(ToolId tool, const std::string& tabName = {});
-    void requestConstraint(const ConstraintRequest& request, const std::string& tabName = {});
-    // Intended for binder-owned parameter dialogs. Resolves a live originating
-    // document on invocation, including renames; a closed view receives nothing.
-    std::function<void(const ConstraintRequest&)> constraintRequestHandler(const std::string& tabName);
+    void selectTool(ToolId tool, std::optional<double> value, const std::string& tabName = {});
 
     // Console
     void executeConsoleCommand(std::string str);
@@ -64,7 +59,8 @@ private:
     bool confirmProjectChange();
     void endInteractions();
     void updateProjectData();
-    void presentReport(DocumentId id, const ActionReport& report);
+    void presentActiveTool(DocumentId id, ToolId tool);
+    //void presentReport(DocumentId id, const ActionReport& report);
     std::string uniqueTabName(const std::string& preferred) const;
     std::filesystem::path nextFilename(DocumentId id) const;
 
@@ -73,7 +69,6 @@ private:
     IPlatformRuntime& platformRuntime_;
     QtViewportHost& viewportHost_;
     UI::ProjectManager& projectManager_;
-    ActionReportPresenter reportPresenter_;
     app::Project project_{{}, {{}, "Untitled"}, {}};
     bool projectModified_ = true;
     // Document IDs and viewport indices have different lifetimes and domains.

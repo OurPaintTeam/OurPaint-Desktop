@@ -298,52 +298,50 @@ void RenderSceneBuilder::buildBezierHandles() {
 void RenderSceneBuilder::buildOverlayObjects() {
     render::DrawLayer layer = makeWorldLayer("overlay", kOverlayOrder);
 
-    render::LineBatch lines;
-    lines.style = style_.overlayLine;
+    struct OverlayBatches {
+        render::LineBatch lines;
+        render::CircleBatch circles;
+        render::ArcBatch arcs;
+    };
+    // Batch ordinary previews and constraint hover separately.
+    std::array<OverlayBatches, 2> batches;
+    for (auto& batch : batches) {
+        batch.lines.style = style_.overlayLine;
+        batch.circles.stroke = style_.overlayCircle;
+        batch.arcs.stroke = style_.overlayCircle;
+    }
 
-    render::CircleBatch circles;
-    circles.stroke = style_.overlayCircle;
-
-    render::ArcBatch arcs;
-    arcs.stroke = style_.overlayCircle;
+    batches[1].lines.style.color = style_.constraintHoverColor;
+    batches[1].circles.stroke.color = style_.constraintHoverColor;
+    batches[1].arcs.stroke.color = style_.constraintHoverColor;
 
     for (const auto& line : overlay_.lines_) {
-        lines.lines.push_back(makeLine(
-            line.x1,
-            line.y1,
-            line.x2,
-            line.y2
-        ));
+        auto& batch = batches[line.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        batch.lines.lines.push_back(makeLine(line.x1, line.y1, line.x2, line.y2));
     }
 
     for (const auto& circle : overlay_.circles_) {
-        circles.circles.push_back(makeCircle(
-            circle.cx,
-            circle.cy,
-            circle.r
-        ));
+        auto& batch = batches[circle.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        batch.circles.circles.push_back(makeCircle(circle.cx, circle.cy, circle.r));
     }
 
     for (const auto& arc : overlay_.arcs_) {
-        arcs.arcs.push_back(makeArc(
-            arc.cx,
-            arc.cy,
-            arc.r,
-            arc.startAngle,
-            arc.endAngle
-        ));
+        auto& batch = batches[arc.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        batch.arcs.arcs.push_back(makeArc(arc.cx, arc.cy, arc.r, arc.startAngle, arc.endAngle));
     }
 
-    if (!lines.lines.empty()) {
-        layer.lineBatches.push_back(std::move(lines));
-    }
+    for (auto& batch : batches) {
+        if (!batch.lines.lines.empty()) {
+            layer.lineBatches.push_back(std::move(batch.lines));
+        }
 
-    if (!circles.circles.empty()) {
-        layer.circleBatches.push_back(std::move(circles));
-    }
+        if (!batch.circles.circles.empty()) {
+            layer.circleBatches.push_back(std::move(batch.circles));
+        }
 
-    if (!arcs.arcs.empty()) {
-        layer.arcBatches.push_back(std::move(arcs));
+        if (!batch.arcs.arcs.empty()) {
+            layer.arcBatches.push_back(std::move(batch.arcs));
+        }
     }
 
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
@@ -352,15 +350,21 @@ void RenderSceneBuilder::buildOverlayObjects() {
 void RenderSceneBuilder::buildOverlayMarkers() {
     render::DrawLayer layer = makeWorldLayer("overlay_markers", kOverlayMarkerOrder);
 
-    render::MarkerBatch markers;
-    markers.style = style_.overlayMarker;
+    std::array<render::MarkerBatch, 2> batches;
+    for (auto& batch : batches) {
+        batch.style = style_.overlayMarker;
+    }
+    batches[1].style.color = style_.constraintHoverColor;
 
     for (const auto& point : overlay_.points_) {
-        markers.markers.push_back(makeMarker(point.x, point.y));
+        auto& batch = batches[point.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        batch.markers.push_back(makeMarker(point.x, point.y));
     }
 
-    if (!markers.markers.empty()) {
-        layer.markerBatches.push_back(std::move(markers));
+    for (auto& batch : batches) {
+        if (!batch.markers.empty()) {
+            layer.markerBatches.push_back(std::move(batch));
+        }
     }
 
     pushLayerIfNotEmpty(renderScene_, std::move(layer));

@@ -3,7 +3,7 @@
 #include "Document.h"
 #include "constraints/ConstraintLayout.h"
 
-ViewportController::ViewportController(Camera2D& camera, OverlayModel& overlay, SketchEditor& editorSession_, Document& document,
+ViewportController::ViewportController(Camera2D& camera, OverlayModel& overlay, app::SketchEditor& editorSession_, Document& document,
                                        const app::ViewportStyle& style, app::ConstraintLayout& constraintLayout,
                                        const app::ConstraintPresentationState& constraintPresentation)
     : camera2D_(camera),
@@ -37,7 +37,7 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
     lastY_ = e.y;
 
     updateConstraintLayout();
-    editorSession_.onMouseMove(e);
+    editorSession_.activeTool()->onMouseMove(e);
 
     requestRedraw();
     return true;
@@ -45,7 +45,7 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
 
 bool ViewportController::onMouseButton(const input::MouseButtonEvent& e) {
     updateConstraintLayout();
-    editorSession_.onMouseButton(e);
+    editorSession_.activeTool()->onMouseButton(e);
 
     requestRedraw();
     return true;
@@ -90,7 +90,13 @@ bool ViewportController::onKey(const input::KeyEvent& e) {
     }
 
     updateConstraintLayout();
-    editorSession_.onKey(e);
+    editorSession_.activeTool()->onKey(e);
+
+    if (e.key == input::KeyCode::Escape && e.action == input::KeyAction::Press) {
+        if (!editorSession_.activeTool()->cancel()) {
+            editorSession_.selectTool(ToolId::Cursor);
+        }
+    }
 
     requestRedraw();
     return true;

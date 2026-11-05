@@ -28,9 +28,7 @@ add_executable(ourpaint
         ui/UIController.cc
         ui/ProjectPersistence.cc
         ui/QtPath.h
-        ui/ActionReportPresenter.cc
         editor/SketchEditor.cc
-        editor/ConstraintActions.cc
         editor/snapping/SnapSystem.cc
         editor/tools/PointTool.cc
         editor/tools/LineTool.cc
@@ -38,7 +36,6 @@ add_executable(ourpaint
         editor/tools/CursorTool.cc
         editor/tools/CubicBezierTool.cc
         editor/tools/ArcTool.cc
-        editor/tools/DimensionTool.cc
         editor/tools/ConstraintTool.cc
         viewport/picking/Cpu2dPicker.cc
         viewport/SelectionModel.cc

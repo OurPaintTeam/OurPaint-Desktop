@@ -61,7 +61,7 @@ std::filesystem::path UIController::nextFilename(DocumentId id) const {
 
 void UIController::endInteractions() {
     for (auto& view : views_) {
-        view->editorSession_.endInteraction();
+        view->editorSession_.activeTool()->cancel();
     }
 }
 
@@ -79,7 +79,7 @@ bool UIController::saveProject() {
     endInteractions();
     const auto report = app::saveProject(project_);
     updateProjectData();
-    reportPresenter_.present(report);
+    //reportPresenter_.present(report);
     if (report) {
         projectModified_ = false;
     }
@@ -97,7 +97,7 @@ bool UIController::saveProjectAs() {
         description.metadata.name = QFileInfo(destination).fileName().toStdString();
     }
     const auto report = app::saveProjectAs(description, app::ui::nativePath(destination));
-    reportPresenter_.present(report);
+    //reportPresenter_.present(report);
     if (!report) {
         return false;
     }
@@ -130,7 +130,7 @@ bool UIController::openProjectInCurrentWindow(const QString& requestedPath) {
     const auto root = info.fileName() == QStringLiteral(".ourpaint") ? info.absolutePath() : selected;
     auto loaded = app::loadProject(app::ui::nativePath(root));
     if (!loaded) {
-        reportPresenter_.present(loaded.error());
+        //reportPresenter_.present(loaded.error());
         return false;
     }
     installProject(std::move(loaded.value()));
@@ -145,7 +145,7 @@ bool UIController::createProjectInCurrentWindow(const QString& requestedPath) {
     }
     app::Project draft{{}, {{}, QFileInfo(destination).fileName().toStdString()}, {}};
     const auto report = app::saveProjectAs(draft, app::ui::nativePath(destination));
-    reportPresenter_.present(report);
+    //reportPresenter_.present(report);
     if (!report) {
         return false;
     }
@@ -194,12 +194,12 @@ void UIController::openFile(const QString& requestedPath) {
     }
     auto bytes = app::detail::readFile(app::ui::nativePath(path));
     if (!bytes) {
-        reportPresenter_.present(bytes.error());
+        //reportPresenter_.present(bytes.error());
         return;
     }
     auto decoded = core::persistence::decodeDocument(bytes.value());
     if (!decoded) {
-        reportPresenter_.present(app::FileError{app::ui::nativePath(path), app::FileStage::Decode, {}, decoded.error()});
+        //reportPresenter_.present(app::FileError{app::ui::nativePath(path), app::FileStage::Decode, {}, decoded.error()});
         return;
     }
     const auto name = uniqueTabName(std::as_const(*decoded.value()).name());
@@ -246,7 +246,8 @@ void UIController::installProject(app::LoadedProject loaded) {
             labels.push_back(name);
             auto view = std::make_unique<DocumentView>(*document, viewportHost_);
             const auto id = ids[i];
-            view->editorSession_.setReportCallback([this, id](const ActionReport& report) { presentReport(id, report); });
+            view->editorSession_.setToolChangedCallback([this, id](ToolId tool) { presentActiveTool(id, tool); });
+            //view->editorSession_.setReportCallback([this, id](const ActionReport& report) { presentReport(id, report); });
             candidates.push_back(std::move(view));
             const int index = viewportHost_.addController(&candidates.back()->viewportController_);
             if (index < 0) {
@@ -258,7 +259,8 @@ void UIController::installProject(app::LoadedProject loaded) {
         }
     } catch (...) {
         for (auto& view : candidates) {
-            view->editorSession_.setReportCallback({});
+            view->editorSession_.setToolChangedCallback({});
+            //view->editorSession_.setReportCallback({});
             viewportHost_.removeController(&view->viewportController_);
         }
         candidates.clear();
@@ -274,7 +276,8 @@ void UIController::installProject(app::LoadedProject loaded) {
         projectManager_.deleteTabSlot(QString::fromStdString(name));
     }
     for (auto& view : views_) {
-        view->editorSession_.setReportCallback({});
+        view->editorSession_.setToolChangedCallback({});
+        //view->editorSession_.setReportCallback({});
         viewportHost_.removeController(&view->viewportController_);
     }
     views_.clear();

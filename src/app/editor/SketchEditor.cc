@@ -1,10 +1,14 @@
 #include "SketchEditor.h"
 
+#include <utility>
+
 #include "../../core/Document.h"
 #include "tools/CircleTool.h"
 #include "tools/CursorTool.h"
 #include "tools/LineTool.h"
 #include "tools/PointTool.h"
+
+using namespace app;
 
 SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
                            app::ConstraintPresentationState& constraintPresentation)
@@ -13,40 +17,36 @@ SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& o
       overlay_(overlay),
       snap_(document_.sketch(), camera_),
       picker_(document_.sketch(), camera_),
-      constraintActions_(document_.sketch()),
-      cursorTool_(document_, camera_, snap_, picker_, overlay_, constraintActions_, constraintLayout, constraintPresentation),
+      cursorTool_(document_, camera_, snap_, picker_, overlay_, constraintLayout, constraintPresentation),
       pointTool_(document_, camera_, snap_, overlay_, picker_),
       lineTool_(document_, camera_, snap_, overlay_, picker_),
       circleTool_(document_, camera_, snap_, picker_, overlay_),
       arcTool_(document_, camera_, snap_, picker_, overlay_),
       bezierTool_(document_, camera_, snap_, overlay_, picker_),
-      constraintTool_(document_, camera_, snap_, overlay_, constraintActions_, picker_),
-      dimensionTool_(document_, camera_, snap_, overlay_, constraintActions_, picker_) {
+      constraintTool_(document_, camera_, snap_, overlay_, picker_) {
     activeTool_ = &cursorTool_;
 }
 
 SketchEditor::~SketchEditor() {}
 
-void SketchEditor::select(ToolId id) {
-    cancelActiveTool();
+void SketchEditor::selectTool(ToolId id, std::optional<double> value) {
+    activeTool_->cancel();
+
     switch (id) {
+        // First group
         case ToolId::Cursor:
             activeTool_ = &cursorTool_;
             break;
-        case ToolId::Size:
 
-            break;
+
+        // Second group
         case ToolId::Point:
             activeTool_ = &pointTool_;
             break;
         case ToolId::Line:
-            activeTool_ = &lineTool_;
-            break;
         case ToolId::Polyline:
-
-            break;
         case ToolId::InfiniteLine:
-
+            activeTool_ = &lineTool_;
             break;
 
         case ToolId::CircleByRadius:
@@ -90,108 +90,32 @@ void SketchEditor::select(ToolId id) {
         case ToolId::CubicBezier:
             activeTool_ = &bezierTool_;
             break;
-    }
-}
 
-void SketchEditor::endInteraction() {
-    if (activeTool_ == &cursorTool_) {
-        cancelActiveTool();
-    }
-}
 
-void SketchEditor::requestConstraint(const ConstraintRequest& request) {
-    const auto refs = overlay_.selection_.model.items();
-    const auto prepared = constraintActions_.prepare(request, refs);
-    switch (prepared.state) {
-        case ConstraintPreparation::State::Ready:
-            if (prepared.definition) {
-                if (activeTool_ == &cursorTool_) {
-                    cancelActiveTool();
-                }
-                deliver(constraintActions_.apply(*prepared.definition));
+        // Third group: constraints
+        default: {
+            if (value.has_value()) {
+                constraintTool_.setValue(value.value());
             }
-            return;
-        case ConstraintPreparation::State::NeedsMoreInput:
-            cancelActiveTool();
-            if (request.action == ConstraintAction::Dimension ||
-                request.action == ConstraintAction::VDistance ||
-                request.action == ConstraintAction::HDistance ||
-                request.action == ConstraintAction::Angle) {
-                dimensionTool_.begin(request, refs);
-                activeTool_ = &dimensionTool_;
-            } else {
-                constraintTool_.begin(request, refs);
-                activeTool_ = &constraintTool_;
-            }
-            return;
-        case ConstraintPreparation::State::InvalidSelection:
-        case ConstraintPreparation::State::Unsupported:
-            deliver(ConstraintActions::rejectedReport(prepared));
-            return;
-    }
-}
 
-void SketchEditor::onMouseMove(const input::MouseMoveEvent& e) { deliver(activeTool_->onMouseMove(e)); }
-
-void SketchEditor::onMouseButton(const input::MouseButtonEvent& e) { deliver(activeTool_->onMouseButton(e)); }
-
-void SketchEditor::onKey(const input::KeyEvent& e) {
-    if (e.action == input::KeyAction::Press && e.key == input::KeyCode::Escape) {
-        if (e.isAutoRepeat) {
-            return;
-        }
-        if (!cancelActiveTool().handled) {
-            select(ToolId::Cursor);
-        }
-        return;
-    }
-
-    if (e.action == input::KeyAction::Press && e.modifiers == input::Modifiers::None && !e.isAutoRepeat) {
-        std::optional<ConstraintAction> action;
-        switch (e.key) {
-            case input::KeyCode::Num4:
-                action = ConstraintAction::Coincident;
-                break;
-            case input::KeyCode::Num5:
-                action = ConstraintAction::Horizontal;
-                break;
-            case input::KeyCode::Num6:
-                action = ConstraintAction::Vertical;
-                break;
-            case input::KeyCode::Num8:
-                action = ConstraintAction::Parallel;
-                break;
-            case input::KeyCode::Num9:
-                action = ConstraintAction::Perpendicular;
-                break;
-            default:
-                break;
-        }
-        if (action) {
-            requestConstraint({*action, std::nullopt});
-            return;
+            activeTool_ = &constraintTool_;
+            constraintTool_.setSubToolType(id);
+            break;
         }
     }
 
-    if (activeTool_ == &cursorTool_ && e.action == input::KeyAction::Press && !e.isAutoRepeat &&
-        (e.key == input::KeyCode::Delete || (e.key == input::KeyCode::V && e.modifiers == input::Modifiers::Ctrl))) {
-        cancelActiveTool();
-    }
-    deliver(activeTool_->onKey(e));
-}
-
-IInteractionTool* SketchEditor::activeTool() { return activeTool_; }
-
-void SketchEditor::setReportCallback(ReportCallback callback) { reportCallback_ = std::move(callback); }
-
-void SketchEditor::deliver(const std::optional<ActionReport>& report) {
-    if (report && reportCallback_) {
-        reportCallback_(*report);
+    if (activeToolId_ != id) {
+        activeToolId_ = id;
+        if (toolChangedCallback_) {
+            toolChangedCallback_(id);
+        }
     }
 }
 
-ToolCancellation SketchEditor::cancelActiveTool() {
-    auto cancelled = activeTool_->cancel();
-    deliver(cancelled.report);
-    return cancelled;
+IInteractionTool* SketchEditor::activeTool() {
+    return activeTool_;
 }
+
+ToolId SketchEditor::activeToolId() const noexcept { return activeToolId_; }
+
+void SketchEditor::setToolChangedCallback(ToolChangedCallback callback) { toolChangedCallback_ = std::move(callback); }

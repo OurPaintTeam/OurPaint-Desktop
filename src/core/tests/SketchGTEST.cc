@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <numbers>
+#include <numeric>
 #include <type_traits>
 
 #include "sketch/Sketch.h"
@@ -244,7 +245,7 @@ TEST_F(SketchBehavior, InvalidControlIndicesAndIndexedNamedSubElementsLeaveState
         const ConstraintDefinition fix{ConstraintType::Fix, {ref}, std::nullopt, Vec2{20, 20}};
         expectError(sketch_->supportsConstraint(fix), ErrorCode::InvalidArgument);
         expectError(sketch_->addConstraint(fix), ErrorCode::InvalidArgument);
-        expectError(sketch_->addCoincident(ref, {point.value(), SubElement::Whole}), ErrorCode::InvalidArgument);
+        expectError(sketch_->addConstraint({ConstraintType::Coincident, {ref, {point.value(), SubElement::Whole}}}), ErrorCode::InvalidArgument);
     }
     const auto after = sketch_->snapshot();
     ASSERT_TRUE(after);
@@ -260,8 +261,14 @@ TEST_F(SketchBehavior, CoincidenceKeepsNurbsControlGroupsSeparateAndPreservesInd
     ASSERT_TRUE(secondPoint);
     const GeometryRef first{curve.value(), SubElement::Control, 1};
     const GeometryRef second{curve.value(), SubElement::Control, 2};
-    ASSERT_TRUE(sketch_->addCoincident(first, {firstPoint.value(), SubElement::Whole}));
-    ASSERT_TRUE(sketch_->addCoincident(second, {secondPoint.value(), SubElement::Whole}));
+    const std::array<PointTarget, 1> firstTarget{{{first, {5, 3}}}};
+    const auto firstCoincident = sketch_->addConstraint({ConstraintType::Coincident, {first, {firstPoint.value(), SubElement::Whole}}}, {firstTarget});
+    ASSERT_TRUE(firstCoincident);
+    ASSERT_TRUE(firstCoincident.value().constraint);
+    const std::array<PointTarget, 1> secondTarget{{{second, {7, -2}}}};
+    const auto secondCoincident = sketch_->addConstraint({ConstraintType::Coincident, {second, {secondPoint.value(), SubElement::Whole}}}, {secondTarget});
+    ASSERT_TRUE(secondCoincident);
+    ASSERT_TRUE(secondCoincident.value().constraint);
     expectPosition(sketch_->pointPosition(first).value(), {5, 3});
     expectPosition(sketch_->pointPosition(second).value(), {7, -2});
     expectPosition(sketch_->pointPosition({firstPoint.value(), SubElement::Whole}).value(), {5, 3});
@@ -353,7 +360,7 @@ TEST_F(SketchBehavior, RemovingEntityCascadesConstraintsOnItsSubElements) {
     EXPECT_TRUE(sketch_->solve());
 }
 
-TEST_F(SketchBehavior, CoincidentPlacementPreparesMidpointWithoutSolvingOtherEquations) {
+TEST_F(SketchBehavior, CoincidentTargetInsertionAlsoSolvesOtherEquations) {
     auto first = sketch_->addPoint({0, 2});
     auto second = sketch_->addPoint({8, 6});
     auto dirtyLine = sketch_->addLine({20, 0}, {24, 3});
@@ -364,22 +371,23 @@ TEST_F(SketchBehavior, CoincidentPlacementPreparesMidpointWithoutSolvingOtherEqu
     const GeometryRef a{first.value(), SubElement::Whole};
     const GeometryRef b{second.value(), SubElement::Whole};
 
-    auto added = sketch_->addCoincident(a, b, CoincidentPlacement::Midpoint);
+    const std::array<PointTarget, 1> targets{{{a, {4, 4}}}};
+    auto added = sketch_->addConstraint({ConstraintType::Coincident, {a, b}}, {targets});
     ASSERT_TRUE(added);
+    ASSERT_TRUE(added.value().constraint);
     expectPosition(sketch_->pointPosition(a).value(), {4, 4});
     expectPosition(sketch_->pointPosition(b).value(), {4, 4});
-    expectPosition(sketch_->pointPosition({dirtyLine.value(), SubElement::End}).value(), {24, 3});
-    auto constraint = sketch_->constraint(added.value());
+    EXPECT_NEAR(sketch_->pointPosition({dirtyLine.value(), SubElement::Start}).value().y,
+                sketch_->pointPosition({dirtyLine.value(), SubElement::End}).value().y, 1e-6);
+    auto constraint = sketch_->constraint(*added.value().constraint);
     ASSERT_TRUE(constraint);
     EXPECT_EQ(constraint.value().definition.type, ConstraintType::Coincident);
     EXPECT_EQ(constraint.value().definition.refs, (std::vector<GeometryRef>{a, b}));
     EXPECT_EQ(sketch_->constraintCount(), 2U);
-    auto solved = sketch_->solve();
-    ASSERT_TRUE(solved);
-    EXPECT_EQ(solved.value().status, SolveStatus::Converged);
+    EXPECT_EQ(added.value().diagnostics.status, SolveStatus::Converged);
 }
 
-TEST_F(SketchBehavior, CoincidentPlacementSupportsCurveElementsAndPreservesOtherCoordinates) {
+TEST_F(SketchBehavior, CoincidentTargetsSupportCurveElementsAndPreserveUnconstrainedCoordinates) {
     auto line = sketch_->addEntity(Line2{{0, 0}, {4, 0}}, true);
     auto circle = sketch_->addCircle({8, 2}, 3);
     auto arc = sketch_->addArc({20, 0}, {22, 0}, {20, 2});
@@ -390,7 +398,10 @@ TEST_F(SketchBehavior, CoincidentPlacementSupportsCurveElementsAndPreservesOther
     ASSERT_TRUE(point);
     const GeometryRef lineEnd{line.value(), SubElement::End};
     const GeometryRef center{circle.value(), SubElement::Center};
-    ASSERT_TRUE(sketch_->addCoincident(lineEnd, center));
+    const std::array<PointTarget, 1> lineTargets{{{lineEnd, {6, 1}}}};
+    const auto lineCoincident = sketch_->addConstraint({ConstraintType::Coincident, {lineEnd, center}}, {lineTargets});
+    ASSERT_TRUE(lineCoincident);
+    ASSERT_TRUE(lineCoincident.value().constraint);
     expectPosition(sketch_->pointPosition(lineEnd).value(), {6, 1});
     expectPosition(sketch_->pointPosition(center).value(), {6, 1});
     expectPosition(sketch_->pointPosition({line.value(), SubElement::Start}).value(), {0, 0});
@@ -398,15 +409,18 @@ TEST_F(SketchBehavior, CoincidentPlacementSupportsCurveElementsAndPreservesOther
     EXPECT_DOUBLE_EQ(std::get<Circle2>(sketch_->entity(circle.value()).value().geometry).radius, 3);
 
     const GeometryRef arcStart{arc.value(), SubElement::Start};
-    ASSERT_TRUE(sketch_->addCoincident(arcStart, {point.value(), SubElement::Whole}));
-    // The initial arc guess may be noncircular until the explicit solve.
+    const std::array<PointTarget, 1> arcTargets{{{arcStart, {24, 0}}}};
+    const auto arcCoincident = sketch_->addConstraint({ConstraintType::Coincident, {arcStart, {point.value(), SubElement::Whole}}}, {arcTargets});
+    ASSERT_TRUE(arcCoincident);
+    ASSERT_TRUE(arcCoincident.value().constraint);
     expectPosition(sketch_->pointPosition(arcStart).value(), {24, 0});
     expectPosition(sketch_->pointPosition({point.value(), SubElement::Whole}).value(), {24, 0});
-    expectPosition(sketch_->pointPosition({arc.value(), SubElement::Center}).value(), {20, 0});
-    expectPosition(sketch_->pointPosition({arc.value(), SubElement::End}).value(), {20, 2});
+    const auto solvedArc = std::get<Arc2>(sketch_->entity(arc.value()).value().geometry);
+    EXPECT_NEAR(std::hypot(solvedArc.start.x - solvedArc.center.x, solvedArc.start.y - solvedArc.center.y),
+                std::hypot(solvedArc.end.x - solvedArc.center.x, solvedArc.end.y - solvedArc.center.y), 1e-6);
 }
 
-TEST_F(SketchBehavior, CoincidentPlacementMovesEntireTransitiveGroups) {
+TEST_F(SketchBehavior, CoincidentTargetsMoveEntireTransitiveGroups) {
     auto created = sketch_->addEntities(std::array<EntityCreation, 4>{{{Point2{{0, 0}}}, {Point2{{0, 0}}}, {Point2{{0, 0}}}, {Point2{{6, 4}}}}});
     ASSERT_TRUE(created);
     const auto& ids = created.value();
@@ -416,13 +430,16 @@ TEST_F(SketchBehavior, CoincidentPlacementMovesEntireTransitiveGroups) {
     const GeometryRef d{ids[3], SubElement::Whole};
     ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {a, b}, std::nullopt, std::nullopt}));
     ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {b, c}, std::nullopt, std::nullopt}));
-    ASSERT_TRUE(sketch_->addCoincident(c, d));
+    const std::array<PointTarget, 1> targets{{{c, {3, 2}}}};
+    const auto coincident = sketch_->addConstraint({ConstraintType::Coincident, {c, d}}, {targets});
+    ASSERT_TRUE(coincident);
+    ASSERT_TRUE(coincident.value().constraint);
     for (const auto ref : {a, b, c, d}) {
         expectPosition(sketch_->pointPosition(ref).value(), {3, 2});
     }
 }
 
-TEST_F(SketchBehavior, CoincidentPlacementRespectsFixOnAnotherMemberInEitherArgumentOrder) {
+TEST_F(SketchBehavior, CoincidentTargetsRespectFixOnAnotherMemberInEitherArgumentOrder) {
     for (bool reverse : {false, true}) {
         auto anchor = sketch_->addPoint({1, 2});
         auto linked = sketch_->addPoint({1, 2});
@@ -435,7 +452,11 @@ TEST_F(SketchBehavior, CoincidentPlacementRespectsFixOnAnotherMemberInEitherArgu
         const GeometryRef freeRef{free.value(), SubElement::Whole};
         ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {fixedRef, linkedRef}, std::nullopt, std::nullopt}));
         ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {fixedRef}, std::nullopt, Vec2{1, 2}}));
-        ASSERT_TRUE(sketch_->addCoincident(reverse ? freeRef : linkedRef, reverse ? linkedRef : freeRef));
+        const std::array<PointTarget, 1> targets{{{freeRef, {5, 5}}}};
+        const auto coincident = sketch_->addConstraint({ConstraintType::Coincident, {reverse ? freeRef : linkedRef, reverse ? linkedRef : freeRef}},
+                                                      {targets, TargetPolicy::Prefer});
+        ASSERT_TRUE(coincident);
+        ASSERT_TRUE(coincident.value().constraint);
         for (const auto ref : {fixedRef, linkedRef, freeRef}) {
             expectPosition(sketch_->pointPosition(ref).value(), {1, 2});
         }
@@ -445,7 +466,7 @@ TEST_F(SketchBehavior, CoincidentPlacementRespectsFixOnAnotherMemberInEitherArgu
     }
 }
 
-TEST_F(SketchBehavior, CoincidentPlacementUsesExplicitFixTargetBeforeSolving) {
+TEST_F(SketchBehavior, CoincidentTargetsRespectExplicitFixTarget) {
     auto fixed = sketch_->addPoint({0, 0});
     auto free = sketch_->addPoint({9, 8});
     ASSERT_TRUE(fixed);
@@ -453,7 +474,10 @@ TEST_F(SketchBehavior, CoincidentPlacementUsesExplicitFixTargetBeforeSolving) {
     const GeometryRef a{fixed.value(), SubElement::Whole};
     const GeometryRef b{free.value(), SubElement::Whole};
     ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {a}, std::nullopt, Vec2{1, 2}}));
-    ASSERT_TRUE(sketch_->addCoincident(a, b));
+    const std::array<PointTarget, 1> targets{{{b, {5, 5}}}};
+    const auto coincident = sketch_->addConstraint({ConstraintType::Coincident, {a, b}}, {targets, TargetPolicy::Prefer});
+    ASSERT_TRUE(coincident);
+    ASSERT_TRUE(coincident.value().constraint);
     expectPosition(sketch_->pointPosition(b).value(), {1, 2});
     auto solved = sketch_->solve();
     ASSERT_TRUE(solved);
@@ -462,7 +486,7 @@ TEST_F(SketchBehavior, CoincidentPlacementUsesExplicitFixTargetBeforeSolving) {
     expectPosition(sketch_->pointPosition(b).value(), {1, 2});
 }
 
-TEST_F(SketchBehavior, CoincidentPlacementDoesNotReseedAnExistingGroup) {
+TEST_F(SketchBehavior, CoincidentInsertionDoesNotReseedAnExistingGroup) {
     auto first = sketch_->addPoint({0, 0});
     auto second = sketch_->addPoint({0, 0});
     ASSERT_TRUE(first);
@@ -475,12 +499,12 @@ TEST_F(SketchBehavior, CoincidentPlacementDoesNotReseedAnExistingGroup) {
     const auto beforeB = sketch_->pointPosition(b);
     ASSERT_TRUE(beforeA);
     ASSERT_TRUE(beforeB);
-    ASSERT_TRUE(sketch_->addCoincident(a, b));
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {a, b}}));
     expectPosition(sketch_->pointPosition(a).value(), beforeA.value());
     expectPosition(sketch_->pointPosition(b).value(), beforeB.value());
 }
 
-TEST_F(SketchBehavior, CoincidentPlacementLeavesConflictingFixedTargetsForExplicitSolve) {
+TEST_F(SketchBehavior, CoincidentTargetInsertionRejectsConflictingFixedTargets) {
     auto first = sketch_->addPoint({0, 0});
     auto second = sketch_->addPoint({5, 0});
     ASSERT_TRUE(first);
@@ -491,33 +515,16 @@ TEST_F(SketchBehavior, CoincidentPlacementLeavesConflictingFixedTargetsForExplic
     auto fixB = sketch_->addConstraint({ConstraintType::Fix, {b}, std::nullopt, Vec2{5, 0}});
     ASSERT_TRUE(fixA);
     ASSERT_TRUE(fixB);
-    ASSERT_TRUE(sketch_->addCoincident(a, b));
+    const std::array<PointTarget, 1> targets{{{a, {2.5, 0}}}};
+    const auto coincident = sketch_->addConstraint({ConstraintType::Coincident, {a, b}}, {targets, TargetPolicy::Prefer});
+    ASSERT_TRUE(coincident);
+    EXPECT_FALSE(coincident.value().constraint);
     EXPECT_EQ(sketch_->constraint(fixA.value()).value().definition.fixedPosition, (std::optional<Vec2>{{0, 0}}));
     EXPECT_EQ(sketch_->constraint(fixB.value()).value().definition.fixedPosition, (std::optional<Vec2>{{5, 0}}));
-    auto solved = sketch_->solve();
-    ASSERT_TRUE(solved);
-    EXPECT_EQ(solved.value().status, SolveStatus::Failed);
+    EXPECT_EQ(coincident.value().diagnostics.status, SolveStatus::Failed);
 }
 
-TEST_F(SketchBehavior, CoincidentPreserveUsesOrdinaryConstraintInsertion) {
-    auto first = sketch_->addPoint({0, 0});
-    auto second = sketch_->addPoint({8, 4});
-    ASSERT_TRUE(first);
-    ASSERT_TRUE(second);
-    auto state = sketch_->snapshot();
-    ASSERT_TRUE(state);
-    Sketch ordinary;
-    ASSERT_TRUE(ordinary.replaceState(state.value()));
-    const GeometryRef a{first.value(), SubElement::Whole};
-    const GeometryRef b{second.value(), SubElement::Whole};
-    ASSERT_TRUE(ordinary.addConstraint({ConstraintType::Coincident, {a, b}, std::nullopt, std::nullopt}));
-    ASSERT_TRUE(sketch_->addCoincident(a, b, CoincidentPlacement::Preserve));
-    for (const auto ref : {a, b}) {
-        expectPosition(sketch_->pointPosition(ref).value(), ordinary.pointPosition(ref).value());
-    }
-}
-
-TEST_F(SketchBehavior, CoincidentPlacementPrevalidatesReferencesAndPolicyWithoutEditing) {
+TEST_F(SketchBehavior, CoincidentTargetInsertionPrevalidatesReferencesAndPolicyWithoutEditing) {
     auto point = sketch_->addPoint({0, 0});
     auto line = sketch_->addLine({6, 2}, {8, 3});
     ASSERT_TRUE(point);
@@ -526,10 +533,12 @@ TEST_F(SketchBehavior, CoincidentPlacementPrevalidatesReferencesAndPolicyWithout
     const GeometryRef b{line.value(), SubElement::Start};
     auto before = sketch_->snapshot();
     ASSERT_TRUE(before);
-    expectError(sketch_->addCoincident(a, a), ErrorCode::InvalidArgument);
-    expectError(sketch_->addCoincident(a, {line.value(), SubElement::Whole}), ErrorCode::InvalidArgument);
-    expectError(sketch_->addCoincident(a, {EntityId(9999), SubElement::Whole}), ErrorCode::NotFound);
-    expectError(sketch_->addCoincident(a, b, static_cast<CoincidentPlacement>(99)), ErrorCode::InvalidArgument);
+    const std::array<PointTarget, 1> targets{{{a, {3, 1}}}};
+    const std::array<PointTarget, 1> invalidTargets{{{{line.value(), SubElement::Whole}, {3, 1}}}};
+    expectError(sketch_->addConstraint({ConstraintType::Coincident, {a, a}}, {targets}), ErrorCode::InvalidArgument);
+    expectError(sketch_->addConstraint({ConstraintType::Coincident, {a, b}}, {invalidTargets}), ErrorCode::InvalidArgument);
+    expectError(sketch_->addConstraint({ConstraintType::Coincident, {a, {EntityId(9999), SubElement::Whole}}}, {targets}), ErrorCode::NotFound);
+    expectError(sketch_->addConstraint({ConstraintType::Coincident, {a, b}}, {targets, static_cast<TargetPolicy>(99)}), ErrorCode::InvalidArgument);
     expectPosition(sketch_->pointPosition(a).value(), {0, 0});
     expectPosition(sketch_->pointPosition(b).value(), {6, 2});
     EXPECT_EQ(sketch_->constraintCount(), 0U);
@@ -538,7 +547,7 @@ TEST_F(SketchBehavior, CoincidentPlacementPrevalidatesReferencesAndPolicyWithout
     EXPECT_EQ(after.value().lastConstraintId, before.value().lastConstraintId);
 }
 
-TEST_F(SketchBehavior, CoincidentPlacementChecksIdCapacityBeforeMovingPoints) {
+TEST_F(SketchBehavior, CoincidentTargetInsertionChecksIdCapacityBeforeMovingPoints) {
     auto first = sketch_->addPoint({0, 0});
     auto second = sketch_->addPoint({8, 4});
     ASSERT_TRUE(first);
@@ -549,7 +558,8 @@ TEST_F(SketchBehavior, CoincidentPlacementChecksIdCapacityBeforeMovingPoints) {
     ASSERT_TRUE(sketch_->replaceState(state.value()));
     const GeometryRef a{first.value(), SubElement::Whole};
     const GeometryRef b{second.value(), SubElement::Whole};
-    expectError(sketch_->addCoincident(a, b), ErrorCode::BackendFailure);
+    const std::array<PointTarget, 1> targets{{{a, {4, 2}}}};
+    expectError(sketch_->addConstraint({ConstraintType::Coincident, {a, b}}, {targets}), ErrorCode::BackendFailure);
     expectPosition(sketch_->pointPosition(a).value(), {0, 0});
     expectPosition(sketch_->pointPosition(b).value(), {8, 4});
     EXPECT_EQ(sketch_->constraintCount(), 0U);
@@ -562,7 +572,10 @@ TEST_F(SketchBehavior, CoincidentMidpointAvoidsOverflowForLargeFiniteCoordinates
     ASSERT_TRUE(second);
     const GeometryRef a{first.value(), SubElement::Whole};
     const GeometryRef b{second.value(), SubElement::Whole};
-    ASSERT_TRUE(sketch_->addCoincident(a, b));
+    const std::array<PointTarget, 1> targets{{{a, {std::midpoint(1.2e308, 1.6e308), std::midpoint(-1.6e308, 1.6e308)}}}};
+    const auto coincident = sketch_->addConstraint({ConstraintType::Coincident, {a, b}}, {targets});
+    ASSERT_TRUE(coincident);
+    ASSERT_TRUE(coincident.value().constraint);
     for (const auto ref : {a, b}) {
         const auto position = sketch_->pointPosition(ref);
         ASSERT_TRUE(position);

@@ -10,7 +10,7 @@
 LineTool::LineTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
     :IInteractionTool(document,camera,snap,overlay, picker) {}
 
-std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e) {
+void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
@@ -46,11 +46,9 @@ std::optional<ActionReport> LineTool::onMouseMove(const input::MouseMoveEvent& e
         overlay_.points_[0].x = v.x;
         overlay_.points_[0].y = v.y;
     }
-    return std::nullopt;
 }
 
-
-std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEvent& e) {
+void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
@@ -84,7 +82,6 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
             }
 
             auto addResult = document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y});
-            ActionReport report = ActionReport::creation(ActionKind::CreateLine, addResult);
 
             if (addResult) {
                 const auto lineId = addResult.value();
@@ -154,11 +151,7 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
                     if (validType && document_.sketch().supportsConstraint(def)) {
                         auto c = document_.sketch().addConstraint(def);
                         if (c) {
-                            report.constraintIds.push_back(c.value());
-                            report.requestedConstraints++;
                             needsSolve = true;
-                        } else {
-                            report.operationError = c.error();
                         }
                     }
                 };
@@ -171,7 +164,6 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
 
                 if (needsSolve) {
                     auto solved = document_.sketch().solve();
-                    report.recordSolve(solved);
                     if (!solved || solved.value().status != core::sketch::SolveStatus::Converged) {
                         std::cout << "solve err in LineTool" << std::endl;
                     }
@@ -190,14 +182,11 @@ std::optional<ActionReport> LineTool::onMouseButton(const input::MouseButtonEven
             state_ = State::WaitingFirstPoint;
 
             overlay_.clearPreview();
-            return report;
         }
     }
-    return std::nullopt;
 }
 
-
-std::optional<ActionReport> LineTool::onKey(const input::KeyEvent& e) {
+void LineTool::onKey(const input::KeyEvent& e) {
     if (input::has_flag(e.modifiers, input::Modifiers::Shift) &&
         e.action == input::KeyAction::Press &&
         state_ == State::WaitingSecondPoint) {
@@ -225,15 +214,14 @@ std::optional<ActionReport> LineTool::onKey(const input::KeyEvent& e) {
         overlay_.points_[0].x = v.x;
         overlay_.points_[0].y = v.y;
     }
-    return std::nullopt;
 }
 
-ToolCancellation LineTool::cancel() {
+bool LineTool::cancel() {
     if (state_ == State::WaitingSecondPoint) {
         overlay_.clearPreview();
         state_ = State::WaitingFirstPoint;
-        return {true, std::nullopt};
+        return true;
     }
-    return {};
+    return false;
 }
 

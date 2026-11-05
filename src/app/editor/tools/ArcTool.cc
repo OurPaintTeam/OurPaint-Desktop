@@ -22,7 +22,7 @@ void ArcTool::reset() {
     overlay_.clearPreview();
 }
 
-std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
+void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
     snap::SnapRequest request;
@@ -49,7 +49,7 @@ std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e)
             if (step_ == Step::WaitingThirdInput) {
                 Arc ca = buildArcFromThreePoints(points_[0], points_[1], cursor);
                 if (!ca.valid) {
-                    return std::nullopt;
+                    return;
                 }
                 if (!overlay_.arcs_.empty()) {
                     overlay_.arcs_[0].r = ca.r;
@@ -67,11 +67,10 @@ std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e)
             }
             break;
     }
-    return std::nullopt;
 }
-std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
+void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
-        return std::nullopt;
+        return;
     }
 
     glm::dvec2 cursor = screenToWorld(e.x, e.y);
@@ -81,40 +80,40 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
         cursor.y = snap_result_.point.position.y;
     }
 
-    auto applyArcConstraints = [&](ActionReport& report, const snap::SnapResult& startSnap, const snap::SnapResult& endSnap) -> bool {
-        if (report.entityIds.empty()) {
-            return false;
-        }
-        const auto arcId = report.entityIds[0];
-        bool needsSolve = false;
-
-        auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement arcSub) {
-            if (!snap.snapped || snap.objects.empty()) {
-                return;
-            }
-
-            core::sketch::ConstraintDefinition def;
-            def.type = core::sketch::ConstraintType::Coincident;
-            def.refs = {{arcId, arcSub}, snap.objects[0]};
-
-            if (document_.sketch().supportsConstraint(def)) {
-                auto c = document_.sketch().addConstraint(def);
-                if (c) {
-                    report.constraintIds.push_back(c.value());
-                    report.requestedConstraints++;
-                    needsSolve = true;
-                } else {
-                    report.operationError = c.error();
-                }
-            }
-        };
-
-        tryAddConstraint(startSnap, core::sketch::SubElement::Start);
-        tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
-        tryAddConstraint(endSnap, core::sketch::SubElement::End);
-
-        return needsSolve;
-    };
+    // auto applyArcConstraints = [&](ActionReport& report, const snap::SnapResult& startSnap, const snap::SnapResult& endSnap) -> bool {
+    //     if (report.entityIds.empty()) {
+    //         return false;
+    //     }
+    //     const auto arcId = report.entityIds[0];
+    //     bool needsSolve = false;
+    //
+    //     auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement arcSub) {
+    //         if (!snap.snapped || snap.objects.empty()) {
+    //             return;
+    //         }
+    //
+    //         core::sketch::ConstraintDefinition def;
+    //         def.type = core::sketch::ConstraintType::Coincident;
+    //         def.refs = {{arcId, arcSub}, snap.objects[0]};
+    //
+    //         if (document_.sketch().supportsConstraint(def)) {
+    //             auto c = document_.sketch().addConstraint(def);
+    //             if (c) {
+    //                 report.constraintIds.push_back(c.value());
+    //                 report.requestedConstraints++;
+    //                 needsSolve = true;
+    //             } else {
+    //                 report.operationError = c.error();
+    //             }
+    //         }
+    //     };
+    //
+    //     tryAddConstraint(startSnap, core::sketch::SubElement::Start);
+    //     tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
+    //     tryAddConstraint(endSnap, core::sketch::SubElement::End);
+    //
+    //     return needsSolve;
+    // };
 
     switch (mode_) {
         case Mode::ThreePoints:
@@ -141,39 +140,36 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
                 sketch::Vec2 start = {a.cx + a.r * std::cos(a.startAngle), a.cy + a.r * std::sin(a.startAngle)};
                 sketch::Vec2 end = {a.cx + a.r * std::cos(a.endAngle), a.cy + a.r * std::sin(a.endAngle)};
 
-                auto report = ActionReport::creation(ActionKind::CreateArc, document_.sketch().addArc(center, start, end));
+                document_.sketch().addArc(center, start, end);
 
                 double dist0ToStart = glm::distance(points_[0], glm::dvec2(start.x, start.y));
                 double dist0ToEnd = glm::distance(points_[0], glm::dvec2(end.x, end.y));
 
                 bool isSwapped = dist0ToStart > dist0ToEnd;
 
-                bool needsSolve = applyArcConstraints(report, isSwapped ? thirdSnap_ : firstSnap_, isSwapped ? firstSnap_ : thirdSnap_);
+                //bool needsSolve = applyArcConstraints(report, isSwapped ? thirdSnap_ : firstSnap_, isSwapped ? firstSnap_ : thirdSnap_);
 
-                if (needsSolve) {
-                    report.recordSolve(document_.sketch().solve());
-                }
+                // if (needsSolve) {
+                //     document_.sketch().solve();
+                // }
 
                 reset();
-                return report;
             }
             break;
     }
-    return std::nullopt;
 }
 
-std::optional<ActionReport> ArcTool::onKey(const input::KeyEvent& e) {
+void ArcTool::onKey(const input::KeyEvent& e) {
     (void)e;
-    return std::nullopt;
 }
 
-ToolCancellation ArcTool::cancel() {
+bool ArcTool::cancel() {
     if (points_.empty()) {
         return {};
     }
 
     reset();
-    return {true, std::nullopt};
+    return false;
 }
 
 glm::dvec2 ArcTool::screenToWorld(double x, double y) const { return camera_.screenLogicalToWorld({x, y}); }

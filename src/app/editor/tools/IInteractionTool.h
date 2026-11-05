@@ -2,7 +2,6 @@
 #define OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
 
 #include "../../platform/InputEvents.h"
-#include "../ActionReport.h"
 #include "OverlayModel.h"
 #include "SnapFeedback.h"
 #include "snapping/SnapSystem.h"
@@ -24,8 +23,7 @@ protected:
     Cpu2dPicker& picker_;
     snap::SnapResult snap_result_;
 
-
-    virtual void snapVisual(const snap::SnapRequest& request) {
+    void snapVisual(const snap::SnapRequest& request) {
         const auto snap_result = snap_.getSnapCandidate(request);
         snap_result_ = snap_result;
 
@@ -115,14 +113,13 @@ public:
 
     virtual ~IInteractionTool() {}
 
-    virtual std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) = 0;
-    virtual std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) = 0;
-    virtual std::optional<ActionReport> onKey(const input::KeyEvent& e) = 0;
+    virtual void onMouseMove(const input::MouseMoveEvent& e) = 0;
+    virtual void onMouseButton(const input::MouseButtonEvent& e) = 0;
+    virtual void onKey(const input::KeyEvent& e) = 0;
 
-    // Pending input is discarded. Geometry edits already applied to Sketch are
-    // retained; presentation previews may restore their initial state. A gesture
-    // may return its outcome; handled=false lets the editor exit an empty tool.
-    virtual ToolCancellation cancel() = 0;
+    // true => cancel handled by tool
+    // false => nothing to cancel, caller may switch tool
+    virtual bool cancel() = 0;
 };
 
 #endif  // ! OURPAINT_APPLICATION_IINTERACTIONTOOL_H_

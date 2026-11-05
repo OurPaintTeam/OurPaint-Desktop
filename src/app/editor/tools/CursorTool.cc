@@ -12,52 +12,252 @@
 #include <utility>
 
 #include "../../viewport/constraints/ConstraintLayout.h"
-#include "../ConstraintActions.h"
 #include "DSU.h"
 #include "Document.h"
 
-namespace {
-bool sameGeometry(const sketch::SketchGeometry& first, const sketch::SketchGeometry& second) {
-    if (first.index() != second.index()) {
-        return false;
-    }
-    return std::visit(
-        [&](const auto& value) {
-            using Geometry = std::decay_t<decltype(value)>;
-            const auto& other = std::get<Geometry>(second);
-            if constexpr (std::is_same_v<Geometry, sketch::Point2>) {
-                return value.position == other.position;
-            } else if constexpr (std::is_same_v<Geometry, sketch::Line2>) {
-                return value.start == other.start && value.end == other.end;
-            } else if constexpr (std::is_same_v<Geometry, sketch::Circle2>) {
-                return value.center == other.center && value.radius == other.radius;
-            } else if constexpr (std::is_same_v<Geometry, sketch::Arc2>) {
-                return value.center == other.center && value.start == other.start && value.end == other.end;
-            } else {
-                return value.degree == other.degree && value.weights == other.weights && value.knots == other.knots &&
-                       std::equal(value.controlPoints.begin(), value.controlPoints.end(), other.controlPoints.begin(), other.controlPoints.end(),
-                                  [](const auto& a, const auto& b) { return a.position == b.position; });
-            }
-        },
-        first);
-}
+using namespace app;
 
-bool sameConstraint(const sketch::ConstraintDefinition& first, const sketch::ConstraintDefinition& second) {
-    return first.type == second.type && first.refs == second.refs && first.value == second.value && first.fixedPosition == second.fixedPosition &&
-           first.tangencyBranch == second.tangencyBranch;
-}
-}  // namespace
-
-CursorTool::CursorTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay,
-                       ConstraintActions& constraintActions, const app::ConstraintLayout& constraintLayout,
-                       app::ConstraintPresentationState& constraintPresentation)
+CursorTool::CursorTool(Document& document,
+                       Camera2D& camera,
+                       snap::SnapSystem& snap,
+                       Cpu2dPicker& picker,
+                       OverlayModel& overlay,
+                       const ConstraintLayout& constraintLayout,
+                       ConstraintPresentationState& constraintPresentation)
     : IInteractionTool(document, camera, snap, overlay, picker),
       sketch_(document.sketch()),
-      constraintActions_(constraintActions),
       constraintLayout_(constraintLayout),
       constraintPresentation_(constraintPresentation) {}
 
-std::optional<DimensionPickResult> CursorTool::pickDimension(glm::dvec2 position) const {
+void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
+    const glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
+    lastCursorWorldPos_ = v;
+
+    if (dimensionDrag_) {
+        if (input::has_flag(e.buttons, input::MouseButton::Left)) {
+            updateDimensionDrag({e.x, e.y});
+        } else {
+            // Recover if mouse capture was lost and no release event reached the tool.
+            endDimensionDrag(false);
+        }
+        return;
+    }
+    // Hover for dimensions
+    overlay_.hoveredDimension.reset();
+    if (state_ == State::Idle && e.buttons == input::MouseButton::None && e.modifiers == input::Modifiers::None) {
+        if (const auto hit = pickDimension({e.x, e.y})) {
+            overlay_.hoveredDimension = hit->constraint;
+        }
+    }
+
+    if (input::has_flag(e.buttons, input::MouseButton::Left)) {
+
+        // Dragging selection items
+        if (state_ == State::DraggingSelection) {
+            const auto& refs = overlay_.selection_.model.items();
+            if (!refs.empty() && !dragStopped_ && (v.x != lastPos_.x || v.y != lastPos_.y)) {
+                auto constraints = sketch_.constraints();
+
+                // Check: first selected entity is circle
+                auto result = sketch_.entity(refs[0].entity);
+                if (!result) {
+                    dragStopped_ = true;
+                    return;
+                }
+                const auto& geometry = result.value().geometry;
+                const auto* circle = std::get_if<sketch::Circle2>(&geometry);
+                const sketch::Vec2 offset{v.x - pressWorldPos_.x, v.y - pressWorldPos_.y};
+                bool c = false;
+                if (circle) {
+                    c = true;
+                    for (auto constraint : constraints.value()) {
+                        if (constraint.definition.type == sketch::ConstraintType::Radius &&
+                            constraint.definition.refs[0] == refs[0]) {
+                            c = false;
+                        }
+                    }
+                }
+
+                // If this is just one circle then change radius
+                if (refs.size() == 1 && refs[0].sub == sketch::SubElement::Whole && c) {
+                    const double radius = std::hypot(v.x - circle->center.x, v.y - circle->center.y);
+                    if (radius == circle->radius) {
+                        lastPos_ = v;
+                        return;
+                    }
+                    dragAttempted_ = true;
+                    const auto updated = sketch_.updateCircleRadius(refs[0].entity, radius);
+                    if (!updated) {
+                        dragStopped_ = true;
+                        return;
+                    }
+                    const auto solved = sketch_.solve();
+                    if (!solved || solved.value().status != sketch::SolveStatus::Converged) {
+                        dragStopped_ = true;
+                        return;
+                    }
+                }
+
+                // Else move selection items
+                else {
+                    dragAttempted_ = true;
+                    const auto dragged = moveSelection(offset);
+                    if (!dragged) {
+                        dragStopped_ = true;
+                        return;
+                    }
+                    if (dragged.value().status != sketch::SolveStatus::Converged) {
+                        //dragStopped_ = true;
+                        //return;
+                    }
+                }
+                lastPos_ = v;
+            }
+        }
+
+        // Rectangular Marquee
+        else if (state_ == State::MarqueeSelection) {
+            if (overlay_.selectionRect_.has_value()) {
+                overlay_.selectionRect_->xMax = v.x;
+                overlay_.selectionRect_->yMax = v.y;
+
+                const bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
+
+                const auto pickedRefs = picker_.pickInRectAtScreenLogical(lastScreenPos_.x, lastScreenPos_.y, e.x, e.y);
+                if (shift) {
+                    overlay_.selection_.model.replace(marqueeBaseSelection_);
+                    overlay_.selection_.model.add(pickedRefs);
+                } else {
+                    overlay_.selection_.model.replace(pickedRefs);
+                }
+                lastPos_ = v;
+            }
+        }
+    }
+}
+
+void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
+    if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
+        endDimensionDrag(false);
+        overlay_.hoveredDimension.reset();
+        bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
+        bool alt = input::has_flag(e.modifiers, input::Modifiers::Alt);
+
+        std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
+
+        // Add point-on-point constraint for near points
+        if (alt) {
+            state_ = State::Idle;
+            return tryApplyPointOnPointConstraintNearCursor(e.x, e.y);
+        }
+
+        // No modifiers -> mb pick dimensions
+        if (e.modifiers == input::Modifiers::None) {
+            if (const auto hit = pickDimension({e.x, e.y})) {
+                beginDimensionDrag(*hit, {e.x, e.y});
+                return;
+            }
+        }
+
+        // is anything selected
+        if (pickRes.has_value()) {
+            const auto ref = pickRes->ref;
+
+            if (shift) { // just toggle
+                overlay_.selection_.model.toggle(ref);
+                state_ = State::Idle;
+            } else {
+                if (!overlay_.selection_.model.contains(ref)) { // if not selected
+                    overlay_.selection_.model.replace(ref); // clear selection and select ref
+                }
+                pressWorldPos_ = camera_.screenLogicalToWorld({e.x, e.y});
+                lastPos_ = pressWorldPos_;
+                const auto prepared = prepareDragSelection(overlay_.selection_.model.items());
+                if (!prepared) {
+                    state_ = State::Idle;
+                    return;
+                }
+                state_ = State::DraggingSelection;
+            }
+        }
+        // nothing selected -> make a marquee rectangle
+        else {
+            state_ = State::MarqueeSelection;
+
+            marqueeBaseSelection_ = overlay_.selection_.model.items();
+
+            if (!shift) {
+                overlay_.selection_.model.clear();
+            }
+
+            glm::dvec2 worldPos = camera_.screenLogicalToWorld({e.x, e.y});
+            overlay_.selectionRect_ = OverlayModel::Rect(worldPos.x, worldPos.y, worldPos.x, worldPos.y);
+            lastScreenPos_ = {e.x, e.y};
+            pressWorldPos_ = worldPos;
+        }
+
+        return;
+    }
+
+    if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Release) {
+        if (dimensionDrag_) {
+            // Use the release position even if the last mouse-move event was coalesced.
+            updateDimensionDrag({e.x, e.y});
+            endDimensionDrag(true);
+        }
+        cancel();
+    }
+}
+
+void CursorTool::onKey(const input::KeyEvent& e) {
+    if (e.action != input::KeyAction::Press || e.isAutoRepeat) {
+        return;
+    }
+
+    // Delete
+    if (e.key == input::KeyCode::Delete) {
+        const auto& selected = overlay_.selection_.model.items();
+        std::set<sketch::EntityId> seen;
+        std::vector<sketch::EntityId> ids;
+        ids.reserve(selected.size());
+        for (const auto& ref : selected) {
+            if (seen.insert(ref.entity).second) {
+                ids.push_back(ref.entity);
+            }
+        }
+        if (ids.empty()) {
+            return;
+        }
+        const auto removed = sketch_.removeEntities(ids);
+        if (!removed) {
+            return;
+        }
+        overlay_.selection_.model.clear();
+        return;
+    }
+
+    // ctrl+C/ctrl+V
+    if (e.modifiers == input::Modifiers::Ctrl) {
+        if (e.key == input::KeyCode::C) {
+            copySelection();
+        } else if (e.key == input::KeyCode::V) {
+            pasteSelection();
+        }
+    }
+}
+
+bool CursorTool::cancel() {
+    endDimensionDrag(false);
+    overlay_.hoveredDimension.reset();
+    overlay_.draggedDimension.reset();
+    overlay_.selectionRect_.reset();
+    marqueeBaseSelection_.clear();
+    dragTargets_.clear();
+    state_ = State::Idle;
+    return false;
+}
+
+std::optional<DimensionPickResult> CursorTool:: pickDimension(glm::dvec2 position) const {
     const auto hit = picker_.pickDimensionAtScreenLogical(position.x, position.y, constraintLayout_);
     // Labels win over geometry, but a point remains reachable where a witness meets it.
     if (hit && (hit->part == DimensionPickResult::Part::Label || !picker_.pickPointAtScreenLogical(position.x, position.y))) {
@@ -121,243 +321,6 @@ void CursorTool::endDimensionDrag(bool commit) {
     state_ = State::Idle;
 }
 
-std::optional<ActionReport> CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
-    glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
-    lastCursorWorldPos_ = v;
-
-    if (dimensionDrag_) {
-        if (input::has_flag(e.buttons, input::MouseButton::Left)) {
-            updateDimensionDrag({e.x, e.y});
-        } else {
-            // Recover if mouse capture was lost and no release event reached the tool.
-            endDimensionDrag(false);
-        }
-        return std::nullopt;
-    }
-    overlay_.hoveredDimension.reset();
-    if (state_ == State::Idle && e.buttons == input::MouseButton::None && e.modifiers == input::Modifiers::None) {
-        if (const auto hit = pickDimension({e.x, e.y})) {
-            overlay_.hoveredDimension = hit->constraint;
-        }
-    }
-
-    if (input::has_flag(e.buttons, input::MouseButton::Left)) {
-        if (state_ == State::DraggingSelection) {
-            const auto& refs = overlay_.selection_.model.items();
-            if (!refs.empty() && !dragStopped_ && (v.x != lastPos_.x || v.y != lastPos_.y)) {
-                auto constraints = sketch_.constraints();
-                if (!dragReport_) {
-                    dragReport_.emplace(ActionReport{ActionKind::Drag});
-                    std::set<sketch::EntityId> owners;
-                    for (const auto& target : dragTargets_) {
-                        owners.insert(target.point.entity);
-                    }
-                    dragReport_->requestedEntities = owners.size();
-                    auto entities = sketch_.entities();
-                    if (!entities) {
-                        dragReport_->operationError = entities.error();
-                        dragStopped_ = true;
-                        return std::nullopt;
-                    }
-                    dragInitialEntities_ = std::move(entities.value());
-                    if (!constraints) {
-                        dragReport_->operationError = constraints.error();
-                        dragStopped_ = true;
-                        return std::nullopt;
-                    }
-                    dragInitialConstraints_ = std::move(constraints.value());
-                }
-                auto result = sketch_.entity(refs[0].entity);
-                if (!result) {
-                    dragReport_->operationError = result.error();
-                    dragStopped_ = true;
-                    return std::nullopt;
-                }
-                const auto& geometry = result.value().geometry;
-                const auto* circle = std::get_if<sketch::Circle2>(&geometry);
-                const sketch::Vec2 offset{v.x - pressWorldPos_.x, v.y - pressWorldPos_.y};
-                bool c = false;
-                if (circle) {
-                    c = true;
-                    for (auto constraint : constraints.value()) {
-                        if (constraint.definition.type == sketch::ConstraintType::Radius &&
-                            constraint.definition.refs[0] == refs[0]) {
-                            c = false;
-                        }
-                    }
-                }
-                if (refs.size() == 1 && refs[0].sub == sketch::SubElement::Whole && c) {
-                    const double radius = std::hypot(v.x - circle->center.x, v.y - circle->center.y);
-                    if (radius == circle->radius) {
-                        lastPos_ = v;
-                        return std::nullopt;
-                    }
-                    dragAttempted_ = true;
-                    const auto updated = sketch_.updateCircleRadius(refs[0].entity, radius);
-                    if (!updated) {
-                        dragReport_->mutationFailed(updated.error());
-                        dragStopped_ = true;
-                        return std::nullopt;
-                    }
-                    dragReport_->change = ModelChange::Changed;
-                    const auto solved = sketch_.solve();
-                    dragReport_->recordSolve(solved);
-                    if (!solved || solved.value().status != sketch::SolveStatus::Converged) {
-                        dragStopped_ = true;
-                        return std::nullopt;
-                    }
-                } else {
-                    dragAttempted_ = true;
-                    const auto dragged = moveSelection(offset);
-                    if (!dragged) {
-                        dragReport_->mutationFailed(dragged.error());
-                        dragStopped_ = true;
-                        return std::nullopt;
-                    }
-                    dragReport_->change = ModelChange::Changed;
-                    dragReport_->recordSolve(dragged);
-                    if (dragged.value().status != sketch::SolveStatus::Converged) {
-                        //dragStopped_ = true;
-                        //return std::nullopt;
-                    }
-                }
-                lastPos_ = v;
-            }
-        } else if (state_ == State::MarqueeSelection) {
-            if (overlay_.selectionRect_.has_value()) {
-                overlay_.selectionRect_->xMax = v.x;
-                overlay_.selectionRect_->yMax = v.y;
-
-                const bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
-
-                const auto pickedRefs = picker_.pickInRectAtScreenLogical(lastScreenPos_.x, lastScreenPos_.y, e.x, e.y);
-                if (shift) {
-                    overlay_.selection_.model.replace(marqueeBaseSelection_);
-                    overlay_.selection_.model.add(pickedRefs);
-                } else {
-                    overlay_.selection_.model.replace(pickedRefs);
-                }
-                lastPos_ = v;
-            }
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<ActionReport> CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
-    if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
-        endDimensionDrag(false);
-        overlay_.hoveredDimension.reset();
-        bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
-        bool alt = input::has_flag(e.modifiers, input::Modifiers::Alt);
-
-        std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
-
-        if (alt) {
-            state_ = State::Idle;
-            return tryApplyPointOnPointNearCursor(e.x, e.y);
-        }
-
-        if (e.modifiers == input::Modifiers::None) {
-            if (const auto hit = pickDimension({e.x, e.y})) {
-                beginDimensionDrag(*hit, {e.x, e.y});
-                return std::nullopt;
-            }
-        }
-
-        if (pickRes.has_value()) {
-            const auto ref = pickRes->ref;
-
-            if (shift) {
-                overlay_.selection_.model.toggle(ref);
-                state_ = State::Idle;
-            } else {
-                if (!overlay_.selection_.model.contains(ref)) {
-                    overlay_.selection_.model.replace(ref);
-                }
-                pressWorldPos_ = camera_.screenLogicalToWorld({e.x, e.y});
-                lastPos_ = pressWorldPos_;
-                const auto prepared = prepareDragSelection(overlay_.selection_.model.items());
-                if (!prepared) {
-                    state_ = State::Idle;
-                    ActionReport report{ActionKind::Drag};
-                    report.operationError = prepared.error();
-                    return report;
-                }
-                state_ = State::DraggingSelection;
-            }
-        } else {
-            state_ = State::MarqueeSelection;
-
-            marqueeBaseSelection_ = overlay_.selection_.model.items();
-
-            if (!shift) {
-                overlay_.selection_.model.clear();
-            }
-
-            glm::dvec2 worldPos = camera_.screenLogicalToWorld({e.x, e.y});
-            overlay_.selectionRect_ = OverlayModel::Rect(worldPos.x, worldPos.y, worldPos.x, worldPos.y);
-            lastScreenPos_ = {e.x, e.y};
-            pressWorldPos_ = worldPos;
-        }
-
-        return std::nullopt;
-    }
-
-    if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Release) {
-        if (dimensionDrag_) {
-            // Use the release position even if the last mouse-move event was coalesced.
-            updateDimensionDrag({e.x, e.y});
-            endDimensionDrag(true);
-            return std::nullopt;
-        }
-        return cancel().report;
-    }
-    return std::nullopt;
-}
-
-std::optional<ActionReport> CursorTool::onKey(const input::KeyEvent& e) {
-    if (e.action != input::KeyAction::Press || e.isAutoRepeat) {
-        return std::nullopt;
-    }
-
-    const auto& selected = overlay_.selection_.model.items();
-    if (e.key == input::KeyCode::Delete) {
-        std::set<sketch::EntityId> seen;
-        std::vector<sketch::EntityId> ids;
-        for (const auto& ref : selected) {
-            if (seen.insert(ref.entity).second) {
-                ids.push_back(ref.entity);
-            }
-        }
-        if (ids.empty()) {
-            return std::nullopt;
-        }
-        ActionReport report{ActionKind::Delete};
-        report.requestedEntities = ids.size();
-        const auto removed = sketch_.removeEntities(ids);
-        if (!removed) {
-            report.mutationFailed(removed.error());
-            return report;
-        }
-        report.change = ModelChange::Changed;
-        report.entityIds = std::move(ids);
-        overlay_.selection_.model.clear();
-        return report;
-    }
-
-    if (e.modifiers == input::Modifiers::Ctrl) {
-        if (e.key == input::KeyCode::C) {
-            copySelection();
-            return std::nullopt;
-        }
-        if (e.key == input::KeyCode::V) {
-            return pasteSelection();
-        }
-    }
-    return std::nullopt;
-}
-
 void CursorTool::copySelection() {
     ClipboardFragment fragment;
     std::set<sketch::EntityId> included;
@@ -409,14 +372,14 @@ void CursorTool::copySelection() {
     data_ = std::move(fragment);
 }
 
-std::optional<ActionReport> CursorTool::pasteSelection() {
+void CursorTool::pasteSelection() {
     if (data_.entities.empty()) {
-        return std::nullopt;
+        return;
     }
 
-    ActionReport report{ActionKind::Paste};
-    report.requestedEntities = data_.entities.size();
-    report.requestedConstraints = data_.constraints.size();
+    //ActionReport report{ActionKind::Paste};
+    //report.requestedEntities = data_.entities.size();
+    //report.requestedConstraints = data_.constraints.size();
     const sketch::Vec2 offset{lastCursorWorldPos_.x - data_.center.x, lastCursorWorldPos_.y - data_.center.y};
     const auto translate = [offset](sketch::Vec2& point) {
         point.x += offset.x;
@@ -447,12 +410,12 @@ std::optional<ActionReport> CursorTool::pasteSelection() {
     }
 
     const auto added = sketch_.addEntities(creations);
-    if (!added) {
-        report.mutationFailed(added.error());
-        return report;
-    }
-    report.change = ModelChange::Changed;
-    report.entityIds = added.value();
+    // if (!added) {
+    //     report.mutationFailed(added.error());
+    //     return report;
+    // }
+    //report.change = ModelChange::Changed;
+    //report.entityIds = added.value();
     std::map<sketch::EntityId, sketch::EntityId> remapped;
     std::vector<sketch::GeometryRef> pasted;
     for (size_t i = 0; i < data_.entities.size(); ++i) {
@@ -479,72 +442,8 @@ std::optional<ActionReport> CursorTool::pasteSelection() {
     }
     sketch_.addConstraints(defs);
     const auto solved = sketch_.solve();
-    report.recordSolve(solved);
-    return report;
-}
-
-ToolCancellation CursorTool::cancel() {
-    const bool handled = state_ != State::Idle;
-    endDimensionDrag(false);
-    overlay_.hoveredDimension.reset();
-    overlay_.draggedDimension.reset();
-    auto report = finishDrag();
-    overlay_.selectionRect_.reset();
-    marqueeBaseSelection_.clear();
-    dragTargets_.clear();
-    state_ = State::Idle;
-    return {handled, std::move(report)};
-}
-
-std::optional<ActionReport> CursorTool::finishDrag() {
-    auto report = std::move(dragReport_);
-    dragReport_.reset();
-    if (report && dragAttempted_ && dragInitialEntities_ && dragInitialConstraints_) {
-        const auto entities = sketch_.entities();
-        const auto constraints = sketch_.constraints();
-        if (!entities || !constraints) {
-            if (!report->operationError) {
-                report->operationError = !entities ? entities.error() : constraints.error();
-            }
-            if (report->change != ModelChange::Unchanged) {
-                report->change = ModelChange::PotentiallyChanged;
-            }
-        } else {
-            const auto& initial = *dragInitialEntities_;
-            const auto& current = entities.value();
-            for (size_t i = 0; i < current.size(); ++i) {
-                if (i >= initial.size() || current[i].id != initial[i].id || current[i].construction != initial[i].construction ||
-                    !sameGeometry(current[i].geometry, initial[i].geometry)) {
-                    report->entityIds.push_back(current[i].id);
-                }
-            }
-            const auto& initialConstraints = *dragInitialConstraints_;
-            const auto& currentConstraints = constraints.value();
-            for (size_t i = 0; i < currentConstraints.size(); ++i) {
-                if (i >= initialConstraints.size() || currentConstraints[i].id != initialConstraints[i].id ||
-                    !sameConstraint(currentConstraints[i].definition, initialConstraints[i].definition)) {
-                    report->constraintIds.push_back(currentConstraints[i].id);
-                }
-            }
-            // Drag retains topology. Comparing once also catches solver movement
-            // and tangency branch changes without full-model queries on every move.
-            if (report->change != ModelChange::PotentiallyChanged) {
-                report->change = report->entityIds.empty() && report->constraintIds.empty() && current.size() == initial.size() &&
-                                         currentConstraints.size() == initialConstraints.size()
-                                     ? ModelChange::Unchanged
-                                     : ModelChange::Changed;
-            }
-        }
-    }
-    dragInitialEntities_.reset();
-    dragInitialConstraints_.reset();
-    dragAttempted_ = false;
-    dragStopped_ = false;
-    if (report && report->change == ModelChange::Unchanged && !report->operationError && !report->solveError &&
-        (!report->solve || report->solve->status == sketch::SolveStatus::Converged)) {
-        return std::nullopt;
-    }
-    return report;
+    //report.recordSolve(solved);
+    //return report;
 }
 
 sketch::Status CursorTool::prepareDragSelection(std::span<const sketch::GeometryRef> refs) {
@@ -584,23 +483,18 @@ sketch::Result<sketch::SolveDiagnostics> CursorTool::moveSelection(sketch::Vec2 
     return sketch_.dragPoints(requests, {sketch::TangencyDragPolicy::SwitchLineSide, camera_.screenLogicalToWorld(4.0)});
 }
 
-ActionReport CursorTool::tryApplyPointOnPointNearCursor(double xLogic, double yLogic) {
-    ActionReport rejected{ActionKind::ApplyConstraint};
-    rejected.requestedConstraints = 1;
+void CursorTool::tryApplyPointOnPointConstraintNearCursor(double xLogic, double yLogic) {
     const glm::dvec2 worldCursor = camera_.screenLogicalToWorld({xLogic, yLogic});
     const auto points = sketch_.pointElements();
     if (!points) {
-        rejected.operationError = points.error();
-        return rejected;
+        return;
     }
     if (points.value().size() < 2) {
-        rejected.rejection = ActionRejection::InsufficientTargets;
-        return rejected;
+        return;
     }
     const auto constraints = sketch_.constraints();
     if (!constraints) {
-        rejected.operationError = constraints.error();
-        return rejected;
+        return;
     }
 
     const auto& elements = points.value();
@@ -640,8 +534,7 @@ ActionReport CursorTool::tryApplyPointOnPointNearCursor(double xLogic, double yL
         }
     }
     if (!first) {
-        rejected.rejection = ActionRejection::InsufficientTargets;
-        return rejected;
+        return;
     }
 
     std::optional<size_t> second;
@@ -657,14 +550,15 @@ ActionReport CursorTool::tryApplyPointOnPointNearCursor(double xLogic, double yL
         }
     }
     if (!second) {
-        rejected.rejection = ActionRejection::InsufficientTargets;
-        return rejected;
+        return;
     }
 
-    const std::array refs{elements[*first].ref, elements[*second].ref};
-    const auto prepared = constraintActions_.prepare({ConstraintAction::Coincident, std::nullopt}, refs);
-    if (prepared.state != ConstraintPreparation::State::Ready || !prepared.definition) {
-        return ConstraintActions::rejectedReport(prepared);
+    sketch::ConstraintDefinition def;
+    def.type = sketch::ConstraintType::Coincident;
+    def.refs = {elements[*first].ref, elements[*second].ref};
+    auto result = sketch_.addConstraint(def);
+    if (!result) {
+        return;
     }
-    return constraintActions_.apply(*prepared.definition);
+    sketch_.solve();
 }

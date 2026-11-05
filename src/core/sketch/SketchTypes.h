@@ -160,15 +160,13 @@ struct PointElement {
     Vec2 position;
 };
 enum class PointElementScope { StandalonePoints, CurveSubElements, All };
-// Midpoint prepares a symmetric initial guess; Preserve uses ordinary insertion.
-enum class CoincidentPlacement { Preserve, Midpoint };
 enum class ConstraintType {
-    Coincident,
+    Coincident, // Two points, point line, point circle, point arc, point nurbs.
     Horizontal,
     Vertical,
     Parallel,
     Perpendicular,
-    Tangent,
+    Tangent, // line circle, line arc, circle circle, circle arc, circle nurbs (line nurbs?, arc nurbs?).
     Equal,
     Fix,
     Concentric,
@@ -232,6 +230,19 @@ struct SketchConstraint {
 };
 
 enum class SolveStatus { Converged, Failed };
+// Targets apply to one solve only; they never create persistent constraints.
+struct PointTarget {
+    GeometryRef point;
+    Vec2 position;
+};
+enum class TargetPolicy {
+    Require,
+    Prefer
+};
+struct SolveOptions {
+    std::span<const PointTarget> pointTargets;
+    TargetPolicy targetPolicy = TargetPolicy::Require;
+};
 // Missing diagnostics mean unavailable, not zero/an empty diagnosis. A failed
 // solve may expose its current iterate; inspect status before treating geometry
 // as solved. Constraint IDs always refer to the public model.
@@ -240,6 +251,14 @@ struct SolveDiagnostics {
     std::optional<int> degreesOfFreedom;
     std::optional<std::vector<ConstraintId>> conflictingConstraints;
     std::optional<std::vector<ConstraintId>> redundantConstraints;
+    // Unavailable when no targets were requested. True only for an accepted solve.
+    std::optional<bool> targetsSatisfied;
+    bool usedFallback = false;
+};
+struct ConstraintSolveResult {
+    // Absent when solving failed and the insertion was rolled back.
+    std::optional<ConstraintId> constraint;
+    SolveDiagnostics diagnostics;
 };
 // One synchronous best-effort drag step of a point-like ref. Target is a solver
 // preference, not a persistent constraint or a guaranteed resulting coordinate.
