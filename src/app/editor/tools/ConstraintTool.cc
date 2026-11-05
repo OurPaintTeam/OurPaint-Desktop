@@ -38,7 +38,10 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
                 if (!pick) {
                     pick = picker_.pickLineAtScreenLogical(e.x, e.y);
                     if (!pick) {
-                        return;
+                        pick = picker_.pickCircleAtScreenLogical(e.x, e.y);
+                        if (!pick) {
+                            return;
+                        }
                     }
                 }
                 pushEntityToOverlay(pick.value().ref);
@@ -362,13 +365,33 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if (!pick) {
                     pick = picker_.pickLineAtScreenLogical(e.x, e.y);
                     if (!pick) {
-                        return;
+                        pick = picker_.pickCircleAtScreenLogical(e.x, e.y);
+                        if (!pick) {
+                            return;
+                        }
                     }
                 }
 
                 if (refs_.empty()) {
                     refs_.push_back(pick.value().ref);
                 }
+
+                // Circle radius case
+                if (refs_.size() == 1) {
+                    auto result = sketch_.entity(refs_[0].entity);
+                    if (!result) {
+                        refs_.clear();
+                        overlay_.selection_.model.clear();
+                        return;
+                    }
+                    auto& ent = result.value();
+                    if (std::holds_alternative<sketch::Circle2>(ent.geometry) && refs_[0].sub == sketch::SubElement::Whole) {
+                        constraintType_ = sketch::ConstraintType::Radius;
+                        break;
+                    }
+                }
+
+                // Lines and points cases
                 if (pick->ref == refs_.front()) {
                     return;
                 }
@@ -409,8 +432,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                         (firstIsLine && secondIsPoint)) {
                         constraintType_ = sketch::ConstraintType::Distance;
                     } else {
-                        refs_.clear();
-                        overlay_.selection_.model.clear();
+                        refs_.pop_back();
                         return;
                     }
                 }
@@ -419,6 +441,23 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             // Selection entities
             else {
                 refs_ = overlay_.selection_.model.items(); // should be two lines
+
+                // Circle radius case
+                if (refs_.size() == 1) {
+                    auto result = sketch_.entity(refs_[0].entity);
+                    if (!result) {
+                        refs_.clear();
+                        overlay_.selection_.model.clear();
+                        return;
+                    }
+                    auto& ent = result.value();
+                    if (std::holds_alternative<sketch::Circle2>(ent.geometry) && refs_[0].sub == sketch::SubElement::Whole) {
+                        constraintType_ = sketch::ConstraintType::Radius;
+                        break;
+                    }
+                }
+
+                // Points and lines
                 if (refs_.size() != 2) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
