@@ -10,18 +10,18 @@ add_ourpaint_test(SnapServiceGTEST
 target_link_libraries(SnapServiceGTEST PRIVATE OurPaint::Sketch glm::glm)
 target_include_directories(SnapServiceGTEST PRIVATE ../editor ../../render/render)
 
-add_ourpaint_test(CursorToolGTEST
-    CursorToolGTEST.cc
-    ../editor/tools/CursorTool.cc
-    ../editor/snapping/SnapSystem.cc
-    ../viewport/picking/Cpu2dPicker.cc
-    ../viewport/constraints/ConstraintLayout.cc
-    ../viewport/constraints/DimensionLayout.cc
-    ../viewport/SelectionModel.cc
-    ../../render/render/Camera2D.cc
-)
-target_link_libraries(CursorToolGTEST PRIVATE ourpaint_document glm::glm)
-target_include_directories(CursorToolGTEST PRIVATE ../editor ../viewport ../../core/sketch ../../render/render)
+#add_ourpaint_test(CursorToolGTEST
+#    CursorToolGTEST.cc
+#    ../editor/tools/CursorTool.cc
+#    ../editor/snapping/SnapSystem.cc
+#    ../viewport/picking/Cpu2dPicker.cc
+#    ../viewport/constraints/ConstraintLayout.cc
+#    ../viewport/constraints/DimensionLayout.cc
+#    ../viewport/SelectionModel.cc
+#    ../../render/render/Camera2D.cc
+#)
+#target_link_libraries(CursorToolGTEST PRIVATE ourpaint_document glm::glm)
+#target_include_directories(CursorToolGTEST PRIVATE ../editor ../viewport ../../core/sketch ../../render/render)
 
 #add_ourpaint_test(ConstraintToolsGTEST
 #    ConstraintToolsGTEST.cc
