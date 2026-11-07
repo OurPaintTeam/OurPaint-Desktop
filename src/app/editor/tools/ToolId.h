@@ -41,7 +41,8 @@ enum class ToolId {
     Concentric,
     Midpoint,
     Collinear,
-    Symmetric
+    Symmetric,
+    Curvature
 };
 
 #endif // ! OURPAINT_APPLICATION_TOOL_ID_H_

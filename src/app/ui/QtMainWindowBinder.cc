@@ -195,6 +195,9 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
             case UI::ConstraintType::Symmetric:
                 controller_.selectTool(ToolId::Symmetric, std::nullopt, tabName.toStdString());
                 break;
+            case UI::ConstraintType::Curvature:
+                controller_.selectTool(ToolId::Curvature, std::nullopt, tabName.toStdString());
+                break;
             default:
                 return;
         }

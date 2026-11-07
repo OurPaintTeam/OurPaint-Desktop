@@ -345,6 +345,8 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
             }
             break;
         }
+        case ToolId::Curvature:
+            return;
         default: {
             return;
         }
@@ -1260,6 +1262,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
             break;
         }
+        case ToolId::Curvature:
+            break;
         default: {
             return;
         }
