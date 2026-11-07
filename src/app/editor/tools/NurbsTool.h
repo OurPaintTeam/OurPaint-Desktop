@@ -9,9 +9,9 @@
 #include "OverlayModel.h"
 #include "RenderScene.h"
 
-class CubicBezierTool : public IInteractionTool {
+class NurbsTool : public IInteractionTool {
 public:
-    explicit CubicBezierTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker);
+    explicit NurbsTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker);
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;

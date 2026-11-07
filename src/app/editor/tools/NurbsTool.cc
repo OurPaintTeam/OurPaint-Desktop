@@ -1,18 +1,17 @@
-#include "CubicBezierTool.h"
-
 #include <iostream>
 
 #include "../../../core/Document.h"
 #include "../../../core/DocumentManager.h"
 #include "Camera2D.h"
+#include "NurbsTool.h"
 #include "objects/Objects.h"
 
-CubicBezierTool::CubicBezierTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
+NurbsTool::NurbsTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
     : IInteractionTool(document, camera, snap, overlay, picker) {}
 
-void CubicBezierTool::onMouseMove(const input::MouseMoveEvent& e) {}
+void NurbsTool::onMouseMove(const input::MouseMoveEvent& e) {}
 
-void CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
+void NurbsTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
         points_.push_back(v);
@@ -30,7 +29,7 @@ void CubicBezierTool::onMouseButton(const input::MouseButtonEvent& e) {
     }
 }
 
-void CubicBezierTool::onKey(const input::KeyEvent& e) {
+void NurbsTool::onKey(const input::KeyEvent& e) {
     if (e.action != input::KeyAction::Press || e.key != input::KeyCode::Enter || e.isAutoRepeat) {
         return;
     }
@@ -64,7 +63,7 @@ void CubicBezierTool::onKey(const input::KeyEvent& e) {
     return;
 }
 
-bool CubicBezierTool::cancel() {
+bool NurbsTool::cancel() {
     const bool handled = !points_.empty();
     points_.clear();
     overlay_.clear();

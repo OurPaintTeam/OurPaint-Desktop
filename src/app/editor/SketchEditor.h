@@ -12,10 +12,10 @@
 #include "tools/ArcTool.h"
 #include "tools/CircleTool.h"
 #include "tools/ConstraintTool.h"
-#include "tools/CubicBezierTool.h"
 #include "tools/CursorTool.h"
 #include "tools/IInteractionTool.h"
 #include "tools/LineTool.h"
+#include "tools/NurbsTool.h"
 #include "tools/PointTool.h"
 #include "tools/ToolId.h"
 
@@ -55,7 +55,7 @@ private:
     LineTool lineTool_;
     CircleTool circleTool_;
     ArcTool arcTool_;
-    CubicBezierTool bezierTool_;
+    NurbsTool bezierTool_;
 
     ConstraintTool constraintTool_;
 };

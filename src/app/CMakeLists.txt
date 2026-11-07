@@ -34,7 +34,7 @@ add_executable(ourpaint
         editor/tools/LineTool.cc
         editor/tools/CircleTool.cc
         editor/tools/CursorTool.cc
-        editor/tools/CubicBezierTool.cc
+        editor/tools/NurbsTool.cc
         editor/tools/ArcTool.cc
         editor/tools/ConstraintTool.cc
         viewport/picking/Cpu2dPicker.cc
