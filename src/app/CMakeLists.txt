@@ -66,7 +66,7 @@ target_include_directories(ourpaint PRIVATE
 set(TYPE_OF_COMPILING BOOL 1)
 if (TYPE_OF_COMPILING)
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(ourpaint PRIVATE -Wall -Wextra)# -Wpedantic -Werror)
+        target_compile_options(ourpaint PRIVATE -Wall -Wextra -Wpedantic)# -Werror)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         #target_compile_options(ourpaint PRIVATE /W4)
     endif ()

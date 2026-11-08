@@ -18,7 +18,7 @@ void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
 
     if (state_ == State::WaitingFirstPoint) {
          request = snap::SnapRequest{ core::sketch::Vec2{v.x, v.y}, snap::ToolType::Line, snap::DrawState::Idle};
-    }else if (state_ == State::WaitingSecondPoint) {
+    } else if (state_ == State::WaitingSecondPoint) {
         request = snap::SnapRequest {
             core::sketch::Vec2{v.x, v.y},
             snap::ToolType::Line,

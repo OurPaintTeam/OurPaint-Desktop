@@ -36,8 +36,6 @@ public:
 
 private:
     void pushConstraint();
-    void pushCoincident();
-
     void pushEntityToOverlay(const sketch::GeometryRef& ref) const;
 
     void pushPointToOverlay(double x, double y) const;

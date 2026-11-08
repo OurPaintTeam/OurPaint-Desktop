@@ -75,8 +75,7 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
             break;
         }
         case ToolId::HorizontalDistance:
-        case ToolId::VerticalDistance:
-        case ToolId::Coincident: {
+        case ToolId::VerticalDistance: {
             auto pick = picker_.pickPointAtScreenLogical(e.x, e.y);
             if (!pick) {
                 return;
@@ -85,6 +84,30 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
             if (position) {
                 pushPointToOverlay(position.value().x, position.value().y);
             }
+            break;
+        }
+        case ToolId::Coincident: {
+            std::optional<PickResult> pick;
+            if (refs_.empty()) {
+                pick = picker_.pickAtScreenLogical(e.x, e.y);
+            } else {
+                auto result = sketch_.entity(refs_[0].entity);
+                if (!result) {
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
+                auto& ent = result.value();
+                if (std::holds_alternative<sketch::Point2>(ent.geometry) || refs_[0].sub != sketch::SubElement::Whole) {
+                    pick = picker_.pickAtScreenLogical(e.x, e.y);
+                } else {
+                    pick = picker_.pickPointAtScreenLogical(e.x, e.y);
+                }
+            }
+            if (!pick) {
+                return;
+            }
+            pushEntityToOverlay(pick.value().ref);
             break;
         }
         case ToolId::Horizontal:
@@ -345,8 +368,9 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
             }
             break;
         }
-        case ToolId::Curvature:
+        case ToolId::Curvature: {
             return;
+        }
         default: {
             return;
         }
@@ -565,31 +589,158 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             break;
         }
         case ToolId::Coincident: {
-            // An invalid preselection must not silently become a partial selection.
-            if (refs_.empty() && !overlay_.selection_.model.empty()) {
-                refs_.clear();
-                overlay_.selection_.model.clear();
-                return;
+            bool pointPoint = false;
+            // Pick entities
+            if (overlay_.selection_.model.items().empty()) {
+                std::optional<PickResult> pick;
+                if (refs_.empty()) {
+                    pick = picker_.pickAtScreenLogical(e.x, e.y);
+                } else {
+                    auto result = sketch_.entity(refs_[0].entity);
+                    if (!result) {
+                        refs_.clear();
+                        overlay_.selection_.model.clear();
+                        return;
+                    }
+                    auto& ent = result.value();
+                    if (std::holds_alternative<sketch::Point2>(ent.geometry) || refs_[0].sub != sketch::SubElement::Whole) {
+                        pick = picker_.pickAtScreenLogical(e.x, e.y);
+
+                        result = sketch_.entity(pick.value().ref.entity);
+                        if (!result) {
+                            refs_.clear();
+                            overlay_.selection_.model.clear();
+                            return;
+                        }
+                        ent = result.value();
+                        if (std::holds_alternative<sketch::Point2>(ent.geometry) || pick.value().ref.sub != sketch::SubElement::Whole) {
+                            pointPoint = true;
+                        }
+                    } else {
+                        pick = picker_.pickPointAtScreenLogical(e.x, e.y);
+                    }
+                }
+
+                if (!pick) {
+                    return;
+                }
+
+
+                if (refs_.empty()) {
+                    refs_.push_back(pick.value().ref);
+                }
+                if (pick->ref == refs_.front()) {
+                    return;
+                }
+                if (refs_.size() == 1) {
+                    coincidentMidpoint_ = false;
+                    refs_.push_back(pick.value().ref);
+                }
             }
-            const auto pick = picker_.pickPointAtScreenLogical(e.x, e.y);
-            if (!pick || !sketch_.pointPosition(pick->ref)) {
-                return;
+            // Selection entities
+            else {
+                refs_ = overlay_.selection_.model.items();
+                if (refs_.size() != 2) {
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
+
+                if (refs_[0] == refs_[1]) {
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
+
+                auto result1 = sketch_.entity(refs_[0].entity);
+                if (!result1) {
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
+
+                auto result2 = sketch_.entity(refs_[1].entity);
+                if (!result2) {
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
+
+                auto& ent1 = result1.value();
+                auto& ent2 = result2.value();
+
+                bool firstIsPoint   = std::holds_alternative<sketch::Point2>(ent1.geometry) || refs_[0].sub != sketch::SubElement::Whole;
+                bool secondIsPoint  = std::holds_alternative<sketch::Point2>(ent2.geometry) || refs_[1].sub != sketch::SubElement::Whole;
+
+                if (firstIsPoint && secondIsPoint) {
+                    pointPoint = true;
+                }
+
+                if (firstIsPoint || secondIsPoint) {
+                    coincidentMidpoint_ = true;
+                } else {
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
             }
-            if (refs_.empty()) {
-                refs_.push_back(pick->ref);
-                return;
+
+            sketch::ConstraintDefinition definition;
+            definition.type = sketch::ConstraintType::Coincident;
+            definition.refs = refs_;
+
+            if (pointPoint) {
+                const auto first = sketch_.pointPosition(refs_[0]);
+                const auto second = sketch_.pointPosition(refs_[1]);
+                if (!first || !second) {
+                    std::cout << "Coincident requires point elements" << '\n';
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
+                const sketch::Vec2 position =
+                    coincidentMidpoint_ ?
+                    sketch::Vec2{std::midpoint(first.value().x, second.value().x), std::midpoint(first.value().y, second.value().y)} :
+                    second.value();
+                const sketch::PointTarget target{refs_[0], position};
+                const sketch::SolveOptions options{std::span(&target, 1), sketch::TargetPolicy::Prefer};
+
+                const auto result = sketch_.addConstraint(definition, options);
+
+                if (!result) {
+                    std::cout << "Coincident not added: " << result.error().message << '\n';
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
+                const auto& outcome = result.value();
+                if (!outcome.constraint || outcome.diagnostics.status != sketch::SolveStatus::Converged) {
+                    std::cout << "Coincident not added: solve did not converge" << '\n';
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
+                if (outcome.diagnostics.targetsSatisfied == false) {
+                    std::cout << "Coincident added; requested placement could not be preserved" << '\n';
+                }
+            } else {
+                const auto result = sketch_.addConstraint(definition);
+                if (!result) {
+                    std::cout << "Coincident not added: " << result.error().message << '\n';
+                    refs_.clear();
+                    overlay_.selection_.model.clear();
+                    return;
+                }
             }
-            if (pick->ref == refs_.front()) {
-                return;
-            }
-            if (refs_.size() == 1) {
-                refs_.push_back(pick->ref);
-                coincidentMidpoint_ = false;
-            } else if (pick->ref != refs_[1]) {
-                refs_[1] = pick->ref;
-                coincidentMidpoint_ = false;
-            }
-            pushCoincident();
+
+            sketch_.solve();
+
+            refs_.clear();
+            coincidentMidpoint_ = false;
+            overlay_.clearPreview();
+            overlay_.selection_.model.clear();
+            constraintType_.reset();
+
             return;
             break;
         }
@@ -1262,8 +1413,9 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
             break;
         }
-        case ToolId::Curvature:
+        case ToolId::Curvature: {
             break;
+        }
         default: {
             return;
         }
@@ -1305,33 +1457,6 @@ void ConstraintTool::setSubToolType(ToolId subTool) {
     subTool_ = subTool;
     isConstraintTypeSet_ = true;
 
-    if (subTool_ == ToolId::Coincident) {
-        const auto selected = overlay_.selection_.model.items();
-        if (selected.size() > 2) {
-            std::cout << "Coincident requires at most two selected points" << '\n';
-            refs_.clear();
-            overlay_.selection_.model.clear();
-            return;
-        }
-        for (const auto& ref : selected) {
-            if (!sketch_.pointPosition(ref)) {
-                std::cout << "Coincident requires point elements" << '\n';
-                refs_.clear();
-                overlay_.selection_.model.clear();
-                return;
-            }
-        }
-        if (selected.size() == 2 && selected[0] == selected[1]) {
-            return;
-        }
-        refs_ = selected;
-        coincidentMidpoint_ = refs_.size() == 2;
-        if (coincidentMidpoint_) {
-            pushCoincident();
-        }
-        return;
-    }
-
     if (!overlay_.selection_.model.empty()) {
         input::MouseButtonEvent mbe;
         mbe.button = input::MouseButton::Left;
@@ -1361,54 +1486,6 @@ void ConstraintTool::pushConstraint() {
     if (!result) {
         std::cout << "Constraint not added" << '\n';
     }
-}
-
-void ConstraintTool::pushCoincident() {
-    if (refs_.size() != 2 || refs_[0] == refs_[1]) {
-        refs_.clear();
-        overlay_.selection_.model.clear();
-        return;
-    }
-    const auto first = sketch_.pointPosition(refs_[0]);
-    const auto second = sketch_.pointPosition(refs_[1]);
-    if (!first || !second) {
-        std::cout << "Coincident requires point elements" << '\n';
-        refs_.clear();
-        overlay_.selection_.model.clear();
-        return;
-    }
-    const sketch::Vec2 position =
-        coincidentMidpoint_ ?
-        sketch::Vec2{std::midpoint(first.value().x, second.value().x), std::midpoint(first.value().y, second.value().y)} :
-        second.value();
-
-    const sketch::PointTarget target{refs_[0], position};
-    const sketch::SolveOptions options{std::span(&target, 1), sketch::TargetPolicy::Prefer};
-    sketch::ConstraintDefinition definition;
-    definition.type = sketch::ConstraintType::Coincident;
-    definition.refs = refs_;
-    const auto result = sketch_.addConstraint(definition, options);
-    if (!result) {
-        std::cout << "Coincident not added: " << result.error().message << '\n';
-        refs_.clear();
-        overlay_.selection_.model.clear();
-        return;
-    }
-    const auto& outcome = result.value();
-    if (!outcome.constraint || outcome.diagnostics.status != sketch::SolveStatus::Converged) {
-        std::cout << "Coincident not added: solve did not converge" << '\n';
-        refs_.clear();
-        overlay_.selection_.model.clear();
-        return;
-    }
-    if (outcome.diagnostics.targetsSatisfied == false) {
-        std::cout << "Coincident added; requested placement could not be preserved" << '\n';
-    }
-    refs_.clear();
-    coincidentMidpoint_ = false;
-    overlay_.clearPreview();
-    overlay_.selection_.model.clear();
-    constraintType_.reset();
 }
 
 void ConstraintTool::pushEntityToOverlay(const sketch::GeometryRef& ref) const {
