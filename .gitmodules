@@ -8,3 +8,6 @@
 	url = https://github.com/OurPaintTeam/OurPaint-Desktop-UI.git
 	branch = main
 
+[submodule "third_party/imgui"]
+	path = third_party/imgui
+	url = https://github.com/ocornut/imgui.git
