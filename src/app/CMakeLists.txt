@@ -14,7 +14,24 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+include(GNUInstallDirs)
+
+set(OURPAINT_LIB_DIR "${CMAKE_SOURCE_DIR}/third_party/UI/Lib")
+
+
+if (WIN32)
+    set(APP_ICON_RC "${CMAKE_CURRENT_SOURCE_DIR}/app_icon.rc")
+    if (EXISTS ${APP_ICON_RC})
+        set_source_files_properties(${APP_ICON_RC} PROPERTIES LANGUAGE RC)
+    endif()
+endif()
+
 add_executable(ourpaint
+        ${APP_ICON_RC}
+
+        ${OURPAINT_LIB_DIR}/resources.qrc
+        ${OURPAINT_LIB_DIR}/translations.qrc
+
         main.cc
         Application.cc
         platform/QtPlatformRuntime.cc
@@ -24,9 +41,7 @@ add_executable(ourpaint
         viewport/constraints/ConstraintLayout.cc
         viewport/constraints/DimensionLayout.cc
         viewport/ViewportController.cc
-        ui/QtMainWindowBinder.cc
         ui/UIController.cc
-        ui/ProjectPersistence.cc
         ui/QtPath.h
         editor/SketchEditor.cc
         editor/snapping/SnapSystem.cc
@@ -61,6 +76,10 @@ target_include_directories(ourpaint PRIVATE
         project
         ui
         viewport
+)
+
+install(TARGETS ourpaint
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 set(TYPE_OF_COMPILING BOOL 1)

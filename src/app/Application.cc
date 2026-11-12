@@ -1,15 +1,33 @@
 #include "Application.h"
 
 #include <QCoreApplication>
+#include <QCommandLineParser>
+#include <QDataStream>
+#include <QDebug>
+#include <QFileInfo>
+#include <QLocalSocket>
+#include <QSettings>
+#include <QThread>
+#include <iostream>
 
 #include "../core/DocumentManager.h"
 #include "../core/Scene.h"
 #include "App/CustomConsole.h"
 #include "OpenGL2dRenderer.h"
+#include "UIController.h"
 #include "platform/QtPlatformRuntime.h"
 #include "platform/QtViewportHost.h"
 
-Application::Application(int& argc, char** argv) : documentManager_(nullptr) {
+#ifdef Q_OS_WIN
+#include "ui/RegWin.h"
+#endif
+
+
+namespace {
+    constexpr const char* kServerName = "OurPaintSingleInstance";
+}
+
+Application::Application(int& argc, char** argv, QObject* parent) : QObject(parent) {
     try {
         init(argc, argv);
     } catch (std::exception& e) {
@@ -21,51 +39,127 @@ void Application::init(int& argc, char** argv) {
     platformRuntime_ = new QtPlatformRuntime(argc, argv);
     platformRuntime_->init();
 
-    documentManager_ = new DocumentManager();
-
     Q_INIT_RESOURCE(resources);
     Q_INIT_RESOURCE(translations);
 
-    projectManager_ = new UI::ProjectManager({}, nullptr, nullptr);
+    QCoreApplication::setOrganizationName("OurPaint");
+    QCoreApplication::setApplicationName("OurPaint");
 
-    host_ = platformRuntime_->createViewportHost();
-    QtViewportHost* qt_host = static_cast<QtViewportHost*>(host_);
-    projectManager_->setQWindowRender(qt_host);
+#ifdef Q_OS_WIN
+    QSettings appSettings;
+    if (!appSettings.value("fileAssociationRegistered", false).toBool()) {
+        registerFileAssociation();
+        appSettings.setValue("fileAssociationRegistered", true);
+    }
+#endif
 
-    uiController_ = new UIController(views_, *documentManager_,  *platformRuntime_, *projectManager_, *qt_host);
+    QCommandLineParser parser;
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.addPositionalArgument(
+        "files",
+        QCoreApplication::translate("main", "Paths to .ourp project files."),
+        "[files...]");
 
-    binder_ = new QtMainWindowBinder(*projectManager_, *uiController_);
+    parser.process(QCoreApplication::arguments());
 
-    const auto arguments = QCoreApplication::arguments();
-    bool opened = false;
-    try {
-        if (arguments.size() == 3 && arguments[1] == QStringLiteral("--open-project")) {
-            opened = uiController_->openProjectInCurrentWindow(arguments[2]);
-        } else if (arguments.size() == 3 && arguments[1] == QStringLiteral("--create-project")) {
-            opened = uiController_->createProjectInCurrentWindow(arguments[2]);
+    QStringList filePaths;
+    for (const QString& f : parser.positionalArguments()) {
+        if (QFileInfo(f).suffix().compare("ourp", Qt::CaseInsensitive) == 0) {
+            filePaths.append(f);
+        } else {
+            qWarning() << "[main] Not a .ourp file:" << f;
         }
-    } catch (const std::exception& error) {
-        projectManager_->addNotification(QCoreApplication::translate("ProjectPersistence", "Could not open the project: %1")
-                                             .arg(QString::fromUtf8(error.what())));
-    }
-    if (!opened) {
-        uiController_->createFile("default");
     }
 
-    //project_ = new app::Project("new project");
+    if (!setupSingleInstance(filePaths)) {
+        return;
+    }
+
+    documentManager_ = new DocumentManager();
+
+
+    uiController_ = new UIController(views_, *documentManager_, *platformRuntime_);
+
+    if (!filePaths.isEmpty()) {
+        uiController_->openFilesFromCommandLine(filePaths);
+    }
+}
+
+bool Application::setupSingleInstance(const QStringList& filePaths) {
+    if (trySendToRunningInstance(filePaths)) {
+        isSecondaryInstance_ = true;
+        return false;
+    }
+
+    localServer_ = new QLocalServer(this);
+    bool isServer = localServer_->listen(kServerName);
+
+    if (!isServer) {
+        for (int i = 0; i < 10 && !isServer; ++i) {
+            if (trySendToRunningInstance(filePaths, 200)) {
+                isSecondaryInstance_ = true;
+                return false;
+            }
+            QThread::msleep(50);
+            isServer = localServer_->listen(kServerName);
+        }
+    }
+
+    if (!isServer) {
+        QLocalServer::removeServer(kServerName);
+        isServer = localServer_->listen(kServerName);
+        if (!isServer) {
+            qWarning() << "[main] Cannot listen:" << localServer_->errorString();
+        }
+    }
+
+    if (isServer) {
+        connect(localServer_, &QLocalServer::newConnection, this, [this]() {
+            while (QLocalSocket* client = localServer_->nextPendingConnection()) {
+                connect(client, &QLocalSocket::readyRead, this, [this, client]() {
+                    QDataStream stream(client);
+                    QStringList received;
+                    stream >> received;
+
+                    if (!received.isEmpty() && uiController_) {
+                        uiController_->openFilesFromCommandLine(received);
+                    }
+                    client->deleteLater();
+                });
+            }
+        });
+    }
+
+    return true;
+}
+
+bool Application::trySendToRunningInstance(const QStringList& paths, int timeoutMs) {
+    if (paths.isEmpty())
+        return false;
+
+    QLocalSocket socket;
+    socket.connectToServer(kServerName);
+    if (!socket.waitForConnected(timeoutMs))
+        return false;
+
+    QDataStream stream(&socket);
+    stream << paths;
+    socket.flush();
+    socket.waitForBytesWritten(timeoutMs);
+    return true;
 }
 
 int Application::exec() {
+    if (isSecondaryInstance_) {
+        return 0;
+    }
     return platformRuntime_->run();
 }
 
 Application::~Application() {
-    delete binder_;
-    // Disconnect editor callbacks and viewport sinks while their owners live.
     delete uiController_;
     views_.clear();
-    delete projectManager_;
     delete documentManager_;
-    // The platform runtime owns host_, including its OpenGL contexts.
     delete platformRuntime_;
 }
