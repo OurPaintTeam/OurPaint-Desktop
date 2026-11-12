@@ -25,11 +25,28 @@
 #include "SettingsSystem.h"
 #include "ToolsType.h"
 
+#include <QPointer>
 
+#include "NativeFile.h"
+#include "QtPath.h"
+#include <QFile>
+#include "DocumentSaveLoad.h"
+#include <filesystem>
+#include <limits>
+
+namespace {
+bool writeAllBytes(const std::filesystem::path& nativePath, const core::persistence::DocumentBytes& bytes) {
+    QFile file(app::ui::pathText(nativePath));
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) return false;
+    if (bytes.empty()) return true;
+    const qint64 written = file.write(reinterpret_cast<const char*>(bytes.data()), static_cast<qint64>(bytes.size()));
+    return written == static_cast<qint64>(bytes.size());
+}
+}  // namespace
 
 UIController::UIController(std::vector<std::unique_ptr<DocumentView>>& views,
     DocumentManager& manager,
-    IPlatformRuntime& platformRuntime )
+    IPlatformRuntime& platformRuntime)
     : views_(views),
       manager_(manager),
       platformRuntime_(platformRuntime),
@@ -38,7 +55,8 @@ UIController::UIController(std::vector<std::unique_ptr<DocumentView>>& views,
     activeHost_ = static_cast<QtViewportHost*>(platformRuntime_.createViewportHost());
 
     auto ctx = createEditorContext(false);
-    createManager(ctx);
+    auto m = createBaseManager(ctx);
+    m->showStartWindow();
 
     currentLanguage_ = settings_.language();
     applyLanguage(currentLanguage_);
@@ -53,29 +71,43 @@ UIController::~UIController() {
     views_.clear();
 }
 
+UI::ProjectManager* UIController::createBaseManager(const UI::EditorContext& context) {
+    auto* manager = new UI::ProjectManager(context);
+    projectManagers_.push_back(manager);
 
-void UIController::createFile(UI::ProjectManager* currentManager,
-                              const QString& path, bool newWindow) {
+    QtViewportHost* host = qobject_cast<QtViewportHost*>(context.renderEngine);
+    managerHosts_[manager] = host;
+
+    initBaseSignals(*manager);
+    return manager;
+}
+
+UI::ProjectManager* UIController::createLightManager(const UI::EditorContext& context) {
+    auto* manager = new UI::ProjectManager(context);
+    projectManagers_.push_back(manager);
+
+    QtViewportHost* host = qobject_cast<QtViewportHost*>(context.renderEngine);
+    managerHosts_[manager] = host;
+
+    initLightManager(*manager);
+    return manager;
+}
+
+void UIController::createFile(UI::ProjectManager* currentManager, const QString& path, bool newWindow) {
     UI::ProjectManager* targetManager = currentManager;
-    if (newWindow || !targetManager) {
-        targetManager = createManager(createEditorContext(true));
+    bool isNew = newWindow || !targetManager;
+    if (isNew) {
+        targetManager = createBaseManager(createEditorContext(true));
     }
 
     qint64 fileId = -1;
     const auto res = fs_.createProject(path, fileId);
 
     switch (res) {
-        case UI::FileSystem::FsResult::Ok:
-            break;
-        case UI::FileSystem::FsResult::AlreadyExists:
-            targetManager->addNotification("❌ File already exists: " + path);
-            return;
-        case UI::FileSystem::FsResult::InvalidArgument:
-            targetManager->addNotification("❌ Invalid file name: " + path);
-            return;
-        default:
-            targetManager->addNotification("❌ Failed to create file: " + path);
-            return;
+        case UI::FileSystem::FsResult::Ok: break;
+        case UI::FileSystem::FsResult::AlreadyExists: targetManager->addNotification("❌ File already exists: " + path); return;
+        case UI::FileSystem::FsResult::InvalidArgument: targetManager->addNotification("❌ Invalid file name: " + path); return;
+        default: targetManager->addNotification("❌ Failed to create file: " + path); return;
     }
 
     UI::FileSystem::ProjectData data = getProjectData(fileId);
@@ -96,24 +128,22 @@ void UIController::createFile(UI::ProjectManager* currentManager,
 
     const auto id = manager_.createNewDocument(fileName);
     try {
-        if (auto* doc = manager_.at(id)) {
-            doc->path() = pathStr;
-        }
-
+        if (auto* doc = manager_.at(id)) doc->path() = pathStr;
         documentIds_[key]  = id;
+
+        UI::FileData fd{data.id, data.name};
+        if (isNew) {
+            targetManager->showEditorWindow(fd);
+        } else {
+            targetManager->addTabSlot(fd);
+        }
 
         attachDocument(*targetManager, id, data.id);
         projectModified_ = true;
 
-        UI::FileData fd{data.id, data.name};
-        targetManager->addTabInEditor(fd);
-
-        if (newWindow) {
-            targetManager->addNotification("✨ File created in new window: " + data.name);
-        } else {
-            targetManager->addNotification("✨ File created: " + data.name);
-        }
+        targetManager->addNotification(isNew ? "✨ File created in new window: " + data.name : "✨ File created: " + data.name);
     } catch (...) {
+        targetManager->closeTabSlot(data.id);
         documentIds_.erase(key);
         manager_.closeDocument(id);
         throw;
@@ -121,8 +151,7 @@ void UIController::createFile(UI::ProjectManager* currentManager,
 }
 
 void UIController::openFile(UI::ProjectManager* currentManager, const QString& path, bool newWindow) {
-    if (path.trimmed().isEmpty()) return;
-    if (!currentManager) return;
+    if (path.trimmed().isEmpty() || !currentManager) return;
 
     qint64 fileId = -1;
     const auto res = fs_.registerProject(path, fileId);
@@ -137,38 +166,37 @@ void UIController::openFile(UI::ProjectManager* currentManager, const QString& p
 void UIController::openFileByID(UI::ProjectManager* currentManager, qint64 fileId, bool newWindow) {
     UI::FileSystem::ProjectData data;
     if (fs_.getProject(fileId, data) != UI::FileSystem::FsResult::Ok) {
-        if (currentManager) {
-            currentManager->addNotification("❌ File not found: id " + QString::number(fileId));
-        }
+        if (currentManager) currentManager->addNotification("❌ File not found: id " + QString::number(fileId));
         return;
     }
 
     UI::ProjectManager* targetManager = currentManager;
-    if (newWindow || !targetManager) {
-        targetManager = createManager(createEditorContext(true));
-    }
-
-    const bool loaded = loadDocument(data.path, targetManager);
-    if (!loaded) {
-        targetManager->addNotification("❌ File not opened: " + data.name);
-        return;
+    bool isNew = newWindow || !targetManager;
+    if (isNew) {
+        targetManager = createBaseManager(createEditorContext(true));
     }
 
     UI::FileData fd{data.id, data.name};
-    targetManager->addTabInEditor(fd);
+    if (isNew) {
+        targetManager->showEditorWindow(fd);
+    } else {
+        targetManager->addTabSlot(fd);
+    }
 
-    const QString where = newWindow ? " in new window" : "";
-    targetManager->addNotification("📄 File opened" + where + ": " + data.name);
+    if (!loadDocument(data.path, targetManager)) {
+        targetManager->addNotification("❌ File not opened: " + data.name);
+        targetManager->closeTabSlot(fileId);
+        return;
+    }
+
+    targetManager->addNotification(isNew ? "📄 File opened in new window: " + data.name : "📄 File opened: " + data.name);
 }
 
 void UIController::renameFile(UI::ProjectManager* currentManager, UI::FileData& data) {
     if (!currentManager) return;
 
     UI::FileSystem::ProjectData pd;
-    if (fs_.getProject(data.id, pd) != UI::FileSystem::FsResult::Ok) {
-        currentManager->addNotification("❌ File not found: id " + QString::number(data.id));
-        return;
-    }
+    if (fs_.getProject(data.id, pd) != UI::FileSystem::FsResult::Ok) return;
 
     const std::string newName = data.name.toStdString();
     if (newName.empty() || pd.name.toStdString() == newName) return;
@@ -186,18 +214,11 @@ void UIController::renameFile(UI::ProjectManager* currentManager, UI::FileData& 
         return;
     }
 
-    if (fs_.renameProject(data.id, data.name) != UI::FileSystem::FsResult::Ok) {
-        currentManager->addNotification("❌ Failed to rename: " + pd.name);
-        return;
+    if (fs_.renameProject(data.id, data.name) != UI::FileSystem::FsResult::Ok) return;
+
+    for (auto* m : projectManagers_) {
+        if (m) m->renameTabSlot(data);
     }
-
-
-        for (auto* m : projectManagers_) {
-            if (m) {
-                m->renameTabSlot(data);
-            }
-        }
-
 
     const auto it = documentIds_.find(oldKey);
     if (it != documentIds_.end()) {
@@ -213,15 +234,11 @@ void UIController::renameFile(UI::ProjectManager* currentManager, UI::FileData& 
             indicesMap_.erase(idxIt);
             indicesMap_[newKey] = index;
         }
-
         view->document().name() = newName;
         view->document().path() = newPathStr;
     }
 
-    if (activeTabHash_ == oldKey) {
-        activeTabHash_ = newKey;
-    }
-
+    if (activeTabHash_ == oldKey) activeTabHash_ = newKey;
     projectModified_ = true;
 }
 
@@ -229,62 +246,59 @@ void UIController::removeFile(UI::ProjectManager* currentManager, const qint64 f
     if (!currentManager) return;
 
     UI::FileSystem::ProjectData data;
-    if (fs_.getProject(fileId, data) != UI::FileSystem::FsResult::Ok) {
-        currentManager->addNotification("❌ File not found: id " + QString::number(fileId));
-        return;
-    }
+    if (fs_.getProject(fileId, data) != UI::FileSystem::FsResult::Ok) return;
 
     const QString name = data.name;
     const std::string pathStr = data.path.toStdString();
     const std::size_t key = pathHash(pathStr);
 
-    if (fs_.removeProject(fileId) != UI::FileSystem::FsResult::Ok) {
-        currentManager->addNotification("❌ Failed to remove file: " + name);
-        return;
+    DocumentId docId = std::numeric_limits<DocumentId>::max();
+    const auto idIt = documentIds_.find(key);
+    if (idIt != documentIds_.end()) {
+        docId = idIt->second;
     }
 
-    const auto idIt = documentIds_.find(key);
+    if (fs_.removeProject(fileId) != UI::FileSystem::FsResult::Ok) return;
+    QFile::remove(data.path);
+
     if (idIt != documentIds_.end()) {
         documentIds_.erase(idIt);
     }
-    QFile::remove(data.path);
 
     for (auto* m : projectManagers_) {
         if (m) m->deleteTabSlot(fileId);
     }
-
     currentManager->addNotification("🗑️ File removed: " + name);
 
-    const auto* target = findView(pathStr);
-    if (target) {
-        for (auto it = views_.begin(); it != views_.end(); ++it) {
-            if (it->get() == target) {
-                (*it)->editorSession_.setToolChangedCallback({});
+    if (docId != std::numeric_limits<DocumentId>::max()) {
+        const auto* target = findView(pathStr);
+        if (target) {
+            for (auto it = views_.begin(); it != views_.end(); ++it) {
+                if (it->get() == target) {
+                    (*it)->editorSession_.setToolChangedCallback({});
+                    const auto removed = controllerMap_.find(&(*it)->viewportController_);
+                    const int removedIndex = (removed != controllerMap_.end()) ? removed->second : -1;
 
-                const auto removed = controllerMap_.find(&(*it)->viewportController_);
-                const int removedIndex = (removed != controllerMap_.end()) ? removed->second : -1;
-
-                DocumentId docId = idFromPath(pathStr);
-                QtViewportHost* host = documentHosts_.contains(docId) ? documentHosts_[docId] : activeHost_;
-                if (host) {
-                    host->removeController(&(*it)->viewportController_);
-                }
-
-                controllerMap_.erase(&(*it)->viewportController_);
-                views_.erase(it);
-                indicesMap_.erase(key);
-
-                if (removedIndex >= 0) {
-                    for (auto& [n, index] : indicesMap_) {
-                        if (index > removedIndex) --index;
+                    QtViewportHost* host = documentHosts_.contains(docId) ? documentHosts_[docId] : nullptr;
+                    if (host) {
+                        host->removeController(&(*it)->viewportController_);
                     }
-                    for (auto& [ctrl, index] : controllerMap_) {
-                        if (index > removedIndex) --index;
+
+                    controllerMap_.erase(&(*it)->viewportController_);
+                    views_.erase(it);
+                    indicesMap_.erase(key);
+
+                    if (removedIndex >= 0) {
+                        for (auto& [n, index] : indicesMap_) if (index > removedIndex) --index;
+                        for (auto& [ctrl, index] : controllerMap_) if (index > removedIndex) --index;
                     }
+                    break;
                 }
-                break;
             }
         }
+
+        documentHosts_.erase(docId);
+        manager_.closeDocument(docId);
     }
 
     if (activeTabHash_ == key) {
@@ -293,10 +307,8 @@ void UIController::removeFile(UI::ProjectManager* currentManager, const qint64 f
         } else {
             const std::size_t nextKey = indicesMap_.begin()->first;
             if (auto* nextView = findViewByHash(nextKey)) {
-                const std::string nextPath = nextView->document().path();
                 qint64 nextFileId = -1;
-
-                if (fs_.getProjectIdByPath(QString::fromStdString(nextPath), nextFileId) == UI::FileSystem::FsResult::Ok) {
+                if (fs_.getProjectIdByPath(QString::fromStdString(nextView->document().path()), nextFileId) == UI::FileSystem::FsResult::Ok) {
                     setActiveFile(currentManager, nextFileId);
                 }
             }
@@ -315,12 +327,10 @@ void UIController::closeFile(UI::ProjectManager* currentManager, const qint64 fi
 
     const std::string pathStr = data.path.toStdString();
     const std::size_t key = pathHash(pathStr);
-
     const auto it = documentIds_.find(key);
 
     if (it != documentIds_.end()) {
-        DocumentId docId = it->second;
-        closeOneDocument(docId,currentManager);
+        closeOneDocument(it->second, currentManager);
         currentManager->addNotification("💾 File saved and closed: " + data.name);
     } else {
         currentManager->closeTabSlot(fileId);
@@ -341,15 +351,16 @@ void UIController::setActiveFile(UI::ProjectManager* currentManager, const qint6
 
     if (activeTabHash_ != newHash) {
         if (auto* previous = findViewByHash(activeTabHash_)) {
-            previous->editorSession_.activeTool()->cancel();
+            if (auto* activeTool = previous->editorSession_.activeTool()) {
+                activeTool->cancel();
+            }
         }
     }
-
     activeTabHash_ = newHash;
 
     QtViewportHost* host = managerHosts_.contains(currentManager) ? managerHosts_[currentManager] : activeHost_;
-
     auto indexIt = indicesMap_.find(newHash);
+
     if (indexIt != indicesMap_.end() && host) {
         host->setActiveController(indexIt->second);
     }
@@ -358,200 +369,96 @@ void UIController::setActiveFile(UI::ProjectManager* currentManager, const qint6
     if (idIt != documentIds_.end()) {
         presentActiveTool(currentManager, idIt->second, view->editorSession_.activeToolId());
     }
-// <-- Вызываем у правильного хоста
+
     currentManager->setActiveTab(fileId);
 }
 
 void UIController::sentCommand(UI::ProjectManager* currentManager, const qint64 fileId, const QString command) {
     currentManager->addNotification(fileId, "Console command received: " + command);
-    try {
-        // const auto entry = documentIds_.find(activeTabName_);
-        // Document* document = entry == documentIds_.end() ? nullptr : manager_.at(entry->second);
-        // UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
-        // CommandManager& cm = document->commandManager();
-        // Transaction* txn = cm.invoke(str);
-        // urm.push(std::move(*txn));
-
-        // if (document) {
-        //     viewportHost_.requestRedraw();
-        // }
-    } catch (const std::exception& e) {
-        throw std::runtime_error(e.what());
-    }
 }
 
 void UIController::primitive(UI::ProjectManager* currentManager, const qint64 fileId, UI::PrimitiveType type) {
     const std::string pathStr = getFilePath(fileId).toStdString();
-
-
     switch (type) {
-        case UI::PrimitiveType::Point:
-            selectTool(ToolId::Point, std::nullopt, pathStr);
-            break;
-
-        case UI::PrimitiveType::CubicBezier:
-            selectTool(ToolId::CubicBezier, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::Line:
-            selectTool(ToolId::Line, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::Polyline:
-            selectTool(ToolId::Polyline, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::InfiniteLine:
-            selectTool(ToolId::InfiniteLine, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::LineSettings:
-            // selectTool(ToolId::);
-            break;
-
-        case UI::PrimitiveType::CircleByRadius:
-            selectTool(ToolId::CircleByRadius, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::CircleByDiameter:
-            selectTool(ToolId::CircleByDiameter, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::CircleByTwoPoints:
-            selectTool(ToolId::CircleByTwoPoints, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::CircleByThreePoints:
-            selectTool(ToolId::CircleByThreePoints, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::CircleTangentTwoLines:
-            selectTool(ToolId::CircleTangentTwoLines, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::CircleTangentThreeLines:
-            selectTool(ToolId::CircleTangentThreeLines, std::nullopt, pathStr);
-            break;
-
-        case UI::PrimitiveType::ArcByRadius:
-            selectTool(ToolId::ArcByRadius, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::ArcByDiameter:
-            selectTool(ToolId::ArcByDiameter, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::ArcThreePoints:
-            selectTool(ToolId::ArcByThreePoints, std::nullopt, pathStr);
-            break;
-        case UI::PrimitiveType::ArcSettings:
-            selectTool(ToolId::ArcByThreePoints, std::nullopt, pathStr);
-            break;
-        default:
-            break;
+        case UI::PrimitiveType::Point: selectTool(ToolId::Point, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::CubicBezier: selectTool(ToolId::CubicBezier, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::Line: selectTool(ToolId::Line, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::Polyline: selectTool(ToolId::Polyline, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::InfiniteLine: selectTool(ToolId::InfiniteLine, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::CircleByRadius: selectTool(ToolId::CircleByRadius, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::CircleByDiameter: selectTool(ToolId::CircleByDiameter, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::CircleByTwoPoints: selectTool(ToolId::CircleByTwoPoints, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::CircleByThreePoints: selectTool(ToolId::CircleByThreePoints, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::CircleTangentTwoLines: selectTool(ToolId::CircleTangentTwoLines, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::CircleTangentThreeLines: selectTool(ToolId::CircleTangentThreeLines, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::ArcByRadius: selectTool(ToolId::ArcByRadius, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::ArcByDiameter: selectTool(ToolId::ArcByDiameter, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::ArcThreePoints: selectTool(ToolId::ArcByThreePoints, std::nullopt, pathStr); break;
+        case UI::PrimitiveType::ArcSettings: selectTool(ToolId::ArcByThreePoints, std::nullopt, pathStr); break;
+        default: break;
     }
-
     currentManager->addNotification(fileId, "Primitive selected for file " + QString::number(fileId));
 }
 
 void UIController::constraint(UI::ProjectManager* currentManager, const qint64 fileId, UI::ConstraintType type) {
     const std::string pathStr = getFilePath(fileId).toStdString();
-
     switch (type) {
         case UI::ConstraintType::Distance:
         case UI::ConstraintType::VDistance:
         case UI::ConstraintType::HDistance:
         case UI::ConstraintType::Angle: {
-            ToolId  constraintType;
-            QString promptText;
-            if (type == UI::ConstraintType::Angle) {
-                constraintType = ToolId::Angle;
-                promptText     = tr("Angle (degrees):");
-            } else if (type == UI::ConstraintType::VDistance) {
-                constraintType = ToolId::VerticalDistance;
-                promptText     = tr("Vertical Distance:");
-            } else if (type == UI::ConstraintType::HDistance) {
-                constraintType = ToolId::HorizontalDistance;
-                promptText     = tr("Horizontal Distance:");
-            } else { // Distance
-                constraintType = ToolId::Distance;
-                promptText     = tr("Distance:");
-            }
-
+            ToolId constraintType; QString promptText;
+            if (type == UI::ConstraintType::Angle) { constraintType = ToolId::Angle; promptText = tr("Angle (degrees):"); }
+            else if (type == UI::ConstraintType::VDistance) { constraintType = ToolId::VerticalDistance; promptText = tr("Vertical Distance:"); }
+            else if (type == UI::ConstraintType::HDistance) { constraintType = ToolId::HorizontalDistance; promptText = tr("Horizontal Distance:"); }
+            else { constraintType = ToolId::Distance; promptText = tr("Distance:"); }
             showConstraintPrompt(promptText, constraintType, pathStr);
             break;
         }
-        case UI::ConstraintType::Tangent:
-            selectTool(ToolId::Tangent, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Coincident:
-            selectTool(ToolId::Coincident, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Horizontal:
-            selectTool(ToolId::Horizontal, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Vertical:
-            selectTool(ToolId::Vertical, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Parallel:
-            selectTool(ToolId::Parallel, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Perpendicular:
-            selectTool(ToolId::Perpendicular, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Equal:
-            selectTool(ToolId::Equal, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::FixUnfix:
-            selectTool(ToolId::Fix, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Concentric:
-            selectTool(ToolId::Concentric, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Collinear:
-            selectTool(ToolId::Collinear, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Midpoint:
-            selectTool(ToolId::Midpoint, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Symmetric:
-            selectTool(ToolId::Symmetric, std::nullopt, pathStr);
-            break;
-        case UI::ConstraintType::Curvature:
-            selectTool(ToolId::Curvature, std::nullopt, pathStr);
-            break;
-        default:
-            return;
+        case UI::ConstraintType::Tangent: selectTool(ToolId::Tangent, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Coincident: selectTool(ToolId::Coincident, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Horizontal: selectTool(ToolId::Horizontal, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Vertical: selectTool(ToolId::Vertical, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Parallel: selectTool(ToolId::Parallel, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Perpendicular: selectTool(ToolId::Perpendicular, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Equal: selectTool(ToolId::Equal, std::nullopt, pathStr); break;
+        case UI::ConstraintType::FixUnfix: selectTool(ToolId::Fix, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Concentric: selectTool(ToolId::Concentric, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Collinear: selectTool(ToolId::Collinear, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Midpoint: selectTool(ToolId::Midpoint, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Symmetric: selectTool(ToolId::Symmetric, std::nullopt, pathStr); break;
+        case UI::ConstraintType::Curvature: selectTool(ToolId::Curvature, std::nullopt, pathStr); break;
+        default: return;
     }
-
     currentManager->addNotification(fileId, "Constraint selected for file " + QString::number(fileId));
 }
 
 void UIController::tools(UI::ProjectManager* currentManager, const qint64 fileId, UI::ToolsType type) {
     currentManager->addNotification(fileId, "Tool selected for file " + QString::number(fileId));
-    switch (type) {
-        case UI::ToolsType::None:
-        case UI::ToolsType::Size:
-            break;
-            default:
-            break;
-    }
 }
 
 void UIController::script(UI::ProjectManager* currentManager, const QString& path) { currentManager->addNotification("Script: " + path); }
 
 void UIController::settingsChanged(UI::ProjectManager* currentManager) {
     const auto d = settings_.loadChanges();
-    if (d.isEmpty()) {
-        return;
-    }
-
+    if (d.isEmpty()) return;
     if (!d.sketch.isEmpty()) {
-        qDebug() << "[settings] sketch changed:" << (d.sketch.gridEnabled ? *d.sketch.gridEnabled : -1) << (d.sketch.snapEnabled ? *d.sketch.snapEnabled : -1)
-                 << (d.sketch.gridStep ? *d.sketch.gridStep : -1) << (d.sketch.snapStep ? *d.sketch.snapStep : -1);
+        qDebug() << "[settings] sketch changed:" << (d.sketch.gridEnabled ? *d.sketch.gridEnabled : -1) << (d.sketch.snapEnabled ? *d.sketch.snapEnabled : -1) << (d.sketch.gridStep ? *d.sketch.gridStep : -1) << (d.sketch.snapStep ? *d.sketch.snapStep : -1);
     }
-
-    if (d.language) {
-        applyLanguage(*d.language);
-    }
+    if (d.language) applyLanguage(*d.language);
 }
 
-void UIController::saveFullProject(UI::ProjectManager* currentManager) {
+void UIController::saveFullProject(UI::ProjectManager* currentManager, bool close) {
     if (!currentManager) return;
 
+    QtViewportHost* managerHost = managerHosts_.contains(currentManager) ? managerHosts_[currentManager] : nullptr;
+    if (!managerHost) return;
+
     std::vector<DocumentId> ids;
-    ids.reserve(documentIds_.size());
     for (const auto& [hash, id] : documentIds_) {
-        ids.push_back(id);
+        if (documentHosts_.contains(id) && documentHosts_[id] == managerHost) {
+            ids.push_back(id);
+        }
     }
 
     if (ids.empty()) {
@@ -559,41 +466,150 @@ void UIController::saveFullProject(UI::ProjectManager* currentManager) {
         return;
     }
 
-    int savedCount = 0;
+    int processedCount = 0;
     for (DocumentId id : ids) {
-        closeOneDocument(id,currentManager);
-        savedCount++;
+        if (close) {
+            closeOneDocument(id, currentManager);
+        } else {
+            Document* doc = manager_.at(id);
+            if (doc && !doc->path().empty()) {
+                saveDocument(id, QString::fromStdString(doc->path()));
+            }
+        }
+        processedCount++;
     }
 
-    currentManager->addNotification(
-        QStringLiteral("💾 Saved and closed %1 file(s)").arg(savedCount));
-}
-
-void UIController::lightEditorReturned(UI::ProjectManager* currentManager,const qint64 fileId) {
-    UI::FileSystem::ProjectData data;
-    if (fs_.getProject(fileId, data) != UI::FileSystem::FsResult::Ok) {
-        return;
+    if (close) {
+        currentManager->addNotification(QStringLiteral("💾 Saved and closed %1 file(s)").arg(processedCount));
+    } else {
+        currentManager->addNotification(QStringLiteral("💾 Saved %1 file(s)").arg(processedCount));
     }
-
-    UI::FileData fd{data.id, data.name};
-    currentManager->addTabInEditor(fd);
-    currentManager->addNotification("Returned tab from light editor: " + data.name);
 }
 
-void UIController::lightEditorRequested(UI::ProjectManager* currentManager,const qint64 id) {
+void UIController::lightEditorRequested(UI::ProjectManager* currentManager, const qint64 id) {
     UI::FileSystem::ProjectData pd;
-    if (fs_.getProject(id, pd) != UI::FileSystem::FsResult::Ok) {
-        return;
+    if (fs_.getProject(id, pd) == UI::FileSystem::FsResult::Ok) {
+        UI::FileData fd{pd.id, pd.name};
+        openLightEditor(currentManager, fd);
     }
-    UI::FileData fd{pd.id, pd.name};
-    openLightEditor(currentManager,fd);
 }
 
-void UIController::openLightEditor(UI::ProjectManager* currentManager,UI::FileData& data) {
-    auto ctx = createEditorContext(true);
-    currentManager->openLightEditor(ctx, data);
+void UIController::openLightEditor(UI::ProjectManager* currentManager, UI::FileData& data) {
+    if (!currentManager) return;
 
-    currentManager->addNotification("Opened light editor: " + data.name);
+    DocumentId docId = idFromPath(getFilePath(data.id).toStdString());
+    if (docId == std::numeric_limits<DocumentId>::max()) return;
+
+    auto ctx = createEditorContext(true);
+    auto* lightManager = createLightManager(ctx);
+
+    currentManager->closeTabSlot(data.id);
+
+    closeDocumentView(docId);
+
+    attachDocument(*lightManager, docId, data.id);
+
+    lightManager->showLightEditorWindow(data);
+
+    lightManager->addNotification("Opened light editor: " + data.name);
+}
+
+void UIController::returnTabToEditorRequested(UI::ProjectManager* currentManager, qint64 fileId) {
+    if (!currentManager) return;
+    UI::FileSystem::ProjectData pd;
+    if (fs_.getProject(fileId, pd) != UI::FileSystem::FsResult::Ok) return;
+
+    UI::FileData fd{pd.id, pd.name};
+    DocumentId docId = idFromPath(pd.path.toStdString());
+    if (docId == std::numeric_limits<DocumentId>::max()) return;
+
+    UI::ProjectManager* targetManager = nullptr;
+    for (auto* pm : projectManagers_) {
+        if (!pm->isLightEditor() && pm != currentManager) { targetManager = pm; break; }
+    }
+
+    bool isNew = (targetManager == nullptr);
+    if (isNew) {
+        targetManager = createBaseManager(createEditorContext(true));
+    }
+
+    closeDocumentView(docId);
+
+    attachDocument(*targetManager, docId, fileId);
+
+    targetManager->showEditorWindow(fd);
+
+    targetManager->addNotification("Returned tab from light editor: " + fd.name);
+}
+
+void UIController::handleTabMove(qint64 fileId, quintptr sourceWindowPtr, quintptr targetWindowPtr) {
+    UI::ProjectManager* sourceManager = nullptr;
+    UI::ProjectManager* targetManager = nullptr;
+
+    for (auto* pm : projectManagers_) {
+        if (!pm) continue;
+        QWidget* win = pm->windowWidget();
+        if (!win) continue;
+        const quintptr windowPtr = reinterpret_cast<quintptr>(win);
+        if (windowPtr == sourceWindowPtr) sourceManager = pm;
+        if (windowPtr == targetWindowPtr) targetManager = pm;
+    }
+
+    if (!sourceManager || !targetManager || sourceManager == targetManager) return;
+
+    UI::FileSystem::ProjectData pd;
+    if (fs_.getProject(fileId, pd) != UI::FileSystem::FsResult::Ok) return;
+
+    UI::FileData fd{pd.id, pd.name};
+    DocumentId docId = idFromPath(pd.path.toStdString());
+
+    if (docId != std::numeric_limits<DocumentId>::max()) {
+        closeDocumentView(docId);
+        sourceManager->closeTabSlot(fileId);
+        attachDocument(*targetManager, docId, fileId);
+
+        targetManager->addTabSlot(fd);
+    }
+}
+
+void UIController::closeLightEditorWindowTriggered(UI::ProjectManager* currentManager) {
+    const qint64 id = currentManager->getActiveTabId();
+    QString path = getFilePath(id);
+    if (path.isEmpty()) return;
+
+    std::string pathStr = path.toStdString();
+    std::size_t key = pathHash(pathStr);
+    DocumentId docId = idFromPath(pathStr);
+
+    if (docId != std::numeric_limits<DocumentId>::max()) {
+        saveDocument(docId, path);
+
+        for (auto it = views_.begin(); it != views_.end(); ++it) {
+            if (&(*it)->document() == manager_.at(docId)) {
+                (*it)->editorSession_.setToolChangedCallback({});
+
+                QtViewportHost* host = documentHosts_.contains(docId) ? documentHosts_[docId] : activeHost_;
+
+                if (host) {
+                    host->removeController(&(*it)->viewportController_);
+                }
+
+                controllerMap_.erase(&(*it)->viewportController_);
+                views_.erase(it);
+                break;
+            }
+        }
+
+        indicesMap_.erase(key);
+        documentHosts_.erase(docId);
+        documentIds_.erase(key);
+
+        manager_.closeDocument(docId);
+    }
+
+    if (currentManager) {
+        managerHosts_.erase(currentManager);
+    }
 }
 
 qint64 UIController::getFileID(const QString& filePath) {
@@ -629,15 +645,6 @@ UI::FileSystem::ProjectData UIController::getProjectData(const qint64 fileId) {
     return data;
 }
 
-UI::ProjectManager* UIController::createManager(const UI::EditorContext& context) {
-    auto* manager = new UI::ProjectManager(context);
-    projectManagers_.push_back(manager);
-
-    managerHosts_[manager] = static_cast<QtViewportHost*>(context.renderEngine);
-
-    initUISignals(*manager);
-    return manager;
-}
 
 UI::EditorContext UIController::createEditorContext(bool isNewWindow) const {
     UI::EditorContext ctx;
@@ -816,7 +823,7 @@ void UIController::presentActiveTool(UI::ProjectManager* currentManager, Documen
     }
 
     const auto present = [currentManager](auto uiTool) {
-        currentManager->setActiveToolEditorWindow(uiTool);
+        currentManager->setActiveTool(uiTool);
     };
 
     switch (tool) {
@@ -955,112 +962,71 @@ void UIController::attachDocument(UI::ProjectManager& currentManager, DocumentId
 }
 
 
-void UIController::initUISignals(UI::ProjectManager& manager) {
+void UIController::initBaseSignals(UI::ProjectManager& manager) {
     using PM = UI::ProjectManager;
 
-    connect(&manager, &PM::createFileTriggered, this,
-            [this, &manager](const QString& path, bool newWindow) { createFile(&manager, path, newWindow); });
-    connect(&manager, &PM::openFileTriggered, this,
-            [this, &manager](const QString& path, bool newWindow) { openFile( &manager, path,newWindow); });
-    connect(&manager, &PM::openFileByIDTriggered, this,
-            [this, &manager](qint64 fileId, bool newWindow) { openFileByID(&manager,fileId,  newWindow); });
-    connect(&manager, &PM::renameFileTriggered, this,
-            [this, &manager](UI::FileData& data) { renameFile(&manager,data); });
-    connect(&manager, &PM::removeFileTriggered, this,
-            [this, &manager](qint64 fileId) { removeFile(&manager, fileId); });
-    connect(&manager, &PM::closeFileTriggered, this,
-            [this, &manager](qint64 fileId) { closeFile(&manager,fileId); });
-    connect(&manager, &PM::setActiveFileTriggered, this,
-            [this, &manager](qint64 fileId) { setActiveFile(&manager, fileId); });
-    connect(&manager, &PM::sentCommandTriggered, this,
-            [this, &manager](qint64 fileId, const QString& command) { sentCommand(&manager, fileId, command); });
-    connect(&manager, &PM::primitiveTriggered, this,
-            [this, &manager](qint64 fileId, UI::PrimitiveType type) {
-                primitive(&manager, fileId, type);
-            });
-    connect(&manager, &PM::constraintTriggered, this,
-            [this, &manager](qint64 fileId, UI::ConstraintType type) { constraint(&manager, fileId, type); });
-    connect(&manager, &PM::toolsTriggered, this,
-            [this, &manager](qint64 fileId, UI::ToolsType type) { tools(&manager, fileId, type); });
-    connect(&manager, &PM::scriptTriggered, this,
-            [this, &manager](const QString& path) { script(&manager, path); });
-    connect(&manager, &PM::settingsChanged, this,
-            [this, &manager]() { settingsChanged(&manager); });
-    connect(&manager, &PM::saveFullProjectTriggered, this,
-            [this, &manager]() { saveFullProject(&manager); });
-    connect(&manager, &PM::lightEditorReturned, this,
-            [this, &manager](qint64 fileId) { lightEditorReturned(&manager, fileId); });
-    connect(&manager, &PM::lightEditorRequested, this,
-            [this, &manager](qint64 fileId) { lightEditorRequested(&manager, fileId); });
+    connect(&manager, &PM::createFileTriggered, this, [this, &manager](const QString& path, bool newWindow) { createFile(&manager, path, newWindow); });
+    connect(&manager, &PM::openFileTriggered, this, [this, &manager](const QString& path, bool newWindow) { openFile(&manager, path, newWindow); });
+    connect(&manager, &PM::openFileByIDTriggered, this, [this, &manager](qint64 fileId, bool newWindow) { openFileByID(&manager, fileId, newWindow); });
+    connect(&manager, &PM::renameFileTriggered, this, [this, &manager](UI::FileData& data) { renameFile(&manager, data); });
+    connect(&manager, &PM::removeFileTriggered, this, [this, &manager](qint64 fileId) { removeFile(&manager, fileId); });
+    connect(&manager, &PM::closeFileTriggered, this, [this, &manager](qint64 fileId) { closeFile(&manager, fileId); });
+    connect(&manager, &PM::setActiveFileTriggered, this, [this, &manager](qint64 fileId) { setActiveFile(&manager, fileId); });
 
-    connect(&manager, &QObject::destroyed, this,
-            [this, &manager] {
-                deleteManager(&manager);
-            });
+    connect(&manager, &PM::lightEditorRequested, this, [this, &manager](qint64 fileId) { lightEditorRequested(&manager, fileId); });
+    connect(&manager, &PM::tabMovedToAnotherWindow, this, [this](qint64 fileId, quintptr sourceWindowPtr, quintptr targetWindowPtr) { handleTabMove(fileId, sourceWindowPtr, targetWindowPtr); });
+
+    connect(&manager, &PM::saveTriggered, this, [this, &manager]() { saveFullProject(&manager, false); });
+    connect(&manager, &PM::windowClosed, this, [this, &manager]() { saveFullProject(&manager, true); });
+
+    connect(&manager, &PM::sentCommandTriggered, this, [this, &manager](qint64 fileId, const QString& command) { sentCommand(&manager, fileId, command); });
+    connect(&manager, &PM::primitiveTriggered, this, [this, &manager](qint64 fileId, UI::PrimitiveType type) { primitive(&manager, fileId, type); });
+    connect(&manager, &PM::constraintTriggered, this, [this, &manager](qint64 fileId, UI::ConstraintType type) { constraint(&manager, fileId, type); });
+    connect(&manager, &PM::toolsTriggered, this, [this, &manager](qint64 fileId, UI::ToolsType type) { tools(&manager, fileId, type); });
+    connect(&manager, &PM::scriptTriggered, this, [this, &manager](const QString& path) { script(&manager, path); });
+    connect(&manager, &PM::settingsChanged, this, [this, &manager]() { settingsChanged(&manager); });
+
+    connect(&manager, &QObject::destroyed, this, [this, &manager] { deleteManager(&manager); });
 }
 
+void UIController::initLightManager(UI::ProjectManager& manager) {
+    using PM = UI::ProjectManager;
 
-#include "NativeFile.h"
-#include "QtPath.h"
-#include "UIController.h"
-#include <QFile>
-#include <QFileInfo>
+    connect(&manager, &PM::returnTabToEditorRequested, this, [this, &manager](qint64 fileId) { returnTabToEditorRequested(&manager, fileId); });
+    connect(&manager, &PM::windowClosed, this, [this, &manager]() { closeLightEditorWindowTriggered(&manager); });
 
-#include "DocumentSaveLoad.h"
-#include <filesystem>
-#include <limits>
-
-namespace {
-
-bool writeAllBytes(const std::filesystem::path& nativePath,
-                   const core::persistence::DocumentBytes& bytes) {
-    QFile file(app::ui::pathText(nativePath));
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        return false;
-    }
-    if (bytes.empty()) {
-        return true;
-    }
-    const qint64 written = file.write(
-        reinterpret_cast<const char*>(bytes.data()),
-        static_cast<qint64>(bytes.size()));
-    return written == static_cast<qint64>(bytes.size());
+    connect(&manager, &PM::sentCommandTriggered, this, [this, &manager](qint64 fileId, const QString& command) { sentCommand(&manager, fileId, command); });
+    connect(&manager, &PM::primitiveTriggered, this, [this, &manager](qint64 fileId, UI::PrimitiveType type) { primitive(&manager, fileId, type); });
+    connect(&manager, &PM::constraintTriggered, this, [this, &manager](qint64 fileId, UI::ConstraintType type) { constraint(&manager, fileId, type); });
+    connect(&manager, &PM::toolsTriggered, this, [this, &manager](qint64 fileId, UI::ToolsType type) { tools(&manager, fileId, type); });
+    connect(&manager, &PM::scriptTriggered, this, [this, &manager](const QString& path) { script(&manager, path); });
+    connect(&manager, &PM::settingsChanged, this, [this, &manager]() { settingsChanged(&manager); });
+    connect(&manager, &PM::saveTriggered, this, [this, &manager]() { saveFullProject(&manager,false); });
+    connect(&manager, &QObject::destroyed, this, [this, &manager] { deleteManager(&manager); });
 }
 
-}  // namespace
 
 bool UIController::loadDocument(const QString& path, UI::ProjectManager* currentManager) {
-    if (path.isEmpty() || !currentManager) {
-        return false;
-    }
+    if (path.isEmpty() || !currentManager) return false;
 
     auto bytes = app::detail::readFile(app::ui::nativePath(path));
-    if (!bytes) {
-        return false;
-    }
+    if (!bytes) return false;
 
     auto decoded = core::persistence::decodeDocument(bytes.value());
-    if (!decoded) {
-        return false;
-    }
+    if (!decoded) return false;
 
     std::string name = std::as_const(*decoded.value()).name();
-    if (name.empty()) {
-        name = QFileInfo(path).baseName().toStdString();
-    }
-    if (name.empty()) {
-        name = "Sketch";
-    }
+    if (name.empty()) name = QFileInfo(path).baseName().toStdString();
+    if (name.empty()) name = "Sketch";
 
     const auto id = manager_.openDocument(std::move(decoded.value()));
 
     qint64 fileID = -1;
     const auto res = fs_.registerProject(path, fileID);
-    if (res != UI::FileSystem::FsResult::Ok &&
-        res != UI::FileSystem::FsResult::AlreadyExists) {
+    if (res != UI::FileSystem::FsResult::Ok && res != UI::FileSystem::FsResult::AlreadyExists) {
         manager_.closeDocument(id);
         return false;
-        }
+    }
 
     const std::string pathStr = path.toStdString();
 
@@ -1069,9 +1035,7 @@ bool UIController::loadDocument(const QString& path, UI::ProjectManager* current
             doc->path() = pathStr;
             doc->name() = name;
         }
-
         documentIds_[pathHash(pathStr)] = id;
-
         attachDocument(*currentManager, id, fileID);
     } catch (...) {
         manager_.closeDocument(id);
@@ -1127,19 +1091,21 @@ void UIController::closeDocumentView(DocumentId id) {
     for (auto it = views_.begin(); it != views_.end(); ++it) {
         if (&(*it)->document() == document) {
             (*it)->editorSession_.setToolChangedCallback({});
+
             const auto removed = controllerMap_.find(&(*it)->viewportController_);
             const int removedIndex = removed == controllerMap_.end() ? -1 : removed->second;
 
-            if (host) host->removeController(&(*it)->viewportController_);
             controllerMap_.erase(&(*it)->viewportController_);
-            views_.erase(it);
-
             indicesMap_.erase(key);
 
             if (removedIndex >= 0) {
                 for (auto& [n, idx] : indicesMap_)   if (idx > removedIndex) --idx;
                 for (auto& [c, idx] : controllerMap_) if (idx > removedIndex) --idx;
             }
+
+            if (host) host->removeController(&(*it)->viewportController_);
+
+            views_.erase(it);
             break;
         }
     }
@@ -1167,13 +1133,21 @@ std::size_t UIController::pathHash(const std::string& path) const {
 void UIController::openFilesFromCommandLine(const QStringList& filePaths) {
     if (filePaths.isEmpty()) return;
 
-    if (projectManagers_.isEmpty()) {
-        createManager(createEditorContext(true));
+    UI::ProjectManager* targetManager = nullptr;
+    for (auto* pm : projectManagers_) {
+        if (pm && !pm->isLightEditor()) {
+            targetManager = pm;
+            break;
+        }
     }
 
-    UI::ProjectManager* manager = projectManagers_.first();
+    if (!targetManager) {
+        targetManager = createBaseManager(createEditorContext(true));
+    }
+
     for (const QString& path : filePaths) {
-        openFile(manager, path, false);
+        if (path.trimmed().isEmpty()) continue;
+        openFile(targetManager, path, false);
     }
 }
 
