@@ -1,27 +1,21 @@
 #include "Application.h"
 
-#include <QCoreApplication>
 #include <QCommandLineParser>
+#include <QCoreApplication>
 #include <QDataStream>
-#include <QDebug>
-#include <QFileInfo>
 #include <QLocalSocket>
-#include <QSettings>
 #include <QThread>
 #include <iostream>
 
 #include "../core/DocumentManager.h"
-#include "../core/Scene.h"
-#include "App/CustomConsole.h"
-#include "OpenGL2dRenderer.h"
-#include "UIController.h"
+#include "DocumentController.h"
+
+#include "QtUIController.h"
 #include "platform/QtPlatformRuntime.h"
-#include "platform/QtViewportHost.h"
 
 #ifdef Q_OS_WIN
 #include "ui/RegWin.h"
 #endif
-
 
 namespace {
     constexpr const char* kServerName = "OurPaintSingleInstance";
@@ -56,11 +50,7 @@ void Application::init(int& argc, char** argv) {
     QCommandLineParser parser;
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.addPositionalArgument(
-        "files",
-        QCoreApplication::translate("main", "Paths to .ourp project files."),
-        "[files...]");
-
+    parser.addPositionalArgument("files", QCoreApplication::translate("main", "Paths to .ourp project files."), "[files...]");
     parser.process(QCoreApplication::arguments());
 
     QStringList filePaths;
@@ -77,12 +67,12 @@ void Application::init(int& argc, char** argv) {
     }
 
     documentManager_ = new DocumentManager();
+    documentController_ = new DocumentController(*documentManager_);
 
-
-    uiController_ = new UIController(views_, *documentManager_, *platformRuntime_);
+    qtUIController_ = new QtUIController(views_, *documentController_, *platformRuntime_);
 
     if (!filePaths.isEmpty()) {
-        uiController_->openFilesFromCommandLine(filePaths);
+        qtUIController_->openFilesFromCommandLine(filePaths);
     }
 }
 
@@ -122,8 +112,8 @@ bool Application::setupSingleInstance(const QStringList& filePaths) {
                     QStringList received;
                     stream >> received;
 
-                    if (!received.isEmpty() && uiController_) {
-                        uiController_->openFilesFromCommandLine(received);
+                    if (!received.isEmpty() && qtUIController_) {
+                        qtUIController_->openFilesFromCommandLine(received);
                     }
                     client->deleteLater();
                 });
@@ -135,13 +125,11 @@ bool Application::setupSingleInstance(const QStringList& filePaths) {
 }
 
 bool Application::trySendToRunningInstance(const QStringList& paths, int timeoutMs) {
-    if (paths.isEmpty())
-        return false;
+    if (paths.isEmpty()) return false;
 
     QLocalSocket socket;
     socket.connectToServer(kServerName);
-    if (!socket.waitForConnected(timeoutMs))
-        return false;
+    if (!socket.waitForConnected(timeoutMs)) return false;
 
     QDataStream stream(&socket);
     stream << paths;
@@ -158,8 +146,12 @@ int Application::exec() {
 }
 
 Application::~Application() {
-    delete uiController_;
+
+    delete qtUIController_;
     views_.clear();
+
+    delete documentController_;
     delete documentManager_;
+
     delete platformRuntime_;
 }

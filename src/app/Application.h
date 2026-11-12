@@ -3,15 +3,13 @@
 
 #include <QLocalServer>
 #include <QObject>
-#include <QStringList>
 #include <memory>
 #include <vector>
 
-class QLocalServer;
 class DocumentManager;
 class IPlatformRuntime;
-class IViewportHost;
-class UIController;
+class DocumentController;
+class QtUIController;
 class DocumentView;
 
 class Application : public QObject {
@@ -25,14 +23,17 @@ public:
 private:
     void init(int& argc, char** argv);
     bool setupSingleInstance(const QStringList& filePaths);
-    bool trySendToRunningInstance(const QStringList& paths, int timeoutMs = 500);
+    static bool trySendToRunningInstance(const QStringList& paths, int timeoutMs = 500);
 
     bool isSecondaryInstance_{false};
+
     IPlatformRuntime* platformRuntime_{nullptr};
     DocumentManager* documentManager_{nullptr};
-    UIController* uiController_{nullptr};
+    DocumentController* documentController_{nullptr};
+    QtUIController* qtUIController_{nullptr};
     QLocalServer* localServer_{nullptr};
+
     std::vector<std::unique_ptr<DocumentView>> views_;
 };
 
-#endif  // APPLICATION_H
+#endif // APPLICATION_H
