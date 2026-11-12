@@ -41,8 +41,8 @@ add_executable(ourpaint
         viewport/constraints/ConstraintLayout.cc
         viewport/constraints/DimensionLayout.cc
         viewport/ViewportController.cc
-        ui/UIController.cc
-        ui/QtPath.h
+        ui/QtUIController.cc
+        ui/DocumentController.cc
         editor/SketchEditor.cc
         editor/snapping/SnapSystem.cc
         editor/tools/PointTool.cc

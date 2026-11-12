@@ -347,8 +347,8 @@ void QtViewportHost::wheelEvent(QWheelEvent* e) {
 
 void QtViewportHost::initContext() {
     qDebug() << "initContext() started";
-
-    if (!context_) {
+    
+    if (!controller_ || !context_) {
         qWarning() << "No active viewport controller/context";
         return;
     }
