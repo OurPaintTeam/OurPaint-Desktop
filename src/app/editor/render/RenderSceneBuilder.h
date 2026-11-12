@@ -1,0 +1,64 @@
+#ifndef OURPAINT_APPLICATION_RENDER_SCENE_BUILDER_H_
+#define OURPAINT_APPLICATION_RENDER_SCENE_BUILDER_H_
+
+namespace core {class Scene;}
+class OverlayModel;
+namespace render { class RenderScene; }
+class AxisTexts;
+namespace app {
+struct ViewportStyle;
+class ConstraintLayout;
+}
+
+#include "../../../render/Camera2D.h"
+#include "Document.h"
+
+using namespace core;
+
+class RenderSceneBuilder {
+public:
+    RenderSceneBuilder(Document& document,
+                       const OverlayModel& overlay,
+                       AxisTexts& axis,
+                       const app::ViewportStyle& style,
+                       render::RenderScene& renderScene,
+                       const Camera2D& camera,
+                       const app::ConstraintLayout& constraintLayout);
+
+    void rebuild();
+
+private:
+    void buildGrid();
+
+    void buildBaseObjects();
+    void buildBaseMarkers();
+
+    void buildBezierCurves();
+    void buildBezierHandles();
+
+    void buildOverlayObjects();
+    void buildOverlayMarkers();
+
+    void buildSelectedObjects();
+    void buildSelectedMarkers();
+
+    void buildSelectionRectangle();
+    void buildAxisText();
+
+    void buildConstraintsMarkers();
+    void buildSnapFeedback();
+
+    void testBuild();
+
+private:
+    Document& document_;
+    sketch::Sketch& sketch_;
+    const OverlayModel& overlay_;
+    AxisTexts& axis_;
+    const app::ViewportStyle& style_;
+    render::RenderScene& renderScene_;
+    const Camera2D& camera_;
+    const app::ConstraintLayout& constraintLayout_;
+};
+
+#endif // ! OURPAINT_APPLICATION_RENDER_SCENE_BUILDER_H_

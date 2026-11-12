@@ -3,10 +3,10 @@
 #include <utility>
 
 #include "../../core/Document.h"
-#include "tools/CircleTool.h"
-#include "tools/CursorTool.h"
-#include "tools/LineTool.h"
-#include "tools/PointTool.h"
+#include "tool/CircleTool.h"
+#include "tool/CursorTool.h"
+#include "tool/LineTool.h"
+#include "tool/PointTool.h"
 
 using namespace app;
 
@@ -87,7 +87,7 @@ void SketchEditor::selectTool(ToolId id, std::optional<double> value) {
             activeTool_ = &arcTool_;
             break;
 
-        case ToolId::CubicBezier:
+        case ToolId::Nurbs:
             activeTool_ = &bezierTool_;
             break;
 

@@ -40,7 +40,7 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
       - name: Build desktop and OurPaint tests
-        run: cmake --build build --target ourpaint ourpaint_tests --parallel 2
+        run: cmake --build build --target ourpaint_qt ourpaint_tests --parallel 2
 
       - name: Run OurPaint tests
-        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^ourpaint$' --output-on-failure --no-tests=error --parallel 2
+        run: ctest --test-dir build -C ${{ matrix.build_type }} -L '^ourpaint_qt$' --output-on-failure --no-tests=error --parallel 2

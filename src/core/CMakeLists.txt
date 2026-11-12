@@ -56,7 +56,6 @@ add_library(ourpaint_core
 
 target_include_directories(ourpaint_core PUBLIC
         /
-        saveload
         sketch
 #        UndoRedo
 #        UndoRedo/commands

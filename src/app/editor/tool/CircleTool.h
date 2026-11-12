@@ -1,0 +1,72 @@
+#ifndef OURPAINT_APPLICATION_CIRCLE_TOOL_H_
+#define OURPAINT_APPLICATION_CIRCLE_TOOL_H_
+
+#include <glm/glm.hpp>
+#include <optional>
+#include <vector>
+
+#include "../../../render/Camera2D.h"
+#include "../pick/Cpu2dPicker.h"
+#include "../OverlayModel.h"
+#include "Document.h"
+#include "IInteractionTool.h"
+
+class CircleTool : public IInteractionTool {
+public:
+    enum class Mode {
+        CenterRadius,
+        CenterDiameter,
+        DiameterTwoPoints,
+        ThreePoints,
+        TangentTwoObjectsRadius,
+        TangentThreeObjects
+    };
+
+public:
+    explicit CircleTool(Document& document,
+                        Camera2D& camera,
+                        snap::SnapSystem& snap,
+                        Cpu2dPicker& picker,
+                        OverlayModel& overlay);
+
+    void setMode(Mode mode);
+
+    void onMouseMove(const input::MouseMoveEvent& e) override;
+    void onMouseButton(const input::MouseButtonEvent& e) override;
+    void onKey(const input::KeyEvent& e) override;
+    bool cancel() override;
+
+private:
+    enum class Step {
+        WaitingFirstInput,
+        WaitingSecondInput,
+        WaitingThirdInput
+    };
+
+private:
+    glm::dvec2 screenToWorld(double x, double y) const;
+    void reset();
+
+    struct Circle {
+        double cx;
+        double cy;
+        double r;
+    };
+    static std::optional<Circle> buildCircleFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2);
+    void pushCircleToModel(const Circle& c) const;
+
+
+
+private:
+    Mode mode_ = Mode::CenterRadius;
+    Step step_ = Step::WaitingFirstInput;
+
+    std::vector<glm::dvec2> points_;
+    std::vector<sketch::EntityId> objects_;
+
+    snap::SnapResult firstSnap_;
+    snap::SnapResult secondSnap_;
+    snap::SnapResult thirdSnap_;
+};
+
+#endif // ! OURPAINT_APPLICATION_CIRCLE_TOOL_H_

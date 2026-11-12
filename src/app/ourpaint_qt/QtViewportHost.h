@@ -1,0 +1,91 @@
+#ifndef OURPAINT_RENDERING_QT_VIEWPORT_HOST_H_
+#define OURPAINT_RENDERING_QT_VIEWPORT_HOST_H_
+
+#include <glad/gl.h>
+
+#include <QOpenGLContext>
+#include <QWindow>
+#include <vector>
+
+#include "../../render/Camera2D.h"
+#include "../editor/InputEvents.h"
+#include "IRenderer.h"
+#include "IViewportController.h"
+
+class QWidget;
+class QTimer;
+
+class QtViewportHost : public QWindow {
+    Q_OBJECT
+public:
+    explicit QtViewportHost(uint32_t id, QScreen* screen = nullptr);
+    ~QtViewportHost() override;
+
+    uint32_t         id()                   const;
+    Viewport2D       getSize()              const;
+    float            getDevicePixelRatio()  const;
+
+    void requestRedraw();
+    void setContinuousRedraw(bool on);
+    void presentFrame();
+    int setEventSink(IViewportController* controller);
+
+    // Для встраивания в Qt layout
+    QWidget* createContainer(QWidget* parent = nullptr);
+
+    // Для shared context между несколькими viewport-ами
+    //QOpenGLContext* context() const { return context_; }
+
+    int addController(IViewportController* controller);
+    void setActiveController(int index);
+    bool removeController(IViewportController* controller);
+
+protected:
+    // QWindow events
+    void exposeEvent            (QExposeEvent   *ev) override;
+    void paintEvent             (QPaintEvent    *ev) override;
+    void resizeEvent            (QResizeEvent   *ev) override;
+
+    void keyPressEvent          (QKeyEvent      *ev) override;
+    void keyReleaseEvent        (QKeyEvent      *ev) override;
+
+    void mouseMoveEvent         (QMouseEvent    *ev) override;
+    void mousePressEvent        (QMouseEvent    *ev) override;
+    void mouseReleaseEvent      (QMouseEvent    *ev) override;
+    void wheelEvent             (QWheelEvent    *ev) override;
+
+    // void focusOutEvent         (QFocusEvent  *ev) override;
+    // void mouseDoubleClickEvent (QMouseEvent  *ev) override;
+
+private:
+    void initContext();
+    void renderFrame();
+
+    static input::MouseButton      toMouseButtonEnum   (Qt::MouseButtons button);
+    static input::Modifiers        toModifiersEnum     (Qt::KeyboardModifiers mods);
+    static input::KeyCode          toKeyCodeEnum       (Qt::Key key);
+
+    static input::MouseMoveEvent   toMouseMoveEvent    (QMouseEvent* e);
+    static input::MouseButtonEvent toMouseButtonEvent  (QMouseEvent* e, input::MouseButtonAction action);
+    static input::WheelEvent       toWheelEvent        (QWheelEvent* e);
+    static input::KeyEvent         toKeyEvent          (QKeyEvent* e, input::KeyAction action);
+    static input::ResizeEvent      toResizeEvent       (QResizeEvent* e, float dpr);
+
+private:
+    struct ControllerContext {
+        IViewportController* controller = nullptr;
+        QOpenGLContext*      context    = nullptr;
+    };
+
+    std::vector<ControllerContext> controllers_;
+
+    IViewportController* controller_ = nullptr;
+    QOpenGLContext*      context_    = nullptr;
+
+    QTimer*              continuousTimer_  = nullptr;
+    bool                 initialized_      = false;
+
+public: signals: void frameReady();
+};
+
+#endif // ! OURPAINT_RENDERING_QT_VIEWPORT_HOST_H_

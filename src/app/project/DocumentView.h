@@ -1,23 +1,23 @@
 #ifndef OURPAINT_APPLICATION_DOCUMENT_WORKSPACE_H_
 #define OURPAINT_APPLICATION_DOCUMENT_WORKSPACE_H_
 
-#include "../editor/CommandConsole.h"
-#include "../viewport/AxisTexts.h"
-#include "../viewport/OverlayModel.h"
-#include "../viewport/ViewportController.h"
-#include "../viewport/ViewportStyle.h"
-#include "../viewport/constraints/ConstraintLayout.h"
-#include "../viewport/constraints/ConstraintPresentationState.h"
-#include "../viewport/picking/Cpu2dPicker.h"
-#include "../viewport/render/RenderSceneBuilder.h"
 #include "Camera2D.h"
+#include "OverlayModel.h"
+#include "ViewportController.h"
+#include "render/AxisTexts.h"
+#include "render/ViewportStyle.h"
+#include "render/constraints/ConstraintLayout.h"
+#include "render/constraints/ConstraintPresentationState.h"
+#include "pick/Cpu2dPicker.h"
+#include "render/RenderSceneBuilder.h"
 #include "IRenderer.h"
 
-// Application owns each view. Document and viewport host outlive it; UIController
-// disconnects synchronous editor callbacks and the viewport sink before removal.
+// Application owns each view. Document and viewport host outlive it; the UI adapter
+// disconnects editor callbacks and detaches the viewport sink before removal.
+// Explicit GPU shutdown requires this view's OpenGL context to still be current.
 class DocumentView {
 public:
-    explicit DocumentView(Document& document, IViewportHost& host);
+    explicit DocumentView(Document& document);
 
     DocumentView(const DocumentView&) = delete;
     DocumentView& operator=(const DocumentView&) = delete;
@@ -30,7 +30,6 @@ public:
 public:
 
     Document& document_;
-    IViewportHost& host_;
 
     Camera2D camera2D_;
     OverlayModel overlay_;
