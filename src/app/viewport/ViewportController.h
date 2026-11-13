@@ -1,10 +1,9 @@
 #ifndef OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 #define OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 
-#include "../../core/Document.h"
-#include "../editor/SketchEditor.h"
-#include "../platform/IViewportHost.h"
-#include "../platform/InputEvents.h"
+#include "Document.h"
+#include "SketchEditor.h"
+#include "InputEvents.h"
 #include "AxisTexts.h"
 #include "Camera2D.h"
 #include "IRenderer.h"
@@ -12,7 +11,7 @@
 #include "OpenGL2dRenderer.h"
 #include "RenderScene.h"
 #include "ViewportStyle.h"
-#include "render/RenderSceneBuilder.h"
+#include "RenderSceneBuilder.h"
 
 namespace app {
 struct ConstraintPresentationState;

@@ -5,9 +5,10 @@
 #include <QStyle>
 #include <QTextLayout>
 
-#include "../viewport/OverlayModel.h"
+#include "OverlayModel.h"
+#include "QtViewportHost.h"
 
-CommandConsole::CommandConsole(OverlayModel& overlayModel, IViewportHost& host) : QLineEdit(nullptr), overlayModel_(overlayModel), host_(host) {
+CommandConsole::CommandConsole(OverlayModel& overlayModel, QtViewportHost& host) : QLineEdit(nullptr), overlayModel_(overlayModel), host_(host) {
     connect(this, &QLineEdit::textChanged, this, &CommandConsole::updateAutocomplete);
     connect(this, &QLineEdit::textChanged, this, &CommandConsole::onTextChanged);
     const QStringList list = {"LINE ", "POINT ", "CIRCLE ", "ARC ", "REQ "};

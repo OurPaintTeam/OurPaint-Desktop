@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC OFF)
 enable_testing()
 
 add_subdirectory(third_party)
-add_subdirectory(src/app)
+add_subdirectory(src/app/ourpaint_qt)
 add_subdirectory(src/core)
 include(cmake/Dependencies.cmake)
 include(cmake/OurPaintTests.cmake)

@@ -9,12 +9,9 @@
 #include <QTimer>
 #include <QWidget>
 
-#include "../viewport/IViewportController.h"
 #include "Logger.h"
 
-QtViewportHost::QtViewportHost(uint32_t id, QScreen* screen)
-    : QWindow(screen)
-{
+QtViewportHost::QtViewportHost(QScreen* screen) : QWindow(screen) {
     setSurfaceType(QWindow::OpenGLSurface);
 
     QSurfaceFormat fmt;
@@ -22,15 +19,13 @@ QtViewportHost::QtViewportHost(uint32_t id, QScreen* screen)
     fmt.setProfile(QSurfaceFormat::CoreProfile);
     fmt.setDepthBufferSize(24);
     fmt.setStencilBufferSize(8);
-    fmt.setSwapInterval(0); // 1 V-Sync on, 0 V-Sync off.
+    fmt.setSwapInterval(0);  // 1 V-Sync on, 0 V-Sync off.
     setFormat(fmt);
 
     continuousTimer_ = new QTimer(this);
     continuousTimer_->setInterval(16);
 
-    QObject::connect(continuousTimer_, &QTimer::timeout,
-                     [this]() { requestRedraw(); });
-
+    QObject::connect(continuousTimer_, &QTimer::timeout, [this]() { requestRedraw(); });
 
     // Без InitContext, т.к. когда окно реально покажется будет вызван exposeEvent.
 }
@@ -53,17 +48,13 @@ QtViewportHost::~QtViewportHost() {
 
 // --- IViewportHost ---
 
-uint32_t QtViewportHost::id() const { return 0; }
-
 Viewport2D QtViewportHost::getSize() const {
     int w = static_cast<int>(QWindow::width() * devicePixelRatio());
     int h = static_cast<int>(QWindow::height() * devicePixelRatio());
-    return { w, h };
+    return {w, h};
 }
 
-float QtViewportHost::getDevicePixelRatio() const {
-    return static_cast<float>(QWindow::devicePixelRatio());
-}
+float QtViewportHost::getDevicePixelRatio() const { return static_cast<float>(QWindow::devicePixelRatio()); }
 
 void QtViewportHost::requestRedraw() {
     if (initialized_ && isExposed()) {
@@ -71,9 +62,7 @@ void QtViewportHost::requestRedraw() {
     }
 }
 
-void QtViewportHost::setContinuousRedraw(bool on) {
-    on ? continuousTimer_->start() : continuousTimer_->stop();
-}
+void QtViewportHost::setContinuousRedraw(bool on) { on ? continuousTimer_->start() : continuousTimer_->stop(); }
 
 void QtViewportHost::presentFrame() {
     if (context_) {
@@ -116,22 +105,13 @@ int QtViewportHost::addController(IViewportController* controller) {
         return -1;
     }
 
-    controllers_.push_back({
-        .controller = controller,
-        .context = context
-    });
+    controllers_.push_back({.controller = controller, .context = context});
 
     return static_cast<int>(controllers_.size()) - 1;
 }
 
 bool QtViewportHost::removeController(IViewportController* controller) {
-    auto it = std::find_if(
-        controllers_.begin(),
-        controllers_.end(),
-        [controller](const ControllerContext& entry) {
-            return entry.controller == controller;
-        }
-    );
+    auto it = std::find_if(controllers_.begin(), controllers_.end(), [controller](const ControllerContext& entry) { return entry.controller == controller; });
 
     if (it == controllers_.end()) {
         return false;
@@ -219,15 +199,12 @@ void QtViewportHost::setActiveController(int index) {
     renderFrame();
 }
 
-
-
 QWidget* QtViewportHost::createContainer(QWidget* parent) {
     auto* container = QWidget::createWindowContainer(this, parent);
     container->setFocusPolicy(Qt::StrongFocus);
     container->setAttribute(Qt::WA_MouseTracking);
     return container;
 }
-
 
 // --- QWindow events ---
 
@@ -242,9 +219,7 @@ void QtViewportHost::exposeEvent(QExposeEvent*) {
     emit frameReady();
 }
 
-void QtViewportHost::paintEvent(QPaintEvent* ev) {
-    QWindow::paintEvent(ev);
-}
+void QtViewportHost::paintEvent(QPaintEvent* ev) { QWindow::paintEvent(ev); }
 
 void QtViewportHost::resizeEvent(QResizeEvent* e) {
     if (!initialized_) {
@@ -338,17 +313,12 @@ void QtViewportHost::wheelEvent(QWheelEvent* e) {
     }
 }
 
-
-
-
-
 // --- Private ---
-
 
 void QtViewportHost::initContext() {
     qDebug() << "initContext() started";
 
-    if (!context_) {
+    if (!controller_ || !context_) {
         qWarning() << "No active viewport controller/context";
         return;
     }
@@ -416,77 +386,218 @@ input::MouseButton QtViewportHost::toMouseButtonEnum(Qt::MouseButtons bs) {
 input::KeyCode QtViewportHost::toKeyCodeEnum(Qt::Key key) {
     input::KeyCode kc;
     switch (key) {
-        case Qt::Key_Escape:    kc = input::KeyCode::Escape;    break;
-        case Qt::Key_Tab:       kc = input::KeyCode::Tab;       break;
-        case Qt::Key_Return:     kc = input::KeyCode::Enter;     break; // TODO
-        case Qt::Key_Space:     kc = input::KeyCode::Space;     break;
-        case Qt::Key_Backspace: kc = input::KeyCode::Backspace; break;
-        case Qt::Key_Delete:    kc = input::KeyCode::Delete;    break;
-        case Qt::Key_Insert:    kc = input::KeyCode::Insert;    break;
-        case Qt::Key_Home:      kc = input::KeyCode::Home;      break;
-        case Qt::Key_End:       kc = input::KeyCode::End;       break;
-        case Qt::Key_PageUp:    kc = input::KeyCode::PageUp;    break;
-        case Qt::Key_PageDown:  kc = input::KeyCode::PageDown;  break;
-        case Qt::Key_Left:      kc = input::KeyCode::Left;      break;
-        case Qt::Key_Right:     kc = input::KeyCode::Right;     break;
-        case Qt::Key_Up:        kc = input::KeyCode::Up;        break;
-        case Qt::Key_Down:      kc = input::KeyCode::Down;      break;
-        case Qt::Key_A:         kc = input::KeyCode::A;         break; // 1
-        case Qt::Key_B:         kc = input::KeyCode::B;         break; // 2
-        case Qt::Key_C:         kc = input::KeyCode::C;         break; // 3
-        case Qt::Key_D:         kc = input::KeyCode::D;         break; // 4
-        case Qt::Key_E:         kc = input::KeyCode::E;         break; // 5
-        case Qt::Key_F:         kc = input::KeyCode::F;         break; // 6
-        case Qt::Key_G:         kc = input::KeyCode::G;         break; // 7
-        case Qt::Key_H:         kc = input::KeyCode::H;         break; // 8
-        case Qt::Key_I:         kc = input::KeyCode::I;         break; // 9
-        case Qt::Key_J:         kc = input::KeyCode::J;         break; // 10
-        case Qt::Key_K:         kc = input::KeyCode::K;         break; // 11
-        case Qt::Key_L:         kc = input::KeyCode::L;         break; // 12
-        case Qt::Key_M:         kc = input::KeyCode::M;         break; // 13
-        case Qt::Key_N:         kc = input::KeyCode::N;         break; // 14
-        case Qt::Key_O:         kc = input::KeyCode::O;         break; // 15
-        case Qt::Key_P:         kc = input::KeyCode::P;         break; // 16
-        case Qt::Key_Q:         kc = input::KeyCode::Q;         break; // 17
-        case Qt::Key_R:         kc = input::KeyCode::R;         break; // 18
-        case Qt::Key_S:         kc = input::KeyCode::S;         break; // 19
-        case Qt::Key_T:         kc = input::KeyCode::T;         break; // 20
-        case Qt::Key_U:         kc = input::KeyCode::U;         break; // 21
-        case Qt::Key_V:         kc = input::KeyCode::V;         break; // 22
-        case Qt::Key_W:         kc = input::KeyCode::W;         break; // 23
-        case Qt::Key_X:         kc = input::KeyCode::X;         break; // 24
-        case Qt::Key_Y:         kc = input::KeyCode::Y;         break; // 25
-        case Qt::Key_Z:         kc = input::KeyCode::Z;         break; // 26
-        case Qt::Key_0:         kc = input::KeyCode::Num0;      break;
-        case Qt::Key_1:         kc = input::KeyCode::Num1;      break;
-        case Qt::Key_2:         kc = input::KeyCode::Num2;      break;
-        case Qt::Key_3:         kc = input::KeyCode::Num3;      break;
-        case Qt::Key_4:         kc = input::KeyCode::Num4;      break;
-        case Qt::Key_5:         kc = input::KeyCode::Num5;      break;
-        case Qt::Key_6:         kc = input::KeyCode::Num6;      break;
-        case Qt::Key_7:         kc = input::KeyCode::Num7;      break;
-        case Qt::Key_8:         kc = input::KeyCode::Num8;      break;
-        case Qt::Key_9:         kc = input::KeyCode::Num9;      break;
-        case Qt::Key_Comma:     kc = input::KeyCode::Comma;     break;
-        case Qt::Key_Period:    kc = input::KeyCode::Period;    break;
-        case Qt::Key_Backslash: kc = input::KeyCode::Backslash; break;
-        case Qt::Key_BracketLeft: kc=input::KeyCode::LeftBracket;break;
-        case Qt::Key_Minus:     kc = input::KeyCode::Minus;     break;
-        case Qt::Key_Plus:      kc = input::KeyCode::Plus;      break;
-        case Qt::Key_Asterisk:  kc = input::KeyCode::Asterisk;  break;
-        case Qt::Key_F1:        kc = input::KeyCode::F1;        break;
-        case Qt::Key_F2:        kc = input::KeyCode::F2;        break;
-        case Qt::Key_F3:        kc = input::KeyCode::F3;        break;
-        case Qt::Key_F4:        kc = input::KeyCode::F4;        break;
-        case Qt::Key_F5:        kc = input::KeyCode::F5;        break;
-        case Qt::Key_F6:        kc = input::KeyCode::F6;        break;
-        case Qt::Key_F7:        kc = input::KeyCode::F7;        break;
-        case Qt::Key_F8:        kc = input::KeyCode::F8;        break;
-        case Qt::Key_F9:        kc = input::KeyCode::F9;        break;
-        case Qt::Key_F10:       kc = input::KeyCode::F10;       break;
-        case Qt::Key_F11:       kc = input::KeyCode::F11;       break;
-        case Qt::Key_F12:       kc = input::KeyCode::F12;       break;
-            default: kc = input::KeyCode::Unknown;
+        case Qt::Key_Escape:
+            kc = input::KeyCode::Escape;
+            break;
+        case Qt::Key_Tab:
+            kc = input::KeyCode::Tab;
+            break;
+        case Qt::Key_Return:
+            kc = input::KeyCode::Enter;
+            break;  // TODO
+        case Qt::Key_Space:
+            kc = input::KeyCode::Space;
+            break;
+        case Qt::Key_Backspace:
+            kc = input::KeyCode::Backspace;
+            break;
+        case Qt::Key_Delete:
+            kc = input::KeyCode::Delete;
+            break;
+        case Qt::Key_Insert:
+            kc = input::KeyCode::Insert;
+            break;
+        case Qt::Key_Home:
+            kc = input::KeyCode::Home;
+            break;
+        case Qt::Key_End:
+            kc = input::KeyCode::End;
+            break;
+        case Qt::Key_PageUp:
+            kc = input::KeyCode::PageUp;
+            break;
+        case Qt::Key_PageDown:
+            kc = input::KeyCode::PageDown;
+            break;
+        case Qt::Key_Left:
+            kc = input::KeyCode::Left;
+            break;
+        case Qt::Key_Right:
+            kc = input::KeyCode::Right;
+            break;
+        case Qt::Key_Up:
+            kc = input::KeyCode::Up;
+            break;
+        case Qt::Key_Down:
+            kc = input::KeyCode::Down;
+            break;
+        case Qt::Key_A:
+            kc = input::KeyCode::A;
+            break;  // 1
+        case Qt::Key_B:
+            kc = input::KeyCode::B;
+            break;  // 2
+        case Qt::Key_C:
+            kc = input::KeyCode::C;
+            break;  // 3
+        case Qt::Key_D:
+            kc = input::KeyCode::D;
+            break;  // 4
+        case Qt::Key_E:
+            kc = input::KeyCode::E;
+            break;  // 5
+        case Qt::Key_F:
+            kc = input::KeyCode::F;
+            break;  // 6
+        case Qt::Key_G:
+            kc = input::KeyCode::G;
+            break;  // 7
+        case Qt::Key_H:
+            kc = input::KeyCode::H;
+            break;  // 8
+        case Qt::Key_I:
+            kc = input::KeyCode::I;
+            break;  // 9
+        case Qt::Key_J:
+            kc = input::KeyCode::J;
+            break;  // 10
+        case Qt::Key_K:
+            kc = input::KeyCode::K;
+            break;  // 11
+        case Qt::Key_L:
+            kc = input::KeyCode::L;
+            break;  // 12
+        case Qt::Key_M:
+            kc = input::KeyCode::M;
+            break;  // 13
+        case Qt::Key_N:
+            kc = input::KeyCode::N;
+            break;  // 14
+        case Qt::Key_O:
+            kc = input::KeyCode::O;
+            break;  // 15
+        case Qt::Key_P:
+            kc = input::KeyCode::P;
+            break;  // 16
+        case Qt::Key_Q:
+            kc = input::KeyCode::Q;
+            break;  // 17
+        case Qt::Key_R:
+            kc = input::KeyCode::R;
+            break;  // 18
+        case Qt::Key_S:
+            kc = input::KeyCode::S;
+            break;  // 19
+        case Qt::Key_T:
+            kc = input::KeyCode::T;
+            break;  // 20
+        case Qt::Key_U:
+            kc = input::KeyCode::U;
+            break;  // 21
+        case Qt::Key_V:
+            kc = input::KeyCode::V;
+            break;  // 22
+        case Qt::Key_W:
+            kc = input::KeyCode::W;
+            break;  // 23
+        case Qt::Key_X:
+            kc = input::KeyCode::X;
+            break;  // 24
+        case Qt::Key_Y:
+            kc = input::KeyCode::Y;
+            break;  // 25
+        case Qt::Key_Z:
+            kc = input::KeyCode::Z;
+            break;  // 26
+        case Qt::Key_0:
+            kc = input::KeyCode::Num0;
+            break;
+        case Qt::Key_1:
+            kc = input::KeyCode::Num1;
+            break;
+        case Qt::Key_2:
+            kc = input::KeyCode::Num2;
+            break;
+        case Qt::Key_3:
+            kc = input::KeyCode::Num3;
+            break;
+        case Qt::Key_4:
+            kc = input::KeyCode::Num4;
+            break;
+        case Qt::Key_5:
+            kc = input::KeyCode::Num5;
+            break;
+        case Qt::Key_6:
+            kc = input::KeyCode::Num6;
+            break;
+        case Qt::Key_7:
+            kc = input::KeyCode::Num7;
+            break;
+        case Qt::Key_8:
+            kc = input::KeyCode::Num8;
+            break;
+        case Qt::Key_9:
+            kc = input::KeyCode::Num9;
+            break;
+        case Qt::Key_Comma:
+            kc = input::KeyCode::Comma;
+            break;
+        case Qt::Key_Period:
+            kc = input::KeyCode::Period;
+            break;
+        case Qt::Key_Backslash:
+            kc = input::KeyCode::Backslash;
+            break;
+        case Qt::Key_BracketLeft:
+            kc = input::KeyCode::LeftBracket;
+            break;
+        case Qt::Key_Minus:
+            kc = input::KeyCode::Minus;
+            break;
+        case Qt::Key_Plus:
+            kc = input::KeyCode::Plus;
+            break;
+        case Qt::Key_Asterisk:
+            kc = input::KeyCode::Asterisk;
+            break;
+        case Qt::Key_F1:
+            kc = input::KeyCode::F1;
+            break;
+        case Qt::Key_F2:
+            kc = input::KeyCode::F2;
+            break;
+        case Qt::Key_F3:
+            kc = input::KeyCode::F3;
+            break;
+        case Qt::Key_F4:
+            kc = input::KeyCode::F4;
+            break;
+        case Qt::Key_F5:
+            kc = input::KeyCode::F5;
+            break;
+        case Qt::Key_F6:
+            kc = input::KeyCode::F6;
+            break;
+        case Qt::Key_F7:
+            kc = input::KeyCode::F7;
+            break;
+        case Qt::Key_F8:
+            kc = input::KeyCode::F8;
+            break;
+        case Qt::Key_F9:
+            kc = input::KeyCode::F9;
+            break;
+        case Qt::Key_F10:
+            kc = input::KeyCode::F10;
+            break;
+        case Qt::Key_F11:
+            kc = input::KeyCode::F11;
+            break;
+        case Qt::Key_F12:
+            kc = input::KeyCode::F12;
+            break;
+        default:
+            kc = input::KeyCode::Unknown;
     }
     return kc;
 }
@@ -573,9 +684,3 @@ input::ResizeEvent QtViewportHost::toResizeEvent(QResizeEvent* e, float dpr) {
 
     return re;
 }
-
-
-
-
-
-
