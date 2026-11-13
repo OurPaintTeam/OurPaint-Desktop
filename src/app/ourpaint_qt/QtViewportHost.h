@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "../editor/InputEvents.h"
-class ViewportController;
+class IViewportController;
 namespace render {
 struct Viewport2D;
 }
@@ -29,7 +29,7 @@ public:
     void requestRedraw();
     void setContinuousRedraw(bool on);
     void presentFrame();
-    int setEventSink(ViewportController* controller);
+    int setEventSink(IViewportController* controller);
 
     // Для встраивания в Qt layout
     QWidget* createContainer(QWidget* parent = nullptr);
@@ -37,9 +37,9 @@ public:
     // Для shared context между несколькими viewport-ами
     //QOpenGLContext* context() const { return context_; }
 
-    int addController(ViewportController* controller);
+    int addController(IViewportController* controller);
     void setActiveController(int index);
-    bool removeController(ViewportController* controller);
+    bool removeController(IViewportController* controller);
 
 protected:
     // QWindow events
@@ -74,13 +74,13 @@ private:
 
 private:
     struct ControllerContext {
-        ViewportController* controller = nullptr;
+        IViewportController* controller = nullptr;
         QOpenGLContext*      context    = nullptr;
     };
 
     std::vector<ControllerContext> controllers_;
 
-    ViewportController* controller_ = nullptr;
+    IViewportController* controller_ = nullptr;
     QOpenGLContext*      context_    = nullptr;
 
     QTimer*              continuousTimer_  = nullptr;

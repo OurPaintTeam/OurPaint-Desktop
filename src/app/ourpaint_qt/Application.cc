@@ -31,7 +31,7 @@ Application::Application(int& argc, char** argv) : platformRuntime_(std::make_un
                                              .arg(QString::fromUtf8(error.what())));
     }
     if (!opened) {
-        uiController_->createFile("default");
+        binder_->showNewView(uiController_->createDocument("default"));
     }
 
 }

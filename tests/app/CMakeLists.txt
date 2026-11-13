@@ -52,3 +52,6 @@ add_ourpaint_test(ConstraintLayoutGTEST
 )
 target_link_libraries(ConstraintLayoutGTEST PRIVATE OurPaint::Sketch glm::glm)
 target_include_directories(ConstraintLayoutGTEST PRIVATE ../../src/core/sketch ../../render/render)
+
+add_ourpaint_test(UIControllerViewsGTEST UIControllerViewsGTEST.cc)
+target_link_libraries(UIControllerViewsGTEST PRIVATE ourpaint_project)

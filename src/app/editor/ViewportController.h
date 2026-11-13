@@ -1,6 +1,9 @@
 #ifndef OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 #define OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 
+#include <functional>
+#include <utility>
+
 #include "../../core/Document.h"
 #include "../../render/Camera2D.h"
 #include "../../render/RenderScene.h"
@@ -41,8 +44,11 @@ public:
     void render() override;
 
     // Release GPU resources while this view's OpenGL context is still current.
-    void shutdown();
+    void shutdown() override;
 
+    // Shared geometry may change during a gesture. The owning workspace schedules
+    // redraws for sibling views without copying this view's camera or selection.
+    void setSiblingRedrawCallback(std::function<void()> callback) { redrawSiblings_ = std::move(callback); }
     void requestRedraw();
     void setContinuousRedraw(bool enable);
 
@@ -62,6 +68,7 @@ private:
     RenderSceneBuilder builder_;
     render::OpenGL2dRenderer renderer_;
 
+    std::function<void()> redrawSiblings_;
     double lastX_ = 0.0;
     double lastY_ = 0.0;
 

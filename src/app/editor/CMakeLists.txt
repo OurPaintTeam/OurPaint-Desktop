@@ -18,6 +18,7 @@ add_library(ourpaint_editor STATIC
         SelectionModel.cc
         render/AxisTexts.cc
         render/ViewportStyle.cc
+        UIController.cc
 )
 target_compile_features(ourpaint_editor PUBLIC cxx_std_20)
 target_include_directories(ourpaint_editor PUBLIC
@@ -29,5 +30,7 @@ target_include_directories(ourpaint_editor PUBLIC
 )
 target_link_libraries(ourpaint_editor PUBLIC
         ourpaint_document
+        ourpaint_project
+        ourpaint_project_io
         ourpaint_render
 )

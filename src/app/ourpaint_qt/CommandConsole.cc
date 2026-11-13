@@ -143,27 +143,27 @@ void CommandConsole::onTextChanged(const QString& text) {
 
 
 void CommandConsole::parseReqInput(const QString& text) const {
-    const auto parts = text.split(' ', Qt::SkipEmptyParts);
-
-    if (parts.size() < 3) {
-        controller_.previewConsoleSelection({});
-        return;
-    }
-
-    if (parts[0].compare("REQ", Qt::CaseInsensitive) != 0) {
-        return;
-    }
-
-    std::vector<int> ids;
-
-    for (int i = 2; i < parts.size(); ++i) {
-        bool ok = false;
-        const int id = parts[i].toInt(&ok);
-
-        if (ok) {
-            ids.push_back(id);
-        }
-    }
-
-    controller_.previewConsoleSelection(ids);
+    // const auto parts = text.split(' ', Qt::SkipEmptyParts);
+    //
+    // if (parts.size() < 3) {
+    //     controller_.previewConsoleSelection({});
+    //     return;
+    // }
+    //
+    // if (parts[0].compare("REQ", Qt::CaseInsensitive) != 0) {
+    //     return;
+    // }
+    //
+    // std::vector<int> ids;
+    //
+    // for (int i = 2; i < parts.size(); ++i) {
+    //     bool ok = false;
+    //     const int id = parts[i].toInt(&ok);
+    //
+    //     if (ok) {
+    //         ids.push_back(id);
+    //     }
+    // }
+    //
+    // controller_.previewConsoleSelection(ids);
 }

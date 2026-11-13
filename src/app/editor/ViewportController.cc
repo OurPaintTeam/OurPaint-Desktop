@@ -38,6 +38,9 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
 
     updateConstraintLayout();
     editorSession_.activeTool()->onMouseMove(e);
+    if (redrawSiblings_ && input::has_flag(e.buttons, input::MouseButton::Left)) {
+        redrawSiblings_();
+    }
 
     requestRedraw();
     return true;
@@ -46,6 +49,9 @@ bool ViewportController::onMouseMove(const input::MouseMoveEvent& e) {
 bool ViewportController::onMouseButton(const input::MouseButtonEvent& e) {
     updateConstraintLayout();
     editorSession_.activeTool()->onMouseButton(e);
+    if (redrawSiblings_) {
+        redrawSiblings_();
+    }
 
     requestRedraw();
     return true;
@@ -98,6 +104,9 @@ bool ViewportController::onKey(const input::KeyEvent& e) {
         }
     }
 
+    if (redrawSiblings_) {
+        redrawSiblings_();
+    }
     requestRedraw();
     return true;
 }

@@ -1,204 +1,313 @@
 #include "UIController.h"
 
-#include <algorithm>
 #include <stdexcept>
 #include <utility>
+#include <algorithm>
+#include <ranges>
 
-#include "../project/DocumentView.h"
+#include "DocumentView.h"
+#include "NativeFile.h"
 
 UIController::UIController() = default;
-UIController::~UIController() { clearViews(); }
-
-void UIController::setCallbacks(Callbacks callbacks) { callbacks_ = std::move(callbacks); }
-
-DocumentView* UIController::findView(const std::string& name) const {
-    const auto entry = documentIds_.find(name);
-    if (entry == documentIds_.end()) {
-        return nullptr;
-    }
-    const auto* document = manager_.at(entry->second);
-    const auto view = std::find_if(views_.begin(), views_.end(), [document](const auto& candidate) { return &candidate->document() == document; });
-    return view == views_.end() ? nullptr : view->get();
+UIController::~UIController() {
+    clearDocumentViews();
 }
 
-std::optional<ToolId> UIController::activeToolId() const {
-    if (auto* view = findView(activeTabName_)) {
-        return view->editorSession_.activeToolId();
+DocumentId UIController::createDocument(std::string name) {
+    if (name.empty()) {
+        return InvalidDocumentId;
     }
-    return std::nullopt;
+    return addDocument(std::make_unique<Document>(name));
 }
 
-void UIController::selectTool(ToolId tool, std::optional<double> value, const std::string& tabName) {
-    if (auto* view = findView(tabName.empty() ? activeTabName_ : tabName)) {
-        view->editorSession_.selectTool(tool, value);
-        view->viewportController_.requestRedraw();
-        if (callbacks_.redraw) {
-            callbacks_.redraw();
-        }
-    }
-}
-
-void UIController::presentActiveTool(DocumentId id, ToolId tool) {
-    if (!callbacks_.toolChanged) {
-        return;
-    }
-    const auto entry = std::find_if(documentIds_.begin(), documentIds_.end(), [id](const auto& item) { return item.second == id; });
-    if (entry != documentIds_.end()) {
-        callbacks_.toolChanged(entry->first, tool, entry->first == activeTabName_);
-    }
-}
-
-void UIController::executeConsoleCommand(const std::string& /*command*/) {
-    // The existing console has no command interpreter yet.
-    if (findView(activeTabName_) && callbacks_.redraw) {
-        callbacks_.redraw();
-    }
-}
-
-void UIController::previewConsoleSelection(const std::vector<int>& ids) {
-    if (auto* view = findView(activeTabName_)) {
-        std::vector<core::sketch::GeometryRef> refs;
-        refs.reserve(ids.size());
-        for (const int id : ids) {
-            refs.push_back({core::sketch::EntityId(id), core::sketch::SubElement::Whole});
-        }
-        view->overlay_.selection_.model.replace(refs);
-        view->viewportController_.requestRedraw();
-        if (callbacks_.redraw) {
-            callbacks_.redraw();
-        }
-    }
-}
-
-void UIController::createFile(const std::string& fileName) {
-    if (fileName.empty()) {
-        return;
-    }
-    if (findView(fileName)) {
-        setActiveFile(fileName);
-        return;
-    }
-    if (const auto it = documentIds_.find(fileName); it != documentIds_.end()) {
-        attachDocument(it->second, fileName);
-        return;
-    }
-    const auto id = manager_.createNewDocument(fileName);
+DocumentId UIController::addDocument(std::unique_ptr<Document> document) {
+    documents_.reserve(documents_.size() + 1);
+    const DocumentId id = manager_.openDocument(std::move(document));
     try {
         project_.documents.push_back({nextFilename(id), std::cref(*manager_.at(id))});
-        attachDocument(id, fileName);
-        projectModified_ = true;
     } catch (...) {
-        std::erase_if(project_.documents, [this, id](const auto& item) { return &item.document.get() == manager_.at(id); });
         manager_.closeDocument(id);
         throw;
     }
+    documents_.push_back(id);
+    projectModified_ = true;
+    return id;
 }
 
-void UIController::attachDocument(DocumentId id, const std::string& tabName) {
-    auto view = std::make_unique<DocumentView>(*manager_.at(id));
-    view->editorSession_.setToolChangedCallback([this, id](ToolId tool) { presentActiveTool(id, tool); });
-    auto* viewport = &view->viewportController_;
-    views_.reserve(views_.size() + 1);
-    const auto previous = activeTabName_;
-    const bool newName = documentIds_.try_emplace(tabName, id).second;
-    bool attached = false;
-    bool publishedTab = false;
-    try {
-        if (callbacks_.attachViewport) {
-            if (!callbacks_.attachViewport(*viewport)) {
-                throw std::runtime_error("Could not create a viewport for the document");
-            }
-            attached = true;
-        }
-        views_.push_back(std::move(view));
-        if (callbacks_.tabAdded) {
-            publishedTab = true;
-            callbacks_.tabAdded(tabName);
-        }
-        setActiveFile(tabName);
-    } catch (...) {
-        if (attached && callbacks_.detachViewport) {
-            callbacks_.detachViewport(*viewport);
-        }
-        if (publishedTab && callbacks_.tabRemoved) {
-            callbacks_.tabRemoved(tabName);
-        }
-        std::erase_if(views_, [viewport](const auto& candidate) { return &candidate->viewportController_ == viewport; });
-        if (newName) {
-            documentIds_.erase(tabName);
-        }
-        activeTabName_ = previous;
-        setActiveFile(previous);
-        throw;
-    }
+std::string UIController::documentName(DocumentId id) const {
+    const Document* document = manager_.at(id);
+    return document ? document->name() : std::string{};
 }
 
-void UIController::setActiveFile(const std::string& fileName) {
-    auto* view = findView(fileName);
-    if (!view) {
-        return;
-    }
-    if (fileName != activeTabName_) {
-        if (auto* previous = findView(activeTabName_)) {
-            previous->editorSession_.activeTool()->cancel();
-        }
-        activeTabName_ = fileName;
-    }
-    if (callbacks_.activeChanged) {
-        callbacks_.activeChanged(fileName, view->viewportController_);
-    }
-    presentActiveTool(documentIds_.at(fileName), view->editorSession_.activeToolId());
-    if (callbacks_.redraw) {
-        callbacks_.redraw();
-    }
-}
-
-void UIController::removeFile(const std::string& fileName) {
-    auto* view = findView(fileName);
-    if (!view) {
-        return;
-    }
-    view->editorSession_.setToolChangedCallback({});
-    view->editorSession_.activeTool()->cancel();
-    if (callbacks_.detachViewport) {
-        callbacks_.detachViewport(view->viewportController_);
-    }
-    std::erase_if(views_, [view](const auto& candidate) { return candidate.get() == view; });
-    if (callbacks_.tabRemoved) {
-        callbacks_.tabRemoved(fileName);
-    }
-    if (activeTabName_ == fileName) {
-        activeTabName_.clear();
-        for (const auto& [name, id] : documentIds_) {
-            if (!views_.empty() && manager_.at(id) == &views_.front()->document()) {
-                setActiveFile(name);
-                break;
-            }
-        }
-    }
-}
-
-void UIController::clearViews() {
-    activeTabName_.clear();
-    for (const auto& [name, id] : documentIds_) {
-        removeFile(name);
-    }
-}
-
-bool UIController::renameTab(const std::string& oldName, const std::string& newName) {
-    auto* view = findView(oldName);
-    if (!view || newName.empty() || (oldName != newName && documentIds_.contains(newName))) {
+bool UIController::renameDocument(DocumentId id, const std::string& name) {
+    auto* document = manager_.at(id);
+    if (!document || name.empty()) {
         return false;
     }
-    if (oldName != newName) {
-        const auto id = documentIds_.at(oldName);
-        documentIds_.emplace(newName, id);
-        documentIds_.erase(oldName);
-        view->document().name() = newName;
-        if (activeTabName_ == oldName) {
-            activeTabName_ = newName;
-        }
+    if (std::as_const(*document).name() != name) {
+        document->name() = name;
         projectModified_ = true;
     }
     return true;
 }
+
+ViewId UIController::createDocumentView(DocumentId id) {
+    auto* document = manager_.at(id);
+    if (!document) {
+        return InvalidViewId;
+    }
+    if (nextViewId_ == 0) {
+        throw std::overflow_error("View IDs exhausted");
+    }
+    const ViewId view{nextViewId_++};
+    auto state = std::make_unique<DocumentView>(*document);
+    state->editorSession_.setToolChangedCallback([this, view](ToolId tool) {
+        if (observer_) {
+            observer_->toolChanged(view, tool);
+        }
+    });
+    state->viewportController_.setSiblingRedrawCallback([this, id, view] {
+        for (const auto& [other, entry] : views_) {
+            if (other != view && entry->id == id) {
+                requestRedraw(other);
+            }
+        }
+    });
+    views_.emplace(view, std::move(state));
+    return view;
+}
+
+IViewportController* UIController::findViewport(ViewId view) {
+    const auto it = views_.find(view);
+    return it == views_.end() ? nullptr : &it->second->viewportController_;
+}
+
+DocumentId UIController::documentOf(ViewId view) const {
+    const auto it = views_.find(view);
+    return it == views_.end() ? InvalidDocumentId : it->second->id;
+}
+
+void UIController::closeDocumentView(ViewId view) {
+    const auto it = views_.find(view);
+    if (it == views_.end()) {
+        return;
+    }
+    it->second->editorSession_.setToolChangedCallback({});
+    it->second->editorSession_.activeTool()->cancel();
+    if (observer_) {
+        observer_->viewAboutToClose(view);
+    }
+    views_.erase(it);
+    if (active_ == view) {
+        active_ = InvalidViewId;
+        setActiveDocumentView(views_.empty() ? InvalidViewId : views_.begin()->first);
+    }
+}
+
+void UIController::clearDocumentViews() {
+    // Do not activate intermediate tabs while closing a whole project.
+    const bool hadActiveView = active_ != InvalidViewId;
+    active_ = InvalidViewId;
+    while (!views_.empty()) {
+        closeDocumentView(views_.begin()->first);
+    }
+    if (hadActiveView && observer_) {
+        observer_->activeViewChanged(InvalidViewId);
+    }
+}
+
+void UIController::setActiveDocumentView(ViewId view) {
+    if (view != InvalidViewId && !views_.contains(view)) {
+        return;
+    }
+    if (view != active_) {
+        if (const auto old = views_.find(active_); old != views_.end()) {
+            old->second->editorSession_.activeTool()->cancel();
+        }
+        active_ = view;
+    }
+    if (observer_) {
+        observer_->activeViewChanged(view);
+    }
+}
+
+void UIController::selectTool(ViewId view, ToolId tool, std::optional<double> value) {
+    if (const auto it = views_.find(view); it != views_.end()) {
+        it->second->editorSession_.selectTool(tool, value);
+        requestRedraw(view);
+    }
+}
+
+std::optional<ToolId> UIController::activeToolId(ViewId view) const {
+    const auto it = views_.find(view);
+    return it == views_.end() ? std::nullopt : std::optional{it->second->editorSession_.activeToolId()};
+}
+
+void UIController::requestRedraw(ViewId view) {
+    if (auto* viewport = findViewport(view)) {
+        viewport->dirty_ = true;
+        if (observer_) {
+            observer_->redrawRequested(view);
+        }
+    }
+}
+
+// void UIController::executeConsoleCommand(const std::string& /*command*/) {
+//     // The existing console has no command interpreter yet.
+//     requestRedraw(active_);
+// }
+//
+// void UIController::previewConsoleSelection(const std::vector<int>& ids) {
+//     if (const auto it = views_.find(active_); it != views_.end()) {
+//         std::vector<core::sketch::GeometryRef> refs;
+//         refs.reserve(ids.size());
+//         for (const int id : ids) {
+//             refs.push_back({core::sketch::EntityId(id), core::sketch::SubElement::Whole});
+//         }
+//         it->second->overlay_.selection_.model.replace(refs);
+//         requestRedraw(active_);
+//     }
+// }
+
+
+namespace {
+
+std::string utf8Name(const std::filesystem::path& path) {
+    const auto text = path.u8string();
+    return {text.begin(), text.end()};
+}
+
+}  // namespace
+
+std::filesystem::path UIController::nextFilename(DocumentId id) const {
+    const app::detail::FilenameLess less;
+    for (uint64_t suffix = 0;; ++suffix) {
+        const std::filesystem::path candidate = "sketch-" + std::to_string(id) + (suffix ? "-" + std::to_string(suffix) : std::string{}) + ".ourp";
+        const bool used =
+            std::ranges::any_of(project_.documents, [&](const auto& item) { return !less(item.filename, candidate) && !less(candidate, item.filename); });
+        if (!used) {
+            return candidate;
+        }
+    }
+}
+
+void UIController::endInteractions() {
+    for (auto& [id, view] : views_) {
+        view->editorSession_.activeTool()->cancel();
+    }
+}
+
+const std::filesystem::path& UIController::projectRoot() const { return project_.root; }
+
+const app::ProjectMetadata& UIController::projectMetadata() const { return project_.metadata; }
+
+bool UIController::needsSaveConfirmation() const {
+    if (projectModified_) {
+        return !project_.root.empty() || !project_.documents.empty();
+    }
+    // Tools currently hold mutable sketch references; Document::isDirty() cannot distinguish
+    // a query from an edit, or identify edits since a successful save. Compare one document
+    // at a time on close/replacement. A missing or unreadable file also warrants confirmation.
+    for (const auto& item : project_.documents) {
+        const auto current = core::persistence::encodeDocument(item.document.get());
+        const auto saved = app::detail::readFile(project_.root / item.filename);
+        if (!current || !saved || saved.value() != current.value()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+app::SaveReport UIController::saveProject() {
+    endInteractions();
+    auto report = app::saveProject(project_);
+    if (report) {
+        projectModified_ = false;
+    }
+    return report;
+}
+
+app::SaveReport UIController::saveProjectAs(const std::filesystem::path& destination) {
+    endInteractions();
+    auto description = project_;
+    if (description.root.empty()) {
+        description.metadata.name = utf8Name(destination.filename());
+    }
+    auto report = app::saveProjectAs(description, destination);
+    if (report) {
+        project_.root = report.root;
+        project_.metadata = report.metadata;
+        projectModified_ = false;
+    }
+    return report;
+}
+
+app::SaveReport UIController::createProject(const std::filesystem::path& destination) {
+    app::Project draft{{}, {{}, utf8Name(destination.filename())}, {}};
+    auto report = app::saveProjectAs(draft, destination);
+    if (report) {
+        installProject({report.root, report.metadata, {}});
+    }
+    return report;
+}
+
+std::optional<app::FileError> UIController::openProject(const std::filesystem::path& path) {
+    auto root = path;
+    if (root.filename() == ".ourpaint") {
+        root = root.has_parent_path() ? root.parent_path() : std::filesystem::path(".");
+    }
+    auto loaded = app::loadProject(root);
+    if (!loaded) {
+        return loaded.error();
+    }
+    installProject(std::move(loaded.value()));
+    return {};
+}
+
+app::FileResult<DocumentId> UIController::openFile(const std::filesystem::path& path) {
+    using Result = app::FileResult<DocumentId>;
+    if (!project_.root.empty()) {
+        for (size_t i = 0; i < project_.documents.size(); ++i) {
+            std::error_code error;
+            if (std::filesystem::equivalent(path, project_.root / project_.documents[i].filename, error)) {
+                return Result::success(documents_[i]);
+            }
+        }
+    }
+    auto bytes = app::detail::readFile(path);
+    if (!bytes) {
+        return Result::failure(bytes.error());
+    }
+    auto decoded = core::persistence::decodeDocument(bytes.value());
+    if (!decoded) {
+        return Result::failure({path, app::FileStage::Decode, {}, decoded.error()});
+    }
+    return Result::success(addDocument(std::move(decoded.value())));
+}
+
+void UIController::installProject(app::LoadedProject loaded) {
+    // Stage adoption before invalidating borrowed viewports from the previous
+    // project. A command-line client can load the same project without any views.
+    auto description = loaded.view();
+    std::vector<DocumentId> ids;
+    ids.reserve(loaded.documents.size());
+    try {
+        for (auto& item : loaded.documents) {
+            ids.push_back(manager_.openDocument(std::move(item.document)));
+        }
+    } catch (...) {
+        for (auto id : ids) {
+            manager_.closeDocument(id);
+        }
+        throw;
+    }
+
+    clearDocumentViews();
+    project_ = std::move(description);
+    for (auto id : documents_) {
+        manager_.closeDocument(id);
+    }
+    documents_ = std::move(ids);
+    projectModified_ = false;
+}
+

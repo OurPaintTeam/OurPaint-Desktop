@@ -4,6 +4,8 @@
 #include <QObject>
 #include <functional>
 #include <QPointer>
+#include <QMap>
+#include "UIObserver.h"
 
 #include "../editor/UIController.h"
 #include "Lib/Core/ProjectManager.h"
@@ -19,10 +21,14 @@ public:
                                 QObject* parent = nullptr);
 
     ~QtMainWindowBinder() override;
+    void showNewView(DocumentId document);
     bool openProjectInCurrentWindow(const QString& path = {});
     bool createProjectInCurrentWindow(const QString& path = {});
 
 private:
+    ViewId viewForTab(const QString& label) const;
+    QString availableLabel(const QString& base, ViewId except = InvalidViewId) const;
+    void renameViewDocument(const QString& oldLabel, const QString& newName);
     void openProjectInNewWindow(const QString& path);
     void createProjectInNewWindow(const QString& path);
     void openFile(const QString& path);
@@ -37,6 +43,11 @@ private:
     UI::ProjectManager& window_;
     UIController& controller_;
     QPointer<QtViewportHost> host_;
+    UIObserver observer_;
+    // ProjectManager identifies tabs by their labels. Only this adapter translates
+    // labels to stable IDs. Multiple tabs may address the same document.
+    QMap<ViewId, QString> labels_;
+    bool tearingDown_ = false;
 };
 
 #endif // ! OURPAINT_APPLICATION_QT_MAINWINDOW_BINDER_H_

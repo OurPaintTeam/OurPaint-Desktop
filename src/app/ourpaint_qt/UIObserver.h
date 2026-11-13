@@ -1,17 +1,29 @@
-#ifndef OURPAINT_QT_UI_OBSERVER_H_
-#define OURPAINT_QT_UI_OBSERVER_H_
+#pragma once
 
+#include <QObject>
 #include <string>
-#include "../editor/tool/ToolId.h"
+
+#include "../editor/IUIObserver.h"
 
 namespace UI {
 class ProjectManager;
 }
 
-// Presents the editor's actual tool, including changes initiated by viewport input.
-class UIObserver {
+// Translates synchronous App notifications to Qt signals on the GUI thread.
+// viewClosing must be delivered directly while findViewport(view) is still valid.
+class UIObserver final : public QObject, public IUIObserver {
+    Q_OBJECT
 public:
-    static void presentActiveTool(UI::ProjectManager& window, const std::string& tabName, ToolId tool, bool active);
-};
+    void viewAboutToClose(ViewId view) override { emit viewClosing(view); }
+    void activeViewChanged(ViewId view) override { emit activeChanged(view); }
+    void toolChanged(ViewId view, ToolId tool) override { emit selectedToolChanged(view, tool); }
+    void redrawRequested(ViewId view) override { emit redraw(view); }
 
-#endif  // OURPAINT_QT_UI_OBSERVER_H_
+    static void presentActiveTool(UI::ProjectManager& window, const std::string& tabName, ToolId tool, bool active);
+
+signals:
+    void viewClosing(ViewId view);
+    void activeChanged(ViewId view);
+    void selectedToolChanged(ViewId view, ToolId tool);
+    void redraw(ViewId view);
+};

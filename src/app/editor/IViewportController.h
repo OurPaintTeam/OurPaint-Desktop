@@ -14,6 +14,8 @@ public:
     virtual bool onKey        (const input::KeyEvent& e)         = 0;
 
     virtual void render() = 0;
+    // The host calls this with the view's context current before detaching.
+    virtual void shutdown() = 0;
 
     bool dirty_ = false;
     bool continuousRedraw_ = false;

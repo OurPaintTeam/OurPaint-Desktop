@@ -1,9 +1,6 @@
 #include "QtMainWindowBinder.h"
 
-#include <QAction>
-#include <QApplication>
 #include <QCloseEvent>
-#include <QDir>
 #include <QFile>
 #include <QKeySequence>
 #include <QStyle>
@@ -11,52 +8,54 @@
 #include <iostream>
 #include <limits>
 #include <numbers>
+#include <QApplication>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QMessageBox>
+#include <QProcess>
+
+#include "ProjectWindow.h"
+#include "QtPath.h"
 
 #include "InputWidget.h"
 #include "ParameterInputWidget.h"
 #include "ProjectMenu.h"
-#include "ProjectWindow.h"
 #include "ToolsType.h"
 #include "QtViewportHost.h"
 #include "UIObserver.h"
 
 QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController& controller, QtViewportHost& host, QObject* parent)
     : QObject(parent), window_(window), controller_(controller), host_(&host) {
-    UIController::Callbacks callbacks;
-    callbacks.attachViewport = [this](ViewportController& viewport) {
-        return host_ && host_->addController(&viewport) >= 0;
-    };
-    callbacks.detachViewport = [this](ViewportController& viewport) {
+    connect(&observer_, &UIObserver::viewClosing, this, [this](ViewId view) {
         if (host_) {
-            host_->removeController(&viewport);
+            host_->removeController(controller_.findViewport(view));
         }
-    };
-    // The tab widget emits selection signals during programmatic changes. The
-    // controller publishes the final active tab separately after updating its state.
-    callbacks.tabAdded = [this](const std::string& name) {
-        const QSignalBlocker blocker(window_);
-        window_.addTabSlot(QString::fromStdString(name));
-    };
-    callbacks.tabRemoved = [this](const std::string& name) {
-        const QSignalBlocker blocker(window_);
-        window_.deleteTabSlot(QString::fromStdString(name));
-    };
-    callbacks.activeChanged = [this](const std::string& name, ViewportController& viewport) {
-        if (host_) {
-            host_->setEventSink(&viewport);
+        const auto label = labels_.take(view);
+        if (!tearingDown_ && !label.isEmpty()) {
+            const QSignalBlocker blocker(window_);
+            window_.deleteTabSlot(label);
         }
-        const QSignalBlocker blocker(window_);
-        window_.setActiveTabNameProject(QString::fromStdString(name));
-    };
-    callbacks.toolChanged = [this](const std::string& name, ToolId tool, bool active) {
-        UIObserver::presentActiveTool(window_, name, tool, active);
-    };
-    callbacks.redraw = [this]() {
+    }, Qt::DirectConnection);
+    connect(&observer_, &UIObserver::activeChanged, this, [this](ViewId view) {
         if (host_) {
+            host_->setEventSink(controller_.findViewport(view));
+        }
+        if (const auto tool = controller_.activeToolId(view); tool && labels_.contains(view)) {
+            const QSignalBlocker blocker(window_);
+            window_.setActiveTabNameProject(labels_[view]);
+            UIObserver::presentActiveTool(window_, labels_[view].toStdString(), *tool, true);
+        }
+    });
+    connect(&observer_, &UIObserver::selectedToolChanged, this, [this](ViewId view, ToolId tool) {
+        if (labels_.contains(view)) {
+            UIObserver::presentActiveTool(window_, labels_[view].toStdString(), tool, view == controller_.activeDocumentView());
+        }
+    });
+    connect(&observer_, &UIObserver::redraw, this, [this](ViewId view) {
+        if (host_ && view == controller_.activeDocumentView()) {
             host_->requestRedraw();
         }
-    };
-    controller_.setCallbacks(std::move(callbacks));
+    });
     installProjectActions();
 
     connect(&window, &UI::ProjectManager::saveFullProjectTriggered, this, [this]() { invoke([this]() { saveProject(); }); });
@@ -64,7 +63,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered, this, [this](const QString& tabName, const QString& str) {
         (void)tabName;
         try {
-            controller_.executeConsoleCommand(str.toStdString());
+            //controller_.executeConsoleCommand(str.toStdString());
         } catch (const std::exception& e) {
             QString error = "Error: " + QString::fromStdString(e.what());
             window_.addNotification(error);
@@ -95,7 +94,7 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
             }
 
             try {
-                controller_.executeConsoleCommand(line.toStdString());
+                //controller_.executeConsoleCommand(line.toStdString());
             } catch (const std::exception& e) {
                 window_.addNotification("Error: " + QString::fromStdString(e.what()));
             }
@@ -126,37 +125,32 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
     // --- Rename tab ---
     QObject::connect(&window, &UI::ProjectManager::renameTabTriggered, this, [this](const QString& oldName, const QString& newName) {
-        std::cout << "remove file triggered: " << oldName.toStdString() << " -> " << newName.toStdString() << '\n';
-        const QSignalBlocker blocker(window_);
-        if (controller_.renameTab(oldName.toStdString(), newName.toStdString())) {
-            window_.renameTabSlot(oldName, newName);
-        } else {
-            window_.renameTabSlot(newName, oldName);
-        }
+        renameViewDocument(oldName, newName);
     });
 
     // --- Remove tab ---
     QObject::connect(&window, &UI::ProjectManager::removeTabTriggered, this, [this](const QString& fileName) {
         std::cout << "remove file triggered: " << fileName.toStdString() << '\n';
-        controller_.removeFile(fileName.toStdString());
+        controller_.closeDocumentView(viewForTab(fileName));
     });
 
     // --- Create file ---
     QObject::connect(&window, &UI::ProjectManager::createFileTriggered, this, [this](const QString& fileName) {
         std::cout << "create file triggered: " << fileName.toStdString() << '\n';
-        invoke([this, fileName]() { controller_.createFile(fileName.toStdString()); });
+        invoke([this, fileName]() { showNewView(controller_.createDocument(fileName.toStdString())); });
     });
 
     // --- Set active file
     QObject::connect(&window, &UI::ProjectManager::setActiveTabTriggered, this, [this](const QString& fileName) {
         std::cout << "set active file: " << fileName.toStdString() << '\n';
-        controller_.setActiveFile(fileName.toStdString());
+        controller_.setActiveDocumentView(viewForTab(fileName));
     });
 
 
 
     // Tools - constraints
     QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this](const QString& tabName, UI::ConstraintType type) {
+        const ViewId view = viewForTab(tabName);
         switch (type) {
             case UI::ConstraintType::Distance:
             case UI::ConstraintType::VDistance:
@@ -179,11 +173,11 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                 }
 
                 auto* prompt = new UI::ParameterInputWidget(promptText, nullptr);
-                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, tabName, constraintType](const QString& parameter) {
+                connect(prompt, &UI::ParameterInputWidget::inputEnteredTriggered, this, [this, view, constraintType](const QString& parameter) {
                     bool valid = false;
                     const double value = parameter.toDouble(&valid);
                     const double scale = constraintType == ToolId::Angle ? std::numbers::pi / 180.0 : 1.0;
-                    controller_.selectTool(constraintType, valid ? value * scale : std::numeric_limits<double>::quiet_NaN(), tabName.toStdString());
+                    controller_.selectTool(view, constraintType, valid ? value * scale : std::numeric_limits<double>::quiet_NaN());
                 });
 
                 prompt->move(200, 200);
@@ -191,43 +185,43 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
                 break;
             }
             case UI::ConstraintType::Tangent:
-                controller_.selectTool(ToolId::Tangent, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Tangent, std::nullopt);
                 break;
             case UI::ConstraintType::Coincident:
-                controller_.selectTool(ToolId::Coincident, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Coincident, std::nullopt);
                 break;
             case UI::ConstraintType::Horizontal:
-                controller_.selectTool(ToolId::Horizontal, std::nullopt,  tabName.toStdString());
+                controller_.selectTool(view, ToolId::Horizontal, std::nullopt);
                 break;
             case UI::ConstraintType::Vertical:
-                controller_.selectTool(ToolId::Vertical, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Vertical, std::nullopt);
                 break;
             case UI::ConstraintType::Parallel:
-                controller_.selectTool(ToolId::Parallel, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Parallel, std::nullopt);
                 break;
             case UI::ConstraintType::Perpendicular:
-                controller_.selectTool(ToolId::Perpendicular, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Perpendicular, std::nullopt);
                 break;
             case UI::ConstraintType::Equal:
-                controller_.selectTool(ToolId::Equal, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Equal, std::nullopt);
                 break;
             case UI::ConstraintType::FixUnfix:
-                controller_.selectTool(ToolId::FixUnfix, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::FixUnfix, std::nullopt);
                 break;
             case UI::ConstraintType::Concentric:
-                controller_.selectTool(ToolId::Concentric, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Concentric, std::nullopt);
                 break;
             case UI::ConstraintType::Collinear:
-                controller_.selectTool(ToolId::Collinear, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Collinear, std::nullopt);
                 break;
             case UI::ConstraintType::Midpoint:
-                controller_.selectTool(ToolId::Midpoint, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Midpoint, std::nullopt);
                 break;
             case UI::ConstraintType::Symmetric:
-                controller_.selectTool(ToolId::Symmetric, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Symmetric, std::nullopt);
                 break;
             case UI::ConstraintType::Curvature:
-                controller_.selectTool(ToolId::Curvature, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Curvature, std::nullopt);
                 break;
             default:
                 return;
@@ -236,22 +230,23 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
     // Tools - point/line
     QObject::connect(&window, &UI::ProjectManager::primitiveTriggered, this, [this](const QString tabName, UI::PrimitiveType _t1) {
+        const ViewId view = viewForTab(tabName);
         switch (_t1) {
             case UI::PrimitiveType::Point:
-                controller_.selectTool(ToolId::Point, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Point, std::nullopt);
                 break;
 
             case UI::PrimitiveType::CubicBezier:
-                controller_.selectTool(ToolId::Nurbs, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Nurbs, std::nullopt);
                 break;
             case UI::PrimitiveType::Line:
-                controller_.selectTool(ToolId::Line, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Line, std::nullopt);
                 break;
             case UI::PrimitiveType::Polyline:
-                controller_.selectTool(ToolId::Polyline, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::Polyline, std::nullopt);
                 break;
             case UI::PrimitiveType::InfiniteLine:
-                controller_.selectTool(ToolId::InfiniteLine, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::InfiniteLine, std::nullopt);
                 break;
             case UI::PrimitiveType::LineSettings:
                 // controller_.selectTool(ToolId::);
@@ -259,36 +254,36 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
 
             case UI::PrimitiveType::CircleByRadius:
-                controller_.selectTool(ToolId::CircleByRadius, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::CircleByRadius, std::nullopt);
                 break;
             case UI::PrimitiveType::CircleByDiameter:
-                controller_.selectTool(ToolId::CircleByDiameter, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::CircleByDiameter, std::nullopt);
                 break;
             case UI::PrimitiveType::CircleByTwoPoints:
-                controller_.selectTool(ToolId::CircleByTwoPoints, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::CircleByTwoPoints, std::nullopt);
                 break;
             case UI::PrimitiveType::CircleByThreePoints:
-                controller_.selectTool(ToolId::CircleByThreePoints, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::CircleByThreePoints, std::nullopt);
                 break;
             case UI::PrimitiveType::CircleTangentTwoLines:
-                controller_.selectTool(ToolId::CircleTangentTwoLines, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::CircleTangentTwoLines, std::nullopt);
                 break;
             case UI::PrimitiveType::CircleTangentThreeLines:
-                controller_.selectTool(ToolId::CircleTangentThreeLines, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::CircleTangentThreeLines, std::nullopt);
                 break;
 
 
             case UI::PrimitiveType::ArcByRadius:
-                controller_.selectTool(ToolId::ArcByRadius, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::ArcByRadius, std::nullopt);
                 break;
             case UI::PrimitiveType::ArcByDiameter:
-                controller_.selectTool(ToolId::ArcByDiameter, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::ArcByDiameter, std::nullopt);
                 break;
             case UI::PrimitiveType::ArcThreePoints:
-                controller_.selectTool(ToolId::ArcByThreePoints, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::ArcByThreePoints, std::nullopt);
                 break;
             case UI::PrimitiveType::ArcSettings:
-                controller_.selectTool(ToolId::ArcByThreePoints, std::nullopt, tabName.toStdString());
+                controller_.selectTool(view, ToolId::ArcByThreePoints, std::nullopt);
                 break;
             default:
                 break;
@@ -297,24 +292,74 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
     // Tools - cursor/size
     QObject::connect(&window, &UI::ProjectManager::toolsTriggered, this, [this](const QString& tabName, UI::ToolsType _t1) {
+        const ViewId view = viewForTab(tabName);
         if (_t1 == UI::ToolsType::Cursor) {
-            controller_.selectTool(ToolId::Cursor, std::nullopt, tabName.toStdString());
+            controller_.selectTool(view, ToolId::Cursor, std::nullopt);
         }
     });
+    controller_.setObserver(&observer_);
 }
 
 QtMainWindowBinder::~QtMainWindowBinder() {
-    // The project window may already have closed. Detach surviving GL contexts
-    // without sending any further presentation updates to the closed window.
-    UIController::Callbacks teardown;
-    teardown.detachViewport = [this](ViewportController& viewport) {
-        if (host_) {
-            host_->removeController(&viewport);
+    tearingDown_ = true;
+    controller_.clearDocumentViews();
+    controller_.setObserver(nullptr);
+}
+
+ViewId QtMainWindowBinder::viewForTab(const QString& label) const {
+    return label.isEmpty() ? controller_.activeDocumentView() : labels_.key(label, InvalidViewId);
+}
+
+QString QtMainWindowBinder::availableLabel(const QString& base, ViewId except) const {
+    QString name = base;
+    for (int suffix = 2;; ++suffix) {
+        const ViewId owner = labels_.key(name, InvalidViewId);
+        if (owner == InvalidViewId || owner == except) {
+            return name;
         }
-    };
-    controller_.setCallbacks(std::move(teardown));
-    controller_.clearViews();
-    controller_.setCallbacks({});
+        name = base + QStringLiteral(" (%1)").arg(suffix);
+    }
+}
+
+void QtMainWindowBinder::showNewView(DocumentId document) {
+    const ViewId view = controller_.createDocumentView(document);
+    if (view == InvalidViewId) {
+        return;
+    }
+    try {
+        if (!host_ || host_->addController(controller_.findViewport(view)) < 0) {
+            throw std::runtime_error("Could not create the document viewport");
+        }
+        auto base = QString::fromStdString(controller_.documentName(document));
+        auto name = availableLabel(base.isEmpty() ? tr("Sketch") : base);
+        labels_.insert(view, name);
+        const QSignalBlocker blocker(window_);
+        window_.addTabSlot(name);
+        controller_.setActiveDocumentView(view);
+    } catch (...) {
+        controller_.closeDocumentView(view);
+        throw;
+    }
+}
+
+void QtMainWindowBinder::renameViewDocument(const QString& oldLabel, const QString& newName) {
+    const auto view = viewForTab(oldLabel);
+    const auto document = controller_.documentOf(view);
+    if (newName.isEmpty() || availableLabel(newName, view) != newName || !controller_.renameDocument(document, newName.toStdString())) {
+        return;
+    }
+    const QSignalBlocker blocker(window_);
+    window_.renameTabSlot(oldLabel, newName);
+    labels_[view] = newName;
+    for (auto it = labels_.begin(); it != labels_.end(); ++it) {
+        if (it.key() != view && controller_.documentOf(it.key()) == document) {
+            const auto label = availableLabel(newName, it.key());
+            window_.renameTabSlot(it.value(), label);
+            it.value() = label;
+        }
+    }
+    // ProjectManager selects the last renamed label, even for a background tab.
+    window_.setActiveTabNameProject(labels_.value(controller_.activeDocumentView()));
 }
 
 void QtMainWindowBinder::invoke(const std::function<void()>& action) {
@@ -356,9 +401,202 @@ void QtMainWindowBinder::installProjectActions() {
         connect(save, &QAction::triggered, this, [this]() { invoke([this]() { saveProject(); }); });
         connect(saveAs, &QAction::triggered, this, [this]() { invoke([this]() { saveProjectAs(); }); });
         if (auto* menu = projectWindow->findChild<UI::ProjectMenu*>()) {
+            auto* newView = menu->addAction(tr("New view of current document"));
+            connect(newView, &QAction::triggered, this, [this] {
+                invoke([this] { showNewView(controller_.documentOf(controller_.activeDocumentView())); });
+            });
             menu->addSeparator();
             menu->addAction(save);
             menu->addAction(saveAs);
         }
     }
+}
+
+
+namespace {
+
+QWidget* dialogParent() {
+    for (auto* widget : QApplication::topLevelWidgets()) {
+        if (qobject_cast<UI::ProjectWindow*>(widget) && widget->isVisible()) {
+            return widget;
+        }
+    }
+    return QApplication::activeWindow();
+}
+
+QString chooseFolder(const char* title) {
+    return QFileDialog::getExistingDirectory(dialogParent(), QCoreApplication::translate("ProjectPersistence", title), {},
+                                             QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+}
+
+QString fileErrorText(const app::FileError& error) {
+    QString message;
+    using app::FileStage;
+    switch (error.stage) {
+        case FileStage::ValidateProject:
+            message = QCoreApplication::translate("ProjectPersistence", "The project data is invalid.");
+            break;
+        case FileStage::ValidatePath:
+            message = QCoreApplication::translate("ProjectPersistence", "This file or folder cannot be used.");
+            break;
+        case FileStage::GenerateId:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not create a project identifier.");
+            break;
+        case FileStage::Encode:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not prepare a document for saving.");
+            break;
+        case FileStage::CreateDirectory:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not create the project folder.");
+            break;
+        case FileStage::Open:
+        case FileStage::Read:
+        case FileStage::Enumerate:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not read the file or project folder.");
+            break;
+        case FileStage::Decode:
+            message = QCoreApplication::translate("ProjectPersistence", "The file is damaged or uses an unsupported format.");
+            break;
+        default:
+            message = QCoreApplication::translate("ProjectPersistence", "Could not finish saving the file.");
+            break;
+    }
+    message += QStringLiteral("\n") + app::ui::pathText(error.path);
+    if (error.codecError) {
+        message += QStringLiteral("\n") + QString::fromStdString(error.codecError->message);
+    }
+    if (error.systemError) {
+        message += QStringLiteral("\n") + QString::fromLocal8Bit(error.systemError.message().c_str());
+    }
+    return message;
+}
+
+void present(UI::ProjectManager& manager, const app::SaveReport& report) {
+    if (report) {
+        manager.addNotification(QCoreApplication::translate("ProjectPersistence", "Project saved to %1.").arg(app::ui::pathText(report.root)));
+        return;
+    }
+    QString text = fileErrorText(*report.error);
+    text += QCoreApplication::translate("ProjectPersistence", "\nSaved files: %1. Not attempted: %2.")
+                .arg(static_cast<qulonglong>(report.saved.size()))
+                .arg(static_cast<qulonglong>(report.unprocessed.size()));
+    if (report.failedFileReplaced) {
+        text += QCoreApplication::translate("ProjectPersistence", "\nThe file already contains the new data, but saving could not be fully confirmed.");
+    }
+    manager.addNotification(text);
+}
+
+}  // namespace
+
+void QtMainWindowBinder::updateProjectData() {
+    const auto& metadata = controller_.projectMetadata();
+    window_.setProjectData({app::ui::pathText(controller_.projectRoot()), QString::fromStdString(metadata.id)});
+    if (auto* window = dialogParent()) {
+        window->setWindowTitle(QString::fromStdString(metadata.name) + QStringLiteral(" - OurPaint"));
+    }
+}
+
+bool QtMainWindowBinder::saveProject() {
+    if (controller_.projectRoot().empty()) {
+        return saveProjectAs();
+    }
+    auto report = controller_.saveProject();
+    updateProjectData();
+    present(window_, report);
+    return static_cast<bool>(report);
+}
+
+bool QtMainWindowBinder::saveProjectAs() {
+    const auto path = chooseFolder("Save project to a new or empty folder");
+    if (path.isEmpty()) {
+        return false;
+    }
+    auto report = controller_.saveProjectAs(app::ui::nativePath(path));
+    if (report) {
+        updateProjectData();
+    }
+    present(window_, report);
+    return static_cast<bool>(report);
+}
+
+bool QtMainWindowBinder::confirmClose() {
+    controller_.endInteractions();
+    if (!controller_.needsSaveConfirmation()) {
+        return true;
+    }
+    const auto answer = QMessageBox::question(dialogParent(), QCoreApplication::translate("ProjectPersistence", "Unsaved project"),
+                                              QCoreApplication::translate("ProjectPersistence", "Save the current project before continuing?"),
+                                              QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Save);
+    return answer == QMessageBox::Discard || (answer == QMessageBox::Save && saveProject());
+}
+
+bool QtMainWindowBinder::openProjectInCurrentWindow(const QString& requestedPath) {
+    const auto selected = requestedPath.isEmpty() ? chooseFolder("Open project folder") : requestedPath;
+    if (selected.isEmpty() || !confirmClose()) {
+        return false;
+    }
+    if (auto error = controller_.openProject(app::ui::nativePath(selected))) {
+        window_.addNotification(fileErrorText(*error));
+        return false;
+    }
+    updateProjectData();
+    for (const auto document : controller_.documents()) {
+        showNewView(document);
+    }
+    window_.addNotification(QCoreApplication::translate("ProjectPersistence", "Project opened."));
+    return true;
+}
+
+bool QtMainWindowBinder::createProjectInCurrentWindow(const QString& requestedPath) {
+    const auto selected = requestedPath.isEmpty() ? chooseFolder("Create project in a new or empty folder") : requestedPath;
+    if (selected.isEmpty() || !confirmClose()) {
+        return false;
+    }
+    auto report = controller_.createProject(app::ui::nativePath(selected));
+    if (report) {
+        updateProjectData();
+    }
+    present(window_, report);
+    return static_cast<bool>(report);
+}
+
+void QtMainWindowBinder::openProjectInNewWindow(const QString& requestedPath) {
+    const auto path = requestedPath.isEmpty() ? chooseFolder("Open project folder") : requestedPath;
+    if (!path.isEmpty() && !QProcess::startDetached(QCoreApplication::applicationFilePath(), {QStringLiteral("--open-project"), path})) {
+        window_.addNotification(QCoreApplication::translate("ProjectPersistence", "Could not open another window."));
+    }
+}
+
+void QtMainWindowBinder::createProjectInNewWindow(const QString& requestedPath) {
+    const auto path = requestedPath.isEmpty() ? chooseFolder("Create project in a new or empty folder") : requestedPath;
+    if (!path.isEmpty() && !QProcess::startDetached(QCoreApplication::applicationFilePath(), {QStringLiteral("--create-project"), path})) {
+        window_.addNotification(QCoreApplication::translate("ProjectPersistence", "Could not open another window."));
+    }
+}
+
+void QtMainWindowBinder::openFile(const QString& requestedPath) {
+    const auto path = requestedPath.isEmpty()
+                          ? QFileDialog::getOpenFileName(dialogParent(), QCoreApplication::translate("ProjectPersistence", "Open sketch or project"), {},
+                                                         QCoreApplication::translate("ProjectPersistence", "OurPaint files (*.ourp .ourpaint);;All files (*)"))
+                          : requestedPath;
+    if (path.isEmpty()) {
+        return;
+    }
+    if (QFileInfo(path).isDir() || QFileInfo(path).fileName() == QStringLiteral(".ourpaint")) {
+        openProjectInCurrentWindow(path);
+        return;
+    }
+    auto result = controller_.openFile(app::ui::nativePath(path));
+    if (!result) {
+        window_.addNotification(fileErrorText(result.error()));
+        return;
+    }
+    // Opening an already visible project file focuses its tab. Creating a second
+    // independent view is an explicit menu action.
+    for (auto it = labels_.cbegin(); it != labels_.cend(); ++it) {
+        if (controller_.documentOf(it.key()) == result.value()) {
+            controller_.setActiveDocumentView(it.key());
+            return;
+        }
+    }
+    showNewView(result.value());
 }

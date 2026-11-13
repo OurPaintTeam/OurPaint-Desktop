@@ -11,7 +11,8 @@
 
 #include <algorithm>
 
-#include "../editor/ViewportController.h"
+#include "../editor/IViewportController.h"
+#include "Camera2D.h"
 
 QtViewportHost::QtViewportHost(uint32_t id, QScreen* screen)
     : QWindow(screen)
@@ -82,7 +83,7 @@ void QtViewportHost::presentFrame() {
     }
 }
 
-int QtViewportHost::setEventSink(ViewportController* controller) {
+int QtViewportHost::setEventSink(IViewportController* controller) {
     if (!controller) {
         controller_ = nullptr;
         context_ = nullptr;
@@ -96,7 +97,7 @@ int QtViewportHost::setEventSink(ViewportController* controller) {
     return index;
 }
 
-int QtViewportHost::addController(ViewportController* controller) {
+int QtViewportHost::addController(IViewportController* controller) {
     if (!controller) {
         qWarning() << "Cannot add null viewport controller";
         return -1;
@@ -125,7 +126,7 @@ int QtViewportHost::addController(ViewportController* controller) {
     return static_cast<int>(controllers_.size()) - 1;
 }
 
-bool QtViewportHost::removeController(ViewportController* controller) {
+bool QtViewportHost::removeController(IViewportController* controller) {
     auto it = std::find_if(
         controllers_.begin(),
         controllers_.end(),

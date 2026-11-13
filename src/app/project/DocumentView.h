@@ -30,6 +30,7 @@ public:
 public:
 
     Document& document_;
+    DocumentId id;
 
     render::Camera2D camera2D_;
     OverlayModel overlay_;
