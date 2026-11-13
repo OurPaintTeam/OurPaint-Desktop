@@ -67,9 +67,9 @@ void Application::init(int& argc, char** argv) {
     }
 
     documentManager_ = new DocumentManager();
-    documentController_ = new DocumentController(*documentManager_);
+    documentController_ = new DocumentController(*documentManager_, views_);
 
-    qtUIController_ = new QtUIController(views_, *documentController_, *platformRuntime_);
+    qtUIController_ = new QtUIController(*documentController_, *platformRuntime_);
 
     if (!filePaths.isEmpty()) {
         qtUIController_->openFilesFromCommandLine(filePaths);

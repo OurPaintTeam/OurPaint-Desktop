@@ -24,8 +24,8 @@ bool writeFileBytes(const std::filesystem::path& path,
 }
 } // namespace
 
-DocumentController::DocumentController(DocumentManager& manager)
-    : manager_(manager) {}
+DocumentController::DocumentController(DocumentManager& manager, std::vector<std::unique_ptr<DocumentView>>& views)
+    : manager_(manager),views_(views) {}
 
 DocumentId DocumentController::loadDocument(const std::string& path) {
     const auto key = pathHash(path);
@@ -170,4 +170,127 @@ bool DocumentController::renameDocument(DocumentId id, const std::string& newNam
     doc->name() = newName;
 
     return true;
+}
+
+
+DocumentView* DocumentController::findView(const std::string& path) const {
+    for (const auto& view : views_) {
+        if (view && view->document().path() == path) {
+            return view.get();
+        }
+    }
+    return nullptr;
+}
+
+DocumentView* DocumentController::findViewByHash(std::size_t hash) const {
+    if (hash == 0) return nullptr;
+    for (const auto& view : views_) {
+        if (view && pathHash(view->document().path()) == hash) {
+            return view.get();
+        }
+    }
+    return nullptr;
+}
+
+int DocumentController::addView(std::unique_ptr<DocumentView> view,
+                                QtViewportHost* host) {
+    if (!view || !host) return -1;
+
+    const int index = host->addController(&view->viewportController_);
+    if (index < 0) return -1;
+
+    auto* controller = &view->viewportController_;
+    const std::size_t key = pathHash(view->document().path());
+
+    indicesMap_[key] = index;
+    controllerMap_[controller] = index;
+    views_.push_back(std::move(view));
+
+    return index;
+}
+
+bool DocumentController::removeView(DocumentId id, QtViewportHost* host) {
+    const Document* document = manager_.at(id);
+    if (!document) return false;
+
+    const std::size_t key = pathHash(document->path());
+    clearActiveTabHashIf(key);
+
+    for (auto it = views_.begin(); it != views_.end(); ++it) {
+        if (&(*it)->document() == document) {
+            (*it)->editorSession_.setToolChangedCallback({});
+
+            const auto removed = controllerMap_.find(&(*it)->viewportController_);
+            const int removedIndex = (removed != controllerMap_.end())
+                                         ? removed->second : -1;
+
+            controllerMap_.erase(&(*it)->viewportController_);
+            indicesMap_.erase(key);
+
+            if (removedIndex >= 0) {
+                shiftIndicesAfterRemoval(removedIndex);
+            }
+
+            if (host) host->removeController(&(*it)->viewportController_);
+
+            views_.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+void DocumentController::shiftIndicesAfterRemoval(int removedIndex) {
+    for (auto& [n, idx] : indicesMap_)   if (idx > removedIndex) --idx;
+    for (auto& [c, idx] : controllerMap_) if (idx > removedIndex) --idx;
+}
+
+int DocumentController::indexOfHash(std::size_t hash) const {
+    auto it = indicesMap_.find(hash);
+    return (it != indicesMap_.end()) ? it->second : -1;
+}
+
+void DocumentController::setIndexOfHash(std::size_t hash, int index) {
+    indicesMap_[hash] = index;
+}
+
+void DocumentController::eraseHashIndex(std::size_t hash) {
+    indicesMap_.erase(hash);
+}
+
+int DocumentController::registerView(std::unique_ptr<DocumentView> view) {
+    if (!view) return -1;
+    auto* controller = &view->viewportController_;
+    const std::size_t key = pathHash(view->document().path());
+    controllerMap_[controller] = -1;
+    views_.push_back(std::move(view));
+    return static_cast<int>(views_.size() - 1);
+}
+
+bool DocumentController::unregisterView(DocumentId id, int* outRemovedIndex) {
+    const Document* document = manager_.at(id);
+    if (!document) return false;
+
+    const std::size_t key = pathHash(document->path());
+    clearActiveTabHashIf(key);
+
+    for (auto it = views_.begin(); it != views_.end(); ++it) {
+        if (&(*it)->document() == document) {
+            (*it)->editorSession_.setToolChangedCallback({});
+
+            const auto removed = controllerMap_.find(&(*it)->viewportController_);
+            const int removedIndex = (removed != controllerMap_.end())
+                                         ? removed->second : -1;
+            if (outRemovedIndex) *outRemovedIndex = removedIndex;
+
+            controllerMap_.erase(&(*it)->viewportController_);
+            indicesMap_.erase(key);
+
+            if (removedIndex >= 0) shiftIndicesAfterRemoval(removedIndex);
+
+            views_.erase(it);
+            return true;
+        }
+    }
+    return false;
 }

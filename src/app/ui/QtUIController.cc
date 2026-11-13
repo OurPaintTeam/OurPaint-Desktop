@@ -11,10 +11,9 @@
 #include "IPlatformRuntime.h"
 #include "ParameterInputWidget.h"
 
-QtUIController::QtUIController(std::vector<std::unique_ptr<DocumentView>>& views, DocumentController& docController,
+QtUIController::QtUIController(DocumentController& docController,
                                IPlatformRuntime& platformRuntime)
     : docController_(docController),
-      views_(views),
       platformRuntime_(platformRuntime),
       settings_(fs_.settingsPath()) {
     activeHost_ = static_cast<QtViewportHost*>(platformRuntime_.createViewportHost());
@@ -28,14 +27,13 @@ QtUIController::QtUIController(std::vector<std::unique_ptr<DocumentView>>& views
 }
 
 QtUIController::~QtUIController() {
-    for (auto& view : views_) {
+    for (auto& view : docController_.views()) {
         if (!view) continue;
         view->editorSession_.setToolChangedCallback({});
         if (activeHost_) {
             activeHost_->removeController(&view->viewportController_);
         }
     }
-    views_.clear();
 
     qDeleteAll(projectManagers_);
     projectManagers_.clear();
@@ -193,23 +191,21 @@ bool QtUIController::renameFile(UI::ProjectManager* currentManager, UI::FileData
         if (m) m->renameTabSlot(data);
     }
 
-    if (auto* view = findView(pd.path.toStdString())) {
+    if (auto* view = docController_.findView(pd.path.toStdString())) {
         view->document().name() = newName;
         view->document().path() = newPathStr;
     }
 
-    std::size_t oldKey = docController_.pathHash(pd.path.toStdString());
-    std::size_t newKey = docController_.pathHash(newPathStr);
+    const std::size_t oldKey = docController_.pathHash(pd.path.toStdString());
+    const std::size_t newKey = docController_.pathHash(newPathStr);
 
-    auto idxIt = indicesMap_.find(oldKey);
-    if (idxIt != indicesMap_.end()) {
-        int index = idxIt->second;
-        indicesMap_.erase(idxIt);
-        indicesMap_[newKey] = index;
+    const int idx = docController_.indexOfHash(oldKey);
+    if (idx >= 0) {
+        docController_.eraseHashIndex(oldKey);
+        docController_.setIndexOfHash(newKey, idx);
     }
-
-    if (activeTabHash_ == oldKey) {
-        activeTabHash_ = newKey;
+    if (docController_.activeTabHash() == oldKey) {
+        docController_.setActiveTabHash(newKey);
     }
     return true;
 }
@@ -268,57 +264,40 @@ bool QtUIController::closeFile(UI::ProjectManager* currentManager, const qint64 
 
 }
 
-bool QtUIController::setActiveFile(UI::ProjectManager* currentManager, const qint64 fileId) {
-    if (!currentManager) {
-        return false;
-    }
+bool QtUIController::setActiveFile(UI::ProjectManager* currentManager, qint64 fileId) {
+    if (!currentManager) return false;
 
     UI::FileSystem::ProjectData pd;
-    if (fs_.getProject(fileId, pd) != UI::FileSystem::FsResult::Ok) {
-        return false;
-    }
+    if (fs_.getProject(fileId, pd) != UI::FileSystem::FsResult::Ok) return false;
 
     const std::string pathStr = pd.path.toStdString();
     const std::size_t newHash = docController_.pathHash(pathStr);
 
-    auto* view = findView(pathStr);
-    if (!view) {
-        return false;
-    }
+    auto* view = docController_.findView(pathStr);
+    if (!view) return false;
 
-    if (activeTabHash_ != newHash) {
-        if (auto* previous = findViewByHash(activeTabHash_)) {
-            if (auto* tool = previous->editorSession_.activeTool()) {
-                tool->cancel();
-            }
+    if (docController_.activeTabHash() != newHash) {
+        if (auto* previous = docController_.findViewByHash(docController_.activeTabHash())) {
+            if (auto* tool = previous->editorSession_.activeTool()) tool->cancel();
         }
     }
-    activeTabHash_ = newHash;
+    docController_.setActiveTabHash(newHash);
 
-    QtViewportHost* host = nullptr;
-    if (managerHosts_.contains(currentManager)) {
-        host = managerHosts_[currentManager].data();
-    }
-    if (!host) {
-        return false;
-    }
+    QtViewportHost* host = managerHosts_.contains(currentManager)
+                               ? managerHosts_[currentManager].data() : nullptr;
+    if (!host) return false;
 
-    auto indexIt = indicesMap_.find(newHash);
-    if (indexIt == indicesMap_.end()) {
-        return false;
-    }
+    const int index = docController_.indexOfHash(newHash);
+    if (index < 0) return false;
 
-    host->setActiveController(indexIt->second);
+    host->setActiveController(index);
     host->requestRedraw();
 
     DocumentId docId = docController_.idFromPath(pathStr);
-    if (docId == DocumentController::InvalidId) {
-        return false;
-    }
+    if (docId == DocumentController::InvalidId) return false;
 
     presentActiveTool(currentManager, docId, view->editorSession_.activeToolId());
     currentManager->setActiveTab(fileId);
-
     return true;
 }
 
@@ -477,113 +456,63 @@ bool QtUIController::closeLightEditorWindowTriggered(UI::ProjectManager* current
     return true;
 }
 
-bool QtUIController::attachDocument(UI::ProjectManager& currentManager, DocumentId id, qint64 fileID) {
-    QtViewportHost* host = nullptr;
-    if (managerHosts_.contains(&currentManager)) {
-        host = managerHosts_[&currentManager].data();
-    }
-
+bool QtUIController::attachDocument(UI::ProjectManager& currentManager,
+                                    DocumentId id, qint64 fileID) {
+    QtViewportHost* host = managerHosts_.contains(&currentManager)
+                               ? managerHosts_[&currentManager].data() : nullptr;
     if (!host) return false;
 
     documentHosts_[id] = host;
 
     auto view = std::make_unique<DocumentView>(*docController_.manager().at(id), *host);
-    view->editorSession_.setToolChangedCallback([this, id, &currentManager](ToolId tool) {
-        presentActiveTool(&currentManager, id, tool);
-    });
+    view->editorSession_.setToolChangedCallback(
+        [this, id, &currentManager](ToolId tool) {
+            presentActiveTool(&currentManager, id, tool);
+        });
 
-    const int index = host->addController(&view->viewportController_);
-    if (index < 0) {
-        return false;
-    }
+    const int index = docController_.addView(std::move(view), host);
+    if (index < 0) return false;
 
-    auto* controller = &view->viewportController_;
-    const std::size_t key = docController_.pathHash(docController_.pathOf(id));
-
-    indicesMap_[key] = index;
-    controllerMap_[controller] = index;
-    views_.push_back(std::move(view));
-
-    setActiveFile(&currentManager, fileID);
+    bool flag = setActiveFile(&currentManager, fileID);
     return true;
 }
 
 bool QtUIController::closeDocumentView(DocumentId id) {
-    const Document* document = docController_.manager().at(id);
-    if (!document) return false;
-
-    const std::size_t key = docController_.pathHash(document->path());
-    if (activeTabHash_ == key) activeTabHash_ = 0;
-
-    QtViewportHost* host = documentHosts_.contains(id) ? documentHosts_[id].data() : nullptr;
-
-    for (auto it = views_.begin(); it != views_.end(); ++it) {
-        if (&(*it)->document() == document) {
-            (*it)->editorSession_.setToolChangedCallback({});
-
-            const auto removed = controllerMap_.find(&(*it)->viewportController_);
-            const int removedIndex = (removed != controllerMap_.end()) ? removed->second : -1;
-
-            controllerMap_.erase(&(*it)->viewportController_);
-            indicesMap_.erase(key);
-
-            if (removedIndex >= 0) {
-                for (auto& [n, idx] : indicesMap_) if (idx > removedIndex) --idx;
-                for (auto& [c, idx] : controllerMap_) if (idx > removedIndex) --idx;
-            }
-
-            if (host) host->removeController(&(*it)->viewportController_);
-
-            views_.erase(it);
-            documentHosts_.erase(id);
-            return true;
-        }
-    }
+    QtViewportHost* host = documentHosts_.contains(id)
+                               ? documentHosts_[id].data() : nullptr;
+    const bool removed = docController_.removeView(id, host);
     documentHosts_.erase(id);
-    return false;
+    return removed;
 }
 
-bool QtUIController::closeOneDocument(DocumentId docId, UI::ProjectManager* currentManager) {
+bool QtUIController::closeOneDocument(DocumentId docId,
+                                      UI::ProjectManager* currentManager) {
     if (!docController_.isOpened(docId)) return false;
-
     if (!docController_.saveDocument(docId)) return false;
 
     const std::string path = docController_.pathOf(docId);
     const std::size_t key = docController_.pathHash(path);
 
     closeDocumentView(docId);
-
     if (!docController_.closeDocument(docId)) return false;
 
-    if (activeTabHash_ == key) activeTabHash_ = 0;
+    docController_.clearActiveTabHashIf(key);
 
     qint64 fileId = -1;
-    if (fs_.getProjectIdByPath(QString::fromStdString(path), fileId) == UI::FileSystem::FsResult::Ok) {
+    if (fs_.getProjectIdByPath(QString::fromStdString(path), fileId)
+        == UI::FileSystem::FsResult::Ok) {
         currentManager->closeTabSlot(fileId);
-    }
+        }
     return true;
 }
 
 
 DocumentView* QtUIController::findView(const std::string& path) const {
-    for (const auto& view : views_) {
-        if (view->document().path() == path) {
-            return view.get();
-        }
-    }
-    return nullptr;
+    return docController_.findView(path);
 }
 
 DocumentView* QtUIController::findViewByHash(std::size_t hash) const {
-    if (hash == 0) {
-        return nullptr;
-    }
-    for (const auto& view : views_) {
-        if (docController_.pathHash(view->document().path()) == hash) {
-            return view.get();
-        }
-    }
-    return nullptr;
+    return docController_.findViewByHash(hash);
 }
 
 
@@ -957,27 +886,20 @@ void QtUIController::presentActiveTool(UI::ProjectManager* currentManager, Docum
     }
 }
 
-void QtUIController::selectTool(ToolId tool, std::optional<double> value, const std::string& path) {
-    DocumentView* view = nullptr;
-    if (path.empty()) {
-        view = findViewByHash(activeTabHash_);
-    } else {
-        view = findView(path);
-    }
+void QtUIController::selectTool(ToolId tool, std::optional<double> value,
+                                const std::string& path) {
+    DocumentView* view = path.empty()
+        ? docController_.findViewByHash(docController_.activeTabHash())
+        : docController_.findView(path);
+    if (!view) return;
 
-    if (view) {
-        view->editorSession_.selectTool(tool, value);
-        view->viewportController_.requestRedraw();
+    view->editorSession_.selectTool(tool, value);
+    view->viewportController_.requestRedraw();
 
-        DocumentId id = docController_.idFromPath(view->document().path());
-        QtViewportHost* host = activeHost_.data();
-        if (documentHosts_.contains(id)) {
-            host = documentHosts_[id].data();
-        }
-        if (host) {
-            host->requestRedraw();
-        }
-    }
+    DocumentId id = docController_.idFromPath(view->document().path());
+    QtViewportHost* host = activeHost_.data();
+    if (documentHosts_.contains(id)) host = documentHosts_[id].data();
+    if (host) host->requestRedraw();
 }
 
 void QtUIController::showConstraintPrompt(const QString& promptText, ToolId constraintType, std::string path) {

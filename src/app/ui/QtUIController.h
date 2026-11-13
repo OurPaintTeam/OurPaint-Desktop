@@ -21,8 +21,7 @@ class QtUIController : public QObject {
     Q_OBJECT
 
 public:
-    QtUIController(std::vector<std::unique_ptr<DocumentView>>& views,
-                   DocumentController& docController,
+    QtUIController(DocumentController& docController,
                    IPlatformRuntime& platformRuntime);
     ~QtUIController() override;
 
@@ -76,7 +75,6 @@ private:
 
 private:
     DocumentController& docController_;
-    std::vector<std::unique_ptr<DocumentView>>& views_;
     IPlatformRuntime& platformRuntime_;
 
     UI::FileSystem fs_;
@@ -87,10 +85,6 @@ private:
     QPointer<QtViewportHost> activeHost_;
     std::unordered_map<UI::ProjectManager*, QPointer<QtViewportHost>> managerHosts_;
     std::unordered_map<DocumentId, QPointer<QtViewportHost>> documentHosts_;
-
-    std::unordered_map<std::size_t, int> indicesMap_;
-    std::unordered_map<ViewportController*, int> controllerMap_;
-    std::size_t activeTabHash_{0};
 
     QVector<UI::ProjectManager*> projectManagers_;
 };
