@@ -7,7 +7,9 @@
 
 #include "SketchTypes.h"
 
+namespace render {
 class Camera2D;
+}
 
 namespace render::text {
 class TextMeasurer;
@@ -79,7 +81,7 @@ struct ConstraintMarker {
 // presentation-state or font-metric changes.
 class ConstraintLayout {
 public:
-    void rebuild(const core::sketch::Sketch& sketch, const Camera2D& camera, const ConstraintMarkerStyle& style,
+    void rebuild(const core::sketch::Sketch& sketch, const render::Camera2D& camera, const ConstraintMarkerStyle& style,
                  const ConstraintPresentationState& presentation, const render::text::TextMeasurer& textMeasurer);
     const std::vector<ConstraintMarker>& markers() const noexcept { return markers_; }
 

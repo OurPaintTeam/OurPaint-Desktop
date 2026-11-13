@@ -25,7 +25,7 @@ class SketchEditor {
 public:
     using ToolChangedCallback = std::function<void(ToolId)>;
 
-    SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
+    SketchEditor(Document& document, render::Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
                  app::ConstraintPresentationState& constraintPresentation);
     ~SketchEditor();
 
@@ -38,7 +38,7 @@ public:
 
 private:
     Document& document_;
-    Camera2D& camera_;
+    render::Camera2D& camera_;
     OverlayModel& overlay_;
     snap::SnapSystem snap_;
 

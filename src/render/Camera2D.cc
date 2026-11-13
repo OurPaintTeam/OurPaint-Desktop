@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 
+using namespace render;
+
 void Camera2D::setViewport(int width, int height, double devicePixelRatio) {
     viewport_.logicalWidth = std::max(1, width);
     viewport_.logicalHeight = std::max(1, height);

@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <cmath>
 
+namespace render {
+
 struct Viewport2D {
     int logicalWidth = 1;
     int logicalHeight = 1;
@@ -92,5 +94,7 @@ private:
     static constexpr double kMinZoom = 1e-6;
     static constexpr double kMaxZoom = 1e6;
 };
+
+}
 
 #endif // ! OURPAINT_RENDERING_VIEW2D_H_

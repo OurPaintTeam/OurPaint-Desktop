@@ -8,7 +8,7 @@
 #include "Document.h"
 
 ConstraintTool::ConstraintTool(Document& document,
-                               Camera2D& camera,
+                               render::Camera2D& camera,
                                snap::SnapSystem& snap,
                                OverlayModel& overlay,
                                Cpu2dPicker& picker)

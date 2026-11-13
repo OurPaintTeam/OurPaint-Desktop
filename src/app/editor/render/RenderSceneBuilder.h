@@ -22,7 +22,7 @@ public:
                        AxisTexts& axis,
                        const app::ViewportStyle& style,
                        render::RenderScene& renderScene,
-                       const Camera2D& camera,
+                       const render::Camera2D& camera,
                        const app::ConstraintLayout& constraintLayout);
 
     void rebuild();
@@ -57,7 +57,7 @@ private:
     AxisTexts& axis_;
     const app::ViewportStyle& style_;
     render::RenderScene& renderScene_;
-    const Camera2D& camera_;
+    const render::Camera2D& camera_;
     const app::ConstraintLayout& constraintLayout_;
 };
 

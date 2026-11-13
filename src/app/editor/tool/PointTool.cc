@@ -5,7 +5,7 @@
 #include "../../../core/Document.h"
 #include "objects/Objects.h"
 
-PointTool::PointTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker) :
+PointTool::PointTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker) :
 IInteractionTool(document,camera,snap,overlay, picker) {}
 
 void PointTool::onMouseMove(const input::MouseMoveEvent& e) {

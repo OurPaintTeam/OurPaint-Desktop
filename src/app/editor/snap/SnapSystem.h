@@ -7,7 +7,9 @@
 #include "SnapTypes.h"
 #include "sketch/SketchTypes.h"
 
+namespace render {
 class Camera2D;
+}
 namespace core::sketch {
 class Sketch;
 }
@@ -99,10 +101,10 @@ struct SnapCandidate {
 class SnapSystem {
 private:
     const core::sketch::Sketch& sketch_;
-    const Camera2D& camera_;
+    const render::Camera2D& camera_;
 
 public:
-    explicit SnapSystem(const core::sketch::Sketch& sketch,const Camera2D& camera);
+    explicit SnapSystem(const core::sketch::Sketch& sketch,const render::Camera2D& camera);
     SnapResult getSnapCandidate(const SnapRequest& request) const;
 
 private:

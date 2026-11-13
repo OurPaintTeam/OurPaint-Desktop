@@ -5,7 +5,7 @@
 
 #include "Document.h"
 
-CircleTool::CircleTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
+CircleTool::CircleTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
     : IInteractionTool(document, camera, snap, overlay, picker) {}
 
 void CircleTool::setMode(Mode mode) {

@@ -10,7 +10,7 @@
 
 using namespace app;
 
-SketchEditor::SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
+SketchEditor::SketchEditor(Document& document, render::Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
                            app::ConstraintPresentationState& constraintPresentation)
     : document_(document),
       camera_(camera),

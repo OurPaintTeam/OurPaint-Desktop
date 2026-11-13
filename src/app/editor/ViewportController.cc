@@ -3,7 +3,7 @@
 #include "Document.h"
 #include "render/constraints/ConstraintLayout.h"
 
-ViewportController::ViewportController(Camera2D& camera, OverlayModel& overlay, app::SketchEditor& editorSession_, Document& document,
+ViewportController::ViewportController(render::Camera2D& camera, OverlayModel& overlay, app::SketchEditor& editorSession_, Document& document,
                                        const app::ViewportStyle& style, app::ConstraintLayout& constraintLayout,
                                        const app::ConstraintPresentationState& constraintPresentation)
     : camera2D_(camera),

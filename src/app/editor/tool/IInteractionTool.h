@@ -8,7 +8,9 @@
 
 class Cpu2dPicker;
 class Document;
+namespace render {
 class Camera2D;
+}
 class OverlayModel;
 namespace snap {
 class SnapSystem;
@@ -17,7 +19,7 @@ class SnapSystem;
 class IInteractionTool {
 protected:
     Document& document_;
-    Camera2D& camera_;
+    render::Camera2D& camera_;
     snap::SnapSystem& snap_;
     OverlayModel& overlay_;
     Cpu2dPicker& picker_;
@@ -108,7 +110,7 @@ protected:
     }
 
 public:
-    IInteractionTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker_)
+    IInteractionTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker_)
         : document_(document), camera_(camera), snap_(snap), overlay_(overlay), picker_(picker_) {}
 
     virtual ~IInteractionTool() {}

@@ -9,7 +9,9 @@
 
 #include "../editor/InputEvents.h"
 class ViewportController;
+namespace render {
 struct Viewport2D;
+}
 
 class QWidget;
 class QTimer;
@@ -21,7 +23,7 @@ public:
     ~QtViewportHost() override;
 
     uint32_t         id()                   const;
-    Viewport2D       getSize()              const;
+    render::Viewport2D       getSize()              const;
     float            getDevicePixelRatio()  const;
 
     void requestRedraw();

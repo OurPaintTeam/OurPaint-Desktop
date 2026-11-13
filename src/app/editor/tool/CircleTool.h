@@ -24,7 +24,7 @@ public:
 
 public:
     explicit CircleTool(Document& document,
-                        Camera2D& camera,
+                        render::Camera2D& camera,
                         snap::SnapSystem& snap,
                         Cpu2dPicker& picker,
                         OverlayModel& overlay);

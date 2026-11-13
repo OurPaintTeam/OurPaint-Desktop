@@ -24,8 +24,13 @@ struct ConstraintPresentationState;
 // Route project and toolbar commands through UIController; keep widget types out of both APIs.
 class ViewportController : public IViewportController {
 public:
-    ViewportController(Camera2D& camera, OverlayModel& overlay, app::SketchEditor& session, Document& document, const app::ViewportStyle& style,
-                       app::ConstraintLayout& constraintLayout, const app::ConstraintPresentationState& constraintPresentation);
+    ViewportController(render::Camera2D& camera,
+                       OverlayModel& overlay,
+                       app::SketchEditor& session,
+                       Document& document,
+                       const app::ViewportStyle& style,
+                       app::ConstraintLayout& constraintLayout,
+                       const app::ConstraintPresentationState& constraintPresentation);
 
     bool onResize     (const input::ResizeEvent& e)      override;
     bool onMouseMove  (const input::MouseMoveEvent& e)   override;
@@ -44,7 +49,7 @@ public:
 private:
     void updateConstraintLayout();
 
-    Camera2D& camera2D_;
+    render::Camera2D& camera2D_;
     OverlayModel& overlay_;
     app::SketchEditor& editorSession_;
     Document& document_;

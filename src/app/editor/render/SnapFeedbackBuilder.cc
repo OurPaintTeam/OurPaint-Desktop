@@ -148,7 +148,7 @@ bool clipAxis(double origin, double direction, double minimum, double maximum, d
     return first <= last;
 }
 
-bool clipGuide(const SnapGuide& guide, const RectD& bounds, Line2& clipped) {
+bool clipGuide(const SnapGuide& guide, const render::RectD& bounds, Line2& clipped) {
     if (!finite(guide.line.start) || !finite(guide.line.end)) {
         return false;
     }
@@ -182,7 +182,7 @@ bool clipGuide(const SnapGuide& guide, const RectD& bounds, Line2& clipped) {
     return finite(clipped.start) && finite(clipped.end);
 }
 
-void appendGuides(const SnapFeedback& feedback, const RectD& bounds, const SnapFeedbackStyle& style, render::RenderScene& scene) {
+void appendGuides(const SnapFeedback& feedback, const render::RectD& bounds, const SnapFeedbackStyle& style, render::RenderScene& scene) {
     if (!validStroke(style.guide)) {
         return;
     }
@@ -201,7 +201,7 @@ void appendGuides(const SnapFeedback& feedback, const RectD& bounds, const SnapF
     appendLayer(std::move(layer), scene);
 }
 
-void appendGlyph(const SnapFeedback& feedback, const Camera2D& camera, const SnapFeedbackStyle& style, render::RenderScene& scene) {
+void appendGlyph(const SnapFeedback& feedback, const render::Camera2D& camera, const SnapFeedbackStyle& style, render::RenderScene& scene) {
     const double dpr = camera.viewport().devicePixelRatio;
     const auto logical = camera.worldToScreenLogical({feedback.position.x, feedback.position.y});
     const Vec2 center{logical.x * dpr, camera.hFramebuffer() - logical.y * dpr};
@@ -267,7 +267,7 @@ void appendGlyph(const SnapFeedback& feedback, const Camera2D& camera, const Sna
 
 }  // namespace
 
-void appendSnapFeedback(const SnapFeedback& feedback, const core::sketch::Sketch& sketch, const Camera2D& camera, const SnapFeedbackStyle& style,
+void appendSnapFeedback(const SnapFeedback& feedback, const core::sketch::Sketch& sketch, const render::Camera2D& camera, const SnapFeedbackStyle& style,
                         render::RenderScene& scene) {
     const auto& viewport = camera.viewport();
     const double framebufferWidth = viewport.logicalWidth * viewport.devicePixelRatio;

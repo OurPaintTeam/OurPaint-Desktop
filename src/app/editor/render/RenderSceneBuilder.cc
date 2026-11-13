@@ -129,7 +129,7 @@ RenderSceneBuilder::RenderSceneBuilder(Document& document,
                                        AxisTexts& axis,
                                        const app::ViewportStyle& style,
                                        render::RenderScene& renderScene,
-                                       const Camera2D& camera,
+                                       const render::Camera2D& camera,
                                        const app::ConstraintLayout& constraintLayout)
     :
       document_(document),

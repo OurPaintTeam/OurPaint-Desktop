@@ -6,7 +6,7 @@
 #include <locale>
 #include <sstream>
 
-AxisTexts::AxisTexts(const Camera2D& camera) : gridInfo_(), camera_(camera) {}
+AxisTexts::AxisTexts(const render::Camera2D& camera) : gridInfo_(), camera_(camera) {}
 
 void AxisTexts::update() {
     labels_.clear();

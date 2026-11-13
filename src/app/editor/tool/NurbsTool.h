@@ -11,7 +11,7 @@
 
 class NurbsTool : public IInteractionTool {
 public:
-    explicit NurbsTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker);
+    explicit NurbsTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker);
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;

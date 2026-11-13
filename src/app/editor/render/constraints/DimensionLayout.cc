@@ -78,7 +78,7 @@ bool validStyle(const ConstraintMarkerStyle& style) {
 }
 
 // sketch::GeometryRef -> Point (in logical pixels)
-std::optional<glm::dvec2> screenPoint(const sketch::Sketch& sketch, sketch::GeometryRef ref, const Camera2D& camera) {
+std::optional<glm::dvec2> screenPoint(const sketch::Sketch& sketch, sketch::GeometryRef ref, const render::Camera2D& camera) {
     const auto point = sketch.pointPosition(ref);
     if (!point) {
         return std::nullopt;
@@ -88,7 +88,7 @@ std::optional<glm::dvec2> screenPoint(const sketch::Sketch& sketch, sketch::Geom
 }
 
 // sketch::GeometryRef -> Line (in logical pixels)
-std::optional<Line> screenLine(const sketch::Sketch& sketch, sketch::GeometryRef ref, const Camera2D& camera) {
+std::optional<Line> screenLine(const sketch::Sketch& sketch, sketch::GeometryRef ref, const render::Camera2D& camera) {
     if (ref.sub != sketch::SubElement::Whole) {
         return std::nullopt;
     }
@@ -108,7 +108,7 @@ std::optional<Line> screenLine(const sketch::Sketch& sketch, sketch::GeometryRef
 }
 
 // sketch::GeometryRef -> CircularCurve (in logical pixels)
-std::optional<CircularCurve> screenCurve(const sketch::Sketch& sketch, sketch::GeometryRef ref, const Camera2D& camera) {
+std::optional<CircularCurve> screenCurve(const sketch::Sketch& sketch, sketch::GeometryRef ref, const render::Camera2D& camera) {
     if (ref.sub != sketch::SubElement::Whole) {
         return std::nullopt;
     }
@@ -136,7 +136,7 @@ std::optional<CircularCurve> screenCurve(const sketch::Sketch& sketch, sketch::G
     return finite(result.center) && std::isfinite(result.radius) && result.radius > kEpsilon ? std::optional(result) : std::nullopt;
 }
 
-std::optional<glm::dvec2> userLabel(sketch::ConstraintId id, const ConstraintPresentationState& presentation, const Camera2D& camera) {
+std::optional<glm::dvec2> userLabel(sketch::ConstraintId id, const ConstraintPresentationState& presentation, const render::Camera2D& camera) {
     const auto found = presentation.labelPlacements.find(id);
     if (found == presentation.labelPlacements.end()) {
         return std::nullopt;
@@ -309,7 +309,7 @@ glm::dvec2 project(glm::dvec2 point, const Line& line, bool clampToSegment = fal
 
 // anchor line (in logical pixels)
 // Get only: Distance, HorizontalDistance, VerticalDistance, Length
-std::optional<Line> linearAnchors(const sketch::ConstraintDefinition& definition, const sketch::Sketch& sketch, const Camera2D& camera) {
+std::optional<Line> linearAnchors(const sketch::ConstraintDefinition& definition, const sketch::Sketch& sketch, const render::Camera2D& camera) {
     const auto& refs = definition.refs;
 
     // Length (line) constraint
@@ -439,7 +439,7 @@ void angularDimension(ConstraintMarker& marker, const Line& first, const Line& s
 
 void appendDimension(const sketch::SketchConstraint& constraint,
                      const sketch::Sketch& sketch,
-                     const Camera2D& camera,
+                     const render::Camera2D& camera,
                      const ConstraintMarkerStyle& style,
                      const ConstraintPresentationState& presentation,
                      const render::text::TextMeasurer& textMeasurer,

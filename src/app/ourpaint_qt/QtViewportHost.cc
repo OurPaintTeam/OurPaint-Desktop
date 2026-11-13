@@ -56,7 +56,7 @@ QtViewportHost::~QtViewportHost() {
 
 uint32_t QtViewportHost::id() const { return 0; }
 
-Viewport2D QtViewportHost::getSize() const {
+render::Viewport2D QtViewportHost::getSize() const {
     int w = static_cast<int>(QWindow::width() * devicePixelRatio());
     int h = static_cast<int>(QWindow::height() * devicePixelRatio());
     return { w, h };
@@ -204,7 +204,7 @@ void QtViewportHost::setActiveController(int index) {
         return;
     }
 
-    const Viewport2D viewport = getSize();
+    const render::Viewport2D viewport = getSize();
 
     const int wLogical = width();
     const int hLogical = height();
@@ -370,7 +370,7 @@ void QtViewportHost::initContext() {
 
     initialized_ = true;
 
-    const Viewport2D viewport = getSize();
+    const render::Viewport2D viewport = getSize();
 
     const int w = int(width() * devicePixelRatio());
     const int h = int(height() * devicePixelRatio());

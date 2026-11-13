@@ -31,7 +31,7 @@ public:
 
     Document& document_;
 
-    Camera2D camera2D_;
+    render::Camera2D camera2D_;
     OverlayModel overlay_;
     app::ViewportStyle viewportStyle_;
     app::ConstraintPresentationState constraintPresentation_;

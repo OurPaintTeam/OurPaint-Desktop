@@ -7,7 +7,7 @@
 #include "../../../core/DocumentManager.h"
 #include "objects/Objects.h"
 
-LineTool::LineTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
+LineTool::LineTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
     :IInteractionTool(document,camera,snap,overlay, picker) {}
 
 void LineTool::onMouseMove(const input::MouseMoveEvent& e) {

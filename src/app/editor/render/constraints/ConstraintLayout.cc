@@ -162,7 +162,7 @@ bool glyphIsEntityAgnostic(sketch::ConstraintType type) {
            type == sketch::ConstraintType::Fix;
 }
 
-std::map<sketch::EntityId, LineMarkers> collectLines(const sketch::Sketch& sketch, const Camera2D& camera) {
+std::map<sketch::EntityId, LineMarkers> collectLines(const sketch::Sketch& sketch, const render::Camera2D& camera) {
     std::map<sketch::EntityId, LineMarkers> lines;
     const auto entities = sketch.lines();
     if (!entities) {
@@ -255,7 +255,7 @@ void appendLineConstraint(const sketch::SketchConstraint& constraint, const Cons
     }
 }
 
-std::optional<glm::dvec2> screenPoint(const sketch::Sketch& sketch, sketch::GeometryRef ref, const Camera2D& camera) {
+std::optional<glm::dvec2> screenPoint(const sketch::Sketch& sketch, sketch::GeometryRef ref, const render::Camera2D& camera) {
     const auto position = sketch.pointPosition(ref);
     if (!position || !finite({position.value().x, position.value().y})) {
         return std::nullopt;
@@ -264,7 +264,7 @@ std::optional<glm::dvec2> screenPoint(const sketch::Sketch& sketch, sketch::Geom
     return finite(screen) ? std::optional<glm::dvec2>(screen) : std::nullopt;
 }
 
-void appendFixedPoint(const sketch::SketchConstraint& constraint, const sketch::Sketch& sketch, const Camera2D& camera, const ConstraintMarkerStyle& style,
+void appendFixedPoint(const sketch::SketchConstraint& constraint, const sketch::Sketch& sketch, const render::Camera2D& camera, const ConstraintMarkerStyle& style,
                       std::vector<ConstraintMarker>& output) {
     if (constraint.definition.refs.size() != 1) {
         return;
@@ -282,7 +282,7 @@ void appendFixedPoint(const sketch::SketchConstraint& constraint, const sketch::
     output.push_back(std::move(marker));
 }
 
-void appendFixedCurve(const sketch::SketchConstraint& constraint, const sketch::Sketch& sketch, const Camera2D& camera, const ConstraintMarkerStyle& style,
+void appendFixedCurve(const sketch::SketchConstraint& constraint, const sketch::Sketch& sketch, const render::Camera2D& camera, const ConstraintMarkerStyle& style,
                       std::vector<ConstraintMarker>& output) {
     const auto& refs = constraint.definition.refs;
     if (refs.size() != 1 || refs.front().sub != sketch::SubElement::Whole) {
@@ -331,7 +331,7 @@ struct CoincidentNode {
 
 using CoincidentGraph = std::map<sketch::GeometryRef, CoincidentNode>;
 
-void collectCoincident(const sketch::SketchConstraint& constraint, const sketch::Sketch& sketch, const Camera2D& camera, const ConstraintMarkerStyle& style,
+void collectCoincident(const sketch::SketchConstraint& constraint, const sketch::Sketch& sketch, const render::Camera2D& camera, const ConstraintMarkerStyle& style,
                        CoincidentGraph& graph, std::vector<ConstraintMarker>& output) {
     const auto& refs = constraint.definition.refs;
     if (refs.size() != 2 || refs[0] == refs[1]) {
@@ -357,7 +357,7 @@ void collectCoincident(const sketch::SketchConstraint& constraint, const sketch:
     graph[refs[1]].neighbors.push_back({refs[0], constraint.id});
 }
 
-void appendCoincidentMarkers(CoincidentGraph& graph, const sketch::Sketch& sketch, const Camera2D& camera, const ConstraintMarkerStyle& style,
+void appendCoincidentMarkers(CoincidentGraph& graph, const sketch::Sketch& sketch, const render::Camera2D& camera, const ConstraintMarkerStyle& style,
                              std::vector<ConstraintMarker>& output) {
     for (auto& [attachment, node] : graph) {
         if (node.visited) {
@@ -395,7 +395,7 @@ void appendCoincidentMarkers(CoincidentGraph& graph, const sketch::Sketch& sketc
     }
 }
 
-void appendGeometricRelation(const sketch::SketchConstraint&, const sketch::Sketch&, const Camera2D&, const ConstraintMarkerStyle&,
+void appendGeometricRelation(const sketch::SketchConstraint&, const sketch::Sketch&, const render::Camera2D&, const ConstraintMarkerStyle&,
                              std::vector<ConstraintMarker>&) {
     // TODO: Build relation-specific anchors and glyphs for Tangent, Equal,
     // Concentric, Symmetric and Midpoint. These do not share line-slot placement.
@@ -403,7 +403,7 @@ void appendGeometricRelation(const sketch::SketchConstraint&, const sketch::Sket
 
 }  // namespace
 
-void ConstraintLayout::rebuild(const sketch::Sketch& sketch, const Camera2D& camera, const ConstraintMarkerStyle& style,
+void ConstraintLayout::rebuild(const sketch::Sketch& sketch, const render::Camera2D& camera, const ConstraintMarkerStyle& style,
                                const ConstraintPresentationState& presentation, const render::text::TextMeasurer& textMeasurer) {
     // Single entry point: rebuild all markers from scratch.
     markers_.clear();

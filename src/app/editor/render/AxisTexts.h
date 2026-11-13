@@ -7,7 +7,7 @@
 
 class AxisTexts {
 public:
-    AxisTexts(const Camera2D& camera);
+    AxisTexts(const render::Camera2D& camera);
 
     struct Color {
         float r{};
@@ -52,6 +52,6 @@ private:
     std::vector<float> tickX_;
     std::vector<float> tickY_;
 
-    const Camera2D& camera_;
+    const render::Camera2D& camera_;
 };
 #endif // ! OURPAINT_APPLICATION_AXIS_TEXTS_H_

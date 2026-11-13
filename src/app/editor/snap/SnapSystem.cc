@@ -75,7 +75,7 @@ bool SnapSystem::isBetterCandidate(const SnapCandidate& candidate, const SnapCan
     return candidateDistance < currentDistance;
 }
 
-SnapSystem::SnapSystem(const core::sketch::Sketch& sketch, const Camera2D& camera) : sketch_(sketch), camera_(camera) {}
+SnapSystem::SnapSystem(const core::sketch::Sketch& sketch, const render::Camera2D& camera) : sketch_(sketch), camera_(camera) {}
 
 SnapResult SnapSystem::getSnapCandidate(const SnapRequest& request) const { return parser(request); }
 

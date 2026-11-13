@@ -8,7 +8,7 @@
 
 class LineTool : public IInteractionTool {
 public:
-    explicit LineTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker);
+    explicit LineTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker);
 
     void onMouseMove(const input::MouseMoveEvent& e) override;
     void onMouseButton(const input::MouseButtonEvent& e) override;

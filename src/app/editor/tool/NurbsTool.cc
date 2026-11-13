@@ -7,7 +7,7 @@
 #include "../../../render/Camera2D.h"
 #include "objects/Objects.h"
 
-NurbsTool::NurbsTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
+NurbsTool::NurbsTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
     : IInteractionTool(document, camera, snap, overlay, picker) {}
 
 void NurbsTool::onMouseMove(const input::MouseMoveEvent& e) {}

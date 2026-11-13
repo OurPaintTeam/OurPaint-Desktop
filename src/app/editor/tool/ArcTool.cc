@@ -4,7 +4,7 @@
 #include "../../../render/RenderScene.h"
 #include "objects/Objects.h"
 
-ArcTool::ArcTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
+ArcTool::ArcTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay)
     : IInteractionTool(document, camera, snap, overlay, picker) {}
 
 void ArcTool::setMode(Mode mode) {

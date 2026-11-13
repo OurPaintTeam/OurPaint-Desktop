@@ -3,7 +3,9 @@
 
 #include <vector>
 
+namespace render {
 class Camera2D;
+}
 namespace core::sketch {
 class Sketch;
 struct SketchConstraint;
@@ -19,7 +21,7 @@ struct ConstraintPresentationState;
 // Builds presentation only; it neither validates solver support nor mutates Sketch.
 void appendDimension(const core::sketch::SketchConstraint& constraint,
                      const core::sketch::Sketch& sketch,
-                     const Camera2D& camera,
+                     const render::Camera2D& camera,
                      const ConstraintMarkerStyle& style,
                      const ConstraintPresentationState& presentation,
                      const render::text::TextMeasurer& textMeasurer,

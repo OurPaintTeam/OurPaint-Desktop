@@ -111,7 +111,7 @@ bool arcIntersectsRect(const sketch::Arc2& arc, double xmin, double ymin, double
 
 }  // namespace
 
-Cpu2dPicker::Cpu2dPicker(sketch::Sketch& sketch, Camera2D& camera) : sketch_(sketch), camera_(camera) {}
+Cpu2dPicker::Cpu2dPicker(sketch::Sketch& sketch, render::Camera2D& camera) : sketch_(sketch), camera_(camera) {}
 
 std::optional<DimensionPickResult> Cpu2dPicker::pickDimensionAtScreenLogical(double screenX, double screenY, const app::ConstraintLayout& layout) const {
     if (!std::isfinite(screenX) || !std::isfinite(screenY)) {

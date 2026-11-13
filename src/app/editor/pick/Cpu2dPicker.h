@@ -27,7 +27,7 @@ struct DimensionPickResult {
 
 class Cpu2dPicker {
 public:
-    explicit Cpu2dPicker(sketch::Sketch& sketch, Camera2D& camera);
+    explicit Cpu2dPicker(sketch::Sketch& sketch, render::Camera2D& camera);
 
     // Reads the rendered layout in logical pixels; the caller controls geometry-vs-dimension priority.
     std::optional<DimensionPickResult> pickDimensionAtScreenLogical(double screenX, double screenY, const app::ConstraintLayout& layout) const;
@@ -67,7 +67,7 @@ private:
     static bool lineIntersectsRectFast(double x1, double y1, double x2, double y2, double xMin, double yMin, double xMax, double yMax);
 
     sketch::Sketch& sketch_;
-    Camera2D& camera_;
+    render::Camera2D& camera_;
 };
 
 #endif // ! OURPAINT_APPLICATION_CPU_2D_PICKER_H_
