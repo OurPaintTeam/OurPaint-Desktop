@@ -42,7 +42,7 @@ add_executable(ourpaint
         controllers/CommandConsole.cc
         controllers/CommandConsole.cc
 
-
+        ../editor/Settings.cc
         ../editor/DocumentController.cc
         ../editor/SketchEditor.cc
         ../editor/snapping/SnapSystem.cc

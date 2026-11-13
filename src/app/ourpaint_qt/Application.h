@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 
+#include "Settings.h"
+
 class DocumentManager;
 class QtPlatformRuntime;
 class DocumentController;
@@ -32,6 +34,7 @@ private:
     DocumentController* documentController_{nullptr};
     QtUIController* qtUIController_{nullptr};
     QLocalServer* localServer_{nullptr};
+    Settings* settings_{nullptr};
 
     std::vector<std::unique_ptr<DocumentView>> views_;
 };
