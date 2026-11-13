@@ -1,4 +1,4 @@
-#include "../CustomConsole.h"
+#include "CustomConsole.h"
 
 #include <QFontMetrics>
 #include <QPainter>
@@ -69,7 +69,7 @@ void CustomConsole::keyPressEvent(QKeyEvent* event) {
             if (!text().isEmpty()) {
                 commandsArray_.push_back(text());
                 index_ = commandsArray_.size();
-                emit sentCommandTriggered(text());
+               // emit sentCommandTriggered(text());
                 clear();
             }
             event->accept();

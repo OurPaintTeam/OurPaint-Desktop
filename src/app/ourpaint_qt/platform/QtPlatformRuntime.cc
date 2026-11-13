@@ -9,12 +9,15 @@ QtPlatformRuntime::QtPlatformRuntime(int& argc, char** argv)
     : argc_(argc), argv_(argv) {}
 
 QtPlatformRuntime::~QtPlatformRuntime() {
-    for (auto host : hosts_) {
-        if (host) {
-            delete host;
+    for (auto& host : hosts_) {
+        if (!host.isNull()) {
+            delete host.data();
         }
     }
-    //delete app_;
+    hosts_.clear();
+
+    delete app_;
+    app_ = nullptr;
 }
 
 bool QtPlatformRuntime::init() {
@@ -42,8 +45,8 @@ int QtPlatformRuntime::run() {
     return app_->exec();
 }
 
-IViewportHost* QtPlatformRuntime::createViewportHost() {
-    auto* host = new QtViewportHost(nextHostId_++);
+QtViewportHost* QtPlatformRuntime::createViewportHost() {
+    auto* host = new QtViewportHost(QGuiApplication::primaryScreen());
 
     if (!hosts_.empty()) {
         // Shared context: создаём контекст с явным shareContext
@@ -57,12 +60,12 @@ IViewportHost* QtPlatformRuntime::createViewportHost() {
     return host;
 }
 
-void QtPlatformRuntime::destroyViewportHost(IViewportHost* host) {
-    //auto* qtHost = static_cast<QtViewportHost*>(host);
-    //auto  it     = std::find(hosts_.begin(), hosts_.end(), qtHost);
-    //if (it == hosts_.end()) return;
-    //delete *it;
-    //hosts_.erase(it);
+void QtPlatformRuntime::destroyViewportHost(QtViewportHost* host) {
+    if (!host) return;
+    auto it = std::find(hosts_.begin(), hosts_.end(), host);
+    if (it == hosts_.end()) return;
+    hosts_.erase(it);
+    delete host;
 }
 
 

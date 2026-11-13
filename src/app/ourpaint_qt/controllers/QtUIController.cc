@@ -5,14 +5,14 @@
 #include <QScreen>
 #include <algorithm>
 
-#include "App/CustomConsole.h"
-#include "App/RenderEngine.h"
 #include "DocumentController.h"
-#include "IPlatformRuntime.h"
+#include "CustomConsole.h"
+#include "QtPlatformRuntime.h"
+#include "QtViewportHost.h"
 #include "ParameterInputWidget.h"
 
 QtUIController::QtUIController(DocumentController& docController,
-                               IPlatformRuntime& platformRuntime)
+                               QtPlatformRuntime& platformRuntime)
     : docController_(docController),
       platformRuntime_(platformRuntime),
       settings_(fs_.settingsPath()) {
@@ -40,34 +40,63 @@ QtUIController::~QtUIController() {
 }
 
 UI::ProjectManager* QtUIController::createBaseManager(const UI::EditorContext& context) {
-    auto* manager = new UI::ProjectManager(context);
-    projectManagers_.push_back(manager);
-    managerHosts_[manager] = qobject_cast<QtViewportHost*>(context.renderEngine);
-    initBaseSignals(*manager);
-    return manager;
+    QtViewportHost* host = static_cast<QtViewportHost*>(context.renderEngine);
+    if (!host) {
+        return nullptr;
+    }
+
+    auto manager = std::make_unique<UI::ProjectManager>(context);
+    projectManagers_.push_back(manager.get());
+    managerHosts_[manager.get()] = host;
+
+    try {
+        initBaseSignals(*manager);
+    } catch (...) {
+        managerHosts_.erase(manager.get());
+        projectManagers_.removeOne(manager.get());
+        throw;
+    }
+
+    return manager.release();
 }
 
 UI::ProjectManager* QtUIController::createLightManager(const UI::EditorContext& context) {
-    auto* manager = new UI::ProjectManager(context);
-    projectManagers_.push_back(manager);
-    managerHosts_[manager] = qobject_cast<QtViewportHost*>(context.renderEngine);
-    initLightManager(*manager);
-    return manager;
+    QtViewportHost* host = static_cast<QtViewportHost*>(context.renderEngine);
+    if (!host) {
+        return nullptr;
+    }
+
+    auto manager = std::make_unique<UI::ProjectManager>(context);
+    projectManagers_.push_back(manager.get());
+    managerHosts_[manager.get()] = host;
+
+    try {
+        initLightManager(*manager);
+    } catch (...) {
+        managerHosts_.erase(manager.get());
+        projectManagers_.removeOne(manager.get());
+        throw;
+    }
+
+    return manager.release();
 }
 
 UI::EditorContext QtUIController::createEditorContext(bool isNewWindow) const {
     UI::EditorContext ctx;
     ctx.fileSystem = const_cast<UI::FileSystem*>(&fs_);
-    ctx.settings = const_cast<UI::SettingsSystem*>(&settings_);
+    ctx.settings   = const_cast<UI::SettingsSystem*>(&settings_);
 
+    QtViewportHost* host = nullptr;
     if (isNewWindow) {
-        auto* hostInterface = platformRuntime_.createViewportHost();
-        auto* qtHost = static_cast<QtViewportHost*>(hostInterface);
-        ctx.renderEngine = static_cast<QWindow*>(qtHost);
+        host = platformRuntime_.createViewportHost();
     } else {
-        ctx.renderEngine = static_cast<QWindow*>(activeHost_.data());
+        host = activeHost_.data();
+        if (!host) {
+            host = platformRuntime_.createViewportHost();
+        }
     }
 
+    ctx.renderEngine  = host;
     ctx.consoleEngine = nullptr;
     return ctx;
 }
@@ -464,7 +493,7 @@ bool QtUIController::attachDocument(UI::ProjectManager& currentManager,
 
     documentHosts_[id] = host;
 
-    auto view = std::make_unique<DocumentView>(*docController_.manager().at(id), *host);
+    auto view = std::make_unique<DocumentView>(*docController_.manager().at(id));
     view->editorSession_.setToolChangedCallback(
         [this, id, &currentManager](ToolId tool) {
             presentActiveTool(&currentManager, id, tool);
@@ -473,8 +502,7 @@ bool QtUIController::attachDocument(UI::ProjectManager& currentManager,
     const int index = docController_.addView(std::move(view), host);
     if (index < 0) return false;
 
-    bool flag = setActiveFile(&currentManager, fileID);
-    return true;
+    return setActiveFile(&currentManager, fileID);   // было: bool flag = ...; return true;
 }
 
 bool QtUIController::closeDocumentView(DocumentId id) {

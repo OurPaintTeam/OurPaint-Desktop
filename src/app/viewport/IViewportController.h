@@ -1,7 +1,7 @@
 #ifndef OURPAINT_APPLICATION_IVIEWPORTEVENTSINK_H_
 #define OURPAINT_APPLICATION_IVIEWPORTEVENTSINK_H_
 
-#include "../platform/InputEvents.h"
+#include "InputEvents.h"
 
 class IViewportController {
 public:

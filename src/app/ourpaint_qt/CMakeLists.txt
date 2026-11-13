@@ -1,13 +1,13 @@
 add_library(ourpaint_project_io STATIC
-        project/Project.h
-        project/Project.cc
-        project/ProjectSaveLoad.h
-        project/ProjectSaveLoad.cc
-        project/NativeFile.h
-        project/NativeFile.cc
+        ../project/Project.h
+        ../project/Project.cc
+        ../project/ProjectSaveLoad.h
+        ../project/ProjectSaveLoad.cc
+        ../project/NativeFile.h
+        ../project/NativeFile.cc
 )
 target_compile_features(ourpaint_project_io PUBLIC cxx_std_20)
-target_include_directories(ourpaint_project_io PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/project")
+target_include_directories(ourpaint_project_io PUBLIC "../project")
 target_link_libraries(ourpaint_project_io PUBLIC ourpaint_document PRIVATE nlohmann_json::nlohmann_json)
 
 set(CMAKE_AUTOMOC ON)
@@ -20,7 +20,7 @@ set(OURPAINT_LIB_DIR "${CMAKE_SOURCE_DIR}/third_party/UI/Lib")
 
 
 if (WIN32)
-    set(APP_ICON_RC "${CMAKE_CURRENT_SOURCE_DIR}/app_icon.rc")
+    set(APP_ICON_RC "app_icon.rc")
     if (EXISTS ${APP_ICON_RC})
         set_source_files_properties(${APP_ICON_RC} PROPERTIES LANGUAGE RC)
     endif()
@@ -34,31 +34,37 @@ add_executable(ourpaint
 
         main.cc
         Application.cc
+
         platform/QtPlatformRuntime.cc
-        platform/QtViewportHost.cc
-        viewport/render/RenderSceneBuilder.cc
-        viewport/render/SnapFeedbackBuilder.cc
-        viewport/constraints/ConstraintLayout.cc
-        viewport/constraints/DimensionLayout.cc
-        viewport/ViewportController.cc
-        ui/QtUIController.cc
-        ui/DocumentController.cc
-        editor/SketchEditor.cc
-        editor/snapping/SnapSystem.cc
-        editor/tools/PointTool.cc
-        editor/tools/LineTool.cc
-        editor/tools/CircleTool.cc
-        editor/tools/CursorTool.cc
-        editor/tools/NurbsTool.cc
-        editor/tools/ArcTool.cc
-        editor/tools/ConstraintTool.cc
-        viewport/picking/Cpu2dPicker.cc
-        viewport/SelectionModel.cc
-        editor/CommandConsole.cc
-        editor/CommandConsole.h
-        viewport/AxisTexts.cc
-        project/DocumentView.cc
-        viewport/ViewportStyle.cc
+        viewport/QtViewportHost.cc
+        controllers/QtUIController.cc
+        controllers/CustomConsole.cc
+        controllers/CommandConsole.cc
+        controllers/CommandConsole.cc
+
+
+        ../editor/DocumentController.cc
+        ../editor/SketchEditor.cc
+        ../editor/snapping/SnapSystem.cc
+        ../editor/tools/PointTool.cc
+        ../editor/tools/LineTool.cc
+        ../editor/tools/CircleTool.cc
+        ../editor/tools/CursorTool.cc
+        ../editor/tools/NurbsTool.cc
+        ../editor/tools/ArcTool.cc
+        ../editor/tools/ConstraintTool.cc
+
+        ../viewport/picking/Cpu2dPicker.cc
+        ../viewport/SelectionModel.cc
+        ../viewport/render/RenderSceneBuilder.cc
+        ../viewport/render/SnapFeedbackBuilder.cc
+        ../viewport/constraints/ConstraintLayout.cc
+        ../viewport/constraints/DimensionLayout.cc
+        ../viewport/ViewportController.cc
+        ../viewport/AxisTexts.cc
+        ../viewport/ViewportStyle.cc
+
+        ../project/DocumentView.cc
 )
 
 set_target_properties(ourpaint PROPERTIES UNITY_BUILD OFF)
@@ -71,11 +77,21 @@ target_link_libraries(ourpaint PRIVATE
 )
 
 target_include_directories(ourpaint PRIVATE
-        editor
-        platform
-        project
-        ui
-        viewport
+        ../editor
+        ../platform
+        ../platform
+        ../ui
+        ../../core/
+
+        ../viewport
+        ../viewport/constraints
+        ../viewport/picking
+        ../viewport/render
+
+
+        controllers/
+        platform/
+        viewport/
 )
 
 install(TARGETS ourpaint

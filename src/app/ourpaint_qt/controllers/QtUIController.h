@@ -8,13 +8,15 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../platform/QtViewportHost.h"
-#include "../project/DocumentView.h"
+#include "DocumentView.h"
 #include "FileSystem.h"
-#include "Lib/Core/ProjectManager.h"
+#include "ProjectManager.h"
+#include "QtViewportHost.h"
 #include "SettingsSystem.h"
 #include "ToolsType.h"
 
+class QtViewportHost;
+class QtPlatformRuntime;
 class IPlatformRuntime;
 class DocumentController;
 class QtUIController : public QObject {
@@ -22,7 +24,7 @@ class QtUIController : public QObject {
 
 public:
     QtUIController(DocumentController& docController,
-                   IPlatformRuntime& platformRuntime);
+                   QtPlatformRuntime& platformRuntime);
     ~QtUIController() override;
 
 public slots:
@@ -75,7 +77,7 @@ private:
 
 private:
     DocumentController& docController_;
-    IPlatformRuntime& platformRuntime_;
+    QtPlatformRuntime& platformRuntime_;
 
     UI::FileSystem fs_;
     UI::SettingsSystem settings_;

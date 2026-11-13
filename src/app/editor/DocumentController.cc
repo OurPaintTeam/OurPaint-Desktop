@@ -5,6 +5,7 @@
 
 #include "DocumentSaveLoad.h"
 #include "NativeFile.h"
+#include "QtViewportHost.h"
 
 namespace {
 bool writeFileBytes(const std::filesystem::path& path,

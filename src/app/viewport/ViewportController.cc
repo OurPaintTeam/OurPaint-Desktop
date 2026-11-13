@@ -1,7 +1,7 @@
 #include "ViewportController.h"
 
 #include "Document.h"
-#include "constraints/ConstraintLayout.h"
+#include "ConstraintLayout.h"
 
 ViewportController::ViewportController(Camera2D& camera, OverlayModel& overlay, app::SketchEditor& editorSession_, Document& document,
                                        const app::ViewportStyle& style, app::ConstraintLayout& constraintLayout,

@@ -7,7 +7,7 @@
 #include <vector>
 
 class DocumentManager;
-class IPlatformRuntime;
+class QtPlatformRuntime;
 class DocumentController;
 class QtUIController;
 class DocumentView;
@@ -27,7 +27,7 @@ private:
 
     bool isSecondaryInstance_{false};
 
-    IPlatformRuntime* platformRuntime_{nullptr};
+    QtPlatformRuntime* platformRuntime_{nullptr};
     DocumentManager* documentManager_{nullptr};
     DocumentController* documentController_{nullptr};
     QtUIController* qtUIController_{nullptr};

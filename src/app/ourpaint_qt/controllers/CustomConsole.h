@@ -8,7 +8,6 @@
 class QKeyEvent;
 class QPaintEvent;
 
-
 class CustomConsole final : public QLineEdit {
     Q_OBJECT
 
@@ -21,7 +20,7 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     bool focusNextPrevChild(bool next);
 
-    void textChanged(QString& str) override;
+    // void textChanged(QString& str) override;
 
 private:
     void updateAutocomplete(const QString& text);
@@ -32,4 +31,4 @@ private:
     long long index_ = -1;
 };
 
-#endif // OURPAINT_HEADERS_GUI_CUSTOMCONSOLE_H_
+#endif  // OURPAINT_HEADERS_GUI_CUSTOMCONSOLE_H_

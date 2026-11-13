@@ -3,18 +3,18 @@
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDataStream>
+#include <QFileInfo>
 #include <QLocalSocket>
 #include <QThread>
 #include <iostream>
-#include <QFileInfo>
 
-#include "../core/DocumentManager.h"
+#include "DocumentManager.h"
 #include "DocumentController.h"
+#include "QtPlatformRuntime.h"
 #include "QtUIController.h"
-#include "platform/QtPlatformRuntime.h"
 
 #ifdef Q_OS_WIN
-#include "ui/RegWin.h"
+#include "RegWin.h"
 #endif
 
 namespace {
