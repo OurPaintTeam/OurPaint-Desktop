@@ -2,23 +2,13 @@
 #define APPLICATION_H_
 
 #include <memory>
-#include <vector>
 
-#define GL_GLEXT_PROTOTYPES
-
-#include "../editor/SketchEditor.h"
-#include "../project/DocumentView.h"
-#include "../project/Project.h"
-#include "QtMainWindowBinder.h"
-
-class DocumentManager;
-
+class QtMainWindowBinder;
 class QtPlatformRuntime;
-class QtViewportHost;
-
 class UIController;
-
-class UIObserver;
+namespace UI {
+class ProjectManager;
+}
 
 class Application {
 public:
@@ -27,33 +17,12 @@ public:
     int exec();
 
 private:
-    void init(int& argc, char** argv);
-
-private:
-    // Core (UndoRedoManager, CommandSystem, Scene)
-    DocumentManager* documentManager_ = nullptr;
-
-    // Platform
-    QtPlatformRuntime* platformRuntime_ = nullptr;
-
-    // Host
-    QtViewportHost* host_ = nullptr;
-
-    // Controllers
-    UIController* uiController_ = nullptr;
-
-    // Core observer
-    //UIObserver* uiObserver_;
-
-    // Application
-    std::vector<std::unique_ptr<DocumentView>> views_;
-
-    // UI
-    UI::ProjectManager* projectManager_ = nullptr;
-    QtMainWindowBinder* binder_ = nullptr;
-
-    //app::Project* project_;
+    // Reverse destruction detaches the viewport before releasing the editor
+    // and destroys all Qt windows before the platform runtime ends.
+    std::unique_ptr<QtPlatformRuntime> platformRuntime_;
+    std::unique_ptr<UI::ProjectManager> projectManager_;
+    std::unique_ptr<UIController> uiController_;
+    std::unique_ptr<QtMainWindowBinder> binder_;
 };
 
-#endif // APPLICATION_H_
-
+#endif  // APPLICATION_H_

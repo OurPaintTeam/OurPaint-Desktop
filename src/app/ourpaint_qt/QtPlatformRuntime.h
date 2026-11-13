@@ -1,6 +1,7 @@
 #ifndef OURPAINT_QT_PLATFORM_RUNTIME_H_
 #define OURPAINT_QT_PLATFORM_RUNTIME_H_
 
+#include <QPointer>
 #include <cstdint>
 #include <vector>
 
@@ -22,7 +23,7 @@ private:
     char**          argv_;
     QApplication*   app_  = nullptr;
 
-    std::vector<QtViewportHost*> hosts_;
+    std::vector<QPointer<QtViewportHost>> hosts_;
     uint32_t nextHostId_ = 1;
 };
 

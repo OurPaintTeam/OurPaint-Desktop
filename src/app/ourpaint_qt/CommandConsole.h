@@ -5,11 +5,7 @@
 #include <QStringList>
 #include <QVector>
 
-#include "../../core/Scene.h"
-#include "QtViewportHost.h"
-
-class OverlayModel;
-
+class UIController;
 class QKeyEvent;
 class QPaintEvent;
 
@@ -18,7 +14,7 @@ class CommandConsole final : public QLineEdit {
     Q_OBJECT
 
 public:
-    explicit CommandConsole(OverlayModel& overlayModel_, QtViewportHost& host);
+    explicit CommandConsole(UIController& controller);
     void setCommands(const QStringList& commands);
 
     signals:
@@ -34,13 +30,12 @@ private:
     void onTextChanged(const QString& text);
     void parseReqInput(const QString& text) const;
 
-    OverlayModel& overlayModel_;
+    UIController& controller_;
     QStringList commands_;
     QString currentCommands_;
     QVector<QString> commandsArray_;
     long long index_ = -1;
 
-    QtViewportHost& host_;
 };
 
 

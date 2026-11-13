@@ -7,7 +7,7 @@ add_library(ourpaint_render STATIC
 )
 
 target_include_directories(ourpaint_render PUBLIC
-        /
+        ${CMAKE_CURRENT_SOURCE_DIR}
         shaders
         text
 )

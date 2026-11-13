@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QKeySequence>
 #include <QStyle>
+#include <QSignalBlocker>
 #include <iostream>
 #include <limits>
 #include <numbers>
@@ -16,12 +17,49 @@
 #include "ProjectMenu.h"
 #include "ProjectWindow.h"
 #include "ToolsType.h"
+#include "QtViewportHost.h"
+#include "UIObserver.h"
 
-QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController& controller, QObject* parent)
-    : QObject(parent), window_(window), controller_(controller) {
+QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController& controller, QtViewportHost& host, QObject* parent)
+    : QObject(parent), window_(window), controller_(controller), host_(&host) {
+    UIController::Callbacks callbacks;
+    callbacks.attachViewport = [this](ViewportController& viewport) {
+        return host_ && host_->addController(&viewport) >= 0;
+    };
+    callbacks.detachViewport = [this](ViewportController& viewport) {
+        if (host_) {
+            host_->removeController(&viewport);
+        }
+    };
+    // The tab widget emits selection signals during programmatic changes. The
+    // controller publishes the final active tab separately after updating its state.
+    callbacks.tabAdded = [this](const std::string& name) {
+        const QSignalBlocker blocker(window_);
+        window_.addTabSlot(QString::fromStdString(name));
+    };
+    callbacks.tabRemoved = [this](const std::string& name) {
+        const QSignalBlocker blocker(window_);
+        window_.deleteTabSlot(QString::fromStdString(name));
+    };
+    callbacks.activeChanged = [this](const std::string& name, ViewportController& viewport) {
+        if (host_) {
+            host_->setEventSink(&viewport);
+        }
+        const QSignalBlocker blocker(window_);
+        window_.setActiveTabNameProject(QString::fromStdString(name));
+    };
+    callbacks.toolChanged = [this](const std::string& name, ToolId tool, bool active) {
+        UIObserver::presentActiveTool(window_, name, tool, active);
+    };
+    callbacks.redraw = [this]() {
+        if (host_) {
+            host_->requestRedraw();
+        }
+    };
+    controller_.setCallbacks(std::move(callbacks));
     installProjectActions();
 
-    connect(&window, &UI::ProjectManager::saveFullProjectTriggered, this, [this]() { invoke([this]() { controller_.saveProject(); }); });
+    connect(&window, &UI::ProjectManager::saveFullProjectTriggered, this, [this]() { invoke([this]() { saveProject(); }); });
     // Console
     QObject::connect(&window, &UI::ProjectManager::sentCommandTriggered, this, [this](const QString& tabName, const QString& str) {
         (void)tabName;
@@ -68,28 +106,33 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
 
     // --- Open project in new window ---
     QObject::connect(&window, &UI::ProjectManager::openNewWindowOpenProjectTriggered, this,
-                     [this](const QString& path) { invoke([this, path]() { controller_.openProjectInNewWindow(path); }); });
+                     [this](const QString& path) { invoke([this, path]() { openProjectInNewWindow(path); }); });
 
     // --- Create project in new window ---
     QObject::connect(&window, &UI::ProjectManager::openNewWindowCreateProjectTriggered, this,
-                     [this](const QString& path) { invoke([this, path]() { controller_.createProjectInNewWindow(path); }); });
+                     [this](const QString& path) { invoke([this, path]() { createProjectInNewWindow(path); }); });
 
     // --- Open project in this window ---
     QObject::connect(&window, &UI::ProjectManager::openProjectThisWindowTriggered, this,
-                     [this](const QString& path) { invoke([this, path]() { controller_.openProjectInCurrentWindow(path); }); });
+                     [this](const QString& path) { invoke([this, path]() { openProjectInCurrentWindow(path); }); });
 
     // --- Create project in this window ---
     QObject::connect(&window, &UI::ProjectManager::createProjectThisWindowTriggered, this,
-                     [this](const QString& path) { invoke([this, path]() { controller_.createProjectInCurrentWindow(path); }); });
+                     [this](const QString& path) { invoke([this, path]() { createProjectInCurrentWindow(path); }); });
 
     // --- Open file ---
     QObject::connect(&window, &UI::ProjectManager::openFileTriggered, this,
-                     [this](const QString& path) { invoke([this, path]() { controller_.openFile(path); }); });
+                     [this](const QString& path) { invoke([this, path]() { openFile(path); }); });
 
     // --- Rename tab ---
     QObject::connect(&window, &UI::ProjectManager::renameTabTriggered, this, [this](const QString& oldName, const QString& newName) {
         std::cout << "remove file triggered: " << oldName.toStdString() << " -> " << newName.toStdString() << '\n';
-        controller_.renameTab(oldName.toStdString(), newName.toStdString());
+        const QSignalBlocker blocker(window_);
+        if (controller_.renameTab(oldName.toStdString(), newName.toStdString())) {
+            window_.renameTabSlot(oldName, newName);
+        } else {
+            window_.renameTabSlot(newName, oldName);
+        }
     });
 
     // --- Remove tab ---
@@ -111,18 +154,6 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 
 
-
-    // --- Project ---
-    QObject::connect(&window, &UI::ProjectManager::renameProjectTriggered, this, [this]() { controller_.renameProject(); });
-
-    // --- Delete project ---
-    QObject::connect(&window, &UI::ProjectManager::deleteProjectTriggered, this, [this]() { controller_.deleteProject(); });
-
-    // Close
-    /* QObject::connect(&window, &UI::ProjectManager::closeApplication,
-                      this,[this]() {
-                          controller_.closeApplication();
-                      });*/
 
     // Tools - constraints
     QObject::connect(&window, &UI::ProjectManager::constraintTriggered, this, [this](const QString& tabName, UI::ConstraintType type) {
@@ -272,6 +303,20 @@ QtMainWindowBinder::QtMainWindowBinder(UI::ProjectManager& window, UIController&
     });
 }
 
+QtMainWindowBinder::~QtMainWindowBinder() {
+    // The project window may already have closed. Detach surviving GL contexts
+    // without sending any further presentation updates to the closed window.
+    UIController::Callbacks teardown;
+    teardown.detachViewport = [this](ViewportController& viewport) {
+        if (host_) {
+            host_->removeController(&viewport);
+        }
+    };
+    controller_.setCallbacks(std::move(teardown));
+    controller_.clearViews();
+    controller_.setCallbacks({});
+}
+
 void QtMainWindowBinder::invoke(const std::function<void()>& action) {
     try {
         action();
@@ -283,7 +328,7 @@ void QtMainWindowBinder::invoke(const std::function<void()>& action) {
 bool QtMainWindowBinder::eventFilter(QObject* watched, QEvent* event) {
     if (event->type() == QEvent::Close) {
         try {
-            if (controller_.confirmClose()) {
+            if (confirmClose()) {
                 return false;
             }
         } catch (const std::exception& error) {
@@ -308,8 +353,8 @@ void QtMainWindowBinder::installProjectActions() {
         saveAs->setShortcut(QKeySequence::SaveAs);
         projectWindow->addAction(save);
         projectWindow->addAction(saveAs);
-        connect(save, &QAction::triggered, this, [this]() { invoke([this]() { controller_.saveProject(); }); });
-        connect(saveAs, &QAction::triggered, this, [this]() { invoke([this]() { controller_.saveProjectAs(); }); });
+        connect(save, &QAction::triggered, this, [this]() { invoke([this]() { saveProject(); }); });
+        connect(saveAs, &QAction::triggered, this, [this]() { invoke([this]() { saveProjectAs(); }); });
         if (auto* menu = projectWindow->findChild<UI::ProjectMenu*>()) {
             menu->addSeparator();
             menu->addAction(save);

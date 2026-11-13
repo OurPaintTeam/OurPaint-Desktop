@@ -5,9 +5,9 @@
 #include <QStyle>
 #include <QTextLayout>
 
-#include "../editor/OverlayModel.h"
+#include "../editor/UIController.h"
 
-CommandConsole::CommandConsole(OverlayModel& overlayModel, QtViewportHost& host) : QLineEdit(nullptr), overlayModel_(overlayModel), host_(host) {
+CommandConsole::CommandConsole(UIController& controller) : QLineEdit(nullptr), controller_(controller) {
     connect(this, &QLineEdit::textChanged, this, &CommandConsole::updateAutocomplete);
     connect(this, &QLineEdit::textChanged, this, &CommandConsole::onTextChanged);
     const QStringList list = {"LINE ", "POINT ", "CIRCLE ", "ARC ", "REQ "};
@@ -146,7 +146,7 @@ void CommandConsole::parseReqInput(const QString& text) const {
     const auto parts = text.split(' ', Qt::SkipEmptyParts);
 
     if (parts.size() < 3) {
-        overlayModel_.selection_.model.clear();
+        controller_.previewConsoleSelection({});
         return;
     }
 
@@ -154,20 +154,16 @@ void CommandConsole::parseReqInput(const QString& text) const {
         return;
     }
 
-    overlayModel_.selection_.model.clear();
-
-    std::vector<core::sketch::GeometryRef> refs;
+    std::vector<int> ids;
 
     for (int i = 2; i < parts.size(); ++i) {
         bool ok = false;
         const int id = parts[i].toInt(&ok);
 
         if (ok) {
-            refs.push_back({core::sketch::EntityId(id), core::sketch::SubElement::Whole});
+            ids.push_back(id);
         }
     }
 
-    overlayModel_.selection_.model.add(refs);
-
-    host_.requestRedraw();
+    controller_.previewConsoleSelection(ids);
 }

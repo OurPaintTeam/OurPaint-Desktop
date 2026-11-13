@@ -1,185 +1,72 @@
-#include "../ourpaint_qt/UIController.h"
+#include "UIController.h"
 
 #include <algorithm>
-#include <iostream>
 #include <stdexcept>
 #include <utility>
 
-#include "../../core/Document.h"
-#include "../../core/DocumentManager.h"
-#include "../../render/OpenGL2dRenderer.h"
-#include "../ourpaint_qt/CommandConsole.h"
-#include "../ourpaint_qt/QtViewportHost.h"
-#include "ToolsType.h"
-#include "ViewportController.h"
-#include "render/AxisTexts.h"
-#include "render/RenderSceneBuilder.h"
+#include "../project/DocumentView.h"
 
-UIController::UIController(std::vector<std::unique_ptr<DocumentView>>& views,
-                           DocumentManager& manager,
-                           UI::ProjectManager& projectManager,
-                           QtViewportHost& host)
-    : views_(views),
-      manager_(manager),
-      viewportHost_(host),
-      projectManager_(projectManager),
-      activeTabName_({}) {}
+UIController::UIController() = default;
+UIController::~UIController() { clearViews(); }
 
-UIController::~UIController() {
-    for (auto& view : views_) {
-        view->editorSession_.setToolChangedCallback({});
-        //view->editorSession_.setReportCallback({});
-        viewportHost_.removeController(&view->viewportController_);
-    }
-}
+void UIController::setCallbacks(Callbacks callbacks) { callbacks_ = std::move(callbacks); }
 
 DocumentView* UIController::findView(const std::string& name) const {
     const auto entry = documentIds_.find(name);
     if (entry == documentIds_.end()) {
         return nullptr;
     }
-    const Document* document = manager_.at(entry->second);
-    for (const auto& view : views_) {
-        if (&view->document() == document) {
-            return view.get();
-        }
+    const auto* document = manager_.at(entry->second);
+    const auto view = std::find_if(views_.begin(), views_.end(), [document](const auto& candidate) { return &candidate->document() == document; });
+    return view == views_.end() ? nullptr : view->get();
+}
+
+std::optional<ToolId> UIController::activeToolId() const {
+    if (auto* view = findView(activeTabName_)) {
+        return view->editorSession_.activeToolId();
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 void UIController::selectTool(ToolId tool, std::optional<double> value, const std::string& tabName) {
     if (auto* view = findView(tabName.empty() ? activeTabName_ : tabName)) {
         view->editorSession_.selectTool(tool, value);
         view->viewportController_.requestRedraw();
-        viewportHost_.requestRedraw();
+        if (callbacks_.redraw) {
+            callbacks_.redraw();
+        }
     }
 }
 
 void UIController::presentActiveTool(DocumentId id, ToolId tool) {
-    const auto entry = std::find_if(documentIds_.begin(), documentIds_.end(), [id](const auto& item) { return item.second == id; });
-    if (entry == documentIds_.end()) {
+    if (!callbacks_.toolChanged) {
         return;
     }
-    const auto tabName = QString::fromStdString(entry->first);
-    const auto present = [this, &tabName, active = entry->first == activeTabName_](auto uiTool) {
-        projectManager_.setActiveToolTabWindow(tabName, uiTool);
-        if (active) {
-            projectManager_.setActiveToolProjectWindow(uiTool);
-        }
-    };
-
-    switch (tool) {
-        case ToolId::Cursor:
-            present(UI::ToolsType::Cursor);
-            break;
-        case ToolId::Point:
-            present(UI::PrimitiveType::Point);
-            break;
-        case ToolId::Line:
-            present(UI::PrimitiveType::Line);
-            break;
-        case ToolId::Polyline:
-            present(UI::PrimitiveType::Polyline);
-            break;
-        case ToolId::InfiniteLine:
-            present(UI::PrimitiveType::InfiniteLine);
-            break;
-        case ToolId::CircleByRadius:
-            present(UI::PrimitiveType::CircleByRadius);
-            break;
-        case ToolId::CircleByDiameter:
-            present(UI::PrimitiveType::CircleByDiameter);
-            break;
-        case ToolId::CircleByTwoPoints:
-            present(UI::PrimitiveType::CircleByTwoPoints);
-            break;
-        case ToolId::CircleByThreePoints:
-            present(UI::PrimitiveType::CircleByThreePoints);
-            break;
-        case ToolId::CircleTangentTwoLines:
-            present(UI::PrimitiveType::CircleTangentTwoLines);
-            break;
-        case ToolId::CircleTangentThreeLines:
-            present(UI::PrimitiveType::CircleTangentThreeLines);
-            break;
-        case ToolId::ArcByRadius:
-            present(UI::PrimitiveType::ArcByRadius);
-            break;
-        case ToolId::ArcByDiameter:
-            present(UI::PrimitiveType::ArcByDiameter);
-            break;
-        case ToolId::ArcByThreePoints:
-            present(UI::PrimitiveType::ArcThreePoints);
-            break;
-        case ToolId::Nurbs:
-            present(UI::PrimitiveType::CubicBezier);
-            break;
-        case ToolId::Distance:
-            present(UI::ConstraintType::Distance);
-            break;
-        case ToolId::HorizontalDistance:
-            present(UI::ConstraintType::HDistance);
-            break;
-        case ToolId::VerticalDistance:
-            present(UI::ConstraintType::VDistance);
-            break;
-        case ToolId::Angle:
-            present(UI::ConstraintType::Angle);
-            break;
-        case ToolId::Coincident:
-            present(UI::ConstraintType::Coincident);
-            break;
-        case ToolId::Horizontal:
-            present(UI::ConstraintType::Horizontal);
-            break;
-        case ToolId::Vertical:
-            present(UI::ConstraintType::Vertical);
-            break;
-        case ToolId::Parallel:
-            present(UI::ConstraintType::Parallel);
-            break;
-        case ToolId::Perpendicular:
-            present(UI::ConstraintType::Perpendicular);
-            break;
-        case ToolId::Tangent:
-            present(UI::ConstraintType::Tangent);
-            break;
-        case ToolId::Equal:
-            present(UI::ConstraintType::Equal);
-            break;
-        case ToolId::FixUnfix:
-            present(UI::ConstraintType::FixUnfix);
-            break;
-        case ToolId::Concentric:
-            present(UI::ConstraintType::Concentric);
-            break;
-        case ToolId::Midpoint:
-            present(UI::ConstraintType::Midpoint);
-            break;
-        case ToolId::Collinear:
-            present(UI::ConstraintType::Collinear);
-            break;
-        case ToolId::Symmetric:
-            present(UI::ConstraintType::Symmetric);
-            break;
+    const auto entry = std::find_if(documentIds_.begin(), documentIds_.end(), [id](const auto& item) { return item.second == id; });
+    if (entry != documentIds_.end()) {
+        callbacks_.toolChanged(entry->first, tool, entry->first == activeTabName_);
     }
 }
 
-void UIController::executeConsoleCommand(std::string str) {
-    (void)str;
-    try {
-        const auto entry = documentIds_.find(activeTabName_);
-        Document* document = entry == documentIds_.end() ? nullptr : manager_.at(entry->second);
-        // UndoRedo::UndoRedoManager& urm = document->undoRedoManager();
-        // CommandManager& cm = document->commandManager();
-        // Transaction* txn = cm.invoke(str);
-        // urm.push(std::move(*txn));
+void UIController::executeConsoleCommand(const std::string& /*command*/) {
+    // The existing console has no command interpreter yet.
+    if (findView(activeTabName_) && callbacks_.redraw) {
+        callbacks_.redraw();
+    }
+}
 
-        if (document) {
-            viewportHost_.requestRedraw();
+void UIController::previewConsoleSelection(const std::vector<int>& ids) {
+    if (auto* view = findView(activeTabName_)) {
+        std::vector<core::sketch::GeometryRef> refs;
+        refs.reserve(ids.size());
+        for (const int id : ids) {
+            refs.push_back({core::sketch::EntityId(id), core::sketch::SubElement::Whole});
         }
-    }catch (const std::exception& e) {
-        throw std::runtime_error(e.what());
+        view->overlay_.selection_.model.replace(refs);
+        view->viewportController_.requestRedraw();
+        if (callbacks_.redraw) {
+            callbacks_.redraw();
+        }
     }
 }
 
@@ -191,18 +78,13 @@ void UIController::createFile(const std::string& fileName) {
         setActiveFile(fileName);
         return;
     }
-    if (auto* previous = findView(activeTabName_)) {
-        previous->editorSession_.activeTool()->cancel();
-    }
-    const auto existing = documentIds_.find(fileName);
-    if (existing != documentIds_.end()) {
-        attachDocument(existing->second, fileName);
+    if (const auto it = documentIds_.find(fileName); it != documentIds_.end()) {
+        attachDocument(it->second, fileName);
         return;
     }
     const auto id = manager_.createNewDocument(fileName);
     try {
-        const auto filename = nextFilename(id);
-        project_.documents.push_back({filename, std::cref(*manager_.at(id))});
+        project_.documents.push_back({nextFilename(id), std::cref(*manager_.at(id))});
         attachDocument(id, fileName);
         projectModified_ = true;
     } catch (...) {
@@ -215,125 +97,108 @@ void UIController::createFile(const std::string& fileName) {
 void UIController::attachDocument(DocumentId id, const std::string& tabName) {
     auto view = std::make_unique<DocumentView>(*manager_.at(id));
     view->editorSession_.setToolChangedCallback([this, id](ToolId tool) { presentActiveTool(id, tool); });
-    //view->editorSession_.setReportCallback([this, id](const ActionReport& report) { presentReport(id, report); });
-    const int index = viewportHost_.addController(&view->viewportController_);
-    if (index < 0) {
-        throw std::runtime_error("Could not create a viewport for the document");
-    }
-    auto* controller = &view->viewportController_;
-    const bool registered = documentIds_.contains(tabName);
+    auto* viewport = &view->viewportController_;
+    views_.reserve(views_.size() + 1);
     const auto previous = activeTabName_;
+    const bool newName = documentIds_.try_emplace(tabName, id).second;
+    bool attached = false;
+    bool publishedTab = false;
     try {
-        documentIds_[tabName] = id;
-        indicesMap_[tabName] = index;
-        controllerMap_[controller] = index;
+        if (callbacks_.attachViewport) {
+            if (!callbacks_.attachViewport(*viewport)) {
+                throw std::runtime_error("Could not create a viewport for the document");
+            }
+            attached = true;
+        }
         views_.push_back(std::move(view));
-        projectManager_.addTabSlot(QString::fromStdString(tabName));
+        if (callbacks_.tabAdded) {
+            publishedTab = true;
+            callbacks_.tabAdded(tabName);
+        }
         setActiveFile(tabName);
     } catch (...) {
-        viewportHost_.removeController(controller);
-        std::erase_if(views_, [controller](const auto& candidate) { return &candidate->viewportController_ == controller; });
-        indicesMap_.erase(tabName);
-        controllerMap_.erase(controller);
-        if (!registered) {
+        if (attached && callbacks_.detachViewport) {
+            callbacks_.detachViewport(*viewport);
+        }
+        if (publishedTab && callbacks_.tabRemoved) {
+            callbacks_.tabRemoved(tabName);
+        }
+        std::erase_if(views_, [viewport](const auto& candidate) { return &candidate->viewportController_ == viewport; });
+        if (newName) {
             documentIds_.erase(tabName);
         }
-        projectManager_.deleteTabSlot(QString::fromStdString(tabName));
         activeTabName_ = previous;
+        setActiveFile(previous);
         throw;
     }
 }
 
 void UIController::setActiveFile(const std::string& fileName) {
-    const auto* view = findView(fileName);
+    auto* view = findView(fileName);
     if (!view) {
         return;
     }
-    if (activeTabName_ != fileName) {
+    if (fileName != activeTabName_) {
         if (auto* previous = findView(activeTabName_)) {
             previous->editorSession_.activeTool()->cancel();
         }
+        activeTabName_ = fileName;
     }
-
-    activeTabName_ = fileName;
-    int index = indicesMap_[fileName];
-    viewportHost_.setActiveController(index);
-    projectManager_.setActiveTabNameProject(QString::fromStdString(fileName));
+    if (callbacks_.activeChanged) {
+        callbacks_.activeChanged(fileName, view->viewportController_);
+    }
     presentActiveTool(documentIds_.at(fileName), view->editorSession_.activeToolId());
-    viewportHost_.requestRedraw();
+    if (callbacks_.redraw) {
+        callbacks_.redraw();
+    }
 }
 
 void UIController::removeFile(const std::string& fileName) {
-    const auto* target = findView(fileName);
-    for (auto it = views_.begin(); it != views_.end(); ++it) {
-        if (it->get() == target) {
-            (*it)->editorSession_.setToolChangedCallback({});
-            //(*it)->editorSession_.setReportCallback({});
-            const auto removed = controllerMap_.find(&(*it)->viewportController_);
-            const int removedIndex = removed == controllerMap_.end() ? -1 : removed->second;
-            viewportHost_.removeController(&(*it)->viewportController_);
-            controllerMap_.erase(&(*it)->viewportController_);
-            views_.erase(it);
-            indicesMap_.erase(fileName);
-            if (removedIndex >= 0) {
-                for (auto& [name, index] : indicesMap_) {
-                    if (index > removedIndex) {
-                        --index;
-                    }
-                }
-                for (auto& [controller, index] : controllerMap_) {
-                    if (index > removedIndex) {
-                        --index;
-                    }
-                }
+    auto* view = findView(fileName);
+    if (!view) {
+        return;
+    }
+    view->editorSession_.setToolChangedCallback({});
+    view->editorSession_.activeTool()->cancel();
+    if (callbacks_.detachViewport) {
+        callbacks_.detachViewport(view->viewportController_);
+    }
+    std::erase_if(views_, [view](const auto& candidate) { return candidate.get() == view; });
+    if (callbacks_.tabRemoved) {
+        callbacks_.tabRemoved(fileName);
+    }
+    if (activeTabName_ == fileName) {
+        activeTabName_.clear();
+        for (const auto& [name, id] : documentIds_) {
+            if (!views_.empty() && manager_.at(id) == &views_.front()->document()) {
+                setActiveFile(name);
+                break;
             }
-            if (activeTabName_ == fileName) {
-                activeTabName_ = indicesMap_.empty() ? std::string{} : indicesMap_.begin()->first;
-            }
-            if (!activeTabName_.empty()) {
-                setActiveFile(activeTabName_);
-            }
-            return;
         }
     }
 }
 
-void UIController::renameTab(const std::string& oldName, const std::string& newName) {
-    auto* view = findView(oldName);
-    if (!view) {
-        return;
+void UIController::clearViews() {
+    activeTabName_.clear();
+    for (const auto& [name, id] : documentIds_) {
+        removeFile(name);
     }
-    if (newName.empty() || (oldName != newName && documentIds_.contains(newName))) {
-        projectManager_.renameTabSlot(QString::fromStdString(newName), QString::fromStdString(oldName));
-        return;
-    }
-    int index = indicesMap_[oldName];
-    indicesMap_.erase(oldName);
-    indicesMap_[newName] = index;
-    const auto id = documentIds_.at(oldName);
-    documentIds_.erase(oldName);
-    documentIds_[newName] = id;
-    view->document().name() = newName;
-    projectModified_ = true;
-    if (activeTabName_ == oldName) {
-        activeTabName_ = newName;
-    }
-    projectManager_.renameTabSlot(QString::fromStdString(oldName), QString::fromStdString(newName));
 }
 
-void UIController::renameProject() {}
-
-void UIController::deleteProject() {}
-
-void UIController::closeApplication() {}
-
-
-
-
-
-
-
-
-
-
-
+bool UIController::renameTab(const std::string& oldName, const std::string& newName) {
+    auto* view = findView(oldName);
+    if (!view || newName.empty() || (oldName != newName && documentIds_.contains(newName))) {
+        return false;
+    }
+    if (oldName != newName) {
+        const auto id = documentIds_.at(oldName);
+        documentIds_.emplace(newName, id);
+        documentIds_.erase(oldName);
+        view->document().name() = newName;
+        if (activeTabName_ == oldName) {
+            activeTabName_ = newName;
+        }
+        projectModified_ = true;
+    }
+    return true;
+}

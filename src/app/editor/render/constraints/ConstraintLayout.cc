@@ -6,8 +6,8 @@
 #include <optional>
 #include <utility>
 
-#include "../../../core/sketch/Sketch.h"
-#include "../../../render/Camera2D.h"
+#include "../../../../core/sketch/Sketch.h"
+#include "../../../../render/Camera2D.h"
 #include "ConstraintMarkerStyle.h"
 #include "ConstraintPresentationState.h"
 #include "DimensionLayout.h"

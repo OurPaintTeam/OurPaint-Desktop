@@ -48,7 +48,6 @@ add_library(ourpaint_core
 
 
         # /
-#        ISceneObserver.h
         ExceptionGuard.h
 #        Scene.h
 #        Scene.cc

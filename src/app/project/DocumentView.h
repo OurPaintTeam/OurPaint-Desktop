@@ -12,8 +12,8 @@
 #include "render/RenderSceneBuilder.h"
 #include "IRenderer.h"
 
-// Application owns each view. Document and viewport host outlive it; the UI adapter
-// disconnects editor callbacks and detaches the viewport sink before removal.
+// UIController owns the view and its document. The host borrows only the viewport
+// controller and detaches while the view is still alive.
 // Explicit GPU shutdown requires this view's OpenGL context to still be current.
 class DocumentView {
 public:

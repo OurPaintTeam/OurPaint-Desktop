@@ -18,18 +18,16 @@ add_library(ourpaint_editor STATIC
         SelectionModel.cc
         render/AxisTexts.cc
         render/ViewportStyle.cc
-        UIController.cc
-        #UIObserver.cc
 )
 target_compile_features(ourpaint_editor PUBLIC cxx_std_20)
 target_include_directories(ourpaint_editor PUBLIC
-        /
+        ${CMAKE_CURRENT_SOURCE_DIR}
         pick
         render
         snap
         tool
 )
 target_link_libraries(ourpaint_editor PUBLIC
-        ourpaint_core
+        ourpaint_document
         ourpaint_render
 )

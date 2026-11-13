@@ -1,5 +1,6 @@
 #include "QtPlatformRuntime.h"
 
+#include <algorithm>
 #include <QApplication>
 #include <QSurfaceFormat>
 
@@ -9,10 +10,10 @@ QtPlatformRuntime::QtPlatformRuntime(int& argc, char** argv)
     : argc_(argc), argv_(argv) {}
 
 QtPlatformRuntime::~QtPlatformRuntime() {
-    for (auto* host : hosts_) {
-        delete host;
+    for (const auto& host : hosts_) {
+        delete host.data();
     }
-    //delete app_;
+    delete app_;
 }
 
 bool QtPlatformRuntime::init() {
@@ -45,26 +46,14 @@ int QtPlatformRuntime::run() {
 QtViewportHost* QtPlatformRuntime::createViewportHost() {
     auto* host = new QtViewportHost(nextHostId_++);
 
-    if (!hosts_.empty()) {
-        // Shared context: создаём контекст с явным shareContext
-        // QtViewportHost::initContext() вызовется позже при первом expose,
-        // поэтому shared context передаём через setFormat до этого момента —
-        // либо чуть усложняем и передаём shareContext в конструктор:
-        // new QtViewportHost(nextHostId_++, hosts_[0]->context())
-    }
-
     hosts_.push_back(host);
     return host;
 }
 
 void QtPlatformRuntime::destroyViewportHost(QtViewportHost* host) {
-    //auto* qtHost = static_cast<QtViewportHost*>(host);
-    //auto  it     = std::find(hosts_.begin(), hosts_.end(), qtHost);
-    //if (it == hosts_.end()) return;
-    //delete *it;
-    //hosts_.erase(it);
+    const auto it = std::find(hosts_.begin(), hosts_.end(), host);
+    if (it != hosts_.end()) {
+        hosts_.erase(it);
+        delete host;
+    }
 }
-
-
-
-

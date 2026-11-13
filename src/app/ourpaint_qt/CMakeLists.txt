@@ -2,13 +2,15 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets)
+
 add_executable(ourpaint_qt
         main.cc
         Application.cc
         QtPlatformRuntime.cc
         QtViewportHost.cc
         QtMainWindowBinder.cc
-        ../editor/UIController.cc
+        UIObserver.cc
         ProjectPersistence.cc
         QtPath.h
         CommandConsole.cc
@@ -18,12 +20,9 @@ add_executable(ourpaint_qt
 set_target_properties(ourpaint_qt PROPERTIES UNITY_BUILD OFF)
 
 target_link_libraries(ourpaint_qt PRIVATE
+        Eigen3::Eigen
         ourpaint_project
         ourpaint_ui
-)
-
-target_include_directories(ourpaint_qt PRIVATE
-        /
 )
 
 set(TYPE_OF_COMPILING BOOL 1)

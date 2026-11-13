@@ -9,8 +9,9 @@
 #include <QTimer>
 #include <QWidget>
 
-#include "../../render/Logger.h"
-#include "../editor/IViewportController.h"
+#include <algorithm>
+
+#include "../editor/ViewportController.h"
 
 QtViewportHost::QtViewportHost(uint32_t id, QScreen* screen)
     : QWindow(screen)
@@ -81,7 +82,7 @@ void QtViewportHost::presentFrame() {
     }
 }
 
-int QtViewportHost::setEventSink(IViewportController* controller) {
+int QtViewportHost::setEventSink(ViewportController* controller) {
     if (!controller) {
         controller_ = nullptr;
         context_ = nullptr;
@@ -95,7 +96,7 @@ int QtViewportHost::setEventSink(IViewportController* controller) {
     return index;
 }
 
-int QtViewportHost::addController(IViewportController* controller) {
+int QtViewportHost::addController(ViewportController* controller) {
     if (!controller) {
         qWarning() << "Cannot add null viewport controller";
         return -1;
@@ -124,7 +125,7 @@ int QtViewportHost::addController(IViewportController* controller) {
     return static_cast<int>(controllers_.size()) - 1;
 }
 
-bool QtViewportHost::removeController(IViewportController* controller) {
+bool QtViewportHost::removeController(ViewportController* controller) {
     auto it = std::find_if(
         controllers_.begin(),
         controllers_.end(),
@@ -140,6 +141,9 @@ bool QtViewportHost::removeController(IViewportController* controller) {
     const bool wasActive = (controller_ == controller);
     QOpenGLContext* contextToRemove = it->context;
 
+    if (contextToRemove->makeCurrent(this)) {
+        controller->shutdown();
+    }
     if (QOpenGLContext::currentContext() == contextToRemove) {
         contextToRemove->doneCurrent();
     }

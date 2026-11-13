@@ -7,10 +7,9 @@
 #include <QWindow>
 #include <vector>
 
-#include "../../render/Camera2D.h"
 #include "../editor/InputEvents.h"
-#include "IRenderer.h"
-#include "IViewportController.h"
+class ViewportController;
+struct Viewport2D;
 
 class QWidget;
 class QTimer;
@@ -28,7 +27,7 @@ public:
     void requestRedraw();
     void setContinuousRedraw(bool on);
     void presentFrame();
-    int setEventSink(IViewportController* controller);
+    int setEventSink(ViewportController* controller);
 
     // Для встраивания в Qt layout
     QWidget* createContainer(QWidget* parent = nullptr);
@@ -36,9 +35,9 @@ public:
     // Для shared context между несколькими viewport-ами
     //QOpenGLContext* context() const { return context_; }
 
-    int addController(IViewportController* controller);
+    int addController(ViewportController* controller);
     void setActiveController(int index);
-    bool removeController(IViewportController* controller);
+    bool removeController(ViewportController* controller);
 
 protected:
     // QWindow events
@@ -73,13 +72,13 @@ private:
 
 private:
     struct ControllerContext {
-        IViewportController* controller = nullptr;
+        ViewportController* controller = nullptr;
         QOpenGLContext*      context    = nullptr;
     };
 
     std::vector<ControllerContext> controllers_;
 
-    IViewportController* controller_ = nullptr;
+    ViewportController* controller_ = nullptr;
     QOpenGLContext*      context_    = nullptr;
 
     QTimer*              continuousTimer_  = nullptr;

@@ -17,6 +17,11 @@ namespace app {
 struct ConstraintPresentationState;
 }
 
+// Frontend entry point for input, resize and drawing for one document view. The host
+// translates native events and provides the current graphics context and render target.
+// The view owns this controller and the editor state it borrows. Hosts detach before
+// the view is destroyed and call shutdown() while its graphics context is current.
+// Route project and toolbar commands through UIController; keep widget types out of both APIs.
 class ViewportController : public IViewportController {
 public:
     ViewportController(Camera2D& camera, OverlayModel& overlay, app::SketchEditor& session, Document& document, const app::ViewportStyle& style,
