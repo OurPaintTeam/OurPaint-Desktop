@@ -16,7 +16,6 @@ QtPlatformRuntime::~QtPlatformRuntime() {
     }
     hosts_.clear();
 
-    delete app_;
     app_ = nullptr;
 }
 

@@ -4,9 +4,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QTranslator>
-#include <memory>
 #include <unordered_map>
-#include <vector>
 
 #include "DocumentView.h"
 #include "FileSystem.h"
@@ -59,9 +57,6 @@ private:
     bool attachDocument(UI::ProjectManager& manager, DocumentId id, qint64 fileID);
     bool closeDocumentView(DocumentId id);
     bool closeOneDocument(DocumentId docId, UI::ProjectManager* currentManager);
-
-    DocumentView* findView(const std::string& path) const;
-    DocumentView* findViewByHash(std::size_t hash) const;
 
     void initBaseSignals(UI::ProjectManager& manager);
     void initLightManager(UI::ProjectManager& manager);
