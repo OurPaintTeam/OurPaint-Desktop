@@ -66,10 +66,12 @@ void Application::init(int& argc, char** argv) {
         return;
     }
 
+
     documentManager_ = new DocumentManager();
+    settings_ = new Settings(*documentManager_);
     documentController_ = new DocumentController(*documentManager_, views_);
 
-    qtUIController_ = new QtUIController(*documentController_, *platformRuntime_);
+    qtUIController_ = new QtUIController(*documentController_, *platformRuntime_,*settings_);
 
     if (!filePaths.isEmpty()) {
         qtUIController_->openFilesFromCommandLine(filePaths);

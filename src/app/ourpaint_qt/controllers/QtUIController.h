@@ -10,6 +10,7 @@
 #include "FileSystem.h"
 #include "ProjectManager.h"
 #include "QtViewportHost.h"
+#include "Settings.h"
 #include "SettingsSystem.h"
 #include "ToolsType.h"
 
@@ -22,7 +23,7 @@ class QtUIController : public QObject {
 
 public:
     QtUIController(DocumentController& docController,
-                   QtPlatformRuntime& platformRuntime);
+                   QtPlatformRuntime& platformRuntime, Settings& settings);
     ~QtUIController() override;
 
 public slots:
@@ -73,9 +74,10 @@ private:
 private:
     DocumentController& docController_;
     QtPlatformRuntime& platformRuntime_;
+    Settings& app_settings_;
 
     UI::FileSystem fs_;
-    UI::SettingsSystem settings_;
+    UI::SettingsSystem ui_settings_;
     QTranslator* translator_{nullptr};
     UI::SettingsSystem::Language currentLanguage_{UI::SettingsSystem::Language::English};
 
