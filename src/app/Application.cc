@@ -6,10 +6,10 @@
 #include <QLocalSocket>
 #include <QThread>
 #include <iostream>
+#include <QFileInfo>
 
 #include "../core/DocumentManager.h"
 #include "DocumentController.h"
-
 #include "QtUIController.h"
 #include "platform/QtPlatformRuntime.h"
 
