@@ -1,27 +1,26 @@
-#include "CommandConsole.h"
+#include "CustomConsole.h"
 
 #include <QFontMetrics>
 #include <QPainter>
 #include <QStyle>
 #include <QTextLayout>
 
-#include "../editor/UIController.h"
 
-CommandConsole::CommandConsole(UIController& controller) : QLineEdit(nullptr), controller_(controller) {
-    connect(this, &QLineEdit::textChanged, this, &CommandConsole::updateAutocomplete);
-    connect(this, &QLineEdit::textChanged, this, &CommandConsole::onTextChanged);
-    const QStringList list = {"LINE ", "POINT ", "CIRCLE ", "ARC ", "REQ "};
-    setCommands(list);
-    for (const auto& cmd : list) {
-        commandsArray_.push_back(cmd);
-    }
+CustomConsole::CustomConsole(QWidget* parent)
+    : QLineEdit(parent) {
+    connect(this, &QLineEdit::textChanged, this, &CustomConsole::updateAutocomplete);
+    setCommands({"help", "exit", "open", "save", "undo", "redo"});
     setObjectName("CustomConsole");
     setFocusPolicy(Qt::StrongFocus);
 }
 
-void CommandConsole::setCommands(const QStringList& commands) { commands_ = commands; }
 
-void CommandConsole::paintEvent(QPaintEvent* event) {
+void CustomConsole::setCommands(const QStringList& commands) {
+    commands_ = commands;
+}
+
+
+void CustomConsole::paintEvent(QPaintEvent* event) {
     QLineEdit::paintEvent(event);
 
     if (currentCommands_.isEmpty()) {
@@ -52,7 +51,8 @@ void CommandConsole::paintEvent(QPaintEvent* event) {
     painter.drawText(x, y, suffix);
 }
 
-void CommandConsole::keyPressEvent(QKeyEvent* event) {
+
+void CustomConsole::keyPressEvent(QKeyEvent* event) {
     setFocus();
 
     switch (event->key()) {
@@ -69,10 +69,10 @@ void CommandConsole::keyPressEvent(QKeyEvent* event) {
             if (!text().isEmpty()) {
                 commandsArray_.push_back(text());
                 index_ = commandsArray_.size();
-                // emit sentCommandTriggered(text());
-                // clear();
+               // emit sentCommandTriggered(text());
+                clear();
             }
-            QLineEdit::keyPressEvent(event);
+            event->accept();
             return;
 
         case Qt::Key_Up:
@@ -106,7 +106,8 @@ void CommandConsole::keyPressEvent(QKeyEvent* event) {
     QLineEdit::keyPressEvent(event);
 }
 
-bool CommandConsole::focusNextPrevChild(const bool next) {
+
+bool CustomConsole::focusNextPrevChild(const bool next) {
     if (next) {
         if (!currentCommands_.isEmpty()) {
             setText(currentCommands_);
@@ -118,14 +119,15 @@ bool CommandConsole::focusNextPrevChild(const bool next) {
     return QLineEdit::focusNextPrevChild(next);
 }
 
-void CommandConsole::updateAutocomplete(const QString& text) {
+
+void CustomConsole::updateAutocomplete(const QString& text) {
     if (text.isEmpty()) {
         currentCommands_.clear();
         update();
         return;
     }
 
-    for (const auto& cmd : commands_) {
+    for (const auto& cmd: commands_) {
         if (cmd.startsWith(text, Qt::CaseInsensitive)) {
             currentCommands_ = cmd;
             update();
@@ -135,35 +137,4 @@ void CommandConsole::updateAutocomplete(const QString& text) {
 
     currentCommands_.clear();
     update();
-}
-
-void CommandConsole::onTextChanged(const QString& text) {
-    parseReqInput(text);
-}
-
-
-void CommandConsole::parseReqInput(const QString& text) const {
-    // const auto parts = text.split(' ', Qt::SkipEmptyParts);
-    //
-    // if (parts.size() < 3) {
-    //     controller_.previewConsoleSelection({});
-    //     return;
-    // }
-    //
-    // if (parts[0].compare("REQ", Qt::CaseInsensitive) != 0) {
-    //     return;
-    // }
-    //
-    // std::vector<int> ids;
-    //
-    // for (int i = 2; i < parts.size(); ++i) {
-    //     bool ok = false;
-    //     const int id = parts[i].toInt(&ok);
-    //
-    //     if (ok) {
-    //         ids.push_back(id);
-    //     }
-    // }
-    //
-    // controller_.previewConsoleSelection(ids);
 }

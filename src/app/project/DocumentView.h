@@ -28,7 +28,6 @@ public:
     const Document& document() const noexcept;
 
 public:
-
     Document& document_;
     DocumentId id;
 

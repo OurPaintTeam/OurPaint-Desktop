@@ -1,26 +1,34 @@
-#include "../CustomConsole.h"
+#include "CommandConsole.h"
 
 #include <QFontMetrics>
 #include <QPainter>
 #include <QStyle>
 #include <QTextLayout>
 
+<<<<<<<< HEAD:src/app/ourpaint_qt/CommandConsole.cc
+#include "../editor/UIController.h"
 
-CustomConsole::CustomConsole(QWidget* parent)
-    : QLineEdit(parent) {
-    connect(this, &QLineEdit::textChanged, this, &CustomConsole::updateAutocomplete);
-    setCommands({"help", "exit", "open", "save", "undo", "redo"});
+CommandConsole::CommandConsole(UIController& controller) : QLineEdit(nullptr), controller_(controller) {
+========
+#include "OverlayModel.h"
+#include "QtViewportHost.h"
+
+CommandConsole::CommandConsole(OverlayModel& overlayModel, QtViewportHost& host) : QLineEdit(nullptr), overlayModel_(overlayModel), host_(host) {
+>>>>>>>> origin/feature/update_UI:src/app/ourpaint_qt/controllers/CommandConsole.cc
+    connect(this, &QLineEdit::textChanged, this, &CommandConsole::updateAutocomplete);
+    connect(this, &QLineEdit::textChanged, this, &CommandConsole::onTextChanged);
+    const QStringList list = {"LINE ", "POINT ", "CIRCLE ", "ARC ", "REQ "};
+    setCommands(list);
+    for (const auto& cmd : list) {
+        commandsArray_.push_back(cmd);
+    }
     setObjectName("CustomConsole");
     setFocusPolicy(Qt::StrongFocus);
 }
 
+void CommandConsole::setCommands(const QStringList& commands) { commands_ = commands; }
 
-void CustomConsole::setCommands(const QStringList& commands) {
-    commands_ = commands;
-}
-
-
-void CustomConsole::paintEvent(QPaintEvent* event) {
+void CommandConsole::paintEvent(QPaintEvent* event) {
     QLineEdit::paintEvent(event);
 
     if (currentCommands_.isEmpty()) {
@@ -51,8 +59,7 @@ void CustomConsole::paintEvent(QPaintEvent* event) {
     painter.drawText(x, y, suffix);
 }
 
-
-void CustomConsole::keyPressEvent(QKeyEvent* event) {
+void CommandConsole::keyPressEvent(QKeyEvent* event) {
     setFocus();
 
     switch (event->key()) {
@@ -69,10 +76,10 @@ void CustomConsole::keyPressEvent(QKeyEvent* event) {
             if (!text().isEmpty()) {
                 commandsArray_.push_back(text());
                 index_ = commandsArray_.size();
-                emit sentCommandTriggered(text());
-                clear();
+                // emit sentCommandTriggered(text());
+                // clear();
             }
-            event->accept();
+            QLineEdit::keyPressEvent(event);
             return;
 
         case Qt::Key_Up:
@@ -106,8 +113,7 @@ void CustomConsole::keyPressEvent(QKeyEvent* event) {
     QLineEdit::keyPressEvent(event);
 }
 
-
-bool CustomConsole::focusNextPrevChild(const bool next) {
+bool CommandConsole::focusNextPrevChild(const bool next) {
     if (next) {
         if (!currentCommands_.isEmpty()) {
             setText(currentCommands_);
@@ -119,15 +125,14 @@ bool CustomConsole::focusNextPrevChild(const bool next) {
     return QLineEdit::focusNextPrevChild(next);
 }
 
-
-void CustomConsole::updateAutocomplete(const QString& text) {
+void CommandConsole::updateAutocomplete(const QString& text) {
     if (text.isEmpty()) {
         currentCommands_.clear();
         update();
         return;
     }
 
-    for (const auto& cmd: commands_) {
+    for (const auto& cmd : commands_) {
         if (cmd.startsWith(text, Qt::CaseInsensitive)) {
             currentCommands_ = cmd;
             update();
@@ -137,4 +142,35 @@ void CustomConsole::updateAutocomplete(const QString& text) {
 
     currentCommands_.clear();
     update();
+}
+
+void CommandConsole::onTextChanged(const QString& text) {
+    parseReqInput(text);
+}
+
+
+void CommandConsole::parseReqInput(const QString& text) const {
+    // const auto parts = text.split(' ', Qt::SkipEmptyParts);
+    //
+    // if (parts.size() < 3) {
+    //     controller_.previewConsoleSelection({});
+    //     return;
+    // }
+    //
+    // if (parts[0].compare("REQ", Qt::CaseInsensitive) != 0) {
+    //     return;
+    // }
+    //
+    // std::vector<int> ids;
+    //
+    // for (int i = 2; i < parts.size(); ++i) {
+    //     bool ok = false;
+    //     const int id = parts[i].toInt(&ok);
+    //
+    //     if (ok) {
+    //         ids.push_back(id);
+    //     }
+    // }
+    //
+    // controller_.previewConsoleSelection(ids);
 }

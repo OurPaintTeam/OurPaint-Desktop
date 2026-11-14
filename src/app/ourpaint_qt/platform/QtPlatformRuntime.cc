@@ -10,18 +10,20 @@ QtPlatformRuntime::QtPlatformRuntime(int& argc, char** argv)
     : argc_(argc), argv_(argv) {}
 
 QtPlatformRuntime::~QtPlatformRuntime() {
-    for (const auto& host : hosts_) {
-        delete host.data();
+    for (auto& host : hosts_) {
+        if (!host.isNull()) {
+            delete host.data();
+        }
     }
-    delete app_;
+    hosts_.clear();
+
+    app_ = nullptr;
 }
 
 bool QtPlatformRuntime::init() {
     if (app_) {
         return true;
     }
-
-    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 
     app_ = new QApplication(argc_, argv_);
 
@@ -44,16 +46,16 @@ int QtPlatformRuntime::run() {
 }
 
 QtViewportHost* QtPlatformRuntime::createViewportHost() {
-    auto* host = new QtViewportHost(nextHostId_++);
+    auto* host = new QtViewportHost(QGuiApplication::primaryScreen())
 
     hosts_.push_back(host);
     return host;
 }
 
 void QtPlatformRuntime::destroyViewportHost(QtViewportHost* host) {
-    const auto it = std::find(hosts_.begin(), hosts_.end(), host);
-    if (it != hosts_.end()) {
-        hosts_.erase(it);
-        delete host;
-    }
+    if (!host) return;
+    auto it = std::find(hosts_.begin(), hosts_.end(), host);
+    if (it == hosts_.end()) return;
+    hosts_.erase(it);
+    delete host;
 }

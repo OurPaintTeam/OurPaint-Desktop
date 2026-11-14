@@ -5,7 +5,15 @@
 #include <QStringList>
 #include <QVector>
 
+<<<<<<<< HEAD:src/app/ourpaint_qt/CommandConsole.h
 class UIController;
+========
+#include "Scene.h"
+
+class QtViewportHost;
+class OverlayModel;
+
+>>>>>>>> origin/feature/update_UI:src/app/ourpaint_qt/controllers/CommandConsole.h
 class QKeyEvent;
 class QPaintEvent;
 
@@ -14,7 +22,11 @@ class CommandConsole final : public QLineEdit {
     Q_OBJECT
 
 public:
+<<<<<<<< HEAD:src/app/ourpaint_qt/CommandConsole.h
     explicit CommandConsole(UIController& controller);
+========
+    explicit CommandConsole(OverlayModel& overlayModel_, QtViewportHost& host);
+>>>>>>>> origin/feature/update_UI:src/app/ourpaint_qt/controllers/CommandConsole.h
     void setCommands(const QStringList& commands);
 
     signals:
@@ -36,6 +48,10 @@ private:
     QVector<QString> commandsArray_;
     long long index_ = -1;
 
+<<<<<<<< HEAD:src/app/ourpaint_qt/CommandConsole.h
+========
+    QtViewportHost& host_;
+>>>>>>>> origin/feature/update_UI:src/app/ourpaint_qt/controllers/CommandConsole.h
 };
 
 

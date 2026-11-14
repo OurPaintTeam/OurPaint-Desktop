@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "QtViewportHost.h"
+
 class QApplication;
 class QtViewportHost;
 
@@ -19,14 +21,12 @@ public:
     void destroyViewportHost(QtViewportHost* host);
 
 private:
-    int&            argc_;
-    char**          argv_;
-    QApplication*   app_  = nullptr;
+    int& argc_;
+    char** argv_;
+    QApplication* app_ = nullptr;
 
     std::vector<QPointer<QtViewportHost>> hosts_;
     uint32_t nextHostId_ = 1;
 };
 
-#endif // ! OURPAINT_QT_PLATFORM_RUNTIME_H_
-
-
+#endif  // ! OURPAINT_QT_PLATFORM_RUNTIME_H_
