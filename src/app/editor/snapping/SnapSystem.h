@@ -54,6 +54,10 @@ private:
     std::vector<SnapResult> snapForDrawing(const SnapRequest& request) const;
 
     std::optional<SnapCandidate> collectCoincident(const SnapRequest& request) const;
+    std::optional<SnapCandidate> collectMidpoint(const SnapRequest& request) const;
+    std::optional<SnapCandidate> collectIntersection(const SnapRequest& request) const;
+    std::optional<SnapCandidate> collectExtendedIntersection(const SnapRequest& request) const;
+    std::optional<SnapCandidate> collectVirtualIntersection(const SnapRequest& request) const;
 };
 
 }  // namespace snap

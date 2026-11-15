@@ -85,7 +85,8 @@ target_include_directories(ourpaint PRIVATE
         ../ui
         ../../core/
         ../../core/geometry
-        ../../core/geometry/
+        ../../core/geometry/intersections
+        ../../core/geometry/relations
 
 
         ../viewport

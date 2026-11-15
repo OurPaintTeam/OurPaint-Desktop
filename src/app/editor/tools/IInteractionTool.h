@@ -1,6 +1,8 @@
 #ifndef OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
 #define OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
 
+#include <qlogging.h>
+
 #include "../../platform/InputEvents.h"
 #include "Document.h"
 #include "OverlayModel.h"
@@ -159,10 +161,36 @@ bool applySnapConstraint(const snap::SnapResult& snap,
                 return static_cast<bool>(c);
             }
 
-            case SK::Midpoint:
-            case SK::Intersection:
+            case SK::Midpoint: {
+                if (snap.objects.empty()) return false;
+
+                core::sketch::ConstraintDefinition def;
+                def.type = CT::Midpoint;
+                def.refs = { target, snap.objects[0] };
+
+                if (!document_.sketch().supportsConstraint(def)) return false;
+                auto c = document_.sketch().addConstraint(def);
+                return static_cast<bool>(c);
+            }
             case SK::ExtendedIntersection:
+            case SK::Intersection: {
+                if (snap.objects.empty()) return false;
+
+                bool added = false;
+                for (const auto& obj : snap.objects) {
+                    core::sketch::ConstraintDefinition def;
+                    def.type = CT::Coincident;
+                    def.refs = { target, obj };
+
+                    if (!document_.sketch().supportsConstraint(def)) continue;
+                    auto c = document_.sketch().addConstraint(def);
+                    if (c) added = true;
+                }
+                return added;
+            }
+                break;
             case SK::VirtualIntersection:
+                break;
             case SK::Tangent:
             case SK::Horizontal:
             case SK::Vertical:
