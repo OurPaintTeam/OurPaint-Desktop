@@ -7,12 +7,11 @@
 #include <utility>
 #include <vector>
 
-#include "Algorithms.h"
 #include "Camera2D.h"
+#include "CoincidentCollectors.h"
+#include "LineAlgorithms.h"
 #include "sketch/Sketch.h"
 #include "sketch/SketchTypes.h"
-#include "snapping/algorithms/SnapEntityQuery.h"
-#include "snapping/algorithms/SnapTangencyQuery.h"
 
 namespace snap {
 namespace {
@@ -41,6 +40,81 @@ using geometry::detail::subtract;
 
 SnapSystem::SnapSystem(const core::sketch::Sketch& sketch, const Camera2D& camera) : sketch_(sketch), camera_(camera) {}
 
-SnapResult SnapSystem::getSnapCandidate(const SnapRequest& request) const { return  SnapResult(); }
+std::vector<SnapResult> SnapSystem::getSnapCandidates(const SnapRequest& request) const {
+    return parserRequest(request);
+}
+
+std::vector<SnapResult> SnapSystem::parserRequest(const SnapRequest& snapRequest) const{
+    std::vector<SnapResult> results;
+    if (snapRequest.action == ActionType::Draw) {
+       return snapForDrawing(snapRequest);
+    } else {
+    }
+    return results;
+}
+
+std::vector<SnapResult> SnapSystem::snapForDrawing(const SnapRequest& request) const {
+    std::vector<SnapResult> results;
+    if (request.action != ActionType::Draw) return results;
+
+    const SnapMask mask = snapMaskFor(request.primitive, request.drawState);
+    if (mask == SnapMask::None) return results;
+
+    auto append = [&results](std::optional<SnapCandidate> c) {
+        if (c) results.push_back(std::move(c->result));
+    };
+
+    for (SnapKind kind : kAllSnapKinds) {
+        if (!hasSnap(mask, kind)) continue;
+        switch (kind) {
+            case SnapKind::Coincident:           append(collectCoincident(request));             break;
+            case SnapKind::Midpoint:             /*append(collectMidpoint(request));*/           break;
+            case SnapKind::Intersection:         /*append(collectIntersection(request));*/       break;
+            case SnapKind::ExtendedIntersection: /*append(collectExtendedIntersection(request));*/ break;
+            case SnapKind::VirtualIntersection:  /*append(collectVirtualIntersection(request));*/  break;
+            case SnapKind::Tangent:              /*append(collectTangent(request));*/            break;
+
+            case SnapKind::Horizontal:           /*append(collectHorizontal(request));*/         break;
+            case SnapKind::Vertical:             /*append(collectVertical(request));*/           break;
+            case SnapKind::Parallel:             /*append(collectParallel(request));*/           break;
+            case SnapKind::Perpendicular:        /*append(collectPerpendicular(request));*/      break;
+            case SnapKind::AngleToLine:          /*append(collectAngleToLine(request));*/        break;
+            case SnapKind::Collinear:            /*append(collectCollinear(request));*/          break;
+            case SnapKind::None:
+                break;
+        }
+    }
+    return results;
+}
+
+
+std::optional<SnapCandidate>
+SnapSystem::collectCoincident(const SnapRequest& request) const {
+    const double tolWorld = camera_.screenLogicalToWorld(
+        snapTolerancePixels(request.primitive, request.drawState));
+
+    std::optional<SnapCandidate> best;
+
+    auto mergeIn = [&](std::optional<SnapCandidate> c) {
+        if (!c) return;
+        if (!best
+            || c->priority > best->priority
+            || (c->priority == best->priority
+                && c->distanceSquared < best->distanceSquared)) {
+            best = std::move(c);
+                }
+    };
+
+    if (auto pts     = sketch_.points())
+        mergeIn(coincident::collectFromPoints(request, pts.value(), tolWorld));
+    if (auto lines   = sketch_.lines())
+        mergeIn(coincident::collectFromLines(request, lines.value(), tolWorld));
+    if (auto circles = sketch_.circles())
+        mergeIn(coincident::collectFromCircles(request, circles.value(), tolWorld));
+    if (auto arcs    = sketch_.arcs())
+        mergeIn(coincident::collectFromArcs(request, arcs.value(), tolWorld));
+
+    return best;
+}
 
 }  // namespace snap

@@ -78,10 +78,15 @@ target_link_libraries(ourpaint PRIVATE
 
 target_include_directories(ourpaint PRIVATE
         ../editor
+        ../editor/snapping
+        ../editor/snapping/algorithms
         ../platform
         ../platform
         ../ui
         ../../core/
+        ../../core/geometry
+        ../../core/geometry/
+
 
         ../viewport
         ../viewport/constraints

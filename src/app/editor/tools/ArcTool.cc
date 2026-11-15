@@ -1,5 +1,7 @@
 #include "ArcTool.h"
 
+#include <iostream>
+
 #include "../../../core/Document.h"
 #include "RenderScene.h"
 #include "objects/Objects.h"
@@ -20,54 +22,57 @@ void ArcTool::reset() {
     points_.clear();
     step_ = Step::WaitingFirstInput;
     overlay_.clearPreview();
+    firstSnap_ = {};
+    secondSnap_ = {};
+    thirdSnap_ = {};
 }
 
 void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
-    snap::SnapRequest request;
-
-    if (step_ == Step::WaitingFirstInput) {
-        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ToolType::Circle, snap::DrawState::Idle};
-    } else if (step_ == Step::WaitingSecondInput) {
-        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y},
-                                    snap::ToolType::Circle,
-                                    snap::DrawState::FirstPoint,
-                                    {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}}};
-    } else if (step_ == Step::WaitingThirdInput) {
-        request = snap::SnapRequest{
-            core::sketch::Vec2{cursor.x, cursor.y},
-            snap::ToolType::Point,
-            snap::DrawState::FirstPoint,
-            {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}, core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}};
-    }
-
-    snapVisual(request);
+    snap::SnapRequest request{
+        core::sketch::Vec2{cursor.x, cursor.y},
+        snap::ActionType::Draw,
+        snap::PrimitiveType::Arc,
+    };
 
     switch (mode_) {
         case Mode::ThreePoints:
-            if (step_ == Step::WaitingThirdInput) {
+            if (step_ == Step::WaitingFirstInput) {
+                request.drawState  = snap::DrawState::Start;
+            }else  if (step_ == Step::WaitingSecondInput) {
+                request.drawState  = snap::DrawState::Body;
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+            }else if (step_ == Step::WaitingThirdInput) {
+            request.drawState  = snap::DrawState::End;
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}});
+
                 Arc ca = buildArcFromThreePoints(points_[0], points_[1], cursor);
                 if (!ca.valid) {
-                    return;
+                    if (!overlay_.arcs_.empty()) {
+                        overlay_.arcs_[0].r = ca.r;
+                        overlay_.arcs_[0].cx = ca.cx;
+                        overlay_.arcs_[0].cy = ca.cy;
+                        overlay_.arcs_[0].startAngle = ca.startAngle;
+                        overlay_.arcs_[0].endAngle = ca.endAngle;
+                    }
+                    if (overlay_.points_.size() > 3) {
+                        overlay_.points_[2].x = cursor.x;
+                        overlay_.points_[2].y = cursor.y;
+                        overlay_.points_[3].x = ca.cx;
+                        overlay_.points_[3].y = ca.cy;
+                    }
                 }
-                if (!overlay_.arcs_.empty()) {
-                    overlay_.arcs_[0].r = ca.r;
-                    overlay_.arcs_[0].cx = ca.cx;
-                    overlay_.arcs_[0].cy = ca.cy;
-                    overlay_.arcs_[0].startAngle = ca.startAngle;
-                    overlay_.arcs_[0].endAngle = ca.endAngle;
-                }
-                if (overlay_.points_.size() > 3) {
-                    overlay_.points_[2].x = cursor.x;
-                    overlay_.points_[2].y = cursor.y;
-                    overlay_.points_[3].x = ca.cx;
-                    overlay_.points_[3].y = ca.cy;
-                }
+
+            } else if (step_ == Step::WaitingSecondInput) {
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
             }
             break;
     }
+    snapVisual(request);
 }
+
 void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
         return;
@@ -75,55 +80,22 @@ void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
 
     glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
-    if (snap_result_.snapped) {
-        cursor.x = snap_result_.point.position.x;
-        cursor.y = snap_result_.point.position.y;
+    if (!snap_results_.empty()) {
+        cursor.x = snap_results_[0].point.position.x;
+        cursor.y = snap_results_[0].point.position.y;
     }
-
-    // auto applyArcConstraints = [&](ActionReport& report, const snap::SnapResult& startSnap, const snap::SnapResult& endSnap) -> bool {
-    //     if (report.entityIds.empty()) {
-    //         return false;
-    //     }
-    //     const auto arcId = report.entityIds[0];
-    //     bool needsSolve = false;
-    //
-    //     auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement arcSub) {
-    //         if (!snap.snapped || snap.objects.empty()) {
-    //             return;
-    //         }
-    //
-    //         core::sketch::ConstraintDefinition def;
-    //         def.type = core::sketch::ConstraintType::Coincident;
-    //         def.refs = {{arcId, arcSub}, snap.objects[0]};
-    //
-    //         if (document_.sketch().supportsConstraint(def)) {
-    //             auto c = document_.sketch().addConstraint(def);
-    //             if (c) {
-    //                 report.constraintIds.push_back(c.value());
-    //                 report.requestedConstraints++;
-    //                 needsSolve = true;
-    //             } else {
-    //                 report.operationError = c.error();
-    //             }
-    //         }
-    //     };
-    //
-    //     tryAddConstraint(startSnap, core::sketch::SubElement::Start);
-    //     tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
-    //     tryAddConstraint(endSnap, core::sketch::SubElement::End);
-    //
-    //     return needsSolve;
-    // };
 
     switch (mode_) {
         case Mode::ThreePoints:
             if (step_ == Step::WaitingFirstInput) {
-                firstSnap_ = snap_result_;
+                firstSnap_ = snap_results_.empty() ? snap::SnapResult{}
+                                                   : snap_results_.front();
                 points_.push_back(cursor);
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 step_ = Step::WaitingSecondInput;
             } else if (step_ == Step::WaitingSecondInput) {
-                secondSnap_ = snap_result_;
+                secondSnap_ = snap_results_.empty() ? snap::SnapResult{}
+                                                    : snap_results_.front();
                 points_.push_back(cursor);
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
                 overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
@@ -131,27 +103,41 @@ void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
                 overlay_.arcs_.push_back(OverlayModel::Arc());  // just init
                 step_ = Step::WaitingThirdInput;
             } else if (step_ == Step::WaitingThirdInput) {
-                thirdSnap_ = snap_result_;
+                thirdSnap_ = snap_results_.empty() ? snap::SnapResult{}
+                                                   : snap_results_.front();
                 points_.push_back(cursor);
 
                 Arc a = buildArcFromThreePoints(points_[0], points_[1], points_[2]);
 
+                if (!a.valid) {
+                    reset();
+                    break;
+                }
+
                 sketch::Vec2 center = {a.cx, a.cy};
-                sketch::Vec2 start = {a.cx + a.r * std::cos(a.startAngle), a.cy + a.r * std::sin(a.startAngle)};
-                sketch::Vec2 end = {a.cx + a.r * std::cos(a.endAngle), a.cy + a.r * std::sin(a.endAngle)};
+                sketch::Vec2 start  = {a.cx + a.r * std::cos(a.startAngle),
+                                       a.cy + a.r * std::sin(a.startAngle)};
+                sketch::Vec2 end    = {a.cx + a.r * std::cos(a.endAngle),
+                                       a.cy + a.r * std::sin(a.endAngle)};
 
-                document_.sketch().addArc(center, start, end);
+                auto arcResult = document_.sketch().addArc(center, start, end);
 
-                double dist0ToStart = glm::distance(points_[0], glm::dvec2(start.x, start.y));
-                double dist0ToEnd = glm::distance(points_[0], glm::dvec2(end.x, end.y));
+                bool needsSolve = false;
+                if (arcResult) {
+                    const auto arcId = arcResult.value();
+                    using SE = core::sketch::SubElement;
 
-                bool isSwapped = dist0ToStart > dist0ToEnd;
-
-                //bool needsSolve = applyArcConstraints(report, isSwapped ? thirdSnap_ : firstSnap_, isSwapped ? firstSnap_ : thirdSnap_);
-
-                // if (needsSolve) {
-                //     document_.sketch().solve();
-                // }
+                    if (applySnapConstraint(firstSnap_,  {arcId, SE::Start})) needsSolve = true;
+                    if (applySnapConstraint(secondSnap_, {arcId, SE::Whole})) needsSolve = true;
+                    if (applySnapConstraint(thirdSnap_,  {arcId, SE::End}))   needsSolve = true;
+                }
+                if (needsSolve) {
+                    auto solved = document_.sketch().solve();
+                    if (!solved ||
+                        solved.value().status != core::sketch::SolveStatus::Converged) {
+                        std::cout << "solve err in ArcTool\n";
+                    }
+                }
 
                 reset();
             }
@@ -159,9 +145,7 @@ void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
     }
 }
 
-void ArcTool::onKey(const input::KeyEvent& e) {
-    (void)e;
-}
+void ArcTool::onKey(const input::KeyEvent& e) { (void)e; }
 
 bool ArcTool::cancel() {
     if (points_.empty()) {
