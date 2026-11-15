@@ -6,8 +6,11 @@
 #include "../render/SnapFeedback.h"
 #include "snap/SnapSystem.h"
 
-class Cpu2dPicker;
+namespace core {
 class Document;
+}
+
+class Cpu2dPicker;
 namespace render {
 class Camera2D;
 }
@@ -18,7 +21,7 @@ class SnapSystem;
 
 class IInteractionTool {
 protected:
-    Document& document_;
+    core::Document& document_;
     render::Camera2D& camera_;
     snap::SnapSystem& snap_;
     OverlayModel& overlay_;
@@ -110,7 +113,7 @@ protected:
     }
 
 public:
-    IInteractionTool(Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker_)
+    IInteractionTool(core::Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker_)
         : document_(document), camera_(camera), snap_(snap), overlay_(overlay), picker_(picker_) {}
 
     virtual ~IInteractionTool() {}

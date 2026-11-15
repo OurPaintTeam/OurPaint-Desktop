@@ -21,9 +21,11 @@
 
 #include <iostream>  // TEST
 
-#include "DocumentView.h"
-#include "Document.h"
-#include "ImGuiViewportHost.h"
+#include "Camera2D.h"
+#include "IViewportController.h"
+#include "OpenGLRenderTarget.h"
+#include "UIController.h"
+#include "ViewportController.h"
 #include "imgui_internal.h"
 
 constexpr ImVec4 kWindowBg{151/255.f, 136/255.f, 151/255.f, 1.0f}; // #978897
@@ -34,6 +36,7 @@ constexpr ImVec2 kViewportPadding(10.0f, 10.0f);
 constexpr float kClearColor[4] = {0.5f, 0.5f, 0.5f, 1.0f};
 constexpr float kIconLogical = 32.0f;
 
+render::OpenGLRenderTarget target_;
 
 GLuint LoadTextureFromSVG(const char* filename, int* out_width = nullptr, int* out_height = nullptr, float scale = 2.0f) {
     NSVGimage* image = nsvgParseFromFile(filename, "px", 96.0f);
@@ -88,6 +91,8 @@ static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
+void draw(app::ViewportController* controller);
+
 int main(int argc, char** argv) {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -122,7 +127,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    glfwSwapInterval(1);  // Enable vsync
+    glfwSwapInterval(0);  // Disable vsync
 
     // Setup icons and tools
     const float bakeScale = 2.0f * main_scale; // supersample * DPI
@@ -187,6 +192,8 @@ int main(int argc, char** argv) {
                                       // This will scale fonts but NOT scale sizes/padding for now.
     io.ConfigDpiScaleViewports = true;// [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
 
+    io.Fonts->AddFontDefaultVector();
+
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -198,19 +205,24 @@ int main(int argc, char** argv) {
     {
         // Destruction is in reverse order: view first, then host/FBO, then document.
         // All of them leave this scope before the GLFW context is destroyed.
-        Document document("Untitled");
-        ImGuiViewportHost host;
-        DocumentView view(document, host);
-        host.setEventSink(&view.viewportController_);
+
+        app::UIController controller;
+        const app::DocumentId document_id = controller.createDocument("Untitled");
+        const app::ViewId view_id = controller.createDocumentView(document_id);
+        controller.setActiveDocumentView(view_id);
+        app::ViewportController* viewport_controller = controller.findViewport(view_id);
+        if (!viewport_controller) {
+            return 1;
+        }
 
         std::optional<ToolId> parameterTool;
         double parameterValue = 1.0;
         bool openParameterPopup = false;
         const auto toolButton = [&](const char* label, ToolId tool, GLuint icon) {
-            const bool selected = view.editorSession_.activeToolId() == tool;
+            const auto selected = controller.activeToolId(view_id);
 
             ImGui::PushID(label);
-            if (selected) {
+            if (selected == tool) {
                 ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
             }
 
@@ -219,7 +231,7 @@ int main(int argc, char** argv) {
                 ? ImGui::ImageButton("##icon", static_cast<ImTextureID>(static_cast<intptr_t>(icon)), {uiSize, uiSize})
                 : ImGui::Button(label);
 
-            if (selected) {
+            if (selected == tool) {
                 ImGui::PopStyleColor();
             }
 
@@ -237,8 +249,8 @@ int main(int argc, char** argv) {
                 parameterValue = tool == ToolId::Angle ? 45.0 : 1.0;
                 openParameterPopup = true;
             } else {
-                view.editorSession_.selectTool(tool);
-                host.requestRedraw();
+                controller.selectTool(view_id, tool);
+                draw(viewport_controller);
             }
         };
 
@@ -278,10 +290,10 @@ int main(int argc, char** argv) {
                                                        ImGuiWindowFlags_NoScrollWithMouse;
 
             if (ImGui::Begin("Viewport", nullptr, viewportFlags)) {
-                ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.0f, 0.0f, 0.0f, 0.0f));         // Normal
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 1.0f, 1.0f, 0.2f));  // Hovered
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(1.0f, 1.0f, 1.0f, 0.3f));   // Pressed
-                ImGui::PushStyleColor(ImGuiCol_Text,          ImVec4(1.0f, 1.0f, 1.0f, 1.0f));           // Text
+                ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // Normal
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 1.0f, 1.0f, 0.2f)); // Hovered
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(1.0f, 1.0f, 1.0f, 0.3f)); // Pressed
+                ImGui::PushStyleColor(ImGuiCol_Text,          ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // Text
                 ImGui::PushStyleColor(ImGuiCol_Separator,     ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
                 ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);          // Rounded tool buttons
@@ -326,8 +338,7 @@ int main(int argc, char** argv) {
                     ImGui::BeginDisabled(!valid);
                     if ((ImGui::Button("Apply") || entered) && valid && parameterTool) {
                         const double value = *parameterTool == ToolId::Angle ? parameterValue * std::numbers::pi / 180.0 : parameterValue;
-                        view.editorSession_.selectTool(*parameterTool, value);
-                        host.requestRedraw();
+                        controller.selectTool(view_id, *parameterTool, value);
                         parameterTool.reset();
                         ImGui::CloseCurrentPopup();
                     }
@@ -341,7 +352,7 @@ int main(int argc, char** argv) {
                 }
 
                 if (ImGui::BeginChild("RenderArea", ImVec2(0, 0), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
-                    host.draw();
+                    draw(viewport_controller);
                 }
                 ImGui::EndChild();
             }
@@ -372,11 +383,6 @@ int main(int argc, char** argv) {
             glfwSwapBuffers(window);
         }
 
-        // Detach borrowed pointers and release the controller's GPU objects while its
-        // context is current. host's own FBO is released at the end of this scope.
-        view.editorSession_.activeTool()->cancel();
-        view.viewportController_.shutdown();
-        host.removeController(&view.viewportController_);
     }
 
 
@@ -390,3 +396,184 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+
+void dispatchInput(float originX, float originY, float imageWidth, float imageHeight, bool hovered, app::ViewportController* controller, render::Viewport2D);
+
+void draw(app::ViewportController* controller) {
+    const ImVec2 available = ImGui::GetContentRegionAvail();
+    if (available.x <= 0.0f || available.y <= 0.0f) {
+        return;
+    }
+    const ImGuiViewport* viewport = ImGui::GetWindowViewport();
+    const double uiScale = viewport->DpiScale;
+    const int width = std::max(1, static_cast<int>(std::lround(available.x / uiScale)));
+    const int height = std::max(1, static_cast<int>(std::lround(available.y / uiScale)));
+
+    // Compute a universal scaling ratio for rendering.
+    // uiScale handles content scaling. Typically > 1 on Windows/Linux when the OS uses physical pixels as logical.
+    // FramebufferScale handles the framebuffer-to-window ratio (DPR: physical pixels per logical pixel)
+    // typically > 1 on macOS/iOS/Android Retina displays.
+    // Multiplying them gives the final ratio needed
+    // to convert ImGui logical units into actual framebuffer pixels, regardless of platform.
+    const double ratio = uiScale * viewport->FramebufferScale.x;
+
+    const render::Viewport2D newSize{width, height, ratio};
+    if (!target_.resize(newSize.framebufferWidth(), newSize.framebufferHeight())) {
+        ImGui::TextUnformatted("Could not allocate the CAD render target.");
+        return;
+    }
+
+    // A real ImGui item provides hit testing and mouse ownership. A popup can block
+    // new presses, while a drag that started here may continue outside the image.
+    const ImVec2 origin = ImGui::GetCursorScreenPos();
+    ImGui::InvisibleButton("CAD image", available, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
+    const bool hovered = ImGui::IsItemHovered();
+
+    GLint framebuffer_ = 0;
+    GLint viewport_[4]{};
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &framebuffer_);
+    glGetIntegerv(GL_VIEWPORT, viewport_);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_.framebuffer());
+    glViewport(0, 0, target_.width(), target_.height());
+
+    controller->onResize({width, height, static_cast<float>(ratio)});
+
+    dispatchInput(origin.x, origin.y, available.x, available.y, hovered, controller, newSize);
+
+    controller->render();
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(framebuffer_));
+    glViewport(viewport_[0], viewport_[1], viewport_[2], viewport_[3]);
+
+
+    // AddImage uses the already reserved rectangle. Image() would reserve another.
+    // This texture remains alive until the UI backend executes the queued draw data.
+    ImGui::GetWindowDrawList()->AddImage(ImTextureRef(target_.colorTexture()),
+                                   origin,
+                                   ImVec2(origin.x + available.x, origin.y + available.y),
+                                  ImVec2(0, 1),
+                                  ImVec2(1, 0));
+
+
+    // std::cout << "====================== New Frame started" << '\n';
+    // std::cout << "frameBuffer (w=" << available.x << ", h=" << available.y << ')' << '\n';
+    // std::cout << "logical size (w=" << width << ", h=" << height << ')' << '\n';
+    // std::cout << "Ratio=" << ratio << '\n';
+}
+
+input::Modifiers modifiers(const ImGuiIO& io) {
+    auto result = input::Modifiers::None;
+    if (io.KeyShift) {
+        result = result | input::Modifiers::Shift;
+    }
+    if (io.KeyCtrl) {
+        result = result | input::Modifiers::Ctrl;
+    }
+    if (io.KeyAlt) {
+        result = result | input::Modifiers::Alt;
+    }
+    if (io.KeySuper) {
+        result = result | input::Modifiers::Meta;
+    }
+    return result;
+}
+
+input::MouseButton capturedButtons_ = input::MouseButton::None;
+double lastMouseX_ = 0.0;
+double lastMouseY_ = 0.0;
+input::Modifiers lastModifiers_ = input::Modifiers::None;
+bool wasHovered_ = false;
+
+void dispatchInput(float originX, float originY, float imageWidth, float imageHeight, bool hovered, app::ViewportController* controller_, render::Viewport2D size_) {
+    const auto& io = ImGui::GetIO();
+    const auto mods = modifiers(io);
+    const auto time = static_cast<uint64_t>(ImGui::GetTime() * 1000.0);
+    // On focus loss ImGui can invalidate MousePos. Release at the last known local
+    // position instead of feeding its sentinel coordinates into camera/geometry math.
+    const bool mouseValid = ImGui::IsMousePosValid(&io.MousePos);
+
+    bool mouseChanged = mods != lastModifiers_ || hovered != wasHovered_;
+    if (mouseValid) {
+        const double newX = (io.MousePos.x - originX) *  size_.logicalWidth / imageWidth;
+        const double newY = (io.MousePos.y - originY) * size_.logicalHeight / imageHeight;
+        mouseChanged = mouseChanged || newX != lastMouseX_ || newY != lastMouseY_;
+        lastMouseX_ = newX;
+        lastMouseY_ = newY;
+    }
+    wasHovered_ = hovered;
+    lastModifiers_ = mods;
+    const double x = lastMouseX_;
+    const double y = lastMouseY_;
+    constexpr std::array buttons{input::MouseButton::Left, input::MouseButton::Right, input::MouseButton::Middle};
+    // Seed the position before a new press, avoiding a camera jump on right-button pan.
+    // A stationary mouse must not force expensive scene rebuilding every UI frame.
+    // A dirty controller still gets a refresh, e.g. after choosing a different tool.
+    if (mouseValid && (hovered || capturedButtons_ != input::MouseButton::None) && (mouseChanged || controller_->dirty_)) {
+        controller_->onMouseMove({x, y, capturedButtons_, mods, time});
+    }
+
+    for (int button = 0; button < static_cast<int>(buttons.size()); ++button) {
+        const auto flag = buttons[button];
+        if (hovered && ImGui::IsMouseClicked(button)) {
+            capturedButtons_ = capturedButtons_ | flag;
+            controller_->onMouseButton({x, y, flag, input::MouseButtonAction::Press, capturedButtons_, mods, time});
+        }
+        // MouseDown is cleared on focus loss too. Always finish a captured gesture,
+        // including releases outside the image, so tools cannot remain in dragging state.
+        if (input::has_flag(capturedButtons_, flag) && (ImGui::IsMouseReleased(button) || !io.MouseDown[button])) {
+            capturedButtons_ = static_cast<input::MouseButton>(static_cast<uint32_t>(capturedButtons_) & ~static_cast<uint32_t>(flag));
+            controller_->onMouseButton({x, y, flag, input::MouseButtonAction::Release, capturedButtons_, mods, time});
+        }
+    }
+
+    if (hovered && (io.MouseWheel != 0.0f || io.MouseWheelH != 0.0f)) {
+        controller_->onWheel({x, y, io.MouseWheelH, io.MouseWheel, mods, time, false});
+    }
+    // WantCaptureKeyboard is normally true for the embedded viewport itself. Accept
+    // its child focus or an unobstructed hover, so Escape works after choosing a tool
+    // without requiring a geometry-creating click first. Protect text entry elsewhere.
+    if ((!hovered && !ImGui::IsWindowFocused()) || io.WantTextInput) {
+        return;
+    }
+
+    const auto dispatchKey = [&](ImGuiKey key, input::KeyCode code) {
+        if (ImGui::IsKeyPressed(key, false)) {
+            controller_->onKey({code, input::KeyAction::Press, mods, 0, false, time});
+        } else if (ImGui::IsKeyPressed(key, true)) {
+            controller_->onKey({code, input::KeyAction::Repeat, mods, 0, true, time});
+        }
+        if (ImGui::IsKeyReleased(key)) {
+            controller_->onKey({code, input::KeyAction::Release, mods, 0, false, time});
+        }
+    };
+    constexpr std::array keys{std::pair{ImGuiKey_Escape, input::KeyCode::Escape},
+                              std::pair{ImGuiKey_Enter, input::KeyCode::Enter},
+                              std::pair{ImGuiKey_Tab, input::KeyCode::Tab},
+                              std::pair{ImGuiKey_Space, input::KeyCode::Space},
+                              std::pair{ImGuiKey_Backspace, input::KeyCode::Backspace},
+                              std::pair{ImGuiKey_Delete, input::KeyCode::Delete},
+                              std::pair{ImGuiKey_LeftArrow, input::KeyCode::Left},
+                              std::pair{ImGuiKey_RightArrow, input::KeyCode::Right},
+                              std::pair{ImGuiKey_UpArrow, input::KeyCode::Up},
+                              std::pair{ImGuiKey_DownArrow, input::KeyCode::Down}};
+    for (const auto& [key, code] : keys) {
+        dispatchKey(key, code);
+    }
+    for (int letter = 0; letter < 26; ++letter) {
+        dispatchKey(static_cast<ImGuiKey>(ImGuiKey_A + letter), static_cast<input::KeyCode>(static_cast<int>(input::KeyCode::A) + letter));
+    }
+    // Modifiers carry no separate KeyCode in the existing event API, but tools still
+    // need their press/release events (for example Shift's temporary line-axis lock).
+    constexpr std::array modifierKeys{ImGuiKey_LeftShift, ImGuiKey_RightShift, ImGuiKey_LeftCtrl,  ImGuiKey_RightCtrl,
+                                      ImGuiKey_LeftAlt,   ImGuiKey_RightAlt,   ImGuiKey_LeftSuper, ImGuiKey_RightSuper};
+    for (const auto key : modifierKeys) {
+        dispatchKey(key, input::KeyCode::Unknown);
+    }
+    for (int digit = 0; digit < 10; ++digit) {
+        dispatchKey(static_cast<ImGuiKey>(ImGuiKey_0 + digit), static_cast<input::KeyCode>(static_cast<int>(input::KeyCode::Num0) + digit));
+    }
+    for (int function = 0; function < 12; ++function) {
+        dispatchKey(static_cast<ImGuiKey>(ImGuiKey_F1 + function), static_cast<input::KeyCode>(static_cast<int>(input::KeyCode::F1) + function));
+    }
+}
+

@@ -1,22 +1,26 @@
-#pragma once
+#ifndef OURPAINT_APPLICATION_UI_CONTROLLER_H_
+#define OURPAINT_APPLICATION_UI_CONTROLLER_H_
 
-#include <filesystem>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
-#include "../../core/DocumentManager.h"
-#include "../project/ProjectSaveLoad.h"
+#include "DocumentManager.h"
+#include "FileResult.h"
 #include "IUIObserver.h"
 
+namespace app {
+using DocumentId = core::DocumentId;
+inline constexpr DocumentId InvalidDocumentId = core::InvalidDocumentId;
 class DocumentView;
-class IViewportController;
+class ViewportController;
 
-// Application entry point for project, document and tool commands. A project owns
-// documents independently of any views. Each open view has its own editor, camera
-// and viewport controller. Frontends own windowing, host attachment and presentation.
+// The only frontend entry point for document lifetime, file I/O and tool commands.
+// Documents live independently of their views; each view owns its camera/editor/viewport.
+// Frontends own windows and graphics contexts, and borrow viewports only through this API.
+// A new document exists only in memory. Saving is explicit; closing never writes a file.
+// There are no projects. The application-wide .ourpaint file contains metadata, not CAD data.
 class UIController {
 public:
     UIController();
@@ -24,52 +28,63 @@ public:
     UIController(const UIController&) = delete;
     UIController& operator=(const UIController&) = delete;
 
-    // Non-owning. Clear the subscription before the observer is destroyed.
+    // Optional, synchronous and non-owning. Unsubscribe before destroying the observer.
     void setObserver(IUIObserver* observer) { observer_ = observer; }
 
     DocumentId createDocument(std::string name);
-    // Every call creates another view of the existing document. Invalid IDs fail
-    // without side effects. IDs issued by this controller are never recycled.
+    FileResult<DocumentId> openDocument(const std::filesystem::path& path);
+    // The caller asks about unsaved changes first. All views close before the document.
+    bool closeDocument(DocumentId document);
+    const std::vector<DocumentId>& documents() const { return documents_; }
+    std::string documentName(DocumentId document) const;
+    bool renameDocument(DocumentId document, const std::string& name);
+    std::filesystem::path documentPath(DocumentId document) const;
+    // Compares against the last saved/loaded state, or the initial empty draft.
+    // Intended for close/save decisions, not for every render frame.
+    bool documentModified(DocumentId document) const;
+    FileResult<std::filesystem::path> saveDocument(DocumentId document);
+    FileResult<std::filesystem::path> saveDocumentAs(DocumentId document, const std::filesystem::path& path);
+
+    // Every call opens an independent view. Stable IDs are never recycled.
     ViewId createDocumentView(DocumentId document);
-    // Borrowed until closeView, project replacement or controller destruction.
-    IViewportController* findViewport(ViewId view);
+    // Borrowed until this view/document closes or this controller is destroyed.
+    ViewportController* findViewport(ViewId view);
     void closeDocumentView(ViewId view);
     void clearDocumentViews();
     void setActiveDocumentView(ViewId view);
     ViewId activeDocumentView() const { return active_; }
     DocumentId documentOf(ViewId view) const;
-    const std::vector<DocumentId>& documents() const { return documents_; }
-    std::string documentName(DocumentId document) const;
-    bool renameDocument(DocumentId document, const std::string& name);
-
+    std::vector<ViewId> documentViews(DocumentId document) const;
     void selectTool(ViewId view, ToolId tool, std::optional<double> value = {});
     std::optional<ToolId> activeToolId(ViewId view) const;
-
-    // void executeConsoleCommand(const std::string& command);
-    // void previewConsoleSelection(const std::vector<int>& ids);
-
-    app::SaveReport saveProject();
-    app::SaveReport saveProjectAs(const std::filesystem::path& destination);
-    app::SaveReport createProject(const std::filesystem::path& destination);
-    std::optional<app::FileError> openProject(const std::filesystem::path& path);
-    app::FileResult<DocumentId> openFile(const std::filesystem::path& path);
-    bool needsSaveConfirmation() const;
     void endInteractions();
-    const std::filesystem::path& projectRoot() const;
-    const app::ProjectMetadata& projectMetadata() const;
+
+    // Frontends supply the platform's user-config path. Missing metadata is normal.
+    // Only explicitly opened/saved paths enter this list; drafts are never persisted.
+    std::optional<FileError> loadApplicationMetadata(const std::filesystem::path& path);
+    const std::vector<std::filesystem::path>& recentDocuments() const { return recentDocuments_; }
+    const std::optional<FileError>& metadataError() const { return metadataError_; }
 
 private:
-    DocumentId addDocument(std::unique_ptr<Document> document);
-    void installProject(app::LoadedProject loaded);
-    std::filesystem::path nextFilename(DocumentId id) const;
+    struct DocumentState {
+        std::filesystem::path path;
+        core::persistence::DocumentBytes savedState;
+    };
+    DocumentId addDocument(std::unique_ptr<core::Document> document, std::filesystem::path path = {});
+    void rememberDocument(const std::filesystem::path& path);
     void requestRedraw(ViewId view);
 
-    DocumentManager manager_;
+    core::DocumentManager manager_;
     std::vector<DocumentId> documents_;
+    std::map<DocumentId, DocumentState> documentStates_;
     std::map<ViewId, std::unique_ptr<DocumentView>> views_;
     ViewId active_ = InvalidViewId;
     uint64_t nextViewId_ = 1;
     IUIObserver* observer_ = nullptr;
-    app::Project project_{{}, {{}, "Untitled"}, {}};
-    bool projectModified_ = true;
+    std::filesystem::path metadataPath_;
+    std::vector<std::filesystem::path> recentDocuments_;
+    std::optional<FileError> metadataError_;
 };
+}  // namespace app
+
+#endif

@@ -1,7 +1,10 @@
 #include "DocumentView.h"
 
-DocumentView::DocumentView(Document& document)
+using namespace app;
+
+DocumentView::DocumentView(core::Document& document, DocumentId id)
     : document_(document),
+      id_(id),
       camera2D_(),
       overlay_(),
       viewportStyle_(app::ViewportStyle::makeDefault()),
@@ -10,11 +13,11 @@ DocumentView::DocumentView(Document& document)
       editorSession_(document_, camera2D_, overlay_, constraintLayout_, constraintPresentation_),
       viewportController_(camera2D_, overlay_, editorSession_, document_, viewportStyle_, constraintLayout_, constraintPresentation_) {}
 
-Document& DocumentView::document() noexcept {
+core::Document& DocumentView::document() noexcept {
     return document_;
 }
 
-const Document& DocumentView::document() const noexcept {
+const core::Document& DocumentView::document() const noexcept {
     return document_;
 }
 

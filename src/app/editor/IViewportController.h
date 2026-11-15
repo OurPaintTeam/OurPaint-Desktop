@@ -3,6 +3,7 @@
 
 #include "InputEvents.h"
 
+namespace app {
 class IViewportController {
 public:
     virtual ~IViewportController() = default;
@@ -20,5 +21,6 @@ public:
     bool dirty_ = false;
     bool continuousRedraw_ = false;
 };
+}
 
 #endif // ! OURPAINT_APPLICATION_IVIEWPORTEVENTSINK_H_

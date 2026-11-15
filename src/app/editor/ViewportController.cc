@@ -4,6 +4,8 @@
 
 #include "render/constraints/ConstraintLayout.h"
 
+using namespace app;
+
 ViewportController::ViewportController(render::Camera2D& camera, OverlayModel& overlay, app::SketchEditor& editorSession_, Document& document,
                                        const app::ViewportStyle& style, app::ConstraintLayout& constraintLayout,
                                        const app::ConstraintPresentationState& constraintPresentation)

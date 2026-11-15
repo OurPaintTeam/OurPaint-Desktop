@@ -5,6 +5,7 @@
 #include <string>
 #include "sketch/Sketch.h"
 
+namespace core {
 class Document {
 public:
     explicit Document(const std::string& documentName = "Untitled");
@@ -28,6 +29,6 @@ private:
 
     std::unique_ptr<core::sketch::Sketch> sketch_;
 };
-
+}
 
 #endif // ! OURPAINT_HEADERS_DOCUMENT_H_

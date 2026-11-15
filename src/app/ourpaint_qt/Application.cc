@@ -1,159 +1,113 @@
 #include "Application.h"
 
 #include <QCommandLineParser>
-#include <QCoreApplication>
 #include <QDataStream>
+#include <QDir>
 #include <QFileInfo>
 #include <QLocalSocket>
-#include <QThread>
-#include <iostream>
+#include <QStandardPaths>
+#include <QTimer>
 
-#include "DocumentManager.h"
-#include "DocumentController.h"
-#include "QtPlatformRuntime.h"
 #include "QtUIController.h"
 
-#ifdef Q_OS_WIN
-#include "RegWin.h"
-#endif
-
 namespace {
-    constexpr const char* kServerName = "OurPaintSingleInstance";
+constexpr auto serverName = "OurPaintSingleInstance";
 }
 
-Application::Application(int& argc, char** argv, QObject* parent) : QObject(parent) {
-    try {
-        init(argc, argv);
-    } catch (std::exception& e) {
-        std::cout << e.what();
-    }
-}
-
-void Application::init(int& argc, char** argv) {
-    platformRuntime_ = new QtPlatformRuntime(argc, argv);
-    platformRuntime_->init();
-
+Application::Application(int& argc, char** argv) : qt_(argc, argv) {
     Q_INIT_RESOURCE(resources);
     Q_INIT_RESOURCE(translations);
-
-    QCoreApplication::setOrganizationName("OurPaint");
-    QCoreApplication::setApplicationName("OurPaint");
-
-#ifdef Q_OS_WIN
-    QSettings appSettings;
-    if (!appSettings.value("fileAssociationRegistered", false).toBool()) {
-        registerFileAssociation();
-        appSettings.setValue("fileAssociationRegistered", true);
-    }
-#endif
-
+    QCoreApplication::setOrganizationName(QStringLiteral("OurPaint"));
+    QCoreApplication::setApplicationName(QStringLiteral("OurPaint"));
     QCommandLineParser parser;
     parser.addHelpOption();
-    parser.addVersionOption();
-    parser.addPositionalArgument("files", QCoreApplication::translate("main", "Paths to .ourp project files."), "[files...]");
-    parser.process(QCoreApplication::arguments());
-
-    QStringList filePaths;
-    for (const QString& f : parser.positionalArguments()) {
-        if (QFileInfo(f).suffix().compare("ourp", Qt::CaseInsensitive) == 0) {
-            filePaths.append(f);
-        } else {
-            qWarning() << "[main] Not a .ourp file:" << f;
-        }
+    parser.addPositionalArgument(QStringLiteral("files"), QStringLiteral("Paths to .ourp documents."), QStringLiteral("[files...]"));
+    parser.process(qt_);
+    QStringList paths;
+    for (const auto& path : parser.positionalArguments()) {
+        paths.push_back(QFileInfo(path).absoluteFilePath());
     }
-
-    if (!setupSingleInstance(filePaths)) {
+    if (!setupSingleInstance(paths)) {
+        secondary_ = true;
         return;
     }
 
-
-    documentManager_ = new DocumentManager();
-    settings_ = new Settings(*documentManager_);
-    documentController_ = new DocumentController(*documentManager_, views_);
-
-    qtUIController_ = new QtUIController(*documentController_, *platformRuntime_,*settings_);
-
-    if (!filePaths.isEmpty()) {
-        qtUIController_->openFilesFromCommandLine(filePaths);
+    // The current renderer resolves shaders/fonts relative to the process directory.
+    // Resolve incoming filenames first so command-line paths keep their original meaning.
+    if (!QDir::setCurrent(QCoreApplication::applicationDirPath())) {
+        qWarning("Could not select the application resource directory");
     }
-}
-
-bool Application::setupSingleInstance(const QStringList& filePaths) {
-    if (trySendToRunningInstance(filePaths)) {
-        isSecondaryInstance_ = true;
-        return false;
-    }
-
-    localServer_ = new QLocalServer(this);
-    bool isServer = localServer_->listen(kServerName);
-
-    if (!isServer) {
-        for (int i = 0; i < 10 && !isServer; ++i) {
-            if (trySendToRunningInstance(filePaths, 200)) {
-                isSecondaryInstance_ = true;
-                return false;
-            }
-            QThread::msleep(50);
-            isServer = localServer_->listen(kServerName);
-        }
-    }
-
-    if (!isServer) {
-        QLocalServer::removeServer(kServerName);
-        isServer = localServer_->listen(kServerName);
-        if (!isServer) {
-            qWarning() << "[main] Cannot listen:" << localServer_->errorString();
-        }
-    }
-
-    if (isServer) {
-        connect(localServer_, &QLocalServer::newConnection, this, [this]() {
-            while (QLocalSocket* client = localServer_->nextPendingConnection()) {
-                connect(client, &QLocalSocket::readyRead, this, [this, client]() {
-                    QDataStream stream(client);
-                    QStringList received;
-                    stream >> received;
-
-                    if (!received.isEmpty() && qtUIController_) {
-                        qtUIController_->openFilesFromCommandLine(received);
-                    }
-                    client->deleteLater();
-                });
-            }
-        });
-    }
-
-    return true;
-}
-
-bool Application::trySendToRunningInstance(const QStringList& paths, int timeoutMs) {
-    if (paths.isEmpty()) return false;
-
-    QLocalSocket socket;
-    socket.connectToServer(kServerName);
-    if (!socket.waitForConnected(timeoutMs)) return false;
-
-    QDataStream stream(&socket);
-    stream << paths;
-    socket.flush();
-    socket.waitForBytesWritten(timeoutMs);
-    return true;
-}
-
-int Application::exec() {
-    if (isSecondaryInstance_) {
-        return 0;
-    }
-    return platformRuntime_->run();
+    const auto config = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    const auto metadata = QDir(config).filePath(QStringLiteral(".ourpaint"));
+#ifdef Q_OS_WIN
+    controller_.loadApplicationMetadata(metadata.toStdWString());
+#else
+    controller_.loadApplicationMetadata(std::filesystem::u8path(metadata.toUtf8().constData()));
+#endif
+    ui_ = std::make_unique<QtUIController>(controller_, config);
+    ui_->openFilesFromCommandLine(paths);
 }
 
 Application::~Application() {
-
-    delete qtUIController_;
-    views_.clear();
-
-    delete documentController_;
-    delete documentManager_;
-
-    delete platformRuntime_;
+    server_.reset();
+    ui_.reset();
 }
+
+bool Application::trySendToRunningInstance(const QStringList& paths) {
+    QLocalSocket socket;
+    socket.connectToServer(QString::fromLatin1(serverName));
+    if (!socket.waitForConnected(500)) {
+        return false;
+    }
+    QDataStream stream(&socket);
+    stream << paths;
+    socket.flush();
+    return socket.bytesToWrite() == 0 || socket.waitForBytesWritten(500);
+}
+
+bool Application::setupSingleInstance(const QStringList& paths) {
+    if (trySendToRunningInstance(paths)) {
+        return false;
+    }
+    server_ = std::make_unique<QLocalServer>();
+    server_->setSocketOptions(QLocalServer::UserAccessOption);
+    if (!server_->listen(QString::fromLatin1(serverName))) {
+        if (trySendToRunningInstance(paths)) {
+            return false;
+        }
+        // A previous process may have left a stale local socket on Unix.
+        if (server_->serverError() == QAbstractSocket::AddressInUseError) {
+            QLocalServer::removeServer(QString::fromLatin1(serverName));
+            server_->listen(QString::fromLatin1(serverName));
+        }
+        if (!server_->isListening()) {
+            qWarning() << "Single-instance listener unavailable:" << server_->errorString();
+        }
+    }
+    QObject::connect(server_.get(), &QLocalServer::newConnection, server_.get(), [this] {
+        while (auto* socket = server_->nextPendingConnection()) {
+            const auto read = [this, socket] {
+                QDataStream stream(socket);
+                stream.startTransaction();
+                QStringList received;
+                stream >> received;
+                if (!stream.commitTransaction()) {
+                    return;  // Wait for the rest of a fragmented message.
+                }
+                if (ui_) {
+                    ui_->openFilesFromCommandLine(received);
+                }
+                socket->disconnectFromServer();
+                socket->deleteLater();
+            };
+            QObject::connect(socket, &QLocalSocket::readyRead, socket, read);
+            QObject::connect(socket, &QLocalSocket::disconnected, socket, &QObject::deleteLater);
+            if (socket->bytesAvailable()) {
+                QTimer::singleShot(0, socket, read);
+            }
+        }
+    });
+    return true;
+}
+
+int Application::exec() { return secondary_ ? 0 : qt_.exec(); }

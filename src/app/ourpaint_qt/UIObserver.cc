@@ -3,17 +3,11 @@
 #include "Lib/Core/ProjectManager.h"
 #include "Lib/Core/ToolsType.h"
 
-void UIObserver::presentActiveTool(UI::ProjectManager& window, const std::string& name, ToolId tool, bool active) {
-    const QString tabName = QString::fromStdString(name);
-    const auto present = [&](auto uiTool) {
-        window.setActiveToolTabWindow(tabName, uiTool);
-        if (active) {
-            window.setActiveToolProjectWindow(uiTool);
-        }
-    };
+void UIObserver::presentActiveTool(UI::ProjectManager& window, ToolId tool) {
+    const auto present = [&](auto uiTool) { window.setActiveTool(uiTool); };
     switch (tool) {
         case ToolId::Cursor:
-            present(UI::ToolsType::Cursor);
+            present(UI::ToolsType::None);
             break;
         case ToolId::Point:
             present(UI::PrimitiveType::Point);

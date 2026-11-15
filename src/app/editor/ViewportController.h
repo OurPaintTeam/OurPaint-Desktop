@@ -18,22 +18,21 @@
 
 namespace app {
 struct ConstraintPresentationState;
-}
 
 // Frontend entry point for input, resize and drawing for one document view. The host
 // translates native events and provides the current graphics context and render target.
 // The view owns this controller and the editor state it borrows. Hosts detach before
 // the view is destroyed and call shutdown() while its graphics context is current.
-// Route project and toolbar commands through UIController; keep widget types out of both APIs.
+// Route document and toolbar commands through UIController; keep widget types out of both APIs.
 class ViewportController : public IViewportController {
 public:
-    ViewportController(render::Camera2D& camera,
+    ViewportController(Camera2D& camera,
                        OverlayModel& overlay,
-                       app::SketchEditor& session,
-                       Document& document,
-                       const app::ViewportStyle& style,
-                       app::ConstraintLayout& constraintLayout,
-                       const app::ConstraintPresentationState& constraintPresentation);
+                       SketchEditor& session,
+                       core::Document& document,
+                       const ViewportStyle& style,
+                       ConstraintLayout& constraintLayout,
+                       const ConstraintPresentationState& constraintPresentation);
 
     bool onResize     (const input::ResizeEvent& e)      override;
     bool onMouseMove  (const input::MouseMoveEvent& e)   override;
@@ -55,18 +54,18 @@ public:
 private:
     void updateConstraintLayout();
 
-    render::Camera2D& camera2D_;
+    Camera2D& camera2D_;
     OverlayModel& overlay_;
-    app::SketchEditor& editorSession_;
-    Document& document_;
-    app::ConstraintLayout& constraintLayout_;
-    const app::ConstraintPresentationState& constraintPresentation_;
+    SketchEditor& editorSession_;
+    core::Document& document_;
+    ConstraintLayout& constraintLayout_;
+    const ConstraintPresentationState& constraintPresentation_;
 
     AxisTexts axisTexts_;
-    const app::ViewportStyle& viewportStyle_;
-    render::RenderScene renderScene_;
+    const ViewportStyle& viewportStyle_;
+    RenderScene renderScene_;
     RenderSceneBuilder builder_;
-    render::OpenGL2dRenderer renderer_;
+    OpenGL2dRenderer renderer_;
 
     std::function<void()> redrawSiblings_;
     double lastX_ = 0.0;
@@ -74,5 +73,6 @@ private:
 
     bool _ini = false;
 };
+}
 
 #endif // ! OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_

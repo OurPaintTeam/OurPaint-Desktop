@@ -3,14 +3,16 @@
 #include "IViewportController.h"
 #include "UIController.h"
 
+using namespace app;
+
 TEST(UIControllerViews, IndependentViewsSurviveClosingAndRenaming) {
     UIController ui;
-    const DocumentId document = ui.createFile("Sketch");
+    const DocumentId document = ui.createDocument("Sketch");
     ASSERT_NE(document, InvalidDocumentId);
-    EXPECT_EQ(ui.activeView(), InvalidViewId);
+    EXPECT_EQ(ui.activeDocumentView(), InvalidViewId);
 
-    const auto first = ui.openView(document);
-    const auto second = ui.openView(document);
+    const auto first = ui.createDocumentView(document);
+    const auto second = ui.createDocumentView(document);
     ASSERT_NE(first, second);
     auto* survivingViewport = ui.findViewport(second);
     ASSERT_NE(survivingViewport, nullptr);
@@ -21,20 +23,20 @@ TEST(UIControllerViews, IndependentViewsSurviveClosingAndRenaming) {
     ui.selectTool(first, ToolId::Point);
     EXPECT_EQ(ui.activeToolId(first), ToolId::Point);
     EXPECT_EQ(ui.activeToolId(second), ToolId::Cursor);
-    ui.setActiveView(first);
+    ui.setActiveDocumentView(first);
     ASSERT_TRUE(ui.renameDocument(document, "Plate"));
     EXPECT_EQ(ui.documentOf(second), document);
-    ui.closeView(first);
+    ui.closeDocumentView(first);
     EXPECT_EQ(ui.findViewport(first), nullptr);
     EXPECT_EQ(ui.findViewport(second), survivingViewport);
-    EXPECT_EQ(ui.activeView(), second);
-    ui.closeView(second);
-    const auto reopened = ui.openView(document);
+    EXPECT_EQ(ui.activeDocumentView(), second);
+    ui.closeDocumentView(second);
+    const auto reopened = ui.createDocumentView(document);
     EXPECT_NE(reopened, first);
     EXPECT_NE(reopened, second);
     EXPECT_EQ(ui.documentOf(reopened), document);
     EXPECT_EQ(ui.documentName(document), "Plate");
-    EXPECT_EQ(ui.openView(InvalidDocumentId), InvalidViewId);
+    EXPECT_EQ(ui.createDocumentView(InvalidDocumentId), InvalidViewId);
 }
 
 TEST(UIControllerViews, ObserverCanDetachWhileViewportStillExists) {
@@ -55,14 +57,14 @@ TEST(UIControllerViews, ObserverCanDetachWhileViewportStillExists) {
     UIController ui;
     Observer observer(ui);
     ui.setObserver(&observer);
-    const auto document = ui.createFile("Sketch");
-    const auto first = ui.openView(document);
-    const auto second = ui.openView(document);
+    const auto document = ui.createDocument("Sketch");
+    const auto first = ui.createDocumentView(document);
+    const auto second = ui.createDocumentView(document);
     ui.selectTool(second, ToolId::Line);
     EXPECT_EQ(observer.changed, second);
-    ui.closeView(first);
-    ui.closeView(first);
-    ui.clearViews();
+    ui.closeDocumentView(first);
+    ui.closeDocumentView(first);
+    ui.clearDocumentViews();
     EXPECT_EQ(observer.closing, (std::vector<ViewId>{first, second}));
     ui.setObserver(nullptr);
 }

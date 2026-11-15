@@ -182,13 +182,14 @@ selectTool() updates the tool and its parameters before synchronously notifying
 the single ToolChangedCallback subscriber when the ToolId changes. Installing the
 callback does not replay the current state.
 
-UIController subscribes for both newly created and loaded document views, capturing
-the stable DocumentId and resolving the current tab name when notified. It maps
-ToolId to UI enums and updates the detached tab toolbar plus the main toolbar for
-the active document. Activating a view explicitly presents its current tool.
-Callbacks are disconnected before view removal, project replacement, or controller
-destruction. SketchEditor and ViewportController do not depend on UI tool enums or
-ProjectManager; Escape switches through the same selectTool() notification path.
+UIController subscribes when creating each document view and forwards the stable
+ViewId and ToolId through the optional IUIObserver. The Qt UIObserver and
+QtUIController translate ToolId into UI enums and update the toolbar of the window
+that displays that view. A window's visible view is independent of keyboard focus
+in another window. Activating a view explicitly presents its current tool.
+Callbacks are disconnected before view removal. SketchEditor and ViewportController
+do not depend on Qt or ProjectManager; Escape uses the same selectTool() notification
+path. See [Qt client integration](qt-client.md) for ownership and persistence.
 
 ### Constraint interaction in App
 
@@ -234,7 +235,7 @@ Midpoint accepts one point-like reference and one whole line in either selection
 order. App stores them as point then segment. With a point pending, picking
 prefers whole lines; with a line pending, it prefers point elements. A ready
 preselection applies through the same ConstraintActions path as interactive input.
-The existing Midpoint toolbar signal is routed through QtMainWindowBinder.
+The existing Midpoint toolbar signal is routed through QtUIController.
 
 ConstraintTool creates point-to-point Coincident through the atomic
 `addConstraint(definition, options)` overload. Sequential selection targets the

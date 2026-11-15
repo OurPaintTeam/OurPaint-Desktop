@@ -11,58 +11,16 @@
 #include <vector>
 
 #include "Project.h"
+#include "FileResult.h"
 #include "saveload/DocumentSaveLoad.h"
 
 namespace app {
 
 inline constexpr uint32_t ProjectFormatVersion = 1;
 
-enum class FileStage {
-    ValidateProject,
-    ValidatePath,
-    GenerateId,
-    Encode,
-    CreateDirectory,
-    CreateTemporary,
-    Open,
-    Read,
-    Enumerate,
-    Decode,
-    Write,
-    Flush,
-    Close,
-    Replace,
-    SyncDirectory
-};
-
-struct FileError {
-    std::filesystem::path path;
-    FileStage stage;
-    // Native errors retain their category; codec failures use codecError.
-    std::error_code systemError;
-    std::optional<core::persistence::CodecError> codecError;
-};
-
-// Check the active alternative before access. Allocation failures propagate.
-template <class T>
-class FileResult {
-public:
-    static FileResult success(T value) { return FileResult(std::move(value)); }
-    static FileResult failure(FileError error) { return FileResult(std::move(error)); }
-    explicit operator bool() const { return std::holds_alternative<T>(data_); }
-    T& value() { return std::get<T>(data_); }
-    const T& value() const { return std::get<T>(data_); }
-    const FileError& error() const { return std::get<FileError>(data_); }
-
-private:
-    explicit FileResult(T value) : data_(std::move(value)) {}
-    explicit FileResult(FileError error) : data_(std::move(error)) {}
-    std::variant<T, FileError> data_;
-};
-
 struct LoadedDocument {
     std::filesystem::path filename;
-    std::unique_ptr<Document> document;
+    std::unique_ptr<core::Document> document;
 };
 
 struct LoadedProject {

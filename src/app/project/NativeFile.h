@@ -1,7 +1,7 @@
 #ifndef OURPAINT_APPLICATION_NATIVE_FILE_H_
 #define OURPAINT_APPLICATION_NATIVE_FILE_H_
 
-#include "ProjectSaveLoad.h"
+#include "FileResult.h"
 
 namespace app::detail {
 

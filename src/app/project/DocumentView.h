@@ -12,24 +12,25 @@
 #include "render/RenderSceneBuilder.h"
 #include "IRenderer.h"
 
+namespace app {
 // UIController owns the view and its document. The host borrows only the viewport
 // controller and detaches while the view is still alive.
 // Explicit GPU shutdown requires this view's OpenGL context to still be current.
 class DocumentView {
 public:
-    explicit DocumentView(Document& document);
+    explicit DocumentView(core::Document& document, DocumentId id);
 
     DocumentView(const DocumentView&) = delete;
     DocumentView& operator=(const DocumentView&) = delete;
     DocumentView(DocumentView&&) = delete;
     DocumentView& operator=(DocumentView&&) = delete;
 
-    Document& document() noexcept;
-    const Document& document() const noexcept;
+    core::Document& document() noexcept;
+    const core::Document& document() const noexcept;
 
 public:
-    Document& document_;
-    DocumentId id;
+    core::Document& document_;
+    DocumentId id_;
 
     render::Camera2D camera2D_;
     OverlayModel overlay_;
@@ -39,6 +40,6 @@ public:
     app::SketchEditor editorSession_;
     ViewportController viewportController_;
 };
-
+}
 
 #endif // OURPAINT_APPLICATION_DOCUMENT_WORKSPACE_H_

@@ -4,6 +4,7 @@
 
 #include "tool/ToolId.h"
 
+namespace app {
 // Strongly typed so a stable document ID cannot accidentally address a view.
 enum class ViewId : std::uint64_t {};
 inline constexpr ViewId InvalidViewId{0};
@@ -13,9 +14,10 @@ inline constexpr ViewId InvalidViewId{0};
 class IUIObserver {
 public:
     virtual ~IUIObserver() = default;
-    // Last chance to detach a borrowed viewport, including on project replacement.
+    // Last chance to detach a borrowed viewport, before its document is released.
     virtual void viewAboutToClose(ViewId view) = 0;
     virtual void activeViewChanged(ViewId view) = 0;
     virtual void toolChanged(ViewId view, ToolId tool) = 0;
     virtual void redrawRequested(ViewId view) = 0;
 };
+}

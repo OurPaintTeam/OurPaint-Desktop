@@ -1,13 +1,12 @@
 add_executable(ourpaint_imgui
         main.cc
-        ImGuiViewportHost.cc
 )
 
 target_link_libraries(ourpaint_imgui PUBLIC
         ourpaint_project
         glad
         imgui
-        #imgui_demo
+        imgui_demo
         nanosvg
         nanosvgrast
 )
@@ -21,5 +20,5 @@ add_custom_command(TARGET ourpaint_imgui POST_BUILD
     COMMENT "Copy ImGui CAD shaders and fonts"
 )
 
-set_target_properties(ourpaint_imgui PROPERTIES WIN32_EXECUTABLE TRUE)
+#set_target_properties(ourpaint_imgui PROPERTIES WIN32_EXECUTABLE TRUE)
 
