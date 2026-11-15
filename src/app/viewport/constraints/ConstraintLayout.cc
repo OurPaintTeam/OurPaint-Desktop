@@ -319,10 +319,6 @@ void appendFixedCurve(const sketch::SketchConstraint& constraint, const sketch::
     output.push_back(std::move(marker));
 }
 
-struct GeometryRefLess {
-    bool operator()(sketch::GeometryRef a, sketch::GeometryRef b) const { return a.entity != b.entity ? a.entity < b.entity : a.sub < b.sub; }
-};
-
 struct CoincidentNeighbor {
     sketch::GeometryRef ref;
     sketch::ConstraintId constraint;
@@ -333,7 +329,7 @@ struct CoincidentNode {
     bool visited = false;
 };
 
-using CoincidentGraph = std::map<sketch::GeometryRef, CoincidentNode, GeometryRefLess>;
+using CoincidentGraph = std::map<sketch::GeometryRef, CoincidentNode>;
 
 void collectCoincident(const sketch::SketchConstraint& constraint, const sketch::Sketch& sketch, const Camera2D& camera, const ConstraintMarkerStyle& style,
                        CoincidentGraph& graph, std::vector<ConstraintMarker>& output) {

@@ -1,8 +1,12 @@
 #include "RenderSceneBuilder.h"
 
+#include <../core/tinynurbs/include/tinynurbs/tinynurbs.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <glm/glm.hpp>
+#include <iostream>
 #include <iterator>
 #include <utility>
 #include <vector>
@@ -160,6 +164,8 @@ void RenderSceneBuilder::rebuild() {
 
     buildConstraintsMarkers();
     buildSnapFeedback();
+
+    testBuild();
 }
 
 void RenderSceneBuilder::buildGrid() {
@@ -292,52 +298,50 @@ void RenderSceneBuilder::buildBezierHandles() {
 void RenderSceneBuilder::buildOverlayObjects() {
     render::DrawLayer layer = makeWorldLayer("overlay", kOverlayOrder);
 
-    render::LineBatch lines;
-    lines.style = style_.overlayLine;
+    struct OverlayBatches {
+        render::LineBatch lines;
+        render::CircleBatch circles;
+        render::ArcBatch arcs;
+    };
+    // Batch ordinary previews and constraint hover separately.
+    std::array<OverlayBatches, 2> batches;
+    for (auto& batch : batches) {
+        batch.lines.style = style_.overlayLine;
+        batch.circles.stroke = style_.overlayCircle;
+        batch.arcs.stroke = style_.overlayCircle;
+    }
 
-    render::CircleBatch circles;
-    circles.stroke = style_.overlayCircle;
-
-    render::ArcBatch arcs;
-    arcs.stroke = style_.overlayCircle;
+    batches[1].lines.style.color = style_.constraintHoverColor;
+    batches[1].circles.stroke.color = style_.constraintHoverColor;
+    batches[1].arcs.stroke.color = style_.constraintHoverColor;
 
     for (const auto& line : overlay_.lines_) {
-        lines.lines.push_back(makeLine(
-            line.x1,
-            line.y1,
-            line.x2,
-            line.y2
-        ));
+        auto& batch = batches[line.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        batch.lines.lines.push_back(makeLine(line.x1, line.y1, line.x2, line.y2));
     }
 
     for (const auto& circle : overlay_.circles_) {
-        circles.circles.push_back(makeCircle(
-            circle.cx,
-            circle.cy,
-            circle.r
-        ));
+        auto& batch = batches[circle.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        batch.circles.circles.push_back(makeCircle(circle.cx, circle.cy, circle.r));
     }
 
     for (const auto& arc : overlay_.arcs_) {
-        arcs.arcs.push_back(makeArc(
-            arc.cx,
-            arc.cy,
-            arc.r,
-            arc.startAngle,
-            arc.endAngle
-        ));
+        auto& batch = batches[arc.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        batch.arcs.arcs.push_back(makeArc(arc.cx, arc.cy, arc.r, arc.startAngle, arc.endAngle));
     }
 
-    if (!lines.lines.empty()) {
-        layer.lineBatches.push_back(std::move(lines));
-    }
+    for (auto& batch : batches) {
+        if (!batch.lines.lines.empty()) {
+            layer.lineBatches.push_back(std::move(batch.lines));
+        }
 
-    if (!circles.circles.empty()) {
-        layer.circleBatches.push_back(std::move(circles));
-    }
+        if (!batch.circles.circles.empty()) {
+            layer.circleBatches.push_back(std::move(batch.circles));
+        }
 
-    if (!arcs.arcs.empty()) {
-        layer.arcBatches.push_back(std::move(arcs));
+        if (!batch.arcs.arcs.empty()) {
+            layer.arcBatches.push_back(std::move(batch.arcs));
+        }
     }
 
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
@@ -346,15 +350,21 @@ void RenderSceneBuilder::buildOverlayObjects() {
 void RenderSceneBuilder::buildOverlayMarkers() {
     render::DrawLayer layer = makeWorldLayer("overlay_markers", kOverlayMarkerOrder);
 
-    render::MarkerBatch markers;
-    markers.style = style_.overlayMarker;
+    std::array<render::MarkerBatch, 2> batches;
+    for (auto& batch : batches) {
+        batch.style = style_.overlayMarker;
+    }
+    batches[1].style.color = style_.constraintHoverColor;
 
     for (const auto& point : overlay_.points_) {
-        markers.markers.push_back(makeMarker(point.x, point.y));
+        auto& batch = batches[point.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        batch.markers.push_back(makeMarker(point.x, point.y));
     }
 
-    if (!markers.markers.empty()) {
-        layer.markerBatches.push_back(std::move(markers));
+    for (auto& batch : batches) {
+        if (!batch.markers.empty()) {
+            layer.markerBatches.push_back(std::move(batch));
+        }
     }
 
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
@@ -585,4 +595,90 @@ void RenderSceneBuilder::buildSnapFeedback() {
     if (const auto& feedback = overlay_.snapFeedback()) {
         app::appendSnapFeedback(*feedback, sketch_, camera_, style_.snapFeedback, renderScene_);
     }
+}
+
+void RenderSceneBuilder::testBuild() {
+    auto entities = sketch_.entities(sketch::EntityKind::Nurbs);
+    if (!entities) {
+        std::cerr << "Cannot read NURBS curves: " << entities.error().message << '\n';
+        return;
+    }
+
+    render::DrawLayer layer = makeWorldLayer("nurbs_curves", kGeometryOrder);
+    render::LineBatch curves;
+    render::MarkerBatch controlMarkers;
+    curves.style = style_.baseLine;
+    controlMarkers.style = style_.baseMarker;
+
+
+    for (const auto& ent : entities.value()) {
+        const auto& curve = std::get<sketch::NurbsCurve2>(ent.geometry);
+        tinynurbs::RationalCurve<double> crv;
+        crv.degree = static_cast<unsigned>(curve.degree);
+        crv.knots = curve.knots;
+        crv.weights = curve.weights;
+        for (const auto& p : curve.controlPoints) {
+            crv.control_points.push_back({p.position.x, p.position.y, 0.0});
+            controlMarkers.markers.push_back(render::Marker(p.position.x, p.position.y));
+        }
+        if (!tinynurbs::curveIsValid(crv)) {
+            std::cerr << "Invalid NURBS curve: " << ent.id.get() << '\n';
+            continue;
+        }
+
+        const size_t numSegments = 128 * crv.control_points.size();
+        const double uMin = crv.knots[crv.degree];
+        const double uMax = crv.knots[crv.control_points.size()];
+        auto previous = tinynurbs::curvePoint(crv, uMin);
+        for (size_t i = 1; i <= numSegments; ++i) {
+            const double t = std::lerp(uMin, uMax, static_cast<double>(i) / static_cast<double>(numSegments));
+            const auto current = tinynurbs::curvePoint(crv, t);
+            curves.lines.push_back(makeLine(previous.x, previous.y, current.x, current.y));
+            previous = current;
+        }
+    }
+
+    int degree = 3;
+    for (const auto& nc : overlay_.nurbs_) {
+        tinynurbs::RationalCurve<double> crv;
+        crv.degree = static_cast<unsigned>(degree);
+
+        crv.knots.assign(degree + 1, 0.0);
+        const size_t spans = nc.points.size() - degree;
+        for (size_t i = 1; i < spans; ++i) {
+            crv.knots.push_back(static_cast<double>(i) / static_cast<double>(spans));
+        }
+        crv.knots.insert(crv.knots.end(), degree + 1, 1.0);
+
+        crv.weights.assign(nc.points.size(), 1.0);
+        for (const auto& p : nc.points) {
+            crv.control_points.push_back({p.x, p.y, 0.0});
+            controlMarkers.markers.push_back(render::Marker(p.x, p.y));
+        }
+        if (!tinynurbs::curveIsValid(crv)) {
+            std::cerr << "Invalid NURBS curve: " << '\n';
+            continue;
+        }
+
+        const size_t numSegments = 128 * crv.control_points.size();
+        const double uMin = crv.knots[crv.degree];
+        const double uMax = crv.knots[crv.control_points.size()];
+        auto previous = tinynurbs::curvePoint(crv, uMin);
+        for (size_t i = 1; i <= numSegments; ++i) {
+            const double t = std::lerp(uMin, uMax, static_cast<double>(i) / static_cast<double>(numSegments));
+            const auto current = tinynurbs::curvePoint(crv, t);
+            curves.lines.push_back(makeLine(previous.x, previous.y, current.x, current.y));
+            previous = current;
+        }
+    }
+
+    if (!curves.lines.empty()) {
+        layer.lineBatches.push_back(std::move(curves));
+    }
+
+    if (!controlMarkers.markers.empty()) {
+        layer.markerBatches.push_back(std::move(controlMarkers));
+    }
+
+    pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }

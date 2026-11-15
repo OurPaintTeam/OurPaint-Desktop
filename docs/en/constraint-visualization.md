@@ -272,9 +272,9 @@ camera changes, deleted targets and preservation of Sketch geometry.
 
 ## Decisions to revisit
 
-- Reconcile Sketch capability reporting, validation and solver adapters before
-  exposing the remaining dimension commands. Do not infer semantic support from
-  this presentation module.
+- Validate each complete dimension definition through Sketch::supportsConstraint
+  before exposing the remaining dimension commands. Do not infer semantic support
+  from this presentation module.
 - Text currently uses one fixed bitmap font and a minimal measurement interface.
   Move font metrics into a shared CPU font service when multiple fonts, Unicode,
   shaping or sharper HiDPI rasterization are needed. `TextStyle` also has unused

@@ -24,7 +24,6 @@ public:
     Sketch(const Sketch&) = delete;
     Sketch& operator=(const Sketch&) = delete;
 
-    Capabilities capabilities() const;
     // Common validation and exact DCM support preflight without editing.
     Status supportsConstraint(const ConstraintDefinition& definition) const;
 
@@ -60,14 +59,10 @@ public:
     // Clears public and private model records in place, retaining DCM and IDs.
     Status clear();
     Result<ConstraintId> addConstraint(const ConstraintDefinition& definition);
+    // Insert and solve as one edit. Failure restores geometry and constraints;
+    // only a converged result commits one history entry. Targets are transient.
+    Result<ConstraintSolveResult> addConstraint(const ConstraintDefinition& definition, const SolveOptions& options);
     Result<ConstraintId> addConstraints(std::span<const ConstraintDefinition> definitions);
-    // Prepare both coincidence groups before insertion, without numerical solving.
-    // Midpoint moves free groups to the selected points' midpoint, or to a Fix
-    // target when only one group is fixed. Fixed groups are not seeded. Other
-    // equations/curve validity are enforced by a later explicit solve().
-    // Preserve delegates to addConstraint. Preflight failures leave state intact;
-    // BackendFailure can retain prepared coordinates and partial insertion.
-    Result<ConstraintId> addCoincident(GeometryRef a, GeometryRef b, CoincidentPlacement placement = CoincidentPlacement::Midpoint);
     Status updateConstraint(ConstraintId id, const ConstraintDefinition& definition);
     Status removeConstraint(ConstraintId id);
 
@@ -77,12 +72,14 @@ public:
     Result<std::vector<SketchEntity>> entities() const;
     // Ascending public ID order. Queries scan metadata and copy matching values.
     Result<std::vector<SketchEntity>> entities(EntityKind kind) const;
-    // points() contains standalone Point entities, not curve endpoints/centers.
+    // points() contains standalone Point entities, not curve endpoints/centers/controls.
     Result<std::vector<SketchEntity>> points() const { return entities(EntityKind::Point); }
     Result<std::vector<SketchEntity>> lines() const { return entities(EntityKind::Line); }
     Result<std::vector<SketchEntity>> circles() const { return entities(EntityKind::Circle); }
     Result<std::vector<SketchEntity>> arcs() const { return entities(EntityKind::Arc); }
     Result<Vec2> pointPosition(GeometryRef ref) const;
+    // Both query forms use the same references. NURBS controls are ordered by
+    // their zero-based GeometryRef::index and belong to CurveSubElements/All.
     Result<std::vector<PointElement>> pointElements() const;
     Result<std::vector<PointElement>> pointElements(PointElementScope scope) const;
     Result<std::vector<PointElement>> pointElements(EntityId entity) const;
@@ -97,7 +94,9 @@ public:
     // NotFound and Unsupported leave state unchanged. BackendFailure offers a
     // queryable model, not rollback. solve/drag do not change identities/topology;
     // failed convergence may retain an iterate, and is reported in diagnostics.
-    Result<SolveDiagnostics> solve();
+    // Require holds targets for this solve; Prefer may retry without those locks.
+    // Permanent Fix constraints always remain active.
+    Result<SolveDiagnostics> solve(const SolveOptions& options = {});
     // SwitchLineSide explicitly permits editing saved line/circular tangency
     // branches from hard-projected requested targets before numerical solving.
     // Other branches and ordinary solve/update calls preserve the saved choice.
@@ -121,6 +120,7 @@ public:
 private:
     class Impl;
     Status validateConstraint(const ConstraintDefinition& definition) const;
+    Status validateSolveOptions(const SolveOptions& options) const;
     Status installState(const SketchSnapshot& snapshot);
     std::unique_ptr<Impl> impl_;
     core::IDGenerator entityIds_;

@@ -2,10 +2,14 @@
 #include <nlohmann/json.hpp>
 #include "objectInJson.h"
 
+using core::ID;
+using core::ObjectData;
+using core::ObjType;
+
 TEST(objectInJsonTest, SectionSerializationDeserialization) {
     ObjectData obj;
     obj.id = ID(3);
-    obj.et = ObjType::ET_SECTION;
+    obj.et = ObjType::ET_LINE;
     obj.params = {100.0, 200.0, 300.0, 400.0};
     obj.subObjects = {ID(1), ID(2)};
     std::vector<std::string> names = {"sect2", "point1", "point2"};

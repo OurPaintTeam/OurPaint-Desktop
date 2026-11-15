@@ -2,10 +2,13 @@
 #include <nlohmann/json.hpp>
 #include "requirementInJson.h"
 
+using core::ID;
+using core::Requirement;
+using core::ReqType;
 
 TEST(RequirementInJsonTest, SerializeDeserialize) {
     Requirement data;
-    data.type = ReqType::ET_POINTSECTIONDIST;
+    data.type = ReqType::ET_POINTLINEDIST;
     data.id = ID(42);
     data.obj1 = ID(1);
     data.obj2 = ID(2);
@@ -29,7 +32,7 @@ TEST(RequirementInJsonTest, SerializeDeserialize) {
 
     EXPECT_EQ(name2, name);
     EXPECT_EQ(data2.id.get(), 42);
-    EXPECT_EQ(data2.type, ReqType::ET_POINTSECTIONDIST);
+    EXPECT_EQ(data2.type, ReqType::ET_POINTLINEDIST);
     EXPECT_EQ(data2.obj1.get(), 1);
     EXPECT_EQ(data2.obj2.get(), 2);
     EXPECT_DOUBLE_EQ(data2.param.value(), 100.5);
@@ -37,7 +40,7 @@ TEST(RequirementInJsonTest, SerializeDeserialize) {
 
 TEST(RequirementInJsonTest, CopyConstructorAndAssignment) {
     Requirement data;
-    data.type = ReqType::ET_POINTSECTIONDIST;
+    data.type = ReqType::ET_POINTLINEDIST;
     data.id = ID(1);
     data.obj1 = ID(10);
     data.obj2 = ID(20);
@@ -56,7 +59,7 @@ TEST(RequirementInJsonTest, CopyConstructorAndAssignment) {
 
 TEST(RequirementInJsonTest, MoveConstructorAndAssignment) {
     Requirement data;
-    data.type = ReqType::ET_POINTSECTIONDIST;
+    data.type = ReqType::ET_POINTLINEDIST;
     data.id = ID(5);
     data.obj1 = ID(100);
     data.obj2 = ID(200);

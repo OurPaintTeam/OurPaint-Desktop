@@ -1,5 +1,19 @@
 add_subdirectory(sketch)
 
+add_library(ourpaint_document STATIC
+        Document.h
+        Document.cc
+        DocumentManager.h
+        DocumentManager.cc
+        saveload/DocumentSaveLoad.h
+        saveload/DocumentSaveLoad.cc
+        saveload/CborCodec.h
+)
+target_compile_features(ourpaint_document PUBLIC cxx_std_20)
+target_include_directories(ourpaint_document PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(ourpaint_document PUBLIC OurPaint::Sketch)
+target_link_libraries(ourpaint_document PRIVATE nlohmann_json::nlohmann_json)
+
 add_library(ourpaint_core
         # /saveload/
         saveload/FileOurP.h
@@ -36,13 +50,8 @@ add_library(ourpaint_core
         # /
 #        ISceneObserver.h
         ExceptionGuard.h
-        Document.h
-        DocumentManager.h
 #        Scene.h
 #        Scene.cc
-        Document.cc
-        DocumentManager.cc
-        saveload/DocumentSaveLoad.cc
 )
 
 target_include_directories(ourpaint_core PUBLIC
@@ -58,7 +67,7 @@ target_link_libraries(ourpaint_core
     PUBLIC
         nlohmann_json::nlohmann_json
         OurPaintDCM
-        ourpaint_sketch
+        ourpaint_document
 )
 
 

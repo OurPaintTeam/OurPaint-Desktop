@@ -1,6 +1,7 @@
 #include "Sketch.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <exception>
 #include <limits>
@@ -11,7 +12,6 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "../DSU.h"
 #include "DCMManager.h"
 #include "PointElements.h"
 
@@ -60,11 +60,13 @@ Status validateGeometry(const SketchGeometry& geometry, bool transferring = fals
                 return finite(g.start) && finite(g.end) && std::isfinite(length) && length > 0;
             } else if constexpr (std::is_same_v<T, Circle2>) {
                 return finite(g.center) && std::isfinite(g.radius) && g.radius > 0;
-            } else {
+            } else if constexpr (std::is_same_v<T, Arc2>) {
                 const double a = distance(g.center, g.start);
                 const double b = distance(g.center, g.end);
                 return finite(g.center) && finite(g.start) && finite(g.end) && std::isfinite(a) && std::isfinite(b) && a > 0 && b > 0 && g.start != g.end &&
                        (transferring || std::abs(a - b) <= 1e-9 * std::max(a, b));
+            } else {
+                return true;
             }
         },
         geometry);
@@ -73,7 +75,7 @@ Status validateGeometry(const SketchGeometry& geometry, bool transferring = fals
 
 using detail::pointLike;
 
-bool validKind(EntityKind kind) { return static_cast<size_t>(kind) < 4; }
+bool validKind(EntityKind kind) { return static_cast<size_t>(kind) < std::variant_size_v<SketchGeometry>; }
 
 Circle2 supportCircle(const SketchGeometry& geometry) {
     if (const auto* circle = std::get_if<Circle2>(&geometry)) {
@@ -161,28 +163,23 @@ class Sketch::Impl {
     };
 
 public:
-    Capabilities capabilities() const {
-        Capabilities result;
-        result.entities.fill(true);
-        for (auto type :
-             {ConstraintType::Coincident, ConstraintType::Horizontal, ConstraintType::Vertical, ConstraintType::Parallel, ConstraintType::Perpendicular,
-              ConstraintType::Tangent, ConstraintType::Equal, ConstraintType::Distance, ConstraintType::HorizontalDistance, ConstraintType::VerticalDistance,
-              ConstraintType::Length, ConstraintType::Radius, ConstraintType::Diameter, ConstraintType::Angle, ConstraintType::Fix, ConstraintType::Concentric,
-              ConstraintType::Symmetric, ConstraintType::Midpoint}) {
-            result.constraints[static_cast<size_t>(type)] = true;
-        }
-        result.updateEntities = result.removeEntities = result.updateConstraints = result.removeConstraints = true;
-        result.solve = result.drag = true;
-        // DCM's rank diagnosis counts only variables in its function system,
-        // omitting unconstrained geometry and eliminated aliases. It is not a
-        // sound whole-sketch DOF/conflict/redundancy report.
-        return result;
+    struct ConstraintCheckpoint {
+        dcm::DCMManager::Snapshot model;
+        std::map<ConstraintId, ConstraintRecord> constraints;
+    };
+
+    Result<ConstraintCheckpoint> constraintCheckpoint() const {
+        return checked<ConstraintCheckpoint>([&] { return ConstraintCheckpoint{manager_.snapshot(), constraints_}; });
+    }
+
+    Status restoreConstraintCheckpoint(ConstraintCheckpoint& checkpoint) {
+        return checkedStatus([&] {
+            manager_.restoreSnapshot(checkpoint.model);
+            constraints_.swap(checkpoint.constraints);
+        });
     }
 
     Status supportsConstraint(const ConstraintDefinition& definition) const {
-        if (!capabilities().supports(definition.type)) {
-            return Status::failure(ErrorCode::Unsupported, "This constraint is not supported by DCM");
-        }
         for (const auto& ref : definition.refs) {
             if (!entities_.contains(ref.entity)) {
                 return Status::failure(ErrorCode::NotFound, "Constraint entity was not found");
@@ -246,18 +243,6 @@ public:
             for (const auto& entity : entities) {
                 entities_.at(entity.id).construction = entity.construction;
             }
-        });
-    }
-
-    Status updatePointGuesses(std::span<const PointElement> points) {
-        return checkedStatus([&] {
-            std::vector<du::PointUpdateDescriptor> updates;
-            updates.reserve(points.size());
-            for (const auto& point : points) {
-                updates.push_back({pointHandle(point.ref), point.position.x, point.position.y});
-            }
-            // Ordinary GLOBAL edits project hard groups but do not solve.
-            manager_.updatePoints(updates);
         });
     }
 
@@ -421,13 +406,31 @@ public:
         });
     }
 
-    Result<SolveDiagnostics> solve() {
+    // DCM's rank diagnosis omits unconstrained geometry and eliminated aliases.
+    // Whole-sketch DOF/conflict/redundancy diagnostics therefore remain unavailable
+    // in both solve and drag results.
+    Result<SolveDiagnostics> solve(const SolveOptions& options) {
         return checked<SolveDiagnostics>([&] {
-            const bool converged = manager_.solve();
             SolveDiagnostics result;
-            // The existing general diagnostics workaround remains in place;
-            // tangency additionally checks its saved branch and support geometry.
-            result.status = (!hasTangencies() || converged) && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
+            bool converged;
+            if (options.pointTargets.empty()) {
+                converged = manager_.solve();
+            } else {
+                std::vector<dcm::PointTarget> targets;
+                targets.reserve(options.pointTargets.size());
+                for (const auto& target : options.pointTargets) {
+                    targets.push_back({pointHandle(target.point), target.position.x, target.position.y});
+                }
+                const auto policy = options.targetPolicy == TargetPolicy::Require ? dcm::TargetPolicy::Require : dcm::TargetPolicy::Prefer;
+                const auto solved = manager_.solveWithTargets(targets, policy);
+                converged = solved.converged;
+                result.targetsSatisfied = solved.targetsSatisfied;
+                result.usedFallback = solved.usedFallback;
+            }
+            result.status = converged && geometryValid() && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
+            if (result.status == SolveStatus::Failed && result.targetsSatisfied) {
+                result.targetsSatisfied = false;
+            }
             return result;
         });
     }
@@ -472,8 +475,22 @@ private:
                     return du::FigureDescriptor::line(value.start.x, value.start.y, value.end.x, value.end.y);
                 } else if constexpr (std::is_same_v<T, Circle2>) {
                     return du::FigureDescriptor::circle(value.center.x, value.center.y, value.radius);
-                } else {
+                } else if constexpr (std::is_same_v<T, Arc2>) {
                     return du::FigureDescriptor::arc(value.start.x, value.start.y, value.end.x, value.end.y, value.center.x, value.center.y);
+                } else if constexpr (std::is_same_v<T, NurbsCurve2>) {
+                    std::vector<double> coords;
+                    coords.reserve(value.controlPoints.size() * 2);
+                    for (const Point2& p : value.controlPoints) {
+                        coords.push_back(p.position.x);
+                        coords.push_back(p.position.y);
+                    }
+
+                    return du::FigureDescriptor::curve(
+                        static_cast<unsigned>(value.degree),
+                        std::move(coords),
+                        value.weights,
+                        value.knots,
+                        false);
                 }
             },
             geometry);
@@ -504,6 +521,18 @@ private:
             case du::FigureType::ET_ARC:
                 geometry = Arc2{{c.at(4), c.at(5)}, {c.at(0), c.at(1)}, {c.at(2), c.at(3)}};
                 break;
+            case du::FigureType::ET_CURVE2D: {
+                NurbsCurve2 curve;
+                curve.degree = static_cast<int>(descriptor.degree);
+                curve.weights = descriptor.weights;
+                curve.knots = descriptor.knots;
+                curve.controlPoints.reserve(c.size() / 2);
+                for (size_t i = 0; i < c.size(); i += 2) {
+                    curve.controlPoints.push_back({{c.at(i), c.at(i + 1)}});
+                }
+                geometry = std::move(curve);
+                break;
+            }
             default:
                 throw std::logic_error("Unknown DCM geometry kind");
         }
@@ -515,6 +544,9 @@ private:
         const auto descriptor = figure(handle);
         if (descriptor.type == du::FigureType::ET_POINT2D && ref.sub == SubElement::Whole) {
             return handle;
+        }
+        if (descriptor.type == du::FigureType::ET_CURVE2D && ref.sub == SubElement::Control) {
+            return descriptor.pointIds.at(ref.index);
         }
         if (ref.sub == SubElement::Start) {
             return descriptor.pointIds.at(0);
@@ -654,10 +686,6 @@ private:
             }
         }
         return converged;
-    }
-
-    bool hasTangencies() const {
-        return std::any_of(constraints_.begin(), constraints_.end(), [](const auto& item) { return item.second.definition.type == ConstraintType::Tangent; });
     }
 
     ConstraintDefinition resolveDefinition(ConstraintDefinition definition) const {
@@ -818,6 +846,8 @@ private:
                         add(du::RequirementDescriptor::pointLineDist(whole(0), whole(1), dist));
                     } else if (kind1 == EntityKind::Line && kind2 == EntityKind::Point) {
                         add(du::RequirementDescriptor::pointLineDist(whole(1), whole(0), dist));
+                    } else if (kind1 == EntityKind::Point && kind2 == EntityKind::Point) {
+                        add(du::RequirementDescriptor::pointPointDist(whole(0), whole(1), dist));
                     } else {
                         throw std::logic_error("Unsupported constraint passed DCM preflight");
                     }
@@ -851,7 +881,6 @@ private:
                     auto kind1 = entities_.at(definition.refs[0].entity).kind;
                     auto id1 = entities_.at(definition.refs[0].entity).handle;
                     auto type_subEt1 = definition.refs[0].sub;
-                    std::cout << "Diameter";
                     break;
                 }
                 case ConstraintType::Angle:
@@ -887,11 +916,37 @@ private:
                     break;
                 }
                 case ConstraintType::Symmetric: {
-                    if (entities_.at(definition.refs[2].entity).kind == EntityKind::Line && definition.refs[2].sub == SubElement::Whole) {
-                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(0), pointAt(1), whole(2)));
-                    } else {
+                    auto kind1 = entities_.at(definition.refs[0].entity).kind;
+                    auto id1 = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt1 = definition.refs[0].sub;
+
+                    auto kind2 = entities_.at(definition.refs[1].entity).kind;
+                    auto id2 = entities_.at(definition.refs[1].entity).handle;
+                    auto type_subEt2 = definition.refs[1].sub;
+
+                    auto kind3 = entities_.at(definition.refs[2].entity).kind;
+                    auto id3 = entities_.at(definition.refs[2].entity).handle;
+                    auto type_subEt3 = definition.refs[2].sub;
+
+                    bool firstIsPoint  = kind1 == EntityKind::Point || type_subEt1 != SubElement::Whole;
+                    bool firstIsLine   = kind1 == EntityKind::Line;
+
+                    bool secondIsPoint = kind2 == EntityKind::Point || type_subEt2 != SubElement::Whole;
+                    bool secondIsLine  = kind2 == EntityKind::Line;
+
+                    bool thirdIsPoint  = kind3 == EntityKind::Point || type_subEt3 != SubElement::Whole;
+                    bool thirdIsLine   = kind3 == EntityKind::Line;
+
+                    if (firstIsPoint && secondIsPoint && thirdIsPoint) {
                         add(du::RequirementDescriptor::symmetricAboutPoint(pointAt(0), pointAt(1), pointAt(2)));
+                    } else if (firstIsPoint && secondIsLine && thirdIsPoint) {
+                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(0), pointAt(2), id2));
+                    } else if (firstIsPoint && secondIsPoint && thirdIsLine) {
+                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(0), pointAt(1), id3));
+                    } else if (firstIsLine && secondIsPoint && thirdIsPoint) {
+                        add(du::RequirementDescriptor::symmetricAboutLine(pointAt(1), pointAt(2), id1));
                     }
+
                     break;
                 }
                 case ConstraintType::Concentric: {
@@ -915,6 +970,7 @@ private:
 
                     // point arc
                     // point line
+                    // line line
 
                     if ((kind1 == EntityKind::Line && type_subEt1 == SubElement::Whole) &&
                         (kind2 == EntityKind::Line && type_subEt2 == SubElement::Whole)) {
@@ -933,6 +989,22 @@ private:
                         if (kind2 == EntityKind::Point || type_subEt2 != SubElement::Whole) {
                             add(du::RequirementDescriptor::pointAtArcMidpoint(pointAt(1), whole(0)));
                         }
+                    }
+                    break;
+                }
+                case ConstraintType::Collinear: {
+                    auto kind1 = entities_.at(definition.refs[0].entity).kind;
+                    auto id1 = entities_.at(definition.refs[0].entity).handle;
+                    auto type_subEt1 = definition.refs[0].sub;
+
+                    auto kind2 = entities_.at(definition.refs[1].entity).kind;
+                    auto id2 = entities_.at(definition.refs[1].entity).handle;
+                    auto type_subEt2 = definition.refs[1].sub;
+
+                    if (kind1 == EntityKind::Line && kind2 == EntityKind::Line) {
+                        add(du::RequirementDescriptor::lineLineParallel(whole(0), whole(1)));
+                        add(du::RequirementDescriptor::pointOnLine(
+                            pointHandle({definition.refs[1].entity, SubElement::Start}), whole(0)));
                     }
                     break;
                 }
@@ -957,10 +1029,7 @@ private:
         }
     }
 
-    bool constraintsSatisfied() const {
-        // DCM can return true with no free variables even when constraints
-        // conflict. These read-only checks also reject invalid solver iterates
-        // and do not copy or synchronize a second live geometric model.
+    bool geometryValid() const {
         for (const auto& [id, record] : entities_) {
             const auto geometry = readEntity(id, record).geometry;
             const bool valid = std::visit(
@@ -974,16 +1043,28 @@ private:
                         return finite(value.start) && finite(value.end) && std::isfinite(size) && size > 0;
                     } else if constexpr (std::is_same_v<T, Circle2>) {
                         return finite(value.center) && std::isfinite(value.radius) && value.radius > 0;
-                    } else {
+                    } else if constexpr (std::is_same_v<T, Arc2>) {
                         const double radius = length(subtract(value.start, value.center));
                         return finite(value.center) && finite(value.start) && finite(value.end) && radius > 0 && length(subtract(value.start, value.end)) > 0 &&
                                near(length(subtract(value.end, value.center)), radius);
+                    } else {
+                        return true; // TODO
                     }
                 },
                 geometry);
             if (!valid) {
                 return false;
             }
+        }
+        return true;
+    }
+
+    bool constraintsSatisfied() const {
+        // DCM can return true with no free variables even when constraints
+        // conflict. These read-only checks also reject invalid solver iterates
+        // and do not copy or synchronize a second live geometric model.
+        if (!geometryValid()) {
+            return false;
         }
         for (const auto& [id, record] : constraints_) {
             const auto& definition = record.definition;
@@ -1106,8 +1187,6 @@ private:
 Sketch::Sketch() : impl_(std::make_unique<Impl>()) {}
 Sketch::~Sketch() = default;
 
-Capabilities Sketch::capabilities() const { return impl_->capabilities(); }
-
 Result<EntityId> Sketch::addEntity(const SketchGeometry& geometry, bool construction) {
     const EntityCreation input{geometry, construction};
     auto result = addEntities(std::span(&input, 1));
@@ -1186,7 +1265,7 @@ Status Sketch::moveEntities(std::span<const EntityId> ids, Vec2 offset) {
                     translate(g.end);
                 } else if constexpr (std::is_same_v<T, Circle2>) {
                     translate(g.center);
-                } else {
+                } else if constexpr (std::is_same_v<T, Arc2>) {
                     translate(g.center);
                     translate(g.start);
                     translate(g.end);
@@ -1202,9 +1281,6 @@ Status Sketch::setConstruction(EntityId id, bool construction) {
     if (id.get() <= 0) {
         return invalid("Entity ID must be positive");
     }
-    if (!capabilities().updateEntities) {
-        return Status::failure(ErrorCode::Unsupported, "Entity updates are unsupported");
-    }
     return impl_->setConstruction(id, construction);
 }
 
@@ -1215,14 +1291,10 @@ Result<std::vector<EntityId>> Sketch::addEntities(std::span<const EntityCreation
     if (input.empty()) {
         return Added::success({});
     }
-    const auto support = capabilities();
     for (const auto& item : input) {
         auto valid = validateGeometry(item.geometry);
         if (!valid) {
             return Added::failure(valid.error().code, valid.error().message);
-        }
-        if (!support.supports(entityKind(item.geometry))) {
-            return Added::failure(ErrorCode::Unsupported, "Entity kind is unsupported");
         }
     }
     const auto remaining = std::numeric_limits<int64_t>::max() - entityIds_.getLast().get();
@@ -1271,9 +1343,6 @@ Status Sketch::updateEntities(std::span<const EntityUpdate> input) {
         }
         records.push_back({item.id, item.geometry, item.construction.value_or(current.value().construction)});
     }
-    if (!capabilities().updateEntities) {
-        return Status::failure(ErrorCode::Unsupported, "Entity updates are unsupported");
-    }
     return impl_->updateEntities(records);
 }
 
@@ -1290,9 +1359,6 @@ Status Sketch::removeEntities(std::span<const EntityId> ids) {
         if (!current) {
             return Status::failure(current.error().code, current.error().message);
         }
-    }
-    if (!capabilities().removeEntities) {
-        return Status::failure(ErrorCode::Unsupported, "Entity removal is unsupported");
     }
     auto res = impl_->removeEntities(ids); // TODO
     push(); // TODO
@@ -1314,6 +1380,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         case ConstraintType::Equal:
         case ConstraintType::Concentric:
         case ConstraintType::Midpoint:
+        case ConstraintType::Collinear:
             count = 2;
             break;
         case ConstraintType::Horizontal:
@@ -1399,7 +1466,10 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             return Status::failure(target.error().code, target.error().message);
         }
         const auto kind = entityKind(target.value().geometry);
-        points[i] = pointLike(kind, ref.sub);
+        if (!detail::validGeometryRef(target.value().geometry, ref)) {
+            return invalid("Invalid sub-element or control point index");
+        }
+        points[i] = pointLike(target.value().geometry, ref);
         lines[i] = kind == EntityKind::Line && ref.sub == SubElement::Whole;
         circles[i] = (kind == EntityKind::Circle || kind == EntityKind::Arc) && ref.sub == SubElement::Whole;
         if (type == ConstraintType::Tangent) {
@@ -1432,6 +1502,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         case ConstraintType::Parallel:
         case ConstraintType::Perpendicular:
         case ConstraintType::Angle:
+        case ConstraintType::Collinear:
             valid = lines[0] && lines[1];
             break;
         case ConstraintType::Tangent:
@@ -1454,7 +1525,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             valid = points[0] || lines[0] || circles[0];
             break;
         case ConstraintType::Symmetric:
-            valid = points[0] && points[1] && (lines[2] || points[2]);
+            valid = true;//points[0] && points[1] && (lines[2] || points[2]);
             break;
     }
     if (!valid) {
@@ -1480,6 +1551,7 @@ Result<ConstraintId> Sketch::addConstraint(const ConstraintDefinition& definitio
 }
 
 Result<ConstraintId> Sketch::addConstraints(std::span<const ConstraintDefinition> definitions) {
+    ConstraintId lastId;
     for (auto& definition : definitions) {
         auto valid = supportsConstraint(definition);
         if (!valid) {
@@ -1493,103 +1565,76 @@ Result<ConstraintId> Sketch::addConstraints(std::span<const ConstraintDefinition
         if (!result) {
             return Result<ConstraintId>::failure(result.error().code, result.error().message);
         }
+        lastId = id;
     }
     push(); // TODO
     drag_ = false; // TODO
-    return Result<ConstraintId>::success(ConstraintId(-1));
+    return Result<ConstraintId>::success(lastId);
 }
 
-Result<ConstraintId> Sketch::addCoincident(GeometryRef a, GeometryRef b, CoincidentPlacement placement) {
-    using Added = Result<ConstraintId>;
-    const ConstraintDefinition definition{ConstraintType::Coincident, {a, b}, std::nullopt, std::nullopt};
-    if (placement == CoincidentPlacement::Preserve) {
-        return addConstraint(definition);
-    }
-    if (placement != CoincidentPlacement::Midpoint) {
-        return Added::failure(ErrorCode::InvalidArgument, "Unknown coincidence placement");
-    }
+Result<ConstraintSolveResult> Sketch::addConstraint(const ConstraintDefinition& definition, const SolveOptions& options) {
+    using Added = Result<ConstraintSolveResult>;
     const auto valid = supportsConstraint(definition);
     if (!valid) {
         return Added::failure(valid.error().code, valid.error().message);
     }
+    const auto targetsValid = validateSolveOptions(options);
+    if (!targetsValid) {
+        return Added::failure(targetsValid.error().code, targetsValid.error().message);
+    }
     if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
         return Added::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
     }
-    if (!capabilities().updateEntities) {
-        return Added::failure(ErrorCode::Unsupported, "Coincidence placement requires point editing");
+    auto before = snapshot();
+    if (!before) {
+        return Added::failure(before.error().code, before.error().message);
     }
-    const auto first = pointPosition(a);
-    const auto second = pointPosition(b);
-    if (!first || !second) {
-        const auto& error = !first ? first.error() : second.error();
+    auto checkpoint = impl_->constraintCheckpoint();
+    if (!checkpoint) {
+        return Added::failure(checkpoint.error().code, checkpoint.error().message);
+    }
+    const auto rollbackError = [&](const SketchError& error) {
+        const auto restored = impl_->restoreConstraintCheckpoint(checkpoint.value());
+        if (!restored) {
+            return Added::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
         return Added::failure(error.code, error.message);
-    }
-    if (!finite(first.value()) || !finite(second.value())) {
-        return Added::failure(ErrorCode::InvalidArgument, "Coincidence placement requires finite point positions");
-    }
-    const auto existing = constraints();
-    if (!existing) {
-        return Added::failure(existing.error().code, existing.error().message);
-    }
-
-    // Use public references to include transitive groups without solver handles.
-    using RefKey = std::pair<EntityId, SubElement>;
-    std::map<RefKey, size_t> indices;
-    DSU<size_t> groups;
-    const auto index = [&](GeometryRef ref) {
-        const auto [it, inserted] = indices.emplace(RefKey{ref.entity, ref.sub}, indices.size());
-        if (inserted) {
-            groups.makeSet(it->second);
-        }
-        return it->second;
     };
-    const size_t firstIndex = index(a);
-    const size_t secondIndex = index(b);
-    for (const auto& constraint : existing.value()) {
-        const auto& current = constraint.definition;
-        if (current.type == ConstraintType::Coincident) {
-            groups.unite(index(current.refs[0]), index(current.refs[1]));
+    // Keep allocated public IDs consumed even when the edit is rolled back.
+    const ConstraintId id(constraintIds_.generate().get());
+    const auto inserted = impl_->addConstraint({id, definition});
+    if (!inserted) {
+        return rollbackError(inserted.error());
+    }
+    const auto solved = impl_->solve(options);
+    if (!solved) {
+        return rollbackError(solved.error());
+    }
+    if (solved.value().status != SolveStatus::Converged) {
+        const auto restored = impl_->restoreConstraintCheckpoint(checkpoint.value());
+        if (!restored) {
+            return Added::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
         }
+        return Added::success({std::nullopt, solved.value()});
     }
-    const size_t firstGroup = groups.find(firstIndex);
-    const size_t secondGroup = groups.find(secondIndex);
-    if (firstGroup == secondGroup) {
-        return addConstraint(definition);
+    auto after = snapshot();
+    if (!after) {
+        return rollbackError(after.error());
     }
-
-    std::optional<Vec2> firstFixed;
-    std::optional<Vec2> secondFixed;
-    for (const auto& constraint : existing.value()) {
-        const auto& current = constraint.definition;
-        if (current.type != ConstraintType::Fix) {
-            continue;
-        }
-        const size_t group = groups.find(index(current.refs[0]));
-        if (group == firstGroup && !firstFixed) {
-            firstFixed = current.fixedPosition;
-        }
-        if (group == secondGroup && !secondFixed) {
-            secondFixed = current.fixedPosition;
-        }
+    // Record the exact pre-edit geometry, including any unrecorded solve, and
+    // the final solved state. No insertion-only or failed state enters history.
+    if (undo_.empty()) {
+        undo_.push_back(std::move(before.value()));
+    } else {
+        undo_.back() = std::move(before.value());
     }
-    if (firstFixed && secondFixed) {
-        // Preserve both anchors, leaving any conflict for explicit solving.
-        return addConstraint(definition);
+    undo_.push_back(std::move(after.value()));
+    if (undo_.size() > static_cast<size_t>(maxSteps_)) {
+        undo_.pop_front();
     }
-    const Vec2 midpoint{std::midpoint(first.value().x, second.value().x), std::midpoint(first.value().y, second.value().y)};
-    const Vec2 target = firstFixed ? *firstFixed : secondFixed ? *secondFixed : midpoint;
-    std::vector<PointElement> guesses;
-    for (const auto& [ref, i] : indices) {
-        const size_t group = groups.find(i);
-        if ((group == firstGroup && !firstFixed) || (group == secondGroup && !secondFixed)) {
-            guesses.push_back({{ref.first, ref.second}, target});
-        }
-    }
-    const auto prepared = impl_->updatePointGuesses(guesses);
-    if (!prepared) {
-        return Added::failure(prepared.error().code, prepared.error().message);
-    }
-    return addConstraint(definition);
+    redo_.clear();
+    drag_ = false;
+    return Added::success({id, solved.value()});
 }
 
 Status Sketch::updateConstraint(ConstraintId id, const ConstraintDefinition& definition) {
@@ -1606,9 +1651,6 @@ Status Sketch::updateConstraint(ConstraintId id, const ConstraintDefinition& def
     if (!valid) {
         return valid;
     }
-    if (!capabilities().updateConstraints) {
-        return Status::failure(ErrorCode::Unsupported, "Constraint updates are unsupported");
-    }
     return impl_->updateConstraint({id, resolved});
 }
 
@@ -1616,9 +1658,6 @@ Status Sketch::removeConstraint(ConstraintId id) {
     auto current = constraint(id);
     if (!current) {
         return Status::failure(current.error().code, current.error().message);
-    }
-    if (!capabilities().removeConstraints) {
-        return Status::failure(ErrorCode::Unsupported, "Constraint removal is unsupported");
     }
     return impl_->removeConstraint(id);
 }
@@ -1647,10 +1686,10 @@ Result<Vec2> Sketch::pointPosition(GeometryRef ref) const {
     if (!current) {
         return Result<Vec2>::failure(current.error().code, current.error().message);
     }
-    if (!pointLike(entityKind(current.value().geometry), ref.sub)) {
+    if (!pointLike(current.value().geometry, ref)) {
         return Result<Vec2>::failure(ErrorCode::InvalidArgument, "A point-like reference is required");
     }
-    return Result<Vec2>::success(detail::geometryPointPosition(current.value().geometry, ref.sub));
+    return Result<Vec2>::success(detail::geometryPointPosition(current.value().geometry, ref));
 }
 Result<std::vector<PointElement>> Sketch::pointElements() const { return pointElements(PointElementScope::All); }
 Result<std::vector<PointElement>> Sketch::pointElements(PointElementScope scope) const {
@@ -1682,11 +1721,33 @@ Result<size_t> Sketch::entityCount(EntityKind kind) const {
 }
 size_t Sketch::constraintCount() const { return impl_->constraintCount(); }
 
-Result<SolveDiagnostics> Sketch::solve() {
-    if (!capabilities().solve) {
-        return Result<SolveDiagnostics>::failure(ErrorCode::Unsupported, "Solving is unsupported");
+Status Sketch::validateSolveOptions(const SolveOptions& options) const {
+    if (options.targetPolicy != TargetPolicy::Require && options.targetPolicy != TargetPolicy::Prefer) {
+        return invalid("Unknown target policy");
     }
-    return impl_->solve();
+    std::map<GeometryRef, Vec2> targets;
+    for (const auto& target : options.pointTargets) {
+        if (!finite(target.position)) {
+            return invalid("Solve target must be finite");
+        }
+        const auto position = pointPosition(target.point);
+        if (!position) {
+            return Status::failure(position.error().code, position.error().message);
+        }
+        const auto [it, inserted] = targets.emplace(target.point, target.position);
+        if (!inserted && it->second != target.position) {
+            return invalid("Conflicting targets for the same point");
+        }
+    }
+    return Status::success();
+}
+
+Result<SolveDiagnostics> Sketch::solve(const SolveOptions& options) {
+    const auto valid = validateSolveOptions(options);
+    if (!valid) {
+        return Result<SolveDiagnostics>::failure(valid.error().code, valid.error().message);
+    }
+    return impl_->solve(options);
 }
 
 Result<SolveDiagnostics> Sketch::drag(const DragRequest& request, DragOptions options) {
@@ -1701,7 +1762,7 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
     if (requests.empty()) {
         return Result<SolveDiagnostics>::success(SolveDiagnostics{});
     }
-    std::set<std::pair<EntityId, SubElement>> points;
+    std::set<GeometryRef> points;
     for (const auto& request : requests) {
         if (!finite(request.target)) {
             return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Drag target must be finite");
@@ -1710,15 +1771,12 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
         if (!target) {
             return Result<SolveDiagnostics>::failure(target.error().code, target.error().message);
         }
-        if (!pointLike(entityKind(target.value().geometry), request.point.sub)) {
+        if (!pointLike(target.value().geometry, request.point)) {
             return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Drag requires a point-like reference");
         }
-        if (!points.emplace(request.point.entity, request.point.sub).second) {
+        if (!points.insert(request.point).second) {
             return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Duplicate drag point");
         }
-    }
-    if (!capabilities().drag) {
-        return Result<SolveDiagnostics>::failure(ErrorCode::Unsupported, "Dragging is unsupported");
     }
     // TODO
     if (!drag_) {
@@ -1764,9 +1822,6 @@ Status Sketch::installState(const SketchSnapshot& state) {
     auto candidate = Sketch();
     auto& staging = candidate;
     for (const auto& e : state.entities) {
-        if (!staging.capabilities().supports(entityKind(e.geometry))) {
-            return Status::failure(ErrorCode::Unsupported, "Snapshot contains unsupported entity kind");
-        }
         auto added = staging.impl_->addEntity(e);
         if (!added) {
             return added;

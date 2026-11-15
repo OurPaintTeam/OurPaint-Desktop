@@ -1,10 +1,9 @@
 #ifndef OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 #define OURPAINT_RENDERER_VIEWPORT_CONTROLLER_H_
 
-#include "../../core/Document.h"
-#include "../editor/SketchEditor.h"
-#include "../platform/IViewportHost.h"
-#include "../platform/InputEvents.h"
+#include "Document.h"
+#include "SketchEditor.h"
+#include "InputEvents.h"
 #include "AxisTexts.h"
 #include "Camera2D.h"
 #include "IRenderer.h"
@@ -12,7 +11,7 @@
 #include "OpenGL2dRenderer.h"
 #include "RenderScene.h"
 #include "ViewportStyle.h"
-#include "render/RenderSceneBuilder.h"
+#include "RenderSceneBuilder.h"
 
 namespace app {
 struct ConstraintPresentationState;
@@ -20,7 +19,7 @@ struct ConstraintPresentationState;
 
 class ViewportController : public IViewportController {
 public:
-    ViewportController(Camera2D& camera, OverlayModel& overlay, SketchEditor& session, Document& document, const app::ViewportStyle& style,
+    ViewportController(Camera2D& camera, OverlayModel& overlay, app::SketchEditor& session, Document& document, const app::ViewportStyle& style,
                        app::ConstraintLayout& constraintLayout, const app::ConstraintPresentationState& constraintPresentation);
 
     bool onResize     (const input::ResizeEvent& e)      override;
@@ -39,7 +38,7 @@ private:
 
     Camera2D& camera2D_;
     OverlayModel& overlay_;
-    SketchEditor& editorSession_;
+    app::SketchEditor& editorSession_;
     Document& document_;
     app::ConstraintLayout& constraintLayout_;
     const app::ConstraintPresentationState& constraintPresentation_;

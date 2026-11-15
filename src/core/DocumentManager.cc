@@ -1,121 +1,79 @@
 #include "DocumentManager.h"
 
+#include <algorithm>
 #include <stdexcept>
+#include <utility>
 
 #include "Document.h"
-#include "saveload/DocumentSaveLoad.h"
+
+DocumentManager::DocumentManager() = default;
+DocumentManager::~DocumentManager() = default;
 
 Document* DocumentManager::at(DocumentId index) const {
-    if (index < documents.size()) {
-        return documents[index];
+    if (index < documents_.size()) {
+        return documents_[index].get();
     }
     return nullptr;
 }
 
 Document* DocumentManager::at(const std::string& documentName) const {
-    for (auto& document : documents) {
-        if (document->name() == documentName) {
-            return document;
-        }
-    }
-    return nullptr;
+    return at(findIdByName(documentName));
 }
 
 DocumentId DocumentManager::findIdByName(const std::string& documentName) const {
-    size_t i = 0;
-    for (; i < documents.size(); ++i) {
-        if (documents[i]->name() == documentName) {
+    for (size_t i = 0; i < documents_.size(); ++i) {
+        const auto& document = documents_[i];
+        if (document && std::as_const(*document).name() == documentName) {
             return i;
         }
     }
-    return -1;
+    return InvalidDocumentId;
 }
 
 size_t DocumentManager::count() const {
-    return documents.size();
+    return std::count_if(documents_.begin(), documents_.end(), [](const auto& document) { return document != nullptr; });
 }
 
 DocumentId DocumentManager::createNewDocument(const std::string& documentName) {
-    Document* document = new Document(documentName);
-    documents.push_back(document);
-    return documents.size() - 1;
+    return openDocument(std::make_unique<Document>(documentName));
 }
 
-DocumentId DocumentManager::openDocument(const std::string& path) {
-    Document* document = nullptr;
-    if (loadDocumentFromFile(path, document) == false) {
-        return -1;
+DocumentId DocumentManager::openDocument(std::unique_ptr<Document> document) {
+    if (!document) {
+        throw std::invalid_argument("Cannot adopt a null document");
     }
-    documents.push_back(document);
-    return documents.size() - 1;
+    documents_.push_back(std::move(document));
+    return documents_.size() - 1;
 }
 
-bool DocumentManager::closeDocument(const DocumentId index, const bool autoSave) {
-    if (index >= count()) {
+bool DocumentManager::closeDocument(DocumentId index) {
+    if (!at(index)) {
         return false;
     }
-    Document* document = documents[index];
-    if (autoSave) {
-        if (saveDocumentToFile(document->path(), document) == false) {
-            return false;
-        }
-    }
-    delete document;
-    return true;
-}
-bool DocumentManager::closeDocument(const std::string& name, bool autoSave) {
-    Document* document = nullptr;
-    for (int i = 0; i < count(); i++) {
-        if (documents[i]->name() == name) {
-            document = documents[i];
-        }
-    }
-    if (document && autoSave) {
-        if (saveDocumentToFile(document->path(), document) == false) {
-            return false;
-        }
-    }
-    delete document;
+    documents_[index].reset();
     return true;
 }
 
-bool DocumentManager::isDocumentSaved(const DocumentId index) const {
-    if (index >= count()) {
-
-        return false;
-    }
-    const Document* document = documents[index];
-    return !document->isDirty();
+bool DocumentManager::closeDocument(const std::string& name) {
+    return closeDocument(findIdByName(name));
 }
 
-bool DocumentManager::isDocumentSaved(const std::string& name) const {
-    const Document* document = nullptr;
-    for (int i = 0; i < count(); i++) {
-        if (documents[i]->name() == name) {
-            document = documents[i];
-        }
-    }
+bool DocumentManager::isDocumentSaved(DocumentId index) const {
+    const Document* document = at(index);
     return document && !document->isDirty();
 }
 
+bool DocumentManager::isDocumentSaved(const std::string& name) const {
+    return isDocumentSaved(findIdByName(name));
+}
+
 bool DocumentManager::isAllDocumentsSaved() const {
-    for (const Document* document : documents) {
-        if (document->isDirty() == true) {
-            return false;
-        }
+    return std::all_of(documents_.begin(), documents_.end(), [](const auto& document) { return !document || !document->isDirty(); });
+}
+
+bool DocumentManager::closeAllDocuments() {
+    for (auto& document : documents_) {
+        document.reset();
     }
     return true;
 }
-
-bool DocumentManager::closeAllDocuments(const bool autoSave) {
-    for (const Document* document : documents) {
-        if (autoSave) {
-            if (saveDocumentToFile(document->path(), document) == false) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-

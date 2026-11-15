@@ -1,6 +1,7 @@
 #ifndef OURPAINT_HEADERS_DOCUMENT_H_
 #define OURPAINT_HEADERS_DOCUMENT_H_
 
+#include <memory>
 #include <string>
 #include "sketch/Sketch.h"
 

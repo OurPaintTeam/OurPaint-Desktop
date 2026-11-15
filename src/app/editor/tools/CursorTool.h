@@ -9,35 +9,46 @@
 #include "IInteractionTool.h"
 #include "snapping/SnapSystem.h"
 
-using namespace core;
+namespace app {
 
-class ConstraintActions;
+using namespace core;
 
 class CursorTool : public IInteractionTool {
 public:
-    explicit CursorTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, Cpu2dPicker& picker, OverlayModel& overlay,
-                        ConstraintActions& constraintActions, const app::ConstraintLayout& constraintLayout,
-                        app::ConstraintPresentationState& constraintPresentation);
+    explicit CursorTool(Document& document,
+                        Camera2D& camera,
+                        snap::SnapSystem& snap,
+                        Cpu2dPicker& picker,
+                        OverlayModel& overlay,
+                        const ConstraintLayout& constraintLayout,
+                        ConstraintPresentationState& constraintPresentation);
 
-    std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
-    std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
-    std::optional<ActionReport> onKey(const input::KeyEvent& e) override;
-    ToolCancellation cancel() override;
+    void onMouseMove(const input::MouseMoveEvent& e) override;
+    void onMouseButton(const input::MouseButtonEvent& e) override;
+    void onKey(const input::KeyEvent& e) override;
+    bool cancel() override;
 
 private:
     void copySelection();
-    std::optional<ActionReport> pasteSelection();
+    void pasteSelection();
     sketch::Status prepareDragSelection(std::span<const sketch::GeometryRef> refs);
     sketch::Result<sketch::SolveDiagnostics> moveSelection(sketch::Vec2 offset);
-    std::optional<ActionReport> finishDrag();
+    void finishDrag();
     std::optional<DimensionPickResult> pickDimension(glm::dvec2 position) const;
     void beginDimensionDrag(const DimensionPickResult& hit, glm::dvec2 position);
     void updateDimensionDrag(glm::dvec2 position);
     void endDimensionDrag(bool commit);
 
-    ActionReport tryApplyPointOnPointNearCursor(double xLogic, double yLogic);
+    void tryApplyPointOnPointConstraintNearCursor(double xLogic, double yLogic);
 
-    enum class State { Idle, Pressed, PressedDimension, DraggingDimension, DraggingSelection, MarqueeSelection };
+    enum class State {
+        Idle,
+        Pressed,
+        PressedDimension,
+        DraggingDimension,
+        DraggingSelection,
+        MarqueeSelection
+    };
 
     State state_ = State::Idle;
     sketch::Sketch& sketch_;
@@ -45,9 +56,8 @@ private:
     glm::dvec2 lastPos_{};
     glm::dvec2 pressWorldPos_{};
     glm::ivec2 lastScreenPos_{};
-    ConstraintActions& constraintActions_;
-    const app::ConstraintLayout& constraintLayout_;
-    app::ConstraintPresentationState& constraintPresentation_;
+    const ConstraintLayout& constraintLayout_;
+    ConstraintPresentationState& constraintPresentation_;
 
     struct DimensionDrag {
         sketch::ConstraintId constraint;
@@ -59,10 +69,6 @@ private:
 
     std::vector<sketch::GeometryRef> marqueeBaseSelection_;
     std::vector<sketch::DragRequest> dragTargets_;
-    std::optional<ActionReport> dragReport_;
-    // Detached values recognize an unchanged gesture; they are never used for rollback.
-    std::optional<std::vector<sketch::SketchEntity>> dragInitialEntities_;
-    std::optional<std::vector<sketch::SketchConstraint>> dragInitialConstraints_;
     bool dragAttempted_ = false;
     bool dragStopped_ = false;
 
@@ -76,5 +82,7 @@ private:
     };
     ClipboardFragment data_;
 };
+
+}
 
 #endif // ! OURPAINT_APPLICATION_CURSOR_TOOL_H_

@@ -11,11 +11,10 @@ class PointTool : public IInteractionTool {
 public:
     explicit PointTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker);
 
-    std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
-    std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
-    std::optional<ActionReport> onKey(const input::KeyEvent& e) override;
-    ToolCancellation cancel() override;
-
+    void onMouseMove(const input::MouseMoveEvent& e) override;
+    void onMouseButton(const input::MouseButtonEvent& e) override;
+    void onKey(const input::KeyEvent& e) override;
+    bool cancel() override;
 };
 
 #endif // ! OURPAINT_APPLICATION_POINT_TOOL_H_

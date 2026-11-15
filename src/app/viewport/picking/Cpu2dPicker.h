@@ -41,16 +41,19 @@ public:
     std::optional<PickResult> pickPointAtScreenLogical(double screenX, double screenY) const;
     std::optional<PickResult> pickLineAtScreenLogical(double screenX, double screenY) const;
     std::optional<PickResult> pickCircleAtScreenLogical(double screenX, double screenY) const;
+    std::optional<PickResult> pickArcAtScreenLogical(double screenX, double screenY) const;
 
     std::optional<PickResult> pickAtScreenFramebuffer(double screenX, double screenY) const;
     std::optional<PickResult> pickPointAtScreenFramebuffer(double screenX, double screenY) const;
     std::optional<PickResult> pickLineAtScreenFramebuffer(double screenX, double screenY) const;
     std::optional<PickResult> pickCircleAtScreenFramebuffer(double screenX, double screenY) const;
+    std::optional<PickResult> pickArcAtScreenFramebuffer(double screenX, double screenY) const;
 
     std::optional<PickResult> pickAtWorld(double worldX, double worldY) const;
     std::optional<PickResult> pickPointAtWorld(double worldX, double worldY) const;
     std::optional<PickResult> pickLineAtWorld(double worldX, double worldY) const;
     std::optional<PickResult> pickCircleAtWorld(double worldX, double worldY) const;
+    std::optional<PickResult> pickArcAtWorld(double worldX, double worldY) const;
 
 private:
     std::optional<PickResult> pickAt(double worldX, double worldY) const;

@@ -1,7 +1,5 @@
 #include "ArcTool.h"
 
-#include <variant>
-
 #include "../../../core/Document.h"
 #include "RenderScene.h"
 #include "objects/Objects.h"
@@ -24,26 +22,24 @@ void ArcTool::reset() {
     overlay_.clearPreview();
 }
 
-std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
+void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
     snap::SnapRequest request;
 
-    if (mode_ == Mode::ThreePoints) {
-        if (step_ == Step::WaitingFirstInput) {
-            request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ActionType::Arc, snap::DrawState::Start};
-        } else if (step_ == Step::WaitingSecondInput) {
-            request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y},
-                                        snap::ActionType::Arc,
-                                        snap::DrawState::Body,
-                                        {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}}};
-        } else if (step_ == Step::WaitingThirdInput) {
-            request = snap::SnapRequest{
-                core::sketch::Vec2{cursor.x, cursor.y},
-                snap::ActionType::Arc,
-                snap::DrawState::End,
-                {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}, core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}};
-        }
+    if (step_ == Step::WaitingFirstInput) {
+        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y}, snap::ToolType::Circle, snap::DrawState::Idle};
+    } else if (step_ == Step::WaitingSecondInput) {
+        request = snap::SnapRequest{core::sketch::Vec2{cursor.x, cursor.y},
+                                    snap::ToolType::Circle,
+                                    snap::DrawState::FirstPoint,
+                                    {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}}};
+    } else if (step_ == Step::WaitingThirdInput) {
+        request = snap::SnapRequest{
+            core::sketch::Vec2{cursor.x, cursor.y},
+            snap::ToolType::Point,
+            snap::DrawState::FirstPoint,
+            {core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}}, core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}}}};
     }
 
     snapVisual(request);
@@ -53,7 +49,7 @@ std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e)
             if (step_ == Step::WaitingThirdInput) {
                 Arc ca = buildArcFromThreePoints(points_[0], points_[1], cursor);
                 if (!ca.valid) {
-                    return std::nullopt;
+                    return;
                 }
                 if (!overlay_.arcs_.empty()) {
                     overlay_.arcs_[0].r = ca.r;
@@ -71,12 +67,10 @@ std::optional<ActionReport> ArcTool::onMouseMove(const input::MouseMoveEvent& e)
             }
             break;
     }
-    return std::nullopt;
 }
-
-std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
+void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
-        return std::nullopt;
+        return;
     }
 
     glm::dvec2 cursor = screenToWorld(e.x, e.y);
@@ -86,180 +80,40 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
         cursor.y = snap_result_.point.position.y;
     }
 
-    auto applyArcConstraints = [&](ActionReport& report, const snap::SnapResult& startSnap, const snap::SnapResult& endSnap) -> bool {
-        if (report.entityIds.empty()) {
-            return false;
-        }
-
-        const auto arcId = report.entityIds[0];
-        bool needsSolve = false;
-
-        using SK = snap::SnapKind;
-        using CT = core::sketch::ConstraintType;
-        using SE = core::sketch::SubElement;
-        using Ref = core::sketch::GeometryRef;
-
-        // Cache entities once instead of retrieving them for every object.
-        const auto entities = document_.sketch().entities();
-
-        auto isStandalonePoint = [&](core::sketch::EntityId id) {
-            if (!entities) {
-                return false;
-            }
-
-            for (const auto& entity : entities.value()) {
-                if (entity.id == id) {
-                    return std::holds_alternative<core::sketch::Point2>(entity.geometry);
-                }
-            }
-
-            return false;
-        };
-
-        // Avoid adding the same constraint more than once.
-        std::vector<core::sketch::ConstraintDefinition> appliedConstraints;
-
-        auto addConstraint = [&](CT type, std::vector<Ref> refs) {
-            core::sketch::ConstraintDefinition def;
-            def.type = type;
-            def.refs = std::move(refs);
-
-            const auto duplicate = std::find_if(appliedConstraints.begin(), appliedConstraints.end(), [&](const auto& existing) {
-                if (existing.type != def.type || existing.refs.size() != def.refs.size()) {
-                    return false;
-                }
-
-                for (std::size_t i = 0; i < existing.refs.size(); ++i) {
-                    if (existing.refs[i] != def.refs[i] || existing.refs[i].sub != def.refs[i].sub) {
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-
-            if (duplicate != appliedConstraints.end()) {
-                return;
-            }
-
-            if (!document_.sketch().supportsConstraint(def)) {
-                return;
-            }
-
-            auto c = document_.sketch().addConstraint(def);
-
-            if (c) {
-                appliedConstraints.push_back(std::move(def));
-                report.constraintIds.push_back(c.value());
-                report.requestedConstraints++;
-                needsSolve = true;
-            } else {
-                report.operationError = c.error();
-            }
-        };
-
-        auto applySnapKind = [&](SK type, const std::vector<Ref>& objects, SE arcSub) {
-            const Ref arcRef{arcId, arcSub};
-
-            switch (type) {
-                case SK::Midpoint:
-                    if (arcSub == SE::Start || arcSub == SE::End) {
-                        for (const auto& object : objects) {
-                            addConstraint(CT::Midpoint, {arcRef, object});
-                        }
-                    }
-                    break;
-
-                case SK::Coincident:
-                    // Arc endpoint/body to a point is Coincident. For the arc body
-                    // against another curve body, the intended relation is Tangent,
-                    // not Coincident(Whole, Whole).
-                    for (const auto& object : objects) {
-                        if (arcSub == SE::Whole && object.sub == SE::Whole && !isStandalonePoint(object.entity)) {
-                            addConstraint(CT::Tangent, {arcRef, object});
-                        } else {
-                            addConstraint(CT::Coincident, {arcRef, object});
-                        }
-                    }
-                    break;
-
-                case SK::ExtendedIntersection:
-                case SK::Intersection:
-                case SK::VirtualIntersection:
-                    if (arcSub == SE::Start || arcSub == SE::End) {
-                        for (const auto& object : objects) {
-                            addConstraint(CT::Coincident, {arcRef, object});
-                        }
-                    }
-                    break;
-
-                case SK::Tangent:
-                    // Tangency is a property of the whole arc, not of an endpoint.
-                    // The caller passes SubElement::Whole only for secondSnap_
-                    // (middle point on the arc body), which is the only place
-                    // where a Tangent snap makes sense.
-                    if (arcSub != SE::Whole) {
-                        return;
-                    }
-
-                    for (const auto& object : objects) {
-                        addConstraint(CT::Tangent, {arcRef, object});
-                    }
-                    break;
-
-                case SK::Parallel:
-                    if (arcSub == SE::Whole) {
-                        for (const auto& object : objects) {
-                            addConstraint(CT::Parallel, {arcRef, object});
-                        }
-                    }
-                    break;
-
-                case SK::Perpendicular:
-                    if (arcSub == SE::Whole) {
-                        for (const auto& object : objects) {
-                            addConstraint(CT::Perpendicular, {arcRef, object});
-                        }
-                    }
-                    break;
-
-                case SK::Horizontal:
-                    if (arcSub == SE::Whole) {
-                        addConstraint(CT::Horizontal, {arcRef});
-                    }
-                    break;
-
-                case SK::Vertical:
-                    if (arcSub == SE::Whole) {
-                        addConstraint(CT::Vertical, {arcRef});
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-        };
-
-        auto tryAddConstraint = [&](const snap::SnapResult& snap, SE arcSub) {
-            if (!snap.snapped) {
-                return;
-            }
-
-            // Process every object in the primary snap.
-            applySnapKind(snap.type, snap.objects, arcSub);
-
-            // Process all additional simultaneous relations.
-            for (const auto& relation : snap.relations) {
-                applySnapKind(relation.type, relation.objects, arcSub);
-            }
-        };
-
-        tryAddConstraint(startSnap, SE::Start);
-        tryAddConstraint(secondSnap_, SE::Whole);
-        tryAddConstraint(endSnap, SE::End);
-
-        return needsSolve;
-    };
+    // auto applyArcConstraints = [&](ActionReport& report, const snap::SnapResult& startSnap, const snap::SnapResult& endSnap) -> bool {
+    //     if (report.entityIds.empty()) {
+    //         return false;
+    //     }
+    //     const auto arcId = report.entityIds[0];
+    //     bool needsSolve = false;
+    //
+    //     auto tryAddConstraint = [&](const snap::SnapResult& snap, core::sketch::SubElement arcSub) {
+    //         if (!snap.snapped || snap.objects.empty()) {
+    //             return;
+    //         }
+    //
+    //         core::sketch::ConstraintDefinition def;
+    //         def.type = core::sketch::ConstraintType::Coincident;
+    //         def.refs = {{arcId, arcSub}, snap.objects[0]};
+    //
+    //         if (document_.sketch().supportsConstraint(def)) {
+    //             auto c = document_.sketch().addConstraint(def);
+    //             if (c) {
+    //                 report.constraintIds.push_back(c.value());
+    //                 report.requestedConstraints++;
+    //                 needsSolve = true;
+    //             } else {
+    //                 report.operationError = c.error();
+    //             }
+    //         }
+    //     };
+    //
+    //     tryAddConstraint(startSnap, core::sketch::SubElement::Start);
+    //     tryAddConstraint(secondSnap_, core::sketch::SubElement::Whole);
+    //     tryAddConstraint(endSnap, core::sketch::SubElement::End);
+    //
+    //     return needsSolve;
+    // };
 
     switch (mode_) {
         case Mode::ThreePoints:
@@ -286,40 +140,36 @@ std::optional<ActionReport> ArcTool::onMouseButton(const input::MouseButtonEvent
                 sketch::Vec2 start = {a.cx + a.r * std::cos(a.startAngle), a.cy + a.r * std::sin(a.startAngle)};
                 sketch::Vec2 end = {a.cx + a.r * std::cos(a.endAngle), a.cy + a.r * std::sin(a.endAngle)};
 
-                auto report = ActionReport::creation(ActionKind::CreateArc, document_.sketch().addArc(center, start, end));
+                document_.sketch().addArc(center, start, end);
 
                 double dist0ToStart = glm::distance(points_[0], glm::dvec2(start.x, start.y));
                 double dist0ToEnd = glm::distance(points_[0], glm::dvec2(end.x, end.y));
 
                 bool isSwapped = dist0ToStart > dist0ToEnd;
 
-                bool needsSolve = applyArcConstraints(report, isSwapped ? thirdSnap_ : firstSnap_, isSwapped ? firstSnap_ : thirdSnap_);
+                //bool needsSolve = applyArcConstraints(report, isSwapped ? thirdSnap_ : firstSnap_, isSwapped ? firstSnap_ : thirdSnap_);
 
-                if (needsSolve) {
-                    report.recordSolve(document_.sketch().solve());
-                }
+                // if (needsSolve) {
+                //     document_.sketch().solve();
+                // }
 
                 reset();
-                return report;
             }
             break;
     }
-
-    return std::nullopt;
 }
 
-std::optional<ActionReport> ArcTool::onKey(const input::KeyEvent& e) {
+void ArcTool::onKey(const input::KeyEvent& e) {
     (void)e;
-    return std::nullopt;
 }
 
-ToolCancellation ArcTool::cancel() {
+bool ArcTool::cancel() {
     if (points_.empty()) {
         return {};
     }
 
     reset();
-    return {true, std::nullopt};
+    return false;
 }
 
 glm::dvec2 ArcTool::screenToWorld(double x, double y) const { return camera_.screenLogicalToWorld({x, y}); }

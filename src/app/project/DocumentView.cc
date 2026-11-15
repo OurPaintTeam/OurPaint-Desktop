@@ -1,8 +1,7 @@
 #include "DocumentView.h"
 
-DocumentView::DocumentView(Document& document, IViewportHost& host)
+DocumentView::DocumentView(Document& document)
     : document_(document),
-      host_(host),
       camera2D_(),
       overlay_(),
       viewportStyle_(app::ViewportStyle::makeDefault()),

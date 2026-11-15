@@ -40,6 +40,7 @@ ViewportStyle ViewportStyle::makeDefault() {
     }
 
     {
+        style.constraintHoverColor = {1.0f, 127.0f / 255.0f, 39.0f / 255.0f, 1.0f};
         style.constraintMarker.stroke.color = {1.0f, 127.0f / 255.0f, 39.0f / 255.0f, 1.0f};
         style.constraintMarker.stroke.widthPx = 0.5f;
         style.constraintMarker.stroke.edgeSoftnessPx = 1.5f;

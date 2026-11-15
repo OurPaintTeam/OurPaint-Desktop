@@ -31,10 +31,10 @@ public:
 
     void setMode(Mode mode);
 
-    std::optional<ActionReport> onMouseMove(const input::MouseMoveEvent& e) override;
-    std::optional<ActionReport> onMouseButton(const input::MouseButtonEvent& e) override;
-    std::optional<ActionReport> onKey(const input::KeyEvent& e) override;
-    ToolCancellation cancel() override;
+    void onMouseMove(const input::MouseMoveEvent& e) override;
+    void onMouseButton(const input::MouseButtonEvent& e) override;
+    void onKey(const input::KeyEvent& e) override;
+    bool cancel() override;
 
 private:
     enum class Step {
@@ -53,7 +53,7 @@ private:
         double r;
     };
     static std::optional<Circle> buildCircleFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2);
-    ActionReport pushCircleToModel(const Circle& c) const;
+    void pushCircleToModel(const Circle& c) const;
 
 
 

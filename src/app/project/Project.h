@@ -1,30 +1,34 @@
 #ifndef OURPAINT_APPLICATION_PROJECT_H_
 #define OURPAINT_APPLICATION_PROJECT_H_
 
-#include <cstdint>
 #include <filesystem>
+#include <functional>
+#include <string>
 #include <vector>
+
+class Document;
 
 namespace app {
 
-class Project {
-public:
-    Project(std::string name);
-
-    std::string name() const;
-
-    const std::vector<DocumentId>& documents() const;
-
-    void addDocument(DocumentId id);
-    void removeDocument(DocumentId id);
-
-private:
-    std::string name_;
-    std::filesystem::path projectPath_;
-
-    std::vector<DocumentId> documents_;
+struct ProjectMetadata {
+    // Empty for an unsaved description; published IDs are 32 lowercase hex digits.
+    std::string id;
+    std::string name;
 };
 
-}
+struct ProjectDocument {
+    std::filesystem::path filename;
+    std::reference_wrapper<const Document> document;
+};
 
-#endif // ! OURPAINT_APPLICATION_PROJECT_H_
+// Borrowed description, not another editable document model. Documents must
+// outlive every operation using the description. Filenames do not track names.
+struct Project {
+    std::filesystem::path root;
+    ProjectMetadata metadata;
+    std::vector<ProjectDocument> documents;
+};
+
+}  // namespace app
+
+#endif  // OURPAINT_APPLICATION_PROJECT_H_

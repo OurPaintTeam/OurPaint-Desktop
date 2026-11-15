@@ -1,5 +1,4 @@
 #include "Document.h"
-#include "Sketch.h"
 
 Document::Document(const std::string& documentName) {
     documentName_ = documentName;

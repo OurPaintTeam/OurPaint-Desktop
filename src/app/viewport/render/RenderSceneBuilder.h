@@ -48,6 +48,8 @@ private:
     void buildConstraintsMarkers();
     void buildSnapFeedback();
 
+    void testBuild();
+
 private:
     Document& document_;
     sketch::Sketch& sketch_;

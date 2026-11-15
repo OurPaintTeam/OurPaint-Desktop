@@ -1,13 +1,13 @@
 #ifndef OURPAINT_CORE_SKETCH_TYPES_H_
 #define OURPAINT_CORE_SKETCH_TYPES_H_
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <span>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -34,7 +34,7 @@ struct ConstraintTag;
 using EntityId = SketchId<EntityTag>;
 using ConstraintId = SketchId<ConstraintTag>;
 
-// Domain/capability errors are values. Convergence and backend failures differ.
+// Validation/support errors are values. Convergence and backend failures differ.
 enum class ErrorCode {
     Unsupported,
     InvalidArgument,
@@ -100,12 +100,22 @@ struct Arc2 {
     Vec2 start;
     Vec2 end;
 };
-using SketchGeometry = std::variant<Point2, Line2, Circle2, Arc2>;
+
+// TODO
+struct NurbsCurve2 {
+    int degree;
+    std::vector<Point2> controlPoints;
+    std::vector<double> weights;
+    std::vector<double> knots;
+};
+
+using SketchGeometry = std::variant<Point2, Line2, Circle2, Arc2, NurbsCurve2>;
 enum class EntityKind {
     Point,
     Line,
     Circle,
-    Arc
+    Arc,
+    Nurbs
 };
 inline EntityKind entityKind(const SketchGeometry& geometry) {
     return static_cast<EntityKind>(geometry.index());
@@ -130,32 +140,39 @@ struct EntityUpdate {
     std::optional<bool> construction = std::nullopt;
 };
 enum class SubElement {
-    Whole, Start, End, Center
+    Whole,
+    Start,
+    End,
+    Center,
+    Control
 };
 struct GeometryRef {
     EntityId entity;
     SubElement sub = SubElement::Whole;
+    // Zero-based control point index. Other sub-elements require zero.
+    // Stable while the control point order and count remain unchanged.
+    size_t index = 0;
     bool operator==(const GeometryRef&) const = default;
+    bool operator<(const GeometryRef& other) const { return std::tie(entity, sub, index) < std::tie(other.entity, other.sub, other.index); }
 };
 struct PointElement {
     GeometryRef ref;
     Vec2 position;
 };
 enum class PointElementScope { StandalonePoints, CurveSubElements, All };
-// Midpoint prepares a symmetric initial guess; Preserve uses ordinary insertion.
-enum class CoincidentPlacement { Preserve, Midpoint };
 enum class ConstraintType {
-    Coincident,
+    Coincident, // Two points, point line, point circle, point arc, point nurbs.
     Horizontal,
     Vertical,
     Parallel,
     Perpendicular,
-    Tangent,
+    Tangent, // line circle, line arc, circle circle, circle arc, circle nurbs (line nurbs?, arc nurbs?).
     Equal,
     Fix,
     Concentric,
     Symmetric,
     Midpoint,
+    Collinear,
 
     // Two points, point line, point circle, point arc.
     // line circle, line arc.
@@ -212,30 +229,20 @@ struct SketchConstraint {
     ConstraintDefinition definition;
 };
 
-// Type support is coarse; supportsConstraint checks the actual ref combination.
-// Unsupported operations never mutate the model.
-struct Capabilities {
-    std::array<bool, 4> entities{};
-    std::array<bool, 18> constraints{};
-    bool updateEntities = false;
-    bool removeEntities = false;
-    bool updateConstraints = false;
-    bool removeConstraints = false;
-    bool solve = false;
-    bool drag = false;
-    bool degreesOfFreedom = false;
-    bool conflictingConstraints = false;
-    bool redundantConstraints = false;
-    bool supports(EntityKind kind) const {
-        const auto i = static_cast<size_t>(kind);
-        return i < entities.size() && entities[i];
-    }
-    bool supports(ConstraintType type) const {
-        const auto i = static_cast<size_t>(type);
-        return i < constraints.size() && constraints[i];
-    }
-};
 enum class SolveStatus { Converged, Failed };
+// Targets apply to one solve only; they never create persistent constraints.
+struct PointTarget {
+    GeometryRef point;
+    Vec2 position;
+};
+enum class TargetPolicy {
+    Require,
+    Prefer
+};
+struct SolveOptions {
+    std::span<const PointTarget> pointTargets;
+    TargetPolicy targetPolicy = TargetPolicy::Require;
+};
 // Missing diagnostics mean unavailable, not zero/an empty diagnosis. A failed
 // solve may expose its current iterate; inspect status before treating geometry
 // as solved. Constraint IDs always refer to the public model.
@@ -244,6 +251,14 @@ struct SolveDiagnostics {
     std::optional<int> degreesOfFreedom;
     std::optional<std::vector<ConstraintId>> conflictingConstraints;
     std::optional<std::vector<ConstraintId>> redundantConstraints;
+    // Unavailable when no targets were requested. True only for an accepted solve.
+    std::optional<bool> targetsSatisfied;
+    bool usedFallback = false;
+};
+struct ConstraintSolveResult {
+    // Absent when solving failed and the insertion was rolled back.
+    std::optional<ConstraintId> constraint;
+    SolveDiagnostics diagnostics;
 };
 // One synchronous best-effort drag step of a point-like ref. Target is a solver
 // preference, not a persistent constraint or a guaranteed resulting coordinate.

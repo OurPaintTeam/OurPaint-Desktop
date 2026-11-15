@@ -5,136 +5,104 @@
 #include "../../../core/Document.h"
 #include "objects/Objects.h"
 
-PointTool::PointTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
-    : IInteractionTool(document, camera, snap, overlay, picker) {}
+PointTool::PointTool(Document& document, Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker) :
+IInteractionTool(document,camera,snap,overlay, picker) {}
 
-std::optional<ActionReport> PointTool::onMouseMove(const input::MouseMoveEvent& e) {
+void PointTool::onMouseMove(const input::MouseMoveEvent& e) {
+    // SNAP
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
-    snap::SnapRequest request{core::sketch::Vec2{v.x, v.y}, snap::ActionType::Point, snap::DrawState::Start};
+    snap::SnapRequest request{ core::sketch::Vec2{v.x, v.y}, snap::ToolType::Point, snap::DrawState::Idle};
     snapVisual(request);
-    return std::nullopt;
 }
 
-std::optional<ActionReport> PointTool::onMouseButton(const input::MouseButtonEvent& e) {
-    if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
-        glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
+void PointTool::onMouseButton(const input::MouseButtonEvent& e) {
+    if (e.button != input::MouseButton::Left || e.action != input::MouseButtonAction::Press) {
+        return;
+    }
+    glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
 
-        if (snap_result_.snapped) {
-            v.x = snap_result_.point.position.x;
-            v.y = snap_result_.point.position.y;
+    // SNAP
+    if (snap_result_.snapped) {
+        v.x = snap_result_.point.position.x;
+        v.y = snap_result_.point.position.y;
 
-            core::sketch::Result<core::sketch::EntityId> addResult = document_.sketch().addPoint({v.x, v.y});
+        core::sketch::Result<core::sketch::EntityId> addResult = document_.sketch().addPoint({v.x, v.y});
+        const auto newPointId = addResult.value();
 
-            if (!addResult) {
-                return ActionReport::creation(ActionKind::CreatePoint, addResult);
-            }
+        core::sketch::ConstraintDefinition def;
+        bool shouldAddConstraint = false;
 
-            const auto newPointId = addResult.value();
+        switch(snap_result_.type) {
+            case snap::SnapKind::StandalonePoint:
+            case snap::SnapKind::LineEndpoint:
+            case snap::SnapKind::CircleCentre:
+            case snap::SnapKind::ArcEndpoint:
+            case snap::SnapKind::ArcCentre:
+                def.type = core::sketch::ConstraintType::Coincident;
+                def.refs = {
+                            { newPointId, core::sketch::SubElement::Whole },
+                            snap_result_.objects[0]
+                        };
+                shouldAddConstraint = true;
+                break;
 
-            ActionReport report = ActionReport::creation(ActionKind::CreatePoint, addResult);
+            case snap::SnapKind::LineBody:
+            case snap::SnapKind::CircleBody:
+            case snap::SnapKind::ArcBody:
+                def.type = core::sketch::ConstraintType::Coincident;
+                def.refs = {
+                            { newPointId, core::sketch::SubElement::Whole },
+                            snap_result_.objects[0]
+                        };
+                shouldAddConstraint = false;
+                break;
 
-            using SK = snap::SnapKind;
-            using CT = core::sketch::ConstraintType;
-            using SE = core::sketch::SubElement;
-            using Ref = core::sketch::GeometryRef;
-            using ConstraintDef = core::sketch::ConstraintDefinition;
+            case snap::SnapKind::LineMidpoint:
+                def.type = core::sketch::ConstraintType::Midpoint;
+                def.refs = {
+                            { newPointId, core::sketch::SubElement::Whole },
+                            snap_result_.objects[0]
+                        };
+                shouldAddConstraint = true;
+                break;
 
-            const Ref pointRef{newPointId, SE::Whole};
-
-            std::vector<ConstraintDef> appliedConstraints;
-            bool needsSolve = false;
-            bool constraintAttempted = false;
-
-            auto addConstraint = [&](CT type, std::vector<Ref> refs) {
-                ConstraintDef def;
-                def.type = type;
-                def.refs = std::move(refs);
-
-                for (const auto& existing : appliedConstraints) {
-                    if (existing.type != def.type || existing.refs.size() != def.refs.size()) {
-                        continue;
-                    }
-
-                    bool sameRefs = true;
-
-                    for (std::size_t i = 0; i < def.refs.size(); ++i) {
-                        if (existing.refs[i].entity != def.refs[i].entity || existing.refs[i].sub != def.refs[i].sub) {
-                            sameRefs = false;
-                            break;
-                        }
-                    }
-
-                    if (sameRefs) {
-                        return;
-                    }
-                }
-
-                constraintAttempted = true;
-
-                if (!document_.sketch().supportsConstraint(def)) {
-                    report.rejection = ActionRejection::Unsupported;
-                    return;
-                }
-
-                auto c = document_.sketch().addConstraint(def);
-
-                if (c) {
-                    appliedConstraints.push_back(def);
-                    report.constraintIds.push_back(c.value());
-                    report.requestedConstraints++;
-                    needsSolve = true;
-                } else {
-                    report.operationError = c.error();
-                }
-            };
-
-            auto applySnapKind = [&](SK type, const std::vector<Ref>& objects) {
-                switch (type) {
-                    case SK::Coincident:
-                    case SK::Intersection:
-                    case SK::ExtendedIntersection:
-                    case SK::VirtualIntersection:
-                        for (const auto& object : objects) {
-                            addConstraint(CT::Coincident, {pointRef, object});
-                        }
-                        break;
-
-                    case SK::Midpoint:
-                        for (const auto& object : objects) {
-                            addConstraint(CT::Midpoint, {pointRef, object});
-                        }
-                        break;
-
-                    default:
-
-                        break;
-                }
-            };
-
-            applySnapKind(snap_result_.type, snap_result_.objects);
-
-            for (const auto& relation : snap_result_.relations) {
-                applySnapKind(relation.type, relation.objects);
-            }
-
-            if (needsSolve) {
-                auto solved = document_.sketch().solve();
-                report.recordSolve(solved);
-
-                if (!solved || solved.value().status != core::sketch::SolveStatus::Converged) {
-                    std::cout << "solve err" << std::endl;
-                }
-            }
-
-            return report;
+            case snap::SnapKind::Intersection:
+            case snap::SnapKind::ExtendedIntersection:
+            case snap::SnapKind::VirtualIntersection:
+            case snap::SnapKind::Tangent:
+            case snap::SnapKind::Horizontal:
+            case snap::SnapKind::Vertical:
+            case snap::SnapKind::Parallel:
+            case snap::SnapKind::Perpendicular:
+            case snap::SnapKind::Angle:
+            case snap::SnapKind::PerpendicularBisector:
+            default:
+                // Оставляем shouldAddConstraint = false
+                break;
         }
 
-        return ActionReport::creation(ActionKind::CreatePoint, document_.sketch().addPoint({v.x, v.y}));
+        if (shouldAddConstraint && document_.sketch().supportsConstraint(def)) {
+            auto c = document_.sketch().addConstraint(def);
+
+            auto solved = document_.sketch().solve();
+
+            if (!solved || solved.value().status != core::sketch::SolveStatus::Converged) {
+                std::cout << "solve err" << std::endl;
+            }
+        } else if (shouldAddConstraint) {
+        }
     }
 
-    return std::nullopt;
+    // if not snapped
+    document_.sketch().addPoint({v.x, v.y});
 }
 
-std::optional<ActionReport> PointTool::onKey(const input::KeyEvent& e) { return std::nullopt; }
+void PointTool::onKey(const input::KeyEvent& e) {
+    (void)e;
+}
 
-ToolCancellation PointTool::cancel() { return {}; }
+bool PointTool::cancel() {
+    return false;
+}
+
+

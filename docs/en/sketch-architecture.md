@@ -80,8 +80,10 @@ is consumer metadata, not a different equation or exclusion from queries, counts
 or solving. Creation helpers default it to false. Geometry updates preserve it
 unless an explicit optional value is supplied.
 
-`GeometryRef` identifies an entity and `SubElement`. Valid point-like references
-and their within-entity query order are:
+`GeometryRef` identifies an entity, `SubElement`, and a zero-based `index`.
+The index selects a NURBS control point for `Control`; all other sub-elements
+require index zero (the default, preserving existing two-field references).
+Valid point-like references and their within-entity query order are:
 
 | Kind | Point elements |
 | --- | --- |
@@ -89,8 +91,21 @@ and their within-entity query order are:
 | Line | `Start`, `End` |
 | Circle | `Center` |
 | Arc | `Start`, `End`, `Center` |
+| Nurbs | `Control` with indices `0 .. controlPoints.size() - 1` |
 
-Curve Whole references identify curves, not points. Curve endpoints/centers are
+Both `pointElements(entity)` and the scoped queries enumerate the same references
+and positions. Controls belong to `CurveSubElements` and `All`, never to
+`StandalonePoints`. Point reads, drag and constraints reject out-of-range controls
+and nonzero indices on other sub-elements before mutation. Equality, ordering,
+selection and coincidence-group keys include all three reference fields.
+
+Control indices remain meaningful while the control point order and count are
+unchanged. They survive coordinate edits and snapshot/undo/redo transfer, but are
+not stable point IDs. Future topology edits must explicitly remap or invalidate
+dependent references. Core resolves these references to private DCM point IDs;
+the UI never receives solver handles.
+
+Curve Whole references identify curves, not points. Curve endpoints/centers/controls are
 private owned resources, not standalone Point entities. Coincident coordinates
 or Coincident constraints never merge public reference identities.
 `PointElement { GeometryRef ref; Vec2 position; }` exposes references and current
@@ -117,7 +132,7 @@ No API promises rollback for arbitrary system failures.
 ## Desktop selection integration
 
 The desktop picker and SelectionModel use GeometryRef throughout. Whole selects
-one entity; Start, End and Center select its point elements independently.
+one entity; Start, End, Center and indexed Control select its point elements independently.
 Selecting a curve does not implicitly select its markers, and selecting a marker
 does not select its curve. Coincident points retain distinct references.
 
@@ -159,6 +174,22 @@ restores the previous placement or automatic layout. This presentation preview
 does not change the geometry-drag cancellation contract above. Hover and drag
 feedback use constraint IDs in OverlayModel, separate from geometry selection.
 
+### Active tool synchronization in App
+
+SketchEditor owns the active ToolId as well as the tool pointer. Different modes
+can share one tool instance, so UI state uses activeToolId(), not pointer identity.
+selectTool() updates the tool and its parameters before synchronously notifying
+the single ToolChangedCallback subscriber when the ToolId changes. Installing the
+callback does not replay the current state.
+
+UIController subscribes for both newly created and loaded document views, capturing
+the stable DocumentId and resolving the current tab name when notified. It maps
+ToolId to UI enums and updates the detached tab toolbar plus the main toolbar for
+the active document. Activating a view explicitly presents its current tool.
+Callbacks are disconnected before view removal, project replacement, or controller
+destruction. SketchEditor and ViewportController do not depend on UI tool enums or
+ProjectManager; Escape switches through the same selectTool() notification path.
+
 ### Constraint interaction in App
 
 Toolbar requests are translated into `ConstraintRequest` values by the Qt binder
@@ -169,7 +200,7 @@ active tool. Escape first cancels pending tool input, then exits an empty tool.
 
 ConstraintActions owns the shared preparation/application path over a borrowed
 Sketch. Preparation is read-only: it checks compatible partial input, exact
-arity, numeric values, Sketch capabilities and complete definition support.
+arity, numeric values and complete definition support through supportsConstraint.
 A ready preselection is applied immediately without changing the active tool;
 an empty or compatible partial selection starts ConstraintTool or DimensionTool.
 Invalid/ambiguous selections and unsupported operations return without changing
@@ -205,17 +236,17 @@ prefers whole lines; with a line pending, it prefers point elements. A ready
 preselection applies through the same ConstraintActions path as interactive input.
 The existing Midpoint toolbar signal is routed through QtMainWindowBinder.
 
-ConstraintActions applies coincidence with Midpoint placement and returns an
-owning App `ActionReport`. Preparation preserves typed rejection reasons and
-owning Core query/support errors. Confirmed insertion IDs remain separate from
-solve diagnostics/errors: a failed solve does not undo insertion. Both interaction
-tools clear pending references after confirmed or potentially partial insertion,
-so solver failure cannot leave an inserted constraint pending for an accidental
-retry. Transactions, rollback and undo/redo remain unimplemented; failed edits
-can retain model changes.
+ConstraintTool creates point-to-point Coincident through the atomic
+`addConstraint(definition, options)` overload. Sequential selection targets the
+second point's original position; two preselected point elements target their
+original midpoint. App computes this position before insertion and uses
+`TargetPolicy::Prefer`. A successful operation clears the pending input and
+creates one history entry. A failed operation restores the model and retains
+input for retry. These guarantees apply to this overload; ordinary insertion
+still does not promise rollback after a backend failure.
 The FixUnfix toolbar button currently creates point Fix only; unfix is not
 implemented. Buttons for relations absent from the public Core API report
-unsupported operations, and exact DCM support controls Equal/Tangent execution.
+unsupported operations. Equal/Tangent definitions are validated through supportsConstraint.
 Toolbar visual activation is still controlled by the UI submodule independently
 of successful application or the editor's active mode.
 
@@ -260,25 +291,19 @@ it to another document. Parameter dialogs retain a document identity and resolve
 only live views, so renames keep the request associated and closed views receive
 no delayed edit. The binder is destroyed before UIController during shutdown.
 
-## Creation, capabilities, and source compatibility
+## Creation and constraint validation
 
 | Function | Result and behavior |
 | --- | --- |
-| `defaultBackend()` | Always BackendKind::Dcm; constant-time |
-| `availableBackends()` | Owning vector containing only BackendKind::Dcm; bounded constant cost |
-| `create(backend = defaultBackend())` | Result of unique_ptr owning an empty DCM Sketch; unknown enum InvalidArgument, construction exceptions BackendFailure |
+| `Sketch()` | Constructs an empty Sketch owning one DCM model; construction exceptions propagate |
 | `~Sketch()` | Releases Impl and DCM resources; detached values survive |
-| `backendKind() const` | Always BackendKind::Dcm; constant-time, read-only |
-| `capabilities() const` | Detached coarse support flags; constant-time, read-only |
 | `supportsConstraint(definition) const` | Status after common validation and exact support preflight; no edit, ID allocation, or solve |
 
-Sketch is noncopyable and not movable; transfer state explicitly. Capability
-`supports(EntityKind)` and `supports(ConstraintType)` safely test coarse arrays,
-returning false for unknown enums. Other flags cover updates/removals, solve,
-drag, and diagnostics. Coarse type support does not replace exact preflight.
-
-BackendKind contains only Dcm. The selection methods remain for Core source
-compatibility; App and UI do not select, switch, or display solver implementations.
+Sketch is noncopyable and not movable; transfer state explicitly. Geometry and
+constraint types, edits, solve and drag have one fixed Sketch contract. There is
+no per-instance support flag set or solver selection API. Use supportsConstraint
+to validate a complete constraint definition, including its references and values.
+Unavailable diagnostics are represented by empty optionals in SolveDiagnostics.
 CMake always links Sketch to DCM and has no solver-selection options or definitions.
 
 ## Entity and point-element queries
@@ -352,18 +377,17 @@ not rigid transformations or solver group drag.
 | `removeEntities(std::span<const EntityId> ids)` | Status; removes targets in order, cascading their public constraints |
 | `clear()` | Status; removes all public entities/constraints and associated private resources in place. Retains Impl and public watermarks; empty/repeated clear succeeds. No solve/state replacement |
 
-Creation rejects invalid geometry with InvalidArgument, unsupported kinds with
-Unsupported. Updates additionally reject kind changes/duplicate targets with
-InvalidArgument, missing IDs with NotFound, and disabled editing with Unsupported.
-Removal and metadata edits require positive existing IDs and corresponding edit
-support. Clear is supported. Native errors/capacity failures produce
+Creation rejects invalid geometry with InvalidArgument. Updates additionally
+reject kind changes/duplicate targets with InvalidArgument and missing IDs with
+NotFound. Removal and metadata edits require positive existing IDs.
+Clear is supported. Native errors/capacity failures produce
 BackendFailure. Singles use the same geometry batch validation/mutation path.
 
 ### Batch validation and failure boundaries
 
 Sketch validates the complete input before ID allocation or native mutation:
 geometry validity, same-kind updates, existing IDs, duplicate update/removal
-targets, operation support, and public creation ID capacity. Repeated geometry
+targets and public creation ID capacity. Repeated geometry
 in creation is valid; creation has no target IDs. Empty batches succeed without
 native mutation or advancing watermarks.
 
@@ -492,11 +516,11 @@ endpoint/center. Constraint updates, removal, entity deletion and snapshot trans
 use the ordinary constraint lifecycle. Core still rejects zero-length line inputs
 on creation, update and state transfer, even though DCM's midpoint equations
 permit a collapsed segment. Referring to the segment's own endpoint is allowed
-algebraically and can collapse it during solve; the convergence-reporting
-limitation described below remains applicable.
+algebraically and can collapse it during solve; the geometry validation rejects
+such a result as nonconverged.
 
-This is a persistent segment relation. It differs from the initial placement
-policy `CoincidentPlacement::Midpoint` and from a snap-only midpoint. The
+This is a persistent segment relation. It differs from a one-solve target at
+the midpoint of two selected points and from a snap-only midpoint. The
 [sketcher specification, SK-CON-018](sketcher-specification.md#92-geometric-relations)
 also describes explicitly named half-parameter, half-sweep and half-length sites;
 these measures can differ on curves and are not supported by this relation.
@@ -508,77 +532,74 @@ without a selected finite interval and traversal.
 | --- | --- |
 | `supportsConstraint(definition) const` | Status; validates fields/refs, then exact support. InvalidArgument/NotFound/Unsupported/native query failures. At most three entity reads; no mutation |
 | `addConstraint(definition)` | Result of ConstraintId; preflights/capacity-checks, allocates ID, installs equations/private resources. No solve; allocated ID remains consumed after DCM failure |
-| `addCoincident(a, b, placement = CoincidentPlacement::Midpoint)` | Result of ConstraintId; prepares the selected coincidence groups, then inserts Coincident. No numerical solve. Preserve delegates to ordinary addConstraint |
-| `updateConstraint(id, definition)` | Status; existing ID, valid supported replacement, and update capability required. Retains public ID; may replace only translated equations/anchors, no numerical solve |
-| `removeConstraint(id)` | Status; requires existing positive ID/removal support; removes equations/private anchors without numerical solve |
+| `addConstraint(definition, options)` | Result of ConstraintSolveResult; inserts and solves atomically with transient targets. Convergence returns the inserted ID and diagnostics; nonconvergence returns Failed diagnostics without an ID and restores the model. Success creates one history entry |
+| `updateConstraint(id, definition)` | Status; existing ID and valid supported replacement required. Retains public ID; may replace only translated equations/anchors, no numerical solve |
+| `removeConstraint(id)` | Status; requires existing positive ID; removes equations/private anchors without numerical solve |
 | `constraint(id) const` | Result of SketchConstraint with owning definition. Nonpositive ID InvalidArgument, absent ID NotFound. O(log(M + 1)) plus bounded definition copy |
 | `constraints() const` | Result of vector of SketchConstraint, ascending IDs, empty success. O(M) copy/result space, no solve |
 
 Constraint mutations can update native aliases/fixed state, with geometry
 projection or explicit solving enforcing equations. Mutation cost depends on
 graph maintenance and translated resources. Unsupported preflight is unchanged
-state; BackendFailure has no ordinary-edit rollback. There are no batch
-constraint edits or filtered constraint queries in this revision.
+state; BackendFailure has no ordinary-edit rollback. The overload taking
+SolveOptions also covers insertion and solving with rollback. There are no
+filtered constraint queries in this revision.
 
-### Coincidence placement
+### Transient solve targets and atomic insertion
 
-`addCoincident` is the explicit operation for choosing an initial configuration
-before inserting Coincident. `addConstraint` retains its existing insertion
-semantics. Both references must be distinct point-like elements, including curve
-endpoints and centers. `CoincidentPlacement::Preserve` performs ordinary
-insertion; `Midpoint` is the default and also requires point editing support.
-Unknown policies, invalid/missing references, unsupported operations, nonfinite
-selected coordinates, and public constraint-ID exhaustion are checked before
-coordinate edits or ID allocation.
+Sketch exposes one constraint insertion name, `addConstraint`; it has no
+Coincident-specific placement method or placement enum. The caller computes a
+desired position and supplies `PointTarget { GeometryRef point; Vec2 position; }`
+through `SolveOptions::pointTargets`. The borrowed span is used only during the
+synchronous call. Targets may reference standalone points, curve endpoints,
+centers, or NURBS controls. A target on a Coincident member applies to its complete
+native alias group, independent of the group's representative ID.
 
-Midpoint builds temporary groups from public Coincident constraints, including
-transitive links. For two free groups it proposes the selected points' midpoint
-for every member of both groups. If one group contains Fix, it seeds only the
-free group at the fixedPosition target. If several Fix constraints are present
-in that group, its first target in ascending constraint-ID order supplies the
-guess; conflicting anchors remain unchanged for explicit solve diagnostics.
-When both groups contain Fix, or both selected references already belong to one
-group, insertion proceeds without preparing coordinates. The midpoint computation
-avoids overflow for finite inputs.
+`TargetPolicy::Require` accepts only a solution that reaches every target.
+`TargetPolicy::Prefer` first holds the target coordinates during solving; if that
+attempt fails, DCM restores the prepared geometry and retries without temporary
+locks. Persistent Fix constraints remain active in both attempts. Targets never
+create public constraint IDs, appear in snapshots, or survive the call. A
+nonconverged attempt is not a proof that the target is mathematically impossible.
 
-Preparation uses an internal point-guess batch, not dragPoints: it never
-invokes numerical solving, changes metadata, rebuilds Impl, or creates
-temporary public constraints. DCM writes through native updatePoints in GLOBAL
-mode. Other equations are deferred until an explicit `solve()`.
-Intermediate curves can therefore be noncircular or
-degenerate, and final coordinates need not equal the initial midpoint. A returned
-constraint ID confirms insertion, not convergence. Existing native hard projection
-rules still apply during insertion, including when both groups are fixed.
+`SolveDiagnostics::targetsSatisfied` is populated when targets are supplied.
+`usedFallback` reports whether the attempt without temporary locks was used.
+Always check `status` as well: reaching a coordinate alone does not mean all
+persistent constraints are satisfied. Prefer can converge with
+`targetsSatisfied == false`, for example when a fixed group cannot reach the
+requested position.
 
-This is an ordinary compound edit without rollback: BackendFailure after
-preparation begins can leave proposed coordinates or a partially inserted
-constraint. Preflight failures do not consume IDs; an ID allocated for failed
-insertion remains consumed. Group preparation scans/copies the public constraints
-and uses O(M) temporary graph space, with O(M log(M + 1)) map work plus updates for
-the affected group members. No persistent group cache or coordinate mirror is
-introduced.
+Ordinary `addConstraint(definition)` retains native alias/fixed projection and
+does not solve. Its intermediate coordinate choice can depend on private IDs.
+For interactive insertion, `addConstraint(definition, options)` captures the
+pre-edit state, inserts the constraint, then applies targets to the merged groups
+before numerical solving. The target must therefore be captured before insertion.
+Only a converged operation is committed, with one history entry. Nonconvergence
+restores geometry and constraints and returns an empty
+`ConstraintSolveResult::constraint` with Failed diagnostics; validation/backend
+errors return a failed Result. A failed operation creates no history entry.
 
-CursorTool uses Midpoint for both the Num4 shortcut and Alt-click coincidence.
-Clipboard insertion continues to use ordinary addConstraint so that copied
-coordinates are not reseeded by this placement policy.
+ConstraintTool uses this overload only for point-to-point Coincident. Coincident
+between a point and a curve keeps its separate point-on-curve meaning; it does
+not merge their coordinates. Ordinary insertion remains available for consumers
+such as clipboard reconstruction that do not request placement.
 
 ## Solve and drag
 
-solve() returns Result of SolveDiagnostics. Unsupported capability fails before
-mutation. DCM errors may produce BackendFailure. For sketches containing Tangent,
-native solve failure or a failed tangency validation produces SolveStatus::Failed.
-Validation checks each saved tangency branch, regular supporting geometry and
-equal endpoint radii for participating arcs. General convergence reporting remains
-incomplete: without Tangent, the existing TODO reports Converged after a native
-call without establishing convergence of every constraint family.
+`solve(options = {})` returns Result of SolveDiagnostics. DCM errors may produce
+BackendFailure. Native solve failure or failed geometry/constraint validation
+produces SolveStatus::Failed. Validation includes saved tangency branches, regular
+supporting geometry and equal endpoint radii for arcs. With point targets, the
+result additionally reports target satisfaction and whether Prefer used its
+unlocked retry, as described above.
 Solving retains public topology/IDs but can alter unconstrained coordinates.
 Failed attempts can retain their iterate, including invalid/degenerate geometry;
 queries expose it.
 
 drag(const DragRequest&) performs one synchronous best-effort step on a
 point-like reference toward finite target. Nonfinite target, nonpositive ID, or
-incompatible sub-element is InvalidArgument; absent entity NotFound; disabled
-drag Unsupported. Results/errors match solve. Coordinates change without public
+incompatible sub-element is InvalidArgument; absent entity NotFound.
+Results/errors match solve. Coordinates change without public
 ID/topology changes or creating persistent constraints, and failed iterates can remain.
 Target is a preference, not a guaranteed coordinate. There is no gesture session,
 cancellation, or history in Core. Do not call solve after drag: drag already
@@ -630,12 +651,11 @@ private equal-radius equation. Whole-sketch DOF/conflict/redundancy diagnosis is
 not exposed because it omits unconstrained/eliminated variables. Native drag
 discards its convergence result.
 Impl uses updatePoints in DRAG mode for the complete target batch, then restores
-GLOBAL mode after any required component retries, including on exceptions. Like solve(),
+GLOBAL mode after any required component retries, including on exceptions.
 dragPoints() validates saved tangency branches, regular support geometry and arc
-endpoint radii; a failed retry or tangency violation produces Failed. The general residual/geometry
-validation helper remains unused by both result paths. Consumers still check
-Result and diagnostics.status, but Converged does not establish satisfaction of
-every other constraint family. Failed side switches may retain the changed branch
+endpoint radii; a failed retry or tangency violation produces Failed. Ordinary
+solve and targeted solve additionally require native convergence. Consumers
+check Result and diagnostics.status. Failed side switches may retain the changed branch
 and seeded geometry; no rollback was added.
 DCM's native angle equations also use radians.
 
@@ -645,7 +665,6 @@ DCM's native angle equations also use radians.
 | --- | --- |
 | `snapshot() const` | Result of SketchSnapshot: detached current entities/constraints and both watermarks including deleted IDs. No solve; geometry query cost plus O(M) copy, O(N + M) result space |
 | `replaceState(snapshot)` | Status; stages a fresh DCM Impl, validates/inserts state, and swaps only after full success. No implicit solve |
-| `switchBackend(kind)` | Compatibility method; Dcm is no-op success, unknown enum InvalidArgument. Never edits the model or solves |
 
 Watermarks must be nonnegative and cover every positive unique ID. Geometry must
 be finite/nondegenerate; unequal arc radii are accepted during transfer. Constraint
@@ -673,7 +692,7 @@ destroying the source.
 | Symmetric about an explicit line or point | Supported; horizontal and vertical axes use line entities |
 | Midpoint of a finite line segment | Supported through native pointAtMidpoint; point-like ref first, whole line second |
 | Distance, HorizontalDistance, VerticalDistance, Length, Angle, point-like Fix | Supported |
-| Equal line lengths/circular radii; Radius/Diameter | Unsupported |
+| Equal line lengths/circular radii; Radius/Diameter | Supported |
 | Whole-curve Tangent | Supported for line/Circle/Arc and every pair of circular curves; saved side or external/containment branch, complete supporting curves |
 | Constraint update/remove; solve; point-like drag | Supported; see current convergence-reporting limitation above |
 | Snapshot/replacement | Supported for valid DCM definitions |
@@ -698,8 +717,8 @@ Filtering/counts use metadata and avoid coordinate reads for nonmatches.
 Shared reference rules serve constraint/drag validation and point queries;
 Impl alone translates to DCM handles. DCM uses native mixed batches and direct
 add/remove loops. No duplicate live geometry, persistent point mirror, type
-index, UI policy, or dependency was added. Existing
-App consumers remain source-compatible, including explicit bool metadata updates.
+index, UI policy, or dependency was added. App consumers use the fixed Sketch
+contract, including explicit bool metadata updates.
 
 Deliberate limitations remain: query copies/scans, repeated removal constraint
 scans, and no DCM-failure rollback. Public capacity is preflighted; native
@@ -716,6 +735,6 @@ additional solver semantics and App session policy. Versioned persistence/docume
 remain outside the in-memory API.
 
 SketchGTEST contains CRUD, diagnostics, drag, snapshot, and state-replacement
-cases for DCM, plus compatibility selection checks. Behavioral tests, the
+cases for the directly constructed DCM Sketch. Behavioral tests, the
 application, full builds, and CI were not run for this refactor; runtime behavior
 is unverified.

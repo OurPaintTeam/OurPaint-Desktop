@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "GeometricObjects.h"
-#include "BoundBox.h"
-#include "ID.h"
+#include "objects/GeometricObjects.h"
+#include "objects/BoundBox.h"
+#include "objects/ID.h"
+
+using core::ID;
 
 TEST(PointTest, RectMethod) {
     Point p;
@@ -68,9 +70,4 @@ TEST(IDTest, IDTest) {
     EXPECT_TRUE(id10 <= id10again);
     EXPECT_TRUE(id10 >= id10again);
     EXPECT_TRUE(id1 <= id10);
-}
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }
