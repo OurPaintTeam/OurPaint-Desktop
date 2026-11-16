@@ -12,8 +12,8 @@
 #include "IntersectionCollectors.h"
 #include "LineAlgorithms.h"
 #include "MidpointCollectors.h"
-#include "sketch/Sketch.h"
-#include "sketch/SketchTypes.h"
+#include "Sketch.h"
+#include "SketchTypes.h"
 
 namespace snap {
 namespace {
@@ -40,7 +40,7 @@ using geometry::detail::multiply;
 using geometry::detail::subtract;
 }  // namespace
 
-SnapSystem::SnapSystem(const core::sketch::Sketch& sketch, const Camera2D& camera) : sketch_(sketch), camera_(camera) {}
+SnapSystem::SnapSystem(const core::sketch::Sketch& sketch, const render::Camera2D& camera) : sketch_(sketch), camera_(camera) {}
 
 std::vector<SnapResult> SnapSystem::getSnapCandidates(const SnapRequest& request) const { return parserRequest(request); }
 
@@ -159,7 +159,7 @@ std::optional<SnapCandidate> SnapSystem::collectMidpoint(const SnapRequest& requ
 namespace {
 std::optional<SnapCandidate>
 runIntersection(const core::sketch::Sketch& sketch,
-                const Camera2D& camera,
+                const render::Camera2D& camera,
                 const SnapRequest& request,
                 SnapKind wantKind) {
     const double tolWorld = camera.screenLogicalToWorld(

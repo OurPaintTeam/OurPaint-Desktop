@@ -5,11 +5,7 @@
 #include "OverlayModel.h"
 #include "SnapFeedback.h"
 #include "SnapSystem.h"
-#include <qlogging.h>
-
-#include "InputEvents.h"
 #include "Document.h"
-#include "OverlayModel.h"
 
 namespace core {
 class Document;

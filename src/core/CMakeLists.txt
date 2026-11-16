@@ -56,6 +56,9 @@ add_library(ourpaint_core
 target_include_directories(ourpaint_core PUBLIC
         /
         sketch
+        geometry
+        geometry/relations
+        geometry/intersections
 #        UndoRedo
 #        UndoRedo/commands
 #        UndoRedo/commands/Add

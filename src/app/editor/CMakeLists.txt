@@ -25,9 +25,11 @@ target_include_directories(ourpaint_editor PUBLIC
         pick
         render
         snap
+        snap/algorithms
         tool
 )
 target_link_libraries(ourpaint_editor PUBLIC
         ourpaint_document
         ourpaint_render
+        ourpaint_core
 )

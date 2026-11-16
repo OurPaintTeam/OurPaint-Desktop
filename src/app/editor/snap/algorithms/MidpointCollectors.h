@@ -3,8 +3,6 @@
 
 #include <variant>
 
-#include <QDebug>
-
 #include "GeometryMath.h"
 #include "SketchTypes.h"
 #include "SnapSystem.h"
