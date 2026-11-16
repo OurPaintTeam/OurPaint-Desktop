@@ -5,19 +5,19 @@
 #include <optional>
 
 #include "../../core/DocumentManager.h"
-#include "../viewport/OverlayModel.h"
-#include "../viewport/picking/Cpu2dPicker.h"
-#include "Camera2D.h"
-#include "RenderScene.h"
-#include "tools/ArcTool.h"
-#include "tools/CircleTool.h"
-#include "tools/ConstraintTool.h"
-#include "tools/CursorTool.h"
-#include "tools/IInteractionTool.h"
-#include "tools/LineTool.h"
-#include "tools/NurbsTool.h"
-#include "tools/PointTool.h"
-#include "tools/ToolId.h"
+#include "../../render/Camera2D.h"
+#include "../../render/RenderScene.h"
+#include "pick/Cpu2dPicker.h"
+#include "OverlayModel.h"
+#include "tool/ArcTool.h"
+#include "tool/CircleTool.h"
+#include "tool/ConstraintTool.h"
+#include "tool/CursorTool.h"
+#include "tool/IInteractionTool.h"
+#include "tool/LineTool.h"
+#include "tool/NurbsTool.h"
+#include "tool/PointTool.h"
+#include "tool/ToolId.h"
 
 namespace app {
 
@@ -25,7 +25,7 @@ class SketchEditor {
 public:
     using ToolChangedCallback = std::function<void(ToolId)>;
 
-    SketchEditor(Document& document, Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
+    SketchEditor(Document& document, render::Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
                  app::ConstraintPresentationState& constraintPresentation);
     ~SketchEditor();
 
@@ -38,7 +38,7 @@ public:
 
 private:
     Document& document_;
-    Camera2D& camera_;
+    render::Camera2D& camera_;
     OverlayModel& overlay_;
     snap::SnapSystem snap_;
 

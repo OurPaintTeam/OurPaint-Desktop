@@ -2,7 +2,7 @@
 
 В App реализован отдельный канал временных подсказок: `app::SnapFeedback` → `OverlayModel` → `RenderSceneBuilder` → обычные примитивы `RenderScene`. Он показывает выбранную позицию, символ, исходную геометрию и направляющие. Вычисление кандидатов, выбор привязки и интеграция в инструменты остаются задачей producer — кода, который публикует подсказку.
 
-Реализация находится в [SnapFeedback.h](../../src/app/viewport/SnapFeedback.h), [OverlayModel.h](../../src/app/viewport/OverlayModel.h), [RenderSceneBuilder.cc](../../src/app/viewport/render/RenderSceneBuilder.cc) и [ViewportStyle.h](../../src/app/viewport/ViewportStyle.h). Она не зависит от типов `editor/snap` или `SnapKind` из другой ветки.
+Реализация находится в [SnapFeedback.h](../../src/app/editor/render/SnapFeedback.h), [OverlayModel.h](../../src/app/editor/OverlayModel.h), [RenderSceneBuilder.cc](../../src/app/editor/render/RenderSceneBuilder.cc) и [ViewportStyle.h](../../src/app/editor/render/ViewportStyle.h). Она не зависит от типов `editor/snap` или `SnapKind` из другой ветки.
 
 ## Контракт данных
 

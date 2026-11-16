@@ -6,7 +6,6 @@
 #include "objects/GeometricObjects.h"
 #include "DCMManager.h"
 #include "objects/Enums.h"
-class ISceneObserver;
 
 namespace core {
 class Requirement;
@@ -96,8 +95,6 @@ public:
     std::vector<Requirement> getAllRequirementsData() const;
     bool deleteRequirement(ID reqID);
 
-    void setObserver(ISceneObserver* o);
-
     ClipboardData copyFragment(const std::vector<ID>& selected) const;
     std::vector<ID> pasteFragment(const ClipboardData& data, double targetPosX, double targetPosY);
 
@@ -117,8 +114,6 @@ public:
     bool setObjectData(const ObjectData& object);
 
 private:
-    std::vector<ISceneObserver*> _observers;
-
     void addRequirement(const Requirement& reqData, ID reqID);
 
     static ReqType reqTypeMapper(DCM_ReqType type);

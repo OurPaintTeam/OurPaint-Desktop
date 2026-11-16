@@ -689,14 +689,14 @@ RenderSceneBuilder получает `buildSnapFeedback()`:
 | solve/drag | Failed attempt может оставить current iterate | Не считать все queried values принятым валидным решением |
 | Geometry revisions/spatial query | Публичного revision/index API нет | Не делать постоянный кеш по entityCount или ID |
 | [SketchEditor](../../src/app/editor/SketchEditor.cc) | Уже владеет общими picker/actions/tools | Естественный владелец SnapService |
-| [LineTool](../../src/app/editor/tools/LineTool.cc) | Shift H/V дублируется в move/button/key | Перевести на общий resolve path, сохранив UX смысл |
-| [PointTool](../../src/app/editor/tools/PointTool.cc) | Нет общего snap preview | Показывать candidate до первого клика |
-| [CursorTool](../../src/app/editor/tools/CursorTool.cc) | Абсолютные targets от press; cancel не восстанавливает Sketch | Сохранить baseline; full gesture rollback ждёт транзакции |
+| [LineTool](../../src/app/editor/tool/LineTool.cc) | Shift H/V дублируется в move/button/key | Перевести на общий resolve path, сохранив UX смысл |
+| [PointTool](../../src/app/editor/tool/PointTool.cc) | Нет общего snap preview | Показывать candidate до первого клика |
+| [CursorTool](../../src/app/editor/tool/CursorTool.cc) | Абсолютные targets от press; cancel не восстанавливает Sketch | Сохранить baseline; full gesture rollback ждёт транзакции |
 | CursorTool Alt-click | Две ближайшие несвязанные точки выбираются без acquisition radius и сразу применяется Coincident | Не копировать эвристику; её миграция ждёт безопасный commit |
-| [OverlayModel](../../src/app/viewport/OverlayModel.h) | Есть Snap enum, но общие arrays и clearPreview | Добавить независимое feedback |
-| [RenderSceneBuilder](../../src/app/viewport/render/RenderSceneBuilder.cc) | Общие styles overlay primitives | Добавить отдельный snap path/styles |
-| [ViewportController](../../src/app/viewport/ViewportController.cc) | Wheel меняет камеру без placement refresh | Явно пересчитывать active input на view changes |
-| [AxisTexts](../../src/app/viewport/AxisTexts.cc) | Grid step выбирается по zoom | Snap/grid rendering должны получать согласованный policy |
+| [OverlayModel](../../src/app/editor/OverlayModel.h) | Есть Snap enum, но общие arrays и clearPreview | Добавить независимое feedback |
+| [RenderSceneBuilder](../../src/app/editor/render/RenderSceneBuilder.cc) | Общие styles overlay primitives | Добавить отдельный snap path/styles |
+| [ViewportController](../../src/app/editor/ViewportController.cc) | Wheel меняет камеру без placement refresh | Явно пересчитывать active input на view changes |
+| [AxisTexts](../../src/app/editor/render/AxisTexts.cc) | Grid step выбирается по zoom | Snap/grid rendering должны получать согласованный policy |
 | ArcTool/CubicBezierTool | Наличие tool класса не означает завершённую creation integration | Не включать их завершение в Snap PR |
 | [SnapService.h](../../src/app/editor/snap/SnapService.h) | В рабочем дереве есть концептуальный незавершённый черновик | Требует определений типов, namespace/includes и реализации; не готовый сервис |
 

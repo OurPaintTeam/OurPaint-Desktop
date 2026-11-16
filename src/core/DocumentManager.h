@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+namespace core {
 class Document;
 
 using DocumentId = uint64_t;
@@ -46,5 +47,6 @@ public:
 private:
     std::vector<std::unique_ptr<Document>> documents_;
 };
+}
 
 #endif // ! OURPAINT_HEADERS_DOCUMENT_MANAGER_H_

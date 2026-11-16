@@ -6,6 +6,8 @@
 
 #include "Document.h"
 
+using namespace core;
+
 DocumentManager::DocumentManager() = default;
 DocumentManager::~DocumentManager() = default;
 

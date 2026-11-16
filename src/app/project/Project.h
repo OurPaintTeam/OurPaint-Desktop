@@ -6,7 +6,10 @@
 #include <string>
 #include <vector>
 
+namespace core {
+
 class Document;
+}
 
 namespace app {
 
@@ -18,7 +21,7 @@ struct ProjectMetadata {
 
 struct ProjectDocument {
     std::filesystem::path filename;
-    std::reference_wrapper<const Document> document;
+    std::reference_wrapper<const core::Document> document;
 };
 
 // Borrowed description, not another editable document model. Documents must

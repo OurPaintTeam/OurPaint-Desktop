@@ -1,7 +1,6 @@
 #include "Scene.h"
 
 #include "DSU.h"
-#include "ISceneObserver.h"
 #include "objects/Objects.h"
 
 using namespace core;
@@ -25,10 +24,6 @@ ID Scene::addObject(const ObjectData& objData) {
             DCM_FigDesc od = DCM_FigDesc::point(x, y);
             DCM_ID id = DCM_.addFigure(od);
 
-            // for (auto& observer : _observers) {
-            //     observer->onObjectAdded(od);
-            // }
-
             return ID(id.id);
         }
         case ObjType::ET_LINE: {
@@ -45,10 +40,6 @@ ID Scene::addObject(const ObjectData& objData) {
 
             DCM_ID id = DCM_.addFigure(l);
 
-            // for (auto& observer : _observers) {
-            //     observer->onObjectAdded(l);
-            // }
-
             return ID(id.id);
         }
         case ObjType::ET_CIRCLE: {
@@ -62,10 +53,6 @@ ID Scene::addObject(const ObjectData& objData) {
 
             DCM_FigDesc c = DCM_FigDesc::circle(cx, cy, r);
             DCM_ID id = DCM_.addFigure(c);
-
-            // for (auto& observer : _observers) {
-            //     observer->onObjectAdded(c);
-            // }
 
             return ID(id.id);
         }
@@ -86,10 +73,6 @@ ID Scene::addObject(const ObjectData& objData) {
             DCM_ID id_p3 = DCM_.addFigure(DCM_FigDesc::point(cx, cy));
 
             DCM_ID id = DCM_.addFigure(DCM_FigDesc::arc(id_p1, id_p2, id_p3));
-
-            for (auto& observer : _observers) {
-                //observer->onObjectUpserted(objData);
-            }
 
             return ID(id.id);
         }
@@ -142,10 +125,6 @@ ID Scene::addObject(const ObjectData& objData) {
                 ID(id4.id)
             };
 
-            for (auto& observer : _observers) {
-                //observer->onObjectAdded(l);
-            }
-
             return ID();
         }
         default:
@@ -164,9 +143,6 @@ bool Scene::deleteObject(ID objectID) {
     }
     catch (...) {
         return false;
-    }
-    for (const auto& observer : _observers) {
-        observer->onObjectRemoved(id);
     }
     return true;
 }
@@ -469,19 +445,11 @@ void Scene::moveObject(ID objId, double dx, double dy) {
             default: break;
     }
 
-    std::optional<ComponentID> comp = DCM_.getComponentForFigure(id);
-    std::vector<DCM_ID> figures = DCM_.getFiguresInComponent(comp.value());
-
-    for (auto& observer : _observers) {
-        observer->onObjectUpdated(figures);
-    }
-
     DCM_.setSolveMode(Utils::SolveMode::DRAG);
     DCM_.solve();
 }
 
 void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
-    std::unordered_set<DCM_ID> figures;
     std::unordered_set<DCM_ID> points;
 
     for (const auto& objId : ids) {
@@ -545,9 +513,6 @@ void Scene::moveObjects(std::vector<ID> ids, double dx, double dy) {
         }
     }
 
-    for (auto& observer : _observers) {
-        observer->onObjectUpdated({figures.begin(), figures.end()});
-    }
 }
 
 void Scene::movePoint(ID pointID, double dx, double dy) {
@@ -558,12 +523,6 @@ void Scene::movePoint(ID pointID, double dx, double dy) {
     DCM_PointUpdateDesc d(id, desc.x.value() + dx, desc.y.value() + dy);
     DCM_.updatePoint(d);
 
-    std::optional<ComponentID> comp = DCM_.getComponentForFigure(id);
-    std::vector<DCM_ID> figures = DCM_.getFiguresInComponent(comp.value());
-
-    for (auto& observer : _observers) {
-        observer->onObjectUpdated(figures);
-    }
 }
 
 void Scene::moveLine(ID lineID, double dx, double dy) {
@@ -576,12 +535,6 @@ void Scene::moveLine(ID lineID, double dx, double dy) {
     DCM_.updatePoint(d1);
     DCM_.updatePoint(d2);
 
-    std::optional<ComponentID> comp = DCM_.getComponentForFigure(DCM_ID(lineID.get()));
-    std::vector<DCM_ID> figures = DCM_.getFiguresInComponent(comp.value());
-
-    for (auto& observer : _observers) {
-        observer->onObjectUpdated(figures);
-    }
 }
 
 void Scene::moveCircle(ID circleID, double dx, double dy) {
@@ -592,12 +545,6 @@ void Scene::moveCircle(ID circleID, double dx, double dy) {
     DCM_PointUpdateDesc p(desc.pointIds[0], desc.coords[0] + dx, desc.coords[1] + dy);
     DCM_.updatePoint(p);
 
-    std::optional<ComponentID> comp = DCM_.getComponentForFigure(DCM_ID(circleID.get()));
-    std::vector<DCM_ID> figures = DCM_.getFiguresInComponent(comp.value());
-
-    for (auto& observer : _observers) {
-        observer->onObjectUpdated(figures);
-    }
 }
 
 void Scene::moveArc(ID arcID, double dx, double dy) {
@@ -685,9 +632,6 @@ ID Scene::addRequirement(const Requirement& reqData, const bool updateRequiremen
         DCM_.solve();
     }
 
-    // for (auto& observer : _observers) {
-    //     observer->onRequirementAdded(rd);
-    // }
 
     return ID();
 }
@@ -1014,12 +958,3 @@ std::vector<Requirement> Scene::getAllRequirementsData() const {
 bool Scene::deleteRequirement(ID reqID) {
     throw std::runtime_error("Scene error");
 }
-
-void Scene::setObserver(ISceneObserver* o) {
-    _observers.push_back(o);
-}
-
-
-
-
-

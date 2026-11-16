@@ -650,7 +650,7 @@ Json writeGeometry(const sketch::SketchGeometry& geometry) {
 
 }  // namespace
 
-Encoded encodeDocument(const Document& document) {
+Encoded encodeDocument(const core::Document& document) {
     if (document.name().size() >= MaxDocumentBytes) {
         return Encoded::failure({CodecErrorCode::LimitExceeded, "name", "Encoded document exceeds the 64 MiB limit"});
     }

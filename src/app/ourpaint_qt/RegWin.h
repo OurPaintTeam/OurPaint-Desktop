@@ -12,13 +12,13 @@ inline void registerFileAssociation() {
 
     QSettings registry("HKEY_CURRENT_USER\\Software\\Classes", QSettings::NativeFormat);
 
-    registry.setValue(".ourp", "OurPaint.Project");
+    registry.setValue(".ourp", "OurPaint.Document");
 
-    registry.setValue("OurPaint.Project", "OurPaint Project File");
+    registry.setValue("OurPaint.Document", "OurPaint Document");
 
-    registry.setValue("OurPaint.Project/DefaultIcon", QStringLiteral("\"%1\",0").arg(appPath));
+    registry.setValue("OurPaint.Document/DefaultIcon", QStringLiteral("\"%1\",0").arg(appPath));
 
-    registry.setValue("OurPaint.Project/shell/open/command",
+    registry.setValue("OurPaint.Document/shell/open/command",
                       QStringLiteral("\"%1\" \"%2\"").arg(appPath, "%1"));
 
     registry.sync();

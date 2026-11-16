@@ -18,7 +18,8 @@ The active development branch is `dev`.
 - nlohmann/json
 - GoogleTest
 - FreeType
-- GLM
+- GLM 
+- Dear ImGui (via GLFW)
 
 The `third_party/` directory contains the UI and DCM Git submodules, GLAD,
 and bundled fonts. DCM contains its own Math submodule. Other C++ libraries
@@ -45,6 +46,7 @@ git submodule update --init --recursive
 
 Install the required packages:
 
+_Note_: The `xorg-dev`, `libwayland-dev`, and `libwayland-bin` packages are required to build the GLFW dependency used by the ImGui target.
 ```bash
 sudo apt update
 sudo apt install -y \
@@ -59,7 +61,11 @@ sudo apt install -y \
     libqt6opengl6-dev \
     libgl1-mesa-dev \
     libxkbcommon-dev \
-    libxcb-cursor0
+    libxcb-cursor0 \
+    xorg-dev \
+    libwayland-dev \
+    libwayland-bin \
+    wayland-protocols
 ```
 
 Configure the project:
@@ -68,12 +74,11 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 ```
 Build the application:
 ```bash
-cmake --build build --target ourpaint --parallel
+cmake --build build --target ourpaint_qt --parallel
 ```
 Run:
 ```bash
-cd build/src/app
-./ourpaint
+./build/src/app/ourpaint_qt
 ```
 
 ## Building on Windows
@@ -127,7 +132,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 ### 5. Build the Application
 
 ```bash
-cmake --build build --target ourpaint --parallel
+cmake --build build --target ourpaint_qt --parallel
 ```
 
 ### 6. Run the Application

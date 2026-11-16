@@ -1,5 +1,7 @@
 #include "Document.h"
 
+using namespace core;
+
 Document::Document(const std::string& documentName) {
     documentName_ = documentName;
     sketch_ = std::make_unique<core::sketch::Sketch>();
