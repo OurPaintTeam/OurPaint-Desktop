@@ -190,7 +190,7 @@ bool applySnapConstraint(const snap::SnapResult& snap,
             }
                 break;
             case SK::VirtualIntersection:
-                break;
+                return  true;
             case SK::Tangent:
             case SK::Horizontal:
             case SK::Vertical:
