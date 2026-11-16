@@ -19,31 +19,6 @@
 
 namespace snap
 {
-    namespace
-    {
-        using namespace core::sketch;
-
-        using geometry::Circle2;
-        using geometry::GeometryRef;
-        using geometry::Line2;
-        using geometry::Point2;
-        using geometry::SubElement;
-        using geometry::Vec2;
-
-        using geometry::distance;
-        using geometry::detail::add;
-        using geometry::detail::closestPointOnCircle;
-        using geometry::detail::closestPointOnSegment;
-        using geometry::detail::cross;
-        using geometry::detail::distanceSquared;
-        using geometry::detail::dot;
-        using geometry::detail::isFinite;
-        using geometry::detail::lengthSquared;
-        using geometry::detail::midpoint;
-        using geometry::detail::multiply;
-        using geometry::detail::subtract;
-    } // namespace
-
     SnapSystem::SnapSystem(const core::sketch::Sketch& sketch, const render::Camera2D& camera) : sketch_(sketch),
         camera_(camera)
     {
@@ -99,7 +74,9 @@ namespace snap
                 }
                 else if (c->result.type == SnapKind::Horizontal ||
                     c->result.type == SnapKind::Vertical ||
-                    c->result.type == SnapKind::Tangent)
+                    c->result.type == SnapKind::Tangent ||
+                    c->result.type == SnapKind::Parallel ||
+                    c->result.type == SnapKind::Perpendicular)
                 {
                     if (!bestDirectional || c->priority > bestDirectional->priority ||
                         (c->priority == bestDirectional->priority && c->distanceSquared < bestDirectional->
@@ -135,7 +112,7 @@ namespace snap
             case SnapKind::Coincident: append(collectCoincident(request));
                 break;
             case SnapKind::Midpoint: append(collectMidpoint(request));
-                break; 
+                break;
             case SnapKind::Intersection: append(collectIntersection(request));
                 break;
             case SnapKind::ExtendedIntersection: append(collectExtendedIntersection(request));
@@ -148,9 +125,11 @@ namespace snap
                 break;
             case SnapKind::Vertical: append(collectDirection(request, SnapKind::Vertical));
                 break;
+            case SnapKind::Parallel: append(collectDirection(request, SnapKind::Parallel));
+                break;
+            case SnapKind::Perpendicular: append(collectDirection(request, SnapKind::Perpendicular));
+                break;
             case SnapKind::Collinear: /*append(collectCollinear(request));*/ break;
-            case SnapKind::Parallel: /*append(collectParallel(request));*/ break;
-            case SnapKind::Perpendicular: /*append(collectPerpendicular(request));*/ break;
             case SnapKind::AngleToLine: /*append(collectAngleToLine(request));*/ break;
             case SnapKind::None: break;
             }
@@ -160,8 +139,16 @@ namespace snap
         {
             if (bestCoincident && bestDirectional)
             {
-                results.push_back(std::move(bestCoincident->result));
-                results.push_back(std::move(bestDirectional->result));
+                if (bestCoincident->priority >= bestDirectional->priority)
+                {
+                    results.push_back(std::move(bestCoincident->result));
+                    results.push_back(std::move(bestDirectional->result));
+                }
+                else
+                {
+                    results.push_back(std::move(bestDirectional->result));
+                    results.push_back(std::move(bestCoincident->result));
+                }
                 return results;
             }
             if (bestCoincident) results.push_back(std::move(bestCoincident->result));
