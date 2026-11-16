@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+
+    <defs>
+        <!-- Стрелка в одну сторону -->
+        <marker
+                id="arrow-end"
+                markerWidth="6"
+                markerHeight="6"
+                refX="3"
+                refY="3"
+                orient="auto"
+        >
+            <path d="M1,1 L5,3 L1,5 Z" fill="#FFFFFF"/>
+        </marker>
+
+        <!-- Стрелка в обратную сторону -->
+        <marker
+                id="arrow-start"
+                markerWidth="6"
+                markerHeight="6"
+                refX="3"
+                refY="3"
+                orient="auto"
+        >
+            <path d="M5,1 L1,3 L5,5 Z" fill="#FFFFFF"/>
+        </marker>
+    </defs>
+
+    <!-- Диагональная линия -->
+    <line
+            x1="4" y1="20"
+            x2="20" y2="4"
+            stroke="#FFFFFF"
+            stroke-width="2"
+            marker-start="url(#arrow-start)"
+            marker-end="url(#arrow-end)"
+    />
+
+</svg>
