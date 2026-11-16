@@ -14,30 +14,39 @@ void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
+    bool isShiftHeld = input::has_flag(e.modifiers, input::Modifiers::Shift);
+
+    if (state_ == State::WaitingSecondPoint && isShiftHeld) {
+        glm::dvec2 delta = v - firstPoint_;
+        if (std::abs(delta.x) > std::abs(delta.y)) {
+            v.y = firstPoint_.y;
+        } else {
+            v.x = firstPoint_.x;
+        }
+    }
+
     snap::SnapRequest request{core::sketch::Vec2{v.x, v.y}, snap::ActionType::Draw, snap::PrimitiveType::Line, snap::DrawState::Start};
 
     if (state_ == State::WaitingSecondPoint) {
         request.drawState = snap::DrawState::End;
         request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{firstPoint_.x, firstPoint_.y}});
+    }
 
-        if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
-            glm::dvec2 delta = v - firstPoint_;
+    snapVisual(request);
 
-            // Snap to the dominant axis
-            if (std::abs(delta.x) > std::abs(delta.y)) {
-                v.y = firstPoint_.y;  // Lock to horizontal
-            } else {
-                v.x = firstPoint_.x;  // Lock to vertical
-            }
+    if (!snap_results_.empty() && snap_results_[0].type != snap::SnapKind::Tangent) {
+        if (!isShiftHeld || snap_results_[0].type == snap::SnapKind::Horizontal || snap_results_[0].type == snap::SnapKind::Vertical) {
+            v.x = snap_results_[0].point.position.x;
+            v.y = snap_results_[0].point.position.y;
         }
+    }
 
+    if (state_ == State::WaitingSecondPoint) {
         overlay_.lines_[0].x2 = v.x;
         overlay_.lines_[0].y2 = v.y;
         overlay_.points_[0].x = v.x;
         overlay_.points_[0].y = v.y;
     }
-
-    snapVisual(request);
 }
 
 void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
@@ -85,6 +94,7 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
     const auto lineId = addResult.value();
     const core::sketch::GeometryRef startRef{lineId, core::sketch::SubElement::Start};
     const core::sketch::GeometryRef endRef{lineId, core::sketch::SubElement::End};
+    const core::sketch::GeometryRef wholeRef{lineId, core::sketch::SubElement::Whole};
 
     bool needsSolve = false;
 
@@ -92,9 +102,25 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
         needsSolve = true;
     }
 
-    if (!shiftLocked) {
-        for (const auto& snap : snap_results_) {
-            if (applySnapConstraint(snap, endRef)) {
+    bool appliedHV = false;
+    for (const auto& snap : snap_results_) {
+        if (applySnapConstraint(snap, endRef)) {
+            needsSolve = true;
+            if (snap.type == snap::SnapKind::Horizontal || snap.type == snap::SnapKind::Vertical) {
+                appliedHV = true;
+            }
+        }
+    }
+
+    if (shiftLocked && !appliedHV) {
+        core::sketch::ConstraintDefinition def;
+        def.type = (std::abs(v.y - firstPoint_.y) < 1e-9)
+                   ? core::sketch::ConstraintType::Horizontal
+                   : core::sketch::ConstraintType::Vertical;
+        def.refs = { wholeRef };
+
+        if (document_.sketch().supportsConstraint(def)) {
+            if (document_.sketch().addConstraint(def)) {
                 needsSolve = true;
             }
         }

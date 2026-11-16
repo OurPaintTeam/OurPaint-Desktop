@@ -157,10 +157,10 @@ constexpr int snapPriority(SnapKind kind, PrimitiveType primitive, DrawState sta
         case SnapKind::VirtualIntersection:  return 830;
         case SnapKind::Intersection:              return 800;
         case SnapKind::Tangent:             return 700;
-        case SnapKind::Parallel:             return lineEnd ? 650 : 300;
-        case SnapKind::Perpendicular:        return lineEnd ? 650 : 300;
+        case SnapKind::Parallel:             return lineEnd ? 650 : 0;
+        case SnapKind::Perpendicular:        return lineEnd ? 650 : 0;
         case SnapKind::Horizontal:
-        case SnapKind::Vertical:             return lineEnd ? 600 : 250;
+        case SnapKind::Vertical:             return lineEnd ? 600 : 0;
         case SnapKind::Collinear:            return lineEnd ? 275 : 225;
         case SnapKind::AngleToLine:          return 0;
         case SnapKind::None:
