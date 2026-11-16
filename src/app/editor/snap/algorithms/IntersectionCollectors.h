@@ -1,6 +1,7 @@
 #ifndef OURPAINT_INTERSECTIONCOLLECTORS_H
 #define OURPAINT_INTERSECTIONCOLLECTORS_H
 
+#include <cmath>
 #include <variant>
 #include <vector>
 
@@ -36,6 +37,23 @@ bool isCurve(const SketchEntity& e) {
         || std::holds_alternative<Arc2>(e.geometry);
 }
 
+// Точка совпадает с Start/End линии или дуги?
+// У круга и одиночной точки концов нет — они возвращают false.
+bool isEndpointOf(const SketchEntity& e, const Vec2& p) {
+    constexpr double kEps = 1e-9;
+    const double eps2 = kEps * kEps;
+
+    if (const auto* l = std::get_if<Line2>(&e.geometry)) {
+        return geometry::detail::distanceSquared(l->start, p) <= eps2
+            || geometry::detail::distanceSquared(l->end,   p) <= eps2;
+    }
+    if (const auto* a = std::get_if<Arc2>(&e.geometry)) {
+        return geometry::detail::distanceSquared(a->start, p) <= eps2
+            || geometry::detail::distanceSquared(a->end,   p) <= eps2;
+    }
+    return false;
+}
+
 double parameterAlong(const Line2& line, const Vec2& p) {
     const Vec2 d = geometry::detail::subtract(line.end, line.start);
     const double l2 = geometry::detail::lengthSquared(d);
@@ -64,8 +82,15 @@ std::vector<Hit> classifyPair(const SketchEntity& a,
     if (wantKind == SnapKind::Intersection) {
         const auto pts = geometry::intersections::intersectGeometries(a, b);
         for (const auto& p : pts) {
+            const Vec2 pt = Vec2{p.position};
+
+            // Конец линии/дуги — это Coincident, а не Intersection.
+            if (isEndpointOf(a, pt) || isEndpointOf(b, pt)) {
+                continue;
+            }
+
             Hit h;
-            h.point = Vec2{p.position};
+            h.point = pt;
             hits.push_back(std::move(h));
         }
         return hits;
@@ -90,12 +115,19 @@ std::vector<Hit> classifyPair(const SketchEntity& a,
 
         if (got != wantKind) continue;
 
+        // Конец линии/дуги на продолжении — тоже Coincident, не Extended.
+        // Если этот случай должен оставаться Extended — удали блок.
+        if (got == SnapKind::ExtendedIntersection &&
+            (isEndpointOf(a, pt) || isEndpointOf(b, pt))) {
+            continue;
+        }
+
         Hit h;
         h.point = pt;
         if (got == SnapKind::ExtendedIntersection) {
             if (!inA && la) h.guides.push_back(extensionGuide(*la, pt));
             else if (!inB && lb) h.guides.push_back(extensionGuide(*lb, pt));
-        } else {  // VirtualIntersection
+        } else {
             if (la) h.guides.push_back(extensionGuide(*la, pt));
             if (lb) h.guides.push_back(extensionGuide(*lb, pt));
         }

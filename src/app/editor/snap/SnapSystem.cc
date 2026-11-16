@@ -14,6 +14,7 @@
 #include "MidpointCollectors.h"
 #include "Sketch.h"
 #include "SketchTypes.h"
+#include "algorithms/TangentCollectors.h"
 
 namespace snap {
 namespace {
@@ -92,7 +93,7 @@ std::vector<SnapResult> SnapSystem::snapForDrawing(const SnapRequest& request) c
                 break;
             case SnapKind::VirtualIntersection: append(collectVirtualIntersection(request));
                 break;
-            case SnapKind::Tangent: /*append(collectTangent(request));*/
+            case SnapKind::Tangent: append(collectTangent(request));
                 break;
 
             case SnapKind::Horizontal: /*append(collectHorizontal(request));*/
@@ -190,4 +191,14 @@ SnapSystem::collectVirtualIntersection(const SnapRequest& request) const {
                            SnapKind::VirtualIntersection);
 }
 
+    std::optional<SnapCandidate>
+    SnapSystem::collectTangent(const SnapRequest& request) const {
+    const double tolWorld = camera_.screenLogicalToWorld(
+        snapTolerancePixels(request.primitive, request.drawState));
+
+    auto entities = sketch_.entities();
+    if (!entities) return std::nullopt;
+
+    return tangent::collectFromEntities(request, entities.value(), tolWorld);
+}
 }  // namespace snap

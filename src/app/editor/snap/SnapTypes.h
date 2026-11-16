@@ -152,10 +152,10 @@ constexpr int snapPriority(SnapKind kind, PrimitiveType primitive, DrawState sta
     const bool lineEnd = primitive == PrimitiveType::Line && state == DrawState::End;
     switch (kind) {
         case SnapKind::Midpoint:           return 1000;
-        case SnapKind::ExtendedIntersection: return 900;
-        case SnapKind::VirtualIntersection:  return 900;
-        case SnapKind::Intersection:              return 900;
-        case SnapKind::Coincident:         return 800;
+        case SnapKind::Coincident:         return 900;
+        case SnapKind::ExtendedIntersection: return 850;
+        case SnapKind::VirtualIntersection:  return 830;
+        case SnapKind::Intersection:              return 800;
         case SnapKind::Tangent:             return 700;
         case SnapKind::Parallel:             return lineEnd ? 650 : 300;
         case SnapKind::Perpendicular:        return lineEnd ? 650 : 300;

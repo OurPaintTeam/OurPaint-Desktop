@@ -144,66 +144,75 @@ protected:
         overlay_.setSnapFeedback(std::move(feedback));
     }
 
-    virtual
+    virtual bool applySnapConstraint(const snap::SnapResult& snap, const core::sketch::GeometryRef& target) {
+    if (snap.objects.empty()) return false;
 
-bool applySnapConstraint(const snap::SnapResult& snap,
-                                     const core::sketch::GeometryRef& target) {
-        using SK = snap::SnapKind;
-        using CT = core::sketch::ConstraintType;
+    using SK = snap::SnapKind;
+    using CT = core::sketch::ConstraintType;
+    using SE = core::sketch::SubElement;
 
-        switch (snap.type) {
-            case SK::Coincident: {
-                if (snap.objects.empty()) return false;
+    const bool isPointRef = (target.sub == SE::Start || target.sub == SE::End || target.sub == SE::Center);
 
-                core::sketch::ConstraintDefinition def;
-                def.type = CT::Coincident;
-                def.refs = { target, snap.objects[0] };
+    core::sketch::GeometryRef bodyRef = target;
+    bodyRef.sub = SE::Whole;
 
-                if (!document_.sketch().supportsConstraint(def)) return false;
-                auto c = document_.sketch().addConstraint(def);
-                return static_cast<bool>(c);
-            }
+    core::sketch::ConstraintDefinition def;
 
-            case SK::Midpoint: {
-                if (snap.objects.empty()) return false;
-
-                core::sketch::ConstraintDefinition def;
-                def.type = CT::Midpoint;
-                def.refs = { target, snap.objects[0] };
-
-                if (!document_.sketch().supportsConstraint(def)) return false;
-                auto c = document_.sketch().addConstraint(def);
-                return static_cast<bool>(c);
-            }
-            case SK::ExtendedIntersection:
-            case SK::Intersection: {
-                if (snap.objects.empty()) return false;
-
-                bool added = false;
-                for (const auto& obj : snap.objects) {
-                    core::sketch::ConstraintDefinition def;
-                    def.type = CT::Coincident;
-                    def.refs = { target, obj };
-
-                    if (!document_.sketch().supportsConstraint(def)) continue;
-                    auto c = document_.sketch().addConstraint(def);
-                    if (c) added = true;
-                }
-                return added;
-            }
-                break;
-            case SK::VirtualIntersection:
-                return  true;
-            case SK::Tangent:
-            case SK::Horizontal:
-            case SK::Vertical:
-            case SK::Parallel:
-            case SK::Perpendicular:
-            case SK::None:
-            default:
-                return false;
+    switch (snap.type) {
+        case SK::Coincident:
+        case SK::Intersection:
+        case SK::ExtendedIntersection:
+        case SK::VirtualIntersection: {
+            def.type = CT::Coincident;
+            def.refs = { target, snap.objects[0] };
+            break;
         }
+
+        case SK::Midpoint: {
+            if (!isPointRef) return false;
+            def.type = CT::Midpoint;
+            def.refs = { target, snap.objects[0] };
+            break;
+        }
+
+        case SK::Tangent: {
+            def.type = CT::Tangent;
+            def.refs = { bodyRef, snap.objects[0] };
+            break;
+        }
+
+        case SK::Horizontal: {
+            def.type = CT::Horizontal;
+            def.refs = { bodyRef };
+            break;
+        }
+
+        case SK::Vertical: {
+            def.type = CT::Vertical;
+            def.refs = { bodyRef };
+            break;
+        }
+
+        case SK::Parallel: {
+            def.type = CT::Parallel;
+            def.refs = { bodyRef, snap.objects[0] };
+            break;
+        }
+
+        case SK::Perpendicular: {
+            def.type = CT::Perpendicular;
+            def.refs = { bodyRef, snap.objects[0] };
+            break;
+        }
+
+        default:
+            return false;
     }
+
+    if (!document_.sketch().supportsConstraint(def)) return false;
+    auto c = document_.sketch().addConstraint(def);
+    return static_cast<bool>(c);
+}
 
 public:
     IInteractionTool(core::Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker_)

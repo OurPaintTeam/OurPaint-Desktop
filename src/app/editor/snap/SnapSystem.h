@@ -67,6 +67,7 @@ namespace snap
         std::optional<SnapCandidate> collectIntersection(const SnapRequest& request) const;
         std::optional<SnapCandidate> collectExtendedIntersection(const SnapRequest& request) const;
         std::optional<SnapCandidate> collectVirtualIntersection(const SnapRequest& request) const;
+        std::optional<SnapCandidate> collectTangent(const SnapRequest& request) const;
     };
 } // namespace snap
 

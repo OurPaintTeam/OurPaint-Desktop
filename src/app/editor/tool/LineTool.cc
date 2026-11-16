@@ -48,7 +48,7 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
 
-    if (!snap_results_.empty()) {
+    if (!snap_results_.empty() && snap_results_[0].type != snap::SnapKind::Tangent) {
         v.x = snap_results_[0].point.position.x;
         v.y = snap_results_[0].point.position.y;
     }
