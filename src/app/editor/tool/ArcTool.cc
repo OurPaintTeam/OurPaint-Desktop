@@ -28,7 +28,7 @@ void ArcTool::reset() {
 }
 
 void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
-    const glm::dvec2 cursor = screenToWorld(e.x, e.y);
+    glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
     snap::SnapRequest request{
         core::sketch::Vec2{cursor.x, cursor.y},
@@ -40,16 +40,30 @@ void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
         case Mode::ThreePoints:
             if (step_ == Step::WaitingFirstInput) {
                 request.drawState  = snap::DrawState::Start;
-            }else  if (step_ == Step::WaitingSecondInput) {
+            } else if (step_ == Step::WaitingSecondInput) {
                 request.drawState  = snap::DrawState::Body;
                 request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
-            }else if (step_ == Step::WaitingThirdInput) {
-            request.drawState  = snap::DrawState::End;
+            } else if (step_ == Step::WaitingThirdInput) {
+                request.drawState  = snap::DrawState::End;
                 request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
                 request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}});
+            }
+            break;
+    }
 
+    snapVisual(request);
+
+    if (!snap_results_.empty()) {
+        cursor.x = snap_results_[0].point.position.x;
+        cursor.y = snap_results_[0].point.position.y;
+    }
+
+    switch (mode_) {
+        case Mode::ThreePoints:
+            if (step_ == Step::WaitingThirdInput) {
                 Arc ca = buildArcFromThreePoints(points_[0], points_[1], cursor);
-                if (!ca.valid) {
+
+                if (ca.valid) {
                     if (!overlay_.arcs_.empty()) {
                         overlay_.arcs_[0].r = ca.r;
                         overlay_.arcs_[0].cx = ca.cx;
@@ -64,13 +78,9 @@ void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
                         overlay_.points_[3].y = ca.cy;
                     }
                 }
-
-            } else if (step_ == Step::WaitingSecondInput) {
-                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
             }
             break;
     }
-    snapVisual(request);
 }
 
 void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {

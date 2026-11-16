@@ -70,46 +70,72 @@ namespace snap
     std::vector<SnapResult> SnapSystem::snapForDrawing(const SnapRequest& request) const
     {
         std::vector<SnapResult> results;
-        if (request.action != ActionType::Draw)
-        {
-            return results;
-        }
+        if (request.action != ActionType::Draw) return results;
 
         const SnapMask mask = snapMaskFor(request.primitive, request.drawState);
-        if (mask == SnapMask::None)
-        {
-            return results;
-        }
+        if (mask == SnapMask::None) return results;
+
+        const bool isLineEnd = request.primitive == PrimitiveType::Line &&
+            request.drawState == DrawState::End;
 
         std::optional<SnapCandidate> best;
+        std::optional<SnapCandidate> bestCoincident;
+        std::optional<SnapCandidate> bestDirectional;
 
-        auto append = [&best](std::optional<SnapCandidate> c)
+        auto append = [&](std::optional<SnapCandidate> c)
         {
-            if (!c)
+            if (!c) return;
+
+            if (isLineEnd)
             {
-                return;
+                if (c->result.type == SnapKind::Coincident || c->result.type == SnapKind::Midpoint)
+                {
+                    if (!bestCoincident || c->priority > bestCoincident->priority ||
+                        (c->priority == bestCoincident->priority && c->distanceSquared < bestCoincident->
+                            distanceSquared))
+                    {
+                        bestCoincident = std::move(c);
+                    }
+                }
+                else if (c->result.type == SnapKind::Horizontal ||
+                    c->result.type == SnapKind::Vertical ||
+                    c->result.type == SnapKind::Tangent)
+                {
+                    if (!bestDirectional || c->priority > bestDirectional->priority ||
+                        (c->priority == bestDirectional->priority && c->distanceSquared < bestDirectional->
+                            distanceSquared))
+                    {
+                        bestDirectional = std::move(c);
+                    }
+                }
+                else
+                {
+                    if (!best || c->priority > best->priority ||
+                        (c->priority == best->priority && c->distanceSquared < best->distanceSquared))
+                    {
+                        best = std::move(c);
+                    }
+                }
             }
-            if (!best || c->priority > best->priority || (c->priority == best->priority && c->distanceSquared < best->
-                distanceSquared))
+            else
             {
-                best = std::move(c);
+                if (!best || c->priority > best->priority ||
+                    (c->priority == best->priority && c->distanceSquared < best->distanceSquared))
+                {
+                    best = std::move(c);
+                }
             }
         };
 
         for (SnapKind kind : kAllSnapKinds)
         {
-            if (!hasSnap(mask, kind))
-            {
-                continue;
-            }
+            if (!hasSnap(mask, kind)) continue;
             switch (kind)
             {
-            case SnapKind::Coincident:
-                append(collectCoincident(request));
+            case SnapKind::Coincident: append(collectCoincident(request));
                 break;
-            case SnapKind::Midpoint:
-                append(collectMidpoint(request));
-                break;
+            case SnapKind::Midpoint: append(collectMidpoint(request));
+                break; 
             case SnapKind::Intersection: append(collectIntersection(request));
                 break;
             case SnapKind::ExtendedIntersection: append(collectExtendedIntersection(request));
@@ -118,25 +144,36 @@ namespace snap
                 break;
             case SnapKind::Tangent: append(collectTangent(request));
                 break;
-            case SnapKind::Horizontal:
-                append(collectDirection(request, SnapKind::Horizontal));
+            case SnapKind::Horizontal: append(collectDirection(request, SnapKind::Horizontal));
                 break;
-            case SnapKind::Vertical:
-                append(collectDirection(request, SnapKind::Vertical));
+            case SnapKind::Vertical: append(collectDirection(request, SnapKind::Vertical));
                 break;
-            case SnapKind::Parallel: /*append(collectParallel(request));*/
-                break;
-            case SnapKind::Perpendicular: /*append(collectPerpendicular(request));*/
-                break;
-            case SnapKind::AngleToLine: /*append(collectAngleToLine(request));*/
-                break;
-            case SnapKind::Collinear: /*append(collectCollinear(request));*/
-                break;
-            case SnapKind::None:
-                break;
+            case SnapKind::Collinear: /*append(collectCollinear(request));*/ break;
+            case SnapKind::Parallel: /*append(collectParallel(request));*/ break;
+            case SnapKind::Perpendicular: /*append(collectPerpendicular(request));*/ break;
+            case SnapKind::AngleToLine: /*append(collectAngleToLine(request));*/ break;
+            case SnapKind::None: break;
             }
         }
-        if (best) results.push_back(std::move(best->result));
+
+        if (isLineEnd)
+        {
+            if (bestCoincident && bestDirectional)
+            {
+                results.push_back(std::move(bestCoincident->result));
+                results.push_back(std::move(bestDirectional->result));
+                return results;
+            }
+            if (bestCoincident) results.push_back(std::move(bestCoincident->result));
+            if (bestDirectional) results.push_back(std::move(bestDirectional->result));
+            if (results.empty() && best) results.push_back(std::move(best->result));
+            return results;
+        }
+
+        if (best)
+        {
+            results.push_back(std::move(best->result));
+        }
         return results;
     }
 
@@ -255,5 +292,4 @@ namespace snap
 
         return direction::collectFromEntities(request, entities.value(), tolWorld, wantKind);
     }
-
 } // namespace snap

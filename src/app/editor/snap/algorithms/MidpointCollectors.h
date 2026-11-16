@@ -36,7 +36,6 @@ collectFromLines(const SnapRequest& request,
     if (!bodySnapAllowed(request)) {
         return std::nullopt;
     }
-
     const double tol2 = tolWorld * tolWorld;
     const int prio = snapPriority(SnapKind::Midpoint,
                                   request.primitive, request.drawState);

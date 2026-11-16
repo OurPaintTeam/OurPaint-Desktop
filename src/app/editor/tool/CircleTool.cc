@@ -19,7 +19,7 @@ void CircleTool::setMode(Mode mode) {
 }
 
 void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
-    const glm::dvec2 cursor = screenToWorld(e.x, e.y);
+    glm::dvec2 cursor = screenToWorld(e.x, e.y);
 
     snap::SnapRequest request{
         core::sketch::Vec2{cursor.x, cursor.y},
@@ -29,27 +29,59 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
 
     switch (mode_) {
         case Mode::CenterRadius:
-            request.drawState  = snap::DrawState::Center;
+            request.drawState = snap::DrawState::Center;
             if (step_ == Step::WaitingSecondInput) {
                 request.drawState = snap::DrawState::Body;
-                request.anchors.push_back(
-               core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+            }
+            break;
+        case Mode::CenterDiameter:
+            request.drawState = snap::DrawState::Center;
+            if (step_ == Step::WaitingSecondInput) {
+                request.drawState = snap::DrawState::Body;
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+            }
+            break;
+        case Mode::DiameterTwoPoints:
+            request.drawState = snap::DrawState::Body;
+            if (step_ == Step::WaitingSecondInput) {
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+            }
+            break;
+        case Mode::ThreePoints:
+            request.drawState = snap::DrawState::Body;
+            if (step_ == Step::WaitingSecondInput) {
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+            } else if (step_ == Step::WaitingThirdInput) {
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+                request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}});
+            }
+            break;
+        default:
+            break;
+    }
 
+    snapVisual(request);
+
+    if (!snap_results_.empty()) {
+        cursor.x = snap_results_[0].point.position.x;
+        cursor.y = snap_results_[0].point.position.y;
+    }
+
+    switch (mode_) {
+        case Mode::CenterRadius:
+            if (step_ == Step::WaitingSecondInput) {
                 double r = glm::distance(cursor, points_[0]);
-                overlay_.circles_[0].r = r;
+                if (!overlay_.circles_.empty()) {
+                    overlay_.circles_[0].r = r;
+                }
                 if (overlay_.points_.size() > 1) {
                     overlay_.points_[1] = {static_cast<float>(cursor.x), static_cast<float>(cursor.y)};
                 }
             }
             break;
         case Mode::CenterDiameter:
-            request.drawState = snap::DrawState::Center;
             if (step_ == Step::WaitingSecondInput) {
-            request.drawState = snap::DrawState::Body;
-
-                request.anchors.push_back(
-                   core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
-
                 double diameter = glm::distance(cursor, points_[0]);
                 double r = diameter / 2.0;
                 if (!overlay_.circles_.empty()) {
@@ -61,13 +93,7 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
             }
             break;
         case Mode::DiameterTwoPoints:
-            request.drawState = snap::DrawState::Body;
-
             if (step_ == Step::WaitingSecondInput) {
-
-                request.anchors.push_back(
-                    core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
-
                 glm::dvec2 a = points_[0];
                 glm::dvec2 b = cursor;
                 glm::dvec2 center = (a + b) * 0.5;
@@ -78,55 +104,35 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
                     overlay_.circles_[0].r = r;
                 }
                 if (overlay_.points_.size() > 2) {
-                    // center point
                     overlay_.points_[1].x = center.x;
                     overlay_.points_[1].y = center.y;
-                    // second point
                     overlay_.points_[2].x = cursor.x;
                     overlay_.points_[2].y = cursor.y;
                 }
             }
             break;
         case Mode::ThreePoints:
-                request.drawState = snap::DrawState::Body;
-            if (step_ == Step::WaitingSecondInput) {
-                request.anchors.push_back(
-                   core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
-            }
-            else if (step_ == Step::WaitingThirdInput) {
-
-                request.anchors.push_back(
-                    core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
-                request.anchors.push_back(
-                    core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}});
-
+            if (step_ == Step::WaitingThirdInput) {
                 const auto circle = buildCircleFromThreePoints(points_[0], points_[1], cursor);
-                const Circle c = circle.value_or(Circle{0.0, 0.0, 0.0});
-
-                if (!overlay_.circles_.empty()) {
-                    overlay_.circles_[0].r = c.r;
-                    overlay_.circles_[0].cx = c.cx;
-                    overlay_.circles_[0].cy = c.cy;
-                }
-                if (overlay_.points_.size() > 3) {
-                    overlay_.points_[2].x = cursor.x;
-                    overlay_.points_[2].y = cursor.y;
-                    overlay_.points_[3].x = c.cx;
-                    overlay_.points_[3].y = c.cy;
+                if (circle) {
+                    const Circle c = *circle;
+                    if (!overlay_.circles_.empty()) {
+                        overlay_.circles_[0].r = c.r;
+                        overlay_.circles_[0].cx = c.cx;
+                        overlay_.circles_[0].cy = c.cy;
+                    }
+                    if (overlay_.points_.size() > 3) {
+                        overlay_.points_[2].x = cursor.x;
+                        overlay_.points_[2].y = cursor.y;
+                        overlay_.points_[3].x = c.cx;
+                        overlay_.points_[3].y = c.cy;
+                    }
                 }
             }
             break;
-
-        case Mode::TangentTwoObjectsRadius:
-            // handleTangentTwoLinesMove(cursor);
-            break;
-
-        case Mode::TangentThreeObjects:
-            // handleTangentThreeLinesMove(cursor);
+        default:
             break;
     }
-
-    snapVisual(request);
 }
 
 bool intersectLines(glm::dvec2 p1, glm::dvec2 d1, glm::dvec2 p2, glm::dvec2 d2, glm::dvec2& out) {

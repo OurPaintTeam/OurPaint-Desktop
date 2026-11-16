@@ -13,6 +13,10 @@ void PointTool::onMouseMove(const input::MouseMoveEvent& e) {
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     snap::SnapRequest request{core::sketch::Vec2{v.x, v.y}, snap::ActionType::Draw, snap::PrimitiveType::Point, snap::DrawState::Start};
     snapVisual(request);
+    if (!snap_results_.empty()) {
+        v.x = snap_results_[0].point.position.x;
+        v.y = snap_results_[0].point.position.y;
+    }
 }
 
 void PointTool::onMouseButton(const input::MouseButtonEvent& e) {
