@@ -55,6 +55,8 @@ private:
     snap::SnapResult firstSnap_;
     snap::SnapResult secondSnap_;
     snap::SnapResult thirdSnap_;
+
+
 };
 
 #endif // ! OURPAINT_APPLICATION_ARC_TOOL_H_

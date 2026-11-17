@@ -1,10 +1,11 @@
 #ifndef OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
 #define OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
 
-#include "../InputEvents.h"
-#include "../OverlayModel.h"
-#include "../render/SnapFeedback.h"
-#include "snap/SnapSystem.h"
+#include "InputEvents.h"
+#include "OverlayModel.h"
+#include "SnapFeedback.h"
+#include "SnapSystem.h"
+#include "Document.h"
 
 namespace core {
 class Document;
@@ -26,90 +27,182 @@ protected:
     snap::SnapSystem& snap_;
     OverlayModel& overlay_;
     Cpu2dPicker& picker_;
-    snap::SnapResult snap_result_;
+    std::vector<snap::SnapResult> snap_results_;
 
-    void snapVisual(const snap::SnapRequest& request) {
-        const auto snap_result = snap_.getSnapCandidate(request);
-        snap_result_ = snap_result;
+    virtual void snapVisualClear() {
+        snap_results_.clear();
+        overlay_.clearSnap();
+    }
+    virtual void snapVisual(const snap::SnapRequest& request) {
+        snapVisualClear();
 
-        if (!snap_result.snapped) {
-            overlay_.clearSnap();
+        const auto results = snap_.getSnapCandidates(request);
+
+        if (results.empty()) {
             return;
         }
 
+        snap_results_ = results;
+
         app::SnapFeedback feedback;
-        feedback.position = {snap_result.point.position.x, snap_result.point.position.y};
 
-        switch (snap_result.type) {
-            case snap::SnapKind::StandalonePoint:
-            case snap::SnapKind::LineBody:
-            case snap::SnapKind::CircleBody:
-            case snap::SnapKind::ArcBody:
-                feedback.glyph = app::SnapGlyph::Point;
-                feedback.sources = {snap_result.objects.at(0)};
-                break;
+        for (const auto& snap_result : results) {
+            feedback.position = {snap_result.point.position.x, snap_result.point.position.y};
 
-            case snap::SnapKind::LineEndpoint:
-            case snap::SnapKind::ArcEndpoint:
-                feedback.glyph = app::SnapGlyph::Endpoint;
-                feedback.sources = {snap_result.objects.at(0)};
-                break;
+            switch (snap_result.type) {
+                case snap::SnapKind::None: {
+                } break;
+                case snap::SnapKind::Collinear:
+                    feedback.glyph = app::SnapGlyph::Direction;
+                    feedback.sources = {snap_result.objects};
+                    if (!snap_result.guideLines.empty()) {
+                        feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+                    }
+                    break;
 
-            case snap::SnapKind::LineMidpoint:
-                feedback.glyph = app::SnapGlyph::Midpoint;
-                feedback.sources = {snap_result.objects.at(0)};
-                break;
+                case snap::SnapKind::Coincident: {
+                    const auto sub = snap_result.objects.at(0).sub;
+                    if (sub == core::sketch::SubElement::Center) {
+                        feedback.glyph = app::SnapGlyph::Center;
+                    } else if (sub == core::sketch::SubElement::Start || sub == core::sketch::SubElement::End) {
+                        feedback.glyph = app::SnapGlyph::Endpoint;
+                    } else if (sub == core::sketch::SubElement::Whole) {
+                        feedback.glyph = app::SnapGlyph::Point;
+                    } else {
+                        feedback.glyph = app::SnapGlyph::Point;
+                    }
+                    feedback.sources = {snap_result.objects};
+                    break;
+                }
 
-            case snap::SnapKind::CircleCentre:
-            case snap::SnapKind::ArcCentre:
-                feedback.glyph = app::SnapGlyph::Center;
-                feedback.sources = {snap_result.objects.at(0)};
-                break;
+                case snap::SnapKind::Midpoint:
+                    feedback.glyph = app::SnapGlyph::Midpoint;
+                    feedback.sources = {snap_result.objects};
+                    break;
 
-            case snap::SnapKind::Intersection:
-                feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {snap_result.objects.at(0), snap_result.objects.at(1)};
-                break;
+                case snap::SnapKind::Intersection:
+                    feedback.glyph = app::SnapGlyph::Intersection;
+                    feedback.sources = {snap_result.objects};
+                    break;
 
-            case snap::SnapKind::ExtendedIntersection:
-                feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {snap_result.objects.at(0), snap_result.objects.at(1)};
-                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
-                break;
+                case snap::SnapKind::ExtendedIntersection:
+                    feedback.glyph = app::SnapGlyph::Intersection;
+                    feedback.sources = {snap_result.objects};
+                    if (!snap_result.guideLines.empty()) {
+                        feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
+                    }
+                    break;
 
-            case snap::SnapKind::VirtualIntersection:
-                feedback.glyph = app::SnapGlyph::Intersection;
-                feedback.sources = {snap_result.objects.at(0), snap_result.objects.at(1)};
-                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment},
-                                   {snap_result.guideLines.at(1), app::SnapGuideExtent::Segment}};
-                break;
+                case snap::SnapKind::VirtualIntersection:
+                    feedback.glyph = app::SnapGlyph::Intersection;
+                    feedback.sources = {snap_result.objects};
+                    if (snap_result.guideLines.size() >= 2) {
+                        feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment},
+                                           {snap_result.guideLines.at(1), app::SnapGuideExtent::Segment}};
+                    }
+                    break;
 
-            case snap::SnapKind::Parallel:
-            case snap::SnapKind::Perpendicular:
-                feedback.glyph = app::SnapGlyph::Direction;
-                feedback.sources = {snap_result.objects.at(0)};
-                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
-                break;
+                case snap::SnapKind::Parallel:
+                case snap::SnapKind::Perpendicular:
+                    feedback.glyph = app::SnapGlyph::Direction;
+                    feedback.sources = {snap_result.objects};
+                    if (!snap_result.guideLines.empty()) {
+                        feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
+                    }
+                    break;
 
-            case snap::SnapKind::Horizontal:
-            case snap::SnapKind::Vertical:
-                feedback.glyph = app::SnapGlyph::Direction;
-                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
-                break;
+                case snap::SnapKind::Horizontal:
+                case snap::SnapKind::Vertical:
+                    feedback.glyph = app::SnapGlyph::Direction;
+                    if (!snap_result.guideLines.empty()) {
+                        feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+                    }
+                    break;
 
-            case snap::SnapKind::Tangent:
-                feedback.glyph = app::SnapGlyph::Point;
-                feedback.sources = {snap_result.objects.at(0)};
-                if (!snap_result.guideLines.empty())
-                feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
-                break;
+                case snap::SnapKind::Tangent:
+                    feedback.glyph = app::SnapGlyph::Point;
+                    feedback.sources = {snap_result.objects};
+                    if (!snap_result.guideLines.empty()) {
+                        feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::InfiniteLine}};
+                    }
+                    break;
 
-            default:
-                overlay_.clearSnap();
-                return;
+                case snap::SnapKind::AngleToLine:
+                    feedback.glyph = app::SnapGlyph::Point;
+                    feedback.sources = {snap_result.objects};
+                    if (!snap_result.guideLines.empty()) {
+                        feedback.guides = {{snap_result.guideLines.at(0), app::SnapGuideExtent::Segment}};
+                    }
+                    break;
+
+                default:
+                    overlay_.clearSnap();
+                    return;
+            }
         }
 
         overlay_.setSnapFeedback(std::move(feedback));
+    }
+
+    virtual
+
+bool applySnapConstraint(const snap::SnapResult& snap,
+                                     const core::sketch::GeometryRef& target) {
+        using SK = snap::SnapKind;
+        using CT = core::sketch::ConstraintType;
+
+        switch (snap.type) {
+            case SK::Coincident: {
+                if (snap.objects.empty()) return false;
+
+                core::sketch::ConstraintDefinition def;
+                def.type = CT::Coincident;
+                def.refs = { target, snap.objects[0] };
+
+                if (!document_.sketch().supportsConstraint(def)) return false;
+                auto c = document_.sketch().addConstraint(def);
+                return static_cast<bool>(c);
+            }
+
+            case SK::Midpoint: {
+                if (snap.objects.empty()) return false;
+
+                core::sketch::ConstraintDefinition def;
+                def.type = CT::Midpoint;
+                def.refs = { target, snap.objects[0] };
+
+                if (!document_.sketch().supportsConstraint(def)) return false;
+                auto c = document_.sketch().addConstraint(def);
+                return static_cast<bool>(c);
+            }
+            case SK::ExtendedIntersection:
+            case SK::Intersection: {
+                if (snap.objects.empty()) return false;
+
+                bool added = false;
+                for (const auto& obj : snap.objects) {
+                    core::sketch::ConstraintDefinition def;
+                    def.type = CT::Coincident;
+                    def.refs = { target, obj };
+
+                    if (!document_.sketch().supportsConstraint(def)) continue;
+                    auto c = document_.sketch().addConstraint(def);
+                    if (c) added = true;
+                }
+                return added;
+            }
+                break;
+            case SK::VirtualIntersection:
+                return  true;
+            case SK::Tangent:
+            case SK::Horizontal:
+            case SK::Vertical:
+            case SK::Parallel:
+            case SK::Perpendicular:
+            case SK::None:
+            default:
+                return false;
+        }
     }
 
 public:

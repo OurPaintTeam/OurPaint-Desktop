@@ -25,6 +25,7 @@ private:
     glm::dvec2 firstPoint_;
     glm::dvec2 lastCursorWorldPos_;
     snap::SnapResult firstSnap_;
+
 };
 
 #endif // ! OURPAINT_APPLICATION_LINE_TOOL_H_

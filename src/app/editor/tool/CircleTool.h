@@ -53,9 +53,7 @@ private:
         double r;
     };
     static std::optional<Circle> buildCircleFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2);
-    void pushCircleToModel(const Circle& c) const;
-
-
+    core::sketch::Result<core::sketch::EntityId> pushCircleToModel(const Circle& c) const;
 
 private:
     Mode mode_ = Mode::CenterRadius;

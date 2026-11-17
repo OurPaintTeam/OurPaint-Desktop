@@ -30,6 +30,7 @@ CursorTool::CursorTool(Document& document,
       constraintPresentation_(constraintPresentation) {}
 
 void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
+    snapVisualClear();
     const glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
     lastLogicalPos_ = {e.x, e.y};
