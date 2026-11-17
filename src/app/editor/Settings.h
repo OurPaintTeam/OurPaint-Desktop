@@ -1,18 +1,19 @@
-#ifndef OURPAINT_SETTINGS_H
-#define OURPAINT_SETTINGS_H
+#ifndef OURPAINT_SETTINGS_H_
+#define OURPAINT_SETTINGS_H_
+
 #include "DocumentManager.h"
 
 class Settings {
 public:
     Settings(DocumentManager& document);
 
-    void   set_osnap(bool value);
-    void   set_grid(bool value);
+    void   set_osnap    (bool   value);
+    void   set_grid     (bool   value);
     void   set_step_grid(double value);
     void   set_snap_snap(double value);
 
-    bool   get_osnap()    const;
-    bool   get_grid()     const;
+    bool   get_osnap    () const;
+    bool   get_grid     () const;
     double get_step_grid() const;
     double get_snap_snap() const;
 
@@ -24,4 +25,4 @@ private:
     double step_snap = 0.0;
 };
 
-#endif  // OURPAINT_SETTINGS_H
+#endif  // OURPAINT_SETTINGS_H_

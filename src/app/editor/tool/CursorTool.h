@@ -3,10 +3,11 @@
 
 #include "../../../core/Document.h"
 #include "../../../render/Camera2D.h"
-#include "../render/constraints/ConstraintPresentationState.h"
-#include "../pick/Cpu2dPicker.h"
 #include "../OverlayModel.h"
+#include "../pick/Cpu2dPicker.h"
+#include "../render/constraints/ConstraintPresentationState.h"
 #include "IInteractionTool.h"
+#include "geometry/GeometryTypes.h"
 #include "snap/SnapSystem.h"
 
 namespace app {
@@ -39,7 +40,9 @@ private:
     void updateDimensionDrag(glm::dvec2 position);
     void endDimensionDrag(bool commit);
 
-    void tryApplyPointOnPointConstraintNearCursor(double xLogic, double yLogic);
+    std::optional<std::pair<sketch::GeometryRef, sketch::GeometryRef>> findTwoPointsNearCursor(double xLogic, double yLogic);
+    void applyPointOnPointConstraint(sketch::GeometryRef p1, sketch::GeometryRef p2);
+    void previewTwoPoints(sketch::GeometryRef p1, sketch::GeometryRef p2);
 
     enum class State {
         Idle,
@@ -52,6 +55,8 @@ private:
 
     State state_ = State::Idle;
     sketch::Sketch& sketch_;
+
+    glm::ivec2 lastLogicalPos_{};
 
     glm::dvec2 lastPos_{};
     glm::dvec2 pressWorldPos_{};

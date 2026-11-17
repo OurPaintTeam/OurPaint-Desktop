@@ -32,6 +32,7 @@ CursorTool::CursorTool(Document& document,
 void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
     const glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
     lastCursorWorldPos_ = v;
+    lastLogicalPos_ = {e.x, e.y};
 
     if (dimensionDrag_) {
         if (input::has_flag(e.buttons, input::MouseButton::Left)) {
@@ -134,6 +135,14 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
             }
         }
     }
+
+    if (e.modifiers == input::Modifiers::Alt) {
+        overlay_.points_.clear();
+        const auto& pair = findTwoPointsNearCursor(lastLogicalPos_.x, lastLogicalPos_.y);
+        if (pair) {
+            previewTwoPoints(pair.value().first, pair.value().second);
+        }
+    }
 }
 
 void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
@@ -148,7 +157,11 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
         // Add point-on-point constraint for near points
         if (alt) {
             state_ = State::Idle;
-            return tryApplyPointOnPointConstraintNearCursor(e.x, e.y);
+            overlay_.points_.clear();
+            const auto& pair = findTwoPointsNearCursor(e.x, e.y);
+            if (pair) {
+                applyPointOnPointConstraint(pair.value().first, pair.value().second);
+            }
         }
 
         // No modifiers -> mb pick dimensions
@@ -210,12 +223,8 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
 }
 
 void CursorTool::onKey(const input::KeyEvent& e) {
-    if (e.action != input::KeyAction::Press || e.isAutoRepeat) {
-        return;
-    }
-
     // Delete
-    if (e.key == input::KeyCode::Delete) {
+    if (e.action == input::KeyAction::Press && e.key == input::KeyCode::Delete) {
         const auto& selected = overlay_.selection_.model.items();
         std::set<sketch::EntityId> seen;
         std::vector<sketch::EntityId> ids;
@@ -237,12 +246,26 @@ void CursorTool::onKey(const input::KeyEvent& e) {
     }
 
     // ctrl+C/ctrl+V
-    if (e.modifiers == input::Modifiers::Ctrl) {
+    if (e.action == input::KeyAction::Press && e.modifiers == input::Modifiers::Ctrl) {
         if (e.key == input::KeyCode::C) {
             copySelection();
         } else if (e.key == input::KeyCode::V) {
             pasteSelection();
         }
+    }
+
+    // alt (Coincident)
+    if (e.action == input::KeyAction::Press && e.modifiers == input::Modifiers::Alt) {
+        overlay_.points_.clear();
+
+        const auto& pair = findTwoPointsNearCursor(lastLogicalPos_.x, lastLogicalPos_.y);
+        if (pair) {
+            previewTwoPoints(pair.value().first, pair.value().second);
+        }
+    }
+
+    if (e.action == input::KeyAction::Release) {
+        overlay_.points_.clear();
     }
 }
 
@@ -483,18 +506,18 @@ sketch::Result<sketch::SolveDiagnostics> CursorTool::moveSelection(sketch::Vec2 
     return sketch_.dragPoints(requests, {sketch::TangencyDragPolicy::SwitchLineSide, camera_.screenLogicalToWorld(4.0)});
 }
 
-void CursorTool::tryApplyPointOnPointConstraintNearCursor(double xLogic, double yLogic) {
+std::optional<std::pair<sketch::GeometryRef, sketch::GeometryRef>> CursorTool::findTwoPointsNearCursor(double xLogic, double yLogic) {
     const glm::dvec2 worldCursor = camera_.screenLogicalToWorld({xLogic, yLogic});
     const auto points = sketch_.pointElements();
     if (!points) {
-        return;
+        return std::nullopt;
     }
     if (points.value().size() < 2) {
-        return;
+        return std::nullopt;
     }
     const auto constraints = sketch_.constraints();
     if (!constraints) {
-        return;
+        return std::nullopt;
     }
 
     const auto& elements = points.value();
@@ -534,7 +557,7 @@ void CursorTool::tryApplyPointOnPointConstraintNearCursor(double xLogic, double 
         }
     }
     if (!first) {
-        return;
+        return std::nullopt;
     }
 
     std::optional<size_t> second;
@@ -550,15 +573,46 @@ void CursorTool::tryApplyPointOnPointConstraintNearCursor(double xLogic, double 
         }
     }
     if (!second) {
-        return;
+        return std::nullopt;
     }
 
+    return std::make_pair(elements[*first].ref, elements[*second].ref);
+}
+
+void CursorTool::applyPointOnPointConstraint(sketch::GeometryRef p1, sketch::GeometryRef p2) {
     sketch::ConstraintDefinition def;
     def.type = sketch::ConstraintType::Coincident;
-    def.refs = {elements[*first].ref, elements[*second].ref};
-    auto result = sketch_.addConstraint(def);
+    def.refs = {p1, p2};
+
+    const auto first = sketch_.pointPosition(p1);
+    const auto second = sketch_.pointPosition(p2);
+    if (!first || !second) {
+        return;
+    }
+    const sketch::Vec2 position =
+        sketch::Vec2{std::midpoint(first.value().x, second.value().x), std::midpoint(first.value().y, second.value().y)};
+    const sketch::PointTarget target{p1, position};
+    const sketch::SolveOptions options{std::span(&target, 1), sketch::TargetPolicy::Prefer};
+    auto result = sketch_.addConstraint(def, options);
     if (!result) {
         return;
     }
     sketch_.solve();
+}
+
+void CursorTool::previewTwoPoints(sketch::GeometryRef p1, sketch::GeometryRef p2) {
+    const auto result1 = sketch_.pointPosition(p1);
+    const auto result2 = sketch_.pointPosition(p2);
+    if (result1 && result2) {
+        const auto pushPoint = [&](double x, double y) {
+            OverlayModel::Point p;
+            p.type = OverlayModel::OverlayType::ConstraintHoverToObject;
+            p.x = x;
+            p.y = y;
+            overlay_.points_.push_back(p);
+        };
+
+        pushPoint(result1.value().x, result1.value().y);
+        pushPoint(result2.value().x, result2.value().y);
+    }
 }
