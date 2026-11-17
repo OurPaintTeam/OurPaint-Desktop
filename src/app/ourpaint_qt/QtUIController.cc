@@ -663,8 +663,8 @@ void QtUIController::constraint(Window& window, qint64 id, UI::ConstraintType ty
         case UI::ConstraintType::Equal:
             tool = ToolId::Equal;
             break;
-        case UI::ConstraintType::FixUnfix:
-            tool = ToolId::FixUnfix;
+        case UI::ConstraintType::Fix:
+            tool = ToolId::Fix;
             break;
         case UI::ConstraintType::Concentric:
             tool = ToolId::Concentric;

@@ -37,7 +37,7 @@ enum class ToolId {
     Perpendicular,
     Tangent,
     Equal,
-    FixUnfix,
+    Fix,
     Concentric,
     Midpoint,
     Collinear,

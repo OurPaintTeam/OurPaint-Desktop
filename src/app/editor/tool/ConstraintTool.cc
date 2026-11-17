@@ -197,7 +197,7 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
             }
             break;
         }
-        case ToolId::FixUnfix: {
+        case ToolId::Fix: {
             auto pick = picker_.pickAtScreenLogical(e.x, e.y);
             if (!pick) {
                 return;
@@ -1045,7 +1045,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
             break;
         }
-        case ToolId::FixUnfix: {
+        case ToolId::Fix: {
             std::vector<sketch::GeometryRef> refs;
             // Pick entities
             if (overlay_.selection_.model.items().empty()) {

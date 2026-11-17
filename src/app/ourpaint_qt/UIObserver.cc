@@ -84,8 +84,8 @@ void UIObserver::presentActiveTool(UI::ProjectManager& window, ToolId tool) {
         case ToolId::Equal:
             present(UI::ConstraintType::Equal);
             break;
-        case ToolId::FixUnfix:
-            present(UI::ConstraintType::FixUnfix);
+        case ToolId::Fix:
+            present(UI::ConstraintType::Fix);
             break;
         case ToolId::Concentric:
             present(UI::ConstraintType::Concentric);
