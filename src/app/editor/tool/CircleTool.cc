@@ -29,29 +29,15 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
 
     switch (mode_) {
         case Mode::CenterRadius:
-            request.drawState  = snap::DrawState::Center;
-            if (step_ == Step::WaitingSecondInput) {
-                request.drawState = snap::DrawState::Body;
-                request.anchors.push_back(
-               core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
-
-                double r = glm::distance(cursor, points_[0]);
-                overlay_.circles_[0].r = r;
-                if (overlay_.points_.size() > 1) {
-                    overlay_.points_[1] = {static_cast<float>(cursor.x), static_cast<float>(cursor.y)};
-                }
-            }
-            break;
         case Mode::CenterDiameter:
             request.drawState = snap::DrawState::Center;
             if (step_ == Step::WaitingSecondInput) {
-            request.drawState = snap::DrawState::Body;
+                request.drawState = snap::DrawState::Body;
 
                 request.anchors.push_back(
                    core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
 
-                double diameter = glm::distance(cursor, points_[0]);
-                double r = diameter / 2.0;
+                double r = glm::distance(cursor, points_[0]);
                 if (!overlay_.circles_.empty()) {
                     overlay_.circles_[0].r = r;
                 }
@@ -159,43 +145,6 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
 
     switch (mode_) {
         case Mode::CenterRadius:
-            if (step_ == Step::WaitingFirstInput) {
-                firstSnap_ = snap_results_.empty() ? snap::SnapResult{}
-                                                   : snap_results_.front();
-                points_.push_back(cursor);
-                overlay_.circles_.push_back(OverlayModel::Circle(cursor.x, cursor.y, 0.0));
-                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
-                overlay_.points_.push_back(OverlayModel::Point(cursor.x, cursor.y));
-                step_ = Step::WaitingSecondInput;
-            } else if (step_ == Step::WaitingSecondInput) {
-                secondSnap_ = snap_results_.empty() ? snap::SnapResult{}
-                                                    : snap_results_.front();
-
-                double cx = points_[0].x;
-                double cy = points_[0].y;
-                double r = glm::distance(cursor, points_[0]);
-
-                auto circleResult = pushCircleToModel({cx, cy, r});
-
-                bool needsSolve = false;
-                if (circleResult) {
-                    const auto circleId = circleResult.value();
-                    using SE = core::sketch::SubElement;
-                    if (applySnapConstraint(firstSnap_,  {circleId, SE::Center})) needsSolve = true;
-                    if (applySnapConstraint(secondSnap_, {circleId, SE::Whole}))  needsSolve = true;
-                }
-                if (needsSolve) {
-                    auto solved = document_.sketch().solve();
-                    if (!solved ||
-                        solved.value().status != core::sketch::SolveStatus::Converged) {
-                        std::cout << "solve err in CircleTool\n";
-                    }
-                }
-
-                reset();
-            }
-            break;
-
         case Mode::CenterDiameter:
             if (step_ == Step::WaitingFirstInput) {
                 firstSnap_ = snap_results_.empty() ? snap::SnapResult{}
@@ -211,8 +160,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
 
                 double cx = points_[0].x;
                 double cy = points_[0].y;
-                double diameter = glm::distance(cursor, points_[0]);
-                double r = diameter / 2.0;
+                double r = glm::distance(cursor, points_[0]);
 
                 auto circleResult = pushCircleToModel({cx, cy, r});
 
