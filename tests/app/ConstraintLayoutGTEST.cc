@@ -7,11 +7,11 @@
 #include <optional>
 #include <vector>
 
-#include "../../src/app/tests/TestTextMeasurer.h"
-#include "../../src/app/viewport/constraints/ConstraintLayout.h"
-#include "../../src/app/viewport/constraints/ConstraintMarkerStyle.h"
-#include "../../src/app/viewport/constraints/ConstraintPresentationState.h"
-#include "../../src/render/Camera2D.h"
+#include "TestTextMeasurer.h"
+#include "constraints/ConstraintLayout.h"
+#include "constraints/ConstraintMarkerStyle.h"
+#include "constraints/ConstraintPresentationState.h"
+#include "Camera2D.h"
 #include "sketch/Sketch.h"
 
 namespace {
@@ -46,7 +46,7 @@ protected:
     }
 
     std::unique_ptr<Sketch> sketch_;
-    Camera2D camera_;
+    render::Camera2D camera_;
     app::ConstraintMarkerStyle style_;
     app::ConstraintPresentationState presentation_;
     app::ConstraintLayout layout_;

@@ -5,12 +5,12 @@
 #include <limits>
 #include <numbers>
 
-#include "../../src/app/tests/TestTextMeasurer.h"
-#include "../../src/app/viewport/constraints/ConstraintLayout.h"
-#include "../../src/app/viewport/constraints/ConstraintMarkerStyle.h"
-#include "../../src/app/viewport/constraints/ConstraintPresentationState.h"
-#include "../../src/app/viewport/constraints/DimensionLayout.h"
-#include "../../src/render/Camera2D.h"
+#include "TestTextMeasurer.h"
+#include "constraints/ConstraintLayout.h"
+#include "constraints/ConstraintMarkerStyle.h"
+#include "constraints/ConstraintPresentationState.h"
+#include "constraints/DimensionLayout.h"
+#include "Camera2D.h"
 #include "sketch/Sketch.h"
 
 namespace {
@@ -53,7 +53,7 @@ protected:
     const app::ConstraintLabel& label() const { return markers_.front().labels.front(); }
 
     Sketch sketch_;
-    Camera2D camera_;
+    render::Camera2D camera_;
     app::ConstraintMarkerStyle style_;
     app::ConstraintPresentationState presentation_;
     TestTextMeasurer textMeasurer_;

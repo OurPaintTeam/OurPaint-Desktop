@@ -44,8 +44,8 @@ protected:
 };
 
 TEST_F(ProjectPersistence, SavesLoadsAndAdoptsDocumentsWithoutChangingTheirIdentityOrSource) {
-    Document first("Same name");
-    Document second("Same name");
+    core::Document first("Same name");
+    core::Document second("Same name");
     ASSERT_TRUE(first.sketch().addPoint({2, 3}));
     ASSERT_TRUE(second.sketch().addLine({0, 0}, {4, 0}));
     const auto firstBytes = core::persistence::encodeDocument(first);
@@ -82,7 +82,7 @@ TEST_F(ProjectPersistence, SavesLoadsAndAdoptsDocumentsWithoutChangingTheirIdent
     EXPECT_EQ(restoredSecond.value(), secondBytes.value());
 
     auto view = loaded.value().view();
-    DocumentManager manager;
+    core::DocumentManager manager;
     const auto firstId = manager.openDocument(std::move(loaded.value().documents[0].document));
     manager.openDocument(std::move(loaded.value().documents[1].document));
     EXPECT_EQ(manager.at(firstId), &view.documents[0].document.get());
@@ -93,7 +93,7 @@ TEST_F(ProjectPersistence, SavesLoadsAndAdoptsDocumentsWithoutChangingTheirIdent
 }
 
 TEST_F(ProjectPersistence, RejectsACorruptLaterDocumentWithoutChangingOpenModelsOrFiles) {
-    Document document("Saved");
+    core::Document document("Saved");
     Project source{{}, {{}, "Example"}, {{"z.ourp", std::cref(document)}, {"a.ourp", std::cref(document)}}};
     const auto copy = root_ / "copy";
     ASSERT_TRUE(saveProjectAs(source, copy));
@@ -102,7 +102,7 @@ TEST_F(ProjectPersistence, RejectsACorruptLaterDocumentWithoutChangingOpenModels
         broken << "Broken CBOR";
         ASSERT_TRUE(broken.good());
     }
-    DocumentManager manager;
+    core::DocumentManager manager;
     const auto id = manager.createNewDocument("Open model");
     const auto* before = manager.at(id);
     const auto loaded = loadProject(copy);
@@ -120,8 +120,8 @@ TEST_F(ProjectPersistence, RejectsACorruptLaterDocumentWithoutChangingOpenModels
 }
 
 TEST_F(ProjectPersistence, EncodingFailureLeavesTheSaveAsDirectoryAbsent) {
-    Document valid("Valid");
-    Document invalid(std::string("\xc3\x28", 2));
+    core::Document valid("Valid");
+    core::Document invalid(std::string("\xc3\x28", 2));
     Project source{{}, {{}, "Example"}, {{"a.ourp", std::cref(valid)}, {"z.ourp", std::cref(invalid)}}};
     const auto copy = root_ / "copy";
     const auto saved = saveProjectAs(source, copy);
