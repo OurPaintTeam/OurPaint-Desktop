@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
         {"Perpendicular" ,ToolId::Perpendicular      ,loadIcon("icons/constraints/Perpendicular.svg" )},
         {"Tangent"       ,ToolId::Tangent            ,loadIcon("icons/constraints/Tangent.svg"       )},
         {"Equal"         ,ToolId::Equal              ,loadIcon("icons/constraints/Equal.svg"         )},
-        {"FixUnfix"      ,ToolId::FixUnfix           ,loadIcon("icons/constraints/FixUnfix.svg"      )},
+        {"FixUnfix"      ,ToolId::Fix                ,loadIcon("icons/constraints/FixUnfix.svg"      )},
         {"Concentric"    ,ToolId::Concentric         ,loadIcon("icons/constraints/Concentric.svg"    )},
         {"Collinear"     ,ToolId::Collinear          ,loadIcon("icons/constraints/Collinear.svg"     )},
         {"Midpoint"      ,ToolId::Midpoint           ,loadIcon("icons/constraints/Midpoint.svg"      )},

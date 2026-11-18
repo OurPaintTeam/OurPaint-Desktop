@@ -150,7 +150,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         endDimensionDrag(false);
         overlay_.hoveredDimension.reset();
-        bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
+        bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift) || input::has_flag(e.modifiers, input::Modifiers::Ctrl);
         bool alt = input::has_flag(e.modifiers, input::Modifiers::Alt);
 
         std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
