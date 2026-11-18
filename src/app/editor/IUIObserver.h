@@ -1,4 +1,5 @@
-#pragma once
+#ifndef OURPAINT_APPLICATION_EDITOR_I_UI_OBSERVER_H_
+#define OURPAINT_APPLICATION_EDITOR_I_UI_OBSERVER_H_
 
 #include <cstdint>
 
@@ -21,3 +22,5 @@ public:
     virtual void redrawRequested(ViewId view) = 0;
 };
 }
+
+#endif // ! OURPAINT_APPLICATION_EDITOR_I_UI_OBSERVER_H_

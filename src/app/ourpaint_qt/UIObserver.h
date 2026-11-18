@@ -1,9 +1,22 @@
-#pragma once
+#ifndef OURPAINT_OURPAINTQT_UI_OBSERVER_H_
+#define OURPAINT_OURPAINTQT_UI_OBSERVER_H_
 
 #include <QObject>
 #include <string>
 
 #include "../editor/IUIObserver.h"
+
+#include <QDataStream>
+#include <QtGlobal>
+inline QDataStream& operator<<(QDataStream& out, app::ViewId v) {
+    return out << static_cast<quint64>(v);
+}
+inline QDataStream& operator>>(QDataStream& in, app::ViewId& v) {
+    quint64 tmp = 0;
+    in >> tmp;
+    v = static_cast<app::ViewId>(tmp);
+    return in;
+}
 
 namespace UI {
 class ProjectManager;
@@ -27,3 +40,5 @@ signals:
     void selectedToolChanged(app::ViewId view, ToolId tool);
     void redraw(app::ViewId view);
 };
+
+#endif // ! OURPAINT_OURPAINTQT_UI_OBSERVER_H_
