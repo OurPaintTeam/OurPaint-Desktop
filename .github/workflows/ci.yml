@@ -30,11 +30,22 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
-      - name: Install Qt and OpenGL development packages
+      - name: Install Qt, OpenGL, Wayland and XKB development packages
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
-            qt6-base-dev libqt6opengl6-dev qt6-svg-dev libgl1-mesa-dev
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-svg-dev \
+            libqt6opengl6-dev \
+            libgl1-mesa-dev \
+            libxkbcommon-dev \
+            libxcb-cursor0 \
+            xorg-dev \
+            libwayland-dev \
+            libwayland-bin \
+            wayland-protocols \
+            pkg-config
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
