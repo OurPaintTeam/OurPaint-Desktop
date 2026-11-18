@@ -4,6 +4,8 @@ project(ourpaint)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
+enable_testing()
+
 include(cmake/Dependencies.cmake)
 include(cmake/OurPaintTests.cmake)
 
