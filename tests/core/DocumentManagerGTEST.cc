@@ -10,29 +10,29 @@
 
 namespace {
 
-static_assert(!std::is_copy_constructible_v<DocumentManager>);
-static_assert(!std::is_copy_assignable_v<DocumentManager>);
+static_assert(!std::is_copy_constructible_v<core::DocumentManager>);
+static_assert(!std::is_copy_assignable_v<core::DocumentManager>);
 
 TEST(DocumentManager, EmptyAndMissingDocumentsAreSafeToQuery) {
-    DocumentManager manager;
+    core::DocumentManager manager;
 
     EXPECT_EQ(manager.count(), 0U);
-    EXPECT_EQ(manager.at(DocumentId{0}), nullptr);
-    EXPECT_EQ(manager.at(InvalidDocumentId), nullptr);
+    EXPECT_EQ(manager.at(core::DocumentId{0}), nullptr);
+    EXPECT_EQ(manager.at(core::InvalidDocumentId), nullptr);
     EXPECT_EQ(manager.at("missing"), nullptr);
-    EXPECT_EQ(manager.findIdByName("missing"), InvalidDocumentId);
-    EXPECT_FALSE(manager.isDocumentSaved(InvalidDocumentId));
+    EXPECT_EQ(manager.findIdByName("missing"), core::InvalidDocumentId);
+    EXPECT_FALSE(manager.isDocumentSaved(core::InvalidDocumentId));
     EXPECT_FALSE(manager.isDocumentSaved("missing"));
     EXPECT_TRUE(manager.isAllDocumentsSaved());
-    EXPECT_FALSE(manager.closeDocument(InvalidDocumentId));
+    EXPECT_FALSE(manager.closeDocument(core::InvalidDocumentId));
     EXPECT_FALSE(manager.closeDocument("missing"));
 }
 
 TEST(DocumentManager, AdoptsTheStagedDocumentWithoutReplacingItsSketch) {
     using namespace core::sketch;
-    DocumentManager manager;
-    auto staged = std::make_unique<Document>("Loaded sketch");
-    Document* original = staged.get();
+    core::DocumentManager manager;
+    auto staged = std::make_unique<core::Document>("Loaded sketch");
+    core::Document* original = staged.get();
     auto& sketch = staged->sketch();
     const auto line = sketch.addLine({1, 2}, {5, 2});
     ASSERT_TRUE(line);
@@ -44,12 +44,12 @@ TEST(DocumentManager, AdoptsTheStagedDocumentWithoutReplacingItsSketch) {
     const ConstraintId constraintId = constraints.value()[0].id;
     staged->path() = "sketch.ourp";
 
-    const DocumentId id = manager.openDocument(std::move(staged));
+    const core::DocumentId id = manager.openDocument(std::move(staged));
 
     EXPECT_EQ(staged, nullptr);
     ASSERT_EQ(manager.at(id), original);
     EXPECT_EQ(manager.count(), 1U);
-    const Document& adopted = *manager.at(id);
+    const core::Document& adopted = *manager.at(id);
     EXPECT_EQ(adopted.name(), "Loaded sketch");
     EXPECT_EQ(adopted.path(), "sketch.ourp");
     EXPECT_TRUE(adopted.isDirty());
@@ -63,9 +63,9 @@ TEST(DocumentManager, AdoptsTheStagedDocumentWithoutReplacingItsSketch) {
 }
 
 TEST(DocumentManager, RejectsNullAdoptionWithoutChangingDocumentsOrConsumingAnId) {
-    DocumentManager manager;
-    const DocumentId first = manager.createNewDocument("First");
-    Document* original = manager.at(first);
+    core::DocumentManager manager;
+    const core::DocumentId first = manager.createNewDocument("First");
+    core::Document* original = manager.at(first);
 
     EXPECT_THROW(manager.openDocument(nullptr), std::invalid_argument);
 
@@ -75,19 +75,19 @@ TEST(DocumentManager, RejectsNullAdoptionWithoutChangingDocumentsOrConsumingAnId
 }
 
 TEST(DocumentManager, ClosingAMiddleDocumentPreservesOtherIdsAndBorrowedAddresses) {
-    DocumentManager manager;
-    const DocumentId first = manager.createNewDocument("First");
-    const DocumentId middle = manager.createNewDocument("Middle");
-    const DocumentId last = manager.createNewDocument("Last");
-    Document* firstDocument = manager.at(first);
-    Document* lastDocument = manager.at(last);
+    core::DocumentManager manager;
+    const core::DocumentId first = manager.createNewDocument("First");
+    const core::DocumentId middle = manager.createNewDocument("Middle");
+    const core::DocumentId last = manager.createNewDocument("Last");
+    core::Document* firstDocument = manager.at(first);
+    core::Document* lastDocument = manager.at(last);
 
     ASSERT_TRUE(manager.closeDocument(middle));
 
     EXPECT_EQ(manager.count(), 2U);
     EXPECT_EQ(manager.at(middle), nullptr);
     EXPECT_EQ(manager.at("Middle"), nullptr);
-    EXPECT_EQ(manager.findIdByName("Middle"), InvalidDocumentId);
+    EXPECT_EQ(manager.findIdByName("Middle"), core::InvalidDocumentId);
     EXPECT_FALSE(manager.isDocumentSaved(middle));
     EXPECT_FALSE(manager.closeDocument(middle));
     EXPECT_EQ(manager.at(first), firstDocument);
@@ -100,9 +100,9 @@ TEST(DocumentManager, ClosingAMiddleDocumentPreservesOtherIdsAndBorrowedAddresse
 }
 
 TEST(DocumentManager, NameLookupsDoNotMarkUnchangedDocumentsDirty) {
-    DocumentManager manager;
-    const DocumentId id = manager.createNewDocument("Unchanged");
-    const DocumentManager& query = manager;
+    core::DocumentManager manager;
+    const core::DocumentId id = manager.createNewDocument("Unchanged");
+    const core::DocumentManager& query = manager;
 
     EXPECT_EQ(query.at("Unchanged"), query.at(id));
     EXPECT_EQ(query.findIdByName("Unchanged"), id);
@@ -114,9 +114,9 @@ TEST(DocumentManager, NameLookupsDoNotMarkUnchangedDocumentsDirty) {
 }
 
 TEST(DocumentManager, RenamingPreservesTheIdAndClosingDoesNotAttemptToSave) {
-    DocumentManager manager;
-    const DocumentId id = manager.createNewDocument("Original");
-    Document* document = manager.at(id);
+    core::DocumentManager manager;
+    const core::DocumentId id = manager.createNewDocument("Original");
+    core::Document* document = manager.at(id);
     ASSERT_NE(document, nullptr);
     document->name() = "Renamed";
     EXPECT_EQ(manager.at("Original"), nullptr);
@@ -134,9 +134,9 @@ TEST(DocumentManager, RenamingPreservesTheIdAndClosingDoesNotAttemptToSave) {
 }
 
 TEST(DocumentManager, ClosingAllDocumentsNeverReusesIdsEvenAcrossRepeatedCalls) {
-    DocumentManager manager;
-    const DocumentId first = manager.createNewDocument("First");
-    const DocumentId last = manager.createNewDocument("Last");
+    core::DocumentManager manager;
+    const core::DocumentId first = manager.createNewDocument("First");
+    const core::DocumentId last = manager.createNewDocument("Last");
     ASSERT_NE(manager.at(last), nullptr);
     manager.at(last)->name() = "Dirty";
     ASSERT_TRUE(manager.closeDocument(first));
@@ -149,7 +149,7 @@ TEST(DocumentManager, ClosingAllDocumentsNeverReusesIdsEvenAcrossRepeatedCalls) 
     EXPECT_TRUE(manager.isAllDocumentsSaved());
     ASSERT_TRUE(manager.closeAllDocuments());
 
-    const DocumentId next = manager.createNewDocument("New");
+    const core::DocumentId next = manager.createNewDocument("New");
     EXPECT_GT(next, last);
     EXPECT_EQ(manager.count(), 1U);
     EXPECT_EQ(manager.at(first), nullptr);

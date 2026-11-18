@@ -179,7 +179,7 @@ TEST(DocumentCodec, ReturnsAnOwnedDocumentAfterInputBytesAreDestroyed) {
 
     ASSERT_TRUE(decoded);
     ASSERT_NE(decoded.value(), nullptr);
-    const Document& document = *decoded.value();
+    const core::Document& document = *decoded.value();
     EXPECT_EQ(document.name(), "Empty sketch");
     EXPECT_TRUE(document.path().empty());
     EXPECT_EQ(document.sketch().entityCount(), 0U);
@@ -188,7 +188,7 @@ TEST(DocumentCodec, ReturnsAnOwnedDocumentAfterInputBytesAreDestroyed) {
 
 TEST(DocumentCodec, EmptyRoundTripRetainsUtf8NamesAndConsumedIdsWithoutFloatingPointConversion) {
     const std::string name = "Sketch \xd0\xad\xd1\x81\xd0\xba\xd0\xb8\xd0\xb7 \xf0\x9f\x8e\xa8";
-    Document document(name);
+    core::Document document(name);
     sketch::SketchSnapshot state;
     state.lastEntityId = (int64_t{1} << 53) + 17;
     state.lastConstraintId = std::numeric_limits<int64_t>::max();
@@ -198,7 +198,7 @@ TEST(DocumentCodec, EmptyRoundTripRetainsUtf8NamesAndConsumedIdsWithoutFloatingP
     ASSERT_TRUE(encoded);
     auto decoded = decodeDocument(encoded.value());
     ASSERT_TRUE(decoded);
-    const Document& restored = *decoded.value();
+    const core::Document& restored = *decoded.value();
     EXPECT_EQ(restored.name(), name);
     const auto snapshot = restored.sketch().snapshot();
     ASSERT_TRUE(snapshot);
@@ -210,13 +210,13 @@ TEST(DocumentCodec, EmptyRoundTripRetainsUtf8NamesAndConsumedIdsWithoutFloatingP
 }
 
 TEST(DocumentCodec, RoundTripsConstrainedSourceWithoutChangingItsState) {
-    Document document("Populated");
+    core::Document document("Populated");
     const auto point = document.sketch().addPoint({3, 4});
     ASSERT_TRUE(point);
     ASSERT_TRUE(document.sketch().addConstraint(
         {sketch::ConstraintType::Fix, {{point.value(), sketch::SubElement::Whole}}, std::nullopt, sketch::Vec2{3, 4}}));
     document.path() = "original.ourp";
-    const Document& source = document;
+    const core::Document& source = document;
 
     const auto before = source.sketch().snapshot();
     ASSERT_TRUE(before);
@@ -251,7 +251,7 @@ TEST(DocumentCodec, RoundTripsNamedDefinitionsForAllCurrentConstraintKinds) {
         auto state = constraintState();
         state.constraints = {{sketch::ConstraintId(41), item.definition}};
         state.lastConstraintId = 50;
-        Document document;
+        core::Document document;
         ASSERT_TRUE(document.sketch().replaceState(state));
 
         const auto encoded = encodeDocument(document);
@@ -293,7 +293,7 @@ TEST(DocumentCodec, PreservesEverySubElementAndDistinctNurbsControlIndices) {
         auto state = constraintState();
         state.constraints = {{ConstraintId(31), definition}};
         state.lastConstraintId = 31;
-        Document document;
+        core::Document document;
         ASSERT_TRUE(document.sketch().replaceState(state));
         const auto encoded = encodeDocument(document);
         ASSERT_TRUE(encoded);
@@ -313,7 +313,7 @@ TEST(DocumentCodec, PreservesEverySubElementAndDistinctNurbsControlIndices) {
                                         {{EntityId(8), SubElement::Control, 2}, {EntityId(8), SubElement::Control, 1}}, 12, std::nullopt};
     state.constraints = {{ConstraintId(32), distance}};
     state.lastConstraintId = 32;
-    Document document;
+    core::Document document;
     ASSERT_TRUE(document.sketch().replaceState(state));
     const auto encoded = encodeDocument(document);
     ASSERT_TRUE(encoded);
@@ -345,7 +345,7 @@ TEST(DocumentCodec, PreservesAllTangencyBranchesAndOperandOrderWithoutReinferrin
         auto state = constraintState();
         state.constraints = {{ConstraintId(17), definition}};
         state.lastConstraintId = 17;
-        Document document;
+        core::Document document;
         ASSERT_TRUE(document.sketch().replaceState(state));
         const auto encoded = encodeDocument(document);
         ASSERT_TRUE(encoded);

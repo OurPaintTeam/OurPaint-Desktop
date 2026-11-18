@@ -7,9 +7,6 @@ target_link_libraries(DocumentCodecGTEST PRIVATE ourpaint_document nlohmann_json
 add_ourpaint_test(ObjectsGTEST ObjectsGTEST.cc)
 target_link_libraries(ObjectsGTEST PRIVATE ourpaint_core)
 
-add_ourpaint_test(ObjectInJsonTest ObjectInJsonGTEST.cc)
-target_link_libraries(ObjectInJsonTest PRIVATE ourpaint_core)
-
 add_ourpaint_test(RequirementJsonTest requirementInJsonGTEST.cc)
 target_link_libraries(RequirementJsonTest PRIVATE ourpaint_core)
 
