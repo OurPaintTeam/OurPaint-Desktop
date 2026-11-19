@@ -761,6 +761,7 @@ Decoded decodeDocument(std::span<const uint8_t> bytes) {
     }
     auto document = std::make_unique<Document>(envelope.at("name").get<std::string>());
     const auto restored = document->sketch().replaceState(snapshot);
+    document->sketch().pushState(); // FOR UNDO/REDO
     if (!restored) {
         return Decoded::failure({CodecErrorCode::InvalidModel, "$", restored.error().message});
     }

@@ -53,7 +53,7 @@ void PointTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
     }
 
-    document_.sketch().push(); // FOR UNDO/REDO
+    document_.sketch().pushState(); // FOR UNDO/REDO
 }
 
 void PointTool::onKey(const input::KeyEvent& e) { (void)e; }

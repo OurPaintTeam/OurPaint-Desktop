@@ -162,7 +162,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
             const auto& pair = findTwoPointsNearCursor(e.x, e.y);
             if (pair) {
                 applyPointOnPointConstraint(pair.value().first, pair.value().second);
-                document_.sketch().push(); // FOR UNDO/REDO
+                document_.sketch().pushState(); // FOR UNDO/REDO
                 return;
             }
         }
@@ -223,8 +223,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
         }
 
         if (state_ == State::DraggingSelection || state_ == State::DraggingDimension) {
-            document_.sketch().push(); // FOR UNDO/REDO
-            std::cout << "push" << '\n';
+            document_.sketch().pushState(); // FOR UNDO/REDO
         }
 
         cancel();
@@ -251,7 +250,7 @@ void CursorTool::onKey(const input::KeyEvent& e) {
             return;
         }
         overlay_.selection_.model.clear();
-        document_.sketch().push(); // FOR UNDO/REDO
+        document_.sketch().pushState(); // FOR UNDO/REDO
         return;
     }
 
@@ -261,7 +260,7 @@ void CursorTool::onKey(const input::KeyEvent& e) {
             copySelection();
         } else if (e.key == input::KeyCode::V) {
             pasteSelection();
-            document_.sketch().push(); // FOR UNDO/REDO
+            document_.sketch().pushState(); // FOR UNDO/REDO
             return;
         }
     }

@@ -120,7 +120,7 @@ public:
 
     void undo();
     void redo();
-    void push();
+    void pushState();
 
 private:
     class Impl;
@@ -132,7 +132,7 @@ private:
 
     std::deque<SketchSnapshot> undo_;
     std::deque<SketchSnapshot> redo_;
-    int maxSteps_ = 100;
+    int maxSteps_ = 128;
 };
 }  // namespace core::sketch
 #endif

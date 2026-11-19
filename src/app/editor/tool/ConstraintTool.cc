@@ -740,7 +740,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             overlay_.selection_.model.clear();
             constraintType_.reset();
 
-            document_.sketch().push(); // FOR UNDO/REDO
+            document_.sketch().pushState(); // FOR UNDO/REDO
 
             return;
             break;
@@ -794,7 +794,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 overlay_.selection_.model.clear();
                 constraintType_.reset();
 
-                document_.sketch().push(); // FOR UNDO/REDO
+                document_.sketch().pushState(); // FOR UNDO/REDO
             } else {
                 refs_.clear();
                 overlay_.selection_.model.clear();
@@ -1076,7 +1076,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             overlay_.selection_.model.clear();
             constraintType_.reset();
 
-            document_.sketch().push(); // FOR UNDO/REDO
+            document_.sketch().pushState(); // FOR UNDO/REDO
 
             return;
             break;
@@ -1436,7 +1436,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
     overlay_.selection_.model.clear();
     constraintType_.reset();
 
-    document_.sketch().push(); // FOR UNDO/REDO
+    document_.sketch().pushState(); // FOR UNDO/REDO
 }
 
 void ConstraintTool::onKey(const input::KeyEvent& e) {

@@ -1873,7 +1873,7 @@ void Sketch::redo() {
     redo_.pop_back();
 }
 
-void Sketch::push() {
+void Sketch::pushState() {
     redo_.clear();
 
     if (undo_.size() >= maxSteps_) {

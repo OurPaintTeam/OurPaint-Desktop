@@ -62,7 +62,7 @@ void NurbsTool::onKey(const input::KeyEvent& e) {
     points_.clear();
     overlay_.clear();
 
-    document_.sketch().push(); // FOR UNDO/REDO
+    document_.sketch().pushState(); // FOR UNDO/REDO
     return;
 }
 

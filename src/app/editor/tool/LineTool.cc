@@ -109,8 +109,8 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
 
     state_ = State::WaitingFirstPoint;
     overlay_.clearPreview();
-    
-    document_.sketch().push(); // FOR UNDO/REDO
+
+    document_.sketch().pushState(); // FOR UNDO/REDO
 }
 
 void LineTool::onKey(const input::KeyEvent& e) {
