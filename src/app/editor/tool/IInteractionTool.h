@@ -159,7 +159,6 @@ bool applySnapConstraint(const snap::SnapResult& snap,
                 def.type = CT::Coincident;
                 def.refs = { target, snap.objects[0] };
 
-                if (!document_.sketch().supportsConstraint(def)) return false;
                 auto c = document_.sketch().addConstraint(def);
                 return static_cast<bool>(c);
             }
@@ -171,7 +170,6 @@ bool applySnapConstraint(const snap::SnapResult& snap,
                 def.type = CT::Midpoint;
                 def.refs = { target, snap.objects[0] };
 
-                if (!document_.sketch().supportsConstraint(def)) return false;
                 auto c = document_.sketch().addConstraint(def);
                 return static_cast<bool>(c);
             }
@@ -185,9 +183,10 @@ bool applySnapConstraint(const snap::SnapResult& snap,
                     def.type = CT::Coincident;
                     def.refs = { target, obj };
 
-                    if (!document_.sketch().supportsConstraint(def)) continue;
                     auto c = document_.sketch().addConstraint(def);
-                    if (c) added = true;
+                    if (c) {
+                        added = true;
+                    }
                 }
                 return added;
             }

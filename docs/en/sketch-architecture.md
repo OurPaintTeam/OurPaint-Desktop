@@ -201,7 +201,7 @@ active tool. Escape first cancels pending tool input, then exits an empty tool.
 
 ConstraintActions owns the shared preparation/application path over a borrowed
 Sketch. Preparation is read-only: it checks compatible partial input, exact
-arity, numeric values and complete definition support through supportsConstraint.
+arity and numeric values.
 A ready preselection is applied immediately without changing the active tool;
 an empty or compatible partial selection starts ConstraintTool or DimensionTool.
 Invalid/ambiguous selections and unsupported operations return without changing
@@ -247,7 +247,7 @@ input for retry. These guarantees apply to this overload; ordinary insertion
 still does not promise rollback after a backend failure.
 The FixUnfix toolbar button currently creates point Fix only; unfix is not
 implemented. Buttons for relations absent from the public Core API report
-unsupported operations. Equal/Tangent definitions are validated through supportsConstraint.
+unsupported operations. Sketch validates Equal/Tangent definitions during insertion.
 Toolbar visual activation is still controlled by the UI submodule independently
 of successful application or the editor's active mode.
 
@@ -294,15 +294,18 @@ no delayed edit. The binder is destroyed before UIController during shutdown.
 
 ## Creation and constraint validation
 
+The [constraint API proposal](../ru/sketch-architecture.md#предлагаемый-публичный-интерфейс-sketch)
+describes proposed atomic edits, drag outcomes and on-demand analysis. The tables below describe the current API.
+
 | Function | Result and behavior |
 | --- | --- |
 | `Sketch()` | Constructs an empty Sketch owning one DCM model; construction exceptions propagate |
 | `~Sketch()` | Releases Impl and DCM resources; detached values survive |
-| `supportsConstraint(definition) const` | Status after common validation and exact support preflight; no edit, ID allocation, or solve |
+| `validateConstraint(definition) const` | Checks the definition's fields and geometry references in the current sketch. Read-only. |
 
 Sketch is noncopyable and not movable; transfer state explicitly. Geometry and
 constraint types, edits, solve and drag have one fixed Sketch contract. There is
-no per-instance support flag set or solver selection API. Use supportsConstraint
+no per-instance support flag set or solver selection API. Use validateConstraint
 to validate a complete constraint definition, including its references and values.
 Unavailable diagnostics are represented by empty optionals in SolveDiagnostics.
 CMake always links Sketch to DCM and has no solver-selection options or definitions.
@@ -531,7 +534,7 @@ without a selected finite interval and traversal.
 
 | Function | Result, errors, side effects, and cost |
 | --- | --- |
-| `supportsConstraint(definition) const` | Status; validates fields/refs, then exact support. InvalidArgument/NotFound/Unsupported/native query failures. At most three entity reads; no mutation |
+| `validateConstraint(definition) const` | Checks fields, references and geometry kinds for this constraint type. Returns a Status. |
 | `addConstraint(definition)` | Result of ConstraintId; preflights/capacity-checks, allocates ID, installs equations/private resources. No solve; allocated ID remains consumed after DCM failure |
 | `addConstraint(definition, options)` | Result of ConstraintSolveResult; inserts and solves atomically with transient targets. Convergence returns the inserted ID and diagnostics; nonconvergence returns Failed diagnostics without an ID and restores the model. Success creates one history entry |
 | `updateConstraint(id, definition)` | Status; existing ID and valid supported replacement required. Retains public ID; may replace only translated equations/anchors, no numerical solve |
@@ -647,10 +650,10 @@ public constraint IDs. Failure to converge alone is not proof of conflicts.
 Numerical convergence, graph preparation, and equation structure determine solve
 and drag cost; there is no fixed linear-time bound.
 
-DCM uses its stable-address manager incrementally. Bare DCM arcs require a
-private equal-radius equation. Whole-sketch DOF/conflict/redundancy diagnosis is
-not exposed because it omits unconstrained/eliminated variables. Native drag
-discards its convergence result.
+DCM uses its stable-address manager incrementally. Arcs contribute an internal
+equal-radius equation. DCM can compute local degrees of freedom for the whole model,
+including free geometry. Sketch currently skips that query. Native point dragging
+returns a convergence flag. Sketch currently uses the tangency retry and branch checks to report drag status.
 Impl uses updatePoints in DRAG mode for the complete target batch, then restores
 GLOBAL mode after any required component retries, including on exceptions.
 dragPoints() validates saved tangency branches, regular support geometry and arc

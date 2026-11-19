@@ -89,7 +89,7 @@ TEST(SymmetricConstraint, ReflectsAboutFixedHorizontalVerticalAndTiltedLines) {
         ASSERT_TRUE(sketch.addConstraint({ConstraintType::Fix, {line}, std::nullopt, std::nullopt}));
         ASSERT_TRUE(sketch.addConstraint({ConstraintType::Fix, {a}, std::nullopt, Vec2{1, 3}}));
         const ConstraintDefinition symmetric{ConstraintType::Symmetric, {a, b, line}, std::nullopt, std::nullopt};
-        ASSERT_TRUE(sketch.supportsConstraint(symmetric));
+        ASSERT_TRUE(sketch.validateConstraint(symmetric));
         ASSERT_TRUE(sketch.addConstraint(symmetric));
         ASSERT_TRUE(sketch.solve());
         expectPosition(sketch, a, {1, 3});

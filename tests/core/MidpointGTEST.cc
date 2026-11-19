@@ -94,7 +94,7 @@ TEST(MidpointConstraint, AcceptsLineEndpointsCircleCentersAndAllArcPointElements
         ASSERT_TRUE(sketch.addConstraint({ConstraintType::Fix, {{segment.value()}}, std::nullopt, std::nullopt}));
         const GeometryRef point{entity.value(), test.sub};
         const ConstraintDefinition definition{ConstraintType::Midpoint, {point, {segment.value()}}, std::nullopt, std::nullopt};
-        ASSERT_TRUE(sketch.supportsConstraint(definition));
+        ASSERT_TRUE(sketch.validateConstraint(definition));
         ASSERT_TRUE(sketch.addConstraint(definition));
         expectSolved(sketch);
         expectPosition(sketch, point, {4, 2});
@@ -108,7 +108,7 @@ TEST(MidpointConstraint, AllowsPointReferenceToOwnSegmentEndpointAndRejectsZeroL
     ASSERT_TRUE(segment);
     EXPECT_EQ(segment.value().get(), 1);
     const ConstraintDefinition definition{ConstraintType::Midpoint, {{segment.value(), SubElement::Start}, {segment.value()}}, std::nullopt, std::nullopt};
-    ASSERT_TRUE(sketch.supportsConstraint(definition));
+    ASSERT_TRUE(sketch.validateConstraint(definition));
     ASSERT_TRUE(sketch.addConstraint(definition));
 }
 

@@ -140,6 +140,8 @@ void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
                 }
 
                 reset();
+
+                document_.sketch().push(); // FOR UNDO/REDO
             }
             break;
     }

@@ -24,23 +24,24 @@ public:
     Sketch(const Sketch&) = delete;
     Sketch& operator=(const Sketch&) = delete;
 
-    // Common validation and exact DCM support preflight without editing.
-    Status supportsConstraint(const ConstraintDefinition& definition) const;
+    // Check the definition's fields, referenced geometry and sub-elements in this sketch.
+    // A successful check allows an insertion attempt. Joint satisfiability is tested during solving.
+    Status validateConstraint(const ConstraintDefinition& definition) const;
 
     Result<EntityId> addEntity(const SketchGeometry& geometry, bool construction = false);
-    Result<EntityId> addPoint(Vec2 p) { return addEntity(Point2{p}); }
-    Result<EntityId> addLine(Vec2 start, Vec2 end) { return addEntity(Line2{start, end}); }
-    Result<EntityId> addCircle(Vec2 center, double radius) { return addEntity(Circle2{center, radius}); }
-    Result<EntityId> addArc(Vec2 center, Vec2 start, Vec2 end) { return addEntity(Arc2{center, start, end}); }
+    Result<EntityId> addPoint (Vec2 p)                            { return addEntity(Point2{p});        }
+    Result<EntityId> addLine  (Vec2 start, Vec2 end)              { return addEntity(Line2{start, end});        }
+    Result<EntityId> addCircle(Vec2 center, double radius)        { return addEntity(Circle2{center, radius});  }
+    Result<EntityId> addArc   (Vec2 center, Vec2 start, Vec2 end) { return addEntity(Arc2{center, start, end}); }
 
     // Proposes an initial geometry guess of the same kind, preserving identity.
     // Hard fixed/coincident rules may project it. No numerical solve is requested.
-    Status updateEntity(EntityId id, const SketchGeometry& geometry, std::optional<bool> construction = std::nullopt);
-    Status updatePoint(EntityId id, Point2 point);
-    Status updateLine(EntityId id, Line2 line);
-    Status updateCircle(EntityId id, Circle2 circle);
-    Status updateArc(EntityId id, Arc2 arc);
-    Status updateCircleRadius(EntityId id, double radius);
+    Status updateEntity       (EntityId id, const SketchGeometry& geometry, std::optional<bool> construction = std::nullopt);
+    Status updatePoint        (EntityId id, Point2 point);
+    Status updateLine         (EntityId id, Line2 line);
+    Status updateCircle       (EntityId id, Circle2 circle);
+    Status updateArc          (EntityId id, Arc2 arc);
+    Status updateCircleRadius (EntityId id, double radius);
 
     // Translates detached geometry proposals by a finite offset, preserving metadata.
     // Uses updateEntities validation/projection; no numerical solve or group dragging.
@@ -58,12 +59,21 @@ public:
     Status removeEntities(std::span<const EntityId> ids);
     // Clears public and private model records in place, retaining DCM and IDs.
     Status clear();
+
+    // Install a validated definition and return its ID. Any numerical solve is a separate operation.
+    // Fix and coincidence can project geometry during insertion.
     Result<ConstraintId> addConstraint(const ConstraintDefinition& definition);
-    // Insert and solve as one edit. Failure restores geometry and constraints;
-    // only a converged result commits one history entry. Targets are transient.
+    // Insert and solve as one edit with optional transient targets. Convergence commits the ID and one history entry.
+    // On nonconvergence, restore the pre-edit model and return Failed diagnostics with an empty constraint ID.
+    // Validation and backend errors use the error alternative of Result. Allocated IDs stay consumed after rollback.
     Result<ConstraintSolveResult> addConstraint(const ConstraintDefinition& definition, const SolveOptions& options);
+    // Insert in order and defer solving. On success return the last ID (zero for empty input) and record history.
+    // A later failure can leave the inserted prefix in the model.
     Result<ConstraintId> addConstraints(std::span<const ConstraintDefinition> definitions);
+    // Replace the definition under the existing ID and defer solving. An omitted tangency branch is retained
+    // when updating a Tangent with the same references.
     Status updateConstraint(ConstraintId id, const ConstraintDefinition& definition);
+    // Remove the named constraint and its private solver records. A subsequent solve is explicit.
     Status removeConstraint(ConstraintId id);
 
     Result<SketchEntity> entity(EntityId id) const;
@@ -73,10 +83,10 @@ public:
     // Ascending public ID order. Queries scan metadata and copy matching values.
     Result<std::vector<SketchEntity>> entities(EntityKind kind) const;
     // points() contains standalone Point entities, not curve endpoints/centers/controls.
-    Result<std::vector<SketchEntity>> points() const { return entities(EntityKind::Point); }
-    Result<std::vector<SketchEntity>> lines() const { return entities(EntityKind::Line); }
+    Result<std::vector<SketchEntity>> points()  const { return entities(EntityKind::Point);  }
+    Result<std::vector<SketchEntity>> lines()   const { return entities(EntityKind::Line);   }
     Result<std::vector<SketchEntity>> circles() const { return entities(EntityKind::Circle); }
-    Result<std::vector<SketchEntity>> arcs() const { return entities(EntityKind::Arc); }
+    Result<std::vector<SketchEntity>> arcs()    const { return entities(EntityKind::Arc);    }
     Result<Vec2> pointPosition(GeometryRef ref) const;
     // Both query forms use the same references. NURBS controls are ordered by
     // their zero-based GeometryRef::index and belong to CurveSubElements/All.
@@ -89,19 +99,15 @@ public:
     Result<size_t> entityCount(EntityKind kind) const;
     size_t constraintCount() const;
 
-    // Mutations do not automatically solve. Several edits may precede one solve;
-    // this is deferred solving, not an atomic transaction. InvalidArgument,
-    // NotFound and Unsupported leave state unchanged. BackendFailure offers a
-    // queryable model, not rollback. solve/drag do not change identities/topology;
-    // failed convergence may retain an iterate, and is reported in diagnostics.
-    // Require holds targets for this solve; Prefer may retry without those locks.
-    // Permanent Fix constraints always remain active.
+    // Solve the installed constraints in place. Require enforces transient point targets for this call.
+    // Prefer permits a retry with relaxed targets. Inspect diagnostics.status even when Result has a value.
+    // A failed solve may leave an intermediate geometry. Constraint removal and edit rollback are explicit operations.
     Result<SolveDiagnostics> solve(const SolveOptions& options = {});
-    // SwitchLineSide explicitly permits editing saved line/circular tangency
-    // branches from hard-projected requested targets before numerical solving.
-    // Other branches and ordinary solve/update calls preserve the saved choice.
+    // Single-point convenience overload with the same behavior as dragPoints.
     Result<SolveDiagnostics> drag(const DragRequest& request, DragOptions options = {});
-    // Prevalidate all point targets, then solve them together. Empty input is a no-op.
+    // Apply one interactive step to distinct point-like references. Validate all targets first, then drag them together.
+    // Targets are best-effort. SwitchLineSide permits a saved line/circular tangency branch to change.
+    // With valid options, an empty request succeeds immediately. The current status reflects tangency checks and retries.
     Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests, DragOptions options = {});
 
     Result<SketchSnapshot> snapshot() const;
@@ -112,25 +118,21 @@ public:
     // iterates are rejected without replacing the current model.
     Status replaceState(const SketchSnapshot& snapshot);
 
-    // TODO
     void undo();
     void redo();
     void push();
 
 private:
     class Impl;
-    Status validateConstraint(const ConstraintDefinition& definition) const;
     Status validateSolveOptions(const SolveOptions& options) const;
     Status installState(const SketchSnapshot& snapshot);
     std::unique_ptr<Impl> impl_;
-    core::IDGenerator entityIds_;
-    core::IDGenerator constraintIds_;
+    IDGenerator entityIds_;
+    IDGenerator constraintIds_;
 
-    // TODO
     std::deque<SketchSnapshot> undo_;
     std::deque<SketchSnapshot> redo_;
     int maxSteps_ = 100;
-    bool drag_ = false;
 };
 }  // namespace core::sketch
 #endif

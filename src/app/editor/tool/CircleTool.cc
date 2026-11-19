@@ -34,8 +34,7 @@ void CircleTool::onMouseMove(const input::MouseMoveEvent& e) {
             if (step_ == Step::WaitingSecondInput) {
                 request.drawState = snap::DrawState::Body;
 
-                request.anchors.push_back(
-                   core::sketch::Point2{core::sketch::Vec2{points_[0].x, points_[0].y}});
+                request.anchors.push_back(sketch::Point2{sketch::Vec2{points_[0].x, points_[0].y}});
 
                 double r = glm::distance(cursor, points_[0]);
                 if (!overlay_.circles_.empty()) {
@@ -130,7 +129,6 @@ bool intersectLines(glm::dvec2 p1, glm::dvec2 d1, glm::dvec2 p2, glm::dvec2 d2, 
     return true;
 }
 
-
 void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (!(e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press)) {
         return;
@@ -180,6 +178,8 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 }
 
                 reset();
+
+                document_.sketch().push(); // FOR UNDO/REDO
             }
             break;
 
@@ -220,6 +220,8 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 }
 
                 reset();
+
+                document_.sketch().push(); // FOR UNDO/REDO
             }
             break;
 
@@ -269,6 +271,8 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 }
 
                 reset();
+
+                document_.sketch().push(); // FOR UNDO/REDO
             }
             break;
 
@@ -399,7 +403,6 @@ std::optional<CircleTool::Circle> CircleTool::buildCircleFromThreePoints(const g
     return Circle{ux, uy, r};
 }
 
-core::sketch::Result<core::sketch::EntityId> CircleTool::pushCircleToModel(const Circle& c) const {
-    return
-     document_.sketch().addCircle({c.cx, c.cy}, c.r);
+sketch::Result<sketch::EntityId> CircleTool::pushCircleToModel(const Circle& c) const {
+    return document_.sketch().addCircle({c.cx, c.cy}, c.r);
 }

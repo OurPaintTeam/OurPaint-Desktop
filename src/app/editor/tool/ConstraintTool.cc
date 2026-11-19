@@ -740,6 +740,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             overlay_.selection_.model.clear();
             constraintType_.reset();
 
+            document_.sketch().push(); // FOR UNDO/REDO
+
             return;
             break;
         }
@@ -791,6 +793,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 overlay_.clearPreview();
                 overlay_.selection_.model.clear();
                 constraintType_.reset();
+
+                document_.sketch().push(); // FOR UNDO/REDO
             } else {
                 refs_.clear();
                 overlay_.selection_.model.clear();
@@ -1071,6 +1075,9 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             overlay_.clearPreview();
             overlay_.selection_.model.clear();
             constraintType_.reset();
+
+            document_.sketch().push(); // FOR UNDO/REDO
+
             return;
             break;
         }
@@ -1413,6 +1420,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             break;
         }
         case ToolId::Curvature: {
+            return;
             break;
         }
         default: {
@@ -1427,6 +1435,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
     overlay_.clearPreview();
     overlay_.selection_.model.clear();
     constraintType_.reset();
+
+    document_.sketch().push(); // FOR UNDO/REDO
 }
 
 void ConstraintTool::onKey(const input::KeyEvent& e) {
@@ -1483,7 +1493,7 @@ void ConstraintTool::pushConstraint() {
 
     auto result = sketch_.addConstraint(def);
     if (!result) {
-        std::cout << "Constraint not added" << '\n';
+        std::cout << "Sketch message: [Failure] " << result.error().message << '\n';
     }
 }
 

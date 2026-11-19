@@ -642,7 +642,7 @@ TEST_F(SketchBehavior, RejectsMissingEntitiesAndInvalidSubElementReferences) {
     expectError(sketch_->addConstraint(invalid), ErrorCode::InvalidArgument);
     ConstraintDefinition coincident{
         ConstraintType::Coincident, {{line.value(), SubElement::Center}, {point.value(), SubElement::Whole}}, std::nullopt, std::nullopt};
-    expectError(sketch_->supportsConstraint(coincident), ErrorCode::InvalidArgument);
+    expectError(sketch_->validateConstraint(coincident), ErrorCode::InvalidArgument);
     expectError(sketch_->addConstraint(coincident), ErrorCode::InvalidArgument);
     expectError(sketch_->drag({{line.value(), SubElement::Whole}, {3, 4}}), ErrorCode::InvalidArgument);
     expectError(sketch_->entity(EntityId()), ErrorCode::InvalidArgument);

@@ -40,14 +40,22 @@ Status checkedStatus(F&& operation) {
     }
 }
 
-Vec2 subtract(Vec2 a, Vec2 b) { return {a.x - b.x, a.y - b.y}; }
-double length(Vec2 v) { return std::hypot(v.x, v.y); }
-bool near(double actual, double expected) { return std::isfinite(actual) && std::abs(actual - expected) <= 1e-6 * (1.0 + std::abs(expected)); }
+Vec2 subtract(Vec2 a, Vec2 b) {
+    return {a.x - b.x, a.y - b.y};
+}
+double length(Vec2 v) {
+    return std::hypot(v.x, v.y);
+}
+bool near(double actual, double expected) {
+    return std::isfinite(actual) && std::abs(actual - expected) <= 1e-6 * (1.0 + std::abs(expected));
+}
 
 bool finite(Vec2 p) { return std::isfinite(p.x) && std::isfinite(p.y); }
 double distance(Vec2 a, Vec2 b) { return std::hypot(a.x - b.x, a.y - b.y); }
 
-Status invalid(const char* message) { return Status::failure(ErrorCode::InvalidArgument, message); }
+Status invalid(const char* message) {
+    return Status::failure(ErrorCode::InvalidArgument, message);
+}
 
 Status validateGeometry(const SketchGeometry& geometry, bool transferring = false) {
     const bool valid = std::visit(
@@ -179,15 +187,6 @@ public:
         });
     }
 
-    Status supportsConstraint(const ConstraintDefinition& definition) const {
-        for (const auto& ref : definition.refs) {
-            if (!entities_.contains(ref.entity)) {
-                return Status::failure(ErrorCode::NotFound, "Constraint entity was not found");
-            }
-        }
-        return Status::success();
-    }
-
     Status addEntity(const SketchEntity& entity) {
         if (entities_.contains(entity.id)) {
             return Status::failure(ErrorCode::InvalidArgument, "Entity ID already exists");
@@ -299,10 +298,6 @@ public:
         if (constraints_.contains(constraint.id)) {
             return Status::failure(ErrorCode::InvalidArgument, "Constraint ID already exists");
         }
-        const auto supported = supportsConstraint(constraint.definition);
-        if (!supported) {
-            return supported;
-        }
         return checkedStatus([&] { constraints_.emplace(constraint.id, addHandles(resolveDefinition(constraint.definition))); });
     }
 
@@ -310,10 +305,6 @@ public:
         const auto it = constraints_.find(constraint.id);
         if (it == constraints_.end()) {
             return Status::failure(ErrorCode::NotFound, "Constraint was not found");
-        }
-        const auto supported = supportsConstraint(constraint.definition);
-        if (!supported) {
-            return supported;
         }
         return checkedStatus([&] {
             const auto& previous = it->second.definition;
@@ -406,9 +397,8 @@ public:
         });
     }
 
-    // DCM's rank diagnosis omits unconstrained geometry and eliminated aliases.
-    // Whole-sketch DOF/conflict/redundancy diagnostics therefore remain unavailable
-    // in both solve and drag results.
+    // diagnoseDetailed() can compute whole-model rank and degrees of freedom in a separate query.
+    // This path reports the solve outcome and any transient target outcome.
     Result<SolveDiagnostics> solve(const SolveOptions& options) {
         return checked<SolveDiagnostics>([&] {
             SolveDiagnostics result;
@@ -442,10 +432,8 @@ public:
             for (const auto& request : requests) {
                 updates.push_back({pointHandle(request.point), request.target.x, request.target.y});
             }
-            // DCM discards the convergence result from its incremental drag
-            // solve. Validate residuals directly instead of reporting success
-            // merely because updatePoints returned. Restore ordinary edit mode
-            // even if DCM throws, without running a second global solve.
+            // Restore ordinary edit mode even when DCM throws. updatePoints returns the native
+            // drag outcome. The current status calculation below uses only tangency retries and checks.
             struct RestoreMode {
                 dcm::DCMManager& manager;
                 ~RestoreMode() { manager.setSolveMode(du::SolveMode::GLOBAL); }
@@ -713,9 +701,19 @@ private:
 
     ConstraintRecord addHandles(const ConstraintDefinition& definition) {
         ConstraintRecord record{definition, {}, std::nullopt};
-        const auto whole = [&](size_t index) { return entities_.at(definition.refs.at(index).entity).handle; };
-        const auto pointAt = [&](size_t index) { return pointHandle(definition.refs.at(index)); };
-        const auto add = [&](const du::RequirementDescriptor& descriptor) { record.requirements.push_back(manager_.addRequirement(descriptor)); };
+
+        const auto whole = [&](size_t index) {
+            return entities_.at(definition.refs.at(index).entity).handle;
+        };
+
+        const auto pointAt = [&](size_t index) {
+            return pointHandle(definition.refs.at(index));
+        };
+
+        const auto add = [&](const du::RequirementDescriptor& descriptor) {
+            record.requirements.push_back(manager_.addRequirement(descriptor));
+        };
+
         try {
             switch (definition.type) {
                 case ConstraintType::Coincident: {
@@ -1184,6 +1182,20 @@ private:
     std::map<ConstraintId, ConstraintRecord> constraints_;
 };
 
+
+
+
+
+
+
+// -------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
 Sketch::Sketch() : impl_(std::make_unique<Impl>()) {}
 Sketch::~Sketch() = default;
 
@@ -1314,8 +1326,6 @@ Result<std::vector<EntityId>> Sketch::addEntities(std::span<const EntityCreation
     if (!added) {
         return Added::failure(added.error().code, added.error().message);
     }
-    push(); // TODO
-    drag_ = false; // TODO
     return Added::success(std::move(ids));
 }
 
@@ -1360,16 +1370,16 @@ Status Sketch::removeEntities(std::span<const EntityId> ids) {
             return Status::failure(current.error().code, current.error().message);
         }
     }
-    auto res = impl_->removeEntities(ids); // TODO
-    push(); // TODO
-    drag_ = false; // TODO
-    return res;
+    return impl_->removeEntities(ids);
 }
 
-Status Sketch::clear() { return impl_->clear(); }
+Status Sketch::clear() {
+    return impl_->clear();
+}
 
 Status Sketch::validateConstraint(const ConstraintDefinition& definition) const {
     const auto type = definition.type;
+
     size_t count = 0;
     bool dimensional = false;
     switch (type) {
@@ -1407,6 +1417,7 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         default:
             return invalid("Unknown constraint type");
     }
+
     if (definition.refs.size() != count) {
         return invalid("Wrong number of constraint references");
     }
@@ -1425,12 +1436,15 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
         if (!std::isfinite(v) || v < 0) {
             return invalid("Dimensions must be finite and nonnegative");
         }
-        if (type != ConstraintType::Distance && type != ConstraintType::HorizontalDistance && type != ConstraintType::VerticalDistance &&
-            type != ConstraintType::Angle && v == 0) {
+        if (type != ConstraintType::Distance &&
+            type != ConstraintType::HorizontalDistance &&
+            type != ConstraintType::VerticalDistance &&
+            type != ConstraintType::Angle &&
+            v == 0) {
             return invalid("This dimension must be positive");
         }
-        if (type == ConstraintType::Angle && v > std::numbers::pi) {
-            return invalid("Angle must be in [0, pi] radians");
+        if (type == ConstraintType::Angle && v > 180) {
+            return invalid("Angle must be in [0, 180] degrees");
         }
     }
     // if (definition.fixedPosition.has_value() != (type == ConstraintType::Fix)) {
@@ -1506,10 +1520,13 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             valid = lines[0] && lines[1];
             break;
         case ConstraintType::Tangent:
-            valid = (lines[0] && circles[1]) || (circles[0] && lines[1]) || (circles[0] && circles[1]);
+            valid = (lines  [0] && circles[1]) ||
+                    (circles[0] && lines  [1]) ||
+                    (circles[0] && circles[1]);
             break;
         case ConstraintType::Equal:
-            valid = (lines[0] && lines[1]) || (circles[0] && circles[1]);
+            valid = (lines  [0] && lines  [1]) ||
+                    (circles[0] && circles[1]);
             break;
         case ConstraintType::Radius:
         case ConstraintType::Diameter:
@@ -1519,7 +1536,10 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             valid = circles[0] && circles[1];
             break;
         case ConstraintType::Midpoint:
-            valid = (points[0] && lines[1]) || (lines[0] && lines[1]) || (points[0] && circles[1]) || (lines[0] || circles[1]);
+            valid = (points[0] && lines  [1]) ||
+                    (lines [0] && lines  [1]) ||
+                    (points[0] && circles[1]) ||
+                    (lines [0] || circles[1]);
             break;
         case ConstraintType::Fix:
             valid = points[0] || lines[0] || circles[0];
@@ -1534,14 +1554,6 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
     return type == ConstraintType::Tangent ? validateTangency(geometries[0], geometries[1], definition.tangencyBranch) : Status::success();
 }
 
-Status Sketch::supportsConstraint(const ConstraintDefinition& definition) const {
-    auto valid = validateConstraint(definition);
-    if (!valid) {
-        return valid;
-    }
-    return impl_->supportsConstraint(definition);
-}
-
 Result<ConstraintId> Sketch::addConstraint(const ConstraintDefinition& definition) {
     auto result = addConstraints(std::span(&definition, 1));
     if (!result) {
@@ -1553,7 +1565,7 @@ Result<ConstraintId> Sketch::addConstraint(const ConstraintDefinition& definitio
 Result<ConstraintId> Sketch::addConstraints(std::span<const ConstraintDefinition> definitions) {
     ConstraintId lastId;
     for (auto& definition : definitions) {
-        auto valid = supportsConstraint(definition);
+        auto valid = validateConstraint(definition);
         if (!valid) {
             return Result<ConstraintId>::failure(valid.error().code, valid.error().message);
         }
@@ -1567,14 +1579,12 @@ Result<ConstraintId> Sketch::addConstraints(std::span<const ConstraintDefinition
         }
         lastId = id;
     }
-    push(); // TODO
-    drag_ = false; // TODO
     return Result<ConstraintId>::success(lastId);
 }
 
 Result<ConstraintSolveResult> Sketch::addConstraint(const ConstraintDefinition& definition, const SolveOptions& options) {
     using Added = Result<ConstraintSolveResult>;
-    const auto valid = supportsConstraint(definition);
+    const auto valid = validateConstraint(definition);
     if (!valid) {
         return Added::failure(valid.error().code, valid.error().message);
     }
@@ -1585,30 +1595,19 @@ Result<ConstraintSolveResult> Sketch::addConstraint(const ConstraintDefinition& 
     if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
         return Added::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
     }
-    auto before = snapshot();
-    if (!before) {
-        return Added::failure(before.error().code, before.error().message);
-    }
     auto checkpoint = impl_->constraintCheckpoint();
     if (!checkpoint) {
         return Added::failure(checkpoint.error().code, checkpoint.error().message);
     }
-    const auto rollbackError = [&](const SketchError& error) {
-        const auto restored = impl_->restoreConstraintCheckpoint(checkpoint.value());
-        if (!restored) {
-            return Added::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
-        }
-        return Added::failure(error.code, error.message);
-    };
     // Keep allocated public IDs consumed even when the edit is rolled back.
     const ConstraintId id(constraintIds_.generate().get());
     const auto inserted = impl_->addConstraint({id, definition});
     if (!inserted) {
-        return rollbackError(inserted.error());
+        return Added::failure(inserted.error().code, inserted.error().message);
     }
     const auto solved = impl_->solve(options);
     if (!solved) {
-        return rollbackError(solved.error());
+        return Added::failure(solved.error().code, solved.error().message);
     }
     if (solved.value().status != SolveStatus::Converged) {
         const auto restored = impl_->restoreConstraintCheckpoint(checkpoint.value());
@@ -1617,23 +1616,6 @@ Result<ConstraintSolveResult> Sketch::addConstraint(const ConstraintDefinition& 
         }
         return Added::success({std::nullopt, solved.value()});
     }
-    auto after = snapshot();
-    if (!after) {
-        return rollbackError(after.error());
-    }
-    // Record the exact pre-edit geometry, including any unrecorded solve, and
-    // the final solved state. No insertion-only or failed state enters history.
-    if (undo_.empty()) {
-        undo_.push_back(std::move(before.value()));
-    } else {
-        undo_.back() = std::move(before.value());
-    }
-    undo_.push_back(std::move(after.value()));
-    if (undo_.size() > static_cast<size_t>(maxSteps_)) {
-        undo_.pop_front();
-    }
-    redo_.clear();
-    drag_ = false;
     return Added::success({id, solved.value()});
 }
 
@@ -1647,7 +1629,7 @@ Status Sketch::updateConstraint(ConstraintId id, const ConstraintDefinition& def
     if (resolved.type == ConstraintType::Tangent && previous.type == ConstraintType::Tangent && resolved.refs == previous.refs && !resolved.tangencyBranch) {
         resolved.tangencyBranch = previous.tangencyBranch;
     }
-    auto valid = supportsConstraint(resolved);
+    auto valid = validateConstraint(resolved);
     if (!valid) {
         return valid;
     }
@@ -1668,19 +1650,25 @@ Result<SketchEntity> Sketch::entity(EntityId id) const {
     }
     return impl_->entity(id);
 }
+
 Result<SketchConstraint> Sketch::constraint(ConstraintId id) const {
     if (id.get() <= 0) {
         return Result<SketchConstraint>::failure(ErrorCode::InvalidArgument, "Constraint ID must be positive");
     }
     return impl_->constraint(id);
 }
-Result<std::vector<SketchEntity>> Sketch::entities() const { return impl_->entities(); }
+
+Result<std::vector<SketchEntity>> Sketch::entities() const {
+    return impl_->entities();
+}
+
 Result<std::vector<SketchEntity>> Sketch::entities(EntityKind kind) const {
     if (!validKind(kind)) {
         return Result<std::vector<SketchEntity>>::failure(ErrorCode::InvalidArgument, "Unknown entity kind");
     }
     return impl_->entities(kind);
 }
+
 Result<Vec2> Sketch::pointPosition(GeometryRef ref) const {
     auto current = entity(ref.entity);
     if (!current) {
@@ -1691,7 +1679,11 @@ Result<Vec2> Sketch::pointPosition(GeometryRef ref) const {
     }
     return Result<Vec2>::success(detail::geometryPointPosition(current.value().geometry, ref));
 }
-Result<std::vector<PointElement>> Sketch::pointElements() const { return pointElements(PointElementScope::All); }
+
+Result<std::vector<PointElement>> Sketch::pointElements() const {
+    return pointElements(PointElementScope::All);
+}
+
 Result<std::vector<PointElement>> Sketch::pointElements(PointElementScope scope) const {
     switch (scope) {
         case PointElementScope::StandalonePoints:
@@ -1702,6 +1694,7 @@ Result<std::vector<PointElement>> Sketch::pointElements(PointElementScope scope)
             return Result<std::vector<PointElement>>::failure(ErrorCode::InvalidArgument, "Unknown point-element scope");
     }
 }
+
 Result<std::vector<PointElement>> Sketch::pointElements(EntityId id) const {
     auto current = entity(id);
     if (!current) {
@@ -1711,15 +1704,25 @@ Result<std::vector<PointElement>> Sketch::pointElements(EntityId id) const {
     detail::appendPointElements(result, current.value());
     return Result<std::vector<PointElement>>::success(std::move(result));
 }
-Result<std::vector<SketchConstraint>> Sketch::constraints() const { return impl_->constraints(); }
-size_t Sketch::entityCount() const { return impl_->entityCount(); }
+
+Result<std::vector<SketchConstraint>> Sketch::constraints() const {
+    return impl_->constraints();
+}
+
+size_t Sketch::entityCount() const {
+    return impl_->entityCount();
+}
+
 Result<size_t> Sketch::entityCount(EntityKind kind) const {
     if (!validKind(kind)) {
         return Result<size_t>::failure(ErrorCode::InvalidArgument, "Unknown entity kind");
     }
     return Result<size_t>::success(impl_->entityCount(kind));
 }
-size_t Sketch::constraintCount() const { return impl_->constraintCount(); }
+
+size_t Sketch::constraintCount() const {
+    return impl_->constraintCount();
+}
 
 Status Sketch::validateSolveOptions(const SolveOptions& options) const {
     if (options.targetPolicy != TargetPolicy::Require && options.targetPolicy != TargetPolicy::Prefer) {
@@ -1778,11 +1781,6 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
             return Result<SolveDiagnostics>::failure(ErrorCode::InvalidArgument, "Duplicate drag point");
         }
     }
-    // TODO
-    if (!drag_) {
-        push();
-        drag_ = true;
-    }
     return impl_->dragPoints(requests, options);
 }
 
@@ -1828,7 +1826,7 @@ Status Sketch::installState(const SketchSnapshot& state) {
         }
     }
     for (const auto& c : state.constraints) {
-        auto valid = staging.supportsConstraint(c.definition);
+        auto valid = staging.validateConstraint(c.definition);
         if (!valid) {
             return valid;
         }
@@ -1861,8 +1859,6 @@ void Sketch::undo() {
 
     SketchSnapshot& s = undo_.back();
     replaceState(s);
-
-    drag_ = false;
 }
 
 void Sketch::redo() {

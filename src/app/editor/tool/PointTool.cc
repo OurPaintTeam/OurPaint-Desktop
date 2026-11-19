@@ -16,10 +16,9 @@ void PointTool::onMouseMove(const input::MouseMoveEvent& e) {
 }
 
 void PointTool::onMouseButton(const input::MouseButtonEvent& e) {
-    if (e.button != input::MouseButton::Left ||
-        e.action != input::MouseButtonAction::Press) {
+    if (e.button != input::MouseButton::Left || e.action != input::MouseButtonAction::Press) {
         return;
-        }
+    }
 
     glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
 
@@ -53,6 +52,8 @@ void PointTool::onMouseButton(const input::MouseButtonEvent& e) {
             std::cout << "solve err in PointTool\n";
             }
     }
+
+    document_.sketch().push(); // FOR UNDO/REDO
 }
 
 void PointTool::onKey(const input::KeyEvent& e) { (void)e; }
