@@ -713,7 +713,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     return;
                 }
                 const auto& outcome = result.value();
-                if (!outcome.constraint || outcome.diagnostics.status != sketch::SolveStatus::Converged) {
+                if (!outcome.constraint || outcome.diagnostics.solveStatus != sketch::SolveStatus::Converged) {
                     std::cout << "Coincident not added: solve did not converge" << '\n';
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -1428,15 +1428,16 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         }
     }
 
-    pushConstraint();
+    bool pushed = pushConstraint();
 
     refs_.clear();
-    sketch_.solve();
     overlay_.clearPreview();
     overlay_.selection_.model.clear();
     constraintType_.reset();
 
-    document_.sketch().pushState(); // FOR UNDO/REDO
+    if (pushed) {
+        document_.sketch().pushState(); // FOR UNDO/REDO
+    }
 }
 
 void ConstraintTool::onKey(const input::KeyEvent& e) {
@@ -1474,16 +1475,16 @@ void ConstraintTool::setSubToolType(ToolId subTool) {
     }
 }
 
-void ConstraintTool::pushConstraint() {
+bool ConstraintTool::pushConstraint() {
     sketch::ConstraintDefinition def;
 
     if (!constraintType_) {
-        return;
+        return false;
     }
     def.type = constraintType_.value();
 
     if (refs_.empty()) {
-        return;
+        return false;
     }
     def.refs = refs_;
 
@@ -1494,7 +1495,15 @@ void ConstraintTool::pushConstraint() {
     auto result = sketch_.addConstraint(def);
     if (!result) {
         std::cout << "Sketch message: [Failure] " << result.error().message << '\n';
+        return false;
     }
+
+    if (result.value().constraint == std::nullopt) {
+        std::cout << "Sketch message: [Failure] Not Converged" << '\n';
+        return false;
+    }
+
+    return true;
 }
 
 void ConstraintTool::pushEntityToOverlay(const sketch::GeometryRef& ref) const {

@@ -172,7 +172,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if (needsSolve) {
                     auto solved = document_.sketch().solve();
                     if (!solved ||
-                        solved.value().status != core::sketch::SolveStatus::Converged) {
+                        solved.value().solveStatus != core::sketch::SolveStatus::Converged) {
                         std::cout << "solve err in CircleTool\n";
                     }
                 }
@@ -214,7 +214,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if (needsSolve) {
                     auto solved = document_.sketch().solve();
                     if (!solved ||
-                        solved.value().status != core::sketch::SolveStatus::Converged) {
+                        solved.value().solveStatus != core::sketch::SolveStatus::Converged) {
                         std::cout << "solve err in CircleTool\n";
                     }
                 }
@@ -265,7 +265,7 @@ void CircleTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if (needsSolve) {
                     auto solved = document_.sketch().solve();
                     if (!solved ||
-                        solved.value().status != core::sketch::SolveStatus::Converged) {
+                        solved.value().solveStatus != core::sketch::SolveStatus::Converged) {
                         std::cout << "solve err in CircleTool\n";
                     }
                 }

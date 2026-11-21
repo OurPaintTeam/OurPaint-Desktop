@@ -173,3 +173,15 @@ bool UIController::closeDocument(DocumentId document) {
     std::erase(documents_, document);
     return manager_.closeDocument(document);
 }
+
+int UIController::getDOFs(DocumentId id) const {
+    auto* document = manager_.at(id);
+    if (!document) {
+        return -1;
+    }
+    auto result = document->sketch().diagnose();
+    if (!result || !result.value().degreesOfFreedom.has_value()) {
+        return -1;
+    }
+    return result.value().degreesOfFreedom.value();
+}

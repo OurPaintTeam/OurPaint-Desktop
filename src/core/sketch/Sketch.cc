@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "../../app/editor/snap/SnapSystem.h"
 #include "DCMManager.h"
 #include "PointElements.h"
 
@@ -171,22 +172,6 @@ class Sketch::Impl {
     };
 
 public:
-    struct ConstraintCheckpoint {
-        dcm::DCMManager::Snapshot model;
-        std::map<ConstraintId, ConstraintRecord> constraints;
-    };
-
-    Result<ConstraintCheckpoint> constraintCheckpoint() const {
-        return checked<ConstraintCheckpoint>([&] { return ConstraintCheckpoint{manager_.snapshot(), constraints_}; });
-    }
-
-    Status restoreConstraintCheckpoint(ConstraintCheckpoint& checkpoint) {
-        return checkedStatus([&] {
-            manager_.restoreSnapshot(checkpoint.model);
-            constraints_.swap(checkpoint.constraints);
-        });
-    }
-
     Status addEntity(const SketchEntity& entity) {
         if (entities_.contains(entity.id)) {
             return Status::failure(ErrorCode::InvalidArgument, "Entity ID already exists");
@@ -417,8 +402,8 @@ public:
                 result.targetsSatisfied = solved.targetsSatisfied;
                 result.usedFallback = solved.usedFallback;
             }
-            result.status = converged && geometryValid() && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
-            if (result.status == SolveStatus::Failed && result.targetsSatisfied) {
+            result.solveStatus = converged && geometryValid() && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
+            if (result.solveStatus == SolveStatus::Failed && result.targetsSatisfied) {
                 result.targetsSatisfied = false;
             }
             return result;
@@ -446,11 +431,24 @@ public:
             SolveDiagnostics result;
 
             const bool repaired = retryTangencyDrag(updates);
-            result.status = repaired && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
+            result.solveStatus = repaired && tangenciesSatisfied() ? SolveStatus::Converged : SolveStatus::Failed;
 
             return result;
         });
     }
+
+    Result<SolveDiagnostics> diagnose() const {
+        return checked<SolveDiagnostics>([&]() {
+            const auto& d = manager_.getRequirementSystem().diagnoseDetailed();
+            SolveDiagnostics sd;
+            sd.systemStatus = static_cast<SystemStatus>(d.status);
+            sd.degreesOfFreedom = d.degreesOfFreedom;
+            sd.variableCount = d.variableCount;
+            sd.constraintCount = d.constraintCount;
+            sd.rank = d.rank;
+            return sd;
+        });
+    };
 
 private:
     static du::FigureDescriptor describe(const SketchGeometry& geometry) {
@@ -1554,34 +1552,6 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
     return type == ConstraintType::Tangent ? validateTangency(geometries[0], geometries[1], definition.tangencyBranch) : Status::success();
 }
 
-Result<ConstraintId> Sketch::addConstraint(const ConstraintDefinition& definition) {
-    auto result = addConstraints(std::span(&definition, 1));
-    if (!result) {
-        return Result<ConstraintId>::failure(result.error().code, result.error().message);
-    }
-    return Result<ConstraintId>::success(result.value());
-}
-
-Result<ConstraintId> Sketch::addConstraints(std::span<const ConstraintDefinition> definitions) {
-    ConstraintId lastId;
-    for (auto& definition : definitions) {
-        auto valid = validateConstraint(definition);
-        if (!valid) {
-            return Result<ConstraintId>::failure(valid.error().code, valid.error().message);
-        }
-        if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
-            return Result<ConstraintId>::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
-        }
-        const ConstraintId id(constraintIds_.generate().get());
-        auto result = impl_->addConstraint({id, definition});
-        if (!result) {
-            return Result<ConstraintId>::failure(result.error().code, result.error().message);
-        }
-        lastId = id;
-    }
-    return Result<ConstraintId>::success(lastId);
-}
-
 Result<ConstraintSolveResult> Sketch::addConstraint(const ConstraintDefinition& definition, const SolveOptions& options) {
     using Added = Result<ConstraintSolveResult>;
     const auto valid = validateConstraint(definition);
@@ -1595,45 +1565,165 @@ Result<ConstraintSolveResult> Sketch::addConstraint(const ConstraintDefinition& 
     if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
         return Added::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
     }
-    auto checkpoint = impl_->constraintCheckpoint();
-    if (!checkpoint) {
-        return Added::failure(checkpoint.error().code, checkpoint.error().message);
+
+    auto beforeSnapshot = this->snapshot();
+    if (!beforeSnapshot) {
+        return Added::failure(beforeSnapshot.error().code, beforeSnapshot.error().message);
     }
-    // Keep allocated public IDs consumed even when the edit is rolled back.
+
     const ConstraintId id(constraintIds_.generate().get());
     const auto inserted = impl_->addConstraint({id, definition});
     if (!inserted) {
+        const auto restored = installState(beforeSnapshot.value());
+        if (!restored) {
+            return Added::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
         return Added::failure(inserted.error().code, inserted.error().message);
     }
+
     const auto solved = impl_->solve(options);
     if (!solved) {
+        const auto restored = installState(beforeSnapshot.value());
+        if (!restored) {
+            return Added::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
         return Added::failure(solved.error().code, solved.error().message);
     }
-    if (solved.value().status != SolveStatus::Converged) {
-        const auto restored = impl_->restoreConstraintCheckpoint(checkpoint.value());
+
+    if (solved.value().solveStatus != SolveStatus::Converged) {
+        const auto restored = installState(beforeSnapshot.value());
         if (!restored) {
             return Added::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
         }
         return Added::success({std::nullopt, solved.value()});
     }
+
     return Added::success({id, solved.value()});
 }
 
-Status Sketch::updateConstraint(ConstraintId id, const ConstraintDefinition& definition) {
+Result<ConstraintBatchSolveResult> Sketch::addConstraints(std::span<const ConstraintDefinition> definitions,
+                                            const SolveOptions& options) {
+    ConstraintBatchSolveResult batchResult{};
+
+    if (definitions.empty()) {
+        return Result<ConstraintBatchSolveResult>::failure(ErrorCode::InvalidArgument, "definitions is empty");
+    }
+
+    const auto targetsValid = validateSolveOptions(options);
+    if (!targetsValid) {
+        return Result<ConstraintBatchSolveResult>::failure(targetsValid.error().code, targetsValid.error().message);
+    }
+
+    auto beforeSnapshot = this->snapshot();
+    if (!beforeSnapshot) {
+        return Result<ConstraintBatchSolveResult>::failure(beforeSnapshot.error().code, beforeSnapshot.error().message);
+    }
+
+    for (auto& definition : definitions) {
+        auto valid = validateConstraint(definition);
+        if (!valid) {
+            const auto restored = installState(beforeSnapshot.value());
+            if (!restored) {
+                return Result<ConstraintBatchSolveResult>::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+            }
+            return Result<ConstraintBatchSolveResult>::failure(valid.error().code, valid.error().message);
+        }
+        if (constraintIds_.getLast().get() == std::numeric_limits<int64_t>::max()) {
+            const auto restored = installState(beforeSnapshot.value());
+            if (!restored) {
+                return Result<ConstraintBatchSolveResult>::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+            }
+            return Result<ConstraintBatchSolveResult>::failure(ErrorCode::BackendFailure, "Constraint ID space exhausted");
+        }
+
+        const ConstraintId id(constraintIds_.generate().get());
+
+        const auto inserted = impl_->addConstraint({id, definition});
+        if (!inserted) {
+            const auto restored = installState(beforeSnapshot.value());
+            if (!restored) {
+                return Result<ConstraintBatchSolveResult>::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+            }
+            return Result<ConstraintBatchSolveResult>::failure(inserted.error().code, inserted.error().message);
+        }
+
+        batchResult.constraints.push_back(id);
+    }
+
+    const auto solved = impl_->solve(options);
+    if (!solved) {
+        const auto restored = installState(beforeSnapshot.value());
+        if (!restored) {
+            return Result<ConstraintBatchSolveResult>::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
+        return Result<ConstraintBatchSolveResult>::failure(solved.error().code, solved.error().message);
+    }
+
+    if (solved.value().solveStatus != SolveStatus::Converged) {
+        const auto restored = installState(beforeSnapshot.value());
+        if (!restored) {
+            return Result<ConstraintBatchSolveResult>::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
+        return Result<ConstraintBatchSolveResult>::success({{}, solved.value()});
+    }
+
+    return Result<ConstraintBatchSolveResult>::success(batchResult);
+}
+
+Result<SolveDiagnostics> Sketch::updateConstraint(ConstraintId id,
+                                const ConstraintDefinition& definition,
+                                const SolveOptions& options) {
     auto current = constraint(id);
     if (!current) {
-        return Status::failure(current.error().code, current.error().message);
+        return Result<SolveDiagnostics>::failure(current.error().code, current.error().message);
     }
     auto resolved = definition;
     const auto& previous = current.value().definition;
-    if (resolved.type == ConstraintType::Tangent && previous.type == ConstraintType::Tangent && resolved.refs == previous.refs && !resolved.tangencyBranch) {
+    if (resolved.type == ConstraintType::Tangent &&
+        previous.type == ConstraintType::Tangent &&
+        resolved.refs == previous.refs &&
+        !resolved.tangencyBranch) {
         resolved.tangencyBranch = previous.tangencyBranch;
     }
+
     auto valid = validateConstraint(resolved);
     if (!valid) {
-        return valid;
+        return Result<SolveDiagnostics>::failure(valid.error().code, valid.error().message);
     }
-    return impl_->updateConstraint({id, resolved});
+
+    auto beforeSnapshot = this->snapshot();
+    if (!beforeSnapshot) {
+        return Result<SolveDiagnostics>::failure(beforeSnapshot.error().code, beforeSnapshot.error().message);
+    }
+
+    auto status = impl_->updateConstraint({id, resolved});
+    if (!status) {
+        return Result<SolveDiagnostics>::failure(status.error().code, status.error().message);
+    }
+
+    const auto targetsValid = validateSolveOptions(options);
+    if (!targetsValid) {
+        return Result<SolveDiagnostics>::failure(targetsValid.error().code, targetsValid.error().message);
+    }
+
+    const auto solved = impl_->solve(options);
+    if (!solved) {
+        const auto restored = installState(beforeSnapshot.value());
+        if (!restored) {
+            return Result<SolveDiagnostics>::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
+        return Result<SolveDiagnostics>::failure(solved.error().code, solved.error().message);
+    }
+
+    if (solved.value().solveStatus != SolveStatus::Converged) {
+        const auto restored = installState(beforeSnapshot.value());
+        if (!restored) {
+            return Result<SolveDiagnostics>::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
+        return Result<SolveDiagnostics>::success(solved.value());
+    }
+
+    return Result<SolveDiagnostics>::failure(status.error().code, status.error().message);
 }
 
 Status Sketch::removeConstraint(ConstraintId id) {
@@ -1782,6 +1872,10 @@ Result<SolveDiagnostics> Sketch::dragPoints(std::span<const DragRequest> request
         }
     }
     return impl_->dragPoints(requests, options);
+}
+
+Result<SolveDiagnostics> Sketch::diagnose() const {
+    return impl_->diagnose();
 }
 
 Result<SketchSnapshot> Sketch::snapshot() const {

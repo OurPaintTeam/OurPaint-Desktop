@@ -35,7 +35,7 @@ public:
     void setSubToolType(ToolId type);
 
 private:
-    void pushConstraint();
+    bool pushConstraint();
     void pushEntityToOverlay(const sketch::GeometryRef& ref) const;
 
     void pushPointToOverlay(double x, double y) const;

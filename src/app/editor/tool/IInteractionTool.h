@@ -160,7 +160,7 @@ bool applySnapConstraint(const snap::SnapResult& snap,
                 def.refs = { target, snap.objects[0] };
 
                 auto c = document_.sketch().addConstraint(def);
-                return static_cast<bool>(c);
+                return static_cast<bool>(c) && c.value().constraint.has_value();
             }
 
             case SK::Midpoint: {
@@ -171,7 +171,7 @@ bool applySnapConstraint(const snap::SnapResult& snap,
                 def.refs = { target, snap.objects[0] };
 
                 auto c = document_.sketch().addConstraint(def);
-                return static_cast<bool>(c);
+                return static_cast<bool>(c) && c.value().constraint.has_value();
             }
             case SK::ExtendedIntersection:
             case SK::Intersection: {

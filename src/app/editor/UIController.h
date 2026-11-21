@@ -65,6 +65,8 @@ public:
     const std::vector<std::filesystem::path>& recentDocuments() const { return recentDocuments_; }
     const std::optional<FileError>& metadataError() const { return metadataError_; }
 
+    int getDOFs(DocumentId id) const;
+
 private:
     struct DocumentState {
         std::filesystem::path path;

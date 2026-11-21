@@ -15,7 +15,6 @@
 #include "../objects/ID.h"
 
 namespace core::sketch {
-
 // Typed wrappers reuse Core's ID value semantics. Zero is invalid. IDs are local
 // to a Sketch lineage, never reused, and survive snapshot replacement.
 template <class Tag>
@@ -229,7 +228,18 @@ struct SketchConstraint {
     ConstraintDefinition definition;
 };
 
-enum class SolveStatus { Converged, Failed };
+enum class SolveStatus {
+    Converged,
+    Failed
+};
+enum class SystemStatus {
+    WELL_CONSTRAINED,
+    UNDER_CONSTRAINED,
+    OVER_CONSTRAINED,
+    SINGULAR_SYSTEM,
+    EMPTY,
+    UNKNOWN
+};
 // Targets apply to one solve only; they never create persistent constraints.
 struct PointTarget {
     GeometryRef point;
@@ -247,8 +257,12 @@ struct SolveOptions {
 // solve may expose its current iterate; inspect status before treating geometry
 // as solved. Constraint IDs always refer to the public model.
 struct SolveDiagnostics {
-    SolveStatus status = SolveStatus::Converged;
+    SolveStatus solveStatus = SolveStatus::Converged;
+    SystemStatus systemStatus = SystemStatus::UNKNOWN;
     std::optional<int> degreesOfFreedom;
+    std::size_t variableCount;
+    std::size_t constraintCount;
+    std::optional<std::size_t> rank;
     std::optional<std::vector<ConstraintId>> conflictingConstraints;
     std::optional<std::vector<ConstraintId>> redundantConstraints;
     // Unavailable when no targets were requested. True only for an accepted solve.
@@ -258,6 +272,10 @@ struct SolveDiagnostics {
 struct ConstraintSolveResult {
     // Absent when solving failed and the insertion was rolled back.
     std::optional<ConstraintId> constraint;
+    SolveDiagnostics diagnostics;
+};
+struct ConstraintBatchSolveResult {
+    std::vector<ConstraintId> constraints;
     SolveDiagnostics diagnostics;
 };
 // One synchronous best-effort drag step of a point-like ref. Target is a solver

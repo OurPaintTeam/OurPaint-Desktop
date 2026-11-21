@@ -94,7 +94,7 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
                         return;
                     }
                     const auto solved = sketch_.solve();
-                    if (!solved || solved.value().status != sketch::SolveStatus::Converged) {
+                    if (!solved || solved.value().solveStatus != sketch::SolveStatus::Converged) {
                         dragStopped_ = true;
                         return;
                     }
@@ -108,7 +108,7 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
                         dragStopped_ = true;
                         return;
                     }
-                    if (dragged.value().status != sketch::SolveStatus::Converged) {
+                    if (dragged.value().solveStatus != sketch::SolveStatus::Converged) {
                         //dragStopped_ = true;
                         //return;
                     }
@@ -162,7 +162,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
             const auto& pair = findTwoPointsNearCursor(e.x, e.y);
             if (pair) {
                 applyPointOnPointConstraint(pair.value().first, pair.value().second);
-                document_.sketch().pushState(); // FOR UNDO/REDO
+                sketch_.pushState(); // FOR UNDO/REDO
                 return;
             }
         }
@@ -475,7 +475,7 @@ void CursorTool::pasteSelection() {
         // report.constraintIds.push_back(constraint.value());
     }
     sketch_.addConstraints(defs);
-    const auto solved = sketch_.solve();
+    //const auto solved = sketch_.solve();
     //report.recordSolve(solved);
     //return report;
 }

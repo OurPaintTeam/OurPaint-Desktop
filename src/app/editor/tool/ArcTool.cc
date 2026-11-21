@@ -127,14 +127,20 @@ void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
                     const auto arcId = arcResult.value();
                     using SE = core::sketch::SubElement;
 
-                    if (applySnapConstraint(firstSnap_,  {arcId, SE::Start})) needsSolve = true;
-                    if (applySnapConstraint(secondSnap_, {arcId, SE::Whole})) needsSolve = true;
-                    if (applySnapConstraint(thirdSnap_,  {arcId, SE::End}))   needsSolve = true;
+                    if (applySnapConstraint(firstSnap_,  {arcId, SE::Start})) {
+                        needsSolve = true;
+                    }
+                    if (applySnapConstraint(secondSnap_, {arcId, SE::Whole})) {
+                        needsSolve = true;
+                    }
+                    if (applySnapConstraint(thirdSnap_,  {arcId, SE::End})) {
+                        needsSolve = true;
+                    }
                 }
                 if (needsSolve) {
                     auto solved = document_.sketch().solve();
                     if (!solved ||
-                        solved.value().status != core::sketch::SolveStatus::Converged) {
+                        solved.value().solveStatus != core::sketch::SolveStatus::Converged) {
                         std::cout << "solve err in ArcTool\n";
                     }
                 }
@@ -147,7 +153,9 @@ void ArcTool::onMouseButton(const input::MouseButtonEvent& e) {
     }
 }
 
-void ArcTool::onKey(const input::KeyEvent& e) { (void)e; }
+void ArcTool::onKey(const input::KeyEvent& e) {
+    (void)e;
+}
 
 bool ArcTool::cancel() {
     if (points_.empty()) {
@@ -158,7 +166,9 @@ bool ArcTool::cancel() {
     return false;
 }
 
-glm::dvec2 ArcTool::screenToWorld(double x, double y) const { return camera_.screenLogicalToWorld({x, y}); }
+glm::dvec2 ArcTool::screenToWorld(double x, double y) const {
+    return camera_.screenLogicalToWorld({x, y});
+}
 
 ArcTool::Arc ArcTool::buildArcFromThreePoints(const glm::dvec2& p0, const glm::dvec2& p1, const glm::dvec2& p2) {
     const double x0 = p0.x;

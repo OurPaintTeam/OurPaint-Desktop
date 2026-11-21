@@ -320,6 +320,15 @@ int main(int argc, char** argv) {
                         ImGui::SameLine(0,0);
                     }
                     ImGui::EndGroup();
+
+                    ImGui::SameLine(0.0f, 10.0f);
+                    ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+                    ImGui::SameLine(0.0f, 10.0f);
+
+                    // Group experimental
+                    ImGui::BeginGroup();
+                    ImGui::Text("DOFs: %d", controller.getDOFs(document_id));
+                    ImGui::EndGroup();
                 }
 
                 ImGui::EndChild();

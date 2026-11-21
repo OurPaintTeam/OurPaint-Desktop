@@ -24,10 +24,6 @@ public:
     Sketch(const Sketch&) = delete;
     Sketch& operator=(const Sketch&) = delete;
 
-    // Check the definition's fields, referenced geometry and sub-elements in this sketch.
-    // A successful check allows an insertion attempt. Joint satisfiability is tested during solving.
-    Status validateConstraint(const ConstraintDefinition& definition) const;
-
     Result<EntityId> addEntity(const SketchGeometry& geometry, bool construction = false);
     Result<EntityId> addPoint (Vec2 p)                            { return addEntity(Point2{p});        }
     Result<EntityId> addLine  (Vec2 start, Vec2 end)              { return addEntity(Line2{start, end});        }
@@ -60,22 +56,27 @@ public:
     // Clears public and private model records in place, retaining DCM and IDs.
     Status clear();
 
-    // Install a validated definition and return its ID. Any numerical solve is a separate operation.
-    // Fix and coincidence can project geometry during insertion.
-    Result<ConstraintId> addConstraint(const ConstraintDefinition& definition);
-    // Insert and solve as one edit with optional transient targets. Convergence commits the ID and one history entry.
-    // On nonconvergence, restore the pre-edit model and return Failed diagnostics with an empty constraint ID.
-    // Validation and backend errors use the error alternative of Result. Allocated IDs stay consumed after rollback.
-    Result<ConstraintSolveResult> addConstraint(const ConstraintDefinition& definition, const SolveOptions& options);
-    // Insert in order and defer solving. On success return the last ID (zero for empty input) and record history.
-    // A later failure can leave the inserted prefix in the model.
-    Result<ConstraintId> addConstraints(std::span<const ConstraintDefinition> definitions);
-    // Replace the definition under the existing ID and defer solving. An omitted tangency branch is retained
-    // when updating a Tangent with the same references.
-    Status updateConstraint(ConstraintId id, const ConstraintDefinition& definition);
-    // Remove the named constraint and its private solver records. A subsequent solve is explicit.
+
+    // Check the definition's fields, referenced geometry and sub-elements in this sketch.
+    // A successful check allows an insertion attempt. Joint satisfiability is tested during solving.
+    Status validateConstraint(const ConstraintDefinition& definition) const;
+
+    // Stage the constraint, solve, and commit its ID and geometry together.
+    Result<ConstraintSolveResult> addConstraint(const ConstraintDefinition& definition, const SolveOptions& options = {});
+
+    // Stage the whole batch and solve once. Return the committed IDs in input order.
+    Result<ConstraintBatchSolveResult> addConstraints(std::span<const ConstraintDefinition> definitions,
+                                                      const SolveOptions& options = {});
+
+    // Solve with the replacement under the same ID. Restore the previous definition and geometry on failure.
+    Result<SolveDiagnostics> updateConstraint(ConstraintId id,
+                                              const ConstraintDefinition& definition,
+                                              const SolveOptions& options = {});
+
+    // Remove the constraint selected by the caller. The next solve is explicit.
     Status removeConstraint(ConstraintId id);
 
+    // Getters
     Result<SketchEntity> entity(EntityId id) const;
     Result<SketchConstraint> constraint(ConstraintId id) const;
     // Coarse queries read the DCM model in one pass.
@@ -99,6 +100,7 @@ public:
     Result<size_t> entityCount(EntityKind kind) const;
     size_t constraintCount() const;
 
+
     // Solve the installed constraints in place. Require enforces transient point targets for this call.
     // Prefer permits a retry with relaxed targets. Inspect diagnostics.status even when Result has a value.
     // A failed solve may leave an intermediate geometry. Constraint removal and edit rollback are explicit operations.
@@ -110,6 +112,11 @@ public:
     // With valid options, an empty request succeeds immediately. The current status reflects tangency checks and retries.
     Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests, DragOptions options = {});
 
+    // Classify the current geometry and equations on demand, without moving geometry.
+    Result<SolveDiagnostics> diagnose() const;
+
+
+
     Result<SketchSnapshot> snapshot() const;
     // Stages a fresh DCM model, then swaps only on complete success. No solve is
     // implicit. Recreation is limited to explicit state transfer. Import
@@ -117,6 +124,7 @@ public:
     // Unsolved unequal arc radii can transfer; nonfinite/degenerate failed
     // iterates are rejected without replacing the current model.
     Status replaceState(const SketchSnapshot& snapshot);
+
 
     void undo();
     void redo();

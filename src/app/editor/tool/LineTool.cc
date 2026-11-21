@@ -102,7 +102,7 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
 
     if (needsSolve) {
         auto solved = document_.sketch().solve();
-        if (!solved || solved.value().status != core::sketch::SolveStatus::Converged) {
+        if (!solved || solved.value().solveStatus != core::sketch::SolveStatus::Converged) {
             std::cout << "solve err in LineTool\n";
         }
     }
