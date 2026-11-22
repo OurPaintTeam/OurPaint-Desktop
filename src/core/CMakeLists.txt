@@ -1,62 +1,74 @@
+add_subdirectory(sketch)
+
+add_library(ourpaint_document STATIC
+        Document.h
+        Document.cc
+        DocumentManager.h
+        DocumentManager.cc
+        saveload/DocumentSaveLoad.h
+        saveload/DocumentSaveLoad.cc
+        saveload/CborCodec.h
+)
+target_compile_features(ourpaint_document PUBLIC cxx_std_20)
+target_include_directories(ourpaint_document PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(ourpaint_document PUBLIC OurPaint::Sketch)
+target_link_libraries(ourpaint_document PRIVATE nlohmann_json::nlohmann_json)
+
 add_library(ourpaint_core
         # /saveload/
-        src/saveload/FileOurP.h
-        src/saveload/requirementInFile.h
-        src/saveload/objectInFile.h
-        src/saveload/objectInJson.h
-        src/saveload/SaveLoadJson.h
-        src/saveload/requirementInJson.h
-        src/saveload/objectInFile.cc
-        src/saveload/FileOurP.cc
-        src/saveload/requirementInFile.cc
-        src/saveload/requirementInJson.cc
-        src/saveload/SaveLoadJson.cc
-        src/saveload/objectInJson.cc
+        saveload/FileOurP.h
+        saveload/requirementInFile.h
+        saveload/objectInFile.h
+        saveload/objectInJson.h
+        saveload/SaveLoadJson.h
+        saveload/requirementInJson.h
+        saveload/objectInFile.cc
+        saveload/FileOurP.cc
+        saveload/requirementInFile.cc
+        saveload/requirementInJson.cc
+        saveload/SaveLoadJson.cc
+        saveload/objectInJson.cc
 
         # /objects/
-        src/objects/GeometricObjects.cc
-        src/objects/BoundBox.cc
+        objects/GeometricObjects.cc
+        objects/BoundBox.cc
 
         # /UndoRedo/
-        src/UndoRedo/commands/Add/CommandAddObject.cc
-        src/UndoRedo/commands/Delete/CommandDeleteObject.cc
-        src/UndoRedo/commands/CommandAddRequirement.cc
-        src/UndoRedo/commands/CommandDeleteRequirement.cc
-        src/UndoRedo/commands/CommandMove.cc
-        src/UndoRedo/commands/CommandClear.cc
-        src/UndoRedo/Transaction.cc
-        src/UndoRedo/UndoRedoTemplate.cc
-        src/UndoRedo/UndoRedo.cc
-        src/UndoRedo/ConsoleManager.cc
-        src/UndoRedo/UndoRedoTemplate.h
+#        UndoRedo/commands/Add/CommandAddObject.cc
+#        UndoRedo/commands/Delete/CommandDeleteObject.cc
+#        UndoRedo/commands/CommandAddRequirement.cc
+#        UndoRedo/commands/CommandDeleteRequirement.cc
+#        UndoRedo/commands/CommandMove.cc
+#        UndoRedo/commands/CommandClear.cc
+#        UndoRedo/Transaction.cc
+#        UndoRedo/UndoRedoTemplate.cc
+#        UndoRedo/UndoRedo.cc
+#        UndoRedo/ConsoleManager.cc
+#        UndoRedo/UndoRedoTemplate.h
 
 
         # /
-        src/ISceneObserver.h
-        src/ExceptionGuard.h
-        src/Document.h
-        src/DocumentManager.h
-        src/Scene.h
-        src/Scene.cc
-        src/Document.cc
-        src/DocumentManager.cc
-        src/saveload/DocumentSaveLoad.cc
+        ExceptionGuard.h
+#        Scene.h
+#        Scene.cc
 )
 
-target_include_directories(ourpaint_core
-        PUBLIC
-        src
-        src/saveload
-        src/UndoRedo
-        src/UndoRedo/commands
-        src/UndoRedo/commands/Add
-        src/UndoRedo/commands/Delete
+target_include_directories(ourpaint_core PUBLIC
+        /
+        sketch
+        geometry
+        geometry/relations
+        geometry/intersections
+#        UndoRedo
+#        UndoRedo/commands
+#        UndoRedo/commands/Add
+#        UndoRedo/commands/Delete
 )
-add_subdirectory(DCM {CMAKE_CURRENT_BINARY_DIR}/DCM)
 target_link_libraries(ourpaint_core
     PUBLIC
         nlohmann_json::nlohmann_json
         OurPaintDCM
+        ourpaint_document
 )
 
 

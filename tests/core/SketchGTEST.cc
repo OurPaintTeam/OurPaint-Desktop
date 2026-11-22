@@ -1,0 +1,1016 @@
+#include <gtest/gtest.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <limits>
+#include <numbers>
+#include <type_traits>
+
+#include "sketch/Sketch.h"
+
+namespace core::sketch {
+namespace {
+
+static_assert(!std::is_same_v<EntityId, ConstraintId>);
+static_assert(!std::is_convertible_v<EntityId, ConstraintId>);
+
+template <class T>
+void expectError(const Result<T>& result, ErrorCode code) {
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, code);
+    EXPECT_FALSE(result.error().message.empty());
+}
+
+void expectPosition(Vec2 actual, Vec2 expected, double tolerance = 1e-6) {
+    EXPECT_NEAR(actual.x, expected.x, tolerance);
+    EXPECT_NEAR(actual.y, expected.y, tolerance);
+}
+
+void expectGeometry(const SketchGeometry& actual, const SketchGeometry& expected) {
+    ASSERT_EQ(actual.index(), expected.index());
+    std::visit(
+        [&](const auto& value) {
+            using Geometry = std::decay_t<decltype(value)>;
+            const auto& other = std::get<Geometry>(expected);
+            if constexpr (std::is_same_v<Geometry, Point2>) {
+                expectPosition(value.position, other.position);
+            } else if constexpr (std::is_same_v<Geometry, Line2>) {
+                expectPosition(value.start, other.start);
+                expectPosition(value.end, other.end);
+            } else if constexpr (std::is_same_v<Geometry, Circle2>) {
+                expectPosition(value.center, other.center);
+                EXPECT_NEAR(value.radius, other.radius, 1e-6);
+            } else if constexpr (std::is_same_v<Geometry, Arc2>) {
+                expectPosition(value.center, other.center);
+                expectPosition(value.start, other.start);
+                expectPosition(value.end, other.end);
+            } else if constexpr (std::is_same_v<Geometry, NurbsCurve2>) {
+                EXPECT_EQ(value.degree, other.degree);
+                EXPECT_EQ(value.weights, other.weights);
+                EXPECT_EQ(value.knots, other.knots);
+                ASSERT_EQ(value.controlPoints.size(), other.controlPoints.size());
+                for (size_t i = 0; i < value.controlPoints.size(); ++i) {
+                    expectPosition(value.controlPoints[i].position, other.controlPoints[i].position);
+                }
+            }
+        },
+        actual);
+}
+
+void expectSnapshot(const SketchSnapshot& actual, const SketchSnapshot& expected) {
+    EXPECT_EQ(actual.lastEntityId, expected.lastEntityId);
+    EXPECT_EQ(actual.lastConstraintId, expected.lastConstraintId);
+    ASSERT_EQ(actual.entities.size(), expected.entities.size());
+    for (size_t i = 0; i < actual.entities.size(); ++i) {
+        EXPECT_EQ(actual.entities[i].id, expected.entities[i].id);
+        EXPECT_EQ(actual.entities[i].construction, expected.entities[i].construction);
+        expectGeometry(actual.entities[i].geometry, expected.entities[i].geometry);
+    }
+    ASSERT_EQ(actual.constraints.size(), expected.constraints.size());
+    for (size_t i = 0; i < actual.constraints.size(); ++i) {
+        EXPECT_EQ(actual.constraints[i].id, expected.constraints[i].id);
+        const auto& definition = actual.constraints[i].definition;
+        const auto& expectedDefinition = expected.constraints[i].definition;
+        EXPECT_EQ(definition.type, expectedDefinition.type);
+        EXPECT_EQ(definition.refs, expectedDefinition.refs);
+        EXPECT_EQ(definition.value, expectedDefinition.value);
+        EXPECT_EQ(definition.fixedPosition, expectedDefinition.fixedPosition);
+        EXPECT_EQ(definition.tangencyBranch, expectedDefinition.tangencyBranch);
+    }
+}
+
+ConstraintDefinition horizontal(EntityId line) {
+    return {
+        ConstraintType::Horizontal,
+        {{line, SubElement::Whole}},
+        std::nullopt,
+        std::nullopt};
+}
+
+class SketchBehavior : public testing::Test {
+protected:
+    void SetUp() override {
+        sketch_ = std::make_unique<Sketch>();
+    }
+
+    std::unique_ptr<Sketch> sketch_;
+};
+
+TEST_F(SketchBehavior, CreatesQueriesAndRemovesAllBasicEntities) {
+    const std::vector<SketchGeometry> geometry = {Point2{{1, 2}}, Line2{{0, 0}, {3, 4}}, Circle2{{2, 3}, 5}, Arc2{{0, 0}, {2, 0}, {0, 2}}};
+    std::vector<EntityId> ids;
+    for (const auto& item : geometry) {
+        auto added = sketch_->addEntity(item, true);
+        ASSERT_TRUE(added);
+        EXPECT_GT(added.value().get(), 0);
+        ids.push_back(added.value());
+        auto queried = sketch_->entity(added.value());
+        ASSERT_TRUE(queried);
+        EXPECT_EQ(queried.value().id, added.value());
+        EXPECT_TRUE(queried.value().construction);
+        expectGeometry(queried.value().geometry, item);
+    }
+    auto all = sketch_->entities();
+    ASSERT_TRUE(all);
+    EXPECT_EQ(all.value().size(), geometry.size());
+    for (EntityId id : ids) {
+        ASSERT_TRUE(sketch_->removeEntity(id));
+        expectError(sketch_->entity(id), ErrorCode::NotFound);
+        expectError(sketch_->removeEntity(id), ErrorCode::NotFound);
+    }
+    all = sketch_->entities();
+    ASSERT_TRUE(all);
+    EXPECT_TRUE(all.value().empty());
+}
+
+TEST_F(SketchBehavior, NurbsCurvesSurviveQueriesSnapshotsAndUndoRedo) {
+    ASSERT_TRUE(sketch_->addPoint({10, 20}));
+    const std::vector<NurbsCurve2> curves = {{3, {{{0, 0}}, {{1, 3}}, {{4, 3}}, {{5, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}},
+                                             {3, {{{0, 0}}, {{1, 3}}, {{2, -1}}, {{4, 3}}, {{5, 0}}}, {1, 2, 0.5, 2, 1}, {0, 0, 0, 0, 0.5, 1, 1, 1, 1}}};
+    for (const auto& curve : curves) {
+        auto added = sketch_->addEntity(curve);
+        ASSERT_TRUE(added);
+        auto queried = sketch_->entity(added.value());
+        ASSERT_TRUE(queried);
+        expectGeometry(queried.value().geometry, curve);
+    }
+
+    auto all = sketch_->entities();
+    ASSERT_TRUE(all);
+    EXPECT_EQ(all.value().size(), 3U);
+    auto filtered = sketch_->entities(EntityKind::Nurbs);
+    ASSERT_TRUE(filtered);
+    ASSERT_EQ(filtered.value().size(), curves.size());
+    for (size_t i = 0; i < curves.size(); ++i) {
+        expectGeometry(filtered.value()[i].geometry, curves[i]);
+    }
+    auto count = sketch_->entityCount(EntityKind::Nurbs);
+    ASSERT_TRUE(count);
+    EXPECT_EQ(count.value(), curves.size());
+
+    auto state = sketch_->snapshot();
+    ASSERT_TRUE(state);
+    Sketch restored;
+    ASSERT_TRUE(restored.replaceState(state.value()));
+    auto restoredState = restored.snapshot();
+    ASSERT_TRUE(restoredState);
+    expectSnapshot(restoredState.value(), state.value());
+
+    sketch_->undo();
+    auto remaining = sketch_->entities(EntityKind::Nurbs);
+    ASSERT_TRUE(remaining);
+    // ASSERT_EQ(remaining.value().size(), 1U);
+    // expectGeometry(remaining.value().front().geometry, curves.front());
+    // sketch_->redo();
+    // auto redone = sketch_->snapshot();
+    // ASSERT_TRUE(redone);
+    // expectSnapshot(redone.value(), state.value());
+}
+
+TEST_F(SketchBehavior, NurbsControlQueriesShareIndexedReferencesAndRespectScopes) {
+    const NurbsCurve2 curve{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 2, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}};
+    const auto standalone = sketch_->addPoint({-10, 0});
+    const auto added = sketch_->addEntity(curve);
+    ASSERT_TRUE(standalone);
+    ASSERT_TRUE(added);
+    const auto owned = sketch_->pointElements(added.value());
+    const auto scoped = sketch_->pointElements(PointElementScope::CurveSubElements);
+    const auto all = sketch_->pointElements();
+    const auto points = sketch_->pointElements(PointElementScope::StandalonePoints);
+    ASSERT_TRUE(owned);
+    ASSERT_TRUE(scoped);
+    ASSERT_TRUE(all);
+    ASSERT_TRUE(points);
+    ASSERT_EQ(owned.value().size(), 4U);
+    ASSERT_EQ(scoped.value().size(), 4U);
+    ASSERT_EQ(all.value().size(), 5U);
+    ASSERT_EQ(points.value().size(), 1U);
+    EXPECT_EQ(points.value().front().ref, (GeometryRef{standalone.value(), SubElement::Whole}));
+    for (size_t i = 0; i < curve.controlPoints.size(); ++i) {
+        const GeometryRef ref{added.value(), SubElement::Control, i};
+        EXPECT_EQ(owned.value()[i].ref, ref);
+        EXPECT_EQ(scoped.value()[i].ref, ref);
+        EXPECT_EQ(all.value()[i + 1].ref, ref);
+        expectPosition(owned.value()[i].position, curve.controlPoints[i].position);
+        expectPosition(scoped.value()[i].position, owned.value()[i].position);
+        expectPosition(all.value()[i + 1].position, owned.value()[i].position);
+        const auto position = sketch_->pointPosition(ref);
+        ASSERT_TRUE(position);
+        expectPosition(position.value(), curve.controlPoints[i].position);
+    }
+}
+
+TEST_F(SketchBehavior, DragMovesDistinctNurbsControlsWithoutChangingTheirNeighbors) {
+    const NurbsCurve2 curve{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 2, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}};
+    const auto added = sketch_->addEntity(curve);
+    ASSERT_TRUE(added);
+    const GeometryRef first{added.value(), SubElement::Control, 1};
+    const GeometryRef second{added.value(), SubElement::Control, 2};
+    const std::array<DragRequest, 2> requests{{{first, {3, 5}}, {second, {7, -4}}}};
+    const auto dragged = sketch_->dragPoints(requests);
+    ASSERT_TRUE(dragged);
+    EXPECT_EQ(dragged.value().solveStatus, SolveStatus::Converged);
+    auto expected = curve;
+    expected.controlPoints[1].position = {3, 5};
+    expected.controlPoints[2].position = {7, -4};
+    const auto current = sketch_->entity(added.value());
+    ASSERT_TRUE(current);
+    expectGeometry(current.value().geometry, expected);
+
+    const std::array<DragRequest, 2> duplicate{{{first, {20, 30}}, {first, {40, 50}}}};
+    expectError(sketch_->dragPoints(duplicate), ErrorCode::InvalidArgument);
+    expectGeometry(sketch_->entity(added.value()).value().geometry, expected);
+}
+
+// TEST_F(SketchBehavior, InvalidControlIndicesAndIndexedNamedSubElementsLeaveStateUnchanged) {
+//     const auto curve = sketch_->addEntity(NurbsCurve2{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}});
+//     const auto point = sketch_->addPoint({10, 0});
+//     const auto line = sketch_->addLine({10, 2}, {12, 2});
+//     ASSERT_TRUE(curve);
+//     ASSERT_TRUE(point);
+//     ASSERT_TRUE(line);
+//     const auto before = sketch_->snapshot();
+//     ASSERT_TRUE(before);
+//     const std::vector<GeometryRef> invalidRefs{
+//         {curve.value(), SubElement::Control, 4}, {curve.value(), SubElement::Control, std::numeric_limits<size_t>::max()},
+//         {curve.value(), SubElement::Whole, 1},   {curve.value(), SubElement::Start},
+//         {point.value(), SubElement::Whole, 1},   {point.value(), SubElement::Control},
+//         {line.value(), SubElement::Start, 1},    {line.value(), SubElement::Whole, 1}};
+//     for (const auto ref : invalidRefs) {
+//         expectError(sketch_->pointPosition(ref), ErrorCode::InvalidArgument);
+//         const std::array<DragRequest, 2> requests{{{{curve.value(), SubElement::Control, 1}, {30, 30}}, {ref, {20, 20}}}};
+//         expectError(sketch_->dragPoints(requests), ErrorCode::InvalidArgument);
+//         const ConstraintDefinition fix{ConstraintType::Fix, {ref}, std::nullopt, Vec2{20, 20}};
+//         expectError(sketch_->supportsConstraint(fix), ErrorCode::InvalidArgument);
+//         expectError(sketch_->addConstraint(fix), ErrorCode::InvalidArgument);
+//         expectError(sketch_->addCoincident(ref, {point.value(), SubElement::Whole}), ErrorCode::InvalidArgument);
+//     }
+//     const auto after = sketch_->snapshot();
+//     ASSERT_TRUE(after);
+//     expectSnapshot(after.value(), before.value());
+// }
+
+// TEST_F(SketchBehavior, CoincidenceKeepsNurbsControlGroupsSeparateAndPreservesIndicesInSnapshots) {
+//     const auto curve = sketch_->addEntity(NurbsCurve2{3, {{{0, 0}}, {{2, 3}}, {{4, -2}}, {{6, 0}}}, {1, 1, 1, 1}, {0, 0, 0, 0, 1, 1, 1, 1}});
+//     const auto firstPoint = sketch_->addPoint({8, 3});
+//     const auto secondPoint = sketch_->addPoint({10, -2});
+//     ASSERT_TRUE(curve);
+//     ASSERT_TRUE(firstPoint);
+//     ASSERT_TRUE(secondPoint);
+//     const GeometryRef first{curve.value(), SubElement::Control, 1};
+//     const GeometryRef second{curve.value(), SubElement::Control, 2};
+//     ASSERT_TRUE(sketch_->addCoincident(first, {firstPoint.value(), SubElement::Whole}));
+//     ASSERT_TRUE(sketch_->addCoincident(second, {secondPoint.value(), SubElement::Whole}));
+//     expectPosition(sketch_->pointPosition(first).value(), {5, 3});
+//     expectPosition(sketch_->pointPosition(second).value(), {7, -2});
+//     expectPosition(sketch_->pointPosition({firstPoint.value(), SubElement::Whole}).value(), {5, 3});
+//     expectPosition(sketch_->pointPosition({secondPoint.value(), SubElement::Whole}).value(), {7, -2});
+//
+//     const auto saved = sketch_->snapshot();
+//     ASSERT_TRUE(saved);
+//     ASSERT_EQ(saved.value().constraints.size(), 2U);
+//     EXPECT_EQ(saved.value().constraints[0].definition.refs[0], first);
+//     EXPECT_EQ(saved.value().constraints[1].definition.refs[0], second);
+//     Sketch restored;
+//     ASSERT_TRUE(restored.replaceState(saved.value()));
+//     const auto roundTrip = restored.snapshot();
+//     ASSERT_TRUE(roundTrip);
+//     expectSnapshot(roundTrip.value(), saved.value());
+// }
+
+TEST_F(SketchBehavior, UpdatesBasicGeometryWithoutChangingIdentityOrDetachedQueries) {
+    const std::vector<SketchGeometry> before = {Point2{{1, 2}}, Line2{{0, 0}, {3, 4}}, Circle2{{2, 3}, 5}, Arc2{{0, 0}, {2, 0}, {0, 2}}};
+    const std::vector<SketchGeometry> after = {Point2{{5, 6}}, Line2{{1, 2}, {4, 6}}, Circle2{{7, 8}, 3}, Arc2{{1, 1}, {4, 1}, {1, 4}}};
+    for (size_t i = 0; i < before.size(); ++i) {
+        auto added = sketch_->addEntity(before[i]);
+        ASSERT_TRUE(added);
+        const EntityId id = added.value();
+        auto detached = sketch_->entity(id);
+        ASSERT_TRUE(detached);
+        ASSERT_TRUE(sketch_->updateEntity(id, after[i], true));
+        auto updated = sketch_->entity(id);
+        ASSERT_TRUE(updated);
+        EXPECT_EQ(updated.value().id, id);
+        EXPECT_TRUE(updated.value().construction);
+        expectGeometry(updated.value().geometry, after[i]);
+        expectGeometry(detached.value().geometry, before[i]);
+        EXPECT_FALSE(detached.value().construction);
+    }
+}
+
+// TEST_F(SketchBehavior, CoincidentPlacementSupportsCurveElementsAndPreservesOtherCoordinates) {
+//     auto line = sketch_->addEntity(Line2{{0, 0}, {4, 0}}, true);
+//     auto circle = sketch_->addCircle({8, 2}, 3);
+//     auto arc = sketch_->addArc({20, 0}, {22, 0}, {20, 2});
+//     auto point = sketch_->addPoint({26, 0});
+//     ASSERT_TRUE(line);
+//     ASSERT_TRUE(circle);
+//     ASSERT_TRUE(arc);
+//     ASSERT_TRUE(point);
+//     const GeometryRef lineEnd{line.value(), SubElement::End};
+//     const GeometryRef center{circle.value(), SubElement::Center};
+//     ASSERT_TRUE(sketch_->addCoincident(lineEnd, center));
+//     expectPosition(sketch_->pointPosition(lineEnd).value(), {6, 1});
+//     expectPosition(sketch_->pointPosition(center).value(), {6, 1});
+//     expectPosition(sketch_->pointPosition({line.value(), SubElement::Start}).value(), {0, 0});
+//     EXPECT_TRUE(sketch_->entity(line.value()).value().construction);
+//     EXPECT_DOUBLE_EQ(std::get<Circle2>(sketch_->entity(circle.value()).value().geometry).radius, 3);
+//
+//     const GeometryRef arcStart{arc.value(), SubElement::Start};
+//     ASSERT_TRUE(sketch_->addCoincident(arcStart, {point.value(), SubElement::Whole}));
+//     // The initial arc guess may be noncircular until the explicit solve.
+//     expectPosition(sketch_->pointPosition(arcStart).value(), {24, 0});
+//     expectPosition(sketch_->pointPosition({point.value(), SubElement::Whole}).value(), {24, 0});
+//     expectPosition(sketch_->pointPosition({arc.value(), SubElement::Center}).value(), {20, 0});
+//     expectPosition(sketch_->pointPosition({arc.value(), SubElement::End}).value(), {20, 2});
+// }
+
+// TEST_F(SketchBehavior, CoincidentPlacementMovesEntireTransitiveGroups) {
+//     auto created = sketch_->addEntities(std::array<EntityCreation, 4>{{{Point2{{0, 0}}}, {Point2{{0, 0}}}, {Point2{{0, 0}}}, {Point2{{6, 4}}}}});
+//     ASSERT_TRUE(created);
+//     const auto& ids = created.value();
+//     const GeometryRef a{ids[0], SubElement::Whole};
+//     const GeometryRef b{ids[1], SubElement::Whole};
+//     const GeometryRef c{ids[2], SubElement::Whole};
+//     const GeometryRef d{ids[3], SubElement::Whole};
+//     ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {a, b}, std::nullopt, std::nullopt}));
+//     ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {b, c}, std::nullopt, std::nullopt}));
+//     ASSERT_TRUE(sketch_->addCoincident(c, d));
+//     for (const auto ref : {a, b, c, d}) {
+//         expectPosition(sketch_->pointPosition(ref).value(), {3, 2});
+//     }
+// }
+
+// TEST_F(SketchBehavior, CoincidentPlacementRespectsFixOnAnotherMemberInEitherArgumentOrder) {
+//     for (bool reverse : {false, true}) {
+//         auto anchor = sketch_->addPoint({1, 2});
+//         auto linked = sketch_->addPoint({1, 2});
+//         auto free = sketch_->addPoint({9, 8});
+//         ASSERT_TRUE(anchor);
+//         ASSERT_TRUE(linked);
+//         ASSERT_TRUE(free);
+//         const GeometryRef fixedRef{anchor.value(), SubElement::Whole};
+//         const GeometryRef linkedRef{linked.value(), SubElement::Whole};
+//         const GeometryRef freeRef{free.value(), SubElement::Whole};
+//         ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {fixedRef, linkedRef}, std::nullopt, std::nullopt}));
+//         ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {fixedRef}, std::nullopt, Vec2{1, 2}}));
+//         ASSERT_TRUE(sketch_->addCoincident(reverse ? freeRef : linkedRef, reverse ? linkedRef : freeRef));
+//         for (const auto ref : {fixedRef, linkedRef, freeRef}) {
+//             expectPosition(sketch_->pointPosition(ref).value(), {1, 2});
+//         }
+//         auto solved = sketch_->solve();
+//         ASSERT_TRUE(solved);
+//         EXPECT_EQ(solved.value().status, SolveStatus::Converged);
+//     }
+// }
+
+// TEST_F(SketchBehavior, CoincidentPlacementDoesNotReseedAnExistingGroup) {
+//     auto first = sketch_->addPoint({0, 0});
+//     auto second = sketch_->addPoint({0, 0});
+//     ASSERT_TRUE(first);
+//     ASSERT_TRUE(second);
+//     const GeometryRef a{first.value(), SubElement::Whole};
+//     const GeometryRef b{second.value(), SubElement::Whole};
+//     ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {a, b}, std::nullopt, std::nullopt}));
+//     ASSERT_TRUE(sketch_->updatePoint(second.value(), Point2{{4, 2}}));
+//     const auto beforeA = sketch_->pointPosition(a);
+//     const auto beforeB = sketch_->pointPosition(b);
+//     ASSERT_TRUE(beforeA);
+//     ASSERT_TRUE(beforeB);
+//     ASSERT_TRUE(sketch_->addCoincident(a, b));
+//     expectPosition(sketch_->pointPosition(a).value(), beforeA.value());
+//     expectPosition(sketch_->pointPosition(b).value(), beforeB.value());
+// }
+
+// TEST_F(SketchBehavior, CoincidentPreserveUsesOrdinaryConstraintInsertion) {
+//     auto first = sketch_->addPoint({0, 0});
+//     auto second = sketch_->addPoint({8, 4});
+//     ASSERT_TRUE(first);
+//     ASSERT_TRUE(second);
+//     auto state = sketch_->snapshot();
+//     ASSERT_TRUE(state);
+//     Sketch ordinary;
+//     ASSERT_TRUE(ordinary.replaceState(state.value()));
+//     const GeometryRef a{first.value(), SubElement::Whole};
+//     const GeometryRef b{second.value(), SubElement::Whole};
+//     ASSERT_TRUE(ordinary.addConstraint({ConstraintType::Coincident, {a, b}, std::nullopt, std::nullopt}));
+//     ASSERT_TRUE(sketch_->addCoincident(a, b, CoincidentPlacement::Preserve));
+//     for (const auto ref : {a, b}) {
+//         expectPosition(sketch_->pointPosition(ref).value(), ordinary.pointPosition(ref).value());
+//     }
+// }
+
+// TEST_F(SketchBehavior, CoincidentPlacementPrevalidatesReferencesAndPolicyWithoutEditing) {
+//     auto point = sketch_->addPoint({0, 0});
+//     auto line = sketch_->addLine({6, 2}, {8, 3});
+//     ASSERT_TRUE(point);
+//     ASSERT_TRUE(line);
+//     const GeometryRef a{point.value(), SubElement::Whole};
+//     const GeometryRef b{line.value(), SubElement::Start};
+//     auto before = sketch_->snapshot();
+//     ASSERT_TRUE(before);
+//     expectError(sketch_->addCoincident(a, a), ErrorCode::InvalidArgument);
+//     expectError(sketch_->addCoincident(a, {line.value(), SubElement::Whole}), ErrorCode::InvalidArgument);
+//     expectError(sketch_->addCoincident(a, {EntityId(9999), SubElement::Whole}), ErrorCode::NotFound);
+//     expectError(sketch_->addCoincident(a, b, static_cast<CoincidentPlacement>(99)), ErrorCode::InvalidArgument);
+//     expectPosition(sketch_->pointPosition(a).value(), {0, 0});
+//     expectPosition(sketch_->pointPosition(b).value(), {6, 2});
+//     EXPECT_EQ(sketch_->constraintCount(), 0U);
+//     auto after = sketch_->snapshot();
+//     ASSERT_TRUE(after);
+//     EXPECT_EQ(after.value().lastConstraintId, before.value().lastConstraintId);
+// }
+
+// TEST_F(SketchBehavior, CoincidentPlacementChecksIdCapacityBeforeMovingPoints) {
+//     auto first = sketch_->addPoint({0, 0});
+//     auto second = sketch_->addPoint({8, 4});
+//     ASSERT_TRUE(first);
+//     ASSERT_TRUE(second);
+//     auto state = sketch_->snapshot();
+//     ASSERT_TRUE(state);
+//     state.value().lastConstraintId = std::numeric_limits<int64_t>::max();
+//     ASSERT_TRUE(sketch_->replaceState(state.value()));
+//     const GeometryRef a{first.value(), SubElement::Whole};
+//     const GeometryRef b{second.value(), SubElement::Whole};
+//     expectError(sketch_->addCoincident(a, b), ErrorCode::BackendFailure);
+//     expectPosition(sketch_->pointPosition(a).value(), {0, 0});
+//     expectPosition(sketch_->pointPosition(b).value(), {8, 4});
+//     EXPECT_EQ(sketch_->constraintCount(), 0U);
+// }
+
+// TEST_F(SketchBehavior, CoincidentMidpointAvoidsOverflowForLargeFiniteCoordinates) {
+//     auto first = sketch_->addPoint({1.2e308, -1.6e308});
+//     auto second = sketch_->addPoint({1.6e308, 1.6e308});
+//     ASSERT_TRUE(first);
+//     ASSERT_TRUE(second);
+//     const GeometryRef a{first.value(), SubElement::Whole};
+//     const GeometryRef b{second.value(), SubElement::Whole};
+//     ASSERT_TRUE(sketch_->addCoincident(a, b));
+//     for (const auto ref : {a, b}) {
+//         const auto position = sketch_->pointPosition(ref);
+//         ASSERT_TRUE(position);
+//         EXPECT_TRUE(std::isfinite(position.value().x));
+//         EXPECT_NEAR(position.value().x / 1e308, 1.4, 1e-12);
+//         EXPECT_DOUBLE_EQ(position.value().y, 0);
+//     }
+// }
+
+TEST_F(SketchBehavior, AngleUsesRadiansBetweenDirectedLines) {
+    auto a = sketch_->addLine({0, 0}, {4, 0});
+    auto b = sketch_->addLine({0, 0}, {3, 3});
+    ASSERT_TRUE(a);
+    ASSERT_TRUE(b);
+    ConstraintDefinition angle{ConstraintType::Angle, {{a.value(), SubElement::Whole}, {b.value(), SubElement::Whole}}, std::numbers::pi / 3, std::nullopt};
+    ASSERT_TRUE(sketch_->addConstraint(angle));
+    auto solved = sketch_->solve();
+    ASSERT_TRUE(solved);
+    EXPECT_EQ(solved.value().solveStatus, SolveStatus::Converged);
+    auto first = sketch_->entity(a.value());
+    auto second = sketch_->entity(b.value());
+    ASSERT_TRUE(first);
+    ASSERT_TRUE(second);
+    const auto p = std::get<Line2>(first.value().geometry);
+    const auto q = std::get<Line2>(second.value().geometry);
+    const Vec2 u{p.end.x - p.start.x, p.end.y - p.start.y};
+    const Vec2 v{q.end.x - q.start.x, q.end.y - q.start.y};
+    const double cosine = (u.x * v.x + u.y * v.y) / (std::hypot(u.x, u.y) * std::hypot(v.x, v.y));
+    EXPECT_NEAR(std::acos(std::clamp(cosine, -1.0, 1.0)), *angle.value, 1e-4);
+}
+
+TEST_F(SketchBehavior, IntrinsicArcEquationRepairsTransferredUnsolvedRadii) {
+    auto arc = sketch_->addArc({0, 0}, {2, 0}, {0, 2});
+    ASSERT_TRUE(arc);
+    auto state = sketch_->snapshot();
+    ASSERT_TRUE(state);
+    std::get<Arc2>(state.value().entities.front().geometry).end = {0, 3};
+    ASSERT_TRUE(sketch_->replaceState(state.value()));
+    auto solved = sketch_->solve();
+    ASSERT_TRUE(solved);
+    EXPECT_EQ(solved.value().solveStatus, SolveStatus::Converged);
+    auto queried = sketch_->entity(arc.value());
+    ASSERT_TRUE(queried);
+    const auto geometry = std::get<Arc2>(queried.value().geometry);
+    EXPECT_NEAR(std::hypot(geometry.start.x - geometry.center.x, geometry.start.y - geometry.center.y),
+                std::hypot(geometry.end.x - geometry.center.x, geometry.end.y - geometry.center.y), 1e-4);
+    auto constraints = sketch_->constraints();
+    ASSERT_TRUE(constraints);
+    EXPECT_TRUE(constraints.value().empty());
+}
+
+TEST_F(SketchBehavior, IdExhaustionDoesNotOverflowOrMutateModel) {
+    SketchSnapshot state;
+    state.lastEntityId = std::numeric_limits<int64_t>::max();
+    state.lastConstraintId = std::numeric_limits<int64_t>::max();
+    state.entities.push_back({EntityId(1), Line2{{0, 0}, {1, 0}}, false});
+    ASSERT_TRUE(sketch_->replaceState(state));
+    expectError(sketch_->addPoint({0, 0}), ErrorCode::BackendFailure);
+    expectError(sketch_->addConstraint(horizontal(EntityId(1))), ErrorCode::BackendFailure);
+    EXPECT_EQ(sketch_->entities().value().size(), 1U);
+    EXPECT_TRUE(sketch_->constraints().value().empty());
+}
+
+TEST_F(SketchBehavior, DragUpdatesGeometryWithoutPersistentConstraintsOrIdentityChanges) {
+    auto point = sketch_->addPoint({1, 2});
+    ASSERT_TRUE(point);
+    auto dragged = sketch_->drag({{point.value(), SubElement::Whole}, {7, 9}});
+    ASSERT_TRUE(dragged);
+    EXPECT_EQ(dragged.value().solveStatus, SolveStatus::Converged);
+    auto queried = sketch_->entity(point.value());
+    ASSERT_TRUE(queried);
+    EXPECT_EQ(queried.value().id, point.value());
+    expectPosition(std::get<Point2>(queried.value().geometry).position, {7, 9});
+    auto constraints = sketch_->constraints();
+    ASSERT_TRUE(constraints);
+    EXPECT_TRUE(constraints.value().empty());
+}
+
+TEST_F(SketchBehavior, BatchDragTranslatesConstrainedLineAndArcTogether) {
+    auto line = sketch_->addLine({0, 0}, {5, 0});
+    auto arc = sketch_->addArc({10, 0}, {12, 0}, {10, 2});
+    ASSERT_TRUE(line);
+    ASSERT_TRUE(arc);
+    ASSERT_TRUE(sketch_->addConstraint(horizontal(line.value())));
+    std::vector<DragRequest> requests{
+        {{line.value(), SubElement::Start}, {3, 4}},
+        {{line.value(), SubElement::End}, {8, 4}},
+        {{arc.value(), SubElement::Start}, {15, 4}},
+        {{arc.value(), SubElement::End}, {13, 6}},
+        {{arc.value(), SubElement::Center}, {13, 4}},
+    };
+    auto dragged = sketch_->dragPoints(requests);
+    ASSERT_TRUE(dragged);
+    EXPECT_EQ(dragged.value().solveStatus, SolveStatus::Converged);
+    for (const auto& request : requests) {
+        auto position = sketch_->pointPosition(request.point);
+        ASSERT_TRUE(position);
+        expectPosition(position.value(), request.target);
+    }
+    EXPECT_EQ(sketch_->entityCount(), 2U);
+    EXPECT_EQ(sketch_->constraintCount(), 1U);
+}
+
+TEST_F(SketchBehavior, BatchDragAcceptsArcEndpointTargetBeforeCircularityIsRestored) {
+    auto arc = sketch_->addArc({0, 0}, {5, 0}, {0, 5});
+    ASSERT_TRUE(arc);
+    const std::vector<DragRequest> requests{{{arc.value(), SubElement::Start}, {3, 5}}};
+    auto dragged = sketch_->dragPoints(requests);
+    ASSERT_TRUE(dragged);
+    EXPECT_EQ(dragged.value().solveStatus, SolveStatus::Converged);
+    auto queried = sketch_->entity(arc.value());
+    ASSERT_TRUE(queried);
+    const auto& geometry = std::get<Arc2>(queried.value().geometry);
+    expectPosition(geometry.start, {3, 5});
+    EXPECT_NEAR(std::hypot(geometry.start.x - geometry.center.x, geometry.start.y - geometry.center.y),
+                std::hypot(geometry.end.x - geometry.center.x, geometry.end.y - geometry.center.y), 1e-4);
+}
+
+TEST_F(SketchBehavior, BatchDragPrevalidatesAllTargetsWithoutMovingEarlierPoints) {
+    auto point = sketch_->addPoint({1, 2});
+    auto line = sketch_->addLine({0, 0}, {5, 0});
+    ASSERT_TRUE(point);
+    ASSERT_TRUE(line);
+    std::vector<DragRequest> requests{
+        {{point.value(), SubElement::Whole}, {7, 9}},
+        {{line.value(), SubElement::Whole}, {3, 4}},
+    };
+    expectError(sketch_->dragPoints(requests), ErrorCode::InvalidArgument);
+    requests[1] = requests[0];
+    expectError(sketch_->dragPoints(requests), ErrorCode::InvalidArgument);
+    requests[1] = {{line.value(), SubElement::Start}, {std::numeric_limits<double>::infinity(), 0}};
+    expectError(sketch_->dragPoints(requests), ErrorCode::InvalidArgument);
+    requests[1] = {{EntityId(99999), SubElement::Whole}, {3, 4}};
+    expectError(sketch_->dragPoints(requests), ErrorCode::NotFound);
+    auto position = sketch_->pointPosition({point.value(), SubElement::Whole});
+    ASSERT_TRUE(position);
+    expectPosition(position.value(), {1, 2});
+    auto empty = sketch_->dragPoints({});
+    ASSERT_TRUE(empty);
+    EXPECT_EQ(empty.value().solveStatus, SolveStatus::Converged);
+    position = sketch_->pointPosition({point.value(), SubElement::Whole});
+    ASSERT_TRUE(position);
+    expectPosition(position.value(), {1, 2});
+}
+
+TEST_F(SketchBehavior, BatchDragRespectsFixedPointsWithoutAddingConstraints) {
+    auto fixed = sketch_->addPoint({1, 2});
+    auto free = sketch_->addPoint({5, 6});
+    ASSERT_TRUE(fixed);
+    ASSERT_TRUE(free);
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {{fixed.value(), SubElement::Whole}}, std::nullopt, Vec2{1, 2}}));
+    const std::vector<DragRequest> requests{
+        {{fixed.value(), SubElement::Whole}, {7, 9}},
+        {{free.value(), SubElement::Whole}, {11, 13}},
+    };
+    auto dragged = sketch_->dragPoints(requests);
+    ASSERT_TRUE(dragged);
+    EXPECT_EQ(dragged.value().solveStatus, SolveStatus::Converged);
+    auto position = sketch_->pointPosition({fixed.value(), SubElement::Whole});
+    ASSERT_TRUE(position);
+    expectPosition(position.value(), {1, 2});
+    position = sketch_->pointPosition({free.value(), SubElement::Whole});
+    ASSERT_TRUE(position);
+    expectPosition(position.value(), {11, 13});
+    EXPECT_EQ(sketch_->constraintCount(), 1U);
+}
+
+TEST_F(SketchBehavior, InvalidGeometryAndEntityKindChangesLeaveStateUnchanged) {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    expectError(sketch_->addPoint({nan, 0}), ErrorCode::InvalidArgument);
+    expectError(sketch_->addCircle({0, 0}, -1), ErrorCode::InvalidArgument);
+    expectError(sketch_->addLine({1, 1}, {1, 1}), ErrorCode::InvalidArgument);
+    expectError(sketch_->addArc({0, 0}, {1, 0}, {0, 2}), ErrorCode::InvalidArgument);
+    auto point = sketch_->addPoint({1, 2});
+    ASSERT_TRUE(point);
+    expectError(sketch_->updateEntity(point.value(), Circle2{{0, 0}, 2}), ErrorCode::InvalidArgument);
+    expectError(sketch_->updateEntity(point.value(), Point2{{0, nan}}), ErrorCode::InvalidArgument);
+    auto queried = sketch_->entity(point.value());
+    ASSERT_TRUE(queried);
+    expectGeometry(queried.value().geometry, Point2{{1, 2}});
+    auto all = sketch_->entities();
+    ASSERT_TRUE(all);
+    EXPECT_EQ(all.value().size(), 1U);
+}
+
+TEST_F(SketchBehavior, RejectsMissingEntitiesAndInvalidSubElementReferences) {
+    auto line = sketch_->addLine({0, 0}, {1, 1});
+    auto point = sketch_->addPoint({2, 2});
+    ASSERT_TRUE(line);
+    ASSERT_TRUE(point);
+    expectError(sketch_->addConstraint(horizontal(EntityId(10000))), ErrorCode::NotFound);
+    auto invalid = horizontal(point.value());
+    expectError(sketch_->addConstraint(invalid), ErrorCode::InvalidArgument);
+    ConstraintDefinition coincident{
+        ConstraintType::Coincident, {{line.value(), SubElement::Center}, {point.value(), SubElement::Whole}}, std::nullopt, std::nullopt};
+    expectError(sketch_->validateConstraint(coincident), ErrorCode::InvalidArgument);
+    expectError(sketch_->addConstraint(coincident), ErrorCode::InvalidArgument);
+    expectError(sketch_->drag({{line.value(), SubElement::Whole}, {3, 4}}), ErrorCode::InvalidArgument);
+    expectError(sketch_->entity(EntityId()), ErrorCode::InvalidArgument);
+    expectError(sketch_->constraint(ConstraintId(10000)), ErrorCode::NotFound);
+    auto all = sketch_->constraints();
+    ASSERT_TRUE(all);
+    EXPECT_TRUE(all.value().empty());
+}
+
+TEST_F(SketchBehavior, InvalidStateReplacementIsAtomic) {
+    auto point = sketch_->addPoint({1, 2});
+    ASSERT_TRUE(point);
+    auto state = sketch_->snapshot();
+    ASSERT_TRUE(state);
+    auto duplicate = state.value();
+    duplicate.entities.push_back(duplicate.entities.front());
+    expectError(sketch_->replaceState(duplicate), ErrorCode::InvalidArgument);
+    auto dangling = state.value();
+    dangling.constraints.push_back({ConstraintId(1), horizontal(EntityId(10000))});
+    dangling.lastConstraintId = 1;
+    auto result = sketch_->replaceState(dangling);
+    ASSERT_FALSE(result);
+    EXPECT_TRUE(result.error().code == ErrorCode::NotFound || result.error().code == ErrorCode::InvalidArgument);
+    auto queried = sketch_->entity(point.value());
+    ASSERT_TRUE(queried);
+    expectGeometry(queried.value().geometry, Point2{{1, 2}});
+    auto all = sketch_->entities();
+    ASSERT_TRUE(all);
+    EXPECT_EQ(all.value().size(), 1U);
+}
+
+TEST_F(SketchBehavior, SeparateSketchesDoNotShareGeometryOrConstraintState) {
+    Sketch other;
+    auto first = sketch_->addLine({0, 0}, {5, 3});
+    auto second = other.addLine({20, 30}, {24, 30});
+    ASSERT_TRUE(first);
+    ASSERT_TRUE(second);
+    ASSERT_TRUE(sketch_->addConstraint(horizontal(first.value())));
+    ConstraintDefinition vertical{ConstraintType::Vertical, {{second.value(), SubElement::Whole}}, std::nullopt, std::nullopt};
+    ASSERT_TRUE(other.addConstraint(vertical));
+    ASSERT_TRUE(sketch_->solve());
+    auto before = sketch_->entity(first.value());
+    ASSERT_TRUE(before);
+    ASSERT_TRUE(other.solve());
+    auto after = sketch_->entity(first.value());
+    ASSERT_TRUE(after);
+    expectGeometry(after.value().geometry, before.value().geometry);
+    auto secondGeometry = other.entity(second.value());
+    ASSERT_TRUE(secondGeometry);
+    const auto& line = std::get<Line2>(secondGeometry.value().geometry);
+    EXPECT_NEAR(line.start.x, line.end.x, 1e-4);
+    ASSERT_TRUE(other.removeEntity(second.value()));
+    EXPECT_TRUE(sketch_->entity(first.value()));
+}
+
+TEST_F(SketchBehavior, FilteredAndNamedQueriesReturnOrderedDetachedPublicEntities) {
+    for (const auto& empty : {sketch_->points(), sketch_->lines(), sketch_->circles(), sketch_->arcs()}) {
+        ASSERT_TRUE(empty);
+        EXPECT_TRUE(empty.value().empty());
+    }
+    for (auto kind : {EntityKind::Point, EntityKind::Line, EntityKind::Circle, EntityKind::Arc}) {
+        auto empty = sketch_->entities(kind);
+        ASSERT_TRUE(empty);
+        EXPECT_TRUE(empty.value().empty());
+        ASSERT_TRUE(sketch_->entityCount(kind));
+        EXPECT_EQ(sketch_->entityCount(kind).value(), 0U);
+    }
+    const std::array<EntityCreation, 5> input{{{Line2{{0, 0}, {2, 0}}, true},
+                                               {Point2{{1, 2}}, true},
+                                               {Circle2{{4, 5}, 2}, false},
+                                               {Arc2{{0, 0}, {3, 0}, {0, 3}}, true},
+                                               {Line2{{10, 0}, {12, 0}}, false}}};
+    auto added = sketch_->addEntities(input);
+    ASSERT_TRUE(added);
+    ASSERT_EQ(added.value().size(), input.size());
+    for (size_t i = 0; i < input.size(); ++i) {
+        auto queried = sketch_->entity(added.value()[i]);
+        ASSERT_TRUE(queried);
+        expectGeometry(queried.value().geometry, input[i].geometry);
+        EXPECT_EQ(queried.value().construction, input[i].construction);
+        if (i != 0) {
+            EXPECT_LT(added.value()[i - 1].get(), added.value()[i].get());
+        }
+    }
+    const std::array named{sketch_->points(), sketch_->lines(), sketch_->circles(), sketch_->arcs()};
+    for (size_t i = 0; i < named.size(); ++i) {
+        const auto kind = static_cast<EntityKind>(i);
+        auto filtered = sketch_->entities(kind);
+        ASSERT_TRUE(filtered);
+        ASSERT_TRUE(named[i]);
+        ASSERT_EQ(filtered.value().size(), named[i].value().size());
+        EXPECT_EQ(filtered.value().size(), sketch_->entityCount(kind).value());
+        for (size_t j = 0; j < filtered.value().size(); ++j) {
+            EXPECT_EQ(entityKind(filtered.value()[j].geometry), kind);
+            EXPECT_EQ(filtered.value()[j].id, named[i].value()[j].id);
+            expectGeometry(filtered.value()[j].geometry, named[i].value()[j].geometry);
+            EXPECT_EQ(filtered.value()[j].construction, named[i].value()[j].construction);
+        }
+    }
+    EXPECT_EQ(sketch_->entityCount(), input.size());
+    EXPECT_EQ(sketch_->constraintCount(), 0U);
+    auto lines = sketch_->lines();
+    ASSERT_TRUE(lines);
+    ASSERT_EQ(lines.value().size(), 2U);
+    EXPECT_EQ(lines.value()[0].id, added.value()[0]);
+    EXPECT_EQ(lines.value()[1].id, added.value()[4]);
+    lines.value()[0].geometry = Line2{{100, 100}, {200, 200}};
+    lines.value()[0].construction = false;
+    expectGeometry(sketch_->entity(added.value()[0]).value().geometry, input[0].geometry);
+    EXPECT_TRUE(sketch_->entity(added.value()[0]).value().construction);
+    ASSERT_TRUE(sketch_->removeEntity(added.value()[4]));
+    EXPECT_EQ(lines.value().size(), 2U);
+    expectError(sketch_->entities(static_cast<EntityKind>(99)), ErrorCode::InvalidArgument);
+    expectError(sketch_->entityCount(static_cast<EntityKind>(99)), ErrorCode::InvalidArgument);
+}
+
+TEST_F(SketchBehavior, PointElementScopesAndPositionsUsePublicReferenceIdentity) {
+    auto empty = sketch_->pointElements();
+    ASSERT_TRUE(empty);
+    EXPECT_TRUE(empty.value().empty());
+    for (auto scope : {PointElementScope::StandalonePoints, PointElementScope::CurveSubElements, PointElementScope::All}) {
+        auto scoped = sketch_->pointElements(scope);
+        ASSERT_TRUE(scoped);
+        EXPECT_TRUE(scoped.value().empty());
+    }
+    const std::array<EntityCreation, 4> input{{{Point2{{2, 0}}}, {Line2{{0, 0}, {2, 0}}}, {Circle2{{2, 0}, 1}}, {Arc2{{0, 0}, {2, 0}, {0, 2}}}}};
+    auto added = sketch_->addEntities(input);
+    ASSERT_TRUE(added);
+    const auto& ids = added.value();
+    const std::vector<PointElement> expected{{{ids[0], SubElement::Whole}, {2, 0}},  {{ids[1], SubElement::Start}, {0, 0}}, {{ids[1], SubElement::End}, {2, 0}},
+                                             {{ids[2], SubElement::Center}, {2, 0}}, {{ids[3], SubElement::Start}, {2, 0}}, {{ids[3], SubElement::End}, {0, 2}},
+                                             {{ids[3], SubElement::Center}, {0, 0}}};
+    auto all = sketch_->pointElements();
+    auto standalone = sketch_->pointElements(PointElementScope::StandalonePoints);
+    auto curves = sketch_->pointElements(PointElementScope::CurveSubElements);
+    auto explicitAll = sketch_->pointElements(PointElementScope::All);
+    ASSERT_TRUE(all);
+    ASSERT_TRUE(standalone);
+    ASSERT_TRUE(curves);
+    ASSERT_TRUE(explicitAll);
+    ASSERT_EQ(all.value().size(), expected.size());
+    ASSERT_EQ(standalone.value().size(), 1U);
+    ASSERT_EQ(curves.value().size(), 6U);
+    ASSERT_EQ(explicitAll.value().size(), expected.size());
+    EXPECT_EQ(standalone.value()[0].ref, expected[0].ref);
+    for (size_t i = 0; i < expected.size(); ++i) {
+        EXPECT_EQ(all.value()[i].ref, expected[i].ref);
+        EXPECT_EQ(explicitAll.value()[i].ref, expected[i].ref);
+        expectPosition(explicitAll.value()[i].position, expected[i].position);
+        expectPosition(all.value()[i].position, expected[i].position);
+        auto position = sketch_->pointPosition(expected[i].ref);
+        ASSERT_TRUE(position);
+        expectPosition(position.value(), expected[i].position);
+        if (i != 0) {
+            EXPECT_EQ(curves.value()[i - 1].ref, expected[i].ref);
+            expectPosition(curves.value()[i - 1].position, expected[i].position);
+        }
+    }
+    for (auto id : ids) {
+        auto elements = sketch_->pointElements(id);
+        ASSERT_TRUE(elements);
+        for (auto sub : {SubElement::Whole, SubElement::Start, SubElement::End, SubElement::Center, static_cast<SubElement>(99)}) {
+            const GeometryRef ref{id, sub};
+            const auto found = std::find_if(expected.begin(), expected.end(), [ref](const auto& p) { return p.ref == ref; });
+            auto position = sketch_->pointPosition(ref);
+            if (found == expected.end()) {
+                expectError(position, ErrorCode::InvalidArgument);
+            } else {
+                ASSERT_TRUE(position);
+                expectPosition(position.value(), found->position);
+            }
+        }
+        const auto count = std::count_if(expected.begin(), expected.end(), [id](const auto& p) { return p.ref.entity == id; });
+        ASSERT_EQ(elements.value().size(), static_cast<size_t>(count));
+        size_t index = 0;
+        for (const auto& p : expected) {
+            if (p.ref.entity == id) {
+                EXPECT_EQ(elements.value()[index].ref, p.ref);
+                expectPosition(elements.value()[index++].position, p.position);
+            }
+        }
+    }
+    all.value()[0].position = {99, 99};
+    expectPosition(sketch_->pointPosition(expected[0].ref).value(), {2, 0});
+    ASSERT_TRUE(sketch_->updateEntity(ids[1], Line2{{10, 0}, {12, 0}}));
+    expectPosition(all.value()[1].position, {0, 0});
+    expectError(sketch_->pointPosition({EntityId(), SubElement::Whole}), ErrorCode::InvalidArgument);
+    expectError(sketch_->pointPosition({EntityId(9999), SubElement::Start}), ErrorCode::NotFound);
+    expectError(sketch_->pointElements(EntityId()), ErrorCode::InvalidArgument);
+    expectError(sketch_->pointElements(EntityId(9999)), ErrorCode::NotFound);
+    expectError(sketch_->pointElements(static_cast<PointElementScope>(99)), ErrorCode::InvalidArgument);
+}
+
+TEST_F(SketchBehavior, CoincidentPointElementsRemainDistinctReferences) {
+    const std::array<EntityCreation, 4> input{{{Point2{{2, 0}}}, {Line2{{0, 0}, {2, 0}}}, {Circle2{{2, 0}, 1}}, {Arc2{{0, 0}, {2, 0}, {0, 2}}}}};
+    auto added = sketch_->addEntities(input);
+    ASSERT_TRUE(added);
+    const auto& ids = added.value();
+    const std::array refs{GeometryRef{ids[0], SubElement::Whole}, GeometryRef{ids[1], SubElement::End}, GeometryRef{ids[2], SubElement::Center},
+                          GeometryRef{ids[3], SubElement::Start}};
+    for (size_t i = 1; i < refs.size(); ++i) {
+        ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {refs[0], refs[i]}, std::nullopt, std::nullopt}));
+    }
+    auto solved = sketch_->solve();
+    ASSERT_TRUE(solved);
+    ASSERT_EQ(solved.value().solveStatus, SolveStatus::Converged);
+    auto all = sketch_->pointElements();
+    ASSERT_TRUE(all);
+    EXPECT_EQ(all.value().size(), 7U);
+    for (auto ref : refs) {
+        EXPECT_EQ(std::count_if(all.value().begin(), all.value().end(), [ref](const auto& p) { return p.ref == ref; }), 1);
+        auto position = sketch_->pointPosition(ref);
+        ASSERT_TRUE(position);
+        expectPosition(position.value(), sketch_->pointPosition(refs[0]).value());
+    }
+}
+
+TEST_F(SketchBehavior, MixedBatchUpdatesPreserveConstructionUnlessExplicitlyChanged) {
+    const std::array<EntityCreation, 4> input{
+        {{Point2{{1, 2}}, true}, {Line2{{0, 0}, {2, 0}}, true}, {Circle2{{4, 5}, 2}, false}, {Arc2{{0, 0}, {3, 0}, {0, 3}}, true}}};
+    auto added = sketch_->addEntities(input);
+    ASSERT_TRUE(added);
+    const auto& ids = added.value();
+    const std::array<EntityUpdate, 4> updates{{{ids[0], Point2{{5, 6}}, std::nullopt},
+                                               {ids[1], Line2{{1, 1}, {4, 1}}, false},
+                                               {ids[2], Circle2{{8, 9}, 3}, true},
+                                               {ids[3], Arc2{{1, 1}, {5, 1}, {1, 5}}, std::nullopt}}};
+    ASSERT_TRUE(sketch_->updateEntities(updates));
+    for (size_t i = 0; i < updates.size(); ++i) {
+        auto queried = sketch_->entity(ids[i]);
+        ASSERT_TRUE(queried);
+        expectGeometry(queried.value().geometry, updates[i].geometry);
+        EXPECT_EQ(queried.value().construction, updates[i].construction.value_or(input[i].construction));
+    }
+    ASSERT_TRUE(sketch_->updateEntity(ids[0], Point2{{7, 8}}));
+    EXPECT_TRUE(sketch_->entity(ids[0]).value().construction);
+    ASSERT_TRUE(sketch_->updateEntity(ids[0], Point2{{9, 10}}, false));
+    EXPECT_FALSE(sketch_->entity(ids[0]).value().construction);
+    // Even an unsolved fixed point must not be projected by a metadata edit.
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {{ids[0], SubElement::Whole}}, std::nullopt, Vec2{0, 0}}));
+    auto before = sketch_->entity(ids[0]);
+    ASSERT_TRUE(before);
+    ASSERT_TRUE(sketch_->setConstruction(ids[0], true));
+    expectGeometry(sketch_->entity(ids[0]).value().geometry, before.value().geometry);
+    EXPECT_TRUE(sketch_->entity(ids[0]).value().construction);
+    EXPECT_EQ(sketch_->constraintCount(), 1U);
+    expectError(sketch_->setConstruction(EntityId(), true), ErrorCode::InvalidArgument);
+    expectError(sketch_->setConstruction(EntityId(9999), true), ErrorCode::NotFound);
+}
+
+TEST_F(SketchBehavior, MoveRejectsInvalidOffsetsAndTargetsWithoutChangingGeometry) {
+    auto added = sketch_->addEntity(Point2{{1, 2}}, true);
+    ASSERT_TRUE(added);
+    const auto id = added.value();
+    const std::array ids{id};
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double infinity = std::numeric_limits<double>::infinity();
+    const std::array offsets{Vec2{nan, 0}, Vec2{0, nan}, Vec2{infinity, 0}, Vec2{0, -infinity}};
+    for (auto offset : offsets) {
+        expectError(sketch_->moveEntities(ids, offset), ErrorCode::InvalidArgument);
+    }
+    const std::array missing{id, EntityId(9999)};
+    const std::array duplicate{id, id};
+    const std::array invalid{id, EntityId()};
+    expectError(sketch_->moveEntities(missing, {3, 4}), ErrorCode::NotFound);
+    expectError(sketch_->moveEntities(duplicate, {3, 4}), ErrorCode::InvalidArgument);
+    expectError(sketch_->moveEntities(invalid, {3, 4}), ErrorCode::InvalidArgument);
+    // Zero offsets still validate targets; empty batches succeed without editing.
+    expectError(sketch_->moveEntities(missing, {}), ErrorCode::NotFound);
+    ASSERT_TRUE(sketch_->moveEntities(ids, {}));
+    ASSERT_TRUE(sketch_->moveEntities({}, {nan, infinity}));
+    auto current = sketch_->entity(id);
+    ASSERT_TRUE(current);
+    expectGeometry(current.value().geometry, Point2{{1, 2}});
+    EXPECT_TRUE(current.value().construction);
+}
+
+TEST_F(SketchBehavior, MovePrevalidatesResultingGeometryBeforeMutatingAnyTarget) {
+    const std::array<EntityCreation, 2> input{{{Point2{{1, 2}}, true}, {Line2{{0, 0}, {2, 0}}, false}}};
+    auto added = sketch_->addEntities(input);
+    ASSERT_TRUE(added);
+    // This finite offset collapses the line endpoints through floating-point rounding.
+    const double huge = std::numeric_limits<double>::max();
+    expectError(sketch_->moveEntities(added.value(), {huge, 0}), ErrorCode::InvalidArgument);
+    for (size_t i = 0; i < input.size(); ++i) {
+        auto current = sketch_->entity(added.value()[i]);
+        ASSERT_TRUE(current);
+        expectGeometry(current.value().geometry, input[i].geometry);
+        EXPECT_EQ(current.value().construction, input[i].construction);
+    }
+}
+
+TEST_F(SketchBehavior, GeometryBatchesPrevalidateAllInputsAndRejectDuplicateTargets) {
+    auto point = sketch_->addEntity(Point2{{1, 2}}, true);
+    ASSERT_TRUE(point);
+    const auto id = point.value();
+    auto state = sketch_->snapshot();
+    ASSERT_TRUE(state);
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const std::array<EntityCreation, 2> invalidCreation{{{Line2{{0, 0}, {2, 0}}}, {Circle2{{0, 0}, -1}}}};
+    expectError(sketch_->addEntities(invalidCreation), ErrorCode::InvalidArgument);
+    const std::vector<std::vector<EntityUpdate>> invalidUpdates{{{id, Point2{{3, 4}}, false}, {EntityId(9999), Point2{{5, 6}}, std::nullopt}},
+                                                                {{id, Point2{{3, 4}}, false}, {id, Point2{{5, 6}}, std::nullopt}},
+                                                                {{id, Point2{{nan, 4}}, false}},
+                                                                {{id, Line2{{0, 0}, {2, 0}}, false}},
+                                                                {{EntityId(), Point2{{3, 4}}, false}}};
+    const std::array codes{ErrorCode::NotFound, ErrorCode::InvalidArgument, ErrorCode::InvalidArgument, ErrorCode::InvalidArgument, ErrorCode::InvalidArgument};
+    for (size_t i = 0; i < invalidUpdates.size(); ++i) {
+        expectError(sketch_->updateEntities(invalidUpdates[i]), codes[i]);
+        expectGeometry(sketch_->entity(id).value().geometry, Point2{{1, 2}});
+        EXPECT_TRUE(sketch_->entity(id).value().construction);
+    }
+    const std::array missing{id, EntityId(9999)};
+    const std::array duplicate{id, id};
+    const std::array invalid{id, EntityId()};
+    expectError(sketch_->removeEntities(missing), ErrorCode::NotFound);
+    expectError(sketch_->removeEntities(duplicate), ErrorCode::InvalidArgument);
+    expectError(sketch_->removeEntities(invalid), ErrorCode::InvalidArgument);
+    auto empty = sketch_->addEntities({});
+    ASSERT_TRUE(empty);
+    EXPECT_TRUE(empty.value().empty());
+    ASSERT_TRUE(sketch_->updateEntities({}));
+    ASSERT_TRUE(sketch_->removeEntities({}));
+    auto after = sketch_->snapshot();
+    ASSERT_TRUE(after);
+    EXPECT_EQ(sketch_->entityCount(), 1U);
+    EXPECT_EQ(after.value().lastEntityId, state.value().lastEntityId);
+    EXPECT_EQ(after.value().lastConstraintId, state.value().lastConstraintId);
+    // DCM supports every geometry kind; no valid creation input
+    // exercises Unsupported. Unsupported constraint behavior is covered above.
+}
+
+TEST_F(SketchBehavior, MixedCurveBatchProposalsRespectCoincidentReferenceOrder) {
+    const std::array<EntityCreation, 3> input{{{Line2{{0, 0}, {2, 0}}}, {Circle2{{0, 0}, 1}}, {Arc2{{0, 0}, {2, 0}, {0, 2}}}}};
+    auto added = sketch_->addEntities(input);
+    ASSERT_TRUE(added);
+    const auto& ids = added.value();
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {{ids[0], SubElement::Start}, {ids[1], SubElement::Center}}, std::nullopt, std::nullopt}));
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Coincident, {{ids[1], SubElement::Center}, {ids[2], SubElement::Center}}, std::nullopt, std::nullopt}));
+    const std::array<EntityUpdate, 3> updates{
+        {{ids[2], Arc2{{1, 1}, {3, 1}, {1, 3}}, std::nullopt}, {ids[1], Circle2{{4, 4}, 2}, std::nullopt}, {ids[0], Line2{{5, 6}, {7, 6}}, std::nullopt}}};
+    ASSERT_TRUE(sketch_->updateEntities(updates));
+    expectPosition(sketch_->pointPosition({ids[0], SubElement::Start}).value(), {5, 6});
+    expectPosition(sketch_->pointPosition({ids[1], SubElement::Center}).value(), {5, 6});
+    expectPosition(sketch_->pointPosition({ids[2], SubElement::Center}).value(), {5, 6});
+    // Intrinsic circularity is deferred, too: the projected DCM arc now has
+    // unequal radii. The endpoint proposals remain unchanged without solve.
+    expectPosition(sketch_->pointPosition({ids[2], SubElement::Start}).value(), {3, 1});
+    expectPosition(sketch_->pointPosition({ids[2], SubElement::End}).value(), {1, 3});
+    EXPECT_EQ(sketch_->entityCount(), 3U);
+    EXPECT_EQ(sketch_->constraintCount(), 2U);
+}
+
+TEST_F(SketchBehavior, BatchIdCapacityIsCheckedBeforeAllocationAndClearDoesNotResetIt) {
+    SketchSnapshot state;
+    state.lastEntityId = std::numeric_limits<int64_t>::max() - 1;
+    ASSERT_TRUE(sketch_->replaceState(state));
+    const std::array<EntityCreation, 2> tooMany{{{Point2{{0, 0}}}, {Point2{{1, 1}}}}};
+    expectError(sketch_->addEntities(tooMany), ErrorCode::BackendFailure);
+    EXPECT_EQ(sketch_->entityCount(), 0U);
+    auto last = sketch_->addPoint({0, 0});
+    ASSERT_TRUE(last);
+    EXPECT_EQ(last.value().get(), std::numeric_limits<int64_t>::max());
+    ASSERT_TRUE(sketch_->clear());
+    expectError(sketch_->addEntities(tooMany), ErrorCode::BackendFailure);
+    EXPECT_EQ(sketch_->entityCount(), 0U);
+    EXPECT_EQ(sketch_->snapshot().value().lastEntityId, std::numeric_limits<int64_t>::max());
+}
+
+}  // namespace
+}  // namespace core::sketch

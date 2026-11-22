@@ -1,9 +1,21 @@
 [submodule "src/core/DCM"]
-	path = src/core/DCM
+	path = third_party/DCM
 	url = https://github.com/OurPaintTeam/OurPaintDCM.git
 	branch = main
 
 [submodule "src/UI"]
-	path = src/UI
+	path = third_party/UI
 	url = https://github.com/OurPaintTeam/OurPaint-Desktop-UI.git
 	branch = main
+
+[submodule "third_party/imgui"]
+	path = third_party/imgui
+	url = https://github.com/ocornut/imgui.git
+
+[submodule "third_party/glfw"]
+	path = third_party/glfw
+	url = https://github.com/glfw/glfw.git
+
+[submodule "third_party/nanosvg"]
+	path = third_party/nanosvg
+	url = https://github.com/memononen/nanosvg.git

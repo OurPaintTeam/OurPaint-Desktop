@@ -1,0 +1,146 @@
+#ifndef OURPAINT_CORE_SKETCH_H_
+#define OURPAINT_CORE_SKETCH_H_
+
+#include "SketchTypes.h"
+
+#include <deque>
+
+namespace core::sketch {
+// Sketch is a self-contained parametric 2D geometric model operating in its own
+// local 2D coordinate system. It provides the stable OurPaint API for creating,
+// modifying, constraining, solving, manipulating, querying and diagnosing sketch
+// geometry without exposing DCM types.
+//
+// Sketch directly owns one DCM model through its private implementation, together
+// with public identities, metadata and validation policy. It is neither a render
+// scene nor UI/selection/history/document/3D placement state; a future SketchFeature
+// can associate it with a support and placement transform.
+// Calls on one instance must be externally serialized. Query results own their
+// data and remain valid after edits/destruction. No borrowed solver pointers.
+class Sketch {
+public:
+    Sketch();
+    ~Sketch();
+    Sketch(const Sketch&) = delete;
+    Sketch& operator=(const Sketch&) = delete;
+
+    Result<EntityId> addEntity(const SketchGeometry& geometry, bool construction = false);
+    Result<EntityId> addPoint (Vec2 p)                            { return addEntity(Point2{p});        }
+    Result<EntityId> addLine  (Vec2 start, Vec2 end)              { return addEntity(Line2{start, end});        }
+    Result<EntityId> addCircle(Vec2 center, double radius)        { return addEntity(Circle2{center, radius});  }
+    Result<EntityId> addArc   (Vec2 center, Vec2 start, Vec2 end) { return addEntity(Arc2{center, start, end}); }
+
+    // Proposes an initial geometry guess of the same kind, preserving identity.
+    // Hard fixed/coincident rules may project it. No numerical solve is requested.
+    Status updateEntity       (EntityId id, const SketchGeometry& geometry, std::optional<bool> construction = std::nullopt);
+    Status updatePoint        (EntityId id, Point2 point);
+    Status updateLine         (EntityId id, Line2 line);
+    Status updateCircle       (EntityId id, Circle2 circle);
+    Status updateArc          (EntityId id, Arc2 arc);
+    Status updateCircleRadius (EntityId id, double radius);
+
+    // Translates detached geometry proposals by a finite offset, preserving metadata.
+    // Uses updateEntities validation/projection; no numerical solve or group dragging.
+    Status moveEntities(std::span<const EntityId> ids, Vec2 offset);
+
+    // Metadata-only edit: no geometry projection or numerical solve.
+    Status setConstruction(EntityId id, bool construction);
+    // Removes the entity and all constraints referencing any of its sub-elements.
+    Status removeEntity(EntityId id);
+    // All inputs are prevalidated before mutation; no rollback on BackendFailure.
+    // Updates apply in input order and are initial guesses, not group dragging.
+    // Empty batches succeed; created IDs follow input order and are never reused.
+    Result<std::vector<EntityId>> addEntities(std::span<const EntityCreation> entities);
+    Status updateEntities(std::span<const EntityUpdate> entities);
+    Status removeEntities(std::span<const EntityId> ids);
+    // Clears public and private model records in place, retaining DCM and IDs.
+    Status clear();
+
+
+    // Check the definition's fields, referenced geometry and sub-elements in this sketch.
+    // A successful check allows an insertion attempt. Joint satisfiability is tested during solving.
+    Status validateConstraint(const ConstraintDefinition& definition) const;
+
+    // Stage the constraint, solve, and commit its ID and geometry together.
+    Result<ConstraintSolveResult> addConstraint(const ConstraintDefinition& definition, const SolveOptions& options = {});
+
+    // Stage the whole batch and solve once. Return the committed IDs in input order.
+    Result<ConstraintBatchSolveResult> addConstraints(std::span<const ConstraintDefinition> definitions,
+                                                      const SolveOptions& options = {});
+
+    // Solve with the replacement under the same ID. Restore the previous definition and geometry on failure.
+    Result<SolveDiagnostics> updateConstraint(ConstraintId id,
+                                              const ConstraintDefinition& definition,
+                                              const SolveOptions& options = {});
+
+    // Remove the constraint selected by the caller. The next solve is explicit.
+    Status removeConstraint(ConstraintId id);
+
+    // Getters
+    Result<SketchEntity> entity(EntityId id) const;
+    Result<SketchConstraint> constraint(ConstraintId id) const;
+    // Coarse queries read the DCM model in one pass.
+    Result<std::vector<SketchEntity>> entities() const;
+    // Ascending public ID order. Queries scan metadata and copy matching values.
+    Result<std::vector<SketchEntity>> entities(EntityKind kind) const;
+    // points() contains standalone Point entities, not curve endpoints/centers/controls.
+    Result<std::vector<SketchEntity>> points()  const { return entities(EntityKind::Point);  }
+    Result<std::vector<SketchEntity>> lines()   const { return entities(EntityKind::Line);   }
+    Result<std::vector<SketchEntity>> circles() const { return entities(EntityKind::Circle); }
+    Result<std::vector<SketchEntity>> arcs()    const { return entities(EntityKind::Arc);    }
+    Result<Vec2> pointPosition(GeometryRef ref) const;
+    // Both query forms use the same references. NURBS controls are ordered by
+    // their zero-based GeometryRef::index and belong to CurveSubElements/All.
+    Result<std::vector<PointElement>> pointElements() const;
+    Result<std::vector<PointElement>> pointElements(PointElementScope scope) const;
+    Result<std::vector<PointElement>> pointElements(EntityId entity) const;
+    Result<std::vector<SketchConstraint>> constraints() const;
+    // Public records only: O(1) totals, O(N) count by kind, no geometry copies.
+    size_t entityCount() const;
+    Result<size_t> entityCount(EntityKind kind) const;
+    size_t constraintCount() const;
+
+
+    // Solve the installed constraints in place. Require enforces transient point targets for this call.
+    // Prefer permits a retry with relaxed targets. Inspect diagnostics.status even when Result has a value.
+    // A failed solve may leave an intermediate geometry. Constraint removal and edit rollback are explicit operations.
+    Result<SolveDiagnostics> solve(const SolveOptions& options = {});
+    // Single-point convenience overload with the same behavior as dragPoints.
+    Result<SolveDiagnostics> drag(const DragRequest& request, DragOptions options = {});
+    // Apply one interactive step to distinct point-like references. Validate all targets first, then drag them together.
+    // Targets are best-effort. SwitchLineSide permits a saved line/circular tangency branch to change.
+    // With valid options, an empty request succeeds immediately. The current status reflects tangency checks and retries.
+    Result<SolveDiagnostics> dragPoints(std::span<const DragRequest> requests, DragOptions options = {});
+
+    // Classify the current geometry and equations on demand, without moving geometry.
+    Result<SolveDiagnostics> diagnose() const;
+
+
+
+    Result<SketchSnapshot> snapshot() const;
+    // Stages a fresh DCM model, then swaps only on complete success. No solve is
+    // implicit. Recreation is limited to explicit state transfer. Import
+    // retains this instance's ID high watermarks as well, preventing ID reuse.
+    // Unsolved unequal arc radii can transfer; nonfinite/degenerate failed
+    // iterates are rejected without replacing the current model.
+    Status replaceState(const SketchSnapshot& snapshot);
+
+
+    void undo();
+    void redo();
+    void pushState();
+
+private:
+    class Impl;
+    Status validateSolveOptions(const SolveOptions& options) const;
+    Status installState(const SketchSnapshot& snapshot);
+    std::unique_ptr<Impl> impl_;
+    IDGenerator entityIds_;
+    IDGenerator constraintIds_;
+
+    std::deque<SketchSnapshot> undo_;
+    std::deque<SketchSnapshot> redo_;
+    int maxSteps_ = 128;
+};
+}  // namespace core::sketch
+#endif

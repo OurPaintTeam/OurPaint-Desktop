@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.5
+Type=Application
+Name=OurPaint
+Comment=A simple paint application
+Exec=/home/user/OurPaint/OurPaintApp %F
+Icon=ourpaint
+Terminal=false
+Categories=Graphics;Qt;
+MimeType=application/x-ourp-project;
+StartupWMClass=OurPaintApp

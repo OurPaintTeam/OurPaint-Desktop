@@ -1,0 +1,23 @@
+add_ourpaint_test(DocumentManagerGTEST DocumentManagerGTEST.cc)
+target_link_libraries(DocumentManagerGTEST PRIVATE ourpaint_document)
+
+add_ourpaint_test(DocumentCodecGTEST DocumentCodecGTEST.cc)
+target_link_libraries(DocumentCodecGTEST PRIVATE ourpaint_document nlohmann_json::nlohmann_json)
+
+add_ourpaint_test(ObjectsGTEST ObjectsGTEST.cc)
+target_link_libraries(ObjectsGTEST PRIVATE ourpaint_core)
+
+add_ourpaint_test(GeometryAlgorithmTest GeometryAlgorithmsGTEST.cc)
+target_link_libraries(GeometryAlgorithmTest PRIVATE OurPaint::Sketch)
+
+add_ourpaint_test(SketchGTEST SketchGTEST.cc)
+target_link_libraries(SketchGTEST PRIVATE OurPaint::Sketch)
+
+add_ourpaint_test(SymmetricGTEST SymmetricGTEST.cc)
+target_link_libraries(SymmetricGTEST PRIVATE OurPaint::Sketch)
+
+add_ourpaint_test(MidpointGTEST MidpointGTEST.cc)
+target_link_libraries(MidpointGTEST PRIVATE OurPaint::Sketch)
+
+add_ourpaint_test(TangentGTEST TangentGTEST.cc)
+target_link_libraries(TangentGTEST PRIVATE OurPaint::Sketch)

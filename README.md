@@ -18,10 +18,13 @@ The active development branch is `dev`.
 - nlohmann/json
 - GoogleTest
 - FreeType
-- GLM
+- GLM 
+- Dear ImGui (via GLFW)
 
-Most third-party C++ libraries are downloaded and built automatically by
-CMake. Platform-specific build tools and Qt must be installed separately.
+The `third_party/` directory contains the UI and DCM Git submodules, GLAD,
+and bundled fonts. DCM contains its own Math submodule. Other C++ libraries
+are downloaded into the build tree by CMake's FetchContent. Platform-specific
+build tools and Qt must be installed separately.
 
 ## Clone the Repository
 
@@ -43,6 +46,7 @@ git submodule update --init --recursive
 
 Install the required packages:
 
+_Note_: The `xorg-dev`, `libwayland-dev`, and `libwayland-bin` packages are required to build the GLFW dependency used by the ImGui target.
 ```bash
 sudo apt update
 sudo apt install -y \
@@ -57,7 +61,11 @@ sudo apt install -y \
     libqt6opengl6-dev \
     libgl1-mesa-dev \
     libxkbcommon-dev \
-    libxcb-cursor0
+    libxcb-cursor0 \
+    xorg-dev \
+    libwayland-dev \
+    libwayland-bin \
+    wayland-protocols
 ```
 
 Configure the project:
@@ -66,12 +74,11 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 ```
 Build the application:
 ```bash
-cmake --build build --target ourpaint --parallel
+cmake --build build --target ourpaint_qt --parallel
 ```
 Run:
 ```bash
-cd build/src/app
-./ourpaint
+./build/src/app/ourpaint_qt
 ```
 
 ## Building on Windows
@@ -125,7 +132,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 ### 5. Build the Application
 
 ```bash
-cmake --build build --target ourpaint --parallel
+cmake --build build --target ourpaint_qt --parallel
 ```
 
 ### 6. Run the Application
@@ -138,4 +145,67 @@ Run the application from the MSYS2 UCRT64 terminal:
 
 The exact executable path may differ if the output directory is changed in
 CMake.
+
+## Static Release Build on Windows
+
+This PowerShell workflow uses Qt 6.10.0 sources and CLion's MinGW toolchain.
+Adjust the paths for your installation. Build Qt and OurPaint with the same
+compiler; do not mix this environment with MSYS2 libraries. Python 3 must
+also be available in `PATH`.
+
+### 1. Build and Install Static Qt
+
+Install the Qt sources (for example, through Qt Maintenance Tool), then run:
+
+```powershell
+$clionBin = "C:\Program Files\JetBrains\CLion 2025.3.3\bin"
+$env:PATH = "$clionBin\mingw\bin;$clionBin\cmake\win\x64\bin;$clionBin\ninja\win\x64;$env:PATH"
+
+New-Item -ItemType Directory -Force C:\Qt\build-6.10.0-static
+Set-Location C:\Qt\build-6.10.0-static
+
+& C:\Qt\6.10.0\Src\configure.bat `
+    -prefix C:\Qt\6.10.0\mingw_64_static `
+    -release -static -static-runtime `
+    -submodules qtbase,qtsvg `
+    -nomake examples -nomake tests
+
+cmake --build . --parallel 4
+cmake --install .
+```
+
+`-static` builds static Qt libraries; `-static-runtime` enables static compiler
+runtime linking. `qtsvg` provides support for the application's SVG icons.
+Setting `BUILD_SHARED_LIBS=OFF` in OurPaint alone does not make an existing
+shared Qt installation static.
+
+### 2. Build OurPaint
+
+Return to the repository root in the same PowerShell session. Use a new build
+directory to avoid cached paths to shared Qt:
+
+```powershell
+cmake -S . -B build-release-static -G Ninja `
+    -DCMAKE_BUILD_TYPE=Release `
+    -DBUILD_SHARED_LIBS=OFF `
+    -DCMAKE_PREFIX_PATH=C:/Qt/6.10.0/mingw_64_static `
+    -DQt6_DIR=C:/Qt/6.10.0/mingw_64_static/lib/cmake/Qt6 `
+    "-DCMAKE_EXE_LINKER_FLAGS=-static"
+
+cmake --build build-release-static --target ourpaint --parallel 4
+```
+
+Configuration should print `Qt6::Core type: STATIC_LIBRARY`. The executable
+is `build-release-static/src/app/ourpaint.exe`. Keep the generated `shaders`
+and `fonts` folders beside it; these resources are not embedded in the EXE.
+
+Inspect DLL dependencies without launching the application:
+
+```powershell
+objdump -p .\build-release-static\src\app\ourpaint.exe |
+    Select-String "DLL Name"
+```
+
+The list should contain no `Qt6*.dll` dependencies. Windows system DLLs
+remain normal dependencies.
 
