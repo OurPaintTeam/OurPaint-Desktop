@@ -30,12 +30,12 @@ public:
     bool cancel() override;
 
 private:
+    void deleteSelection();
     void copySelection();
     void pasteSelection();
     sketch::Status prepareDragSelection(std::span<const sketch::GeometryRef> refs);
     sketch::Result<sketch::SolveDiagnostics> moveSelection(sketch::Vec2 offset);
     void finishDrag();
-    std::optional<DimensionPickResult> pickDimension(glm::dvec2 position) const;
     void beginDimensionDrag(const DimensionPickResult& hit, glm::dvec2 position);
     void updateDimensionDrag(glm::dvec2 position);
     void endDimensionDrag(bool commit);
@@ -72,7 +72,8 @@ private:
     };
     std::optional<DimensionDrag> dimensionDrag_;
 
-    std::vector<sketch::GeometryRef> marqueeBaseSelection_;
+    std::vector<SelectionItem> marqueeBaseSelection_;
+    std::vector<sketch::GeometryRef> dragGeometry_;
     std::vector<sketch::DragRequest> dragTargets_;
     bool dragAttempted_ = false;
     bool dragStopped_ = false;

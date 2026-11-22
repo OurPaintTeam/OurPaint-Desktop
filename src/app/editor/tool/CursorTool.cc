@@ -17,6 +17,12 @@
 
 using namespace app;
 
+namespace {
+bool canSelectDimension(input::Modifiers modifiers) {
+    return !input::has_flag(modifiers, input::Modifiers::Alt) && !input::has_flag(modifiers, input::Modifiers::Meta);
+}
+}  // namespace
+
 CursorTool::CursorTool(Document& document,
                        render::Camera2D& camera,
                        snap::SnapSystem& snap,
@@ -44,11 +50,10 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
         }
         return;
     }
-    // Hover for dimensions
     overlay_.hoveredDimension.reset();
-    if (state_ == State::Idle && e.buttons == input::MouseButton::None && e.modifiers == input::Modifiers::None) {
-        if (const auto hit = pickDimension({e.x, e.y})) {
-            overlay_.hoveredDimension = hit->constraint;
+    if (state_ == State::Idle && e.buttons == input::MouseButton::None && canSelectDimension(e.modifiers)) {
+        if (const auto dimension = picker_.pickSelectableDimensionAtScreenLogical(e.x, e.y, constraintLayout_)) {
+            overlay_.hoveredDimension = dimension->constraint;
         }
     }
 
@@ -56,7 +61,7 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
 
         // Dragging selection items
         if (state_ == State::DraggingSelection) {
-            const auto& refs = overlay_.selection_.model.items();
+            const auto& refs = dragGeometry_;
             if (!refs.empty() && !dragStopped_ && (v.x != lastPos_.x || v.y != lastPos_.y)) {
                 auto constraints = sketch_.constraints();
 
@@ -150,10 +155,8 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
     if (e.button == input::MouseButton::Left && e.action == input::MouseButtonAction::Press) {
         endDimensionDrag(false);
         overlay_.hoveredDimension.reset();
-        bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift) || input::has_flag(e.modifiers, input::Modifiers::Ctrl);
-        bool alt = input::has_flag(e.modifiers, input::Modifiers::Alt);
-
-        std::optional<PickResult> pickRes = picker_.pickAtScreenLogical(e.x, e.y);
+        const bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift) || input::has_flag(e.modifiers, input::Modifiers::Ctrl);
+        const bool alt = input::has_flag(e.modifiers, input::Modifiers::Alt);
 
         // Add point-on-point constraint for near points
         if (alt) {
@@ -167,34 +170,27 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
         }
 
-        // No modifiers -> mb pick dimensions
-        if (e.modifiers == input::Modifiers::None) {
-            if (const auto hit = pickDimension({e.x, e.y})) {
-                beginDimensionDrag(*hit, {e.x, e.y});
+        const auto hit = canSelectDimension(e.modifiers) ? picker_.pickAtScreenLogical(e.x, e.y, constraintLayout_) : picker_.pickGeometryAtScreenLogical(e.x, e.y);
+        if (hit) {
+            const auto* dimension = std::get_if<DimensionPickResult>(&*hit);
+            const SelectionItem item = dimension ? SelectionItem{dimension->constraint} : SelectionItem{std::get<GeometryPickResult>(*hit).ref};
+            auto& selection = overlay_.selection_.model;
+            if (shift) {
+                selection.toggle(item);
+                state_ = State::Idle;
                 return;
             }
-        }
-
-        // is anything selected
-        if (pickRes.has_value()) {
-            const auto ref = pickRes->ref;
-
-            if (shift) { // just toggle
-                overlay_.selection_.model.toggle(ref);
-                state_ = State::Idle;
-            } else {
-                if (!overlay_.selection_.model.contains(ref)) { // if not selected
-                    overlay_.selection_.model.replace(ref); // clear selection and select ref
-                }
-                pressWorldPos_ = camera_.screenLogicalToWorld({e.x, e.y});
-                lastPos_ = pressWorldPos_;
-                const auto prepared = prepareDragSelection(overlay_.selection_.model.items());
-                if (!prepared) {
-                    state_ = State::Idle;
-                    return;
-                }
-                state_ = State::DraggingSelection;
+            if (!selection.contains(item)) {
+                selection.replace(item);
             }
+            if (dimension) {
+                beginDimensionDrag(*dimension, {e.x, e.y});
+                return;
+            }
+            pressWorldPos_ = camera_.screenLogicalToWorld({e.x, e.y});
+            lastPos_ = pressWorldPos_;
+            dragGeometry_ = selection.geometryItems();
+            state_ = prepareDragSelection(dragGeometry_) ? State::DraggingSelection : State::Idle;
         }
         // nothing selected -> make a marquee rectangle
         else {
@@ -222,7 +218,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
             endDimensionDrag(true);
         }
 
-        if (state_ == State::DraggingSelection || state_ == State::DraggingDimension) {
+        if (state_ == State::DraggingSelection) {
             document_.sketch().pushState(); // FOR UNDO/REDO
         }
 
@@ -233,24 +229,7 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
 void CursorTool::onKey(const input::KeyEvent& e) {
     // Delete
     if (e.action == input::KeyAction::Press && e.key == input::KeyCode::Delete) {
-        const auto& selected = overlay_.selection_.model.items();
-        std::set<sketch::EntityId> seen;
-        std::vector<sketch::EntityId> ids;
-        ids.reserve(selected.size());
-        for (const auto& ref : selected) {
-            if (seen.insert(ref.entity).second) {
-                ids.push_back(ref.entity);
-            }
-        }
-        if (ids.empty()) {
-            return;
-        }
-        const auto removed = sketch_.removeEntities(ids);
-        if (!removed) {
-            return;
-        }
-        overlay_.selection_.model.clear();
-        document_.sketch().pushState(); // FOR UNDO/REDO
+        deleteSelection();
         return;
     }
 
@@ -286,18 +265,10 @@ bool CursorTool::cancel() {
     overlay_.draggedDimension.reset();
     overlay_.selectionRect_.reset();
     marqueeBaseSelection_.clear();
+    dragGeometry_.clear();
     dragTargets_.clear();
     state_ = State::Idle;
     return false;
-}
-
-std::optional<DimensionPickResult> CursorTool:: pickDimension(glm::dvec2 position) const {
-    const auto hit = picker_.pickDimensionAtScreenLogical(position.x, position.y, constraintLayout_);
-    // Labels win over geometry, but a point remains reachable where a witness meets it.
-    if (hit && (hit->part == DimensionPickResult::Part::Label || !picker_.pickPointAtScreenLogical(position.x, position.y))) {
-        return hit;
-    }
-    return std::nullopt;
 }
 
 void CursorTool::beginDimensionDrag(const DimensionPickResult& hit, glm::dvec2 position) {
@@ -308,9 +279,7 @@ void CursorTool::beginDimensionDrag(const DimensionPickResult& hit, glm::dvec2 p
     const auto initial = found == constraintPresentation_.labelPlacements.end() ? std::nullopt : std::optional(found->second);
     dimensionDrag_ = DimensionDrag{hit.constraint, position, hit.labelCenter - position, initial};
     state_ = State::PressedDimension;
-    overlay_.clearSelection();
     overlay_.hoveredDimension = hit.constraint;
-    overlay_.draggedDimension = hit.constraint;
 }
 
 void CursorTool::updateDimensionDrag(glm::dvec2 position) {
@@ -331,6 +300,7 @@ void CursorTool::updateDimensionDrag(glm::dvec2 position) {
         return;
     }
     constraintPresentation_.labelPlacements[dimensionDrag_->constraint] = {{center.x, center.y}};
+    overlay_.draggedDimension = dimensionDrag_->constraint;
     state_ = State::DraggingDimension;
 }
 
@@ -355,6 +325,38 @@ void CursorTool::endDimensionDrag(bool commit) {
     state_ = State::Idle;
 }
 
+void CursorTool::deleteSelection() {
+    auto& selection = overlay_.selection_.model;
+    if (selection.empty()) {
+        return;
+    }
+    cancel();
+    const auto before = sketch_.snapshot();
+    if (!before) {
+        return;
+    }
+
+    bool changed = false;
+    for (const auto& item : selection.items()) {
+        const auto* ref = std::get_if<sketch::GeometryRef>(&item);
+        const auto removed = ref ? sketch_.removeEntity(ref->entity) : sketch_.removeConstraint(std::get<sketch::ConstraintId>(item));
+        // Removing an owner can invalidate later sub-elements and dependent dimensions in this selection.
+        if (removed) {
+            changed = true;
+        } else if (removed.error().code != sketch::ErrorCode::NotFound) {
+            // An earlier removal may have succeeded before the backend failed.
+            if (const auto restored = sketch_.replaceState(before.value()); !restored) {
+                std::cerr << "Could not restore the sketch after a failed deletion: " << restored.error().message << '\n';
+            }
+            return;
+        }
+    }
+    selection.clear();
+    if (changed) {
+        sketch_.pushState();
+    }
+}
+
 void CursorTool::copySelection() {
     ClipboardFragment fragment;
     std::set<sketch::EntityId> included;
@@ -368,7 +370,7 @@ void CursorTool::copySelection() {
     };
 
     // Copy each selected owner once, including its owned endpoints/center.
-    for (const auto& ref : overlay_.selection_.model.items()) {
+    for (const auto& ref : overlay_.selection_.model.geometryItems()) {
         if (!included.insert(ref.entity).second) {
             continue;
         }

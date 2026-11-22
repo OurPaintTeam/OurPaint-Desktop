@@ -381,7 +381,7 @@ void RenderSceneBuilder::buildSelectedObjects() {
     render::ArcBatch arcs;
     arcs.stroke = style_.selectedCircle;
 
-    auto refs = overlay_.selection_.model.items();
+    auto refs = overlay_.selection_.model.geometryItems();
     for (const auto& ref : overlay_.constraintRefs_) {
         if (!overlay_.selection_.model.contains(ref)) {
             refs.push_back(ref);
@@ -494,9 +494,10 @@ void RenderSceneBuilder::buildConstraintsMarkers() {
         render::TextBatch labels;
         std::vector<render::MarkerBatch> dots;
     };
-    // Batch by interaction state; hover and drag use the same primitives as picking.
-    std::array<MarkerBatches, 3> batches;
-    const std::array colors{style_.constraintMarker.stroke.color, style_.constraintMarker.hoveredColor, style_.constraintMarker.draggedColor};
+    enum MarkerState : size_t { Normal, Hovered, Selected, Dragged };
+    const std::array colors{style_.constraintMarker.stroke.color, style_.constraintMarker.hoveredColor, style_.selectedLine.color,
+                            style_.constraintMarker.draggedColor};
+    std::array<MarkerBatches, colors.size()> batches;
     const double dpr = camera_.viewport().devicePixelRatio;
     const double height = camera_.hFramebuffer();
     for (size_t i = 0; i < batches.size(); ++i) {
@@ -516,7 +517,14 @@ void RenderSceneBuilder::buildConstraintsMarkers() {
         const auto represents = [&](const auto& id) {
             return id && std::find(marker.constraints.begin(), marker.constraints.end(), *id) != marker.constraints.end();
         };
-        const size_t state = represents(overlay_.draggedDimension) ? 2 : represents(overlay_.hoveredDimension) ? 1 : 0;
+        MarkerState state = Normal;
+        if (represents(overlay_.draggedDimension)) {
+            state = Dragged;
+        } else if (std::any_of(marker.constraints.begin(), marker.constraints.end(), [&](auto id) { return overlay_.selection_.model.contains(id); })) {
+            state = Selected;
+        } else if (represents(overlay_.hoveredDimension)) {
+            state = Hovered;
+        }
         auto& group = batches[state];
         auto& linesBatch = group.lines;
         auto& circlesBatch = group.circles;
@@ -532,7 +540,7 @@ void RenderSceneBuilder::buildConstraintsMarkers() {
             if (batch == group.dots.end()) {
                 render::MarkerBatch dotsBatch;
                 dotsBatch.style = style_.constraintMarker.point;
-                if (state != 0) {
+                if (state != Normal) {
                     dotsBatch.style.color = colors[state];
                 }
                 dotsBatch.style.radius = radius;

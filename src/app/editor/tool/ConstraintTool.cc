@@ -87,9 +87,9 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
             break;
         }
         case ToolId::Coincident: {
-            std::optional<PickResult> pick;
+            std::optional<GeometryPickResult> pick;
             if (refs_.empty()) {
-                pick = picker_.pickAtScreenLogical(e.x, e.y);
+                pick = picker_.pickGeometryAtScreenLogical(e.x, e.y);
             } else {
                 auto result = sketch_.entity(refs_[0].entity);
                 if (!result) {
@@ -99,7 +99,7 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
                 }
                 auto& ent = result.value();
                 if (std::holds_alternative<sketch::Point2>(ent.geometry) || refs_[0].sub != sketch::SubElement::Whole) {
-                    pick = picker_.pickAtScreenLogical(e.x, e.y);
+                    pick = picker_.pickGeometryAtScreenLogical(e.x, e.y);
                 } else {
                     pick = picker_.pickPointAtScreenLogical(e.x, e.y);
                 }
@@ -199,7 +199,7 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
             break;
         }
         case ToolId::Fix: {
-            auto pick = picker_.pickAtScreenLogical(e.x, e.y);
+            auto pick = picker_.pickGeometryAtScreenLogical(e.x, e.y);
             if (!pick) {
                 return;
             }
@@ -386,13 +386,14 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
     std::vector<sketch::ConstraintDefinition> definitions;
     sketch::PointTarget pointTarget;
     sketch::SolveOptions options{};
+    const auto selectedGeometry = overlay_.selection_.model.geometryItems();
     const std::optional<double> dimension = isValueSet_ ? std::optional{value_} : std::nullopt;
 
     switch (subTool_) {
         case ToolId::Distance: {
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickPointAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     pick = picker_.pickLineAtScreenLogical(e.x, e.y);
@@ -476,7 +477,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items(); // should be two lines
+                refs_ = selectedGeometry; // should be two lines
 
                 // Circle radius case
                 if (refs_.size() == 1) {
@@ -537,8 +538,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         case ToolId::HorizontalDistance:
         case ToolId::VerticalDistance: {
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickPointAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     return;
@@ -557,7 +558,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items();
+                refs_ = selectedGeometry;
                 if (refs_.size() != 2) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -596,12 +597,12 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             break;
         }
         case ToolId::Coincident: {
-            const bool fromSelection = !overlay_.selection_.model.items().empty();
+            const bool fromSelection = !selectedGeometry.empty();
             // Pick entities
             if (!fromSelection) {
-                std::optional<PickResult> pick;
+                std::optional<GeometryPickResult> pick;
                 if (refs_.empty()) { // pick any entity
-                    pick = picker_.pickAtScreenLogical(e.x, e.y);
+                    pick = picker_.pickGeometryAtScreenLogical(e.x, e.y);
                 } else {
                     auto result = sketch_.entity(refs_[0].entity);
                     if (!result) {
@@ -612,7 +613,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     auto& ent = result.value();
                     if (std::holds_alternative<sketch::Point2>(ent.geometry) ||
                         refs_[0].sub != sketch::SubElement::Whole) { // first is a point -> pick any entity
-                        pick = picker_.pickAtScreenLogical(e.x, e.y);
+                        pick = picker_.pickGeometryAtScreenLogical(e.x, e.y);
                     } else { // first entity isn't point -> pick point
                         pick = picker_.pickPointAtScreenLogical(e.x, e.y);
                     }
@@ -633,7 +634,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items();
+                refs_ = selectedGeometry;
                 if (refs_.size() != 2 || refs_[0] == refs_[1]) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -658,8 +659,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         case ToolId::Vertical: {
             std::vector<sketch::GeometryRef> refs; // should be lines
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickLineAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     return;
@@ -668,7 +669,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
             // Selection entities
             else {
-                refs = overlay_.selection_.model.items(); // can be more than 1 line
+                refs = selectedGeometry; // can be more than 1 line
             }
 
             const auto type = subTool_ == ToolId::Horizontal ? ConstraintType::Horizontal : ConstraintType::Vertical;
@@ -693,8 +694,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
 
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickLineAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     return;
@@ -713,7 +714,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items(); // should be two lines
+                refs_ = selectedGeometry; // should be two lines
                 if (refs_.size() != 2) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -764,8 +765,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         }
         case ToolId::Tangent: {
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickLineAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     pick = picker_.pickCircleAtScreenLogical(e.x, e.y);
@@ -815,7 +816,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items(); // should be two circles or line+circle
+                refs_ = selectedGeometry; // should be two circles or line+circle
                 if (refs_.size() != 2) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -855,8 +856,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         }
         case ToolId::Equal: {
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickLineAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     pick = picker_.pickCircleAtScreenLogical(e.x, e.y);
@@ -903,7 +904,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items(); // should be two lines
+                refs_ = selectedGeometry; // should be two lines
                 if (refs_.size() != 2) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -944,9 +945,9 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         case ToolId::Fix: {
             std::vector<sketch::GeometryRef> refs;
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
-                pick = picker_.pickAtScreenLogical(e.x, e.y);
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
+                pick = picker_.pickGeometryAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     return;
                 }
@@ -954,7 +955,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
             // Selection entities
             else {
-                refs = overlay_.selection_.model.items(); // can be more than 1 line
+                refs = selectedGeometry; // can be more than 1 line
             }
 
             definitions.reserve(refs.size());
@@ -965,8 +966,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         }
         case ToolId::Concentric: {
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickCircleAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     pick = picker_.pickArcAtScreenLogical(e.x, e.y);
@@ -1013,7 +1014,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items(); // first is a circle/arc, second is a circle/arc
+                refs_ = selectedGeometry; // first is a circle/arc, second is a circle/arc
                 if (refs_.size() != 2) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -1059,8 +1060,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             // arc point
 
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickPointAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     pick = picker_.pickLineAtScreenLogical(e.x, e.y);
@@ -1117,7 +1118,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items();
+                refs_ = selectedGeometry;
                 if (refs_.size() != 2) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -1164,8 +1165,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         }
         case ToolId::Symmetric: {
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
-                std::optional<PickResult> pick;
+            if (selectedGeometry.empty()) {
+                std::optional<GeometryPickResult> pick;
                 pick = picker_.pickPointAtScreenLogical(e.x, e.y);
                 if (!pick) {
                     pick = picker_.pickLineAtScreenLogical(e.x, e.y);
@@ -1250,7 +1251,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
 
             // Selection entities
             else {
-                refs_ = overlay_.selection_.model.items();
+                refs_ = selectedGeometry;
                 if (refs_.size() != 3) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -1344,7 +1345,7 @@ void ConstraintTool::setSubToolType(ToolId subTool) {
 
     subTool_ = subTool;
 
-    if (!overlay_.selection_.model.empty()) {
+    if (!overlay_.selection_.model.geometryItems().empty()) {
         input::MouseButtonEvent mbe;
         mbe.button = input::MouseButton::Left;
         mbe.action = input::MouseButtonAction::Press;

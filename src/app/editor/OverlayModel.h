@@ -92,7 +92,7 @@ public:
     // Pending tool operands do not change the shared user selection.
     std::vector<core::sketch::GeometryRef> constraintRefs_;
 
-    // Transient dimension feedback, separate from geometry selection and saved placement.
+    // Transient dimension feedback, separate from selection and saved placement.
     std::optional<core::sketch::ConstraintId> hoveredDimension;
     std::optional<core::sketch::ConstraintId> draggedDimension;
 

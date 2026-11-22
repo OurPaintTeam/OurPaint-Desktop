@@ -41,8 +41,9 @@ Labels become centered `render::TextBatch` entries with the same color. The
 adapter scales their anchors and font height by DPR and negates their screen
 rotation when flipping Y. Text is drawn after the other primitives in the layer.
 `OverlayModel::hoveredDimension` and `draggedDimension` provide transient feedback.
-The builder batches primitives by normal, hovered or dragged color, matching
-ConstraintId membership. Highlighting does not change stroke width or hit regions.
+The builder batches primitives by normal, hovered, selected or dragged color,
+matching ConstraintId membership. Selected dimensions use the geometry selection
+color. Highlighting does not change stroke width or hit regions.
 Zero stroke width is
 valid: the renderer can draw the stroke using edge softness.
 
@@ -190,10 +191,14 @@ Labels are tested against their measured rectangle after undoing rotation.
 Body hits use distance to finite segments or finite arcs, including endpoint
 tolerance and arcs crossing zero. All distances and tolerances use logical pixels.
 Labels win over bodies; within the same part, the nearest primitive wins, with
-ConstraintId breaking exact ties. CursorTool adds the overall priority:
-label, geometry point, dimension body, remaining geometry.
+ConstraintId breaking exact ties. For cursor hover and selection,
+`Cpu2dPicker::pickAtScreenLogical()` prioritizes labels, geometry points,
+dimension bodies and then curves. Tools that need only geometry use
+`pickGeometryAtScreenLogical()` or a query for a specific kind of geometry.
 
-An unmodified left press starts a dimension gesture and clears geometry selection.
+An unmodified left press selects the dimension and starts a placement gesture.
+Pressing an already selected dimension keeps the rest of the selection.
+Shift-click and Ctrl-click toggle membership without starting a drag.
 The tool stores the ID, press position, logical cursor-to-label offset and optional
 previous placement. No marker pointer or iterator survives a layout rebuild.
 A three-logical-pixel threshold separates clicking from dragging. Once crossed,
@@ -202,13 +207,18 @@ The current camera is used at every move, while the grab offset stays in logical
 pixels. Labels, dimension strokes, witnesses, arrows and arcs all move this same
 anchor; they do not have independent editing roles yet.
 
-Left release applies the final cursor position and commits placement. A click
-below the threshold never creates a placement entry. Escape, tool/tab changes
+Left release applies the final cursor position and commits placement. The selected
+dimension stays highlighted when the cursor leaves. A click below the threshold
+never creates a placement entry. Escape, tool/tab changes
 and a subsequent mouse move without the left button cancel the preview, restoring
 the previous entry or its absence. If the constraint disappeared during the
 gesture, its placement is erased instead of being restored. Cancelled gestures
-cannot be committed by a later release. Alt, Shift and other modified presses
-retain the existing geometry-tool path.
+cannot be committed by a later release. Alt retains its point-coincidence gesture.
+
+Delete removes the selected constraint and keeps its referenced geometry. A mixed
+selection also removes selected geometry and its dependent constraints. One Undo
+restores the deletion. The view retains committed label placements by constraint ID,
+so a restored dimension reappears at its previous placement.
 
 Moving a dimension neither edits Sketch nor invokes its solver, and emits no
 model-change ActionReport. Geometry drag keeps its existing cancellation semantics.

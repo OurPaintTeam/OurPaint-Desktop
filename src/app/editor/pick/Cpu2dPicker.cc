@@ -171,17 +171,32 @@ std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtWorld(double screenMin
 
 // Pick at screen logical
 
-std::optional<PickResult> Cpu2dPicker::pickAtScreenLogical(double screenX, double screenY) const {
+std::optional<PickResult> Cpu2dPicker::pickAtScreenLogical(double screenX, double screenY, const app::ConstraintLayout& layout) const {
+    if (const auto dimension = pickSelectableDimensionAtScreenLogical(screenX, screenY, layout)) {
+        return *dimension;
+    }
+    return pickGeometryAtScreenLogical(screenX, screenY);
+}
+
+std::optional<DimensionPickResult> Cpu2dPicker::pickSelectableDimensionAtScreenLogical(double screenX, double screenY, const app::ConstraintLayout& layout) const {
+    const auto dimension = pickDimensionAtScreenLogical(screenX, screenY, layout);
+    if (dimension && dimension->part == DimensionPickResult::Part::Body && pickPointAtScreenLogical(screenX, screenY)) {
+        return std::nullopt;
+    }
+    return dimension;
+}
+
+std::optional<GeometryPickResult> Cpu2dPicker::pickGeometryAtScreenLogical(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
     return pickAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickPointAtScreenLogical(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickPointAtScreenLogical(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
     return pickPointAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickCurveAtScreenLogical(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickCurveAtScreenLogical(double screenX, double screenY) const {
     const glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
     if (const auto line = pickLineAt(world.x, world.y)) {
         return line;
@@ -192,67 +207,67 @@ std::optional<PickResult> Cpu2dPicker::pickCurveAtScreenLogical(double screenX, 
     return pickArcAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickLineAtScreenLogical(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickLineAtScreenLogical(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
     return pickLineAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickCircleAtScreenLogical(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickCircleAtScreenLogical(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
     return pickCircleAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickArcAtScreenLogical(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickArcAtScreenLogical(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
     return pickArcAt(world.x, world.y);
 }
 
 // Pick at screen framebuffer
 
-std::optional<PickResult> Cpu2dPicker::pickAtScreenFramebuffer(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickAtScreenFramebuffer(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
     return pickAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickPointAtScreenFramebuffer(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickPointAtScreenFramebuffer(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
     return pickPointAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickLineAtScreenFramebuffer(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickLineAtScreenFramebuffer(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
     return pickLineAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickCircleAtScreenFramebuffer(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickCircleAtScreenFramebuffer(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
     return pickCircleAt(world.x, world.y);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickArcAtScreenFramebuffer(double screenX, double screenY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickArcAtScreenFramebuffer(double screenX, double screenY) const {
     glm::dvec2 world = camera_.screenFramebufferToWorld({screenX, screenY});
     return pickArcAt(world.x, world.y);
 }
 
 // Pick at world
 
-std::optional<PickResult> Cpu2dPicker::pickAtWorld(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickAtWorld(double worldX, double worldY) const {
     return pickAt(worldX, worldY);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickPointAtWorld(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickPointAtWorld(double worldX, double worldY) const {
     return pickPointAt(worldX, worldY);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickLineAtWorld(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickLineAtWorld(double worldX, double worldY) const {
     return pickLineAt(worldX, worldY);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickCircleAtWorld(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickCircleAtWorld(double worldX, double worldY) const {
     return pickCircleAt(worldX, worldY);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickArcAtWorld(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickArcAtWorld(double worldX, double worldY) const {
     return pickArcAt(worldX, worldY);
 }
 
@@ -308,18 +323,18 @@ std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRect(double worldMinX, doubl
     return selected;
 }
 
-std::optional<PickResult> Cpu2dPicker::pickAt(double worldX, double worldY) const {
-    std::optional<PickResult> p = pickPointAt(worldX, worldY);
+std::optional<GeometryPickResult> Cpu2dPicker::pickAt(double worldX, double worldY) const {
+    std::optional<GeometryPickResult> p = pickPointAt(worldX, worldY);
     if (p.has_value()) {
         return p;
     }
 
-    std::optional<PickResult> l = pickLineAt(worldX, worldY);
+    std::optional<GeometryPickResult> l = pickLineAt(worldX, worldY);
     if (l.has_value()) {
         return l;
     }
 
-    std::optional<PickResult> c = pickCircleAt(worldX, worldY);
+    std::optional<GeometryPickResult> c = pickCircleAt(worldX, worldY);
     if (c.has_value()) {
         return c;
     }
@@ -327,7 +342,7 @@ std::optional<PickResult> Cpu2dPicker::pickAt(double worldX, double worldY) cons
     return pickArcAt(worldX, worldY);
 }
 
-std::optional<PickResult> Cpu2dPicker::pickPointAt(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickPointAt(double worldX, double worldY) const {
     const double eps = 0.05 / (camera_.zoom() / 100.0);
     auto result = sketch_.pointElements();
     if (!result) {
@@ -335,13 +350,13 @@ std::optional<PickResult> Cpu2dPicker::pickPointAt(double worldX, double worldY)
     }
     for (const auto& point : result.value()) {
         if (std::abs(point.position.x - worldX) < eps && std::abs(point.position.y - worldY) < eps) {
-            return PickResult{point.ref};
+            return GeometryPickResult{point.ref};
         }
     }
     return std::nullopt;
 }
 
-std::optional<PickResult> Cpu2dPicker::pickLineAt(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickLineAt(double worldX, double worldY) const {
     const double eps = 0.05 / (camera_.zoom() / 100.0);
     auto result = sketch_.lines();
     if (!result) {
@@ -361,7 +376,7 @@ std::optional<PickResult> Cpu2dPicker::pickLineAt(double worldX, double worldY) 
         const double len = std::hypot(dx, dy);
         if (len < 1e-9) {
             if (std::abs(worldX - line->start.x) < eps && std::abs(worldY - line->start.y) < eps) {
-                return PickResult{{entity.id, sketch::SubElement::Whole}};
+                return GeometryPickResult{{entity.id, sketch::SubElement::Whole}};
             }
             continue;
         }
@@ -373,14 +388,14 @@ std::optional<PickResult> Cpu2dPicker::pickLineAt(double worldX, double worldY) 
             const double minY = std::min(line->start.y, line->end.y) - eps;
             const double maxY = std::max(line->start.y, line->end.y) + eps;
             if (worldX >= minX && worldX <= maxX && worldY >= minY && worldY <= maxY) {
-                return PickResult{{entity.id, sketch::SubElement::Whole}};
+                return GeometryPickResult{{entity.id, sketch::SubElement::Whole}};
             }
         }
     }
     return std::nullopt;
 }
 
-std::optional<PickResult> Cpu2dPicker::pickCircleAt(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickCircleAt(double worldX, double worldY) const {
     const double eps = 0.05 / (camera_.zoom() / 100.0);
     auto result = sketch_.circles();
     if (!result) {
@@ -396,13 +411,13 @@ std::optional<PickResult> Cpu2dPicker::pickCircleAt(double worldX, double worldY
         const double dy = worldY - circle->center.y;
         const double distance = std::hypot(dx, dy);
         if (distance > circle->radius - eps && distance < circle->radius + eps) {
-            return PickResult{{entity.id, sketch::SubElement::Whole}};
+            return GeometryPickResult{{entity.id, sketch::SubElement::Whole}};
         }
     }
     return std::nullopt;
 }
 
-std::optional<PickResult> Cpu2dPicker::pickArcAt(double worldX, double worldY) const {
+std::optional<GeometryPickResult> Cpu2dPicker::pickArcAt(double worldX, double worldY) const {
     const double eps = 0.05 / (camera_.zoom() / 100.0);
     auto result = sketch_.arcs();
     if (!result) {
@@ -413,7 +428,7 @@ std::optional<PickResult> Cpu2dPicker::pickArcAt(double worldX, double worldY) c
         const double radius = std::hypot(arc.start.x - arc.center.x, arc.start.y - arc.center.y);
         const double distance = std::hypot(worldX - arc.center.x, worldY - arc.center.y);
         if (radius > 0 && std::abs(distance - radius) < eps && angleInArc(arc, {worldX, worldY}, eps / radius)) {
-            return PickResult{{entity.id, sketch::SubElement::Whole}};
+            return GeometryPickResult{{entity.id, sketch::SubElement::Whole}};
         }
     }
     return std::nullopt;

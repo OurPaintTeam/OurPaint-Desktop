@@ -131,8 +131,10 @@ No API promises rollback for arbitrary system failures.
 
 ## Desktop selection integration
 
-The desktop picker and SelectionModel use GeometryRef throughout. Whole selects
-one entity; Start, End, Center and indexed Control select its point elements independently.
+SelectionModel stores an ordered selection of GeometryRef and ConstraintId values.
+CursorTool selects a dimension by its constraint ID. Geometry tools use the
+geometry references in selection order. Whole selects one entity. Start, End,
+Center and indexed Control select its point elements independently.
 Selecting a curve does not implicitly select its markers, and selecting a marker
 does not select its curve. Coincident points retain distinct references.
 
@@ -172,7 +174,8 @@ the view's ConstraintLayout and updates ConstraintPresentationState label center
 without editing Sketch or calling solve. Release commits the placement; cancellation
 restores the previous placement or automatic layout. This presentation preview
 does not change the geometry-drag cancellation contract above. Hover and drag
-feedback use constraint IDs in OverlayModel, separate from geometry selection.
+feedback use constraint IDs in OverlayModel. Selection stays highlighted after
+release. Delete removes selected dimensions and geometry in one undo step.
 
 ### Active tool synchronization in App
 

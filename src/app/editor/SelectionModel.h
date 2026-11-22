@@ -3,9 +3,12 @@
 
 #include <functional>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 #include "SketchTypes.h"
+
+using SelectionItem = std::variant<core::sketch::GeometryRef, core::sketch::ConstraintId>;
 
 class SelectionModel {
     using GeometryRef = core::sketch::GeometryRef;
@@ -13,30 +16,35 @@ class SelectionModel {
 public:
     bool empty() const;
 
-    bool contains(GeometryRef ref) const;
+    bool contains(SelectionItem item) const;
 
     void clear();
 
-    void replace(GeometryRef ref);
+    void replace(SelectionItem item);
+    void replace(const std::vector<SelectionItem>& items);
     void replace(const std::vector<GeometryRef>& refs);
 
-    void add(GeometryRef ref);
+    void add(SelectionItem item);
     void add(const std::vector<GeometryRef>& refs);
 
-    void toggle(GeometryRef ref);
+    void toggle(SelectionItem item);
 
-    const std::vector<GeometryRef>& items() const;
+    const std::vector<SelectionItem>& items() const { return items_; }
+    std::vector<GeometryRef> geometryItems() const;
 
 private:
-    struct RefHash {
-        std::size_t operator()(GeometryRef ref) const noexcept {
-            const auto ownerAndRole = std::hash<int64_t>{}(ref.entity.get()) * 31 + static_cast<std::size_t>(ref.sub);
-            return ownerAndRole * 31 + std::hash<size_t>{}(ref.index);
+    struct ItemHash {
+        std::size_t operator()(const SelectionItem& item) const noexcept {
+            if (const auto* ref = std::get_if<GeometryRef>(&item)) {
+                const auto ownerAndRole = std::hash<int64_t>{}(ref->entity.get()) * 31 + static_cast<std::size_t>(ref->sub);
+                return ownerAndRole * 31 + std::hash<size_t>{}(ref->index);
+            }
+            return std::hash<int64_t>{}(std::get<core::sketch::ConstraintId>(item).get());
         }
     };
     // Whole and point sub-elements remain independently selectable.
-    std::vector<GeometryRef> items_;
-    std::unordered_set<GeometryRef, RefHash> set_;
+    std::vector<SelectionItem> items_;
+    std::unordered_set<SelectionItem, ItemHash> set_;
 };
 
 #endif  // ! OURPAINT_APPLICATION_SELECTION_MODEL_H_
