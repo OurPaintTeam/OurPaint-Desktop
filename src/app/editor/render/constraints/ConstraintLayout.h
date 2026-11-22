@@ -2,9 +2,11 @@
 #define OURPAINT_APPLICATION_CONSTRAINT_LAYOUT_H_
 
 #include <glm/glm.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "DimensionLayout.h"
 #include "SketchTypes.h"
 
 namespace render {
@@ -22,7 +24,6 @@ class Sketch;
 namespace app {
 
 struct ConstraintMarkerStyle;
-struct ConstraintPresentationState;
 
 // All positions and distances use logical screen pixels, with a top-left origin.
 struct ConstraintMarkerSegment {
@@ -59,6 +60,8 @@ struct ConstraintLabel {
     double heightPx;
     // Rotation in logical screen coordinates (+Y down), kept readable by layout.
     double rotationRad;
+    // Absent when the dimension has no unique geometric frame.
+    std::optional<DimensionPlacementFrame> placementFrame{};
 };
 
 struct ConstraintMarker {
@@ -84,6 +87,7 @@ public:
     void rebuild(const core::sketch::Sketch& sketch, const render::Camera2D& camera, const ConstraintMarkerStyle& style,
                  const ConstraintPresentationState& presentation, const render::text::TextMeasurer& textMeasurer);
     const std::vector<ConstraintMarker>& markers() const noexcept { return markers_; }
+    std::optional<ConstraintLabelPlacement> dimensionPlacementAt(core::sketch::ConstraintId id, glm::dvec2 centerPx) const;
 
 private:
     std::vector<ConstraintMarker> markers_;

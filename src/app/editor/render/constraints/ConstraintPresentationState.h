@@ -2,15 +2,27 @@
 #define OURPAINT_APPLICATION_CONSTRAINT_PRESENTATION_STATE_H_
 
 #include <map>
+#include <variant>
 
 #include "SketchTypes.h"
 
 namespace app {
 
-struct ConstraintLabelPlacement {
-    // User-chosen label center in sketch coordinates, independent of zoom and DPI.
-    core::sketch::Vec2 position;
+struct LinearLabelPlacement {
+    // Fraction from the first anchor to the second for Length/Distance;
+    // sketch units from the midpoint along the fixed axis for H/V dimensions.
+    double along;
+    double normalOffset;
 };
+
+struct PolarLabelPlacement {
+    // Radians from the reference direction. Distance in sketch units from the
+    // rim for Radius/Diameter or from the vertex for Angle.
+    double angle;
+    double radialOffset;
+};
+
+using ConstraintLabelPlacement = std::variant<LinearLabelPlacement, PolarLabelPlacement>;
 
 // View-owned presentation input, separate from solver definitions and derived layout.
 // Dimension layout consumes these anchors without modifying them. CursorTool

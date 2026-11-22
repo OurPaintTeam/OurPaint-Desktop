@@ -28,6 +28,7 @@ struct CircularCurve {
     glm::dvec2 center;
     double radius;
     double defaultAngle;
+    double referenceAngle;  // +X for a circle, start radius for an arc.
 };
 
 // Small 2D geometry helpers for glm::dvec2.
@@ -88,7 +89,7 @@ std::optional<glm::dvec2> screenPoint(const sketch::Sketch& sketch, sketch::Geom
 }
 
 // sketch::GeometryRef -> Line (in logical pixels)
-std::optional<Line> screenLine(const sketch::Sketch& sketch, sketch::GeometryRef ref, const render::Camera2D& camera) {
+std::optional<Line> screenLine(const sketch::Sketch& sketch, sketch::GeometryRef ref, const render::Camera2D& camera, bool allowCollapsed = false) {
     if (ref.sub != sketch::SubElement::Whole) {
         return std::nullopt;
     }
@@ -100,11 +101,11 @@ std::optional<Line> screenLine(const sketch::Sketch& sketch, sketch::GeometryRef
     if (!line) {
         return std::nullopt;
     }
-    Line result{camera.worldToScreenLogical({line->start.x, line->start.y}),
-           camera.worldToScreenLogical({line->end.x, line->end.y})};
-    return finite(result.start) &&
-           finite(result.end) &&
-           length(result.end - result.start) > kEpsilon ? std::optional(result) : std::nullopt;
+    Line result{camera.worldToScreenLogical({line->start.x, line->start.y}), camera.worldToScreenLogical({line->end.x, line->end.y})};
+    if (!finite(result.start) || !finite(result.end) || (!allowCollapsed && length(result.end - result.start) <= kEpsilon)) {
+        return std::nullopt;
+    }
+    return result;
 }
 
 // sketch::GeometryRef -> CircularCurve (in logical pixels)
@@ -119,7 +120,7 @@ std::optional<CircularCurve> screenCurve(const sketch::Sketch& sketch, sketch::G
     CircularCurve result;
     if (const auto* circle = std::get_if<sketch::Circle2>(&entity.value().geometry)) {
         result = {camera.worldToScreenLogical({circle->center.x, circle->center.y}),
-               camera.worldToScreenLogical(circle->radius), std::numbers::pi / 4.0};
+                  camera.worldToScreenLogical(circle->radius), std::numbers::pi / 4.0, 0.0};
     } else if (const auto* arc = std::get_if<sketch::Arc2>(&entity.value().geometry)) {
         const glm::dvec2 start{arc->start.x - arc->center.x, arc->start.y - arc->center.y};
         const glm::dvec2 end{arc->end.x - arc->center.x, arc->end.y - arc->center.y};
@@ -128,22 +129,15 @@ std::optional<CircularCurve> screenCurve(const sketch::Sketch& sketch, sketch::G
         }
         const double angle = std::atan2(start.y, start.x);
         result = {camera.worldToScreenLogical({arc->center.x, arc->center.y}),
-               camera.worldToScreenLogical(length(start)),
-                     angle + positiveAngle(std::atan2(end.y, end.x) - angle) * 0.5};
+                  camera.worldToScreenLogical(length(start)), angle + positiveAngle(std::atan2(end.y, end.x) - angle) * 0.5, angle};
     } else {
         return std::nullopt;
     }
     return finite(result.center) && std::isfinite(result.radius) && result.radius > kEpsilon ? std::optional(result) : std::nullopt;
 }
 
-std::optional<glm::dvec2> userLabel(sketch::ConstraintId id, const ConstraintPresentationState& presentation, const render::Camera2D& camera) {
-    const auto found = presentation.labelPlacements.find(id);
-    if (found == presentation.labelPlacements.end()) {
-        return std::nullopt;
-    }
-    const auto& position = found->second.position;
-    const auto center = camera.worldToScreenLogical({position.x, position.y});
-    return finite(center) ? std::optional(center) : std::nullopt;
+std::optional<glm::dvec2> userLabel(const ConstraintLabel& label, const ConstraintLabelPlacement* placement) {
+    return placement && label.placementFrame ? label.placementFrame->toScreen(*placement) : std::nullopt;
 }
 
 // Make ConstraintLabel without defining center and rotationRad
@@ -314,7 +308,7 @@ std::optional<Line> linearAnchors(const sketch::ConstraintDefinition& definition
 
     // Length (line) constraint
     if (definition.type == sketch::ConstraintType::Length) {
-        return refs.size() == 1 ? screenLine(sketch, refs.front(), camera) : std::nullopt;
+        return refs.size() == 1 ? screenLine(sketch, refs.front(), camera, /*allowCollapsed=*/true) : std::nullopt;
     }
 
     // Distance / HorizontalDistance / VerticalDistance constraint
@@ -371,8 +365,8 @@ void leaderToLabel(ConstraintMarker& marker, glm::dvec2 start, const ConstraintL
     }
 }
 
-void angularDimension(ConstraintMarker& marker, const Line& first, const Line& second, ConstraintLabel label, std::optional<glm::dvec2> placement,
-                      const DimensionMarkerStyle& style) {
+void angularDimension(ConstraintMarker& marker, const Line& first, const Line& second, ConstraintLabel label,
+                      const ConstraintLabelPlacement* localPlacement, double pixelsPerUnit, const DimensionMarkerStyle& style) {
     const auto u = unit(first.end - first.start);
     const auto v = unit(second.end - second.start);
     const double determinant = cross(u, v);
@@ -380,7 +374,7 @@ void angularDimension(ConstraintMarker& marker, const Line& first, const Line& s
         // Parallel lines have no unique vertex; use two leaders instead of inventing an arc center.
         const auto a = first.start + (first.end - first.start) * 0.5;
         const auto b = second.start + (second.end - second.start) * 0.5;
-        placeLabel(label, placement.value_or(a + (b - a) * 0.5 + normal(readable(u)) * style.offsetPx), u);
+        placeLabel(label, a + (b - a) * 0.5 + normal(readable(u)) * style.offsetPx, u);
         leaderToLabel(marker, a, label, style.textGapPx);
         leaderToLabel(marker, b, label, style.textGapPx);
         marker.labels.push_back(std::move(label));
@@ -396,6 +390,8 @@ void angularDimension(ConstraintMarker& marker, const Line& first, const Line& s
     const double start = delta < 0.0 ? secondAngle : firstAngle;
     const double sweep = std::abs(delta);
     const double middle = start + sweep * 0.5;
+    label.placementFrame = DimensionPlacementFrame{center, pixelsPerUnit, DimensionPlacementFrame::Polar{middle, 0.0}};
+    const auto placement = userLabel(label, localPlacement);
     double radius = std::max(style.offsetPx, (label.sizePx.x + 2.0 * (style.textGapPx + style.arrowLengthPx)) / sweep);
     if (placement && length(*placement - center) > kEpsilon) {
         radius = length(*placement - center);
@@ -437,6 +433,53 @@ void angularDimension(ConstraintMarker& marker, const Line& first, const Line& s
 }
 }  // namespace
 
+std::optional<ConstraintLabelPlacement> DimensionPlacementFrame::toLocal(glm::dvec2 centerPx) const {
+    const auto delta = centerPx - originPx;
+    if (!finite(delta)) {
+        return std::nullopt;
+    }
+    if (const auto* linear = std::get_if<Linear>(&axes)) {
+        const double along = glm::dot(delta, linear->tangent) / linear->alongScalePx;
+        const double offset = glm::dot(delta, normal(linear->tangent)) / pixelsPerUnit;
+        if (std::isfinite(along) && std::isfinite(offset)) {
+            return LinearLabelPlacement{along, offset};
+        }
+    } else {
+        const auto& polar = std::get<Polar>(axes);
+        const double distance = length(delta);
+        const double angle = distance > 0.0 ? std::remainder(std::atan2(-delta.y, delta.x) - polar.referenceAngle, kTau) : 0.0;
+        const double offset = (distance - polar.referenceRadiusPx) / pixelsPerUnit;
+        if (std::isfinite(angle) && std::isfinite(offset)) {
+            return PolarLabelPlacement{angle, offset};
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<glm::dvec2> DimensionPlacementFrame::toScreen(const ConstraintLabelPlacement& placement) const {
+    glm::dvec2 center;
+    if (const auto* linear = std::get_if<Linear>(&axes)) {
+        const auto* local = std::get_if<LinearLabelPlacement>(&placement);
+        if (!local) {
+            return std::nullopt;
+        }
+        center = originPx + linear->tangent * (local->along * linear->alongScalePx) + normal(linear->tangent) * (local->normalOffset * pixelsPerUnit);
+    } else {
+        const auto* local = std::get_if<PolarLabelPlacement>(&placement);
+        if (!local) {
+            return std::nullopt;
+        }
+        const auto& polar = std::get<Polar>(axes);
+        const double distance = polar.referenceRadiusPx + local->radialOffset * pixelsPerUnit;
+        if (!std::isfinite(distance)) {
+            return std::nullopt;
+        }
+        // A shrinking curve can move its rim inside a previously chosen inward offset.
+        center = originPx + radial(polar.referenceAngle + local->angle) * std::max(0.0, distance);
+    }
+    return finite(center) ? std::optional(center) : std::nullopt;
+}
+
 void appendDimension(const sketch::SketchConstraint& constraint,
                      const sketch::Sketch& sketch,
                      const render::Camera2D& camera,
@@ -456,7 +499,8 @@ void appendDimension(const sketch::SketchConstraint& constraint,
     }
 
     // user placement
-    const auto placement = userLabel(constraint.id, presentation, camera);
+    const auto found = presentation.labelPlacements.find(constraint.id);
+    const auto* localPlacement = found == presentation.labelPlacements.end() ? nullptr : &found->second;
     ConstraintMarker marker{
         {constraint.id},
         definition.refs.front(),
@@ -484,6 +528,14 @@ void appendDimension(const sketch::SketchConstraint& constraint,
             const auto u = readable(direction);
             const auto& d = style.dimension;
             const auto midpoint = anchors->start + (anchors->end - anchors->start) * 0.5;
+            const double anchorSpan = length(anchors->end - anchors->start);
+            if (anchorSpan > kEpsilon && std::isfinite(anchorSpan)) {
+                const bool fixedAxis = definition.type == sketch::ConstraintType::HorizontalDistance || definition.type == sketch::ConstraintType::VerticalDistance;
+                // The directed tangent follows the anchors through a rotation. readable() is only for drawing.
+                label->placementFrame = DimensionPlacementFrame{fixedAxis ? midpoint : anchors->start, camera.zoom(),
+                    DimensionPlacementFrame::Linear{direction, fixedAxis ? camera.zoom() : anchorSpan}};
+            }
+            const auto placement = userLabel(*label, localPlacement);
             auto automaticCenter = midpoint + normal(u) * d.offsetPx;
             const double span = std::abs(glm::dot(anchors->end - anchors->start, u));
             if (span < label->sizePx.x + 2.0 * (d.textGapPx + d.arrowLengthPx)) {
@@ -502,7 +554,11 @@ void appendDimension(const sketch::SketchConstraint& constraint,
             if (!curve) {
                 return;
             }
-            const auto direction = placement ? unit(*placement - curve->center, radial(curve->defaultAngle)) : radial(curve->defaultAngle);
+            label->placementFrame = DimensionPlacementFrame{curve->center, camera.zoom(), DimensionPlacementFrame::Polar{curve->referenceAngle, curve->radius}};
+            const auto placement = userLabel(*label, localPlacement);
+            // The leader keeps its angle even when an inward placement reaches the center.
+            const double angle = placement ? curve->referenceAngle + std::get<PolarLabelPlacement>(*localPlacement).angle : curve->defaultAngle;
+            const auto direction = radial(angle);
             const bool diameter = definition.type == sketch::ConstraintType::Diameter;
             const auto first = diameter ? curve->center - direction * curve->radius : curve->center;
             const auto second = curve->center + direction * curve->radius;
@@ -519,7 +575,7 @@ void appendDimension(const sketch::SketchConstraint& constraint,
             if (!first || !second) {
                 return;
             }
-            angularDimension(marker, *first, *second, *label, placement, style.dimension);
+            angularDimension(marker, *first, *second, *label, localPlacement, camera.zoom(), style.dimension);
             break;
         }
         default:

@@ -48,7 +48,15 @@ protected:
         app::appendDimension({id_, {type, std::move(refs), value}}, sketch_, camera_, style_, presentation_, textMeasurer_, markers_);
     }
 
-    void place(Vec2 position) { presentation_.labelPlacements[id_] = {position}; }
+    void place(ConstraintType type, const std::vector<GeometryRef>& refs, double value, glm::dvec2 worldCenter) {
+        layout(type, refs, value);
+        ASSERT_EQ(markers_.size(), 1u);
+        ASSERT_TRUE(label().placementFrame);
+        const auto placement = label().placementFrame->toLocal(camera_.worldToScreenLogical(worldCenter));
+        ASSERT_TRUE(placement);
+        presentation_.labelPlacements.insert_or_assign(id_, *placement);
+        layout(type, refs, value);
+    }
 
     const app::ConstraintLabel& label() const { return markers_.front().labels.front(); }
 
@@ -96,8 +104,7 @@ TEST_F(DimensionLayoutBehavior, ManualPlacementExtendsBothEndsAndWitnesses) {
     const auto a = point({-1, 0});
     const auto b = point({1, 0});
     for (double x : {-3.0, 3.0}) {
-        place({x, 2});
-        layout(ConstraintType::Distance, {a, b}, 2);
+        place(ConstraintType::Distance, {a, b}, 2, {x, 2});
         ASSERT_EQ(markers_.size(), 1u);
         expectPosition(label().center, camera_.worldToScreenLogical({x, 2}));
         double low = std::numeric_limits<double>::infinity();
@@ -123,8 +130,7 @@ TEST_F(DimensionLayoutBehavior, ManualPlacementExtendsBothEndsAndWitnesses) {
 TEST_F(DimensionLayoutBehavior, PlacementSurvivesCameraChangesWithConstantLogicalTextSize) {
     const auto a = point({-1, 0});
     const auto b = point({1, 0});
-    place({3, 2});
-    layout(ConstraintType::Distance, {a, b}, 2);
+    place(ConstraintType::Distance, {a, b}, 2, {3, 2});
     ASSERT_EQ(markers_.size(), 1u);
     const auto size = label().sizePx;
     camera_.setZoom(20);
@@ -136,7 +142,19 @@ TEST_F(DimensionLayoutBehavior, PlacementSurvivesCameraChangesWithConstantLogica
     expectPosition(label().center, camera_.worldToScreenLogical({3, 2}));
     expectPosition(label().sizePx, size);
     EXPECT_DOUBLE_EQ(label().heightPx, style_.dimension.textHeightPx);
-    EXPECT_EQ(presentation_.labelPlacements.at(id_).position, (Vec2{3, 2}));
+    const auto local = std::get<app::LinearLabelPlacement>(presentation_.labelPlacements.at(id_));
+    EXPECT_DOUBLE_EQ(local.along, 2.0);
+    EXPECT_DOUBLE_EQ(local.normalOffset, 2.0);
+
+    ASSERT_TRUE(sketch_.updatePoint(a.entity, {{4, 3}}));
+    ASSERT_TRUE(sketch_.updatePoint(b.entity, {{4, 3}}));
+    layout(ConstraintType::Distance, {a, b}, 0);
+    ASSERT_EQ(markers_.size(), 1u);
+    EXPECT_FALSE(label().placementFrame);
+    ASSERT_TRUE(sketch_.updatePoint(b.entity, {{0, 3}}));
+    layout(ConstraintType::Distance, {a, b}, 4);
+    ASSERT_EQ(markers_.size(), 1u);
+    expectPosition(label().center, camera_.worldToScreenLogical({-4, 1}));
 }
 
 TEST_F(DimensionLayoutBehavior, ReversingPointReferencesKeepsAutomaticSideAndReadableText) {
@@ -156,8 +174,7 @@ TEST_F(DimensionLayoutBehavior, ReversingPointReferencesKeepsAutomaticSideAndRea
 TEST_F(DimensionLayoutBehavior, HorizontalAndVerticalDistancesUseAxisProjections) {
     const auto a = point({-1, -1});
     const auto b = point({1, 1});
-    place({3, 2});
-    layout(ConstraintType::HorizontalDistance, {a, b}, 2);
+    place(ConstraintType::HorizontalDistance, {a, b}, 2, {3, 2});
     ASSERT_EQ(markers_.size(), 1u);
     EXPECT_DOUBLE_EQ(label().rotationRad, 0.0);
     const auto hasStroke = [&](glm::dvec2 start, glm::dvec2 end) {
@@ -168,17 +185,21 @@ TEST_F(DimensionLayoutBehavior, HorizontalAndVerticalDistancesUseAxisProjections
     EXPECT_TRUE(hasStroke({300, 397}, {300, 96}));
     EXPECT_TRUE(hasStroke({500, 197}, {500, 96}));
 
-    layout(ConstraintType::VerticalDistance, {a, b}, 2);
+    place(ConstraintType::VerticalDistance, {a, b}, 2, {3, 2});
     ASSERT_EQ(markers_.size(), 1u);
     EXPECT_DOUBLE_EQ(label().rotationRad, -std::numbers::pi / 2.0);
     EXPECT_TRUE(hasStroke({303, 400}, {704, 400}));
     EXPECT_TRUE(hasStroke({503, 200}, {704, 200}));
+    ASSERT_TRUE(sketch_.updatePoint(b.entity, {{3, -1}}));
+    layout(ConstraintType::VerticalDistance, {a, b}, 0);
+    ASSERT_EQ(markers_.size(), 1u);
+    expectPosition(label().center, camera_.worldToScreenLogical({4, 1}));
 }
 
 TEST_F(DimensionLayoutBehavior, ZeroDistanceAndInvalidPlacementRemainFinite) {
     const auto a = point({0, 0});
     const auto b = point({0, 0});
-    place({std::numeric_limits<double>::quiet_NaN(), 1});
+    presentation_.labelPlacements[id_] = app::LinearLabelPlacement{std::numeric_limits<double>::quiet_NaN(), 1};
     layout(ConstraintType::Distance, {a, b}, 0);
     ASSERT_EQ(markers_.size(), 1u);
     EXPECT_DOUBLE_EQ(label().center.y, 270);
@@ -188,7 +209,7 @@ TEST_F(DimensionLayoutBehavior, ZeroDistanceAndInvalidPlacementRemainFinite) {
         EXPECT_TRUE(std::isfinite(stroke.start.x) && std::isfinite(stroke.start.y));
         EXPECT_TRUE(std::isfinite(stroke.end.x) && std::isfinite(stroke.end.y));
     }
-    EXPECT_TRUE(std::isnan(presentation_.labelPlacements.at(id_).position.x));
+    EXPECT_TRUE(std::isnan(std::get<app::LinearLabelPlacement>(presentation_.labelPlacements.at(id_)).along));
 }
 
 TEST_F(DimensionLayoutBehavior, PointLineAndParallelLinesMeasurePerpendicularSeparation) {
@@ -211,9 +232,8 @@ TEST_F(DimensionLayoutBehavior, RadiusAndDiameterShareTheLinearPipelineAndRespec
     const auto circle = sketch_.addCircle({0, 0}, 1);
     ASSERT_TRUE(circle);
     const GeometryRef ref{circle.value(), SubElement::Whole};
-    place({3, 0});
     for (const auto type : {ConstraintType::Radius, ConstraintType::Diameter}) {
-        layout(type, {ref}, type == ConstraintType::Radius ? 1 : 2);
+        place(type, {ref}, type == ConstraintType::Radius ? 1 : 2, {3, 0});
         ASSERT_EQ(markers_.size(), 1u);
         EXPECT_EQ(label().text, type == ConstraintType::Radius ? "R 1" : "D 2");
         expectPosition(label().center, {700, 300});
@@ -224,6 +244,10 @@ TEST_F(DimensionLayoutBehavior, RadiusAndDiameterShareTheLinearPipelineAndRespec
             EXPECT_TRUE(std::ranges::any_of(strokes, [](const auto& stroke) { return stroke.start == glm::dvec2(300, 300); }));
         }
     }
+    ASSERT_TRUE(sketch_.updateCircle(ref.entity, {{2, -1}, 3}));
+    layout(ConstraintType::Diameter, {ref}, 6);
+    ASSERT_EQ(markers_.size(), 1u);
+    expectPosition(label().center, camera_.worldToScreenLogical({7, -1}));
 }
 
 TEST_F(DimensionLayoutBehavior, ArcRadiusDefaultsToItsCounterclockwiseMidpoint) {
@@ -235,13 +259,18 @@ TEST_F(DimensionLayoutBehavior, ArcRadiusDefaultsToItsCounterclockwiseMidpoint) 
     EXPECT_GT(delta.x, 0);
     EXPECT_NEAR(delta.x, -delta.y, kTolerance);
     EXPECT_DOUBLE_EQ(label().rotationRad, -std::numbers::pi / 4.0);
+    const GeometryRef ref{arc.value(), SubElement::Whole};
+    place(ConstraintType::Radius, {ref}, 1, {0, 3});
+    ASSERT_TRUE(sketch_.updateArc(ref.entity, {{2, 1}, {2, 3}, {0, 1}}));
+    layout(ConstraintType::Radius, {ref}, 2);
+    ASSERT_EQ(markers_.size(), 1u);
+    expectPosition(label().center, camera_.worldToScreenLogical({-2, 1}));
 }
 
 TEST_F(DimensionLayoutBehavior, AngleUsesArcGapAndManualRadius) {
     const auto a = line({0, 0}, {1, 0});
     const auto b = line({0, 0}, {0, 1});
-    place({2, 2});
-    layout(ConstraintType::Angle, {a, b}, std::numbers::pi / 2.0);
+    place(ConstraintType::Angle, {a, b}, std::numbers::pi / 2.0, {2, 2});
     ASSERT_EQ(markers_.size(), 1u);
     EXPECT_EQ(label().text, "90 deg");
     expectPosition(label().center, {600, 100});
@@ -256,13 +285,20 @@ TEST_F(DimensionLayoutBehavior, AngleUsesArcGapAndManualRadius) {
     EXPECT_NEAR(arcs.back().endAngle, std::numbers::pi / 2.0, kTolerance);
     EXPECT_LT(arcs.front().endAngle, std::numbers::pi / 4.0);
     EXPECT_GT(arcs.back().startAngle, std::numbers::pi / 4.0);
+    ASSERT_TRUE(sketch_.updateLine(a.entity, {{3, 2}, {3, 3}}));
+    layout(ConstraintType::Angle, {a, b}, 0);
+    ASSERT_EQ(markers_.size(), 1u);
+    EXPECT_FALSE(label().placementFrame);
+    ASSERT_TRUE(sketch_.updateLine(b.entity, {{3, 2}, {2, 2}}));
+    layout(ConstraintType::Angle, {a, b}, std::numbers::pi / 2.0);
+    ASSERT_EQ(markers_.size(), 1u);
+    expectPosition(label().center, camera_.worldToScreenLogical({1, 4}));
 }
 
 TEST_F(DimensionLayoutBehavior, AngleAcrossZeroAndOutsideSectorDoesNotBecomeAFullCircle) {
     const auto a = line({0, 0}, {1, -1});
     const auto b = line({0, 0}, {1, 1});
-    place({-2, 0});
-    layout(ConstraintType::Angle, {a, b}, std::numbers::pi / 2.0);
+    place(ConstraintType::Angle, {a, b}, std::numbers::pi / 2.0, {-2, 0});
     ASSERT_EQ(markers_.size(), 1u);
     expectPosition(label().center, {200, 300});
     ASSERT_EQ(markers_.front().arcs.size(), 1u);

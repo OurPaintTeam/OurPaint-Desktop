@@ -294,12 +294,16 @@ void CursorTool::updateDimensionDrag(glm::dvec2 position) {
     if (state_ == State::PressedDimension && glm::length(position - dimensionDrag_->pressPosition) < kDragThresholdPx) {
         return;
     }
-    const auto center = camera_.screenLogicalToWorld(position + dimensionDrag_->grabOffsetPx);
+    const auto center = position + dimensionDrag_->grabOffsetPx;
     if (!std::isfinite(center.x) || !std::isfinite(center.y)) {
         endDimensionDrag(false);
         return;
     }
-    constraintPresentation_.labelPlacements[dimensionDrag_->constraint] = {{center.x, center.y}};
+    const auto placement = constraintLayout_.dimensionPlacementAt(dimensionDrag_->constraint, center);
+    if (!placement) {
+        return;
+    }
+    constraintPresentation_.labelPlacements.insert_or_assign(dimensionDrag_->constraint, *placement);
     overlay_.draggedDimension = dimensionDrag_->constraint;
     state_ = State::DraggingDimension;
 }

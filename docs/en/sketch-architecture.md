@@ -170,7 +170,7 @@ Shift rectangle selection combines the initial selection
 with the current rectangle hits, without retaining hits from earlier rectangles.
 
 Dimension dragging is a separate presentation gesture in CursorTool. It picks
-the view's ConstraintLayout and updates ConstraintPresentationState label centers,
+the view's ConstraintLayout and updates geometry-relative label placements in ConstraintPresentationState,
 without editing Sketch or calling solve. Release commits the placement; cancellation
 restores the previous placement or automatic layout. This presentation preview
 does not change the geometry-drag cancellation contract above. Hover and drag

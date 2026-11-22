@@ -403,6 +403,16 @@ void appendGeometricRelation(const sketch::SketchConstraint&, const sketch::Sket
 
 }  // namespace
 
+std::optional<ConstraintLabelPlacement> ConstraintLayout::dimensionPlacementAt(sketch::ConstraintId id, glm::dvec2 centerPx) const {
+    for (const auto& marker : markers_) {
+        if (marker.constraints.size() == 1 && marker.constraints.front() == id && marker.labels.size() == 1) {
+            const auto& frame = marker.labels.front().placementFrame;
+            return frame ? frame->toLocal(centerPx) : std::nullopt;
+        }
+    }
+    return std::nullopt;
+}
+
 void ConstraintLayout::rebuild(const sketch::Sketch& sketch, const render::Camera2D& camera, const ConstraintMarkerStyle& style,
                                const ConstraintPresentationState& presentation, const render::text::TextMeasurer& textMeasurer) {
     // Single entry point: rebuild all markers from scratch.

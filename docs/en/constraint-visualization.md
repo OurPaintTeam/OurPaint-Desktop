@@ -131,7 +131,7 @@ the label, reads optional placement, then emits ordinary primitives.
   A label beyond either endpoint extends the dimension line with a short tail;
   a label further along the normal lengthens the extension lines. Short dimensions
   put arrowheads outside the measured span and automatic labels beyond the arrows,
-  keeping even a zero distance legible. Explicit label centers remain unchanged.
+  keeping even a zero distance legible. Manual placements can extend beyond either arrow.
 - Radius and Diameter derive their direction from the center toward the manual
   label, or default to 45 degrees for circles and the CCW midpoint for arcs.
   They reuse the linear builder without extension lines: Radius has one rim arrow,
@@ -167,17 +167,26 @@ handling. Their visualization is prepared without changing those Core behaviors.
 
 ## User placement state
 
-`ConstraintPresentationState::labelPlacements` maps public `ConstraintId` values
-to `ConstraintLabelPlacement`. Its `position` is a user-chosen label center in sketch
-coordinates, independent of camera zoom and DPI. This input is owned by the view
-and survives layout rebuilds; it is separate from both Core constraint definitions
-and the derived screen primitives.
+The view stores each manual placement in `ConstraintPresentationState::labelPlacements`,
+keyed by `ConstraintId`. Dimension layout reconstructs the label center from the
+current geometry on each rebuild. Lengths below are in sketch units and angles in radians.
 
-Dimension layout consumes these centers now. Missing or nonfinite placements use
-automatic placement without changing the map. Automatic positions belong only to
-the rebuilt output. Layout rebuilds never clear or modify user placements.
-CursorTool writes the desired label center through `Camera2D::screenLogicalToWorld()`.
-General deletion cleanup, undo/redo and persistence remain future work.
+- Length and Distance use a fraction along the ordered span between measured anchors
+  and a signed offset perpendicular to it. Fractions can extend past either end.
+  The directed normal follows the geometry through rotation, including when the
+  displayed text flips to stay readable.
+- Horizontal and Vertical Distance use offsets along and across their fixed sketch
+  axis, measured from the midpoint of the two anchors.
+- Radius and Diameter use a direction and a signed distance from the rim.
+  Circles measure the angle from sketch +X. Arcs measure it from their start radius.
+  A sufficiently large reduction in radius brings an inward label to the center.
+- Angle uses the intersection of the supporting lines as the origin, with a radial
+  distance and a signed angle from the bisector of the displayed sector.
+
+Coincident measurement anchors and parallel angle lines use automatic placement until
+their frame exists again. The stored parameters survive this fallback and camera changes.
+Placements are view state. Saving them in documents and recording their edits in
+the undo history remain future work.
 
 ## Dimension picking and dragging
 
@@ -202,9 +211,9 @@ Shift-click and Ctrl-click toggle membership without starting a drag.
 The tool stores the ID, press position, logical cursor-to-label offset and optional
 previous placement. No marker pointer or iterator survives a layout rebuild.
 A three-logical-pixel threshold separates clicking from dragging. Once crossed,
-each move writes `screenLogicalToWorld(cursor + grabOffset)` as the label center.
-The current camera is used at every move, while the grab offset stays in logical
-pixels. Labels, dimension strokes, witnesses, arrows and arcs all move this same
+each move converts `cursor + grabOffset` through the current label frame to obtain
+the local placement. The grab offset stays in logical pixels. Labels, dimension
+strokes, witnesses, arrows and arcs all move this same
 anchor; they do not have independent editing roles yet.
 
 Left release applies the final cursor position and commits placement. The selected
@@ -291,9 +300,8 @@ camera changes, deleted targets and preservation of Sketch geometry.
   font/point-size fields and two competing color representations.
 - Decide document units, numeric formatting and dimension notation explicitly.
   The current target-value labels and ASCII prefixes are intentionally basic.
-- A world-space label center is sufficient for this placement contract, but does
-  not follow an entity translated independently. Relative attachments, undo/redo,
-  persistence and cleanup of deleted constraint IDs require a separate decision.
+- Placement history, document persistence and cleanup of deleted constraint IDs
+  require a separate decision.
 - Placement is local: there is no collision avoidance against other annotations,
   geometry or viewport edges. A manually placed label close to a witness endpoint
   can overlap an arrowhead. Angular sector choice, arc-radius leaders and crowded
