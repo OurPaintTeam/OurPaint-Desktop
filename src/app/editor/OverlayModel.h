@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "render/SnapFeedback.h"
 #include "SelectionModel.h"
+#include "render/snap/SnapFeedback.h"
 
 class OverlayModel {
 public:

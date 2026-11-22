@@ -2,8 +2,8 @@
 #define OURPAINT_RENDER_VIEWPORTSTYLE_H_
 
 #include "../../../render/RenderScene.h"
-#include "SnapFeedbackStyle.h"
 #include "constraints/ConstraintMarkerStyle.h"
+#include "snap/SnapFeedbackStyle.h"
 
 namespace app {
 

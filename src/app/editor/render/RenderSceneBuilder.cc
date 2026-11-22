@@ -15,9 +15,9 @@
 #include "../render/constraints/ConstraintLayout.h"
 #include "AxisTexts.h"
 #include "OverlayModel.h"
-#include "SnapFeedbackBuilder.h"
 #include "ViewportStyle.h"
 #include "objects/Objects.h"
+#include "snap/SnapFeedbackBuilder.h"
 
 using namespace core;
 

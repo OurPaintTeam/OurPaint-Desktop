@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "../../../core/sketch/SketchTypes.h"
+#include "../../../../core/sketch/SketchTypes.h"
 
 namespace app {
 

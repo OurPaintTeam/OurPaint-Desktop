@@ -17,6 +17,9 @@ target_link_libraries(ProjectSaveLoadGTEST PRIVATE ourpaint_project_io)
 add_ourpaint_test(ConstraintToolGTEST ConstraintToolGTEST.cc)
 target_link_libraries(ConstraintToolGTEST PRIVATE ourpaint_editor)
 
+add_ourpaint_test(LineToolGTEST LineToolGTEST.cc)
+target_link_libraries(LineToolGTEST PRIVATE ourpaint_project)
+
 add_ourpaint_test(ConstraintLayoutGTEST
         ConstraintLayoutGTEST.cc
         DimensionLayoutGTEST.cc

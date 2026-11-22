@@ -1,6 +1,6 @@
 #include "LineTool.h"
 
-#include <iomanip>
+#include <cmath>
 #include <iostream>
 
 #include "Document.h"
@@ -10,34 +10,55 @@
 LineTool::LineTool(core::Document& document, render::Camera2D& camera, snap::SnapSystem& snap, OverlayModel& overlay, Cpu2dPicker& picker)
     :IInteractionTool(document,camera,snap,overlay, picker) {}
 
-void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
-    glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
-    lastCursorWorldPos_ = v;
+void LineTool::beginSegmentPreview(glm::dvec2 start) {
+    firstPoint_ = start;
+    state_ = State::WaitingSecondPoint;
+    snapVisualClear();
+    overlay_.clearPreview();
+    overlay_.points_.emplace_back(start.x, start.y);
+    overlay_.points_.emplace_back(start.x, start.y);
+    overlay_.lines_.emplace_back(start.x, start.y, start.x, start.y);
+}
 
-    snap::SnapRequest request{core::sketch::Vec2{v.x, v.y}, snap::ActionType::Draw, snap::PrimitiveType::Line, snap::DrawState::Start};
+glm::dvec2 LineTool::updateCursor(glm::dvec2 cursor, input::Modifiers modifiers) {
+    snap::SnapRequest request{{cursor.x, cursor.y}, snap::ActionType::Draw, snap::PrimitiveType::Line, snap::DrawState::Start};
 
     if (state_ == State::WaitingSecondPoint) {
         request.drawState = snap::DrawState::End;
-        request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{firstPoint_.x, firstPoint_.y}});
+        request.anchors.push_back({{firstPoint_.x, firstPoint_.y}});
+    }
+    snapVisual(request);
 
-        if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
-            glm::dvec2 delta = v - firstPoint_;
+    if (!snap_results_.empty()) {
+        const auto& position = snap_results_.front().point.position;
+        cursor = {position.x, position.y};
+    }
+    cursorPoint_ = cursor;
+    return updatePreview(modifiers);
+}
 
-            // Snap to the dominant axis
+glm::dvec2 LineTool::updatePreview(input::Modifiers modifiers) {
+    glm::dvec2 cursor = cursorPoint_;
+    if (state_ == State::WaitingSecondPoint) {
+        if (input::has_flag(modifiers, input::Modifiers::Shift)) {
+            const glm::dvec2 delta = cursor - firstPoint_;
             if (std::abs(delta.x) > std::abs(delta.y)) {
-                v.y = firstPoint_.y;  // Lock to horizontal
+                cursor.y = firstPoint_.y;
             } else {
-                v.x = firstPoint_.x;  // Lock to vertical
+                cursor.x = firstPoint_.x;
             }
         }
 
-        overlay_.lines_[0].x2 = v.x;
-        overlay_.lines_[0].y2 = v.y;
-        overlay_.points_[0].x = v.x;
-        overlay_.points_[0].y = v.y;
+        overlay_.lines_[0].x2 = cursor.x;
+        overlay_.lines_[0].y2 = cursor.y;
+        overlay_.points_[0].x = cursor.x;
+        overlay_.points_[0].y = cursor.y;
     }
+    return cursor;
+}
 
-    snapVisual(request);
+void LineTool::onMouseMove(const input::MouseMoveEvent& e) {
+    updateCursor(camera_.screenLogicalToWorld({e.x, e.y}), e.modifiers);
 }
 
 void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
@@ -45,40 +66,22 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
         return;
     }
 
-    glm::dvec2 v = camera_.screenLogicalToWorld({e.x, e.y});
-    lastCursorWorldPos_ = v;
-
-    if (!snap_results_.empty()) {
-        v.x = snap_results_[0].point.position.x;
-        v.y = snap_results_[0].point.position.y;
-    }
+    const glm::dvec2 point = updateCursor(camera_.screenLogicalToWorld({e.x, e.y}), e.modifiers);
 
     if (state_ == State::WaitingFirstPoint) {
-        firstPoint_ = v;
         firstSnap_ = snap_results_.empty() ? snap::SnapResult{} : snap_results_.front();
-        state_ = State::WaitingSecondPoint;
-
-        overlay_.points_.push_back(OverlayModel::Point(v.x, v.y));
-        overlay_.points_.push_back(OverlayModel::Point(v.x, v.y));
-        overlay_.lines_.push_back(OverlayModel::Line(v.x, v.y, v.x, v.y));
+        beginSegmentPreview(point);
         return;
     }
 
-    bool shiftLocked = false;
-    if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
-        glm::dvec2 delta = v - firstPoint_;
-        if (std::abs(delta.x) > std::abs(delta.y)) {
-            v.y = firstPoint_.y;
-        } else {
-            v.x = firstPoint_.x;
-        }
-        shiftLocked = true;
+    if (subTool_ == ToolId::Polyline && point == firstPoint_) {
+        return;
     }
 
-    auto addResult = document_.sketch().addLine({firstPoint_.x, firstPoint_.y}, {v.x, v.y});
+    auto& sketch = document_.sketch();
+    const auto addResult = sketch.addLine({firstPoint_.x, firstPoint_.y}, {point.x, point.y});
     if (!addResult) {
-        state_ = State::WaitingFirstPoint;
-        overlay_.clearPreview();
+        cancel();
         return;
     }
 
@@ -86,64 +89,57 @@ void LineTool::onMouseButton(const input::MouseButtonEvent& e) {
     const core::sketch::GeometryRef startRef{lineId, core::sketch::SubElement::Start};
     const core::sketch::GeometryRef endRef{lineId, core::sketch::SubElement::End};
 
-    bool needsSolve = false;
-
-    if (applySnapConstraint(firstSnap_, startRef)) {
-        needsSolve = true;
-    }
-
-    if (!shiftLocked) {
-        for (const auto& snap : snap_results_) {
-            if (applySnapConstraint(snap, endRef)) {
-                needsSolve = true;
+    if (previousEnd_) {
+        const auto joint = sketch.addConstraint({.type = core::sketch::ConstraintType::Coincident, .refs = {*previousEnd_, startRef}});
+        if (!joint || !joint.value().constraint) {
+            const auto removed = sketch.removeEntity(lineId);
+            if (!removed) {
+                std::cerr << "Could not roll back polyline segment: " << removed.error().message << '\n';
+                cancel();
             }
+            return;
+        }
+    } else {
+        applySnapConstraint(firstSnap_, startRef);
+    }
+
+    if (!input::has_flag(e.modifiers, input::Modifiers::Shift)) {
+        for (const auto& snap : snap_results_) {
+            applySnapConstraint(snap, endRef);
         }
     }
 
-    if (needsSolve) {
-        auto solved = document_.sketch().solve();
-        if (!solved || solved.value().solveStatus != core::sketch::SolveStatus::Converged) {
-            std::cout << "solve err in LineTool\n";
+    sketch.pushState();
+    if (subTool_ == ToolId::Polyline) {
+        const auto end = sketch.pointPosition(endRef);
+        if (end) {
+            previousEnd_ = endRef;
+            firstSnap_ = {};
+            beginSegmentPreview({end.value().x, end.value().y});
+            return;
         }
     }
-
-    state_ = State::WaitingFirstPoint;
-    overlay_.clearPreview();
-
-    document_.sketch().pushState(); // FOR UNDO/REDO
+    cancel();
 }
 
 void LineTool::onKey(const input::KeyEvent& e) {
-    if (input::has_flag(e.modifiers, input::Modifiers::Shift) && e.action == input::KeyAction::Press && state_ == State::WaitingSecondPoint) {
-        glm::dvec2 v = lastCursorWorldPos_;
-        glm::dvec2 delta = v - firstPoint_;
-
-        // Snap to the dominant axis
-        if (std::abs(delta.x) > std::abs(delta.y)) {
-            v.y = firstPoint_.y;  // Lock to horizontal
-        } else {
-            v.x = firstPoint_.x;  // Lock to vertical
-        }
-
-        overlay_.lines_[0].x2 = v.x;
-        overlay_.lines_[0].y2 = v.y;
-        overlay_.points_[0].x = v.x;
-        overlay_.points_[0].y = v.y;
-    } else if (e.action == input::KeyAction::Release && state_ == State::WaitingSecondPoint) {
-        glm::dvec2 v = lastCursorWorldPos_;
-        overlay_.lines_[0].x2 = v.x;
-        overlay_.lines_[0].y2 = v.y;
-        overlay_.points_[0].x = v.x;
-        overlay_.points_[0].y = v.y;
+    if (state_ == State::WaitingSecondPoint && e.action != input::KeyAction::Repeat) {
+        updatePreview(e.modifiers);
     }
 }
 
 bool LineTool::cancel() {
+    snapVisualClear();
     if (state_ == State::WaitingSecondPoint) {
         overlay_.clearPreview();
         state_ = State::WaitingFirstPoint;
-        firstSnap_.type = snap::SnapKind::None;
+        firstSnap_ = {};
+        previousEnd_.reset();
         return true;
     }
     return false;
+}
+
+void LineTool::setSubToolType(ToolId subTool) {
+    subTool_ = subTool;
 }

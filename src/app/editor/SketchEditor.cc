@@ -47,6 +47,7 @@ void SketchEditor::selectTool(ToolId id, std::optional<double> value) {
         case ToolId::Polyline:
         case ToolId::InfiniteLine:
             activeTool_ = &lineTool_;
+            lineTool_.setSubToolType(id);
             break;
 
         case ToolId::CircleByRadius:

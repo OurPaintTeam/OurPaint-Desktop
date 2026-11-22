@@ -81,21 +81,15 @@ bool ViewportController::onWheel(const input::WheelEvent& e) {
 }
 
 bool ViewportController::onKey(const input::KeyEvent& e) {
-    //UndoRedo::UndoRedoManager& mgr = document_.undoRedoManager();
-    // redo
-    if (e.key == input::KeyCode::Z &&
-             input::has_flag(e.modifiers, input::Modifiers::Ctrl) &&
-             input::has_flag(e.modifiers, input::Modifiers::Shift) &&
-             e.action == input::KeyAction::Press) {
-        //mgr.redo();
-        document_.sketch().redo();
-    }
-    // undo
-    else if (e.key == input::KeyCode::Z &&
-        input::has_flag(e.modifiers, input::Modifiers::Ctrl) &&
-        e.action == input::KeyAction::Press) {
-        //mgr.undo();
-        document_.sketch().undo();
+    if (e.key == input::KeyCode::Z && input::has_flag(e.modifiers, input::Modifiers::Ctrl) && e.action == input::KeyAction::Press) {
+        if (editorSession_.activeToolId() == ToolId::Polyline) {
+            editorSession_.activeTool()->cancel();
+        }
+        if (input::has_flag(e.modifiers, input::Modifiers::Shift)) {
+            document_.sketch().redo();
+        } else {
+            document_.sketch().undo();
+        }
     }
 
     updateConstraintLayout();

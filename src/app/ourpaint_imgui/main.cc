@@ -92,6 +92,7 @@ static void glfw_error_callback(int error, const char* description) {
 }
 
 void draw(app::ViewportController* controller);
+input::Modifiers modifiers(const ImGuiIO& io);
 
 int main(int argc, char** argv) {
     glfwSetErrorCallback(glfw_error_callback);
@@ -290,6 +291,13 @@ int main(int argc, char** argv) {
                                                        ImGuiWindowFlags_NoScrollWithMouse;
 
             if (ImGui::Begin("Viewport", nullptr, viewportFlags)) {
+                // Escape cancels the CAD tool while either the toolbar or canvas has focus.
+                if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+                    !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup) && !io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+                    const auto time = static_cast<uint64_t>(ImGui::GetTime() * 1000.0);
+                    viewport_controller->onKey({input::KeyCode::Escape, input::KeyAction::Press, modifiers(io), 0, false, time});
+                }
+
                 ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // Normal
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 1.0f, 1.0f, 0.2f)); // Hovered
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(1.0f, 1.0f, 1.0f, 0.3f)); // Pressed
@@ -538,9 +546,7 @@ void dispatchInput(float originX, float originY, float imageWidth, float imageHe
     if (hovered && (io.MouseWheel != 0.0f || io.MouseWheelH != 0.0f)) {
         controller_->onWheel({x, y, io.MouseWheelH, io.MouseWheel, mods, time, false});
     }
-    // WantCaptureKeyboard is normally true for the embedded viewport itself. Accept
-    // its child focus or an unobstructed hover, so Escape works after choosing a tool
-    // without requiring a geometry-creating click first. Protect text entry elsewhere.
+    // Forward canvas keys while the canvas has focus or an unobstructed hover.
     if ((!hovered && !ImGui::IsWindowFocused()) || io.WantTextInput) {
         return;
     }
@@ -555,8 +561,7 @@ void dispatchInput(float originX, float originY, float imageWidth, float imageHe
             controller_->onKey({code, input::KeyAction::Release, mods, 0, false, time});
         }
     };
-    constexpr std::array keys{std::pair{ImGuiKey_Escape, input::KeyCode::Escape},
-                              std::pair{ImGuiKey_Enter, input::KeyCode::Enter},
+    constexpr std::array keys{std::pair{ImGuiKey_Enter, input::KeyCode::Enter},
                               std::pair{ImGuiKey_Tab, input::KeyCode::Tab},
                               std::pair{ImGuiKey_Space, input::KeyCode::Space},
                               std::pair{ImGuiKey_Backspace, input::KeyCode::Backspace},

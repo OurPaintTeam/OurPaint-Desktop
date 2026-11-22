@@ -1,7 +1,7 @@
 #ifndef OURPAINT_APPLICATION_SNAP_FEEDBACK_STYLE_H_
 #define OURPAINT_APPLICATION_SNAP_FEEDBACK_STYLE_H_
 
-#include "../../../render/RenderScene.h"
+#include "../../../../render/RenderScene.h"
 
 namespace app {
 

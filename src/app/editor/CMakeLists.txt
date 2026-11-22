@@ -1,7 +1,7 @@
 # Shared editor/view code contains no Qt or ImGui dependencies.
 add_library(ourpaint_editor STATIC
         render/RenderSceneBuilder.cc
-        render/SnapFeedbackBuilder.cc
+        render/snap/SnapFeedbackBuilder.cc
         render/constraints/ConstraintLayout.cc
         render/constraints/DimensionLayout.cc
         ViewportController.cc

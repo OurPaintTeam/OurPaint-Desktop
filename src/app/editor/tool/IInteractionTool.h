@@ -1,11 +1,11 @@
 #ifndef OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
 #define OURPAINT_APPLICATION_IINTERACTIONTOOL_H_
 
+#include "../render/snap/SnapFeedback.h"
+#include "Document.h"
 #include "InputEvents.h"
 #include "OverlayModel.h"
-#include "SnapFeedback.h"
 #include "SnapSystem.h"
-#include "Document.h"
 
 namespace core {
 class Document;
@@ -144,9 +144,7 @@ protected:
         overlay_.setSnapFeedback(std::move(feedback));
     }
 
-    virtual
-
-bool applySnapConstraint(const snap::SnapResult& snap,
+    virtual bool applySnapConstraint(const snap::SnapResult& snap,
                                      const core::sketch::GeometryRef& target) {
         using SK = snap::SnapKind;
         using CT = core::sketch::ConstraintType;
