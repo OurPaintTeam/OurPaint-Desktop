@@ -688,8 +688,9 @@ void QtUIController::constraint(Window& window, qint64 id, UI::ConstraintType ty
     if (tool == ToolId::Distance || tool == ToolId::HorizontalDistance || tool == ToolId::VerticalDistance || tool == ToolId::Angle) {
         bool accepted = false;
         const bool angle = tool == ToolId::Angle;
-        const double entered = QInputDialog::getDouble(window.widget, tr("Constraint"), angle ? tr("Angle (degrees):") : tr("Distance:"), angle ? 90.0 : 10.0,
+        double entered = QInputDialog::getDouble(window.widget, tr("Constraint"), angle ? tr("Angle (degrees):") : tr("Distance:"), angle ? 90.0 : 10.0,
                                                        0.000001, angle ? 360.0 : 1e12, 6, &accepted);
+        entered = entered * (std::numbers::pi / 180.0);
         if (!accepted) {
             return;
         }

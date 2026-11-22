@@ -1441,9 +1441,9 @@ Status Sketch::validateConstraint(const ConstraintDefinition& definition) const 
             v == 0) {
             return invalid("This dimension must be positive");
         }
-        if (type == ConstraintType::Angle && v > 180) {
-            return invalid("Angle must be in [0, 180] degrees");
-        }
+        // if (type == ConstraintType::Angle && v > 180) {
+        //     return invalid("Angle must be in [0, 2pi] degrees");
+        // }
     }
     // if (definition.fixedPosition.has_value() != (type == ConstraintType::Fix)) {
     //     return invalid("Only Fix requires a fixed position");
