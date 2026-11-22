@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <numeric>
+#include <optional>
 
 #include "../pick/Cpu2dPicker.h"
 #include "../OverlayModel.h"
@@ -51,8 +52,8 @@ void ConstraintTool::onMouseMove(const input::MouseMoveEvent& e) {
                 }
                 auto& ent = result.value();
 
-                bool firstIsPoint  = std::holds_alternative<sketch::Point2>(ent.geometry);
-                bool firstIsLine = std::holds_alternative<sketch::Line2>(ent.geometry);
+                bool firstIsPoint = std::holds_alternative<sketch::Point2>(ent.geometry) || refs_[0].sub != sketch::SubElement::Whole;
+                bool firstIsLine  = std::holds_alternative<sketch::Line2>(ent.geometry)  && refs_[0].sub == sketch::SubElement::Whole;
 
                 if (firstIsPoint) {
                     auto pick = picker_.pickPointAtScreenLogical(e.x, e.y);
@@ -381,6 +382,12 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         return;
     }
 
+    using sketch::ConstraintType;
+    std::vector<sketch::ConstraintDefinition> definitions;
+    sketch::PointTarget pointTarget;
+    sketch::SolveOptions options{};
+    const std::optional<double> dimension = isValueSet_ ? std::optional{value_} : std::nullopt;
+
     switch (subTool_) {
         case ToolId::Distance: {
             // Pick entities
@@ -401,7 +408,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     refs_.push_back(pick.value().ref);
                 }
 
-                // Circle radius case
+                // Circle radius case or one line case
                 if (refs_.size() == 1) {
                     auto result = sketch_.entity(refs_[0].entity);
                     if (!result) {
@@ -411,7 +418,11 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     }
                     auto& ent = result.value();
                     if (std::holds_alternative<sketch::Circle2>(ent.geometry) && refs_[0].sub == sketch::SubElement::Whole) {
-                        constraintType_ = sketch::ConstraintType::Radius;
+                        definitions.push_back({.type = ConstraintType::Radius, .refs = refs_, .value = dimension});
+                        break;
+                    }
+                    if (std::holds_alternative<sketch::Line2>(ent.geometry) && refs_[0].sub == sketch::SubElement::Whole) {
+                        definitions.push_back({.type = ConstraintType::Length, .refs = refs_, .value = dimension});
                         break;
                     }
                 }
@@ -455,7 +466,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     if ((firstIsPoint && secondIsPoint) ||
                         (firstIsPoint && secondIsLine) ||
                         (firstIsLine && secondIsPoint)) {
-                        constraintType_ = sketch::ConstraintType::Distance;
+                        definitions.push_back({.type = ConstraintType::Distance, .refs = refs_, .value = dimension});
                     } else {
                         refs_.pop_back();
                         return;
@@ -477,7 +488,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     }
                     auto& ent = result.value();
                     if (std::holds_alternative<sketch::Circle2>(ent.geometry) && refs_[0].sub == sketch::SubElement::Whole) {
-                        constraintType_ = sketch::ConstraintType::Radius;
+                        definitions.push_back({.type = ConstraintType::Radius, .refs = refs_, .value = dimension});
                         break;
                     }
                 }
@@ -514,7 +525,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if ((firstIsPoint && secondIsPoint) ||
                     (firstIsPoint && secondIsLine) ||
                     (firstIsLine && secondIsPoint)) {
-                    constraintType_ = sketch::ConstraintType::Distance;
+                    definitions.push_back({.type = ConstraintType::Distance, .refs = refs_, .value = dimension});
                 } else {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -523,9 +534,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
             }
             break;
         }
-        case ToolId::HorizontalDistance: {
-            constraintType_ = sketch::ConstraintType::HorizontalDistance;
-        }
+        case ToolId::HorizontalDistance:
         case ToolId::VerticalDistance: {
             // Pick entities
             if (overlay_.selection_.model.items().empty()) {
@@ -582,17 +591,16 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 }
             }
 
-            if (!constraintType_.has_value()) {
-                constraintType_ = sketch::ConstraintType::VerticalDistance;
-            }
+            const auto type = subTool_ == ToolId::HorizontalDistance ? ConstraintType::HorizontalDistance : ConstraintType::VerticalDistance;
+            definitions.push_back({.type = type, .refs = refs_, .value = dimension});
             break;
         }
         case ToolId::Coincident: {
-            bool pointPoint = false;
+            const bool fromSelection = !overlay_.selection_.model.items().empty();
             // Pick entities
-            if (overlay_.selection_.model.items().empty()) {
+            if (!fromSelection) {
                 std::optional<PickResult> pick;
-                if (refs_.empty()) {
+                if (refs_.empty()) { // pick any entity
                     pick = picker_.pickAtScreenLogical(e.x, e.y);
                 } else {
                     auto result = sketch_.entity(refs_[0].entity);
@@ -602,20 +610,10 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                         return;
                     }
                     auto& ent = result.value();
-                    if (std::holds_alternative<sketch::Point2>(ent.geometry) || refs_[0].sub != sketch::SubElement::Whole) {
+                    if (std::holds_alternative<sketch::Point2>(ent.geometry) ||
+                        refs_[0].sub != sketch::SubElement::Whole) { // first is a point -> pick any entity
                         pick = picker_.pickAtScreenLogical(e.x, e.y);
-
-                        result = sketch_.entity(pick.value().ref.entity);
-                        if (!result) {
-                            refs_.clear();
-                            overlay_.selection_.model.clear();
-                            return;
-                        }
-                        ent = result.value();
-                        if (std::holds_alternative<sketch::Point2>(ent.geometry) || pick.value().ref.sub != sketch::SubElement::Whole) {
-                            pointPoint = true;
-                        }
-                    } else {
+                    } else { // first entity isn't point -> pick point
                         pick = picker_.pickPointAtScreenLogical(e.x, e.y);
                     }
                 }
@@ -624,130 +622,39 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     return;
                 }
 
-
                 if (refs_.empty()) {
-                    refs_.push_back(pick.value().ref);
+                    refs_.push_back(pick->ref);
+                    return;
                 }
                 if (pick->ref == refs_.front()) {
                     return;
                 }
-                if (refs_.size() == 1) {
-                    coincidentMidpoint_ = false;
-                    refs_.push_back(pick.value().ref);
-                }
+                refs_.push_back(pick->ref);
             }
             // Selection entities
             else {
                 refs_ = overlay_.selection_.model.items();
-                if (refs_.size() != 2) {
-                    refs_.clear();
-                    overlay_.selection_.model.clear();
-                    return;
-                }
-
-                if (refs_[0] == refs_[1]) {
-                    refs_.clear();
-                    overlay_.selection_.model.clear();
-                    return;
-                }
-
-                auto result1 = sketch_.entity(refs_[0].entity);
-                if (!result1) {
-                    refs_.clear();
-                    overlay_.selection_.model.clear();
-                    return;
-                }
-
-                auto result2 = sketch_.entity(refs_[1].entity);
-                if (!result2) {
-                    refs_.clear();
-                    overlay_.selection_.model.clear();
-                    return;
-                }
-
-                auto& ent1 = result1.value();
-                auto& ent2 = result2.value();
-
-                bool firstIsPoint   = std::holds_alternative<sketch::Point2>(ent1.geometry) || refs_[0].sub != sketch::SubElement::Whole;
-                bool secondIsPoint  = std::holds_alternative<sketch::Point2>(ent2.geometry) || refs_[1].sub != sketch::SubElement::Whole;
-
-                if (firstIsPoint && secondIsPoint) {
-                    pointPoint = true;
-                }
-
-                if (firstIsPoint || secondIsPoint) {
-                    coincidentMidpoint_ = true;
-                } else {
+                if (refs_.size() != 2 || refs_[0] == refs_[1]) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
                     return;
                 }
             }
 
-            sketch::ConstraintDefinition definition;
-            definition.type = sketch::ConstraintType::Coincident;
-            definition.refs = refs_;
-
-            if (pointPoint) {
-                const auto first = sketch_.pointPosition(refs_[0]);
-                const auto second = sketch_.pointPosition(refs_[1]);
-                if (!first || !second) {
-                    std::cout << "Coincident requires point elements" << '\n';
-                    refs_.clear();
-                    overlay_.selection_.model.clear();
-                    return;
+            const auto first = sketch_.pointPosition(refs_[0]);
+            const auto second = sketch_.pointPosition(refs_[1]);
+            if (first && second) {
+                auto position = second.value();
+                if (fromSelection) {
+                    position = {std::midpoint(first.value().x, position.x), std::midpoint(first.value().y, position.y)};
                 }
-                const sketch::Vec2 position =
-                    coincidentMidpoint_ ?
-                    sketch::Vec2{std::midpoint(first.value().x, second.value().x), std::midpoint(first.value().y, second.value().y)} :
-                    second.value();
-                const sketch::PointTarget target{refs_[0], position};
-                const sketch::SolveOptions options{std::span(&target, 1), sketch::TargetPolicy::Prefer};
-
-                const auto result = sketch_.addConstraint(definition, options);
-
-                if (!result) {
-                    std::cout << "Coincident not added: " << result.error().message << '\n';
-                    refs_.clear();
-                    overlay_.selection_.model.clear();
-                    return;
-                }
-                const auto& outcome = result.value();
-                if (!outcome.constraint || outcome.diagnostics.solveStatus != sketch::SolveStatus::Converged) {
-                    std::cout << "Coincident not added: solve did not converge" << '\n';
-                    refs_.clear();
-                    overlay_.selection_.model.clear();
-                    return;
-                }
-                if (outcome.diagnostics.targetsSatisfied == false) {
-                    std::cout << "Coincident added; requested placement could not be preserved" << '\n';
-                }
-            } else {
-                const auto result = sketch_.addConstraint(definition);
-                if (!result) {
-                    std::cout << "Coincident not added: " << result.error().message << '\n';
-                    refs_.clear();
-                    overlay_.selection_.model.clear();
-                    return;
-                }
+                pointTarget = {refs_[0], position};
+                options = {std::span(&pointTarget, 1), sketch::TargetPolicy::Prefer};
             }
-
-            sketch_.solve();
-
-            refs_.clear();
-            coincidentMidpoint_ = false;
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
-            document_.sketch().pushState(); // FOR UNDO/REDO
-
-            return;
+            definitions.push_back({.type = ConstraintType::Coincident, .refs = refs_});
             break;
         }
-        case ToolId::Horizontal: {
-            constraintType_ = sketch::ConstraintType::Horizontal;
-        }
+        case ToolId::Horizontal:
         case ToolId::Vertical: {
             std::vector<sketch::GeometryRef> refs; // should be lines
             // Pick entities
@@ -764,61 +671,27 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 refs = overlay_.selection_.model.items(); // can be more than 1 line
             }
 
-            if (!constraintType_.has_value()) {
-                constraintType_ = sketch::ConstraintType::Vertical;
-            }
-
-            bool allRefsIsLines = true;
-            for (auto& ref : refs) {
-                auto result = sketch_.entity(ref.entity);
-                if (!result) {
+            const auto type = subTool_ == ToolId::Horizontal ? ConstraintType::Horizontal : ConstraintType::Vertical;
+            definitions.reserve(refs.size());
+            for (const auto& ref : refs) {
+                const auto result = sketch_.entity(ref.entity);
+                if (!result || ref.sub != sketch::SubElement::Whole || !std::holds_alternative<sketch::Line2>(result.value().geometry)) {
                     refs_.clear();
                     overlay_.selection_.model.clear();
                     return;
                 }
-                auto& ent = result.value();
-                if (!std::holds_alternative<sketch::Line2>(ent.geometry)) {
-                    allRefsIsLines = false; // if all entities is not lines -> do not apply
-                    break;
-                }
+                definitions.push_back({.type = type, .refs = {ref}});
             }
-
-            if (allRefsIsLines) {
-                for (auto& ref : refs) {
-                    refs_.push_back(ref);
-                    pushConstraint();
-                    refs_.clear();
-                }
-                sketch_.solve();
-                overlay_.clearPreview();
-                overlay_.selection_.model.clear();
-                constraintType_.reset();
-
-                document_.sketch().pushState(); // FOR UNDO/REDO
-            } else {
-                refs_.clear();
-                overlay_.selection_.model.clear();
-            }
-            return;
             break;
         }
-        case ToolId::Angle: {
-            if (!isValueSet_) {
+        case ToolId::Angle:
+        case ToolId::Collinear:
+        case ToolId::Parallel:
+        case ToolId::Perpendicular: {
+            if (subTool_ == ToolId::Angle && !dimension) {
                 return;
             }
-            constraintType_ = sketch::ConstraintType::Angle;
-        }
-        case ToolId::Collinear: {
-            if (!constraintType_.has_value()) {
-                constraintType_ = sketch::ConstraintType::Collinear;
-            }
-        }
-        case ToolId::Parallel: {
-            if (!constraintType_.has_value()) {
-                constraintType_ = sketch::ConstraintType::Parallel;
-            }
-        }
-        case ToolId::Perpendicular: {
+
             // Pick entities
             if (overlay_.selection_.model.items().empty()) {
                 std::optional<PickResult> pick;
@@ -871,8 +744,21 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 }
             }
 
-            if (!constraintType_.has_value()) {
-                constraintType_ = sketch::ConstraintType::Perpendicular;
+            switch (subTool_) {
+                case ToolId::Angle:
+                    definitions.push_back({.type = ConstraintType::Angle, .refs = refs_, .value = dimension});
+                    break;
+                case ToolId::Collinear:
+                    definitions.push_back({.type = ConstraintType::Collinear, .refs = refs_});
+                    break;
+                case ToolId::Parallel:
+                    definitions.push_back({.type = ConstraintType::Parallel, .refs = refs_});
+                    break;
+                case ToolId::Perpendicular:
+                    definitions.push_back({.type = ConstraintType::Perpendicular, .refs = refs_});
+                    break;
+                default:
+                    break;
             }
             break;
         }
@@ -884,7 +770,10 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 if (!pick) {
                     pick = picker_.pickCircleAtScreenLogical(e.x, e.y);
                     if (!pick) {
-                        return;
+                        pick = picker_.pickArcAtScreenLogical(e.x, e.y);
+                        if (!pick) {
+                            return;
+                        }
                     }
                 }
 
@@ -910,13 +799,13 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     auto& ent1 = result1.value();
                     auto& ent2 = result2.value();
 
-                    bool firstIsCircle  = std::holds_alternative<sketch::Circle2>(ent1.geometry);
-                    bool secondIsCircle = std::holds_alternative<sketch::Circle2>(ent2.geometry);
+                    bool firstIsCircle  = std::holds_alternative<sketch::Circle2>(ent1.geometry) || std::holds_alternative<sketch::Arc2>(ent1.geometry);
+                    bool secondIsCircle = std::holds_alternative<sketch::Circle2>(ent2.geometry) || std::holds_alternative<sketch::Arc2>(ent2.geometry);
                     bool firstIsLine = std::holds_alternative<sketch::Line2>(ent1.geometry);
                     bool secondIsLine = std::holds_alternative<sketch::Line2>(ent2.geometry);
 
                     if ((firstIsCircle && secondIsCircle) || (firstIsLine && secondIsCircle) || (firstIsCircle && secondIsLine)) {
-                        constraintType_ = sketch::ConstraintType::Tangent;
+                        definitions.push_back({.type = ConstraintType::Tangent, .refs = refs_});
                     } else {
                         refs_.pop_back();
                         return;
@@ -950,13 +839,13 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 auto& ent1 = result1.value();
                 auto& ent2 = result2.value();
 
-                bool firstIsCircle  = std::holds_alternative<sketch::Circle2>(ent1.geometry);
-                bool secondIsCircle = std::holds_alternative<sketch::Circle2>(ent2.geometry);
+                bool firstIsCircle  = std::holds_alternative<sketch::Circle2>(ent1.geometry) || std::holds_alternative<sketch::Arc2>(ent1.geometry);
+                bool secondIsCircle = std::holds_alternative<sketch::Circle2>(ent2.geometry) || std::holds_alternative<sketch::Arc2>(ent2.geometry);
                 bool firstIsLine = std::holds_alternative<sketch::Line2>(ent1.geometry);
                 bool secondIsLine = std::holds_alternative<sketch::Line2>(ent2.geometry);
 
                 if ((firstIsCircle && secondIsCircle) || (firstIsLine && secondIsCircle) || (firstIsCircle && secondIsLine)) {
-                    constraintType_ = sketch::ConstraintType::Tangent;
+                    definitions.push_back({.type = ConstraintType::Tangent, .refs = refs_});
                 } else {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -999,12 +888,15 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     auto& ent2 = result2.value();
 
                     bool firstIsLine = std::holds_alternative<sketch::Line2>(ent1.geometry);
-                    bool secondIsLine = std::holds_alternative<sketch::Line2>(ent1.geometry);
+                    bool secondIsLine = std::holds_alternative<sketch::Line2>(ent2.geometry);
                     bool firstIsCircle = std::holds_alternative<sketch::Circle2>(ent1.geometry);
-                    bool secondIsCircle = std::holds_alternative<sketch::Circle2>(ent1.geometry);
+                    bool secondIsCircle = std::holds_alternative<sketch::Circle2>(ent2.geometry);
 
-                    if ((firstIsLine && secondIsLine) || (firstIsCircle && secondIsCircle)){
-                        constraintType_ = sketch::ConstraintType::Equal;
+                    if ((firstIsLine && secondIsLine) || (firstIsCircle && secondIsCircle)) {
+                        definitions.push_back({.type = ConstraintType::Equal, .refs = refs_});
+                    } else {
+                        refs_.pop_back();
+                        return;
                     }
                 }
             }
@@ -1040,8 +932,8 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 bool firstIsCircle = std::holds_alternative<sketch::Circle2>(ent1.geometry);
                 bool secondIsCircle = std::holds_alternative<sketch::Circle2>(ent1.geometry);
 
-                if ((firstIsLine && secondIsLine) || (firstIsCircle && secondIsCircle)){
-                    constraintType_ = sketch::ConstraintType::Equal;
+                if ((firstIsLine && secondIsLine) || (firstIsCircle && secondIsCircle)) {
+                    definitions.push_back({.type = ConstraintType::Equal, .refs = refs_});
                 } else {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -1065,20 +957,10 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 refs = overlay_.selection_.model.items(); // can be more than 1 line
             }
 
-            constraintType_ = sketch::ConstraintType::Fix;
-            for (auto& ref : refs) {
-                refs_.push_back(ref);
-                pushConstraint();
-                refs_.clear();
+            definitions.reserve(refs.size());
+            for (const auto& ref : refs) {
+                definitions.push_back({.type = ConstraintType::Fix, .refs = {ref}});
             }
-            sketch_.solve();
-            overlay_.clearPreview();
-            overlay_.selection_.model.clear();
-            constraintType_.reset();
-
-            document_.sketch().pushState(); // FOR UNDO/REDO
-
-            return;
             break;
         }
         case ToolId::Concentric: {
@@ -1121,7 +1003,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     bool secondIsArc = std::holds_alternative<sketch::Arc2>(ent2.geometry);
 
                     if ((firstIsCircle && secondIsCircle) || (firstIsArc && secondIsCircle) || (firstIsCircle && secondIsArc) || (firstIsArc && secondIsArc)) {
-                        constraintType_ = sketch::ConstraintType::Concentric;
+                        definitions.push_back({.type = ConstraintType::Concentric, .refs = refs_});
                     } else {
                         refs_.pop_back();
                         return;
@@ -1161,7 +1043,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                 bool secondIsArc = std::holds_alternative<sketch::Arc2>(ent2.geometry);
 
                 if ((firstIsCircle && secondIsCircle) || (firstIsArc && secondIsCircle) || (firstIsCircle && secondIsArc) || (firstIsArc && secondIsArc)) {
-                    constraintType_ = sketch::ConstraintType::Concentric;
+                    definitions.push_back({.type = ConstraintType::Concentric, .refs = refs_});
                 } else {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -1225,7 +1107,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                         (firstIsPoint && secondIsLine)  ||
                         (firstIsLine  && secondIsPoint) ||
                         (firstIsLine  && secondIsLine)) {
-                        constraintType_ = sketch::ConstraintType::Midpoint;
+                        definitions.push_back({.type = ConstraintType::Midpoint, .refs = refs_});
                     } else {
                         refs_.pop_back();
                         return;
@@ -1272,7 +1154,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     (firstIsPoint && secondIsLine)  ||
                     (firstIsLine  && secondIsPoint) ||
                     (firstIsLine  && secondIsLine)) {
-                    constraintType_ = sketch::ConstraintType::Midpoint;
+                    definitions.push_back({.type = ConstraintType::Midpoint, .refs = refs_});
                 } else {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -1361,7 +1243,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                         (firstIsPoint && secondIsLine && thirdIsPoint) ||
                         (firstIsPoint && secondIsPoint && thirdIsLine) ||
                         (firstIsLine && secondIsPoint && thirdIsPoint)) {
-                        constraintType_ = sketch::ConstraintType::Symmetric;
+                        definitions.push_back({.type = ConstraintType::Symmetric, .refs = refs_});
                     }
                 }
             }
@@ -1411,7 +1293,7 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
                     (firstIsPoint && secondIsPoint && thirdIsLine) ||
                     (firstIsLine && secondIsPoint && thirdIsPoint)
                     ) {
-                    constraintType_ = sketch::ConstraintType::Symmetric;
+                    definitions.push_back({.type = ConstraintType::Symmetric, .refs = refs_});
                 } else {
                     refs_.clear();
                     overlay_.selection_.model.clear();
@@ -1428,15 +1310,14 @@ void ConstraintTool::onMouseButton(const input::MouseButtonEvent& e) {
         }
     }
 
-    bool pushed = pushConstraint();
+    const bool pushed = !definitions.empty() && pushConstraint(definitions, options);
 
     refs_.clear();
     overlay_.clearPreview();
     overlay_.selection_.model.clear();
-    constraintType_.reset();
 
     if (pushed) {
-        document_.sketch().pushState(); // FOR UNDO/REDO
+        sketch_.pushState();
     }
 }
 
@@ -1447,9 +1328,7 @@ void ConstraintTool::onKey(const input::KeyEvent& e) {
 bool ConstraintTool::cancel() {
     overlay_.clearPreview();
     isValueSet_ = false;
-    isConstraintTypeSet_ = false;
     refs_.clear();
-    coincidentMidpoint_ = false;
     return false;
 }
 
@@ -1462,10 +1341,8 @@ void ConstraintTool::setValue(double value) {
 void ConstraintTool::setSubToolType(ToolId subTool) {
     overlay_.clearPreview();
     refs_.clear();
-    coincidentMidpoint_ = false;
 
     subTool_ = subTool;
-    isConstraintTypeSet_ = true;
 
     if (!overlay_.selection_.model.empty()) {
         input::MouseButtonEvent mbe;
@@ -1475,32 +1352,21 @@ void ConstraintTool::setSubToolType(ToolId subTool) {
     }
 }
 
-bool ConstraintTool::pushConstraint() {
-    sketch::ConstraintDefinition def;
-
-    if (!constraintType_) {
-        return false;
-    }
-    def.type = constraintType_.value();
-
-    if (refs_.empty()) {
-        return false;
-    }
-    def.refs = refs_;
-
-    if (isValueSet_) {
-        def.value = value_;
-    }
-
-    auto result = sketch_.addConstraint(def);
+bool ConstraintTool::pushConstraint(std::span<const sketch::ConstraintDefinition> definitions, const sketch::SolveOptions& options) {
+    const auto result = sketch_.addConstraints(definitions, options);
     if (!result) {
         std::cout << "Sketch message: [Failure] " << result.error().message << '\n';
         return false;
     }
 
-    if (result.value().constraint == std::nullopt) {
+    const auto& outcome = result.value();
+    if (outcome.diagnostics.solveStatus != sketch::SolveStatus::Converged || outcome.constraints.size() != definitions.size()) {
         std::cout << "Sketch message: [Failure] Not Converged" << '\n';
         return false;
+    }
+
+    if (outcome.diagnostics.targetsSatisfied == false) {
+        std::cout << "Sketch message: [Warning] Requested placement could not be preserved" << '\n';
     }
 
     return true;

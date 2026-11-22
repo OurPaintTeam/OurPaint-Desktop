@@ -35,7 +35,7 @@ public:
     void setSubToolType(ToolId type);
 
 private:
-    bool pushConstraint();
+    bool pushConstraint(std::span<const sketch::ConstraintDefinition> definitions, const sketch::SolveOptions& options);
     void pushEntityToOverlay(const sketch::GeometryRef& ref) const;
 
     void pushPointToOverlay(double x, double y) const;
@@ -47,11 +47,8 @@ private:
     double value_{};
     bool isValueSet_ = false;
     ToolId subTool_;
-    bool isConstraintTypeSet_ = false;
 
-    std::optional<sketch::ConstraintType> constraintType_ = std::nullopt;
     std::vector<sketch::GeometryRef> refs_;
-    bool coincidentMidpoint_ = false;
 
     sketch::Sketch& sketch_;
 };

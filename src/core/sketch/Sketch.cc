@@ -1606,7 +1606,7 @@ Result<ConstraintBatchSolveResult> Sketch::addConstraints(std::span<const Constr
     ConstraintBatchSolveResult batchResult{};
 
     if (definitions.empty()) {
-        return Result<ConstraintBatchSolveResult>::failure(ErrorCode::InvalidArgument, "definitions is empty");
+        return Result<ConstraintBatchSolveResult>::success(batchResult);
     }
 
     const auto targetsValid = validateSolveOptions(options);
@@ -1667,6 +1667,7 @@ Result<ConstraintBatchSolveResult> Sketch::addConstraints(std::span<const Constr
         return Result<ConstraintBatchSolveResult>::success({{}, solved.value()});
     }
 
+    batchResult.diagnostics = solved.value();
     return Result<ConstraintBatchSolveResult>::success(batchResult);
 }
 
@@ -1691,6 +1692,11 @@ Result<SolveDiagnostics> Sketch::updateConstraint(ConstraintId id,
         return Result<SolveDiagnostics>::failure(valid.error().code, valid.error().message);
     }
 
+    const auto targetsValid = validateSolveOptions(options);
+    if (!targetsValid) {
+        return Result<SolveDiagnostics>::failure(targetsValid.error().code, targetsValid.error().message);
+    }
+
     auto beforeSnapshot = this->snapshot();
     if (!beforeSnapshot) {
         return Result<SolveDiagnostics>::failure(beforeSnapshot.error().code, beforeSnapshot.error().message);
@@ -1698,12 +1704,11 @@ Result<SolveDiagnostics> Sketch::updateConstraint(ConstraintId id,
 
     auto status = impl_->updateConstraint({id, resolved});
     if (!status) {
+        const auto restored = installState(beforeSnapshot.value());
+        if (!restored) {
+            return Result<SolveDiagnostics>::failure(restored.error().code, "Constraint rollback failed: " + restored.error().message);
+        }
         return Result<SolveDiagnostics>::failure(status.error().code, status.error().message);
-    }
-
-    const auto targetsValid = validateSolveOptions(options);
-    if (!targetsValid) {
-        return Result<SolveDiagnostics>::failure(targetsValid.error().code, targetsValid.error().message);
     }
 
     const auto solved = impl_->solve(options);
@@ -1723,7 +1728,7 @@ Result<SolveDiagnostics> Sketch::updateConstraint(ConstraintId id,
         return Result<SolveDiagnostics>::success(solved.value());
     }
 
-    return Result<SolveDiagnostics>::failure(status.error().code, status.error().message);
+    return solved;
 }
 
 Status Sketch::removeConstraint(ConstraintId id) {

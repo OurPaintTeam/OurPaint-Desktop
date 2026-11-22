@@ -49,7 +49,7 @@ void ArcTool::onMouseMove(const input::MouseMoveEvent& e) {
                 request.anchors.push_back(core::sketch::Point2{core::sketch::Vec2{points_[1].x, points_[1].y}});
 
                 Arc ca = buildArcFromThreePoints(points_[0], points_[1], cursor);
-                if (!ca.valid) {
+                if (ca.valid) {
                     if (!overlay_.arcs_.empty()) {
                         overlay_.arcs_[0].r = ca.r;
                         overlay_.arcs_[0].cx = ca.cx;

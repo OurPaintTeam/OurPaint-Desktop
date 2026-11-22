@@ -1,7 +1,7 @@
 add_library(glad STATIC glad/src/gl.c)
 target_include_directories(glad PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
 
-add_subdirectory(DCM)
+add_subdirectory(DCM EXCLUDE_FROM_ALL)
 add_subdirectory(UI)
 add_subdirectory(glfw)
 

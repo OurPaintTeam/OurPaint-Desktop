@@ -11,7 +11,7 @@ namespace {
 void expectSolved(Sketch& sketch) {
     const auto solved = sketch.solve();
     ASSERT_TRUE(solved);
-    EXPECT_EQ(solved.value().status, SolveStatus::Converged);
+    EXPECT_EQ(solved.value().solveStatus, SolveStatus::Converged);
 }
 
 void expectPosition(const Sketch& sketch, GeometryRef ref, Vec2 expected) {
