@@ -2,6 +2,15 @@ add_executable(ourpaint_imgui
         main.cc
 )
 
+if (MINGW)
+    target_link_options(ourpaint_imgui PRIVATE
+        -static
+        -static-libgcc
+        -static-libstdc++
+        -s
+    )
+endif()
+
 target_link_libraries(ourpaint_imgui PUBLIC
         ourpaint_project
         glad
@@ -22,5 +31,5 @@ add_custom_command(TARGET ourpaint_imgui POST_BUILD
     COMMENT "Copy shaders, fonts and icons"
 )
 
-#set_target_properties(ourpaint_imgui PROPERTIES WIN32_EXECUTABLE TRUE)
+set_target_properties(ourpaint_imgui PROPERTIES WIN32_EXECUTABLE TRUE)
 

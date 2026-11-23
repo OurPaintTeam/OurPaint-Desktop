@@ -9,6 +9,11 @@ namespace app {
 
 using namespace render;
 
+struct SelectionRectStyle {
+    StrokeStyle stroke;
+    Color fill;
+};
+
 struct ViewportStyle {
     MarkerStyle baseMarker;
     MarkerStyle selectedMarker;
@@ -27,8 +32,8 @@ struct ViewportStyle {
     StrokeStyle selectedCircle;
     StrokeStyle overlayCircle;
 
-    StrokeStyle selectionRectStroke;
-    Color selectionRectFill;
+    SelectionRectStyle windowSelectionRect;
+    SelectionRectStyle crossingSelectionRect;
 
     Color gridMinorColor;
     Color gridMajorColor;

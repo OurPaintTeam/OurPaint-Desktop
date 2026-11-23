@@ -124,21 +124,7 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
 
         // Rectangular Marquee
         else if (state_ == State::MarqueeSelection) {
-            if (overlay_.selectionRect_.has_value()) {
-                overlay_.selectionRect_->xMax = v.x;
-                overlay_.selectionRect_->yMax = v.y;
-
-                const bool shift = input::has_flag(e.modifiers, input::Modifiers::Shift);
-
-                const auto pickedRefs = picker_.pickInRectAtScreenLogical(lastScreenPos_.x, lastScreenPos_.y, e.x, e.y);
-                if (shift) {
-                    overlay_.selection_.model.replace(marqueeBaseSelection_);
-                    overlay_.selection_.model.add(pickedRefs);
-                } else {
-                    overlay_.selection_.model.replace(pickedRefs);
-                }
-                lastPos_ = v;
-            }
+            updateMarqueeSelection(lastLogicalPos_, e.modifiers);
         }
     }
 
@@ -202,10 +188,10 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
                 overlay_.selection_.model.clear();
             }
 
-            glm::dvec2 worldPos = camera_.screenLogicalToWorld({e.x, e.y});
+            marqueeStartLogical_ = {e.x, e.y};
+            lastLogicalPos_ = marqueeStartLogical_;
+            const auto worldPos = camera_.screenLogicalToWorld(marqueeStartLogical_);
             overlay_.selectionRect_ = OverlayModel::Rect(worldPos.x, worldPos.y, worldPos.x, worldPos.y);
-            lastScreenPos_ = {e.x, e.y};
-            pressWorldPos_ = worldPos;
         }
 
         return;
@@ -220,9 +206,27 @@ void CursorTool::onMouseButton(const input::MouseButtonEvent& e) {
 
         if (state_ == State::DraggingSelection) {
             document_.sketch().pushState(); // FOR UNDO/REDO
+        } else if (state_ == State::MarqueeSelection && lastLogicalPos_ != glm::dvec2(e.x, e.y)) {
+            updateMarqueeSelection({e.x, e.y}, e.modifiers);
         }
 
         cancel();
+    }
+}
+
+void CursorTool::updateMarqueeSelection(glm::dvec2 position, input::Modifiers modifiers) {
+    const auto mode = position.x < marqueeStartLogical_.x ? RectSelectionMode::Crossing : RectSelectionMode::Window;
+    const auto start = camera_.screenLogicalToWorld(marqueeStartLogical_);
+    const auto end = camera_.screenLogicalToWorld(position);
+    overlay_.selectionRect_ = OverlayModel::Rect(start.x, start.y, end.x, end.y, mode);
+
+    const auto hits = picker_.pickInRectAtWorld(start.x, start.y, end.x, end.y, mode);
+    auto& selection = overlay_.selection_.model;
+    if (input::has_flag(modifiers, input::Modifiers::Shift)) {
+        selection.replace(marqueeBaseSelection_);
+        selection.add(hits);
+    } else {
+        selection.replace(hits);
     }
 }
 

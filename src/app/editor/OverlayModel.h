@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "RectSelectionMode.h"
 #include "SelectionModel.h"
 #include "render/snap/SnapFeedback.h"
 
@@ -31,8 +32,7 @@ public:
         float yMin{};
         float xMax{};
         float yMax{};
-        OverlayType type;
-        Color color;
+        app::RectSelectionMode mode = app::RectSelectionMode::Window;
     };
 
     struct Point {

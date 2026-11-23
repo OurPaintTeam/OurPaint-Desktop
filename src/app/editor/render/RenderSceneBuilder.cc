@@ -451,20 +451,14 @@ void RenderSceneBuilder::buildSelectionRectangle() {
         return;
     }
 
-    // Old renderer used camera MVP for selectionRect, so this keeps it as
-    // world-space. If selectionRect_ is actually stored in screen pixels,
-    // change this to makeScreenLayer(...).
     render::DrawLayer layer = makeWorldLayer("selection_rect", kScreenOverlayOrder);
 
+    const auto& selectionRect = *overlay_.selectionRect_;
+    const auto& style = selectionRect.mode == app::RectSelectionMode::Window ? style_.windowSelectionRect : style_.crossingSelectionRect;
     render::RectBatch rect;
-    rect.stroke = style_.selectionRectStroke;
-    rect.fill = style_.selectionRectFill;
-    rect.rects.push_back(makeRect(
-        overlay_.selectionRect_->xMin,
-        overlay_.selectionRect_->yMin,
-        overlay_.selectionRect_->xMax,
-        overlay_.selectionRect_->yMax
-    ));
+    rect.stroke = style.stroke;
+    rect.fill = style.fill;
+    rect.rects.push_back(makeRect(selectionRect.xMin, selectionRect.yMin, selectionRect.xMax, selectionRect.yMax));
 
     layer.rectBatches.push_back(std::move(rect));
 
