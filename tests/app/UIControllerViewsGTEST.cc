@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <set>
+
 #include "IViewportController.h"
 #include "UIController.h"
+#include "render/ViewportStyle.h"
 
 using namespace app;
 
@@ -66,5 +69,36 @@ TEST(UIControllerViews, ObserverCanDetachWhileViewportStillExists) {
     ui.closeDocumentView(first);
     ui.clearDocumentViews();
     EXPECT_EQ(observer.closing, (std::vector<ViewId>{first, second}));
+    ui.setObserver(nullptr);
+}
+
+TEST(UIControllerViews, ChangingViewportStyleRedrawsEveryViewAndPreservesDocuments) {
+    struct Observer final : IUIObserver {
+        void viewAboutToClose(ViewId) override {}
+        void activeViewChanged(ViewId) override {}
+        void toolChanged(ViewId, ToolId) override {}
+        void redrawRequested(ViewId view) override { redrawn.insert(view); }
+        std::multiset<ViewId> redrawn;
+    } observer;
+
+    UIController ui;
+    const auto firstDocument = ui.createDocument("Plate");
+    const auto secondDocument = ui.createDocument("Shaft");
+    const auto first = ui.createDocumentView(firstDocument);
+    const auto second = ui.createDocumentView(firstDocument);
+    const auto third = ui.createDocumentView(secondDocument);
+    ui.setActiveDocumentView(first);
+    ui.setObserver(&observer);
+
+    auto style = ui.viewportStyle();
+    style.constructionColor = {0.125f, 0.5f, 0.875f, 1.0f};
+    ui.setViewportStyle(style);
+
+    EXPECT_FLOAT_EQ(ui.viewportStyle().constructionColor.r, style.constructionColor.r);
+    EXPECT_FLOAT_EQ(ui.viewportStyle().constructionColor.g, style.constructionColor.g);
+    EXPECT_FLOAT_EQ(ui.viewportStyle().constructionColor.b, style.constructionColor.b);
+    EXPECT_EQ(observer.redrawn, (std::multiset<ViewId>{first, second, third}));
+    EXPECT_FALSE(ui.documentModified(firstDocument));
+    EXPECT_FALSE(ui.documentModified(secondDocument));
     ui.setObserver(nullptr);
 }

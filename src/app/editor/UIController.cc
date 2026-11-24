@@ -11,6 +11,13 @@ using namespace app;
 UIController::UIController() = default;
 UIController::~UIController() { clearDocumentViews(); }
 
+void UIController::setViewportStyle(const ViewportStyle& style) {
+    viewportStyle_ = style;
+    for (const auto& [id, view] : views_) {
+        requestRedraw(id);
+    }
+}
+
 DocumentId UIController::createDocument(std::string name) {
     if (name.empty()) {
         return InvalidDocumentId;
@@ -43,7 +50,7 @@ ViewId UIController::createDocumentView(DocumentId id) {
         throw std::overflow_error("View IDs exhausted");
     }
     const ViewId view{nextViewId_++};
-    auto state = std::make_unique<DocumentView>(*document, id);
+    auto state = std::make_unique<DocumentView>(*document, id, viewportStyle_);
     state->editorSession_.setToolChangedCallback([this, view](ToolId tool) {
         if (observer_) {
             observer_->toolChanged(view, tool);

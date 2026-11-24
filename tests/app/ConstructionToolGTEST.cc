@@ -17,7 +17,8 @@ protected:
 
     core::Document document_;
     Sketch& sketch_ = document_.sketch();
-    app::DocumentView view_{document_, 0};
+    const app::ViewportStyle style_ = app::ViewportStyle::makeDefault();
+    app::DocumentView view_{document_, 0, style_};
 };
 
 TEST_F(ConstructionEditing, MixedSelectionConvertsWholeCurvesTogetherAndPreservesSelection) {
@@ -106,7 +107,7 @@ TEST_F(ConstructionEditing, RationalSplineCanBePickedAndDrawnAsConstruction) {
 
     render::RenderScene scene;
     AxisTexts axis(view_.camera2D_);
-    RenderSceneBuilder builder(document_, view_.overlay_, axis, view_.viewportStyle_, scene, view_.camera2D_, view_.constraintLayout_);
+    RenderSceneBuilder builder(document_, view_.overlay_, axis, style_, scene, view_.camera2D_, view_.constraintLayout_);
     builder.rebuild();
     const auto layer = std::ranges::find(scene.layers, "geometry", &render::DrawLayer::name);
     ASSERT_NE(layer, scene.layers.end());

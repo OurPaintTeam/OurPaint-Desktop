@@ -9,6 +9,7 @@
 #include "DocumentManager.h"
 #include "FileResult.h"
 #include "IUIObserver.h"
+#include "render/ViewportStyle.h"
 
 namespace app {
 using DocumentId = core::DocumentId;
@@ -30,6 +31,10 @@ public:
 
     // Optional, synchronous and non-owning. Unsubscribe before destroying the observer.
     void setObserver(IUIObserver* observer) { observer_ = observer; }
+
+    // Shared by all current and future views. Applying a style requests a redraw of every open view.
+    const ViewportStyle& viewportStyle() const noexcept { return viewportStyle_; }
+    void setViewportStyle(const ViewportStyle& style);
 
     DocumentId createDocument(std::string name);
     FileResult<DocumentId> openDocument(const std::filesystem::path& path);
@@ -80,6 +85,7 @@ private:
     core::DocumentManager manager_;
     std::vector<DocumentId> documents_;
     std::map<DocumentId, DocumentState> documentStates_;
+    ViewportStyle viewportStyle_ = ViewportStyle::makeDefault();
     std::map<ViewId, std::unique_ptr<DocumentView>> views_;
     ViewId active_ = InvalidViewId;
     uint64_t nextViewId_ = 1;

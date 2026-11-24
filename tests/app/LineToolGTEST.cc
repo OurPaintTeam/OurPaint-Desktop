@@ -21,7 +21,8 @@ protected:
 
     core::Document document_;
     Sketch& sketch_ = document_.sketch();
-    app::DocumentView view_{document_, 0};
+    const app::ViewportStyle style_ = app::ViewportStyle::makeDefault();
+    app::DocumentView view_{document_, 0, style_};
 };
 
 TEST_F(PolylineDrawing, RepeatedVertexKeepsChainAndShiftSegmentHasCoincidentStart) {
