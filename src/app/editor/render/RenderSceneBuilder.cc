@@ -1,12 +1,9 @@
 #include "RenderSceneBuilder.h"
 
-#include <../core/tinynurbs/include/tinynurbs/tinynurbs.h>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <glm/glm.hpp>
-#include <iostream>
 #include <iterator>
 #include <utility>
 #include <vector>
@@ -14,6 +11,7 @@
 #include "../../../render/RenderScene.h"
 #include "../render/constraints/ConstraintLayout.h"
 #include "AxisTexts.h"
+#include "NurbsPolyline.h"
 #include "OverlayModel.h"
 #include "ViewportStyle.h"
 #include "objects/Objects.h"
@@ -100,6 +98,55 @@ render::Arc makeArc(const sketch::Arc2& arc) {
                    std::atan2(arc.start.y - arc.center.y, arc.start.x - arc.center.x), std::atan2(arc.end.y - arc.center.y, arc.end.x - arc.center.x));
 }
 
+void appendNurbs(render::LineBatch& batch, const sketch::NurbsCurve2& curve) {
+    const auto points = app::sampleNurbsPolyline(curve);
+    for (size_t i = 1; i < points.size(); ++i) {
+        batch.lines.push_back(makeLine(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y));
+    }
+}
+
+struct CurveBatches {
+    render::LineBatch lines;
+    render::CircleBatch circles;
+    render::ArcBatch arcs;
+
+    CurveBatches(const render::StrokeStyle& lineStyle, const render::StrokeStyle& circleStyle) {
+        lines.style = lineStyle;
+        circles.stroke = circleStyle;
+        arcs.stroke = circleStyle;
+    }
+
+    void setColor(render::Color color) {
+        lines.style.color = color;
+        circles.stroke.color = color;
+        arcs.stroke.color = color;
+    }
+
+    void append(const sketch::SketchGeometry& geometry) {
+        if (const auto* line = std::get_if<sketch::Line2>(&geometry)) {
+            lines.lines.push_back(makeLine(line->start.x, line->start.y, line->end.x, line->end.y));
+        } else if (const auto* circle = std::get_if<sketch::Circle2>(&geometry)) {
+            circles.circles.push_back(makeCircle(circle->center.x, circle->center.y, circle->radius));
+        } else if (const auto* arc = std::get_if<sketch::Arc2>(&geometry)) {
+            arcs.arcs.push_back(makeArc(*arc));
+        } else if (const auto* nurbs = std::get_if<sketch::NurbsCurve2>(&geometry)) {
+            appendNurbs(lines, *nurbs);
+        }
+    }
+
+    void moveTo(render::DrawLayer& layer) {
+        if (!lines.lines.empty()) {
+            layer.lineBatches.push_back(std::move(lines));
+        }
+        if (!circles.circles.empty()) {
+            layer.circleBatches.push_back(std::move(circles));
+        }
+        if (!arcs.arcs.empty()) {
+            layer.arcBatches.push_back(std::move(arcs));
+        }
+    }
+};
+
 render::DrawLayer makeWorldLayer(std::string name, int order) {
     render::DrawLayer layer;
     layer.name = std::move(name);
@@ -164,7 +211,7 @@ void RenderSceneBuilder::rebuild() {
     buildConstraintsMarkers();
     buildSnapFeedback();
 
-    testBuild();
+    buildNurbsPreview();
 }
 
 void RenderSceneBuilder::buildGrid() {
@@ -188,41 +235,21 @@ void RenderSceneBuilder::buildGrid() {
 void RenderSceneBuilder::buildBaseObjects() {
     render::DrawLayer layer = makeWorldLayer("geometry", kGeometryOrder);
 
-    render::LineBatch lines;
-    lines.style = style_.baseLine;
-
-    render::CircleBatch circles;
-    circles.stroke = style_.baseCircle;
-
-    render::ArcBatch arcs;
-    arcs.stroke = style_.baseCircle;
     auto result = sketch_.entities();
     if (!result) {
         return;
     }
 
+    CurveBatches normal(style_.baseLine, style_.baseCircle);
+    CurveBatches construction(style_.baseLine, style_.baseCircle);
+    construction.setColor(style_.constructionColor);
     for (const auto& entity : result.value()) {
-        if (const auto* line = std::get_if<sketch::Line2>(&entity.geometry)) {
-            lines.lines.push_back(makeLine(line->start.x, line->start.y, line->end.x, line->end.y));
-        } else if (const auto* circle = std::get_if<sketch::Circle2>(&entity.geometry)) {
-            circles.circles.push_back(makeCircle(circle->center.x, circle->center.y, circle->radius));
-        } else if (const auto* arc = std::get_if<sketch::Arc2>(&entity.geometry)) {
-            arcs.arcs.push_back(makeArc(*arc));
-        }
+        auto& batch = entity.construction ? construction : normal;
+        batch.append(entity.geometry);
     }
 
-    if (!lines.lines.empty()) {
-        layer.lineBatches.push_back(std::move(lines));
-    }
-
-    if (!circles.circles.empty()) {
-        layer.circleBatches.push_back(std::move(circles));
-    }
-
-    if (!arcs.arcs.empty()) {
-        layer.arcBatches.push_back(std::move(arcs));
-    }
-
+    construction.moveTo(layer);
+    normal.moveTo(layer);
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }
 
@@ -297,52 +324,28 @@ void RenderSceneBuilder::buildBezierHandles() {
 void RenderSceneBuilder::buildOverlayObjects() {
     render::DrawLayer layer = makeWorldLayer("overlay", kOverlayOrder);
 
-    struct OverlayBatches {
-        render::LineBatch lines;
-        render::CircleBatch circles;
-        render::ArcBatch arcs;
-    };
     // Batch ordinary previews and constraint hover separately.
-    std::array<OverlayBatches, 2> batches;
-    for (auto& batch : batches) {
-        batch.lines.style = style_.overlayLine;
-        batch.circles.stroke = style_.overlayCircle;
-        batch.arcs.stroke = style_.overlayCircle;
-    }
-
-    batches[1].lines.style.color = style_.constraintHoverColor;
-    batches[1].circles.stroke.color = style_.constraintHoverColor;
-    batches[1].arcs.stroke.color = style_.constraintHoverColor;
+    CurveBatches previews(style_.overlayLine, style_.overlayCircle);
+    CurveBatches hovered(style_.overlayLine, style_.overlayCircle);
+    hovered.setColor(style_.constraintHoverColor);
 
     for (const auto& line : overlay_.lines_) {
-        auto& batch = batches[line.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        auto& batch = line.type == OverlayModel::OverlayType::ConstraintHoverToObject ? hovered : previews;
         batch.lines.lines.push_back(makeLine(line.x1, line.y1, line.x2, line.y2));
     }
 
     for (const auto& circle : overlay_.circles_) {
-        auto& batch = batches[circle.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        auto& batch = circle.type == OverlayModel::OverlayType::ConstraintHoverToObject ? hovered : previews;
         batch.circles.circles.push_back(makeCircle(circle.cx, circle.cy, circle.r));
     }
 
     for (const auto& arc : overlay_.arcs_) {
-        auto& batch = batches[arc.type == OverlayModel::OverlayType::ConstraintHoverToObject ? 1 : 0];
+        auto& batch = arc.type == OverlayModel::OverlayType::ConstraintHoverToObject ? hovered : previews;
         batch.arcs.arcs.push_back(makeArc(arc.cx, arc.cy, arc.r, arc.startAngle, arc.endAngle));
     }
 
-    for (auto& batch : batches) {
-        if (!batch.lines.lines.empty()) {
-            layer.lineBatches.push_back(std::move(batch.lines));
-        }
-
-        if (!batch.circles.circles.empty()) {
-            layer.circleBatches.push_back(std::move(batch.circles));
-        }
-
-        if (!batch.arcs.arcs.empty()) {
-            layer.arcBatches.push_back(std::move(batch.arcs));
-        }
-    }
-
+    previews.moveTo(layer);
+    hovered.moveTo(layer);
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }
 
@@ -371,15 +374,7 @@ void RenderSceneBuilder::buildOverlayMarkers() {
 
 void RenderSceneBuilder::buildSelectedObjects() {
     render::DrawLayer layer = makeWorldLayer("selected", kSelectedOrder);
-
-    render::LineBatch lines;
-    lines.style = style_.selectedLine;
-
-    render::CircleBatch circles;
-    circles.stroke = style_.selectedCircle;
-
-    render::ArcBatch arcs;
-    arcs.stroke = style_.selectedCircle;
+    CurveBatches selected(style_.selectedLine, style_.selectedCircle);
 
     auto refs = overlay_.selection_.model.geometryItems();
     for (const auto& ref : overlay_.constraintRefs_) {
@@ -396,29 +391,10 @@ void RenderSceneBuilder::buildSelectedObjects() {
             continue;
         }
 
-        const auto& entity = result.value();
-
-        if (const auto* line = std::get_if<sketch::Line2>(&entity.geometry)) {
-            lines.lines.push_back(makeLine(line->start.x, line->start.y, line->end.x, line->end.y));
-        } else if (const auto* circle = std::get_if<sketch::Circle2>(&entity.geometry)) {
-            circles.circles.push_back(makeCircle(circle->center.x, circle->center.y, circle->radius));
-        } else if (const auto* arc = std::get_if<sketch::Arc2>(&entity.geometry)) {
-            arcs.arcs.push_back(makeArc(*arc));
-        }
+        selected.append(result.value().geometry);
     }
 
-    if (!lines.lines.empty()) {
-        layer.lineBatches.push_back(std::move(lines));
-    }
-
-    if (!circles.circles.empty()) {
-        layer.circleBatches.push_back(std::move(circles));
-    }
-
-    if (!arcs.arcs.empty()) {
-        layer.arcBatches.push_back(std::move(arcs));
-    }
-
+    selected.moveTo(layer);
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }
 
@@ -598,88 +574,39 @@ void RenderSceneBuilder::buildSnapFeedback() {
     }
 }
 
-void RenderSceneBuilder::testBuild() {
-    auto entities = sketch_.entities(sketch::EntityKind::Nurbs);
-    if (!entities) {
-        std::cerr << "Cannot read NURBS curves: " << entities.error().message << '\n';
-        return;
-    }
-
-    render::DrawLayer layer = makeWorldLayer("nurbs_curves", kGeometryOrder);
+void RenderSceneBuilder::buildNurbsPreview() {
+    render::DrawLayer layer = makeWorldLayer("nurbs_preview", kGeometryOrder);
     render::LineBatch curves;
-    render::MarkerBatch controlMarkers;
     curves.style = style_.baseLine;
+    render::MarkerBatch controlMarkers;
     controlMarkers.style = style_.baseMarker;
 
-
-    for (const auto& ent : entities.value()) {
-        const auto& curve = std::get<sketch::NurbsCurve2>(ent.geometry);
-        tinynurbs::RationalCurve<double> crv;
-        crv.degree = static_cast<unsigned>(curve.degree);
-        crv.knots = curve.knots;
-        crv.weights = curve.weights;
-        for (const auto& p : curve.controlPoints) {
-            crv.control_points.push_back({p.position.x, p.position.y, 0.0});
-            controlMarkers.markers.push_back(render::Marker(p.position.x, p.position.y));
-        }
-        if (!tinynurbs::curveIsValid(crv)) {
-            std::cerr << "Invalid NURBS curve: " << ent.id.get() << '\n';
+    constexpr int degree = 3;
+    for (const auto& preview : overlay_.nurbs_) {
+        if (preview.points.size() <= degree) {
             continue;
         }
-
-        const size_t numSegments = 128 * crv.control_points.size();
-        const double uMin = crv.knots[crv.degree];
-        const double uMax = crv.knots[crv.control_points.size()];
-        auto previous = tinynurbs::curvePoint(crv, uMin);
-        for (size_t i = 1; i <= numSegments; ++i) {
-            const double t = std::lerp(uMin, uMax, static_cast<double>(i) / static_cast<double>(numSegments));
-            const auto current = tinynurbs::curvePoint(crv, t);
-            curves.lines.push_back(makeLine(previous.x, previous.y, current.x, current.y));
-            previous = current;
-        }
-    }
-
-    int degree = 3;
-    for (const auto& nc : overlay_.nurbs_) {
-        tinynurbs::RationalCurve<double> crv;
-        crv.degree = static_cast<unsigned>(degree);
-
-        crv.knots.assign(degree + 1, 0.0);
-        const size_t spans = nc.points.size() - degree;
+        sketch::NurbsCurve2 curve;
+        curve.degree = degree;
+        curve.weights.assign(preview.points.size(), 1.0);
+        curve.knots.assign(degree + 1, 0.0);
+        const size_t spans = preview.points.size() - degree;
         for (size_t i = 1; i < spans; ++i) {
-            crv.knots.push_back(static_cast<double>(i) / static_cast<double>(spans));
+            curve.knots.push_back(static_cast<double>(i) / static_cast<double>(spans));
         }
-        crv.knots.insert(crv.knots.end(), degree + 1, 1.0);
-
-        crv.weights.assign(nc.points.size(), 1.0);
-        for (const auto& p : nc.points) {
-            crv.control_points.push_back({p.x, p.y, 0.0});
-            controlMarkers.markers.push_back(render::Marker(p.x, p.y));
+        curve.knots.insert(curve.knots.end(), degree + 1, 1.0);
+        for (const auto& p : preview.points) {
+            curve.controlPoints.push_back({{p.x, p.y}});
+            controlMarkers.markers.push_back(makeMarker(p.x, p.y));
         }
-        if (!tinynurbs::curveIsValid(crv)) {
-            std::cerr << "Invalid NURBS curve: " << '\n';
-            continue;
-        }
-
-        const size_t numSegments = 128 * crv.control_points.size();
-        const double uMin = crv.knots[crv.degree];
-        const double uMax = crv.knots[crv.control_points.size()];
-        auto previous = tinynurbs::curvePoint(crv, uMin);
-        for (size_t i = 1; i <= numSegments; ++i) {
-            const double t = std::lerp(uMin, uMax, static_cast<double>(i) / static_cast<double>(numSegments));
-            const auto current = tinynurbs::curvePoint(crv, t);
-            curves.lines.push_back(makeLine(previous.x, previous.y, current.x, current.y));
-            previous = current;
-        }
+        appendNurbs(curves, curve);
     }
 
     if (!curves.lines.empty()) {
         layer.lineBatches.push_back(std::move(curves));
     }
-
     if (!controlMarkers.markers.empty()) {
         layer.markerBatches.push_back(std::move(controlMarkers));
     }
-
     pushLayerIfNotEmpty(renderScene_, std::move(layer));
 }

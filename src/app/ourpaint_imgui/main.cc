@@ -131,6 +131,8 @@ int main(int argc, char** argv) {
         GLuint icon;
     };
 
+    const Tool construction{"Normal / Construction (X)", ToolId::Construction, loadIcon(icons::icons::construction)};
+
     const Tool primitives[] = {
         {"Point"  , ToolId::Point          , loadIcon(icons::primitives::point)          },
         {"Line"   , ToolId::Line           , loadIcon(icons::primitives::line)           },
@@ -241,7 +243,6 @@ int main(int argc, char** argv) {
                 openParameterPopup = true;
             } else {
                 controller.selectTool(view_id, tool);
-                draw(viewport_controller);
             }
         };
 
@@ -281,11 +282,16 @@ int main(int argc, char** argv) {
                                                        ImGuiWindowFlags_NoScrollWithMouse;
 
             if (ImGui::Begin("Viewport", nullptr, viewportFlags)) {
-                // Escape cancels the CAD tool while either the toolbar or canvas has focus.
+                // CAD shortcuts also work when a toolbar button has focus.
+                const bool canUseConstruction = controller.canToggleConstruction(view_id);
                 if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-                    !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup) && !io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
-                    const auto time = static_cast<uint64_t>(ImGui::GetTime() * 1000.0);
-                    viewport_controller->onKey({input::KeyCode::Escape, input::KeyAction::Press, modifiers(io), 0, false, time});
+                    !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup) && !io.WantTextInput) {
+                    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+                        const auto time = static_cast<uint64_t>(ImGui::GetTime() * 1000.0);
+                        viewport_controller->onKey({input::KeyCode::Escape, input::KeyAction::Press, modifiers(io), 0, false, time});
+                    } else if (canUseConstruction && io.KeyMods == ImGuiMod_None && ImGui::IsKeyPressed(ImGuiKey_X, false)) {
+                        controller.selectTool(view_id, ToolId::Construction);
+                    }
                 }
 
                 ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // Normal
@@ -305,6 +311,17 @@ int main(int argc, char** argv) {
                         toolButton(e.label, e.id, e.icon);
                         ImGui::SameLine(0,0);
                     }
+                    ImGui::EndGroup();
+
+                    ImGui::SameLine(0.0f, 10.0f);
+                    ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+                    ImGui::SameLine(0.0f, 10.0f);
+
+                    // Group editing
+                    ImGui::BeginGroup();
+                    ImGui::BeginDisabled(!canUseConstruction);
+                    toolButton(construction.label, construction.id, construction.icon);
+                    ImGui::EndDisabled();
                     ImGui::EndGroup();
 
                     ImGui::SameLine(0.0f, 10.0f);

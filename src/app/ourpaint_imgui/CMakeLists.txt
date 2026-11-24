@@ -21,6 +21,7 @@ set(icon_files
     icons/constraints/Midpoint.svg
     icons/constraints/Symmetric.svg
     icons/constraints/Curvature.svg
+    icons/construction.svg
 )
 
 set(icon_header "${CMAKE_CURRENT_BINARY_DIR}/ToolbarIcons.h")

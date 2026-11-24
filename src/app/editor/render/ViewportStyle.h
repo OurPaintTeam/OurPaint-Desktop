@@ -24,6 +24,7 @@ struct ViewportStyle {
     StrokeStyle overlayLine;
     StrokeStyle specialLine;
 
+    Color constructionColor;
     Color constraintHoverColor;
     ConstraintMarkerStyle constraintMarker;
     SnapFeedbackStyle snapFeedback;

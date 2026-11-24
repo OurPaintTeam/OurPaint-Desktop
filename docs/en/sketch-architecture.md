@@ -77,8 +77,9 @@ produces BackendFailure before overflow.
 
 `SketchEntity` contains `id`, owning `geometry`, and `construction`. Construction
 is consumer metadata, not a different equation or exclusion from queries, counts,
-or solving. Creation helpers default it to false. Geometry updates preserve it
-unless an explicit optional value is supplied.
+or solving. Standalone points serve as references and always store `construction = false`,
+including when restoring older snapshots. Curves default to false and preserve
+their flag across geometry updates unless the caller supplies a new value.
 
 `GeometryRef` identifies an entity, `SubElement`, and a zero-based `index`.
 The index selects a NURBS control point for `Control`; all other sub-elements

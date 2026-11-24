@@ -131,6 +131,11 @@ void UIController::selectTool(ViewId view, ToolId tool, std::optional<double> va
     }
 }
 
+bool UIController::canToggleConstruction(ViewId view) const {
+    const auto it = views_.find(view);
+    return it != views_.end() && it->second->editorSession_.canToggleConstruction();
+}
+
 std::optional<ToolId> UIController::activeToolId(ViewId view) const {
     const auto it = views_.find(view);
     return it == views_.end() ? std::nullopt : std::optional{it->second->editorSession_.activeToolId()};

@@ -12,6 +12,7 @@
 #include "tool/ArcTool.h"
 #include "tool/CircleTool.h"
 #include "tool/ConstraintTool.h"
+#include "tool/ConstructionTool.h"
 #include "tool/CursorTool.h"
 #include "tool/IInteractionTool.h"
 #include "tool/LineTool.h"
@@ -30,6 +31,7 @@ public:
     ~SketchEditor();
 
     void selectTool(ToolId id, std::optional<double> value = std::nullopt);
+    bool canToggleConstruction() const { return constructionTool_.canToggle(); }
 
     IInteractionTool* activeTool();
     ToolId activeToolId() const noexcept;
@@ -58,6 +60,7 @@ private:
     NurbsTool bezierTool_;
 
     ConstraintTool constraintTool_;
+    ConstructionTool constructionTool_;
 };
 
 }

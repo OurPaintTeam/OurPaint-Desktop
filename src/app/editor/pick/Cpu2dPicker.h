@@ -67,6 +67,7 @@ public:
 
 private:
     std::optional<GeometryPickResult> pickAt(double worldX, double worldY) const;
+    std::optional<GeometryPickResult> pickCurveAt(double worldX, double worldY) const;
     std::optional<GeometryPickResult> pickPointAt(double worldX, double worldY) const;
     std::optional<GeometryPickResult> pickLineAt(double worldX, double worldY) const;
     std::optional<GeometryPickResult> pickCircleAt(double worldX, double worldY) const;

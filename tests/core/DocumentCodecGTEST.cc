@@ -552,7 +552,7 @@ TEST(DocumentCodec, RoundTripsAllGeometryKindsWithIdsConstructionAndConsumedIds)
         const auto entity = restored.sketch().entity(ids[i]);
         ASSERT_TRUE(entity);
         EXPECT_EQ(entity.value().id, ids[i]);
-        EXPECT_EQ(entity.value().construction, i % 2 == 0);
+        EXPECT_EQ(entity.value().construction, sketch::entityKind(geometry[i]) != sketch::EntityKind::Point && i % 2 == 0);
         expectGeometry(entity.value().geometry, geometry[i]);
         const auto unchanged = source.sketch().entity(ids[i]);
         ASSERT_TRUE(unchanged);
@@ -598,7 +598,7 @@ TEST(DocumentCodec, LoadsSparseLargeIdsWithoutFloatingPointConversionOrReallocat
     const auto line = loadedSketch.entity(sketch::EntityId(first));
     ASSERT_TRUE(point);
     ASSERT_TRUE(line);
-    EXPECT_TRUE(point.value().construction);
+    EXPECT_FALSE(point.value().construction);
     EXPECT_FALSE(line.value().construction);
     expectGeometry(point.value().geometry, sketch::Point2{{-3, 2}});
     expectGeometry(line.value().geometry, sketch::Line2{{0, 0}, {3, 4}});

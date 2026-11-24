@@ -162,8 +162,10 @@ class Sketch::Impl {
     struct EntityRecord {
         du::ID handle;
         EntityKind kind;
-        bool construction;
-        std::optional<du::ID> arcRequirement;
+        bool construction = false;
+        std::optional<du::ID> arcRequirement = std::nullopt;
+
+        void setConstruction(bool value) { construction = kind != EntityKind::Point && value; }
     };
     struct ConstraintRecord {
         ConstraintDefinition definition;
@@ -178,7 +180,8 @@ public:
         }
         return checkedStatus([&] {
             const auto handle = manager_.addFigure(describe(entity.geometry));
-            EntityRecord record{handle, entityKind(entity.geometry), entity.construction, std::nullopt};
+            EntityRecord record{handle, entityKind(entity.geometry)};
+            record.setConstruction(entity.construction);
             try {
                 // DCM represents an arc as three unconstrained points. The
                 // Sketch installs its intrinsic circularity equation privately.
@@ -225,7 +228,7 @@ public:
             // wins within unfixed groups (Start, End, Center within each curve).
             manager_.updateFigures(updates);
             for (const auto& entity : entities) {
-                entities_.at(entity.id).construction = entity.construction;
+                entities_.at(entity.id).setConstruction(entity.construction);
             }
         });
     }
@@ -235,7 +238,7 @@ public:
         if (it == entities_.end()) {
             return Status::failure(ErrorCode::NotFound, "Entity was not found");
         }
-        it->second.construction = construction;
+        it->second.setConstruction(construction);
         return Status::success();
     }
 

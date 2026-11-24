@@ -56,6 +56,7 @@ public:
     DocumentId documentOf(ViewId view) const;
     std::vector<ViewId> documentViews(DocumentId document) const;
     void selectTool(ViewId view, ToolId tool, std::optional<double> value = {});
+    bool canToggleConstruction(ViewId view) const;
     std::optional<ToolId> activeToolId(ViewId view) const;
     void endInteractions();
 

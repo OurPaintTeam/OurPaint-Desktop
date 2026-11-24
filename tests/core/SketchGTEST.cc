@@ -108,7 +108,7 @@ TEST_F(SketchBehavior, CreatesQueriesAndRemovesAllBasicEntities) {
         auto queried = sketch_->entity(added.value());
         ASSERT_TRUE(queried);
         EXPECT_EQ(queried.value().id, added.value());
-        EXPECT_TRUE(queried.value().construction);
+        EXPECT_EQ(queried.value().construction, entityKind(item) != EntityKind::Point);
         expectGeometry(queried.value().geometry, item);
     }
     auto all = sketch_->entities();
@@ -292,7 +292,7 @@ TEST_F(SketchBehavior, UpdatesBasicGeometryWithoutChangingIdentityOrDetachedQuer
         auto updated = sketch_->entity(id);
         ASSERT_TRUE(updated);
         EXPECT_EQ(updated.value().id, id);
-        EXPECT_TRUE(updated.value().construction);
+        EXPECT_EQ(updated.value().construction, entityKind(after[i]) != EntityKind::Point);
         expectGeometry(updated.value().geometry, after[i]);
         expectGeometry(detached.value().geometry, before[i]);
         EXPECT_FALSE(detached.value().construction);
@@ -711,7 +711,7 @@ TEST_F(SketchBehavior, FilteredAndNamedQueriesReturnOrderedDetachedPublicEntitie
         EXPECT_EQ(sketch_->entityCount(kind).value(), 0U);
     }
     const std::array<EntityCreation, 5> input{{{Line2{{0, 0}, {2, 0}}, true},
-                                               {Point2{{1, 2}}, true},
+                                               {Point2{{1, 2}}, false},
                                                {Circle2{{4, 5}, 2}, false},
                                                {Arc2{{0, 0}, {3, 0}, {0, 3}}, true},
                                                {Line2{{10, 0}, {12, 0}}, false}}};
@@ -860,9 +860,27 @@ TEST_F(SketchBehavior, CoincidentPointElementsRemainDistinctReferences) {
     }
 }
 
+TEST_F(SketchBehavior, StandalonePointsAlwaysStoreConstructionFalse) {
+    const auto point = sketch_->addEntity(Point2{{1, 2}}, true);
+    ASSERT_TRUE(point);
+    const auto id = point.value();
+    EXPECT_FALSE(sketch_->entity(id).value().construction);
+    ASSERT_TRUE(sketch_->setConstruction(id, true));
+    EXPECT_FALSE(sketch_->entity(id).value().construction);
+    ASSERT_TRUE(sketch_->updateEntity(id, Point2{{3, 4}}, true));
+    auto snapshot = sketch_->snapshot();
+    ASSERT_TRUE(snapshot);
+    ASSERT_EQ(snapshot.value().entities.size(), 1U);
+    EXPECT_FALSE(snapshot.value().entities.front().construction);
+
+    snapshot.value().entities.front().construction = true;
+    ASSERT_TRUE(sketch_->replaceState(snapshot.value()));
+    EXPECT_FALSE(sketch_->entity(id).value().construction);
+}
+
 TEST_F(SketchBehavior, MixedBatchUpdatesPreserveConstructionUnlessExplicitlyChanged) {
     const std::array<EntityCreation, 4> input{
-        {{Point2{{1, 2}}, true}, {Line2{{0, 0}, {2, 0}}, true}, {Circle2{{4, 5}, 2}, false}, {Arc2{{0, 0}, {3, 0}, {0, 3}}, true}}};
+        {{Point2{{1, 2}}, false}, {Line2{{0, 0}, {2, 0}}, true}, {Circle2{{4, 5}, 2}, false}, {Arc2{{0, 0}, {3, 0}, {0, 3}}, true}}};
     auto added = sketch_->addEntities(input);
     ASSERT_TRUE(added);
     const auto& ids = added.value();
@@ -877,17 +895,17 @@ TEST_F(SketchBehavior, MixedBatchUpdatesPreserveConstructionUnlessExplicitlyChan
         expectGeometry(queried.value().geometry, updates[i].geometry);
         EXPECT_EQ(queried.value().construction, updates[i].construction.value_or(input[i].construction));
     }
-    ASSERT_TRUE(sketch_->updateEntity(ids[0], Point2{{7, 8}}));
-    EXPECT_TRUE(sketch_->entity(ids[0]).value().construction);
-    ASSERT_TRUE(sketch_->updateEntity(ids[0], Point2{{9, 10}}, false));
-    EXPECT_FALSE(sketch_->entity(ids[0]).value().construction);
-    // Even an unsolved fixed point must not be projected by a metadata edit.
-    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {{ids[0], SubElement::Whole}}, std::nullopt, Vec2{0, 0}}));
-    auto before = sketch_->entity(ids[0]);
+    ASSERT_TRUE(sketch_->updateEntity(ids[2], Circle2{{7, 8}, 3}));
+    EXPECT_TRUE(sketch_->entity(ids[2]).value().construction);
+    ASSERT_TRUE(sketch_->updateEntity(ids[2], Circle2{{9, 10}, 3}, false));
+    EXPECT_FALSE(sketch_->entity(ids[2]).value().construction);
+    // A metadata edit preserves the position of a constrained center.
+    ASSERT_TRUE(sketch_->addConstraint({ConstraintType::Fix, {{ids[2], SubElement::Center}}, std::nullopt, Vec2{9, 10}}));
+    auto before = sketch_->entity(ids[2]);
     ASSERT_TRUE(before);
-    ASSERT_TRUE(sketch_->setConstruction(ids[0], true));
-    expectGeometry(sketch_->entity(ids[0]).value().geometry, before.value().geometry);
-    EXPECT_TRUE(sketch_->entity(ids[0]).value().construction);
+    ASSERT_TRUE(sketch_->setConstruction(ids[2], true));
+    expectGeometry(sketch_->entity(ids[2]).value().geometry, before.value().geometry);
+    EXPECT_TRUE(sketch_->entity(ids[2]).value().construction);
     EXPECT_EQ(sketch_->constraintCount(), 1U);
     expectError(sketch_->setConstruction(EntityId(), true), ErrorCode::InvalidArgument);
     expectError(sketch_->setConstruction(EntityId(9999), true), ErrorCode::NotFound);
@@ -917,11 +935,11 @@ TEST_F(SketchBehavior, MoveRejectsInvalidOffsetsAndTargetsWithoutChangingGeometr
     auto current = sketch_->entity(id);
     ASSERT_TRUE(current);
     expectGeometry(current.value().geometry, Point2{{1, 2}});
-    EXPECT_TRUE(current.value().construction);
+    EXPECT_FALSE(current.value().construction);
 }
 
 TEST_F(SketchBehavior, MovePrevalidatesResultingGeometryBeforeMutatingAnyTarget) {
-    const std::array<EntityCreation, 2> input{{{Point2{{1, 2}}, true}, {Line2{{0, 0}, {2, 0}}, false}}};
+    const std::array<EntityCreation, 2> input{{{Point2{{1, 2}}, false}, {Line2{{0, 0}, {2, 0}}, true}}};
     auto added = sketch_->addEntities(input);
     ASSERT_TRUE(added);
     // This finite offset collapses the line endpoints through floating-point rounding.
@@ -953,7 +971,7 @@ TEST_F(SketchBehavior, GeometryBatchesPrevalidateAllInputsAndRejectDuplicateTarg
     for (size_t i = 0; i < invalidUpdates.size(); ++i) {
         expectError(sketch_->updateEntities(invalidUpdates[i]), codes[i]);
         expectGeometry(sketch_->entity(id).value().geometry, Point2{{1, 2}});
-        EXPECT_TRUE(sketch_->entity(id).value().construction);
+        EXPECT_FALSE(sketch_->entity(id).value().construction);
     }
     const std::array missing{id, EntityId(9999)};
     const std::array duplicate{id, id};

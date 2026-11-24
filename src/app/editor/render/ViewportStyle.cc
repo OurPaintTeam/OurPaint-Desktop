@@ -20,6 +20,8 @@ ViewportStyle ViewportStyle::makeDefault() {
         style.overlayMarker = style.baseMarker;
     }
 
+    style.constructionColor = style.baseMarker.color;
+
     {
         // base line
         style.baseLine.color = {0.0f, 0.0f, 0.0f, 1.0f};
