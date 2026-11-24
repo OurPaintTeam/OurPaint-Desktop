@@ -110,8 +110,8 @@ void CursorTool::onMouseMove(const input::MouseMoveEvent& e) {
                     dragAttempted_ = true;
                     const auto dragged = moveSelection(offset);
                     if (!dragged) {
-                        dragStopped_ = true;
-                        return;
+                        // dragStopped_ = true;
+                        // return;
                     }
                     if (dragged.value().solveStatus != sketch::SolveStatus::Converged) {
                         //dragStopped_ = true;

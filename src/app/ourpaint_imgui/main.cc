@@ -3,8 +3,11 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <memory>
 #include <numbers>
 #include <optional>
+#include <string>
+#include <vector>
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -24,6 +27,7 @@
 #include "Camera2D.h"
 #include "IViewportController.h"
 #include "OpenGLRenderTarget.h"
+#include "ToolbarIcons.h"
 #include "UIController.h"
 #include "ViewportController.h"
 #include "imgui_internal.h"
@@ -38,33 +42,30 @@ constexpr float kIconLogical = 32.0f;
 
 render::OpenGLRenderTarget target_;
 
-GLuint LoadTextureFromSVG(const char* filename, int* out_width = nullptr, int* out_height = nullptr, float scale = 2.0f) {
-    NSVGimage* image = nsvgParseFromFile(filename, "px", 96.0f);
+GLuint LoadTextureFromSVG(std::string svg, float scale) {
+    // NanoSVG parses in place, so each call owns a writable copy of the SVG.
+    const std::unique_ptr<NSVGimage, decltype(&nsvgDelete)> image(nsvgParse(svg.data(), "px", 96.0f), nsvgDelete);
     if (!image) {
         return 0;
     }
 
-    const int w = static_cast<int>(image->width  * scale);
+    const int w = static_cast<int>(image->width * scale);
     const int h = static_cast<int>(image->height * scale);
     if (w <= 0 || h <= 0) {
-        nsvgDelete(image);
         return 0;
     }
 
-    NSVGrasterizer* rast = nsvgCreateRasterizer();
+    const std::unique_ptr<NSVGrasterizer, decltype(&nsvgDeleteRasterizer)> rast(nsvgCreateRasterizer(), nsvgDeleteRasterizer);
     if (!rast) {
-        nsvgDelete(image);
         return 0;
     }
 
     std::vector<unsigned char> buffer(static_cast<size_t>(w) * static_cast<size_t>(h) * 4);
-    nsvgRasterize(rast, image, 0, 0, scale, buffer.data(), w, h, w * 4);
+    nsvgRasterize(rast.get(), image.get(), 0, 0, scale, buffer.data(), w, h, w * 4);
 
     GLuint texture = 0;
     glGenTextures(1, &texture);
     if (texture == 0) {
-        nsvgDeleteRasterizer(rast);
-        nsvgDelete(image);
         return 0;
     }
 
@@ -74,16 +75,6 @@ GLuint LoadTextureFromSVG(const char* filename, int* out_width = nullptr, int* o
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.data());
-
-    nsvgDeleteRasterizer(rast);
-    nsvgDelete(image);
-
-    if (out_width) {
-        *out_width  = w;
-    }
-    if (out_height) {
-        *out_height = h;
-    }
     return texture;
 }
 
@@ -132,41 +123,40 @@ int main(int argc, char** argv) {
 
     // Setup icons and tools
     const float bakeScale = 2.0f * main_scale; // supersample * DPI
-    const auto loadIcon = [&](const char* filename) {
-        int dummyW{}, dummyH{};
-        return LoadTextureFromSVG(filename, &dummyH, &dummyW, bakeScale);
-    };
+    const auto loadIcon = [bakeScale](const char* svg) { return LoadTextureFromSVG(svg, bakeScale); };
 
     struct Tool {
         const char* label;
         ToolId id;
         GLuint icon;
     };
+
     const Tool primitives[] = {
-        {"Point"  ,ToolId::Point          ,loadIcon("icons/primitives/point.svg"          )},
-        {"Line"   ,ToolId::Line           ,loadIcon("icons/primitives/line.svg"           )},
-        {"Circle" ,ToolId::CircleByRadius ,loadIcon("icons/primitives/circleByRadius.svg" )},
-        {"Arc"    ,ToolId::ArcByRadius    ,loadIcon("icons/primitives/arcByRadius.svg"    )},
-        {"Nurbs"  ,ToolId::Nurbs          ,loadIcon("icons/primitives/beze.svg"           )},
+        {"Point"  , ToolId::Point          , loadIcon(icons::primitives::point)          },
+        {"Line"   , ToolId::Line           , loadIcon(icons::primitives::line)           },
+        {"Circle" , ToolId::CircleByRadius , loadIcon(icons::primitives::circleByRadius) },
+        {"Arc"    , ToolId::ArcByRadius    , loadIcon(icons::primitives::arcByRadius)    },
+        {"Nurbs"  , ToolId::Nurbs          , loadIcon(icons::primitives::beze)           },
     };
+
     const Tool constraints[] = {
-        {"Distance"      ,ToolId::Distance           ,loadIcon("icons/constraints/Distance.svg"      )},
-        {"VDistance"     ,ToolId::VerticalDistance   ,loadIcon("icons/constraints/VDistance.svg"     )},
-        {"HDistance"     ,ToolId::HorizontalDistance ,loadIcon("icons/constraints/HDistance.svg"     )},
-        {"Angle"         ,ToolId::Angle              ,loadIcon("icons/constraints/Angle.svg"         )},
-        {"Coincident"    ,ToolId::Coincident         ,loadIcon("icons/constraints/Coincident.svg"    )},
-        {"Horizontal"    ,ToolId::Horizontal         ,loadIcon("icons/constraints/Horizontal.svg"    )},
-        {"Vertical"      ,ToolId::Vertical           ,loadIcon("icons/constraints/Vertical.svg"      )},
-        {"Parallel"      ,ToolId::Parallel           ,loadIcon("icons/constraints/Parallel.svg"      )},
-        {"Perpendicular" ,ToolId::Perpendicular      ,loadIcon("icons/constraints/Perpendicular.svg" )},
-        {"Tangent"       ,ToolId::Tangent            ,loadIcon("icons/constraints/Tangent.svg"       )},
-        {"Equal"         ,ToolId::Equal              ,loadIcon("icons/constraints/Equal.svg"         )},
-        {"FixUnfix"      ,ToolId::Fix                ,loadIcon("icons/constraints/FixUnfix.svg"      )},
-        {"Concentric"    ,ToolId::Concentric         ,loadIcon("icons/constraints/Concentric.svg"    )},
-        {"Collinear"     ,ToolId::Collinear          ,loadIcon("icons/constraints/Collinear.svg"     )},
-        {"Midpoint"      ,ToolId::Midpoint           ,loadIcon("icons/constraints/Midpoint.svg"      )},
-        {"Symmetric"     ,ToolId::Symmetric          ,loadIcon("icons/constraints/Symmetric.svg"     )},
-        {"Curvature"     ,ToolId::Curvature          ,loadIcon("icons/constraints/Curvature.svg"     )},
+        {"Distance"      , ToolId::Distance           , loadIcon(icons::constraints::Distance)      },
+        {"VDistance"     , ToolId::VerticalDistance   , loadIcon(icons::constraints::VDistance)     },
+        {"HDistance"     , ToolId::HorizontalDistance , loadIcon(icons::constraints::HDistance)     },
+        {"Angle"         , ToolId::Angle              , loadIcon(icons::constraints::Angle)         },
+        {"Coincident"    , ToolId::Coincident         , loadIcon(icons::constraints::Coincident)    },
+        {"Horizontal"    , ToolId::Horizontal         , loadIcon(icons::constraints::Horizontal)    },
+        {"Vertical"      , ToolId::Vertical           , loadIcon(icons::constraints::Vertical)      },
+        {"Parallel"      , ToolId::Parallel           , loadIcon(icons::constraints::Parallel)      },
+        {"Perpendicular" , ToolId::Perpendicular      , loadIcon(icons::constraints::Perpendicular) },
+        {"Tangent"       , ToolId::Tangent            , loadIcon(icons::constraints::Tangent)       },
+        {"Equal"         , ToolId::Equal              , loadIcon(icons::constraints::Equal)         },
+        {"FixUnfix"      , ToolId::Fix                , loadIcon(icons::constraints::FixUnfix)      },
+        {"Concentric"    , ToolId::Concentric         , loadIcon(icons::constraints::Concentric)    },
+        {"Collinear"     , ToolId::Collinear          , loadIcon(icons::constraints::Collinear)     },
+        {"Midpoint"      , ToolId::Midpoint           , loadIcon(icons::constraints::Midpoint)      },
+        {"Symmetric"     , ToolId::Symmetric          , loadIcon(icons::constraints::Symmetric)     },
+        {"Curvature"     , ToolId::Curvature          , loadIcon(icons::constraints::Curvature)     },
     };
 
     // Setup Dear ImGui context
