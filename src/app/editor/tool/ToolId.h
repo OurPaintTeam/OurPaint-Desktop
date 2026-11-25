@@ -42,7 +42,10 @@ enum class ToolId {
     Midpoint,
     Collinear,
     Symmetric,
-    Curvature
+    Curvature,
+
+    // Editing
+    Construction
 };
 
 #endif // ! OURPAINT_APPLICATION_TOOL_ID_H_

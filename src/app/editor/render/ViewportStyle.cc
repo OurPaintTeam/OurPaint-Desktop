@@ -20,6 +20,8 @@ ViewportStyle ViewportStyle::makeDefault() {
         style.overlayMarker = style.baseMarker;
     }
 
+    style.constructionColor = style.baseMarker.color;
+
     {
         // base line
         style.baseLine.color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -81,11 +83,13 @@ ViewportStyle ViewportStyle::makeDefault() {
     }
 
     {
-        // selection rect
-        style.selectionRectStroke.color = {0.2f, 0.5f, 1.0f, 0.9f};
-        style.selectionRectStroke.widthPx = 2.0f;
+        style.windowSelectionRect.stroke.color = {0.2f, 0.5f, 1.0f, 0.9f};
+        style.windowSelectionRect.stroke.widthPx = 2.0f;
+        style.windowSelectionRect.fill = {0.2f, 0.5f, 1.0f, 0.12f};
 
-        style.selectionRectFill = {0.2f, 0.5f, 1.0f, 0.12f};
+        style.crossingSelectionRect.stroke.color = {0.1f, 0.65f, 0.3f, 0.9f};
+        style.crossingSelectionRect.stroke.widthPx = 2.0f;
+        style.crossingSelectionRect.fill = {0.1f, 0.65f, 0.3f, 0.12f};
     }
 
     {

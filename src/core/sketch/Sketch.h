@@ -43,7 +43,7 @@ public:
     // Uses updateEntities validation/projection; no numerical solve or group dragging.
     Status moveEntities(std::span<const EntityId> ids, Vec2 offset);
 
-    // Metadata-only edit: no geometry projection or numerical solve.
+    // Edits curve metadata without geometry projection or solving. Standalone points ignore this flag.
     Status setConstruction(EntityId id, bool construction);
     // Removes the entity and all constraints referencing any of its sub-elements.
     Status removeEntity(EntityId id);

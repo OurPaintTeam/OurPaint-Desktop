@@ -14,6 +14,7 @@ add_library(ourpaint_editor STATIC
         tool/NurbsTool.cc
         tool/ArcTool.cc
         tool/ConstraintTool.cc
+        tool/ConstructionTool.cc
         pick/Cpu2dPicker.cc
         SelectionModel.cc
         render/AxisTexts.cc

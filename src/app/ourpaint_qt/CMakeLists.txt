@@ -12,6 +12,13 @@ add_executable(ourpaint_qt
         UIObserver.cc
 )
 
+get_target_property(qt_core_type Qt6::Core TYPE)
+if (MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND qt_core_type STREQUAL "STATIC_LIBRARY")
+    target_link_options(ourpaint_qt PRIVATE -static)
+    # Keep the implicit MinGW runtime libraries at the end of the link line static.
+    set_target_properties(ourpaint_qt PROPERTIES LINK_SEARCH_START_STATIC ON LINK_SEARCH_END_STATIC ON)
+endif ()
+
 set_target_properties(ourpaint_qt PROPERTIES UNITY_BUILD OFF)
 
 target_link_libraries(ourpaint_qt PRIVATE

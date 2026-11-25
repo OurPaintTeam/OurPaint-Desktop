@@ -77,8 +77,9 @@ produces BackendFailure before overflow.
 
 `SketchEntity` contains `id`, owning `geometry`, and `construction`. Construction
 is consumer metadata, not a different equation or exclusion from queries, counts,
-or solving. Creation helpers default it to false. Geometry updates preserve it
-unless an explicit optional value is supplied.
+or solving. Standalone points serve as references and always store `construction = false`,
+including when restoring older snapshots. Curves default to false and preserve
+their flag across geometry updates unless the caller supplies a new value.
 
 `GeometryRef` identifies an entity, `SubElement`, and a zero-based `index`.
 The index selects a NURBS control point for `Control`; all other sub-elements
@@ -139,8 +140,11 @@ Selecting a curve does not implicitly select its markers, and selecting a marker
 does not select its curve. Coincident points retain distinct references.
 
 Cpu2dPicker queries pointElements(All) for point hits and entities for curve hits.
-Rectangle selection includes each point inside the rectangle and each curve
-intersecting it. RenderSceneBuilder draws base/selected markers from pointElements
+Dragging right from the press position shows a blue window and selects fully
+enclosed line segments, circles, and arcs. Dragging left shows a green crossing
+window that also selects these curves when they touch or cross its boundary.
+Both modes select point elements inside or on the rectangle independently of their curves.
+RenderSceneBuilder draws base/selected markers from pointElements
 and highlights a curve only when its Whole reference is selected. SelectionModel
 deduplicates identical references while retaining selection order.
 

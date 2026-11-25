@@ -12,24 +12,29 @@ using namespace app;
 
 SketchEditor::SketchEditor(Document& document, render::Camera2D& camera, OverlayModel& overlay, const app::ConstraintLayout& constraintLayout,
                            app::ConstraintPresentationState& constraintPresentation)
-    : document_(document),
-      camera_(camera),
-      overlay_(overlay),
-      snap_(document_.sketch(), camera_),
-      picker_(document_.sketch(), camera_),
-      cursorTool_(document_, camera_, snap_, picker_, overlay_, constraintLayout, constraintPresentation),
-      pointTool_(document_, camera_, snap_, overlay_, picker_),
-      lineTool_(document_, camera_, snap_, overlay_, picker_),
-      circleTool_(document_, camera_, snap_, picker_, overlay_),
-      arcTool_(document_, camera_, snap_, picker_, overlay_),
-      bezierTool_(document_, camera_, snap_, overlay_, picker_),
-      constraintTool_(document_, camera_, snap_, overlay_, picker_) {
+    : document_(document)
+    , camera_(camera)
+    , overlay_(overlay)
+    , snap_(document_.sketch(), camera_)
+    , picker_(document_.sketch(), camera_)
+    , cursorTool_(document_, camera_, snap_, picker_, overlay_, constraintLayout, constraintPresentation)
+    , pointTool_(document_, camera_, snap_, overlay_, picker_)
+    , lineTool_(document_, camera_, snap_, overlay_, picker_)
+    , circleTool_(document_, camera_, snap_, picker_, overlay_)
+    , arcTool_(document_, camera_, snap_, picker_, overlay_)
+    , bezierTool_(document_, camera_, snap_, overlay_, picker_)
+    , constraintTool_(document_, camera_, snap_, overlay_, picker_)
+    , constructionTool_(document_, camera_, snap_, overlay_, picker_, constraintLayout) {
     activeTool_ = &cursorTool_;
 }
 
 SketchEditor::~SketchEditor() {}
 
 void SketchEditor::selectTool(ToolId id, std::optional<double> value) {
+    if (id == ToolId::Construction && !overlay_.selection_.model.empty()) {
+        constructionTool_.toggleSelection();
+        return;
+    }
     activeTool_->cancel();
 
     switch (id) {
@@ -92,6 +97,11 @@ void SketchEditor::selectTool(ToolId id, std::optional<double> value) {
             activeTool_ = &bezierTool_;
             break;
 
+        case ToolId::Construction:
+            overlay_.clearPreview();
+            overlay_.clearSnap();
+            activeTool_ = &constructionTool_;
+            break;
 
         // Third group: constraints
         default: {

@@ -1,10 +1,12 @@
 #include "Cpu2dPicker.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <numbers>
 
+#include "../NurbsPolyline.h"
 #include "../render/constraints/ConstraintLayout.h"
 
 namespace {
@@ -24,11 +26,11 @@ bool isDimension(sketch::ConstraintType type) {
     }
 }
 
-double segmentDistance(glm::dvec2 point, const app::ConstraintMarkerSegment& segment) {
-    const auto direction = segment.end - segment.start;
+double segmentDistance(glm::dvec2 point, glm::dvec2 start, glm::dvec2 end) {
+    const auto direction = end - start;
     const double lengthSquared = glm::dot(direction, direction);
-    const double t = lengthSquared > 0.0 ? std::clamp(glm::dot(point - segment.start, direction) / lengthSquared, 0.0, 1.0) : 0.0;
-    return glm::length(point - (segment.start + t * direction));
+    const double t = lengthSquared > 0.0 ? std::clamp(glm::dot(point - start, direction) / lengthSquared, 0.0, 1.0) : 0.0;
+    return glm::length(point - (start + t * direction));
 }
 
 double arcDistance(glm::dvec2 point, const app::ConstraintArc& arc) {
@@ -62,6 +64,14 @@ double labelDistance(glm::dvec2 point, const app::ConstraintLabel& label) {
 
 bool pointInRect(sketch::Vec2 point, double xmin, double ymin, double xmax, double ymax) {
     return point.x >= xmin && point.x <= xmax && point.y >= ymin && point.y <= ymax;
+}
+
+bool circleIntersectsRect(const sketch::Circle2& circle, double xmin, double ymin, double xmax, double ymax) {
+    const double nearX = std::clamp(circle.center.x, xmin, xmax) - circle.center.x;
+    const double nearY = std::clamp(circle.center.y, ymin, ymax) - circle.center.y;
+    const double farX = std::max(std::abs(xmin - circle.center.x), std::abs(xmax - circle.center.x));
+    const double farY = std::max(std::abs(ymin - circle.center.y), std::abs(ymax - circle.center.y));
+    return std::hypot(nearX, nearY) <= circle.radius && std::hypot(farX, farY) >= circle.radius;
 }
 
 bool angleInArc(const sketch::Arc2& arc, sketch::Vec2 point, double tolerance = 1e-12) {
@@ -109,6 +119,28 @@ bool arcIntersectsRect(const sketch::Arc2& arc, double xmin, double ymin, double
     return false;
 }
 
+bool arcInRect(const sketch::Arc2& arc, double xmin, double ymin, double xmax, double ymax) {
+    if (!pointInRect(arc.start, xmin, ymin, xmax, ymax) || !pointInRect(arc.end, xmin, ymin, xmax, ymax)) {
+        return false;
+    }
+    const double radius = std::hypot(arc.start.x - arc.center.x, arc.start.y - arc.center.y);
+    if (!std::isfinite(radius) || radius <= 0.0) {
+        return false;
+    }
+
+    // Only cardinal points on the arc's sweep can extend its bounds beyond the endpoints.
+    const std::array<sketch::Vec2, 4> extrema{{
+        {arc.center.x - radius, arc.center.y}, {arc.center.x + radius, arc.center.y},
+        {arc.center.x, arc.center.y - radius}, {arc.center.x, arc.center.y + radius},
+    }};
+    for (const auto point : extrema) {
+        if (!pointInRect(point, xmin, ymin, xmax, ymax) && angleInArc(arc, point)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 }  // namespace
 
 Cpu2dPicker::Cpu2dPicker(sketch::Sketch& sketch, render::Camera2D& camera) : sketch_(sketch), camera_(camera) {}
@@ -136,7 +168,7 @@ std::optional<DimensionPickResult> Cpu2dPicker::pickDimensionAtScreenLogical(dou
             part = DimensionPickResult::Part::Body;
             distance = std::numeric_limits<double>::infinity();
             for (const auto& stroke : marker.strokes) {
-                distance = std::min(distance, segmentDistance(point, stroke));
+                distance = std::min(distance, segmentDistance(point, stroke.start, stroke.end));
             }
             for (const auto& arc : marker.arcs) {
                 distance = std::min(distance, arcDistance(point, arc));
@@ -153,20 +185,16 @@ std::optional<DimensionPickResult> Cpu2dPicker::pickDimensionAtScreenLogical(dou
 
 // Pick in rect
 
-std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtScreenLogical(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
-    glm::dvec2 worldP1 = camera_.screenLogicalToWorld({screenMinX, screenMinY});
-    glm::dvec2 worldP2 = camera_.screenLogicalToWorld({screenMaxX, screenMaxY});
-    return pickInRect(worldP1.x, worldP1.y, worldP2.x, worldP2.y);
+std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtScreenLogical(double x1, double y1, double x2, double y2, app::RectSelectionMode mode) const {
+    const auto worldP1 = camera_.screenLogicalToWorld({x1, y1});
+    const auto worldP2 = camera_.screenLogicalToWorld({x2, y2});
+    return pickInRectAtWorld(worldP1.x, worldP1.y, worldP2.x, worldP2.y, mode);
 }
 
-std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtScreenFramebuffer(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
-    glm::dvec2 worldP1 = camera_.screenFramebufferToWorld({screenMinX, screenMinY});
-    glm::dvec2 worldP2 = camera_.screenFramebufferToWorld({screenMaxX, screenMaxY});
-    return pickInRect(worldP1.x, worldP1.y, worldP2.x, worldP2.y);
-}
-
-std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtWorld(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const {
-    return pickInRect(screenMinX, screenMinY, screenMaxX, screenMaxY);
+std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtScreenFramebuffer(double x1, double y1, double x2, double y2, app::RectSelectionMode mode) const {
+    const auto worldP1 = camera_.screenFramebufferToWorld({x1, y1});
+    const auto worldP2 = camera_.screenFramebufferToWorld({x2, y2});
+    return pickInRectAtWorld(worldP1.x, worldP1.y, worldP2.x, worldP2.y, mode);
 }
 
 // Pick at screen logical
@@ -198,13 +226,7 @@ std::optional<GeometryPickResult> Cpu2dPicker::pickPointAtScreenLogical(double s
 
 std::optional<GeometryPickResult> Cpu2dPicker::pickCurveAtScreenLogical(double screenX, double screenY) const {
     const glm::dvec2 world = camera_.screenLogicalToWorld({screenX, screenY});
-    if (const auto line = pickLineAt(world.x, world.y)) {
-        return line;
-    }
-    if (const auto circle = pickCircleAt(world.x, world.y)) {
-        return circle;
-    }
-    return pickArcAt(world.x, world.y);
+    return pickCurveAt(world.x, world.y);
 }
 
 std::optional<GeometryPickResult> Cpu2dPicker::pickLineAtScreenLogical(double screenX, double screenY) const {
@@ -271,13 +293,12 @@ std::optional<GeometryPickResult> Cpu2dPicker::pickArcAtWorld(double worldX, dou
     return pickArcAt(worldX, worldY);
 }
 
-// Private
-
-std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRect(double worldMinX, double worldMinY, double worldMaxX, double worldMaxY) const {
-    const double rx1 = std::min(worldMinX, worldMaxX);
-    const double ry1 = std::min(worldMinY, worldMaxY);
-    const double rx2 = std::max(worldMinX, worldMaxX);
-    const double ry2 = std::max(worldMinY, worldMaxY);
+std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRectAtWorld(double x1, double y1, double x2, double y2, app::RectSelectionMode mode) const {
+    const double rx1 = std::min(x1, x2);
+    const double ry1 = std::min(y1, y2);
+    const double rx2 = std::max(x1, x2);
+    const double ry2 = std::max(y1, y2);
+    const bool window = mode == app::RectSelectionMode::Window;
 
     auto result = sketch_.entities();
     auto points = sketch_.pointElements();
@@ -292,54 +313,68 @@ std::vector<sketch::GeometryRef> Cpu2dPicker::pickInRect(double worldMinX, doubl
         }
     }
     for (const auto& entity : result.value()) {
+        bool picked = false;
         if (const auto* line = std::get_if<sketch::Line2>(&entity.geometry)) {
-            if (lineIntersectsRectFast(line->start.x, line->start.y, line->end.x, line->end.y, rx1, ry1, rx2, ry2)) {
-                selected.push_back({entity.id, sketch::SubElement::Whole});
-            }
+            picked = window ? pointInRect(line->start, rx1, ry1, rx2, ry2) && pointInRect(line->end, rx1, ry1, rx2, ry2)
+                            : lineIntersectsRectFast(line->start.x, line->start.y, line->end.x, line->end.y, rx1, ry1, rx2, ry2);
         } else if (const auto* circle = std::get_if<sketch::Circle2>(&entity.geometry)) {
-            const double rSq = circle->radius * circle->radius;
-            const double closestX = std::clamp(circle->center.x, rx1, rx2);
-            const double closestY = std::clamp(circle->center.y, ry1, ry2);
-            const double dx = circle->center.x - closestX;
-            const double dy = circle->center.y - closestY;
-            if (dx * dx + dy * dy > rSq) {
-                continue;
-            }
-
-            const double farthestX = std::abs(circle->center.x - rx1) > std::abs(circle->center.x - rx2) ? rx1 : rx2;
-            const double farthestY = std::abs(circle->center.y - ry1) > std::abs(circle->center.y - ry2) ? ry1 : ry2;
-            const double dxFar = circle->center.x - farthestX;
-            const double dyFar = circle->center.y - farthestY;
-            if (dxFar * dxFar + dyFar * dyFar >= rSq) {
-                selected.push_back({entity.id, sketch::SubElement::Whole});
-            }
+            const auto [center, radius] = *circle;
+            picked = window ? center.x - radius >= rx1 && center.y - radius >= ry1 && center.x + radius <= rx2 && center.y + radius <= ry2
+                            : circleIntersectsRect(*circle, rx1, ry1, rx2, ry2);
         } else if (const auto* arc = std::get_if<sketch::Arc2>(&entity.geometry)) {
-            if (arcIntersectsRect(*arc, rx1, ry1, rx2, ry2)) {
-                selected.push_back({entity.id, sketch::SubElement::Whole});
+            picked = window ? arcInRect(*arc, rx1, ry1, rx2, ry2) : arcIntersectsRect(*arc, rx1, ry1, rx2, ry2);
+        } else if (const auto* nurbs = std::get_if<sketch::NurbsCurve2>(&entity.geometry)) {
+            const auto samples = app::sampleNurbsPolyline(*nurbs);
+            if (window) {
+                picked = !samples.empty() && std::ranges::all_of(samples, [&](auto p) { return pointInRect(p, rx1, ry1, rx2, ry2); });
+            } else {
+                picked = std::ranges::adjacent_find(samples, [&](auto a, auto b) {
+                    return lineIntersectsRectFast(a.x, a.y, b.x, b.y, rx1, ry1, rx2, ry2);
+                }) != samples.end();
             }
+        }
+        if (picked) {
+            selected.push_back({entity.id, sketch::SubElement::Whole});
         }
     }
 
     return selected;
 }
 
+// Private
+
 std::optional<GeometryPickResult> Cpu2dPicker::pickAt(double worldX, double worldY) const {
-    std::optional<GeometryPickResult> p = pickPointAt(worldX, worldY);
-    if (p.has_value()) {
-        return p;
+    if (const auto point = pickPointAt(worldX, worldY)) {
+        return point;
     }
+    return pickCurveAt(worldX, worldY);
+}
 
-    std::optional<GeometryPickResult> l = pickLineAt(worldX, worldY);
-    if (l.has_value()) {
-        return l;
+std::optional<GeometryPickResult> Cpu2dPicker::pickCurveAt(double worldX, double worldY) const {
+    if (const auto line = pickLineAt(worldX, worldY)) {
+        return line;
     }
-
-    std::optional<GeometryPickResult> c = pickCircleAt(worldX, worldY);
-    if (c.has_value()) {
-        return c;
+    if (const auto circle = pickCircleAt(worldX, worldY)) {
+        return circle;
     }
-
-    return pickArcAt(worldX, worldY);
+    if (const auto arc = pickArcAt(worldX, worldY)) {
+        return arc;
+    }
+    const auto nurbs = sketch_.entities(sketch::EntityKind::Nurbs);
+    if (!nurbs) {
+        return std::nullopt;
+    }
+    const double tolerance = 5.0 / camera_.zoom();
+    for (const auto& entity : nurbs.value()) {
+        const auto samples = app::sampleNurbsPolyline(std::get<sketch::NurbsCurve2>(entity.geometry));
+        const auto hit = std::ranges::adjacent_find(samples, [&](auto a, auto b) {
+            return segmentDistance({worldX, worldY}, {a.x, a.y}, {b.x, b.y}) < tolerance;
+        });
+        if (hit != samples.end()) {
+            return GeometryPickResult{{entity.id, sketch::SubElement::Whole}};
+        }
+    }
+    return std::nullopt;
 }
 
 std::optional<GeometryPickResult> Cpu2dPicker::pickPointAt(double worldX, double worldY) const {

@@ -121,7 +121,7 @@ inline EntityKind entityKind(const SketchGeometry& geometry) {
 }
 
 // Detached query value. Owned solver points are not public entities.
-// Construction affects future consumers only, not constraint equations.
+// The construction flag is curve metadata. Standalone points always store false.
 struct SketchEntity {
     EntityId id;
     SketchGeometry geometry;

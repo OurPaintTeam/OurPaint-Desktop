@@ -48,7 +48,7 @@ private:
     void buildConstraintsMarkers();
     void buildSnapFeedback();
 
-    void testBuild();
+    void buildNurbsPreview();
 
 private:
     Document& document_;

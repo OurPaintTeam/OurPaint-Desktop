@@ -30,6 +30,7 @@ public:
     bool cancel() override;
 
 private:
+    void updateMarqueeSelection(glm::dvec2 position, input::Modifiers modifiers);
     void deleteSelection();
     void copySelection();
     void pasteSelection();
@@ -56,11 +57,11 @@ private:
     State state_ = State::Idle;
     sketch::Sketch& sketch_;
 
-    glm::ivec2 lastLogicalPos_{};
+    glm::dvec2 lastLogicalPos_{};
 
     glm::dvec2 lastPos_{};
     glm::dvec2 pressWorldPos_{};
-    glm::ivec2 lastScreenPos_{};
+    glm::dvec2 marqueeStartLogical_{};
     const ConstraintLayout& constraintLayout_;
     ConstraintPresentationState& constraintPresentation_;
 

@@ -6,8 +6,10 @@ selection regions. RenderScene contains only generic drawing primitives.
 
 ## Ownership and data flow
 
-`DocumentView` owns `ViewportStyle`, `app::ConstraintPresentationState`, and
-`app::ConstraintLayout` before the editor and viewport controller. The controller
+`UIController` owns the `ViewportStyle` shared by all views. Frontends can copy
+the current style with `viewportStyle()` and apply edits with `setViewportStyle()`,
+which requests a redraw of every open view. Each `DocumentView` owns its
+`app::ConstraintPresentationState` and `app::ConstraintLayout`. Its viewport controller
 updates the layout from Sketch, Camera2D, `ViewportStyle::constraintMarker`,
 a const reference to presentation state, and a `render::text::TextMeasurer`.
 The current renderer supplies this CPU-only measurement interface from its font

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../../../render/Camera2D.h"
+#include "../RectSelectionMode.h"
 #include "Sketch.h"
 
 using namespace core;
@@ -38,9 +39,12 @@ public:
     std::optional<DimensionPickResult> pickSelectableDimensionAtScreenLogical(double screenX, double screenY, const app::ConstraintLayout& layout) const;
     std::optional<DimensionPickResult> pickDimensionAtScreenLogical(double screenX, double screenY, const app::ConstraintLayout& layout) const;
 
-    std::vector<sketch::GeometryRef> pickInRectAtScreenLogical(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
-    std::vector<sketch::GeometryRef> pickInRectAtScreenFramebuffer(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
-    std::vector<sketch::GeometryRef> pickInRectAtWorld(double screenMinX, double screenMinY, double screenMaxX, double screenMaxY) const;
+    std::vector<sketch::GeometryRef> pickInRectAtScreenLogical(double x1, double y1, double x2, double y2,
+                                                              app::RectSelectionMode mode = app::RectSelectionMode::Crossing) const;
+    std::vector<sketch::GeometryRef> pickInRectAtScreenFramebuffer(double x1, double y1, double x2, double y2,
+                                                                  app::RectSelectionMode mode = app::RectSelectionMode::Crossing) const;
+    std::vector<sketch::GeometryRef> pickInRectAtWorld(double x1, double y1, double x2, double y2,
+                                                      app::RectSelectionMode mode = app::RectSelectionMode::Crossing) const;
 
     std::optional<GeometryPickResult> pickGeometryAtScreenLogical(double screenX, double screenY) const;
     std::optional<GeometryPickResult> pickCurveAtScreenLogical(double screenX, double screenY) const;
@@ -63,12 +67,11 @@ public:
 
 private:
     std::optional<GeometryPickResult> pickAt(double worldX, double worldY) const;
+    std::optional<GeometryPickResult> pickCurveAt(double worldX, double worldY) const;
     std::optional<GeometryPickResult> pickPointAt(double worldX, double worldY) const;
     std::optional<GeometryPickResult> pickLineAt(double worldX, double worldY) const;
     std::optional<GeometryPickResult> pickCircleAt(double worldX, double worldY) const;
     std::optional<GeometryPickResult> pickArcAt(double worldX, double worldY) const;
-
-    std::vector<sketch::GeometryRef> pickInRect(double worldMinX, double worldMinY, double worldMaxX, double worldMaxY) const;
 
     static bool lineIntersectsRectFast(double x1, double y1, double x2, double y2, double xMin, double yMin, double xMax, double yMax);
 
